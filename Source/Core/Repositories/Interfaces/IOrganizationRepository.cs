@@ -1,18 +1,7 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Exceptionless.Core.Models.Billing;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IOrganizationRepository : IRepository<Organization> {
@@ -20,11 +9,9 @@ namespace Exceptionless.Core.Repositories {
         Organization GetByStripeCustomerId(string customerId);
         ICollection<Organization> GetAbandoned(int? limit = 20);
         ICollection<Organization> GetByRetentionDaysEnabled(PagingOptions paging);
-        void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null);
-        void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null);
         ICollection<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
         BillingPlanStats GetBillingPlanStats();
-        bool IncrementUsage(string organizationId, int count = 1);
+        bool IncrementUsage(string organizationId, bool tooBig, int count = 1);
         int GetRemainingEventLimit(string organizationId);
     }
 }

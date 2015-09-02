@@ -1,107 +1,92 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Exceptionless.Core.Caching;
-using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
+using FluentValidation;
+using Foundatio.Caching;
+using Foundatio.Messaging;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class MongoRepository<T> : MongoReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
+        protected readonly IValidator<T> _validator;
         protected readonly IMessagePublisher _messagePublisher;
-        protected readonly static string _entityType = typeof(T).Name;
         protected readonly static bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByProject = typeof(IOwnedByProject).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));
-        protected static readonly bool _isOrganization = typeof(T) == typeof(Organization);
+        protected static readonly bool _isUser = typeof(T) == typeof(User);
 
-        protected MongoRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient) {
+        protected MongoRepository(MongoDatabase database, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient) {
+            _validator = validator;
             _messagePublisher = messagePublisher;
-            EnableNotifications = true;
         }
 
-        public bool EnableNotifications { get; set; }
+        public bool BatchNotifications { get; set; }
 
-        public T Add(T document, bool addToCache = false, TimeSpan? expiresIn = null) {
+        public T Add(T document, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
             if (document == null)
                 throw new ArgumentNullException("document");
 
-            Add(new[] { document }, addToCache, expiresIn);
+            Add(new[] { document }, addToCache, expiresIn, sendNotifications);
             return document;
         }
 
-        protected virtual void BeforeAdd(ICollection<T> documents) {
-            if (_isOwnedByOrganization && !_isOrganization && documents.Any(d => String.IsNullOrEmpty(((IOwnedByOrganization)d).OrganizationId)))
-                throw new ArgumentException("OrganizationIds must be set.", "documents");
+        protected virtual void BeforeAdd(ICollection<T> documents) { }
 
-            if (_isOwnedByProject && documents.Any(d => String.IsNullOrEmpty(((IOwnedByProject)d).ProjectId)))
-                throw new ArgumentException("ProjectIds must be set.", "documents");
-
-            if (_isOwnedByStack && documents.Any(d => String.IsNullOrEmpty(((IOwnedByStack)d).StackId)))
-                throw new ArgumentException("StackIds must be set.", "documents");
-        }
-
-        public void Add(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+        public void Add(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
             if (documents == null || documents.Count == 0)
                 throw new ArgumentException("Must provide one or more documents to add.", "documents");
 
             BeforeAdd(documents);
+
+            if (_validator != null)
+                documents.ForEach(_validator.ValidateAndThrow);
+
             _collection.InsertBatch<T>(documents);
-            AfterAdd(documents, addToCache, expiresIn);
+            AfterAdd(documents, addToCache, expiresIn, sendNotifications);
         }
 
-        protected virtual void AfterAdd(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+        protected virtual void AfterAdd(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
+            if (!EnableCache && !sendNotifications)
+                return;
+
             foreach (var document in documents) {
-                InvalidateCache(document);
-                if (addToCache && Cache != null)
-                    Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+                if (EnableCache) {
+                    InvalidateCache(document);
+                    if (addToCache && Cache != null)
+                        Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+                }
 
-                var orgEntity = document as IOwnedByOrganization;
-                if (EnableNotifications)
-                    PublishMessageAsync(new EntityChange {
-                        ChangeType = EntityChangeType.Added,
-                        Id = document.Id,
-                        OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
-                        Type = _entityType
-                    });
+                if (sendNotifications && !BatchNotifications)
+                    PublishMessage(ChangeType.Added, document);
             }
+
+            if (sendNotifications && BatchNotifications)
+                PublishMessage(ChangeType.Added, documents);
         }
 
-        protected Task PublishMessageAsync<TMessageType>(TMessageType message) where TMessageType : class {
-            return _messagePublisher != null ? _messagePublisher.PublishAsync(message) : Task.FromResult(0);
-        }
-
-        public void Remove(string id) {
+        public void Remove(string id, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(id))
                 throw new ArgumentNullException("id");
 
-            // TODO: Decide if it's worth it to retrieve the document first
             var document = GetById(id, true);
-            Remove(new[] { document });
+            Remove(new[] { document }, sendNotifications);
         }
 
-        public void Remove(T document) {
+        public void Remove(T document, bool sendNotifications = true) {
             if (document == null)
                 throw new ArgumentNullException("document");
 
-            Remove(new[] { document });
+            Remove(new[] { document }, sendNotifications);
         }
 
-        protected virtual void BeforeRemove(ICollection<T> documents) { }
+        protected virtual void BeforeRemove(ICollection<T> documents, bool sendNotifications = true) {
+            foreach (var document in documents)
+                InvalidateCache(document);
+        }
 
         public void Remove(ICollection<T> documents, bool sendNotification = true) {
             if (documents == null || documents.Count == 0)
@@ -116,19 +101,16 @@ namespace Exceptionless.Core.Repositories {
             foreach (var document in documents) {
                 InvalidateCache(document);
 
-                var orgEntity = document as IOwnedByOrganization;
-                if (sendNotification && EnableNotifications)
-                    PublishMessageAsync(new EntityChange {
-                        ChangeType = EntityChangeType.Removed,
-                        Id = document.Id,
-                        OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
-                        Type = _entityType
-                    });
+                if (sendNotification && !BatchNotifications)
+                    PublishMessage(ChangeType.Removed, document);
             }
+
+            if (sendNotification && BatchNotifications)
+                PublishMessage(ChangeType.Removed, documents);
         }
 
-        public long RemoveAll(bool sendNotifications = true) {
-            return RemoveAll(new QueryOptions(), sendNotifications);
+        public void RemoveAll() {
+            RemoveAll(new QueryOptions());
         }
 
         protected long RemoveAll(QueryOptions options, bool sendNotifications = true) {
@@ -142,11 +124,13 @@ namespace Exceptionless.Core.Repositories {
                 fields.Add(CommonFieldNames.ProjectId);
             if (_isOwnedByStack)
                 fields.Add(CommonFieldNames.StackId);
+            if (_isUser)
+                fields.AddRange(new [] { "OrganizationIds", "EmailAddress" });
 
             long recordsAffected = 0;
 
-            var documents = Collection.FindAs<T>(options.GetQuery(_getIdValue))
-                .SetLimit(RepositoryConstants.BATCH_SIZE)
+            var documents = Collection.FindAs<T>(options.GetMongoQuery(_getIdValue))
+                .SetLimit(Settings.Current.BulkBatchSize)
                 .SetFields(fields.ToArray())
                 .ToList();
 
@@ -154,8 +138,8 @@ namespace Exceptionless.Core.Repositories {
                 recordsAffected += documents.Count;
                 Remove(documents, sendNotifications);
 
-                documents = Collection.FindAs<T>(options.GetQuery(_getIdValue))
-                .SetLimit(RepositoryConstants.BATCH_SIZE)
+                documents = Collection.FindAs<T>(options.GetMongoQuery(_getIdValue))
+                .SetLimit(Settings.Current.BulkBatchSize)
                 .SetFields(fields.ToArray())
                 .ToList();
             }
@@ -163,64 +147,130 @@ namespace Exceptionless.Core.Repositories {
             return recordsAffected;
         }
 
-        public T Save(T document, bool addToCache = false, TimeSpan? expiresIn = null) {
+        public T Save(T document, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
             if (document == null)
                 throw new ArgumentNullException("document");
 
-            Save(new[] { document }, addToCache, expiresIn);
+            Save(new[] { document }, addToCache, expiresIn, sendNotifications);
             return document;
         }
 
-        protected virtual void BeforeSave(ICollection<T> documents) { }
+        protected virtual void BeforeSave(ICollection<T> originalDocuments, ICollection<T> documents) { }
 
-        public void Save(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+        public void Save(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
             if (documents == null || documents.Count == 0)
                 throw new ArgumentException("Must provide one or more documents to save.", "documents");
 
-            BeforeSave(documents);
+            string[] ids = documents.Where(d => !String.IsNullOrEmpty(d.Id)).Select(d => d.Id).ToArray();
+            var originalDocuments = ids.Length > 0 ? GetByIds(documents.Select(d => d.Id).ToArray()) : new List<T>();
+
+            BeforeSave(originalDocuments, documents);
+
+            if (_validator != null)
+                documents.ForEach(_validator.ValidateAndThrow);
+
             foreach (var document in documents)
                 _collection.Save(document);
-            AfterSave(documents, addToCache, expiresIn);
+
+            AfterSave(originalDocuments, documents, addToCache, expiresIn, sendNotifications);
         }
 
-        protected virtual void AfterSave(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+        protected virtual void AfterSave(ICollection<T> originalDocuments, ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
+            if (!EnableCache && !sendNotifications)
+                return;
+            
+            if (EnableCache)
+                originalDocuments.ForEach(InvalidateCache);
+
             foreach (var document in documents) {
-                InvalidateCache(document);
-                if (addToCache && Cache != null)
+                if (EnableCache && addToCache && Cache != null)
                     Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
 
-                var orgEntity = document as IOwnedByOrganization;
-                if (EnableNotifications)
-                    PublishMessageAsync(new EntityChange {
-                        ChangeType = EntityChangeType.Saved,
-                        Id = document.Id,
-                        OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
-                        Type = _entityType
-                    });
+                if (sendNotifications && !BatchNotifications)
+                    PublishMessage(ChangeType.Saved, document);
             }
+
+            if (sendNotifications && BatchNotifications)
+                PublishMessage(ChangeType.Saved, documents);
         }
 
         protected long UpdateAll(QueryOptions options, IMongoUpdate update, bool sendNotifications = true) {
-            var result = _collection.Update(options.GetQuery(_getIdValue), update, UpdateFlags.Multi);
-            if (!sendNotifications || !EnableNotifications || _messagePublisher == null)
+            var result = _collection.Update(options.GetMongoQuery(_getIdValue), update, UpdateFlags.Multi);
+            if (!sendNotifications || _messagePublisher == null)
                 return result.DocumentsAffected;
 
             if (options.OrganizationIds.Any()) {
                 foreach (var orgId in options.OrganizationIds) {
-                    PublishMessageAsync(new EntityChange {
-                        ChangeType = EntityChangeType.UpdatedAll,
+                    PublishMessage(new EntityChanged {
+                        ChangeType = ChangeType.Saved,
                         OrganizationId = orgId,
                         Type = _entityType
                     });
                 }
             } else {
-                PublishMessageAsync(new EntityChange {
-                    ChangeType = EntityChangeType.UpdatedAll,
+                PublishMessage(new EntityChanged {
+                    ChangeType = ChangeType.Saved,
                     Type = _entityType
                 });
             }
 
             return result.DocumentsAffected;
+        }
+
+        protected void PublishMessage(ChangeType changeType, T document) {
+            PublishMessage(changeType, new[] { document });
+        }
+
+        protected virtual void PublishMessage(ChangeType changeType, IEnumerable<T> documents) {
+            if (_isOwnedByOrganization && _isOwnedByProject) {
+                foreach (var projectDocs in documents.Cast<IOwnedByOrganizationAndProjectWithIdentity>().GroupBy(d => d.ProjectId)) {
+                    var firstDoc = projectDocs.FirstOrDefault();
+                    if (firstDoc == null)
+                        continue;
+
+                    int count = projectDocs.Count();
+                    var message = new EntityChanged {
+                        ChangeType = changeType,
+                        OrganizationId = firstDoc.OrganizationId,
+                        ProjectId = projectDocs.Key,
+                        Id = count == 1 ? firstDoc.Id : null,
+                        Type = _entityType
+                    };
+
+                    PublishMessage(message);
+                }
+            } else if (_isOwnedByOrganization) {
+                foreach (var orgDocs in documents.Cast<IOwnedByOrganizationWithIdentity>().GroupBy(d => d.OrganizationId)) {
+                    var firstDoc = orgDocs.FirstOrDefault();
+                    if (firstDoc == null)
+                        continue;
+
+                    int count = orgDocs.Count();
+                    var message = new EntityChanged {
+                        ChangeType = changeType,
+                        OrganizationId = orgDocs.Key,
+                        Id = count == 1 ? firstDoc.Id : null,
+                        Type = _entityType
+                    };
+
+                    PublishMessage(message);
+                }
+            } else {
+                foreach (var doc in documents) {
+                    var message = new EntityChanged {
+                        ChangeType = changeType,
+                        Id = doc.Id,
+                        Type = _entityType
+                    };
+
+                    PublishMessage(message);
+                }
+            }
+        }
+
+        protected void PublishMessage<TMessageType>(TMessageType message) where TMessageType : class {
+            if (_messagePublisher != null)
+                _messagePublisher.Publish(message);
         }
     }
 }

@@ -1,0 +1,26 @@
+cluster.name: exceptionless
+node.name: ex-es01
+#action.disable_delete_all_indices: true
+index.number_of_shards: 10
+#index.number_of_replicas: 1
+index.merge.scheduler.max_thread_count: 1
+index.translog.flush_threshold_size: 1gb
+#path.data: /mnt/data/db
+#path.work: /path/to/work
+#path.logs: /mnt/data/log
+bootstrap.mlockall: true
+script.disable_dynamic: false
+#gateway.expected_nodes: 3
+discovery.zen.ping.multicast.enabled: false
+#discovery.zen.minimum_master_nodes: 2
+#discovery.zen.ping.unicast.hosts: [ '10.2.0.4', '10.2.0.5', '10.2.0.6' ]
+
+#transport.tcp.compress: true
+http.jsonp.enable: true
+http.cors.enabled: true
+http.cors.allow-origin: http://kibana.exceptionless.io
+
+#cloud:
+#  azure:
+#    storage_account: exgeo
+#    storage_key: key_here

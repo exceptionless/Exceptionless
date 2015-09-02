@@ -1,28 +1,18 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Billing {
     public class BillingManager {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
 
-        public BillingManager(IOrganizationRepository organizationRepository, IUserRepository userRepository) {
+        public BillingManager(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository) {
             _organizationRepository = organizationRepository;
+            _projectRepository = projectRepository;
             _userRepository = userRepository;
         }
 
@@ -38,8 +28,8 @@ namespace Exceptionless.Core.Billing {
             if (organization == null || String.IsNullOrWhiteSpace(organization.Id))
                 return false;
 
-            List<User> users = _userRepository.GetByOrganizationId(organization.Id).ToList();
-            return organization.MaxUsers <= -1 || users.Count < organization.MaxUsers;
+            int numberOfUsers = _userRepository.GetByOrganizationId(organization.Id).Count + organization.Invites.Count;
+            return organization.MaxUsers <= -1 || numberOfUsers < organization.MaxUsers;
         }
 
         public bool CanAddProject(Project project) {
@@ -50,14 +40,8 @@ namespace Exceptionless.Core.Billing {
             if (organization == null)
                 return false;
 
-            return organization.MaxProjects == -1 || organization.ProjectCount < organization.MaxProjects;
-        }
-
-        public bool CanAddIntegration(Project project) {
-            if (project == null || String.IsNullOrWhiteSpace(project.OrganizationId))
-                return false;
-
-            return HasPremiumFeatures(project.OrganizationId);
+            long projectCount = _projectRepository.GetCountByOrganizationId(project.OrganizationId);
+            return organization.MaxProjects == -1 || projectCount < organization.MaxProjects;
         }
 
         public bool HasPremiumFeatures(string organizationId) {
@@ -82,8 +66,9 @@ namespace Exceptionless.Core.Billing {
             }
 
             int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : int.MaxValue;
-            if (organization.ProjectCount > maxProjects) {
-                message = String.Format("Please remove {0} project{1} and try again.", organization.ProjectCount - maxProjects, (organization.ProjectCount - maxProjects) > 0 ? "s" : String.Empty);
+            long projectCount = _projectRepository.GetCountByOrganizationId(organization.Id);
+            if (projectCount > maxProjects) {
+                message = String.Format("Please remove {0} project{1} and try again.", projectCount - maxProjects, (projectCount - maxProjects) > 0 ? "s" : String.Empty);
                 return false;
             }
 
@@ -97,18 +82,20 @@ namespace Exceptionless.Core.Billing {
             return true;
         }
 
-        public BillingPlan GetBillingPlan(string planId) {
+        public static BillingPlan GetBillingPlan(string planId) {
             return Plans.FirstOrDefault(p => String.Equals(p.Id, planId, StringComparison.OrdinalIgnoreCase));
         }
 
-        public void ApplyBillingPlan(Organization organization, BillingPlan plan, User user, bool updateBillingPrice = true) {
+        public static void ApplyBillingPlan(Organization organization, BillingPlan plan, User user = null, bool updateBillingPrice = true) {
             organization.PlanId = plan.Id;
+            organization.PlanName = plan.Name;
+            organization.PlanDescription = plan.Description;
             organization.BillingChangeDate = DateTime.Now;
 
             if (updateBillingPrice)
                 organization.BillingPrice = plan.Price;
 
-            organization.BillingChangedByUserId = user.Id;
+            organization.BillingChangedByUserId = user != null ? user.Id : null;
             organization.MaxUsers = plan.MaxUsers;
             organization.MaxProjects = plan.MaxProjects;
             organization.RetentionDays = plan.RetentionDays;
@@ -205,8 +192,8 @@ namespace Exceptionless.Core.Billing {
                     Price = 99,
                     MaxProjects = -1,
                     MaxUsers = -1,
-                    RetentionDays = 365,
-                    MaxEventsPerMonth = 150000,
+                    RetentionDays = 180,
+                    MaxEventsPerMonth = 250000,
                     HasPremiumFeatures = true
                 };
             }
@@ -221,8 +208,72 @@ namespace Exceptionless.Core.Billing {
                     Price = 1089,
                     MaxProjects = -1,
                     MaxUsers = -1,
-                    RetentionDays = 365,
-                    MaxEventsPerMonth = 150000,
+                    RetentionDays = 180,
+                    MaxEventsPerMonth = 250000,
+                    HasPremiumFeatures = true
+                };
+            }
+        }
+
+        public static BillingPlan ExtraLargePlan {
+            get {
+                return new BillingPlan {
+                    Id = "EX_XL",
+                    Name = "Extra Large",
+                    Description = "Extra Large ($199/month)",
+                    Price = 199,
+                    MaxProjects = -1,
+                    MaxUsers = -1,
+                    RetentionDays = 180,
+                    MaxEventsPerMonth = 1000000,
+                    HasPremiumFeatures = true
+                };
+            }
+        }
+
+        public static BillingPlan ExtraLargeYearlyPlan {
+            get {
+                return new BillingPlan {
+                    Id = "EX_XL_YEARLY",
+                    Name = "Extra Large (Yearly)",
+                    Description = "Extra Large Yearly ($2,189/year - Save $199)",
+                    Price = 2189,
+                    MaxProjects = -1,
+                    MaxUsers = -1,
+                    RetentionDays = 180,
+                    MaxEventsPerMonth = 1000000,
+                    HasPremiumFeatures = true
+                };
+            }
+        }
+
+        public static BillingPlan EnterprisePlan {
+            get {
+                return new BillingPlan {
+                    Id = "EX_ENT",
+                    Name = "Enterprise",
+                    Description = "Enterprise ($499/month)",
+                    Price = 499,
+                    MaxProjects = -1,
+                    MaxUsers = -1,
+                    RetentionDays = 180,
+                    MaxEventsPerMonth = 3000000,
+                    HasPremiumFeatures = true
+                };
+            }
+        }
+
+        public static BillingPlan EnterpriseYearlyPlan {
+            get {
+                return new BillingPlan {
+                    Id = "EX_ENT_YEARLY",
+                    Name = "Enterprise (Yearly)",
+                    Description = "Enterprise Yearly ($5,489/year - Save $499)",
+                    Price = 5489,
+                    MaxProjects = -1,
+                    MaxUsers = -1,
+                    RetentionDays = 180,
+                    MaxEventsPerMonth = 3000000,
                     HasPremiumFeatures = true
                 };
             }
@@ -245,6 +296,6 @@ namespace Exceptionless.Core.Billing {
             }
         }
 
-        public static readonly BillingPlan[] Plans = { FreePlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, SmallPlan, MediumPlan, LargePlan, UnlimitedPlan };
+        public static readonly BillingPlan[] Plans = { FreePlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, ExtraLargeYearlyPlan, EnterpriseYearlyPlan, SmallPlan, MediumPlan, LargePlan, ExtraLargePlan, EnterprisePlan, UnlimitedPlan };
     }
 }

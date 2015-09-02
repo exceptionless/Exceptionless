@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
     public static class FindOptionsExtensions {
@@ -65,21 +64,6 @@ namespace Exceptionless.Core.Repositories {
             return options;
         }
 
-        public static T WithQuery<T>(this T options, IMongoQuery query) where T : QueryOptions {
-            options.Query = query;
-            return options;
-        }
-
-        public static T WithReadPreference<T>(this T options, ReadPreference readPreference) where T : QueryOptions {
-            options.ReadPreference = readPreference;
-            return options;
-        }
-        
-        public static T WithSort<T>(this T options, IMongoSortBy sort) where T : OneOptions {
-            options.SortBy = sort;
-            return options;
-        }
-
         public static T WithCacheKey<T>(this T options, string cacheKey) where T: OneOptions {
             options.CacheKey = cacheKey;
             return options;
@@ -110,13 +94,10 @@ namespace Exceptionless.Core.Repositories {
             return options;
         }
 
-        public static T WithBeforeQuery<T>(this T options, IMongoQuery before) where T : MultiOptions {
-            options.BeforeQuery = before;
-            return options;
-        }
-
-        public static T WithAfterQuery<T>(this T options, IMongoQuery after) where T : MultiOptions {
-            options.AfterQuery = after;
+        public static T WithDateRange<T>(this T options, DateTime? start, DateTime? end, string field) where T : MultiOptions {
+            options.StartDate = start;
+            options.EndDate = end;
+            options.DateField = field;
             return options;
         }
 
@@ -134,15 +115,6 @@ namespace Exceptionless.Core.Repositories {
             if (paging == null)
                 return options;
 
-            var pagingWithSorting = paging as PagingWithSortingOptions;
-            if (pagingWithSorting != null) {
-                options.BeforeQuery = pagingWithSorting.BeforeQuery;
-                options.AfterQuery = pagingWithSorting.AfterQuery;
-                options.SortBy = pagingWithSorting.SortBy;
-            }
-
-            options.BeforeValue = paging.Before;
-            options.AfterValue = paging.After;
             options.Page = paging.Page;
             options.Limit = paging.Limit;
 

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodeSmith.Core.Component;
-using CodeSmith.Core.Dependency;
-using CodeSmith.Core.Helpers;
+using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Dependency;
 using NLog.Fluent;
+using Exceptionless.Core.Helpers;
 
 namespace Exceptionless.Core.Plugins {
     public abstract class PluginManagerBase<TPlugin> {
@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Plugins {
         }
 
         private void LoadDefaultPlugins() {
-            var pluginTypes = TypeHelper.GetDerivedTypes<TPlugin>();
+            var pluginTypes = TypeHelper.GetDerivedTypes<TPlugin>(new[] { typeof(Bootstrapper).Assembly });
 
             foreach (var type in pluginTypes) {
                 try {

@@ -1,19 +1,8 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using NLog.Fluent;
 using Stripe;
 
@@ -142,9 +131,6 @@ namespace Exceptionless.Core.Billing {
             }
 
             Log.Info().Message("Stripe payment succeeded. Customer: {0} Org: {1} Org Name: {2}", inv.CustomerId, org.Id, org.Name).Write();
-
-            // TODO: Should we send an email here?
-            //_mailer.SendPaymentSuccessAsync(user, org);
         }
 
         private void InvoicePaymentFailed(StripeInvoice inv) {
@@ -162,7 +148,7 @@ namespace Exceptionless.Core.Billing {
 
             Log.Info().Message("Stripe payment failed. Customer: {0} Org: {1} Org Name: {2} Email: {3}", inv.CustomerId, org.Id, org.Name, user.EmailAddress).Write();
 
-            _mailer.SendPaymentFailedAsync(user, org);
+            _mailer.SendPaymentFailed(user, org);
         }
     }
 }

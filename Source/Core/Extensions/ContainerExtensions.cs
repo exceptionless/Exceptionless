@@ -1,16 +1,6 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using SimpleInjector;
+using SimpleInjector.Advanced;
 using SimpleInjector.Packaging;
 
 namespace Exceptionless.Core.Extensions {
@@ -31,6 +21,19 @@ namespace Exceptionless.Core.Extensions {
             var registration = Lifestyle.Singleton.CreateRegistration(implementationType, implementationType, container);
             foreach (var serviceType in serviceTypesToRegisterFor)
                 container.AddRegistration(serviceType, registration);
+        }
+
+        public static void Bootstrap<T>(this Container container, T target) {
+            foreach (var configuration in container.GetAllInstances<Action<T>>()) {
+                configuration(target);
+            }
+        }
+
+        public static void AddBootstrapper<T>(this Container container, Action<T> configuration) {
+            var tran = Lifestyle.Transient;
+            var type = typeof(Action<T>);
+
+            container.AppendToCollection(type, tran.CreateRegistration(type, () => configuration, container));
         }
     }
 }

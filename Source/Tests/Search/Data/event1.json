@@ -1,0 +1,56 @@
+﻿{
+  "id": "54dbc16ca0f5c61398427b00",
+  "organization_id": "1ecd0826e447ad1e78877555",
+  "project_id": "1ecd0826e447ad1e78877ab2",
+  "stack_id": "1ecd0826e447a44e78877ab1",
+  "is_first_occurrence": false,
+  "is_fixed": true,
+  "is_hidden": false,
+  "created_utc": "2015-02-11T20:54:04.4082284",
+  "type": "log",
+  "source": "GET /Print",
+  "date": "2015-02-11T20:54:04.3457274+00:00",
+  "tags": [
+    "test",
+    "Critical"
+  ],
+  "geo": "40,-70",
+  "value": 1.0,
+  "data": {
+    "idx": {
+      "line count-s": "262",
+      "char count-s": "9386",
+      "load time-s": "14.6556ms"
+    },
+    "@request": {
+      "user_agent": "Mozilla/5.0 (Linux; Android 4.1.1; Prism II Build/HuaweiU8686) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.58 Mobile Safari/537.31",
+      "http_method": "GET",
+      "is_secure": true,
+      "host": "app.exceptionless.com",
+      "port": 443,
+      "path": "/apple-touch-icon.png",
+      "client_ip_address": "192.168.0.243",
+      "data": {
+        "@browser": "Chrome Mobile",
+        "@browser_version": "26.0.1410",
+        "@browser_major_version": "26",
+        "@device": "Huawei U8686",
+        "@os": "Android",
+        "@os_version": "4.1.1",
+        "@os_major_version": "4",
+        "@is_bot": true
+      }
+    },
+    "@user": {
+      "identity": "My-User-Identity"
+    },
+    "@user_description": {
+      "email_address": "test@exceptionless.com",
+      "description": "my custom description"
+    },
+    "@version": "1.2.3.0",
+    "@level": "Error"
+  },
+  "reference_id": "876554321",
+  "session_id": "123452366"
+}

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     public interface IEventParserPlugin {

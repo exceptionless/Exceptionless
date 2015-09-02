@@ -1,20 +1,9 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
-using CodeSmith.Core.Component;
-using Exceptionless.Core.Plugins.EventPipeline;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
-using MongoDB.Driver;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
@@ -27,17 +16,24 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool IsCritical { get { return true; } }
 
-        public override void Process(EventContext ctx) {
+        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {
-                ctx.Event = _eventRepository.Add(ctx.Event);
-            } catch (WriteConcernException ex) {
-                // ignore errors being submitted multiple times
-                if (ex.Message.Contains("E11000")) {
-                    Log.Info().Project(ctx.Event.ProjectId).Message("Ignoring duplicate error submission: {0}", ctx.Event.Id).Write();
-                    ctx.IsCancelled = true;
-                } else
-                    throw;
+                _eventRepository.Add(contexts.Select(c => c.Event).ToList());
+            } catch (Exception ex) {
+                foreach (var context in contexts) {
+                    bool cont = false;
+                    try {
+                        cont = HandleError(ex, context);
+                    } catch {}
+
+                    if (!cont)
+                        context.SetError(ex.Message, ex);
+                }
             }
+        }
+
+        public override Task ProcessAsync(EventContext ctx) {
+            return Task.FromResult(0);
         }
     }
 }

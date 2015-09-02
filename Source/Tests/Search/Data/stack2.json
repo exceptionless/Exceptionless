@@ -1,0 +1,27 @@
+﻿{
+  "id": "2ecd0826e447a44e78877ab2",
+  "organization_id": "1ecd0826e447ad1e78877555",
+  "project_id": "1ecd0826e447ad1e78877ab2",
+  "type": "error",
+  "signature_hash": "20b29b2efe355710562e2cb3c02b8d0a6ebec2ab",
+  "signature_info": {
+    "ExceptionType": "System.Web.Mvc.HttpAntiForgeryException",
+    "Method": "System.Web.Helpers.AntiXsrf.TokenValidator.ValidateTokens(HttpContextBase httpContext, IIdentity identity, AntiForgeryToken sessionToken, AntiForgeryToken fieldToken)",
+    "ErrorCode": "-2147467259"
+  },
+  "fixed_in_version": null,
+  "date_fixed": null,
+  "title": "The provided anti-forgery token was meant for user \"\", but the current user is \"test@exceptionless.com\".",
+  "total_occurrences": 50,
+  "first_occurrence": "2015-01-08T18:29:01.428Z",
+  "last_occurrence": "2015-02-03T16:52:41.982Z",
+  "description": "my custom description",
+  "disable_notifications": false,
+  "is_hidden": true,
+  "is_regressed": true,
+  "occurrences_are_critical": false,
+  "references": [
+    "https://github.com/exceptionless/Exceptionless"
+  ],
+  "tags": ["Blake Niemyjski"]
+}

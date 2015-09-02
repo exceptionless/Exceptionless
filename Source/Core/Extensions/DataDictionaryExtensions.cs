@@ -1,19 +1,8 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Extensions {
     public static class DataDictionaryExtensions {
@@ -24,10 +13,17 @@ namespace Exceptionless.Core.Extensions {
             object data = extendedData[key];
             if (data is T)
                 return (T)data;
-
-            if (data is string) {
+            
+            if (data is JObject) {
                 try {
-                    return JsonConvert.DeserializeObject<T>((string)data);
+                    return ((JObject)data).ToObject<T>();
+                } catch {}
+            }
+
+            string json = data as string;
+            if (json.IsJson()) {
+                try {
+                    return JsonConvert.DeserializeObject<T>(json);
                 } catch {}
             }
 

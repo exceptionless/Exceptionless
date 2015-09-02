@@ -17,7 +17,10 @@ namespace Exceptionless.Api.Utility {
             if (parameterBinding == null || parameterBinding.Descriptor.ParameterType != typeof(string))
                 return Task.FromResult(0);
 
-            SetValue(actionContext, actionContext.Request.Headers.UserAgent.ToString());
+            if (actionContext.Request.Headers.Contains(ExceptionlessHeaders.Client))
+                SetValue(actionContext, actionContext.Request.Headers.GetValues(ExceptionlessHeaders.Client).First());
+            else
+                SetValue(actionContext, actionContext.Request.Headers.UserAgent.ToString());
 
             return Task.FromResult(0);
         }

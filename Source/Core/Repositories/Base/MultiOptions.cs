@@ -1,13 +1,11 @@
 using System;
-using CodeSmith.Core.Events;
-using Exceptionless.Core.Extensions;
-using MongoDB.Bson;
-using MongoDB.Driver;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Repositories {
     public class MultiOptions : OneOptions {
         public event EventHandler<EventArgs<bool>> HasMoreChanged;
         private bool _hasMore;
+        public static readonly DateTime ServiceStartDate = new DateTime(2011, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         public bool HasMore {
             get { return _hasMore; }
@@ -19,11 +17,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public string BeforeValue { get; set; }
-        public IMongoQuery BeforeQuery { get; set; }
         public string AfterValue { get; set; }
-        public IMongoQuery AfterQuery { get; set; }
         public int? Limit { get; set; }
         public int? Page { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string DateField { get; set; }
 
         public bool UseLimit {
             get { return Limit.HasValue; }
@@ -35,6 +34,26 @@ namespace Exceptionless.Core.Repositories {
 
         public bool UsePaging {
             get { return Page.HasValue; }
+        }
+
+        public bool UseStartDate {
+            get { return StartDate.HasValue && StartDate.Value > ServiceStartDate; }
+        }
+        
+        public bool UseEndDate {
+            get { return EndDate.HasValue && EndDate.Value < DateTime.UtcNow.AddHours(1); }
+        }
+
+        public bool UseDateRange {
+            get { return !String.IsNullOrEmpty(DateField) && (UseStartDate || UseEndDate); }
+        }
+
+        public DateTime GetStartDate() {
+            return UseStartDate ? StartDate.GetValueOrDefault() : ServiceStartDate;
+        }
+
+        public DateTime GetEndDate() {
+            return UseEndDate ? EndDate.GetValueOrDefault() : DateTime.UtcNow.AddHours(1);
         }
 
         public int GetLimit() {
@@ -56,24 +75,6 @@ namespace Exceptionless.Core.Repositories {
                 skip = 0;
 
             return skip;
-        }
-
-        public override IMongoQuery GetQuery(Func<string, BsonValue> getIdValue = null) {
-            IMongoQuery query = base.GetQuery(getIdValue);
-            if (getIdValue == null)
-                getIdValue = id => new BsonObjectId(new ObjectId(id));
-
-            if (Page.HasValue)
-                return query;
-
-            if (!String.IsNullOrEmpty(BeforeValue) && BeforeQuery == null)
-                BeforeQuery = MongoDB.Driver.Builders.Query.LT(CommonFieldNames.Id, getIdValue(BeforeValue));
-
-            if (!String.IsNullOrEmpty(AfterValue) && AfterQuery == null)
-                AfterQuery = MongoDB.Driver.Builders.Query.LT(CommonFieldNames.Id, getIdValue(AfterValue));
-
-            query = query.And(BeforeQuery, AfterQuery);
-            return query;
         }
     }
 }

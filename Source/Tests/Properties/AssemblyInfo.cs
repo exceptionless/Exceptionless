@@ -1,19 +1,8 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("Exceptionless.Tests")]
-[assembly: AssemblyDescription("Exceptionless Tests")]
-[assembly: ComVisible(false)]
-[assembly: Guid("af98e11d-b4a8-425d-8ad2-9b22325394e3")]
+[assembly: AssemblyTitle("Exceptionless.Api.Tests")]
+[assembly: Guid("0b368259-ae8c-476e-ad82-e312060b3a9e")]
+
+//[assembly: Xunit.CollectionBehaviorAttribute(DisableTestParallelization = true)]

@@ -1,78 +1,105 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Linq;
-using CodeSmith.Core.Component;
-using Exceptionless.Core.Models;
-using Exceptionless.Core.Plugins.EventPipeline;
-using Exceptionless.Core.Queues;
+using System.Threading.Tasks;
+using Exceptionless.Core.Plugins.EventProcessor;
+using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models.Admin;
+using Foundatio.Queues;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(70)]
     public class QueueNotificationAction : EventPipelineActionBase {
-        private readonly IQueue<EventNotification> _notificationQueue;
+        private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly IWebHookRepository _webHookRepository;
-        private readonly IProjectRepository _projectRepository;
-        private readonly IStackRepository _stackRepository;
-        private readonly IOrganizationRepository _organizationRepository;
+        private readonly WebHookDataPluginManager _webHookDataPluginManager;
 
-        public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository,
-            IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository) {
+        public QueueNotificationAction(IQueue<EventNotificationWorkItem> notificationQueue, 
+            IQueue<WebHookNotification> webHookNotificationQueue, 
+            IWebHookRepository webHookRepository,
+            WebHookDataPluginManager webHookDataPluginManager) {
             _notificationQueue = notificationQueue;
             _webHookNotificationQueue = webHookNotificationQueue;
             _webHookRepository = webHookRepository;
-            _organizationRepository = organizationRepository;
-            _projectRepository = projectRepository;
-            _stackRepository = stackRepository;
+            _webHookDataPluginManager = webHookDataPluginManager;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(EventContext ctx) {
+        public override async Task ProcessAsync(EventContext ctx) {
             // if they don't have premium features, then we don't need to queue notifications
             if (!ctx.Organization.HasPremiumFeatures)
                 return;
 
-            _notificationQueue.EnqueueAsync(new EventNotification {
-                Event = ctx.Event,
-                IsNew = ctx.IsNew,
-                IsCritical = ctx.Event.IsCritical,
-                IsRegression = ctx.IsRegression,
-                //TotalOccurrences = ctx.Stack.TotalOccurrences,
-                ProjectName = ctx.Project.Name
-            }).Wait();
+            if (ShouldQueueNotification(ctx))
+                _notificationQueue.Enqueue(new EventNotificationWorkItem {
+                    EventId = ctx.Event.Id,
+                    IsNew = ctx.IsNew,
+                    IsCritical = ctx.Event.IsCritical(),
+                    IsRegression = ctx.IsRegression,
+                    TotalOccurrences = ctx.Stack.TotalOccurrences,
+                    ProjectName = ctx.Project.Name
+                });
 
-            // TODO: Get by organization id or project id.
-            foreach (WebHook hook in _webHookRepository.GetByProjectId(ctx.Event.ProjectId)) {
-                bool shouldCall = hook.EventTypes.Contains(WebHookRepository.EventTypes.NewError) && ctx.IsNew
-                                  || hook.EventTypes.Contains(WebHookRepository.EventTypes.ErrorRegression) && ctx.IsRegression
-                                  || hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalError) && ctx.Event.Tags != null && ctx.Event.Tags.Contains("Critical");
-
-                if (!shouldCall)
+            foreach (WebHook hook in _webHookRepository.GetByOrganizationIdOrProjectId(ctx.Event.OrganizationId, ctx.Event.ProjectId)) {
+                if (!ShouldCallWebHook(hook, ctx))
                     continue;
 
-                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Write();
-
-                _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
+                var context = new WebHookDataContext(hook.Version, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
+                var notification = new WebHookNotification {
+                    OrganizationId = ctx.Event.OrganizationId,
                     ProjectId = ctx.Event.ProjectId,
                     Url = hook.Url,
-                    Data = WebHookEvent.FromEvent(ctx, _projectRepository, _stackRepository, _organizationRepository)
-                }).Wait();
+                    Data = _webHookDataPluginManager.CreateFromEvent(context)
+                };
+
+                _webHookNotificationQueue.Enqueue(notification);
+                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Property("Web Hook Notification", notification).Write();
             }
+        }
+
+        private bool ShouldCallWebHook(WebHook hook, EventContext ctx) {
+            if (ctx.IsNew && ctx.Event.IsError() && hook.EventTypes.Contains(WebHookRepository.EventTypes.NewError))
+                return true;
+
+            if (ctx.Event.IsCritical() && ctx.Event.IsError() && hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalError))
+                return true;
+
+            if (ctx.IsRegression && hook.EventTypes.Contains(WebHookRepository.EventTypes.StackRegression))
+                return true;
+
+            if (ctx.IsNew && hook.EventTypes.Contains(WebHookRepository.EventTypes.NewEvent))
+                return true;
+
+            if (ctx.Event.IsCritical() && hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalEvent))
+                return true;
+
+            return false;
+        }
+
+        private bool ShouldQueueNotification(EventContext ctx) {
+            if (ctx.Project.NotificationSettings.Count == 0)
+                return false;
+
+            if (ctx.IsNew && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewErrors))
+                return true;
+
+            if (ctx.Event.IsCritical() && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalErrors))
+                return true;
+
+            if (ctx.IsRegression && ctx.Project.NotificationSettings.Any(n => n.Value.ReportEventRegressions))
+                return true;
+
+            if (ctx.IsNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewEvents))
+                return true;
+
+            if (ctx.Event.IsCritical() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalEvents))
+                return true;
+
+            return false;
         }
     }
 }

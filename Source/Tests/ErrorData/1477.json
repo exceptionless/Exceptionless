@@ -1,4 +1,4 @@
-{
+﻿{
   "Id": "800000003d538d628040bea0",
   "OccurrenceDate": "2014-01-17T14:37:02.739-06:00",
   "Tags": [],
@@ -35,8 +35,8 @@
       "Name": "example.Services.PublicEntities",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.011",
-      "ModifiedDate": "2014-01-06T09:41:32",
+      "CreatedDate": "2013-11-25T16:36:38.011+00:00",
+      "ModifiedDate": "2014-01-06T09:41:32+00:00",
       "ExtendedData": {}
     },
     {
@@ -44,8 +44,8 @@
       "Name": "example.Common",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.73",
-      "ModifiedDate": "2014-01-06T09:41:28",
+      "CreatedDate": "2013-11-25T16:36:37.73+00:00",
+      "ModifiedDate": "2014-01-06T09:41:28+00:00",
       "ExtendedData": {}
     },
     {
@@ -53,8 +53,8 @@
       "Name": "NLog",
       "Version": "2.0.1.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.291",
-      "ModifiedDate": "2013-09-16T05:55:24",
+      "CreatedDate": "2013-11-25T16:36:38.291+00:00",
+      "ModifiedDate": "2013-09-16T05:55:24+00:00",
       "ExtendedData": {
         "PublicKeyToken": "5120e14c03d0593c"
       }
@@ -64,8 +64,8 @@
       "Name": "example.Commerce",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.683",
-      "ModifiedDate": "2014-01-07T05:19:28",
+      "CreatedDate": "2013-11-25T16:36:37.683+00:00",
+      "ModifiedDate": "2014-01-07T05:19:28+00:00",
       "ExtendedData": {}
     },
     {
@@ -73,8 +73,8 @@
       "Name": "example.Payments.Models",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.886",
-      "ModifiedDate": "2014-01-06T10:46:54",
+      "CreatedDate": "2013-11-25T16:36:37.886+00:00",
+      "ModifiedDate": "2014-01-06T10:46:54+00:00",
       "ExtendedData": {
         "PublicKeyToken": "61c9d7040bc431b0"
       }
@@ -84,8 +84,8 @@
       "Name": "Datacash",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.106",
-      "ModifiedDate": "2014-01-07T05:19:30",
+      "CreatedDate": "2013-11-25T16:36:37.106+00:00",
+      "ModifiedDate": "2014-01-07T05:19:30+00:00",
       "ExtendedData": {}
     },
     {
@@ -93,8 +93,8 @@
       "Name": "example.Library.ErrorReporting",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2014-01-05T18:50:23.872",
-      "ModifiedDate": "2013-12-20T09:34:20",
+      "CreatedDate": "2014-01-05T18:50:23.872+00:00",
+      "ModifiedDate": "2013-12-20T09:34:20+00:00",
       "ExtendedData": {}
     },
     {
@@ -102,8 +102,8 @@
       "Name": "example.Services.Logic.Interfaces",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.964",
-      "ModifiedDate": "2014-01-06T09:41:34",
+      "CreatedDate": "2013-11-25T16:36:37.964+00:00",
+      "ModifiedDate": "2014-01-06T09:41:34+00:00",
       "ExtendedData": {}
     },
     {
@@ -111,8 +111,8 @@
       "Name": "query-lang-2.13",
       "Version": "2.13.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.447",
-      "ModifiedDate": "2013-09-16T05:55:26",
+      "CreatedDate": "2013-11-25T16:36:38.447+00:00",
+      "ModifiedDate": "2013-09-16T05:55:26+00:00",
       "ExtendedData": {
         "PublicKeyToken": "f11d0ac4605db0cc",
         "FileVersion": "213.42.0.6",
@@ -124,8 +124,8 @@
       "Name": "CookComputing.XmlRpcV2",
       "Version": "0.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.075",
-      "ModifiedDate": "2013-09-16T05:55:22",
+      "CreatedDate": "2013-11-25T16:36:37.075+00:00",
+      "ModifiedDate": "2013-09-16T05:55:22+00:00",
       "ExtendedData": {}
     },
     {
@@ -133,8 +133,8 @@
       "Name": "example.Payments",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.808",
-      "ModifiedDate": "2014-01-06T10:47:00",
+      "CreatedDate": "2013-11-25T16:36:37.808+00:00",
+      "ModifiedDate": "2014-01-06T10:47:00+00:00",
       "ExtendedData": {
         "PublicKeyToken": "5e611d43f6e8856e"
       }
@@ -144,8 +144,8 @@
       "Name": "Antlr.TaskParser",
       "Version": "1.0.5120.20383",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:04.736",
-      "ModifiedDate": "2014-01-07T05:19:28",
+      "CreatedDate": "2013-11-25T16:36:04.736+00:00",
+      "ModifiedDate": "2014-01-07T05:19:28+00:00",
       "ExtendedData": {}
     },
     {
@@ -153,8 +153,8 @@
       "Name": "Example4.CSN.API",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.073",
-      "ModifiedDate": "2014-01-07T05:19:28",
+      "CreatedDate": "2013-11-25T16:36:38.073+00:00",
+      "ModifiedDate": "2014-01-07T05:19:28+00:00",
       "ExtendedData": {}
     },
     {
@@ -162,8 +162,8 @@
       "Name": "example.Framework",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.761",
-      "ModifiedDate": "2014-01-06T09:41:30",
+      "CreatedDate": "2013-11-25T16:36:37.761+00:00",
+      "ModifiedDate": "2014-01-06T09:41:30+00:00",
       "ExtendedData": {}
     },
     {
@@ -171,8 +171,8 @@
       "Name": "AjaxControlToolkit",
       "Version": "3.0.20820.16598",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:04.455",
-      "ModifiedDate": "2013-09-16T05:55:22",
+      "CreatedDate": "2013-11-25T16:36:04.455+00:00",
+      "ModifiedDate": "2013-09-16T05:55:22+00:00",
       "ExtendedData": {
         "PublicKeyToken": "28f01b0e84b6d53e",
         "FileVersion": "3.0.20820.0",
@@ -184,8 +184,8 @@
       "Name": "AntiXssLibrary",
       "Version": "4.2.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:04.517",
-      "ModifiedDate": "2013-09-16T05:55:22",
+      "CreatedDate": "2013-11-25T16:36:04.517+00:00",
+      "ModifiedDate": "2013-09-16T05:55:22+00:00",
       "ExtendedData": {
         "PublicKeyToken": "d127efab8a9c114f",
         "ProductVersion": "4.2"
@@ -196,8 +196,8 @@
       "Name": "antlr.runtime",
       "Version": "2.7.6.2",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:04.689",
-      "ModifiedDate": "2014-01-07T05:19:24",
+      "CreatedDate": "2013-11-25T16:36:04.689+00:00",
+      "ModifiedDate": "2014-01-07T05:19:24+00:00",
       "ExtendedData": {}
     },
     {
@@ -205,8 +205,8 @@
       "Name": "Elmah",
       "Version": "1.2.14706.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.153",
-      "ModifiedDate": "2013-10-31T11:11:30",
+      "CreatedDate": "2013-11-25T16:36:37.153+00:00",
+      "ModifiedDate": "2013-10-31T11:11:30+00:00",
       "ExtendedData": {
         "FileVersion": "1.2.14706.0955",
         "ProductVersion": "1.2.14706.0955"
@@ -217,8 +217,8 @@
       "Name": "Exceptionless",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2014-01-05T18:50:22.717",
-      "ModifiedDate": "2013-12-04T07:36:14",
+      "CreatedDate": "2014-01-05T18:50:22.717+00:00",
+      "ModifiedDate": "2013-12-04T07:36:14+00:00",
       "ExtendedData": {
         "PublicKeyToken": "9fd61cdb91609a7a",
         "FileVersion": "1.1.1477",
@@ -230,8 +230,8 @@
       "Name": "Exceptionless.Models",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2014-01-05T18:50:22.78",
-      "ModifiedDate": "2013-12-04T07:36:14",
+      "CreatedDate": "2014-01-05T18:50:22.78+00:00",
+      "ModifiedDate": "2013-12-04T07:36:14+00:00",
       "ExtendedData": {
         "PublicKeyToken": "9fd61cdb91609a7a",
         "FileVersion": "1.1.1477",
@@ -243,8 +243,8 @@
       "Name": "Exceptionless.Web",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2014-01-05T18:50:22.842",
-      "ModifiedDate": "2013-12-04T07:36:14",
+      "CreatedDate": "2014-01-05T18:50:22.842+00:00",
+      "ModifiedDate": "2013-12-04T07:36:14+00:00",
       "ExtendedData": {
         "PublicKeyToken": "9fd61cdb91609a7a",
         "FileVersion": "1.1.1477",
@@ -256,8 +256,8 @@
       "Name": "Extensions",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.168",
-      "ModifiedDate": "2013-10-25T09:24:44",
+      "CreatedDate": "2013-11-25T16:36:37.168+00:00",
+      "ModifiedDate": "2013-10-25T09:24:44+00:00",
       "ExtendedData": {
         "PublicKeyToken": "61c9d7040bc431b0"
       }
@@ -267,8 +267,8 @@
       "Name": "FiftyOne.Foundation",
       "Version": "1.2.0.5",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.215",
-      "ModifiedDate": "2013-09-16T05:55:24",
+      "CreatedDate": "2013-11-25T16:36:37.215+00:00",
+      "ModifiedDate": "2013-09-16T05:55:24+00:00",
       "ExtendedData": {
         "PublicKeyToken": "e0b3a8da0bbce49c"
       }
@@ -278,8 +278,8 @@
       "Name": "Glimpse.AspNet",
       "Version": "1.5.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.231",
-      "ModifiedDate": "2013-10-31T11:11:28",
+      "CreatedDate": "2013-11-25T16:36:37.231+00:00",
+      "ModifiedDate": "2013-10-31T11:11:28+00:00",
       "ExtendedData": {
         "FileVersion": "1.5.0",
         "ProductVersion": "1.5.0"
@@ -290,8 +290,8 @@
       "Name": "Glimpse.Core",
       "Version": "1.7.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.262",
-      "ModifiedDate": "2013-10-31T11:11:30",
+      "CreatedDate": "2013-11-25T16:36:37.262+00:00",
+      "ModifiedDate": "2013-10-31T11:11:30+00:00",
       "ExtendedData": {
         "FileVersion": "1.7.0",
         "ProductVersion": "1.7.0"
@@ -302,8 +302,8 @@
       "Name": "Glimpse.Elmah",
       "Version": "1.1.1.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.324",
-      "ModifiedDate": "2013-10-31T11:11:30",
+      "CreatedDate": "2013-11-25T16:36:37.324+00:00",
+      "ModifiedDate": "2013-10-31T11:11:30+00:00",
       "ExtendedData": {}
     },
     {
@@ -311,8 +311,8 @@
       "Name": "Html5Asp",
       "Version": "1.0.1.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.34",
-      "ModifiedDate": "2013-09-16T05:55:24",
+      "CreatedDate": "2013-11-25T16:36:37.34+00:00",
+      "ModifiedDate": "2013-09-16T05:55:24+00:00",
       "ExtendedData": {}
     },
     {
@@ -320,8 +320,8 @@
       "Name": "Example2.OpenJDK.Core",
       "Version": "0.42.0.6",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.371",
-      "ModifiedDate": "2013-09-16T05:55:24",
+      "CreatedDate": "2013-11-25T16:36:37.371+00:00",
+      "ModifiedDate": "2013-09-16T05:55:24+00:00",
       "ExtendedData": {
         "PublicKeyToken": "13235d27fcbfff58",
         "ProductVersion": " "
@@ -332,8 +332,8 @@
       "Name": "Example2.Runtime",
       "Version": "0.42.0.6",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.418",
-      "ModifiedDate": "2013-09-16T05:55:22",
+      "CreatedDate": "2013-11-25T16:36:37.418+00:00",
+      "ModifiedDate": "2013-09-16T05:55:22+00:00",
       "ExtendedData": {
         "PublicKeyToken": "13235d27fcbfff58"
       }
@@ -343,8 +343,8 @@
       "Name": "Example2.Runtime.JNI",
       "Version": "0.42.0.6",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.465",
-      "ModifiedDate": "2013-09-16T05:55:22",
+      "CreatedDate": "2013-11-25T16:36:37.465+00:00",
+      "ModifiedDate": "2013-09-16T05:55:22+00:00",
       "ExtendedData": {
         "PublicKeyToken": "13235d27fcbfff58"
       }
@@ -354,8 +354,8 @@
       "Name": "ImageResizer",
       "Version": "3.0.10.740",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.496",
-      "ModifiedDate": "2013-09-16T05:55:24",
+      "CreatedDate": "2013-11-25T16:36:37.496+00:00",
+      "ModifiedDate": "2013-09-16T05:55:24+00:00",
       "ExtendedData": {
         "ProductVersion": "3-alpha-10"
       }
@@ -365,8 +365,8 @@
       "Name": "ImageResizer.Plugins.DiskCache",
       "Version": "3.0.10.740",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.527",
-      "ModifiedDate": "2013-09-16T05:55:20",
+      "CreatedDate": "2013-11-25T16:36:37.527+00:00",
+      "ModifiedDate": "2013-09-16T05:55:20+00:00",
       "ExtendedData": {
         "ProductVersion": "3-alpha-10"
       }
@@ -376,8 +376,8 @@
       "Name": "ImageResizer.Plugins.PrettyGifs",
       "Version": "3.0.10.740",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.558",
-      "ModifiedDate": "2013-09-16T05:55:26",
+      "CreatedDate": "2013-11-25T16:36:37.558+00:00",
+      "ModifiedDate": "2013-09-16T05:55:26+00:00",
       "ExtendedData": {
         "ProductVersion": "3-alpha-10"
       }
@@ -387,8 +387,8 @@
       "Name": "Example156.UrlRewriter",
       "Version": "2.0.0.6",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.589",
-      "ModifiedDate": "2013-09-16T05:55:22",
+      "CreatedDate": "2013-11-25T16:36:37.589+00:00",
+      "ModifiedDate": "2013-09-16T05:55:22+00:00",
       "ExtendedData": {
         "PublicKeyToken": "0573f3650687980d"
       }
@@ -398,8 +398,8 @@
       "Name": "Interop.VISUALSOFTCRYPTLib",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.621",
-      "ModifiedDate": "2013-09-16T05:55:22",
+      "CreatedDate": "2013-11-25T16:36:37.621+00:00",
+      "ModifiedDate": "2013-09-16T05:55:22+00:00",
       "ExtendedData": {}
     },
     {
@@ -407,8 +407,8 @@
       "Name": "Example3_IppServices",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.636",
-      "ModifiedDate": "2013-10-25T06:18:48",
+      "CreatedDate": "2013-11-25T16:36:37.636+00:00",
+      "ModifiedDate": "2013-10-25T06:18:48+00:00",
       "ExtendedData": {
         "PublicKeyToken": "61c9d7040bc431b0"
       }
@@ -418,8 +418,8 @@
       "Name": "example.Payments.DALModels",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.792",
-      "ModifiedDate": "2014-01-06T10:46:54",
+      "CreatedDate": "2013-11-25T16:36:37.792+00:00",
+      "ModifiedDate": "2014-01-06T10:46:54+00:00",
       "ExtendedData": {
         "PublicKeyToken": "74e4833c82fc78ec"
       }
@@ -429,8 +429,8 @@
       "Name": "example.Payments.Example3PDAL",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.855",
-      "ModifiedDate": "2014-01-06T10:46:56",
+      "CreatedDate": "2013-11-25T16:36:37.855+00:00",
+      "ModifiedDate": "2014-01-06T10:46:56+00:00",
       "ExtendedData": {
         "PublicKeyToken": "8d89e86eaaad6866"
       }
@@ -440,8 +440,8 @@
       "Name": "example.Payments.SOAP.Service",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.933",
-      "ModifiedDate": "2014-01-06T10:47:04",
+      "CreatedDate": "2013-11-25T16:36:37.933+00:00",
+      "ModifiedDate": "2014-01-06T10:47:04+00:00",
       "ExtendedData": {}
     },
     {
@@ -449,8 +449,8 @@
       "Name": "example.Utils",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.042",
-      "ModifiedDate": "2014-01-07T05:19:26",
+      "CreatedDate": "2013-11-25T16:36:38.042+00:00",
+      "ModifiedDate": "2014-01-07T05:19:26+00:00",
       "ExtendedData": {}
     },
     {
@@ -458,8 +458,8 @@
       "Name": "Example4.Utils",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.104",
-      "ModifiedDate": "2014-01-07T05:19:26",
+      "CreatedDate": "2013-11-25T16:36:38.104+00:00",
+      "ModifiedDate": "2014-01-07T05:19:26+00:00",
       "ExtendedData": {}
     },
     {
@@ -467,8 +467,8 @@
       "Name": "NLog.Extended",
       "Version": "2.0.1.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.354",
-      "ModifiedDate": "2013-09-16T05:55:22",
+      "CreatedDate": "2013-11-25T16:36:38.354+00:00",
+      "ModifiedDate": "2013-09-16T05:55:22+00:00",
       "ExtendedData": {
         "PublicKeyToken": "5120e14c03d0593c"
       }
@@ -478,8 +478,8 @@
       "Name": "Example5",
       "Version": "1.0.0.0",
       "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.494",
-      "ModifiedDate": "2013-10-04T02:59:16",
+      "CreatedDate": "2013-11-25T16:36:38.494+00:00",
+      "ModifiedDate": "2013-10-04T02:59:16+00:00",
       "ExtendedData": {}
     }
   ],

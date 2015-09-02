@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Description;
 using AutoMapper;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -12,35 +15,53 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Api.Utility;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
+        private readonly OrganizationRepository _organizationRepository;      
+        private readonly BillingManager _billingManager; 
         private readonly DataHelper _dataHelper;
-        private readonly OrganizationRepository _organizationRepository;
-        private readonly BillingManager _billingManager;
+        private readonly EventStats _stats;
 
-        public ProjectController(IProjectRepository projectRepository, OrganizationRepository organizationRepository, DataHelper dataHelper, BillingManager billingManager) : base(projectRepository) {
+        public ProjectController(IProjectRepository projectRepository, OrganizationRepository organizationRepository, BillingManager billingManager, DataHelper dataHelper, EventStats stats) : base(projectRepository) {
             _organizationRepository = organizationRepository;
             _billingManager = billingManager;
             _dataHelper = dataHelper;
+            _stats = stats;
         }
 
         #region CRUD
 
+        /// <summary>
+        /// Get all
+        /// </summary>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string before = null, string after = null, int limit = 10) {
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options);
-            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+        [ResponseType(typeof(List<ViewProject>))]
+        public IHttpActionResult Get(int page = 1, int limit = 10) {
+            page = GetPage(page);
+            limit = GetLimit(limit);
+            var options = new PagingOptions { Page = page, Limit = limit };
+            var projects = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Project, ViewProject>).ToList();
+            return OkWithResourceLinks(PopulateProjectStats(projects), options.HasMore, page);
         }
 
+        /// <summary>
+        /// Get all
+        /// </summary>
+        /// <param name="organization">The identifier of the organization.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The organization could not be found.</response>
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects")]
-        public IHttpActionResult GetByOrganization(string organization, string before = null, string after = null, int limit = 10) {
+        [Route("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
+        [ResponseType(typeof(List<ViewProject>))]
+        public IHttpActionResult GetByOrganization(string organization, int page = 1, int limit = 10) {
             if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
 
@@ -50,23 +71,51 @@ namespace Exceptionless.Api.Controllers {
             else
                 organizationIds.AddRange(GetAssociatedOrganizationIds());
 
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByOrganizationIds(organizationIds, options);
-            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+            page = GetPage(page);
+            limit = GetLimit(limit);
+            var options = new PagingOptions { Page = page, Limit = limit };
+            var projects = _repository.GetByOrganizationIds(organizationIds, options).Select(Mapper.Map<Project, ViewProject>).ToList();
+            return OkWithResourceLinks(PopulateProjectStats(projects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
+        /// <summary>
+        /// Get by id
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("{id:objectid}", Name = "GetProjectById")]
+        [ResponseType(typeof(ViewProject))]
         public override IHttpActionResult GetById(string id) {
-            return base.GetById(id);
+            var project = GetModel(id);
+            if (project == null)
+                return NotFound();
+
+            var viewProject = Mapper.Map<Project, ViewProject>(project);
+            return Ok(PopulateProjectStats(viewProject));
         }
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="project">The project.</param>
+        /// <returns></returns>
+        /// <response code="400">An error occurred while creating the project.</response>
+        /// <response code="409">The project already exists.</response>
         [HttpPost]
         [Route]
-        public override IHttpActionResult Post(NewProject value) {
-            return base.Post(value);
+        [ResponseType(typeof(ViewProject))]
+        public override IHttpActionResult Post(NewProject project) {
+            return base.Post(project);
         }
 
+        /// <summary>
+        /// Update
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="changes">The changes</param>
+        /// <response code="400">An error occurred while updating the project.</response>
+        /// <response code="404">The project could not be found.</response>
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
@@ -74,19 +123,34 @@ namespace Exceptionless.Api.Controllers {
             return base.Patch(id, changes);
         }
 
+        /// <summary>
+        /// Remove
+        /// </summary>
+        /// <param name="ids">A comma delimited list of project identifiers.</param>
+        /// <response code="204">No Content.</response>
+        /// <response code="400">One or more validation errors occurred.</response>
+        /// <response code="404">One or more projects were not found.</response>
+        /// <response code="500">An error occurred while deleting one or more projects.</response>
         [HttpDelete]
-        [Route("{id:objectid}")]
-        public override IHttpActionResult Delete(string id) {
-            return base.Delete(id);
+        [Route("{ids:objectids}")]
+        public async Task<IHttpActionResult> DeleteAsync(string ids) {
+            return await base.DeleteAsync(ids.FromDelimitedString());
         }
 
         #endregion
 
+        /// <summary>
+        /// Get configuration settings
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("config")]
         [Route("{id:objectid}/config")]
+        [Route("~/api/v1/project/config")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.Client)]
+        [ResponseType(typeof(ClientConfiguration))]
         public IHttpActionResult GetConfig(string id = null) {
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();
@@ -98,39 +162,63 @@ namespace Exceptionless.Api.Controllers {
             return Ok(project.Configuration);
         }
 
+        /// <summary>
+        /// Add configuration value
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="key">The key name of the configuration object.</param>
+        /// <param name="value">The configuration value.</param>
+        /// <response code="400">Invalid configuration value.</response>
+        /// <response code="404">The project could not be found.</response>
         [HttpPost]
         [Route("{id:objectid}/config/{key:minlength(1)}")]
-        public IHttpActionResult SetConfig(string id, string key, string value) {
+        public IHttpActionResult SetConfig(string id, string key, [NakedBody] string value) {
             var project = GetModel(id, false);
             if (project == null)
+                return NotFound();
+
+            if (String.IsNullOrWhiteSpace(value))
                 return BadRequest();
 
             project.Configuration.Settings[key] = value;
-            project.Configuration.Version++;
-            _repository.Save(project);
+            project.Configuration.IncrementVersion();
+            _repository.Save(project, true);
 
             return Ok();
         }
 
+        /// <summary>
+        /// Remove configuration value
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="key">The key name of the configuration object.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpDelete]
         [Route("{id:objectid}/config/{key:minlength(1)}")]
         public IHttpActionResult DeleteConfig(string id, string key) {
             var project = GetModel(id, false);
             if (project == null)
-                return BadRequest();
+                return NotFound();
 
-            if (project.Configuration.Settings.Remove(key))
-                _repository.Save(project);
+            if (project.Configuration.Settings.Remove(key)) {
+                project.Configuration.IncrementVersion(); 
+                _repository.Save(project, true);
+            }
 
             return Ok();
         }
 
+        /// <summary>
+        /// Reset project data
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("{id:objectid}/reset-data")]
         public async Task<IHttpActionResult> ResetDataAsync(string id) {
             var project = GetModel(id);
             if (project == null)
-                return BadRequest();
+                return NotFound();
 
             // TODO: Implement a long running process queue where a task can be inserted and then monitor for progress.
             await _dataHelper.ResetProjectDataAsync(id);
@@ -139,51 +227,9 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id:objectid}/apikeys/default")]
-        public IHttpActionResult GetDefaultApiKey(string id) {
-            var project = GetModel(id, false);
-            if (project == null)
-                return BadRequest();
-
-            if (project.ApiKeys.Count > 0)
-                return Ok(new { Key = project.ApiKeys.First() });
-
-            return GetNewApiKey(id);
-        }
-
-        [HttpPost]
-        [Route("{id:objectid}/apikeys")]
-        public IHttpActionResult GetNewApiKey(string id) {
-            var project = GetModel(id, false);
-            if (project == null)
-                return BadRequest();
-
-            string apiKey = Guid.NewGuid().ToString("N").ToLower();
-            project.ApiKeys.Add(apiKey);
-
-            _repository.Save(project);
-
-            return Ok(new { Key = apiKey });
-        }
-
-        [HttpDelete]
-        [Route("{id:objectid}/apikeys/{apiKey:minlength(1)}")]
-        public IHttpActionResult DeleteApiKey(string id, string apiKey) {
-            var project = GetModel(id, false);
-            if (project == null)
-                return BadRequest();
-
-            if (!project.ApiKeys.Contains(apiKey))
-                return StatusCode(HttpStatusCode.NoContent);
-
-            if (project.ApiKeys.Remove(apiKey))
-                _repository.Save(project);
-
-            return StatusCode(HttpStatusCode.NoContent);
-        }
-
-        [HttpGet]
         [Route("{id:objectid}/notifications")]
+        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult GetNotificationSettings(string id) {
             var project = GetModel(id);
             if (project == null)
@@ -192,51 +238,85 @@ namespace Exceptionless.Api.Controllers {
             return Ok(project.NotificationSettings);
         }
 
-        // TODO: Should we remove userId and just use the current user..
+        /// <summary>
+        /// Get user notification settings
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="userId">The identifier of the user.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
-        [Route("{id:objectid}/notifications/{userId:objectid}")]
+        [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
+        [ResponseType(typeof(NotificationSettings))]
         public IHttpActionResult GetNotificationSettings(string id, string userId) {
             var project = GetModel(id);
             if (project == null)
                 return NotFound();
 
-            if (!project.NotificationSettings.ContainsKey(userId))
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
                 return NotFound();
 
-            // TODO: We should just return the settings instead of user id and settings.
-            return Ok(project.NotificationSettings[userId]);
+            NotificationSettings settings;
+            return Ok(project.NotificationSettings.TryGetValue(userId, out settings) ? settings : new NotificationSettings());
         }
 
-        // TODO: Should we remove userId and just use the current user..
+        /// <summary>
+        /// Set user notification settings
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="userId">The identifier of the user.</param>
+        /// <param name="settings">The notification settings.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpPut]
         [HttpPost]
-        [Route("{id:objectid}/notifications/{userId:objectid}")]
+        [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         public IHttpActionResult SetNotificationSettings(string id, string userId, NotificationSettings settings) {
             var project = GetModel(id, false);
             if (project == null)
                 return NotFound();
 
-            project.NotificationSettings[userId] = settings;
-            _repository.Save(project);
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
+                return NotFound();
+
+            if (settings == null)
+                project.NotificationSettings.Remove(userId);
+            else
+                project.NotificationSettings[userId] = settings;
+
+            _repository.Save(project, true);
 
             return Ok();
         }
 
+        /// <summary>
+        /// Remove user notification settings
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="userId">The identifier of the user.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpDelete]
-        [Route("{id:objectid}/notifications/{userId:objectid}")]
+        [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         public IHttpActionResult DeleteNotificationSettings(string id, string userId) {
             var project = GetModel(id, false);
             if (project == null)
                 return NotFound();
 
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
+                return NotFound();
+
             if (project.NotificationSettings.ContainsKey(userId)) {
                 project.NotificationSettings.Remove(userId);
-                _repository.Save(project);
+                _repository.Save(project, true);
             }
 
             return Ok();
         }
 
+        /// <summary>
+        /// Promote tab
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="name">The tab name.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpPut]
         [HttpPost]
         [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
@@ -247,12 +327,18 @@ namespace Exceptionless.Api.Controllers {
 
             if (!project.PromotedTabs.Contains(name)) {
                 project.PromotedTabs.Add(name);
-                _repository.Save(project);
+                _repository.Save(project, true);
             }
 
             return Ok();
         }
 
+        /// <summary>
+        /// Demote tab
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="name">The tab name.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpDelete]
         [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
         public IHttpActionResult DemoteTab(string id, string name) {
@@ -262,53 +348,76 @@ namespace Exceptionless.Api.Controllers {
 
             if (project.PromotedTabs.Contains(name)) {
                 project.PromotedTabs.Remove(name);
-                _repository.Save(project);
+                _repository.Save(project, true);
             }
 
             return Ok();
         }
 
+        /// <summary>
+        /// Check for unique name
+        /// </summary>
+        /// <param name="name">The project name to check.</param>
+        /// <response code="201">The project name is available.</response>
+        /// <response code="204">The project name is not available.</response>
         [HttpGet]
         [Route("check-name/{name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {
-            if (String.IsNullOrWhiteSpace(name))
-                return NotFound();
+            if (IsProjectNameAvailableInternal(null, name))
+                return StatusCode(HttpStatusCode.NoContent);
 
-            if (_repository.GetByOrganizationIds(GetAssociatedOrganizationIds()).Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)))
-                return Ok();
-
-            return NotFound();
+            return StatusCode(HttpStatusCode.Created);
         }
 
+        private bool IsProjectNameAvailableInternal(string organizationId, string name) {
+            if (String.IsNullOrWhiteSpace(name))
+                return false;
+
+            ICollection<string> organizationIds = !String.IsNullOrEmpty(organizationId) ? new List<string> { organizationId } : GetAssociatedOrganizationIds();
+            return !_repository.GetByOrganizationIds(organizationIds).Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Add custom data
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="key">The key name of the data object.</param>
+        /// <param name="value">Any string value.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpPost]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
         public IHttpActionResult PostData(string id, string key, string value) {
             var project = GetModel(id, false);
             if (project == null)
-                return BadRequest();
+                return NotFound();
 
             project.Data[key] = value;
-            _repository.Save(project);
+            _repository.Save(project, true);
 
             return Ok();
         }
 
+        /// <summary>
+        /// Remove custom data
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="key">The key name of the data object.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpDelete]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
         public IHttpActionResult DeleteData(string id, string key) {
             var project = GetModel(id, false);
             if (project == null)
-                return BadRequest();
+                return NotFound();
 
             if (project.Data.Remove(key))
-                _repository.Save(project);
+                _repository.Save(project, true);
 
             return Ok();
         }
 
         protected override void CreateMaps() {
             Mapper.CreateMap<Project, ViewProject>().AfterMap((p, pi) => {
-                pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds;
                 pi.OrganizationName = _organizationRepository.GetById(p.OrganizationId, true).Name;
             });
             base.CreateMaps();
@@ -316,22 +425,69 @@ namespace Exceptionless.Api.Controllers {
 
         protected override PermissionResult CanAdd(Project value) {
             if (String.IsNullOrEmpty(value.Name))
-                return PermissionResult.DenyWithResult(BadRequest("Project name is required."));
+                return PermissionResult.DenyWithMessage("Project name is required.");
+
+            if (!IsProjectNameAvailableInternal(value.OrganizationId, value.Name))
+                return PermissionResult.DenyWithMessage("A project with this name already exists.");
 
             if (!_billingManager.CanAddProject(value))
-                return PermissionResult.DenyWithResult(PlanLimitReached("Please upgrade your plan to add additional projects."));
+                return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add additional projects.");
 
             return base.CanAdd(value);
         }
 
         protected override Project AddModel(Project value) {
-            if (String.IsNullOrWhiteSpace(value.TimeZone))
-                value.TimeZone = TimeZone.CurrentTimeZone.IsDaylightSavingTime(DateTime.Now) ? TimeZone.CurrentTimeZone.DaylightName : TimeZone.CurrentTimeZone.StandardName;
-
-            value.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), value.DefaultTimeZone()).ToUniversalTime().Ticks;
+            value.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            value.AddDefaultOwnerNotificationSettings(ExceptionlessUser.Id);
             var project = base.AddModel(value);
 
             return project;
+        }
+
+        protected override PermissionResult CanUpdate(Project original, Delta<UpdateProject> changes) {
+            var changed = changes.GetEntity();
+            if (changes.ContainsChangedProperty(p => p.Name) && !IsProjectNameAvailableInternal(original.OrganizationId, changed.Name))
+                return PermissionResult.DenyWithMessage("A project with this name already exists.");
+
+            return base.CanUpdate(original, changes);
+        }
+
+        protected override async Task DeleteModels(ICollection<Project> values) {
+            foreach (var value in values)
+                await _dataHelper.ResetProjectDataAsync(value.Id);
+            await base.DeleteModels(values);
+        }
+
+        private ViewProject PopulateProjectStats(ViewProject project) {
+            return PopulateProjectStats(new List<ViewProject> { project }).FirstOrDefault();
+        }
+
+        private List<ViewProject> PopulateProjectStats(List<ViewProject> projects) {
+            if (projects.Count <= 0)
+                return projects;
+
+            var organizations = _organizationRepository.GetByIds(projects.Select(p => p.Id).ToArray(), useCache: true);
+            StringBuilder builder = new StringBuilder();
+            for (int index = 0; index < projects.Count; index++) {
+                if (index > 0)
+                    builder.Append(" OR ");
+
+                var project = projects[index];
+                var organization = organizations.FirstOrDefault(o => o.Id == project.Id);
+                if (organization != null && organization.RetentionDays > 0)
+                    builder.AppendFormat("(project:{0} AND (date:[now/d-{1}d TO now/d+1d}} OR last:[now/d-{1}d TO now/d+1d}}))", project.Id, organization.RetentionDays);
+                else
+                    builder.AppendFormat("project:{0}", project.Id);
+            }
+
+            var result = _stats.GetTermsStats(DateTime.MinValue, DateTime.MaxValue, "project_id", builder.ToString());
+            foreach (var project in projects) {
+                var projectStats = result.Terms.FirstOrDefault(t => t.Term == project.Id);
+                project.EventCount = projectStats != null ? projectStats.Total : 0;
+                project.StackCount = projectStats != null ? projectStats.Unique : 0;
+            }
+
+            return projects;
         }
     }
 }

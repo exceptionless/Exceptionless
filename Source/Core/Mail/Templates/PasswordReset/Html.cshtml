@@ -18,11 +18,11 @@
 
                             <!-- Button -->
                             <p class="center" style="margin: 10px auto 0 auto; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 10px; font-weight: normal; font-size: 14px; line-height: 1.6; text-align: center;">
-                                <a class="btn" href="@Model.BaseUrl/account/resetpassword?token=@Model.User.PasswordResetToken" rel="notrack" target="_blank" style="margin: 10px auto 24px;padding: 10px 15px;min-width:200px;font-family: 'Open Sans', arial, sans-serif;color: #FFF;text-decoration: none;background-color: #6b991c;font-weight: bold;margin-right: 10px;text-align: center;cursor: pointer;display: inline-block;border-radius: 3px;">Reset Password</a>
+                                <a class="btn" href="@Model.BaseUrl/reset-password/@Model.User.PasswordResetToken" rel="notrack" target="_blank" style="margin: 10px auto 24px;padding: 10px 15px;min-width:200px;font-family: 'Open Sans', arial, sans-serif;color: #FFF;text-decoration: none;background-color: #6b991c;font-weight: bold;margin-right: 10px;text-align: center;cursor: pointer;display: inline-block;border-radius: 3px;">Reset Password</a>
                             </p>
 
                             <p style="font: 15px/19px 'Open Sans', arial, sans-serif; font-family:'Open Sans', arial, sans-serif; color: #939393; margin-bottom: 0;">
-                                If you didn't try to reset your password, <a href="@Model.BaseUrl/account/resetpassword?token=@Model.User.PasswordResetToken&cancel=true" rel="notrack">click here</a> and we'll forget this ever happened.
+                                If you didn't try to reset your password, <a href="@Model.BaseUrl/reset-password/@Model.User.PasswordResetToken?cancel=true" rel="notrack">click here</a> and we'll forget this ever happened.
                             </p>
 
                         </td>

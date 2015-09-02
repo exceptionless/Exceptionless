@@ -1,15 +1,4 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -21,26 +10,25 @@ using System.Threading.Tasks;
 
 namespace Exceptionless.Api.Utility {
     public class EncodingDelegatingHandler : DelegatingHandler {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
-            if (request.Method != HttpMethod.Get && request.Content != null && request.Content.Headers.ContentEncoding.Any()) {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+            if (request.Method != HttpMethod.Get && request.Content != null
+                && !(request.RequestUri.AbsolutePath.EndsWith("/events") && request.Method == HttpMethod.Post)
+                && !(request.RequestUri.AbsolutePath.EndsWith("/error") && request.Method == HttpMethod.Post)
+                && request.Content.Headers.ContentEncoding.Any()) {
                 string encodingType = request.Content.Headers.ContentEncoding.First().ToLowerInvariant();
                 if (encodingType == "gzip" || encodingType == "deflate")
                     request.Content = new CompressedContent(request.Content, encodingType);
             }
 
-            return base.SendAsync(request, cancellationToken).ContinueWith(responseToCompleteTask => {
-                HttpResponseMessage response = responseToCompleteTask.Result;
+            var response = await base.SendAsync(request, cancellationToken);
+            if (response.RequestMessage != null && response.RequestMessage.Headers != null && response.RequestMessage.Headers.AcceptEncoding != null && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
+                string encodingType = response.RequestMessage.Headers.AcceptEncoding.First().Value;
 
-                if (response.RequestMessage.Headers.AcceptEncoding != null &&
-                    response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
-                    string encodingType = response.RequestMessage.Headers.AcceptEncoding.First().Value;
+                if (response.Content != null && (encodingType == "gzip" || encodingType == "deflate"))
+                    response.Content = new CompressedContent(response.Content, encodingType);
+            }
 
-                    if (response.Content != null)
-                        response.Content = new CompressedContent(response.Content, encodingType);
-                }
-
-                return response;
-            }, TaskContinuationOptions.OnlyOnRanToCompletion);
+            return response;
         }
     }
 
@@ -65,6 +53,7 @@ namespace Exceptionless.Api.Utility {
             foreach (KeyValuePair<string, IEnumerable<string>> header in _originalContent.Headers)
                 Headers.TryAddWithoutValidation(header.Key, header.Value);
 
+            Headers.ContentEncoding.Clear();
             Headers.ContentEncoding.Add(encodingType);
         }
 
@@ -88,7 +77,7 @@ namespace Exceptionless.Api.Utility {
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) {
             Stream compressedStream = null;
-
+            
             switch (_encodingType) {
                 case "gzip":
                     compressedStream = new GZipStream(stream, CompressionMode.Compress, leaveOpen: true);

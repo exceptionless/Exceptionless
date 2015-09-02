@@ -1,50 +1,57 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
-using Exceptionless.Core.Caching;
-using Exceptionless.Core.Messaging;
-using Exceptionless.Models;
+using System.Linq;
+using Exceptionless.Core.Models;
+using FluentValidation;
+using Foundatio.Caching;
+using Foundatio.Messaging;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
+using MongoDB.Driver.Linq;
 
 namespace Exceptionless.Core.Repositories {
     public class UserRepository : MongoRepository<User>, IUserRepository {
-        public UserRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient, messagePublisher) { }
+        public UserRepository(MongoDatabase database, IValidator<User> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, validator, cacheClient, messagePublisher) { }
 
         public User GetByEmailAddress(string emailAddress) {
-            if (String.IsNullOrEmpty(emailAddress))
+            if (String.IsNullOrWhiteSpace(emailAddress))
                 return null;
 
-            return FindOne<User>(new OneOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(emailAddress));
+            emailAddress = emailAddress.ToLowerInvariant().Trim();
+            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(emailAddress));
+        }
+
+        public User GetByPasswordResetToken(string token) {
+            if (String.IsNullOrEmpty(token))
+                return null;
+
+            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.PasswordResetToken, token)));
+        }
+
+        public User GetUserByOAuthProvider(string provider, string providerUserId) {
+            if (String.IsNullOrEmpty(provider) || String.IsNullOrEmpty(providerUserId))
+                return null;
+
+            provider = provider.ToLowerInvariant();
+            return _collection.AsQueryable().FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider && o.ProviderUserId == providerUserId));
         }
 
         public User GetByVerifyEmailAddressToken(string token) {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            return FindOne<User>(new OneOptions().WithQuery(Query.EQ(FieldNames.VerifyEmailAddressToken, token)));
+            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.VerifyEmailAddressToken, token)));
         }
 
-        // TODO: Have this return a limited subset of user data.
         public ICollection<User> GetByOrganizationId(string id) {
             if (String.IsNullOrEmpty(id))
                 return new List<User>();
 
             var query = Query.In(FieldNames.OrganizationIds, new List<BsonValue> { new BsonObjectId(new ObjectId(id)) });
-            return Find<User>(new MultiOptions().WithQuery(query).WithCacheKey(String.Concat("org:", id)));
+            return Find<User>(new MongoOptions().WithQuery(query).WithCacheKey(String.Concat("org:", id)));
         }
 
         #region Collection Setup
@@ -55,7 +62,7 @@ namespace Exceptionless.Core.Repositories {
             return CollectionName;
         }
 
-        public new static class FieldNames {
+        public static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string EmailAddress = "EmailAddress";
             public const string IsEmailAddressVerified = "IsEmailAddressVerified";
@@ -64,6 +71,7 @@ namespace Exceptionless.Core.Repositories {
             public const string OrganizationIds = "OrganizationIds";
             public const string OAuthAccounts_Provider = "OAuthAccounts.Provider";
             public const string OAuthAccounts_ProviderUserId = "OAuthAccounts.ProviderUserId";
+            public const string PasswordResetToken = "PasswordResetToken";
         }
 
         protected override void InitializeCollection(MongoDatabase database) {
@@ -72,7 +80,6 @@ namespace Exceptionless.Core.Repositories {
             _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.OrganizationIds), IndexOptions.SetBackground(true));
             _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.EmailAddress), IndexOptions.SetUnique(true).SetBackground(true));
             _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OAuthAccounts_Provider, FieldNames.OAuthAccounts_ProviderUserId), IndexOptions.SetUnique(true).SetSparse(true).SetBackground(true));
-            _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.Roles), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<User> cm) {
@@ -88,16 +95,44 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.VerifyEmailAddressTokenExpiration).SetIgnoreIfDefault(true);
         }
         
-        public override void InvalidateCache(User entity) {
-            if (Cache == null)
-                return;
+        #endregion
 
-            //TODO: We should look into getting the original entity and reset the cache on the original email address as it might have changed.
-            InvalidateCache(entity.EmailAddress);
+        protected override void BeforeAdd(ICollection<User> documents) {
+            foreach (var user in documents.Where(user => !String.IsNullOrWhiteSpace(user.EmailAddress)))
+                user.EmailAddress = user.EmailAddress.ToLowerInvariant().Trim();
 
-            base.InvalidateCache(entity);
+            base.BeforeAdd(documents);
         }
 
-        #endregion
+        protected override void BeforeSave(ICollection<User> originalDocuments, ICollection<User> documents) {
+            foreach (var user in documents.Where(user => !String.IsNullOrWhiteSpace(user.EmailAddress)))
+                user.EmailAddress = user.EmailAddress.ToLowerInvariant().Trim();
+
+            base.BeforeSave(originalDocuments, documents);
+        }
+
+        protected override void AfterSave(ICollection<User> originalDocuments, ICollection<User> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
+            if (EnableCache) {
+                foreach (var document in documents) {
+                    foreach (var organizationId in document.OrganizationIds) {
+                        InvalidateCache(String.Concat("org:", organizationId));
+                    }
+                }
+            }
+
+            base.AfterSave(originalDocuments, documents, addToCache, expiresIn, sendNotifications);
+        }
+
+        public override void InvalidateCache(User user) {
+            if (!EnableCache || Cache == null)
+                return;
+
+            InvalidateCache(user.EmailAddress.ToLowerInvariant());
+
+            foreach (var organizationId in user.OrganizationIds)
+                InvalidateCache(String.Concat("org:", organizationId));
+
+            base.InvalidateCache(user);
+        }
     }
 }

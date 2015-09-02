@@ -1,16 +1,7 @@
-{
-  "Id": "80000000b77efe2574abcce8",
-  "OccurrenceDate": "2013-03-27T09:49:14.6232193-05:00",
-  "Tags": [],
-  "ExceptionlessClientInfo": {
-    "Version": "1.0.0.500",
-    "StartCount": 0,
-    "SubmitCount": 1,
-    "Platform": ".NET",
-    "InstallDate": "0001-01-01T00:00:00-06:00"
-  },
-  "Modules": [],
-  "EnvironmentInfo": {
+﻿{
+  "ReferenceId": "80000000b77efe2574abcce8",
+  "Date": "2013-03-27T09:49:14.6232193-05:00",
+  "@environment": {
     "ProcessorCount": 12,
     "TotalPhysicalMemory": 17120079872,
     "AvailablePhysicalMemory": 10084036608,
@@ -25,14 +16,14 @@
     "MachineName": "Example",
     "RuntimeVersion": "4.0.30319.18033",
     "IpAddress": "127.0.0.1",
-    "ExtendedData": {
+    "Data": {
       "AppDomainName": "ConsoleApplication1.vshost.exe"
     }
   },
   "Message": "Exception of type 'System.Exception' was thrown.",
-  "Type": "System.Exception",
-  "ExtendedData": {
-    "__ExceptionInfo": "{\r\n  \"Data\": {}\r\n}"
-  },
-  "StackTrace": []
+  "Type": "error",
+  "@error": {
+    "Message": "Exception of type 'System.Exception' was thrown.",
+    "Type": "System.Exception"
+  }
 }

@@ -1,35 +1,44 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
-using CodeSmith.Core.Component;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Plugins.EventPipeline;
+using Exceptionless.Core.Plugins.EventProcessor;
+using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(90)]
     public class IncrementCountersAction : EventPipelineActionBase {
-        private readonly IAppStatsClient _stats;
+        private readonly IMetricsClient _metricsClient;
 
-        public IncrementCountersAction(IAppStatsClient stats) {
-            _stats = stats;
+        public IncrementCountersAction(IMetricsClient metricsClient) {
+            _metricsClient = metricsClient;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(EventContext ctx) {
-            _stats.Counter(StatNames.EventsProcessed);
-            if (ctx.Organization.PlanId != BillingManager.FreePlan.Id)
-                _stats.Counter(StatNames.EventsPaidProcessed);
+        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+            try {
+                await _metricsClient.CounterAsync(MetricNames.EventsProcessed, contexts.Count);
+
+                if (contexts.First().Organization.PlanId != BillingManager.FreePlan.Id)
+                    await _metricsClient.CounterAsync(MetricNames.EventsPaidProcessed, contexts.Count);
+            } catch (Exception ex) {
+                foreach (var context in contexts) {
+                    bool cont = false;
+                    try {
+                        cont = HandleError(ex, context);
+                    } catch {}
+
+                    if (!cont)
+                        context.SetError(ex.Message, ex);
+                }
+            }
+        }
+
+        public override Task ProcessAsync(EventContext ctx) {
+            return Task.FromResult(0);
         }
     }
 }

@@ -1,0 +1,32 @@
+﻿.swagger-section #header {
+  background-color: #333333;
+}
+
+.swagger-section #header form#api_selector .input a#explore {
+  background-color: #696969;
+}
+
+.swagger-section #header form#api_selector .input a#explore:hover {
+  background-color: #797979;
+}
+
+.swagger-section #header a#logo {
+  background: transparent url(/content/logo.png) no-repeat left center;
+}
+
+.footer {
+    display: none;
+}
+
+.info_title {
+    display: none;
+}
+
+.swagger-section #header a#logo {
+    padding: 20px 0 20px 200px;
+    display: none;
+}
+
+#header .swagger-ui-wrap {
+    min-height: 25px;
+}

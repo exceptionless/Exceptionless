@@ -1,0 +1,85 @@
+﻿{
+  "Date": "2014-05-15T22:51:24.871+00:00",
+  "@environment": {
+    "ProcessorCount": 24,
+    "Data": {
+      "AppDomainName": "/LM/W3SVC/4/ROOT/blah"
+    }
+  },
+  "Message": "The client disconnected.",
+  "Type": "error",
+  "@error": {
+    "Message": "The client disconnected.",
+    "Code": "500",
+    "Type": "System.Web.HttpException",
+    "Inner": {
+      "Message": "Invalid viewstate. Client IP: 127.0.0.1 Port: 58663 Referer: http://www.sample.com/",
+      "Type": "System.Web.UI.ViewStateException",
+      "Code": "-2146233088",
+      "Data": {
+        "@ext": {
+          "RemoteAddress": "172.21.0.1",
+          "RemotePort": "58663",
+          "UserAgent": "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
+          "Referer": "http://www.sample.com/",
+          "IsConnected": false
+        }
+      },
+      "Inner": null,
+      "StackTrace": [],
+      "TargetMethod": null
+    },
+    "StackTrace": [
+      {
+        "DeclaringNamespace": "System.Web.UI",
+        "DeclaringType": "ViewStateException",
+        "DeclaringTypeFullName": "System.Web.UI.ViewStateException",
+        "Name": "ThrowError",
+        "Parameters": [
+          {
+            "Name": "inner",
+            "Type": "Exception",
+            "TypeNamespace": "System",
+            "TypeFullName": "System.Exception"
+          }
+        ]
+      }
+    ],
+    "TargetMethod": {
+      "IsSignatureTarget": false,
+      "DeclaringNamespace": "System.Web.UI",
+      "DeclaringType": "ViewStateException",
+      "DeclaringTypeFullName": "System.Web.UI.ViewStateException",
+      "Name": "ThrowError",
+      "ModuleId": -1,
+      "Parameters": [
+        {
+          "Name": "inner",
+          "Type": "Exception",
+          "TypeNamespace": "System",
+          "TypeFullName": "System.Exception"
+        }
+      ]
+    },
+    "Modules": [
+      {
+        "ModuleId": 3,
+        "Name": "query-lang-2.13",
+        "Version": "2.13.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-09-11T14:49:54.218+00:00",
+        "ModifiedDate": "2014-03-03T11:10:56+00:00",
+        "Data": {
+          "PublicKeyToken": "zzzzzzzz",
+          "FileVersion": "213.42.0.6"
+        }
+      }
+    ],
+    "Data": {
+      "@ext": {
+        "WebEventCode": 3002,
+        "ErrorCode": -2147467259
+      }
+    }
+  }
+}

@@ -1,17 +1,8 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
-using CodeSmith.Core.Component;
-using Exceptionless.Core.Plugins.EventPipeline;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using NLog.Fluent;
 
@@ -28,19 +19,41 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(EventContext ctx) {
-            if (ctx.StackInfo == null || !ctx.StackInfo.DateFixed.HasValue || ctx.StackInfo.DateFixed.Value >= ctx.Event.Date.UtcDateTime)
-                return;
+        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+            var stacks = contexts.Where(c => c.Stack != null && c.Stack.DateFixed.HasValue && c.Stack.DateFixed.Value < c.Event.Date.UtcDateTime).GroupBy(c => c.Event.StackId);
+            foreach (var stackGroup in stacks) {
+                try {
+                    var context = stackGroup.First();
+                    Log.Trace().Message("Marking stack and events as regression.").Write();
+                    _stackRepository.MarkAsRegressed(context.Stack.Id);
+                    _eventRepository.MarkAsRegressedByStack(context.Event.OrganizationId, context.Stack.Id);
 
-            Log.Trace().Message("Marking event as an regression.").Write();
-            _stackRepository.MarkAsRegressed(ctx.StackInfo.Id);
-            _eventRepository.MarkAsRegressedByStack(ctx.StackInfo.Id);
+                    _stackRepository.InvalidateCache(context.Event.ProjectId, context.Event.StackId, context.SignatureHash);
 
-            string signatureHash = ctx.GetProperty<string>("__SignatureHash");
-            _stackRepository.InvalidateCache(ctx.Event.StackId, signatureHash, ctx.Event.ProjectId);
+                    bool isFirstEvent = true;
+                    foreach (var ctx in stackGroup) {
+                        ctx.Event.IsFixed = false;
 
-            ctx.Event.IsFixed = false;
-            ctx.IsRegression = true;
+                        // Only mark the first event context as regressed.
+                        ctx.IsRegression = isFirstEvent;
+                        isFirstEvent = false;
+                    }
+                } catch (Exception ex) {
+                    foreach (var context in stackGroup) {
+                        bool cont = false;
+                        try {
+                            cont = HandleError(ex, context);
+                        } catch {}
+
+                        if (!cont)
+                            context.SetError(ex.Message, ex);
+                    }
+                }
+            }
+        }
+
+        public override Task ProcessAsync(EventContext ctx) {
+            return Task.FromResult(0);
         }
     }
 }

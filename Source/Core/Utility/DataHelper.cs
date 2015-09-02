@@ -1,93 +1,66 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Admin;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
     public class DataHelper {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly ITokenRepository _tokenRepository;
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly IDayStackStatsRepository _dayStackStats;
-        private readonly IMonthStackStatsRepository _monthStackStats;
-        private readonly IDayProjectStatsRepository _dayProjectStats;
-        private readonly IMonthProjectStatsRepository _monthProjectStats;
-        private readonly BillingManager _billingManager;
 
-        public const string SAMPLE_API_KEY = "e3d51ea621464280bbcb79c11fd6483e";
+        public const string TEST_USER_EMAIL = "test@exceptionless.io";
+        public const string TEST_USER_PASSWORD = "tester";
+        public const string TEST_ORG_ID = "537650f3b77efe23a47914f3";
+        public const string TEST_PROJECT_ID = "537650f3b77efe23a47914f4";
+        public const string TEST_API_KEY = "LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw";
+        public const string TEST_USER_API_KEY = "5f8aT5j0M1SdWCMOiJKCrlDNHMI38LjCH4LTWqGp";
+        public const string INTERNAL_API_KEY = "Bx7JgglstPG544R34Tw9T7RlCed3OIwtYXVeyhT2";
+        public const string INTERNAL_PROJECT_ID = "54b56e480ef9605a88a13153";
 
         public DataHelper(IOrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
             IUserRepository userRepository,
             IEventRepository eventRepository,
             IStackRepository stackRepository,
-            IDayStackStatsRepository dayStackStats,
-            IMonthStackStatsRepository monthStackStats,
-            IDayProjectStatsRepository dayProjectStats,
-            IMonthProjectStatsRepository monthProjectStats,
-            BillingManager billingManager) {
+            ITokenRepository tokenRepository) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _eventRepository = eventRepository;
             _stackRepository = stackRepository;
-            _dayStackStats = dayStackStats;
-            _monthStackStats = monthStackStats;
-            _dayProjectStats = dayProjectStats;
-            _monthProjectStats = monthProjectStats;
-            _billingManager = billingManager;
+            _tokenRepository = tokenRepository;
         }
 
         public async Task ResetProjectDataAsync(string projectId) {
             if (String.IsNullOrEmpty(projectId))
                 return;
 
-            Project project = _projectRepository.GetById(projectId);
+            var project = _projectRepository.GetById(projectId);
             if (project == null)
                 return;
 
             try {
-                await _stackRepository.RemoveAllByProjectIdAsync(projectId);
-                await _eventRepository.RemoveAllByProjectIdAsync(projectId);
-                await _dayStackStats.RemoveAllByProjectIdAsync(projectId);
-                await _monthStackStats.RemoveAllByProjectIdAsync(projectId);
-                await _dayProjectStats.RemoveAllByProjectIdAsync(projectId);
-                await _monthProjectStats.RemoveAllByProjectIdAsync(projectId);
-
-                project.EventCount = 0;
-                project.StackCount = 0;
+                await _eventRepository.RemoveAllByProjectIdsAsync(new [] { projectId });
+                await _stackRepository.RemoveAllByProjectIdsAsync(new [] { projectId });
 
                 _projectRepository.Save(project);
-
-                var orgProjects = _projectRepository.GetByOrganizationId(project.OrganizationId);
-                Organization organization = _organizationRepository.GetById(project.OrganizationId);
-                organization.EventCount = orgProjects.Sum(p => p.EventCount);
-                organization.StackCount = orgProjects.Sum(p => p.StackCount);
-                _organizationRepository.Save(organization);
             } catch (Exception e) {
-                Log.Error().Project(projectId).Exception(e).Message("Error resetting project data.").Report().Write();
+                Log.Error().Project(projectId).Exception(e).Message("Error resetting project data.").Write();
                 throw;
             }
         }
 
-        public async Task ResetStackDataASync(string stackId) {
+        public async Task ResetStackDataAsync(string stackId) {
             if (String.IsNullOrEmpty(stackId))
                 return;
 
@@ -101,38 +74,132 @@ namespace Exceptionless.Core.Utility {
                 stack.FirstOccurrence = DateTime.MinValue.ToUniversalTime();
                 _stackRepository.Save(stack);
 
-                _dayProjectStats.DecrementStatsByStackId(stack.ProjectId, stackId);
-                _monthProjectStats.DecrementStatsByStackId(stack.ProjectId, stackId);
-
-                await _eventRepository.RemoveAllByStackIdAsync(stackId);
-                await _dayStackStats.RemoveAllByStackIdAsync(stackId);
-                await _monthStackStats.RemoveAllByStackIdAsync(stackId);
+                await _eventRepository.RemoveAllByStackIdsAsync(new[] { stackId });
             } catch (Exception e) {
-                Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Report().Write();
+                Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Write();
                 throw;
             }
         }
 
-        public void CreateSampleOrganizationAndProject(string userId) {
-            if (_projectRepository.GetByApiKey(SAMPLE_API_KEY) != null)
+        public string CreateDefaultOrganizationAndProject(User user) {
+            string organizationId = user.OrganizationIds.FirstOrDefault();
+            if (!String.IsNullOrEmpty(organizationId)) {
+                var defaultProject = _projectRepository.GetByOrganizationId(user.OrganizationIds.First(), useCache: true).FirstOrDefault();
+                if (defaultProject != null)
+                    return defaultProject.Id;
+            } else {
+                var organization = new Organization {
+                    Name = "Default Organization"
+                };
+                BillingManager.ApplyBillingPlan(organization, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, user);
+                _organizationRepository.Add(organization);
+                organizationId = organization.Id;
+            }
+
+            var project = new Project { Name = "Default Project", OrganizationId = organizationId };
+            project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            project.AddDefaultOwnerNotificationSettings(user.Id);
+            project = _projectRepository.Add(project);
+            
+            _tokenRepository.Add(new Token {
+                Id = StringExtensions.GetNewToken(),
+                OrganizationId = organizationId,
+                ProjectId = project.Id,
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                Type = TokenType.Access
+            });
+
+            if (!user.OrganizationIds.Contains(organizationId)) {
+                user.OrganizationIds.Add(organizationId);
+                _userRepository.Save(user, true);
+            }
+
+            return project.Id;
+        }
+
+        public void CreateTestData() {
+            if (_userRepository.GetByEmailAddress(TEST_USER_EMAIL) != null)
+                return;
+
+            var user = new User {
+                FullName = "Test User", 
+                EmailAddress = TEST_USER_EMAIL,
+                IsEmailAddressVerified = true
+            };
+            user.Roles.Add(AuthorizationRoles.Client);
+            user.Roles.Add(AuthorizationRoles.User);
+            user.Roles.Add(AuthorizationRoles.GlobalAdmin);
+
+            user.Salt = StringExtensions.GetRandomString(16);
+            user.Password = TEST_USER_PASSWORD.ToSaltedHash(user.Salt);
+
+            user = _userRepository.Add(user);
+            CreateTestOrganizationAndProject(user.Id);
+            CreateTestInternalOrganizationAndProject(user.Id);
+        }
+
+        public void CreateTestOrganizationAndProject(string userId) {
+            if (_tokenRepository.GetById(TEST_API_KEY) != null)
                 return;
 
             User user = _userRepository.GetById(userId, true);
-            var organization = new Organization { Id = "537650f3b77efe23a47914f3", Name = "Acme" };
-            _billingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
+            var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme" };
+            BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
             organization = _organizationRepository.Add(organization);
 
-            var project = new Project { Id = "537650f3b77efe23a47914f4", Name = "Disintegrating Pistol", TimeZone = TimeZone.CurrentTimeZone.StandardName, OrganizationId = organization.Id };
-            project.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), project.DefaultTimeZone()).ToUniversalTime().Ticks;
-            project.ApiKeys.Add(SAMPLE_API_KEY);
+            var project = new Project { Id = TEST_PROJECT_ID, Name = "Disintegrating Pistol", OrganizationId = organization.Id };
+            project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultOwnerNotificationSettings(userId);
-            project = _projectRepository.Add(project);
+            project = _projectRepository.Add(project, true);
 
-            _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
+            _tokenRepository.Add(new Token {
+                Id = TEST_API_KEY,
+                OrganizationId = organization.Id,
+                ProjectId = project.Id,
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                Type = TokenType.Access
+            });
+
+            _tokenRepository.Add(new Token {
+                Id = TEST_USER_API_KEY,
+                UserId = user.Id,
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                Type = TokenType.Access
+            });
 
             user.OrganizationIds.Add(organization.Id);
-            _userRepository.Save(user);
+            _userRepository.Save(user, true);
+        }
+
+        public void CreateTestInternalOrganizationAndProject(string userId) {
+            if (_tokenRepository.GetById(INTERNAL_API_KEY) != null)
+                return;
+
+            User user = _userRepository.GetById(userId, true);
+            var organization = new Organization { Name = "Exceptionless" };
+            BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
+            organization = _organizationRepository.Add(organization);
+
+            var project = new Project { Id = INTERNAL_PROJECT_ID, Name = "API", OrganizationId = organization.Id };
+            project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            project.AddDefaultOwnerNotificationSettings(userId);
+            project = _projectRepository.Add(project, true);
+
+            _tokenRepository.Add(new Token {
+                Id = INTERNAL_API_KEY,
+                OrganizationId = organization.Id,
+                ProjectId = project.Id,
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                Type = TokenType.Access
+            });
+
+            user.OrganizationIds.Add(organization.Id);
+            _userRepository.Save(user, true);
         }
     }
 }

@@ -1,15 +1,14 @@
 ﻿using System;
-using System.Net.Mail;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public abstract class FormattingPluginBase : IFormattingPlugin {
-        public virtual string GetStackSummaryHtml(PersistentEvent ev) {
+        public virtual SummaryData GetStackSummaryData(Stack stack) {
             return null;
         }
 
-        public virtual string GetEventSummaryHtml(PersistentEvent ev) {
+        public virtual SummaryData GetEventSummaryData(PersistentEvent ev) {
             return null;
         }
 

@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">  
+  <metadata>
+    <id>Exceptionless.Api</id>
+    <version>$version$</version>
+    <authors>Exceptionless</authors>
+    <owners>Exceptionless</owners>
+    <description>Exceptionless is a cloud based error reporting service that sends your exceptions to http://exceptionless.io and provides aggregated views and analytics.</description>
+    <projectUrl>http://exceptionless.io</projectUrl>
+    <iconUrl>https://be.exceptionless.io/img/exceptionless-32.png</iconUrl>
+    <licenseUrl>http://www.gnu.org/licenses/agpl-3.0.html</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <releaseNotes>http://exceptionless.io/category/versions/</releaseNotes>
+  </metadata>
+  <files>
+    <file src="**\*.*" target="" exclude="*.nuspec;*.settings;**\*.cs;packages.config;*.csproj;*.user;*.suo;**\*.xsd;obj\**\*.*;**\*.ide" />
+    <file src="..\..\packages\Foundatio.*\tools\Job.exe" target="App_Data\JobRunner\" />
+    <file src="..\..\packages\Foundatio.*\tools\Job.pdb" target="App_Data\JobRunner\" />
+    <file src="..\WebJobs\App.config" target="App_Data\JobRunner\Job.exe.config" />
+    <file src="..\WebJobs\Job.bat" target="App_Data\JobRunner\" />
+    <file src="..\WebJobs\NLog.config" target="App_Data\JobRunner\" />
+    <file src="..\WebJobs\continuous\**\*.*" target="App_Data\jobs\continuous\" />
+    <file src="..\WebJobs\triggered\**\*.*" target="App_Data\jobs\triggered\" />
+    <file src="..\..\packages\Foundatio.*\tools\bin\CommandLine.*" target="App_Data\JobRunner\bin\" />
+    <file src="bin\**\*.*" target="App_Data\JobRunner\bin\" />
+    <file src="..\Migrations\EventMigration\bin\Release\Exceptionless.EventMigration*.*" target="App_Data\JobRunner\bin\" />
+  </files>
+</package>

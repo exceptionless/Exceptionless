@@ -1,9 +1,0 @@
-﻿<script type="text/html" id="command-button-template">
-    <!-- ko ifnot: $data.command.isExecuting -->
-    <span data-bind="text: $data.name"></span>
-    <!-- /ko -->
-    <!-- ko if: $data.command.isExecuting -->
-    <i data-bind="css: $data.command.isExecuting ? 'fa fa-refresh fa-spin' : ''"></i> 
-    <span data-bind="text: $data.executingName"></span>
-    <!-- /ko -->
-</script>

@@ -15,6 +15,7 @@
     <RestorePackages>true</RestorePackages>
     <CodeAnalysisAdditionalOptions>/assemblyCompareMode:StrongNameIgnoringVersion</CodeAnalysisAdditionalOptions>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>68c2152b</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -39,76 +40,91 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.ApplicationServer.Caching.AzureClientHelper, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.3.1.0\lib\net40-full\Microsoft.ApplicationServer.Caching.AzureClientHelper.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.ApplicationServer.Caching.AzureCommon, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.3.1.0\lib\net40-full\Microsoft.ApplicationServer.Caching.AzureCommon.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.ApplicationServer.Caching.Client, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.3.1.0\lib\net40-full\Microsoft.ApplicationServer.Caching.Client.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.ApplicationServer.Caching.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.3.1.0\lib\net40-full\Microsoft.ApplicationServer.Caching.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.ServiceBus, Version=2.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\WindowsAzure.ServiceBus.2.3.2.2\lib\net40-full\Microsoft.ServiceBus.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Web.DistributedCache, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.3.1.0\lib\net40-full\Microsoft.Web.DistributedCache.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.WindowsAzure.Configuration, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.WindowsAzure.ConfigurationManager.2.0.3\lib\net40\Microsoft.WindowsAzure.Configuration.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.WindowsFabric.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.3.1.0\lib\net40-full\Microsoft.WindowsFabric.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.WindowsFabric.Data.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.3.1.0\lib\net40-full\Microsoft.WindowsFabric.Data.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="MongoDB.Bson, Version=1.9.1.221, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
+    <Reference Include="AutoMapper, Version=3.3.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\mongocsharpdriver.1.9.1\lib\net35\MongoDB.Bson.dll</HintPath>
+      <HintPath>..\..\packages\AutoMapper.3.3.1\lib\net40\AutoMapper.dll</HintPath>
     </Reference>
-    <Reference Include="MongoDB.Driver, Version=1.9.1.221, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
+    <Reference Include="AutoMapper.Net4, Version=3.3.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\mongocsharpdriver.1.9.1\lib\net35\MongoDB.Driver.dll</HintPath>
+      <HintPath>..\..\packages\AutoMapper.3.3.1\lib\net40\AutoMapper.Net4.dll</HintPath>
+    </Reference>
+    <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Elasticsearch.Net.1.4.3\lib\net45\Elasticsearch.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.38.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.38\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.14.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.14\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
+    </Reference>
+    <Reference Include="FluentValidation">
+      <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
+    </Reference>
+    <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Foundatio.1.0.213\lib\net45\Foundatio.dll</HintPath>
+    </Reference>
+    <Reference Include="MaxMind.Db">
+      <HintPath>..\..\packages\MaxMind.Db.1.0.0.0\lib\net40\MaxMind.Db.dll</HintPath>
+    </Reference>
+    <Reference Include="MaxMind.GeoIP2">
+      <HintPath>..\..\packages\MaxMind.GeoIP2.2.1.0.0\lib\net40\MaxMind.GeoIP2.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Bson, Version=1.10.0.62, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\mongocsharpdriver.1.10.0\lib\net35\MongoDB.Bson.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Driver, Version=1.10.0.62, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\mongocsharpdriver.1.10.0\lib\net35\MongoDB.Driver.dll</HintPath>
+    </Reference>
+    <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\NEST.1.4.3\lib\net45\Nest.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Newtonsoft.Json.6.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="NLog, Version=2.1.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+    <Reference Include="Nito.AsyncEx">
+      <HintPath>..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.dll</HintPath>
+    </Reference>
+    <Reference Include="Nito.AsyncEx.Concurrent">
+      <HintPath>..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Concurrent.dll</HintPath>
+    </Reference>
+    <Reference Include="Nito.AsyncEx.Enlightenment">
+      <HintPath>..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog, Version=3.2.1.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NLog.3.2.1\lib\net45\NLog.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Pegasus.Common, Version=3.1.1.0, Culture=neutral, PublicKeyToken=28c69b6c6d100f4a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\NLog.2.1.0\lib\net45\NLog.dll</HintPath>
+      <HintPath>..\..\packages\Pegasus.3.1.1\lib\net40\Pegasus.Common.dll</HintPath>
     </Reference>
-    <Reference Include="NLog.Xml, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="RazorEngine, Version=3.6.6.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\RazorEngine.3.6.6\lib\net45\RazorEngine.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="SimpleInjector, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\NLog.Xml.2.1.0.24\lib\net45\NLog.Xml.dll</HintPath>
+      <HintPath>..\..\packages\SimpleInjector.2.7.3\lib\net45\SimpleInjector.dll</HintPath>
     </Reference>
-    <Reference Include="RazorEngine">
-      <HintPath>..\..\packages\RazorEngine.3.4.1\lib\net45\RazorEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="SimpleInjector, Version=2.5.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+    <Reference Include="SimpleInjector.Diagnostics, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\SimpleInjector.2.5.0\lib\net45\SimpleInjector.dll</HintPath>
+      <HintPath>..\..\packages\SimpleInjector.2.7.3\lib\net45\SimpleInjector.Diagnostics.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleInjector.Diagnostics">
-      <HintPath>..\..\packages\SimpleInjector.2.5.0\lib\net45\SimpleInjector.Diagnostics.dll</HintPath>
-    </Reference>
-    <Reference Include="SimpleInjector.Packaging">
-      <HintPath>..\..\packages\SimpleInjector.Packaging.2.5.0\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
-    </Reference>
-    <Reference Include="StackExchange.Redis">
-      <HintPath>..\..\packages\StackExchange.Redis.1.0.297\lib\net45\StackExchange.Redis.dll</HintPath>
-    </Reference>
-    <Reference Include="StatsdClient, Version=1.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="SimpleInjector.Packaging, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\StatsdCsharpClient.1.2.1.0\lib\net45\StatsdClient.dll</HintPath>
+      <HintPath>..\..\packages\SimpleInjector.Packaging.2.7.3\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net, Version=2.2.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Stripe.net.2.2.2\lib\net40\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net, Version=2.9.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Stripe.net.2.9.0\lib\net40\Stripe.net.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -119,13 +135,16 @@
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Microsoft.AspNet.Razor.3.1.2\lib\net45\System.Web.Razor.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.AspNet.Razor.3.2.3\lib\net45\System.Web.Razor.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="UAParser">
+      <HintPath>..\..\packages\UAParser.1.2.0.0\lib\net35-Client\UAParser.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\GlobalAssemblyInfo.cs">
@@ -134,36 +153,175 @@
     <Compile Include="Authorization\AuthorizationRoles.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
-    <Compile Include="Caching\AzureCacheClient.cs" />
-    <Compile Include="Caching\ICacheClient.cs" />
-    <Compile Include="Caching\InMemoryCacheClient.cs" />
-    <Compile Include="AppStats\StatNames.cs" />
-    <Compile Include="AppStats\AppStatsClient.cs" />
-    <Compile Include="AppStats\IAppStatsClient.cs" />
+    <Compile Include="Extensions\EventExtensions.cs" />
+    <Compile Include="Extensions\ParameterExtensions.cs" />
+    <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
+    <Compile Include="Jobs\JobBootstrapper.cs" />
+    <Compile Include="Mail\Engine\DirectoryTemplateResolver.cs" />
+    <Compile Include="Mail\Engine\EmailTemplate.cs" />
+    <Compile Include="Mail\Engine\EmbeddedTemplateResolver.cs" />
+    <Compile Include="Mail\Engine\IEmailGenerator.cs" />
+    <Compile Include="Mail\Engine\LanguageScope.cs" />
+    <Compile Include="Mail\Engine\RazorEmailGenerator.cs" />
+    <Compile Include="Mail\Engine\StringExtensions.cs" />
+    <Compile Include="Mail\Engine\TemplatedEmail.cs" />
+    <Compile Include="Migrations\v1.0.36.cs" />
+    <Compile Include="Models\Application.cs" />
+    <Compile Include="Models\ClientConfiguration.cs" />
+    <Compile Include="Models\Collections\DataDictionary.cs" />
+    <Compile Include="Models\Collections\GenericArguments.cs" />
+    <Compile Include="Models\Collections\ModuleCollection.cs" />
+    <Compile Include="Models\Collections\ObservableDictionary.cs" />
+    <Compile Include="Models\Collections\ParameterCollection.cs" />
+    <Compile Include="Models\Collections\SettingsDictionary.cs" />
+    <Compile Include="Models\Collections\StackFrameCollection.cs" />
+    <Compile Include="Models\Collections\TagSet.cs" />
+    <Compile Include="Models\Data\EnvironmentInfo.cs" />
+    <Compile Include="Models\Data\Error.cs" />
+    <Compile Include="Models\Data\InnerError.cs" />
+    <Compile Include="Models\Data\Method.cs" />
+    <Compile Include="Models\Data\Module.cs" />
+    <Compile Include="Models\Data\Parameter.cs" />
+    <Compile Include="Models\Data\RequestInfo.cs" />
+    <Compile Include="Models\Data\SimpleError.cs" />
+    <Compile Include="Models\Data\StackFrame.cs" />
+    <Compile Include="Models\Data\UserDescription.cs" />
+    <Compile Include="Models\Data\UserInfo.cs" />
+    <Compile Include="Models\Enums\NotificationMode.cs" />
+    <Compile Include="Models\Enums\ResponseStatusType.cs" />
+    <Compile Include="Models\Enums\SuspensionCode.cs" />
+    <Compile Include="Models\Event.cs" />
+    <Compile Include="Models\Interfaces\IData.cs" />
+    <Compile Include="Models\Interfaces\IIdentity.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganization.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProject.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProjectAndStack.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProjectAndStackWithIdentity.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProjectWithIdentity.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganizationWithIdentity.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByProject.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByStack.cs" />
+    <Compile Include="Models\Invite.cs" />
+    <Compile Include="Models\Messaging\ReleaseNotification.cs" />
+    <Compile Include="Models\Messaging\SystemNotification.cs" />
+    <Compile Include="Models\NotificationSettings.cs" />
+    <Compile Include="Models\OAuthAccount.cs" />
+    <Compile Include="Models\Organization.cs" />
+    <Compile Include="Models\PersistentEvent.cs" />
+    <Compile Include="Models\Project.cs" />
+    <Compile Include="Models\Queues\StatusMessage.cs" />
+    <Compile Include="Models\Results\EventResult.cs" />
+    <Compile Include="Models\Results\EventResultBase.cs" />
+    <Compile Include="Models\Results\EventStackResult.cs" />
+    <Compile Include="Models\SessionInfo.cs" />
+    <Compile Include="Models\Stack.cs" />
+    <Compile Include="Models\Stats\EventStatsResult.cs" />
+    <Compile Include="Models\Stats\EventTermStatsResult.cs" />
+    <Compile Include="Models\Stats\Results\PagedResult.cs" />
+    <Compile Include="Models\Stats\Results\PlanPagedResult.cs" />
+    <Compile Include="Models\Stats\TermStatsItem.cs" />
+    <Compile Include="Models\Stats\TermTimelineItem.cs" />
+    <Compile Include="Models\Stats\TimelineItem.cs" />
+    <Compile Include="Models\Token.cs" />
+    <Compile Include="Models\User.cs" />
+    <Compile Include="Models\WebHook.cs" />
+    <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
+    <Compile Include="Utility\LastReferenceIdManager.cs" />
+    <Compile Include="Utility\MetricNames.cs" />
     <Compile Include="Bootstrapper.cs" />
-    <Compile Include="Extensions\MongoQueryExtensions.cs" />
+    <Compile Include="Dependency\DefaultDependencyResolver.cs" />
+    <Compile Include="Dependency\DependencyResolverExtensions.cs" />
+    <Compile Include="Dependency\IDependencyResolver.cs" />
+    <Compile Include="Extensions\TaskExtensions.cs" />
+    <Compile Include="Extensions\UserExtensions.cs" />
+    <Compile Include="Repositories\ElasticSearchConfiguration.cs" />
+    <Compile Include="Extensions\ConcurrentQueueExtensions.cs" />
+    <Compile Include="Extensions\DictionaryExtensions.cs" />
+    <Compile Include="Extensions\ElasticSearchExtensions.cs" />
+    <Compile Include="Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Extensions\EnumHelper.cs" />
+    <Compile Include="Extensions\HashExtensions.cs" />
+    <Compile Include="Extensions\HttpClientExtensions.cs" />
+    <Compile Include="Extensions\ILGeneratorExtensions.cs" />
+    <Compile Include="Extensions\NameValueCollectionExtensions.cs" />
+    <Compile Include="Extensions\NumericExtensions.cs" />
+    <Compile Include="Extensions\QueueExtensions.cs" />
+    <Compile Include="Extensions\StorageExtensions.cs" />
+    <Compile Include="Extensions\TaskCompletionSourceExtensions.cs" />
+    <Compile Include="Extensions\TaskFactoryExtensions.cs" />
+    <Compile Include="Extensions\TypeExtensions.cs" />
+    <Compile Include="Geo\IGeoIPResolver.cs" />
+    <Compile Include="Geo\Location.cs" />
+    <Compile Include="Geo\MindMaxGeoIPResolver.cs" />
+    <Compile Include="Jobs\EventNotificationsJob.cs" />
+    <Compile Include="Jobs\WebHooksJob.cs" />
+    <Compile Include="Migrations\v1.0.35.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\60_GeoPlugin.cs" />
+    <Compile Include="Utility\KeepAliveHttpConnection.cs" />
+    <Compile Include="Models\Messaging\ChangeType.cs" />
+    <Compile Include="Models\Messaging\UserMembershipChanged.cs" />
+    <Compile Include="Migrations\v1.0.34.cs" />
+    <Compile Include="Pipeline\Base\PipelineActionBase.cs" />
+    <Compile Include="Pipeline\Base\PipelineBase.cs" />
+    <Compile Include="Pipeline\Base\PipelineContextBase.cs" />
+    <Compile Include="Pipeline\Base\PriorityAttribute.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\50_DefaultSessionIdPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
+    <Compile Include="Filter\QueryProcessorVisitor.cs" />
+    <Compile Include="Repositories\Base\SortOrder.cs" />
+    <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Extensions\RequestInfoExtensions.cs" />
-    <Compile Include="Messaging\IMessagePublisher.cs" />
-    <Compile Include="Messaging\IMessageSubscriber.cs" />
-    <Compile Include="Messaging\InMemoryMessageBus.cs" />
-    <Compile Include="Messaging\Models\EventOccurrence.cs" />
-    <Compile Include="Messaging\Models\EntityChange.cs" />
-    <Compile Include="Messaging\Models\PlanChanged.cs" />
-    <Compile Include="Messaging\Models\PlanOverage.cs" />
-    <Compile Include="Messaging\Models\StackUpdated.cs" />
-    <Compile Include="Messaging\ServiceBusMessageBus.cs" />
+    <Compile Include="Mail\IMailSender.cs" />
+    <Compile Include="Mail\InMemoryMailSender.cs" />
+    <Compile Include="Mail\SmtpMailSender.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\40_RequestInfoPlugin.cs" />
+    <Compile Include="Repositories\Base\DocumentNotFoundException.cs" />
+    <Compile Include="Serialization\EmptyCollectionElasticContractResolver.cs" />
+    <Compile Include="Extensions\MailerExtensions.cs" />
+    <Compile Include="Extensions\MongoQueryExtensions.cs" />
+    <Compile Include="Extensions\ValidationExtensions.cs" />
+    <Compile Include="Jobs\EventUserDescriptionsJob.cs" />
+    <Compile Include="Jobs\MailMessageJob.cs" />
+    <Compile Include="Models\Messaging\EntityChanged.cs" />
+    <Compile Include="Models\Messaging\PlanChanged.cs" />
+    <Compile Include="Models\Messaging\PlanOverage.cs" />
     <Compile Include="Migrations\v1.0.29.cs" />
+    <Compile Include="Migrations\v1.0.30.cs" />
+    <Compile Include="Migrations\v1.0.33.cs" />
+    <Compile Include="Migrations\v1.0.32.cs" />
     <Compile Include="Models\Billing\BillingPlanStats.cs" />
-    <Compile Include="Models\Organization\InvoiceModel.cs" />
+    <Compile Include="Models\EventSummaryModel.cs" />
+    <Compile Include="Models\StackSummaryModel.cs" />
+    <Compile Include="Models\SummaryData.cs" />
+    <Compile Include="Pipeline\001_CheckEventDateAction.cs" />
+    <Compile Include="Pipeline\006_TruncateFieldsAction.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
-    <Compile Include="Plugins\EventPipeline\Default\RequestInfoPlugin.cs" />
+    <Compile Include="Plugins\EventParser\Default\LegacyErrorParserPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\50_SessionFormattingPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\40_UsageFormattingPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\99_DefaultFormattingPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\10_SimpleErrorFormattingPlugin.cs" />
+    <Compile Include="Plugins\WebHook\Default\LoadDefaults.cs" />
+    <Compile Include="Plugins\WebHook\Default\V2_WebHookDataPlugin.cs" />
+    <Compile Include="Plugins\WebHook\Default\V1_WebHookDataPlugin.cs" />
+    <Compile Include="Plugins\WebHook\WebHookDataContext.cs" />
+    <Compile Include="Plugins\WebHook\WebHookDataPluginManager.cs" />
+    <Compile Include="Plugins\WebHook\WebHookDataPluginBase.cs" />
+    <Compile Include="Plugins\WebHook\IWebHookDataPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\30_SimpleErrorPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\10_NotFoundPlugin.cs" />
     <Compile Include="Extensions\ByteArrayExtensions.cs" />
-    <Compile Include="Extensions\PrincipalUtility.cs" />
+    <Compile Include="Extensions\IdentityUtils.cs" />
     <Compile Include="Plugins\EventParser\Default\JsonEventParserPlugin.cs" />
     <Compile Include="Plugins\EventParser\EventParserPluginManager.cs" />
     <Compile Include="Plugins\EventParser\IEventParserPlugin.cs" />
-    <Compile Include="Plugins\Formatting\Default\ErrorFormattingPlugin.cs" />
-    <Compile Include="Plugins\Formatting\Default\NotFoundFormattingPlugin.cs" />
+    <Compile Include="Plugins\EventUpgrader\Default\GetVersion.cs" />
+    <Compile Include="Plugins\EventUpgrader\Default\V1R844_EventUpgrade.cs" />
+    <Compile Include="Plugins\EventUpgrader\Default\V2_EventUpgrade.cs" />
+    <Compile Include="Plugins\EventUpgrader\Default\V1R850_EventUpgrade.cs" />
+    <Compile Include="Plugins\EventUpgrader\Default\V1R500_EventUpgrade.cs" />
+    <Compile Include="Plugins\Formatting\Default\20_ErrorFormattingPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\30_NotFoundFormattingPlugin.cs" />
     <Compile Include="Plugins\Formatting\FormattingPluginBase.cs" />
     <Compile Include="Plugins\Formatting\FormattingPluginManager.cs" />
     <Compile Include="Plugins\Formatting\IFormattingPlugin.cs" />
@@ -175,18 +333,55 @@
     <Compile Include="Extensions\MethodExtensions.cs" />
     <Compile Include="Extensions\OrganizationExtensions.cs" />
     <Compile Include="Extensions\StackExtensions.cs" />
-    <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\JsonExtensions.cs" />
     <Compile Include="Extensions\ProjectExtensions.cs" />
     <Compile Include="Extensions\StackFrameCollectionExtensions.cs" />
     <Compile Include="Extensions\StackFrameExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
-    <Compile Include="Jobs\DailyNotificationJob.cs" />
-    <Compile Include="Jobs\ProcessEventPostsJob.cs" />
-    <Compile Include="Jobs\RemoveStaleAccountsJob.cs" />
-    <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
-    <Compile Include="Jobs\MongoJobHistoryProvider.cs" />
-    <Compile Include="Jobs\CacheJobLockProvider.cs" />
+    <Compile Include="Jobs\DailySummaryJob.cs" />
+    <Compile Include="Jobs\EventPostsJob.cs" />
+    <Compile Include="Jobs\StaleAccountsJob.cs" />
+    <Compile Include="Jobs\RetentionLimitsJob.cs" />
+    <Compile Include="Models\Queues\EventUserDescription.cs" />
+    <Compile Include="Models\Queues\MailMessage.cs" />
+    <Compile Include="Repositories\Base\DuplicateDocumentException.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchOptions.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchOptionsExtensions.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchPagingOptions.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchReadOnlyRepository.cs" />
+    <Compile Include="Repositories\Base\MongoOptions.cs" />
+    <Compile Include="Repositories\Base\MongoOptionsExtensions.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchRepository.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganizationAndProject.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganization.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack.cs" />
+    <Compile Include="Repositories\Base\PagingWitSortByOptions.cs" />
+    <Compile Include="Repositories\EventRepository.cs" />
+    <Compile Include="Serialization\DataObjectConverter.cs" />
+    <Compile Include="Utility\GenericEventArgs.cs" />
+    <Compile Include="Utility\LambdaComparer.cs" />
+    <Compile Include="Utility\PathHelper.cs" />
+    <Compile Include="Utility\Reflection\DelegateFactory.cs" />
+    <Compile Include="Utility\Reflection\FieldAccessor.cs" />
+    <Compile Include="Utility\Reflection\IMemberAccessor.cs" />
+    <Compile Include="Utility\Reflection\LateBinder.cs" />
+    <Compile Include="Utility\Reflection\MemberAccessor.cs" />
+    <Compile Include="Utility\Reflection\PropertyAccessor.cs" />
+    <Compile Include="Utility\Reflection\TypeAccessor.cs" />
+    <Compile Include="Utility\Run.cs" />
+    <Compile Include="Utility\SystemHealthChecker.cs" />
+    <Compile Include="Utility\TaskHelper.cs" />
+    <Compile Include="Utility\TypeHelper.cs" />
+    <Compile Include="Validation\ApplicationValidator.cs" />
+    <Compile Include="Validation\IsObjectIdValidator.cs" />
+    <Compile Include="Validation\OrganizationValidator.cs" />
+    <Compile Include="Validation\PersistentEventValidator.cs" />
+    <Compile Include="Validation\ProjectValidator.cs" />
+    <Compile Include="Validation\StackValidator.cs" />
+    <Compile Include="Validation\TokenValidator.cs" />
+    <Compile Include="Validation\UserDescriptionValidator.cs" />
+    <Compile Include="Validation\UserValidator.cs" />
+    <Compile Include="Validation\WebHookValidator.cs" />
     <None Include="app.config" />
     <None Include="Mail\Templates\AddedToOrganization\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -194,27 +389,29 @@
     <Compile Include="Migrations\v1.0.31.cs" />
     <Compile Include="Migrations\v1.0.27.cs" />
     <Compile Include="Models\Billing\BillingPlan.cs" />
-    <Compile Include="Models\EventPost.cs" />
+    <Compile Include="Models\Queues\EventPostInfo.cs" />
     <Compile Include="Models\WebHookStack.cs" />
-    <Compile Include="Models\IntercomModel.cs" />
     <Compile Include="Mail\Models\PaymentModel.cs" />
-    <Compile Include="Mail\Models\SummaryNotificationModel.cs" />
+    <Compile Include="Mail\Models\DailySummaryModel.cs" />
     <Compile Include="Models\WebHookEvent.cs" />
     <Compile Include="Pipeline\100_RunEventProcessedPluginsAction.cs" />
     <Compile Include="Pipeline\005_RunEventProcessingPluginsAction.cs" />
-    <Compile Include="Pipeline\080_NotifySignalRAction.cs" />
     <Compile Include="Pipeline\090_IncrementCountersAction.cs" />
-    <Compile Include="Plugins\EventPipeline\Default\ThrottleBotsPlugin.cs" />
-    <Compile Include="Plugins\EventPipeline\EventContext.cs" />
-    <Compile Include="Plugins\EventPipeline\EventPluginBase.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\0_ThrottleBotsPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\EventContext.cs" />
+    <Compile Include="Plugins\EventProcessor\EventProcessorPluginBase.cs" />
     <Compile Include="Plugins\PluginManagerBase.cs" />
-    <Compile Include="Queues\InMemoryQueue.cs" />
-    <Compile Include="Queues\IQueue.cs" />
-    <Compile Include="Queues\Models\WebHookNotification.cs" />
-    <Compile Include="Queues\Models\WorkItem.cs" />
-    <Compile Include="Queues\ServiceBusQueue.cs" />
-    <Compile Include="Queues\Models\SummaryNotification.cs" />
-    <Compile Include="Queues\QueueEntry.cs" />
+    <Compile Include="Plugins\EventUpgrader\IEventUpgraderPlugin.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Plugins\EventUpgrader\EventUpgraderContext.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Plugins\EventUpgrader\EventUpgraderPluginManager.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\Queues\WebHookNotification.cs" />
+    <Compile Include="Models\Queues\SummaryNotification.cs" />
     <Compile Include="Repositories\ApplicationRepository.cs" />
     <Compile Include="Repositories\Base\CommonFieldNames.cs" />
     <Compile Include="Repositories\Base\OneOptions.cs" />
@@ -223,39 +420,26 @@
     <Compile Include="Repositories\Base\IRepositoryOwnedByStack.cs" />
     <Compile Include="Repositories\Base\IRepositoryOwnedByProject.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganizationAndProject.cs" />
-    <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganizationAndProjectAndStack.cs" />
-    <Compile Include="Repositories\Base\MongoRepositoryOwnedByProjectAndStack.cs" />
-    <Compile Include="Repositories\Base\MongoRepositoryOwnedByStack.cs" />
-    <Compile Include="Repositories\Base\MongoRepositoryOwnedByProject.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganization.cs" />
     <Compile Include="Repositories\Base\PagingOptions.cs" />
     <Compile Include="Repositories\Base\PagingOptionsExtensions.cs" />
-    <Compile Include="Repositories\Base\PagingWithSortingOptions.cs" />
+    <Compile Include="Repositories\Base\MongoPagingOptions.cs" />
     <Compile Include="Repositories\Base\QueryOptionsExtensions.cs" />
     <Compile Include="Repositories\Base\QueryOptions.cs" />
     <Compile Include="Repositories\Base\RepositoryConstants.cs" />
     <Compile Include="Repositories\Interfaces\IApplicationRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IDayProjectStatsRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IDayStackStatsRepository.cs" />
     <Compile Include="Repositories\Interfaces\ITokenRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IMonthStackStatsRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IMonthProjectStatsRepository.cs" />
     <Compile Include="Repositories\Interfaces\IWebHookRepository.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryManager.cs" />
     <Compile Include="Repositories\TokenRepository.cs" />
     <Compile Include="Repositories\WebHookRepository.cs" />
-    <Compile Include="AppStats\InMemoryAppStatsClient.cs" />
-    <Compile Include="Serialization\ConditionalContractResolver.cs" />
-    <Compile Include="Serialization\DataDictionaryConverter.cs" />
+    <Compile Include="Serialization\ExceptionlessContractResolver.cs" />
     <Compile Include="Serialization\JsonTextWriterWithDepth.cs" />
     <Compile Include="Serialization\LowerCaseUnderscorePropertyNamesContractResolver.cs" />
-    <Compile Include="Serialization\RequestInfoConverter.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="Plugins\EventPipeline\Default\ErrorPlugin.cs" />
-    <Compile Include="Plugins\EventPipeline\EventPluginManager.cs" />
-    <Compile Include="Plugins\EventPipeline\IEventPlugin.cs" />
-    <Compile Include="Utility\CompareObjects.cs" />
-    <Compile Include="Utility\ExtensionContractResolver.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\20_ErrorPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\EventPluginManager.cs" />
+    <Compile Include="Plugins\EventProcessor\IEventProcessorPlugin.cs" />
     <Compile Include="Utility\UtcDateTimeOffsetSerializer.cs" />
     <Compile Include="Utility\InjectAttribute.cs" />
     <Compile Include="Utility\InjectAttributePropertySelectionBehavior.cs" />
@@ -263,79 +447,44 @@
     <Compile Include="Utility\SimpleInjectorCoreDependencyResolver.cs" />
     <Compile Include="Mail\IMailer.cs" />
     <Compile Include="Mail\Mailer.cs" />
-    <Compile Include="Migrations\Documents\DocumentUpgrader.cs" />
-    <Compile Include="Migrations\Documents\LegacyErrorDocumentUpgrader.cs" />
     <Compile Include="Migrations\MongoMigrationChecker.cs" />
     <Compile Include="Mail\Models\AddedToOrganizationModel.cs" />
-    <Compile Include="Mail\Models\ErrorNotificationModel.cs" />
+    <Compile Include="Mail\Models\EventNotificationModel.cs" />
     <Compile Include="Mail\Models\InviteModel.cs" />
     <Compile Include="Mail\Models\MailModelBase.cs" />
     <Compile Include="Mail\Models\UserModel.cs" />
     <Compile Include="Pipeline\010_AssignToStackAction.cs" />
     <Compile Include="Pipeline\020_MarkAsCriticalAction.cs" />
     <Compile Include="Pipeline\030_CheckForRegressionAction.cs" />
-    <Compile Include="Pipeline\050_EnforceRetentionLimitsAction.cs" />
     <Compile Include="Pipeline\EventPipeline.cs" />
     <Compile Include="Pipeline\EventPipelineActionBase.cs" />
     <Compile Include="Pipeline\070_QueueNotificationAction.cs" />
     <Compile Include="Pipeline\040_SaveEventAction.cs" />
     <Compile Include="Pipeline\060_UpdateStatsAction.cs" />
-    <Compile Include="Queues\Models\EventNotification.cs" />
-    <Compile Include="Repositories\Interfaces\IJobHistoryRepository.cs" />
-    <Compile Include="Repositories\JobHistoryRepository.cs" />
+    <Compile Include="Models\Queues\EventNotification.cs" />
     <Compile Include="Repositories\Base\IRepositoryOwnedByOrganization.cs" />
-    <Compile Include="Repositories\Interfaces\IJobLockRepository.cs" />
     <Compile Include="Repositories\Interfaces\IOrganizationRepository.cs" />
     <Compile Include="Repositories\Interfaces\IEventRepository.cs" />
     <Compile Include="Utility\ExtensibleObject.cs" />
-    <Compile Include="Utility\NLogExceptionlessLog.cs" />
-    <Compile Include="Extensions\ToErrorModelExtensions.cs" />
     <Compile Include="Repositories\Interfaces\IStackRepository.cs" />
     <Compile Include="Repositories\Interfaces\IUserRepository.cs" />
     <Compile Include="Repositories\Base\IMongoRepositoryManagement.cs" />
     <Compile Include="Repositories\Interfaces\IProjectRepository.cs" />
     <Compile Include="Utility\ErrorSignature.cs" />
-    <Compile Include="Jobs\JobLockInfo.cs" />
-    <Compile Include="Jobs\MongoJobLockProvider.cs" />
-    <Compile Include="Jobs\MongoMachineJobLockProvider.cs" />
-    <Compile Include="Utility\EventStatsHelper.cs" />
-    <Compile Include="Repositories\DayProjectStatsRepository.cs" />
-    <Compile Include="Repositories\MonthProjectStatsRepository.cs" />
-    <Compile Include="Repositories\MonthStackStatsRepository.cs" />
-    <Compile Include="Repositories\DayStackStatsRepository.cs" />
     <Compile Include="Repositories\Base\IReadOnlyRepository.cs" />
     <Compile Include="Repositories\Base\MongoReadOnlyRepository.cs" />
     <Compile Include="Repositories\Base\IRepository.cs" />
     <Compile Include="Repositories\Base\MongoRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Repositories\EventRepository.cs" />
     <Compile Include="Repositories\StackRepository.cs" />
     <Compile Include="Repositories\OrganizationRepository.cs" />
-    <Compile Include="Repositories\JobLockRepository.cs" />
     <Compile Include="Repositories\ProjectRepository.cs" />
     <Compile Include="Repositories\UserRepository.cs" />
-    <None Include="Performance\Microsoft.ServiceBus.MessagingPerformanceCounters.man" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Clients\Pcl\Pcl.csproj">
-      <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>
-      <Name>Pcl</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
-      <Project>{c2e6e845-b50d-45b8-b188-e2f63b3e468f}</Project>
-      <Name>CodeSmith.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
-      <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
-      <Name>Exceptionless.Models</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MongoMigrations\MongoMigrations.csproj">
+    <ProjectReference Include="..\Migrations\MongoMigrations\MongoMigrations.csproj">
       <Project>{fcb2cf19-ebe7-4dcf-bd48-ec164015ba3f}</Project>
       <Name>MongoMigrations</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\RazorSharpEmail\RazorSharpEmail.csproj">
-      <Project>{B551DBCB-E732-4CFB-9361-CD74F1BA82F5}</Project>
-      <Name>RazorSharpEmail</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -355,12 +504,6 @@
     <Content Include="Mail\Templates\Invite\PlainText.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Mail\Templates\Notice\Html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\Notice\PlainText.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Mail\Templates\PasswordReset\Html.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -373,10 +516,10 @@
     <Content Include="Mail\Templates\VerifyEmail\PlainText.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Mail\Templates\SummaryNotification\PlainText.cshtml">
+    <Content Include="Mail\Templates\DailySummary\PlainText.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Mail\Templates\SummaryNotification\Html.cshtml">
+    <Content Include="Mail\Templates\DailySummary\Html.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Mail\Templates\PaymentFailed\Html.cshtml">
@@ -385,10 +528,25 @@
     <Content Include="Mail\Templates\PaymentFailed\PlainText.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <None Include="Mail\Templates\Invite\Subject.cshtml">
+    <Content Include="Mail\Templates\Notice\Html.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Mail\Templates\Notice\PlainText.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Mail\Templates\NoticeError\Html.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Mail\Templates\NoticeError\PlainText.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Include="Mail\Templates\NoticeError\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Mail\Templates\Notice\Subject.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Mail\Templates\Invite\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Mail\Templates\PasswordReset\Subject.cshtml">
@@ -397,7 +555,7 @@
     <None Include="Mail\Templates\PaymentFailed\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="Mail\Templates\SummaryNotification\Subject.cshtml">
+    <None Include="Mail\Templates\DailySummary\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Mail\Templates\VerifyEmail\Subject.cshtml">
@@ -411,4 +569,12 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets" Condition="Exists('..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets')" />
+  <Import Project="..\..\packages\Pegasus.3.1.1\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.3.1.1\build\Pegasus.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\Pegasus.3.1.1\build\Pegasus.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Pegasus.3.1.1\build\Pegasus.targets'))" />
+  </Target>
 </Project>

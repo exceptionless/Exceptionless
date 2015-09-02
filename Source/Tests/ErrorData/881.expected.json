@@ -1,7 +1,6 @@
 ﻿{
-  "OccurrenceDate": "2013-05-16T10:26:07.485-05:00",
-  "Tags": [],
-  "RequestInfo": {
+  "Date": "2013-05-16T10:26:07.485-05:00",
+  "@request": {
     "UserAgent": "Example_Security_scanner",
     "HttpMethod": "GET",
     "IsSecure": false,
@@ -21,20 +20,9 @@
       "ctl00$PageContent$LoginToSystemControl$StandartLoginControl$Password": "",
       "ctl00$PageContent$LoginToSystemControl$StandartLoginControl$UserName": "",
       "__EVENTVALIDATION": "/Test=="
-    },
-    "ExtendedData": {}
+    }
   },
-  "ExceptionlessClientInfo": {
-    "Version": "0.9.0.881",
-    "InstallIdentifier": "C0020A4F-EF86-45B3-ACA9-A61F5C3AED47",
-    "InstallDate": "2013-05-07T20:45:16-05:00",
-    "StartCount": 10,
-    "SubmitCount": 4575,
-    "Platform": ".NET Web",
-    "SubmissionMethod": "HttpApplicationError"
-  },
-  "Modules": [],
-  "EnvironmentInfo": {
+  "@environment": {
     "ProcessorCount": 8,
     "TotalPhysicalMemory": 12874641408,
     "AvailablePhysicalMemory": 7047577600,
@@ -49,21 +37,186 @@
     "MachineName": "example",
     "RuntimeVersion": "4.0.30319.296",
     "IpAddress": "127.0.0.1",
-    "ExtendedData": {
+    "Data": {
       "AppDomainName": "/LM/W3SVC/819060847/ROOT-1-13013139602206444"
     }
   },
   "Message": "A potentially dangerous Request.RawUrl value was detected from the client (=\"...aspx?%00\"><script>alert(309)</...\").",
-  "Type": "System.Web.HttpRequestValidationException",
-  "Code": "500",
-  "ExtendedData": {
-    "__ExceptionInfo": "{\r\n  \"WebEventCode\": 0,\r\n  \"ErrorCode\": -2147467259\r\n}"
-  },
-  "StackTrace": [
-    {
-      "LineNumber": 0,
-      "Column": 0,
-      "IsSignatureTarget": false,
+  "Type": "error",
+  "@error": {
+    "Message": "A potentially dangerous Request.RawUrl value was detected from the client (=\"...aspx?%00\"><script>alert(309)</...\").",
+    "Code": "500",
+    "Type": "System.Web.HttpRequestValidationException",
+    "StackTrace": [
+      {
+        "LineNumber": 0,
+        "Column": 0,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Web",
+        "DeclaringType": "HttpRequest",
+        "DeclaringTypeFullName": "System.Web.HttpRequest",
+        "FullName": "System.Web.HttpRequest.ValidateString",
+        "Signature": "System.Web.HttpRequest.ValidateString(String value, String collectionKey, RequestValidationSource requestCollection)",
+        "Name": "ValidateString",
+        "ModuleId": -1,
+        "Parameters": [
+          {
+            "Name": "value",
+            "Type": "String",
+            "TypeNamespace": "System",
+            "TypeFullName": "System.String"
+          },
+          {
+            "Name": "collectionKey",
+            "Type": "String",
+            "TypeNamespace": "System",
+            "TypeFullName": "System.String"
+          },
+          {
+            "Name": "requestCollection",
+            "Type": "RequestValidationSource",
+            "TypeNamespace": "System.Web.Util",
+            "TypeFullName": "System.Web.Util.RequestValidationSource"
+          }
+        ]
+      },
+      {
+        "LineNumber": 0,
+        "Column": 0,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Web",
+        "DeclaringType": "HttpRequest",
+        "DeclaringTypeFullName": "System.Web.HttpRequest",
+        "FullName": "System.Web.HttpRequest.get_RawUrl",
+        "Signature": "System.Web.HttpRequest.get_RawUrl()",
+        "Name": "get_RawUrl",
+        "ModuleId": -1
+      },
+      {
+        "LineNumber": 0,
+        "Column": 0,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Web.UI",
+        "DeclaringType": "Page",
+        "DeclaringTypeFullName": "System.Web.UI.Page",
+        "FullName": "System.Web.UI.Page.ProcessRequestMain",
+        "Signature": "System.Web.UI.Page.ProcessRequestMain(Boolean includeStagesBeforeAsyncPoint, Boolean includeStagesAfterAsyncPoint)",
+        "Name": "ProcessRequestMain",
+        "ModuleId": -1,
+        "Parameters": [
+          {
+            "Name": "includeStagesBeforeAsyncPoint",
+            "Type": "Boolean",
+            "TypeNamespace": "System",
+            "TypeFullName": "System.Boolean"
+          },
+          {
+            "Name": "includeStagesAfterAsyncPoint",
+            "Type": "Boolean",
+            "TypeNamespace": "System",
+            "TypeFullName": "System.Boolean"
+          }
+        ]
+      },
+      {
+        "LineNumber": 0,
+        "Column": 0,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Web.UI",
+        "DeclaringType": "Page",
+        "DeclaringTypeFullName": "System.Web.UI.Page",
+        "FullName": "System.Web.UI.Page.ProcessRequest",
+        "Signature": "System.Web.UI.Page.ProcessRequest(Boolean includeStagesBeforeAsyncPoint, Boolean includeStagesAfterAsyncPoint)",
+        "Name": "ProcessRequest",
+        "ModuleId": -1,
+        "Parameters": [
+          {
+            "Name": "includeStagesBeforeAsyncPoint",
+            "Type": "Boolean",
+            "TypeNamespace": "System",
+            "TypeFullName": "System.Boolean"
+          },
+          {
+            "Name": "includeStagesAfterAsyncPoint",
+            "Type": "Boolean",
+            "TypeNamespace": "System",
+            "TypeFullName": "System.Boolean"
+          }
+        ]
+      },
+      {
+        "LineNumber": 0,
+        "Column": 0,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Web.UI",
+        "DeclaringType": "Page",
+        "DeclaringTypeFullName": "System.Web.UI.Page",
+        "FullName": "System.Web.UI.Page.ProcessRequest",
+        "Signature": "System.Web.UI.Page.ProcessRequest()",
+        "Name": "ProcessRequest",
+        "ModuleId": -1
+      },
+      {
+        "LineNumber": 0,
+        "Column": 0,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Web.UI",
+        "DeclaringType": "Page",
+        "DeclaringTypeFullName": "System.Web.UI.Page",
+        "FullName": "System.Web.UI.Page.ProcessRequest",
+        "Signature": "System.Web.UI.Page.ProcessRequest(HttpContext context)",
+        "Name": "ProcessRequest",
+        "ModuleId": -1,
+        "Parameters": [
+          {
+            "Name": "context",
+            "Type": "HttpContext",
+            "TypeNamespace": "System.Web",
+            "TypeFullName": "System.Web.HttpContext"
+          }
+        ]
+      },
+      {
+        "LineNumber": 0,
+        "Column": 0,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Web",
+        "DeclaringType": "HttpApplication+CallHandlerExecutionStep",
+        "DeclaringTypeFullName": "System.Web.HttpApplication.CallHandlerExecutionStep",
+        "FullName": "System.Web.HttpApplication.CallHandlerExecutionStep.System.Web.HttpApplication.IExecutionStep.Execute",
+        "Signature": "System.Web.HttpApplication.CallHandlerExecutionStep.System.Web.HttpApplication.IExecutionStep.Execute()",
+        "Name": "System.Web.HttpApplication.IExecutionStep.Execute",
+        "ModuleId": -1
+      },
+      {
+        "LineNumber": 0,
+        "Column": 0,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Web",
+        "DeclaringType": "HttpApplication",
+        "DeclaringTypeFullName": "System.Web.HttpApplication",
+        "FullName": "System.Web.HttpApplication.ExecuteStep",
+        "Signature": "System.Web.HttpApplication.ExecuteStep(IExecutionStep step, Boolean& completedSynchronously)",
+        "Name": "ExecuteStep",
+        "ModuleId": -1,
+        "Parameters": [
+          {
+            "Name": "step",
+            "Type": "IExecutionStep",
+            "TypeNamespace": "System.Web",
+            "TypeFullName": "System.Web.IExecutionStep"
+          },
+          {
+            "Name": "completedSynchronously",
+            "Type": "Boolean&",
+            "TypeNamespace": "System",
+            "TypeFullName": "System.Boolean&"
+          }
+        ]
+      }
+    ],
+    "TargetMethod": {
+      "IsSignatureTarget": true,
       "DeclaringNamespace": "System.Web",
       "DeclaringType": "HttpRequest",
       "DeclaringTypeFullName": "System.Web.HttpRequest",
@@ -71,237 +224,32 @@
       "Signature": "System.Web.HttpRequest.ValidateString(String value, String collectionKey, RequestValidationSource requestCollection)",
       "Name": "ValidateString",
       "ModuleId": -1,
-      "ExtendedData": {},
-      "GenericArguments": [],
       "Parameters": [
         {
           "Name": "value",
           "Type": "String",
           "TypeNamespace": "System",
-          "TypeFullName": "System.String",
-          "ExtendedData": {},
-          "GenericArguments": []
+          "TypeFullName": "System.String"
         },
         {
           "Name": "collectionKey",
           "Type": "String",
           "TypeNamespace": "System",
-          "TypeFullName": "System.String",
-          "ExtendedData": {},
-          "GenericArguments": []
+          "TypeFullName": "System.String"
         },
         {
           "Name": "requestCollection",
           "Type": "RequestValidationSource",
           "TypeNamespace": "System.Web.Util",
-          "TypeFullName": "System.Web.Util.RequestValidationSource",
-          "ExtendedData": {},
-          "GenericArguments": []
+          "TypeFullName": "System.Web.Util.RequestValidationSource"
         }
       ]
     },
-    {
-      "LineNumber": 0,
-      "Column": 0,
-      "IsSignatureTarget": false,
-      "DeclaringNamespace": "System.Web",
-      "DeclaringType": "HttpRequest",
-      "DeclaringTypeFullName": "System.Web.HttpRequest",
-      "FullName": "System.Web.HttpRequest.get_RawUrl",
-      "Signature": "System.Web.HttpRequest.get_RawUrl()",
-      "Name": "get_RawUrl",
-      "ModuleId": -1,
-      "ExtendedData": {},
-      "GenericArguments": [],
-      "Parameters": []
-    },
-    {
-      "LineNumber": 0,
-      "Column": 0,
-      "IsSignatureTarget": false,
-      "DeclaringNamespace": "System.Web.UI",
-      "DeclaringType": "Page",
-      "DeclaringTypeFullName": "System.Web.UI.Page",
-      "FullName": "System.Web.UI.Page.ProcessRequestMain",
-      "Signature": "System.Web.UI.Page.ProcessRequestMain(Boolean includeStagesBeforeAsyncPoint, Boolean includeStagesAfterAsyncPoint)",
-      "Name": "ProcessRequestMain",
-      "ModuleId": -1,
-      "ExtendedData": {},
-      "GenericArguments": [],
-      "Parameters": [
-        {
-          "Name": "includeStagesBeforeAsyncPoint",
-          "Type": "Boolean",
-          "TypeNamespace": "System",
-          "TypeFullName": "System.Boolean",
-          "ExtendedData": {},
-          "GenericArguments": []
-        },
-        {
-          "Name": "includeStagesAfterAsyncPoint",
-          "Type": "Boolean",
-          "TypeNamespace": "System",
-          "TypeFullName": "System.Boolean",
-          "ExtendedData": {},
-          "GenericArguments": []
-        }
-      ]
-    },
-    {
-      "LineNumber": 0,
-      "Column": 0,
-      "IsSignatureTarget": false,
-      "DeclaringNamespace": "System.Web.UI",
-      "DeclaringType": "Page",
-      "DeclaringTypeFullName": "System.Web.UI.Page",
-      "FullName": "System.Web.UI.Page.ProcessRequest",
-      "Signature": "System.Web.UI.Page.ProcessRequest(Boolean includeStagesBeforeAsyncPoint, Boolean includeStagesAfterAsyncPoint)",
-      "Name": "ProcessRequest",
-      "ModuleId": -1,
-      "ExtendedData": {},
-      "GenericArguments": [],
-      "Parameters": [
-        {
-          "Name": "includeStagesBeforeAsyncPoint",
-          "Type": "Boolean",
-          "TypeNamespace": "System",
-          "TypeFullName": "System.Boolean",
-          "ExtendedData": {},
-          "GenericArguments": []
-        },
-        {
-          "Name": "includeStagesAfterAsyncPoint",
-          "Type": "Boolean",
-          "TypeNamespace": "System",
-          "TypeFullName": "System.Boolean",
-          "ExtendedData": {},
-          "GenericArguments": []
-        }
-      ]
-    },
-    {
-      "LineNumber": 0,
-      "Column": 0,
-      "IsSignatureTarget": false,
-      "DeclaringNamespace": "System.Web.UI",
-      "DeclaringType": "Page",
-      "DeclaringTypeFullName": "System.Web.UI.Page",
-      "FullName": "System.Web.UI.Page.ProcessRequest",
-      "Signature": "System.Web.UI.Page.ProcessRequest()",
-      "Name": "ProcessRequest",
-      "ModuleId": -1,
-      "ExtendedData": {},
-      "GenericArguments": [],
-      "Parameters": []
-    },
-    {
-      "LineNumber": 0,
-      "Column": 0,
-      "IsSignatureTarget": false,
-      "DeclaringNamespace": "System.Web.UI",
-      "DeclaringType": "Page",
-      "DeclaringTypeFullName": "System.Web.UI.Page",
-      "FullName": "System.Web.UI.Page.ProcessRequest",
-      "Signature": "System.Web.UI.Page.ProcessRequest(HttpContext context)",
-      "Name": "ProcessRequest",
-      "ModuleId": -1,
-      "ExtendedData": {},
-      "GenericArguments": [],
-      "Parameters": [
-        {
-          "Name": "context",
-          "Type": "HttpContext",
-          "TypeNamespace": "System.Web",
-          "TypeFullName": "System.Web.HttpContext",
-          "ExtendedData": {},
-          "GenericArguments": []
-        }
-      ]
-    },
-    {
-      "LineNumber": 0,
-      "Column": 0,
-      "IsSignatureTarget": false,
-      "DeclaringNamespace": "System.Web",
-      "DeclaringType": "HttpApplication+CallHandlerExecutionStep",
-      "DeclaringTypeFullName": "System.Web.HttpApplication.CallHandlerExecutionStep",
-      "FullName": "System.Web.HttpApplication.CallHandlerExecutionStep.System.Web.HttpApplication.IExecutionStep.Execute",
-      "Signature": "System.Web.HttpApplication.CallHandlerExecutionStep.System.Web.HttpApplication.IExecutionStep.Execute()",
-      "Name": "System.Web.HttpApplication.IExecutionStep.Execute",
-      "ModuleId": -1,
-      "ExtendedData": {},
-      "GenericArguments": [],
-      "Parameters": []
-    },
-    {
-      "LineNumber": 0,
-      "Column": 0,
-      "IsSignatureTarget": false,
-      "DeclaringNamespace": "System.Web",
-      "DeclaringType": "HttpApplication",
-      "DeclaringTypeFullName": "System.Web.HttpApplication",
-      "FullName": "System.Web.HttpApplication.ExecuteStep",
-      "Signature": "System.Web.HttpApplication.ExecuteStep(IExecutionStep step, Boolean& completedSynchronously)",
-      "Name": "ExecuteStep",
-      "ModuleId": -1,
-      "ExtendedData": {},
-      "GenericArguments": [],
-      "Parameters": [
-        {
-          "Name": "step",
-          "Type": "IExecutionStep",
-          "TypeNamespace": "System.Web",
-          "TypeFullName": "System.Web.IExecutionStep",
-          "ExtendedData": {},
-          "GenericArguments": []
-        },
-        {
-          "Name": "completedSynchronously",
-          "Type": "Boolean&",
-          "TypeNamespace": "System",
-          "TypeFullName": "System.Boolean&",
-          "ExtendedData": {},
-          "GenericArguments": []
-        }
-      ]
-    }
-  ],
-  "TargetMethod": {
-    "IsSignatureTarget": true,
-    "DeclaringNamespace": "System.Web",
-    "DeclaringType": "HttpRequest",
-    "DeclaringTypeFullName": "System.Web.HttpRequest",
-    "FullName": "System.Web.HttpRequest.ValidateString",
-    "Signature": "System.Web.HttpRequest.ValidateString(String value, String collectionKey, RequestValidationSource requestCollection)",
-    "Name": "ValidateString",
-    "ModuleId": -1,
-    "ExtendedData": {},
-    "GenericArguments": [],
-    "Parameters": [
-      {
-        "Name": "value",
-        "Type": "String",
-        "TypeNamespace": "System",
-        "TypeFullName": "System.String",
-        "ExtendedData": {},
-        "GenericArguments": []
-      },
-      {
-        "Name": "collectionKey",
-        "Type": "String",
-        "TypeNamespace": "System",
-        "TypeFullName": "System.String",
-        "ExtendedData": {},
-        "GenericArguments": []
-      },
-      {
-        "Name": "requestCollection",
-        "Type": "RequestValidationSource",
-        "TypeNamespace": "System.Web.Util",
-        "TypeFullName": "System.Web.Util.RequestValidationSource",
-        "ExtendedData": {},
-        "GenericArguments": []
+    "Data": {
+      "@ext": {
+        "WebEventCode": 0,
+        "ErrorCode": -2147467259
       }
-    ]
+    }
   }
 }

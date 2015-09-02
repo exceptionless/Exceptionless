@@ -1,19 +1,9 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Billing;
+using Exceptionless.Core.Models;
 using MongoDB.Bson;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Tests.Utility {
     internal static class OrganizationData {
@@ -33,21 +23,29 @@ namespace Exceptionless.Tests.Utility {
         }
 
         public static Organization GenerateSampleOrganization() {
-            return GenerateOrganization(id: TestConstants.OrganizationId, inviteEmail: TestConstants.InvitedOrganizationUserEmail);
+            return GenerateOrganization(id: TestConstants.OrganizationId, name: "Acme", inviteEmail: TestConstants.InvitedOrganizationUserEmail);
         }
 
-        public static Organization GenerateOrganization(bool generateId = false, string id = null, string inviteEmail = null, bool isSuspended = false) {
+        public static Organization GenerateOrganization(bool generateId = false, string name = null, string id = null, string inviteEmail = null, bool isSuspended = false) {
             var organization = new Organization {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.OrganizationId : id,
-                Name = String.Concat("Organization ", ObjectId.GenerateNewId().ToString()),
-                IsSuspended = isSuspended
+                Name = name ?? String.Format("Organization{0}", id)
             };
+
+            BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan);
 
             if (!String.IsNullOrEmpty(inviteEmail)) {
                 organization.Invites.Add(new Invite {
                     EmailAddress = inviteEmail,
                     Token = Guid.NewGuid().ToString()
                 });
+            }
+
+            if (isSuspended) {
+                organization.IsSuspended = true;
+                organization.SuspensionCode = SuspensionCode.Abuse;
+                organization.SuspendedByUserId = TestConstants.UserId;
+                organization.SuspensionDate = DateTime.Now;
             }
 
             return organization;

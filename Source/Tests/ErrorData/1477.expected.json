@@ -1,8 +1,7 @@
-{
-  "Id": "800000003d538d628040bea0",
-  "OccurrenceDate": "2014-01-17T14:37:02.739-06:00",
-  "Tags": [],
-  "RequestInfo": {
+﻿{
+  "ReferenceId": "800000003d538d628040bea0",
+  "Date": "2014-01-17T14:37:02.739-06:00",
+  "@request": {
     "UserAgent": "Mozilla/4.0 (compatible; Example)",
     "HttpMethod": "GET",
     "IsSecure": false,
@@ -17,473 +16,9 @@
       "category|dat_14951|15184": "-1'",
       "cur": "krw",
       "": "quot;,"
-    },
-    "ExtendedData": {}
-  },
-  "ExceptionlessClientInfo": {
-    "Version": "1.1.1477 ea024e2775",
-    "InstallIdentifier": "C0020A4F-EF86-45B3-ACA9-A61F5C3AED47",
-    "InstallDate": "2014-01-07T09:41:18-06:00",
-    "StartCount": 18,
-    "SubmitCount": 7405,
-    "Platform": ".NET Web",
-    "SubmissionMethod": "HttpApplicationError"
-  },
-  "Modules": [
-    {
-      "ModuleId": 1,
-      "Name": "example.Services.PublicEntities",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.011",
-      "ModifiedDate": "2014-01-06T09:41:32",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 2,
-      "Name": "example.Common",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.73",
-      "ModifiedDate": "2014-01-06T09:41:28",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 3,
-      "Name": "NLog",
-      "Version": "2.0.1.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.291",
-      "ModifiedDate": "2013-09-16T05:55:24",
-      "ExtendedData": {
-        "PublicKeyToken": "5120e14c03d0593c"
-      }
-    },
-    {
-      "ModuleId": 4,
-      "Name": "example.Commerce",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.683",
-      "ModifiedDate": "2014-01-07T05:19:28",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 5,
-      "Name": "example.Payments.Models",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.886",
-      "ModifiedDate": "2014-01-06T10:46:54",
-      "ExtendedData": {
-        "PublicKeyToken": "61c9d7040bc431b0"
-      }
-    },
-    {
-      "ModuleId": 6,
-      "Name": "Datacash",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.106",
-      "ModifiedDate": "2014-01-07T05:19:30",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 7,
-      "Name": "example.Library.ErrorReporting",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2014-01-05T18:50:23.872",
-      "ModifiedDate": "2013-12-20T09:34:20",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 8,
-      "Name": "example.Services.Logic.Interfaces",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.964",
-      "ModifiedDate": "2014-01-06T09:41:34",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 9,
-      "Name": "query-lang-2.13",
-      "Version": "2.13.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.447",
-      "ModifiedDate": "2013-09-16T05:55:26",
-      "ExtendedData": {
-        "PublicKeyToken": "f11d0ac4605db0cc",
-        "FileVersion": "213.42.0.6",
-        "ProductVersion": " "
-      }
-    },
-    {
-      "ModuleId": 10,
-      "Name": "CookComputing.XmlRpcV2",
-      "Version": "0.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.075",
-      "ModifiedDate": "2013-09-16T05:55:22",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 11,
-      "Name": "example.Payments",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.808",
-      "ModifiedDate": "2014-01-06T10:47:00",
-      "ExtendedData": {
-        "PublicKeyToken": "5e611d43f6e8856e"
-      }
-    },
-    {
-      "ModuleId": 12,
-      "Name": "Antlr.TaskParser",
-      "Version": "1.0.5120.20383",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:04.736",
-      "ModifiedDate": "2014-01-07T05:19:28",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 13,
-      "Name": "Example4.CSN.API",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.073",
-      "ModifiedDate": "2014-01-07T05:19:28",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 14,
-      "Name": "example.Framework",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.761",
-      "ModifiedDate": "2014-01-06T09:41:30",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 15,
-      "Name": "AjaxControlToolkit",
-      "Version": "3.0.20820.16598",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:04.455",
-      "ModifiedDate": "2013-09-16T05:55:22",
-      "ExtendedData": {
-        "PublicKeyToken": "28f01b0e84b6d53e",
-        "FileVersion": "3.0.20820.0",
-        "ProductVersion": "3.0.20820.0"
-      }
-    },
-    {
-      "ModuleId": 16,
-      "Name": "AntiXssLibrary",
-      "Version": "4.2.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:04.517",
-      "ModifiedDate": "2013-09-16T05:55:22",
-      "ExtendedData": {
-        "PublicKeyToken": "d127efab8a9c114f",
-        "ProductVersion": "4.2"
-      }
-    },
-    {
-      "ModuleId": 17,
-      "Name": "antlr.runtime",
-      "Version": "2.7.6.2",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:04.689",
-      "ModifiedDate": "2014-01-07T05:19:24",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 18,
-      "Name": "Elmah",
-      "Version": "1.2.14706.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.153",
-      "ModifiedDate": "2013-10-31T11:11:30",
-      "ExtendedData": {
-        "FileVersion": "1.2.14706.0955",
-        "ProductVersion": "1.2.14706.0955"
-      }
-    },
-    {
-      "ModuleId": 19,
-      "Name": "Exceptionless",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2014-01-05T18:50:22.717",
-      "ModifiedDate": "2013-12-04T07:36:14",
-      "ExtendedData": {
-        "PublicKeyToken": "9fd61cdb91609a7a",
-        "FileVersion": "1.1.1477",
-        "ProductVersion": "1.1.1477 ea024e2775"
-      }
-    },
-    {
-      "ModuleId": 20,
-      "Name": "Exceptionless.Models",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2014-01-05T18:50:22.78",
-      "ModifiedDate": "2013-12-04T07:36:14",
-      "ExtendedData": {
-        "PublicKeyToken": "9fd61cdb91609a7a",
-        "FileVersion": "1.1.1477",
-        "ProductVersion": "1.1.1477 ea024e2775"
-      }
-    },
-    {
-      "ModuleId": 21,
-      "Name": "Exceptionless.Web",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2014-01-05T18:50:22.842",
-      "ModifiedDate": "2013-12-04T07:36:14",
-      "ExtendedData": {
-        "PublicKeyToken": "9fd61cdb91609a7a",
-        "FileVersion": "1.1.1477",
-        "ProductVersion": "1.1.1477 ea024e2775"
-      }
-    },
-    {
-      "ModuleId": 22,
-      "Name": "Extensions",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.168",
-      "ModifiedDate": "2013-10-25T09:24:44",
-      "ExtendedData": {
-        "PublicKeyToken": "61c9d7040bc431b0"
-      }
-    },
-    {
-      "ModuleId": 23,
-      "Name": "FiftyOne.Foundation",
-      "Version": "1.2.0.5",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.215",
-      "ModifiedDate": "2013-09-16T05:55:24",
-      "ExtendedData": {
-        "PublicKeyToken": "e0b3a8da0bbce49c"
-      }
-    },
-    {
-      "ModuleId": 24,
-      "Name": "Glimpse.AspNet",
-      "Version": "1.5.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.231",
-      "ModifiedDate": "2013-10-31T11:11:28",
-      "ExtendedData": {
-        "FileVersion": "1.5.0",
-        "ProductVersion": "1.5.0"
-      }
-    },
-    {
-      "ModuleId": 25,
-      "Name": "Glimpse.Core",
-      "Version": "1.7.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.262",
-      "ModifiedDate": "2013-10-31T11:11:30",
-      "ExtendedData": {
-        "FileVersion": "1.7.0",
-        "ProductVersion": "1.7.0"
-      }
-    },
-    {
-      "ModuleId": 26,
-      "Name": "Glimpse.Elmah",
-      "Version": "1.1.1.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.324",
-      "ModifiedDate": "2013-10-31T11:11:30",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 27,
-      "Name": "Html5Asp",
-      "Version": "1.0.1.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.34",
-      "ModifiedDate": "2013-09-16T05:55:24",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 28,
-      "Name": "Example2.OpenJDK.Core",
-      "Version": "0.42.0.6",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.371",
-      "ModifiedDate": "2013-09-16T05:55:24",
-      "ExtendedData": {
-        "PublicKeyToken": "13235d27fcbfff58",
-        "ProductVersion": " "
-      }
-    },
-    {
-      "ModuleId": 29,
-      "Name": "Example2.Runtime",
-      "Version": "0.42.0.6",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.418",
-      "ModifiedDate": "2013-09-16T05:55:22",
-      "ExtendedData": {
-        "PublicKeyToken": "13235d27fcbfff58"
-      }
-    },
-    {
-      "ModuleId": 30,
-      "Name": "Example2.Runtime.JNI",
-      "Version": "0.42.0.6",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.465",
-      "ModifiedDate": "2013-09-16T05:55:22",
-      "ExtendedData": {
-        "PublicKeyToken": "13235d27fcbfff58"
-      }
-    },
-    {
-      "ModuleId": 31,
-      "Name": "ImageResizer",
-      "Version": "3.0.10.740",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.496",
-      "ModifiedDate": "2013-09-16T05:55:24",
-      "ExtendedData": {
-        "ProductVersion": "3-alpha-10"
-      }
-    },
-    {
-      "ModuleId": 32,
-      "Name": "ImageResizer.Plugins.DiskCache",
-      "Version": "3.0.10.740",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.527",
-      "ModifiedDate": "2013-09-16T05:55:20",
-      "ExtendedData": {
-        "ProductVersion": "3-alpha-10"
-      }
-    },
-    {
-      "ModuleId": 33,
-      "Name": "ImageResizer.Plugins.PrettyGifs",
-      "Version": "3.0.10.740",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.558",
-      "ModifiedDate": "2013-09-16T05:55:26",
-      "ExtendedData": {
-        "ProductVersion": "3-alpha-10"
-      }
-    },
-    {
-      "ModuleId": 34,
-      "Name": "Example156.UrlRewriter",
-      "Version": "2.0.0.6",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.589",
-      "ModifiedDate": "2013-09-16T05:55:22",
-      "ExtendedData": {
-        "PublicKeyToken": "0573f3650687980d"
-      }
-    },
-    {
-      "ModuleId": 35,
-      "Name": "Interop.VISUALSOFTCRYPTLib",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.621",
-      "ModifiedDate": "2013-09-16T05:55:22",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 36,
-      "Name": "Example3_IppServices",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.636",
-      "ModifiedDate": "2013-10-25T06:18:48",
-      "ExtendedData": {
-        "PublicKeyToken": "61c9d7040bc431b0"
-      }
-    },
-    {
-      "ModuleId": 37,
-      "Name": "example.Payments.DALModels",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.792",
-      "ModifiedDate": "2014-01-06T10:46:54",
-      "ExtendedData": {
-        "PublicKeyToken": "74e4833c82fc78ec"
-      }
-    },
-    {
-      "ModuleId": 38,
-      "Name": "example.Payments.Example3PDAL",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.855",
-      "ModifiedDate": "2014-01-06T10:46:56",
-      "ExtendedData": {
-        "PublicKeyToken": "8d89e86eaaad6866"
-      }
-    },
-    {
-      "ModuleId": 39,
-      "Name": "example.Payments.SOAP.Service",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:37.933",
-      "ModifiedDate": "2014-01-06T10:47:04",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 40,
-      "Name": "example.Utils",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.042",
-      "ModifiedDate": "2014-01-07T05:19:26",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 41,
-      "Name": "Example4.Utils",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.104",
-      "ModifiedDate": "2014-01-07T05:19:26",
-      "ExtendedData": {}
-    },
-    {
-      "ModuleId": 42,
-      "Name": "NLog.Extended",
-      "Version": "2.0.1.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.354",
-      "ModifiedDate": "2013-09-16T05:55:22",
-      "ExtendedData": {
-        "PublicKeyToken": "5120e14c03d0593c"
-      }
-    },
-    {
-      "ModuleId": 43,
-      "Name": "Example5",
-      "Version": "1.0.0.0",
-      "IsEntry": false,
-      "CreatedDate": "2013-11-25T16:36:38.494",
-      "ModifiedDate": "2013-10-04T02:59:16",
-      "ExtendedData": {}
     }
-  ],
-  "EnvironmentInfo": {
+  },
+  "@environment": {
     "ProcessorCount": 24,
     "TotalPhysicalMemory": 34359738368,
     "AvailablePhysicalMemory": 27725467648,
@@ -498,68 +33,501 @@
     "MachineName": "TestMachine",
     "RuntimeVersion": "4.0.30319.2012",
     "IpAddress": "127.0.0.1",
-    "ExtendedData": {
+    "Data": {
       "AppDomainName": "/LM/W3SVC/16/ROOT/stores-1-130343866428644447"
     }
   },
   "Message": "A potentially dangerous Request.Path value was detected from the client (&).",
-  "Type": "System.Web.HttpException",
-  "Code": "400",
-  "ExtendedData": {
-    "__ExceptionInfo": "{\r\n  \"WebEventCode\": 0,\r\n  \"ErrorCode\": -2147467259\r\n}"
-  },
-  "StackTrace": [
-    {
-      "LineNumber": 0,
-      "Column": 0,
-      "IsSignatureTarget": false,
+  "Type": "error",
+  "@error": {
+    "Message": "A potentially dangerous Request.Path value was detected from the client (&).",
+    "Code": "400",
+    "Type": "System.Web.HttpException",
+    "StackTrace": [
+      {
+        "LineNumber": 0,
+        "Column": 0,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Web",
+        "DeclaringType": "HttpRequest",
+        "DeclaringTypeFullName": "System.Web.HttpRequest",
+        "FullName": "System.Web.HttpRequest.ValidateInputIfRequiredByConfig",
+        "Signature": "System.Web.HttpRequest.ValidateInputIfRequiredByConfig()",
+        "Name": "ValidateInputIfRequiredByConfig",
+        "ModuleId": -1
+      },
+      {
+        "LineNumber": 0,
+        "Column": 0,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Web",
+        "DeclaringType": "HttpApplication+PipelineStepManager",
+        "DeclaringTypeFullName": "System.Web.HttpApplication.PipelineStepManager",
+        "FullName": "System.Web.HttpApplication.PipelineStepManager.ValidateHelper",
+        "Signature": "System.Web.HttpApplication.PipelineStepManager.ValidateHelper(HttpContext context)",
+        "Name": "ValidateHelper",
+        "ModuleId": -1,
+        "Parameters": [
+          {
+            "Name": "context",
+            "Type": "HttpContext",
+            "TypeNamespace": "System.Web",
+            "TypeFullName": "System.Web.HttpContext"
+          }
+        ]
+      }
+    ],
+    "TargetMethod": {
+      "IsSignatureTarget": true,
       "DeclaringNamespace": "System.Web",
       "DeclaringType": "HttpRequest",
       "DeclaringTypeFullName": "System.Web.HttpRequest",
       "FullName": "System.Web.HttpRequest.ValidateInputIfRequiredByConfig",
       "Signature": "System.Web.HttpRequest.ValidateInputIfRequiredByConfig()",
       "Name": "ValidateInputIfRequiredByConfig",
-      "ModuleId": -1,
-      "ExtendedData": {},
-      "GenericArguments": [],
-      "Parameters": []
+      "ModuleId": -1
     },
-    {
-      "LineNumber": 0,
-      "Column": 0,
-      "IsSignatureTarget": false,
-      "DeclaringNamespace": "System.Web",
-      "DeclaringType": "HttpApplication+PipelineStepManager",
-      "DeclaringTypeFullName": "System.Web.HttpApplication.PipelineStepManager",
-      "FullName": "System.Web.HttpApplication.PipelineStepManager.ValidateHelper",
-      "Signature": "System.Web.HttpApplication.PipelineStepManager.ValidateHelper(HttpContext context)",
-      "Name": "ValidateHelper",
-      "ModuleId": -1,
-      "ExtendedData": {},
-      "GenericArguments": [],
-      "Parameters": [
-        {
-          "Name": "context",
-          "Type": "HttpContext",
-          "TypeNamespace": "System.Web",
-          "TypeFullName": "System.Web.HttpContext",
-          "ExtendedData": {},
-          "GenericArguments": []
+    "Modules": [
+      {
+        "ModuleId": 1,
+        "Name": "example.Services.PublicEntities",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:38.011+00:00",
+        "ModifiedDate": "2014-01-06T09:41:32+00:00"
+      },
+      {
+        "ModuleId": 2,
+        "Name": "example.Common",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.73+00:00",
+        "ModifiedDate": "2014-01-06T09:41:28+00:00"
+      },
+      {
+        "ModuleId": 3,
+        "Name": "NLog",
+        "Version": "2.0.1.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:38.291+00:00",
+        "ModifiedDate": "2013-09-16T05:55:24+00:00",
+        "Data": {
+          "PublicKeyToken": "5120e14c03d0593c"
         }
-      ]
+      },
+      {
+        "ModuleId": 4,
+        "Name": "example.Commerce",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.683+00:00",
+        "ModifiedDate": "2014-01-07T05:19:28+00:00"
+      },
+      {
+        "ModuleId": 5,
+        "Name": "example.Payments.Models",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.886+00:00",
+        "ModifiedDate": "2014-01-06T10:46:54+00:00",
+        "Data": {
+          "PublicKeyToken": "61c9d7040bc431b0"
+        }
+      },
+      {
+        "ModuleId": 6,
+        "Name": "Datacash",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.106+00:00",
+        "ModifiedDate": "2014-01-07T05:19:30+00:00"
+      },
+      {
+        "ModuleId": 7,
+        "Name": "example.Library.ErrorReporting",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2014-01-05T18:50:23.872+00:00",
+        "ModifiedDate": "2013-12-20T09:34:20+00:00"
+      },
+      {
+        "ModuleId": 8,
+        "Name": "example.Services.Logic.Interfaces",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.964+00:00",
+        "ModifiedDate": "2014-01-06T09:41:34+00:00"
+      },
+      {
+        "ModuleId": 9,
+        "Name": "query-lang-2.13",
+        "Version": "2.13.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:38.447+00:00",
+        "ModifiedDate": "2013-09-16T05:55:26+00:00",
+        "Data": {
+          "PublicKeyToken": "f11d0ac4605db0cc",
+          "FileVersion": "213.42.0.6",
+          "ProductVersion": " "
+        }
+      },
+      {
+        "ModuleId": 10,
+        "Name": "CookComputing.XmlRpcV2",
+        "Version": "0.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.075+00:00",
+        "ModifiedDate": "2013-09-16T05:55:22+00:00"
+      },
+      {
+        "ModuleId": 11,
+        "Name": "example.Payments",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.808+00:00",
+        "ModifiedDate": "2014-01-06T10:47:00+00:00",
+        "Data": {
+          "PublicKeyToken": "5e611d43f6e8856e"
+        }
+      },
+      {
+        "ModuleId": 12,
+        "Name": "Antlr.TaskParser",
+        "Version": "1.0.5120.20383",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:04.736+00:00",
+        "ModifiedDate": "2014-01-07T05:19:28+00:00"
+      },
+      {
+        "ModuleId": 13,
+        "Name": "Example4.CSN.API",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:38.073+00:00",
+        "ModifiedDate": "2014-01-07T05:19:28+00:00"
+      },
+      {
+        "ModuleId": 14,
+        "Name": "example.Framework",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.761+00:00",
+        "ModifiedDate": "2014-01-06T09:41:30+00:00"
+      },
+      {
+        "ModuleId": 15,
+        "Name": "AjaxControlToolkit",
+        "Version": "3.0.20820.16598",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:04.455+00:00",
+        "ModifiedDate": "2013-09-16T05:55:22+00:00",
+        "Data": {
+          "PublicKeyToken": "28f01b0e84b6d53e",
+          "FileVersion": "3.0.20820.0",
+          "ProductVersion": "3.0.20820.0"
+        }
+      },
+      {
+        "ModuleId": 16,
+        "Name": "AntiXssLibrary",
+        "Version": "4.2.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:04.517+00:00",
+        "ModifiedDate": "2013-09-16T05:55:22+00:00",
+        "Data": {
+          "PublicKeyToken": "d127efab8a9c114f",
+          "ProductVersion": "4.2"
+        }
+      },
+      {
+        "ModuleId": 17,
+        "Name": "antlr.runtime",
+        "Version": "2.7.6.2",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:04.689+00:00",
+        "ModifiedDate": "2014-01-07T05:19:24+00:00"
+      },
+      {
+        "ModuleId": 18,
+        "Name": "Elmah",
+        "Version": "1.2.14706.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.153+00:00",
+        "ModifiedDate": "2013-10-31T11:11:30+00:00",
+        "Data": {
+          "FileVersion": "1.2.14706.0955",
+          "ProductVersion": "1.2.14706.0955"
+        }
+      },
+      {
+        "ModuleId": 19,
+        "Name": "Exceptionless",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2014-01-05T18:50:22.717+00:00",
+        "ModifiedDate": "2013-12-04T07:36:14+00:00",
+        "Data": {
+          "PublicKeyToken": "9fd61cdb91609a7a",
+          "FileVersion": "1.1.1477",
+          "ProductVersion": "1.1.1477 ea024e2775"
+        }
+      },
+      {
+        "ModuleId": 20,
+        "Name": "Exceptionless.Models",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2014-01-05T18:50:22.78+00:00",
+        "ModifiedDate": "2013-12-04T07:36:14+00:00",
+        "Data": {
+          "PublicKeyToken": "9fd61cdb91609a7a",
+          "FileVersion": "1.1.1477",
+          "ProductVersion": "1.1.1477 ea024e2775"
+        }
+      },
+      {
+        "ModuleId": 21,
+        "Name": "Exceptionless.Web",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2014-01-05T18:50:22.842+00:00",
+        "ModifiedDate": "2013-12-04T07:36:14+00:00",
+        "Data": {
+          "PublicKeyToken": "9fd61cdb91609a7a",
+          "FileVersion": "1.1.1477",
+          "ProductVersion": "1.1.1477 ea024e2775"
+        }
+      },
+      {
+        "ModuleId": 22,
+        "Name": "Extensions",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.168+00:00",
+        "ModifiedDate": "2013-10-25T09:24:44+00:00",
+        "Data": {
+          "PublicKeyToken": "61c9d7040bc431b0"
+        }
+      },
+      {
+        "ModuleId": 23,
+        "Name": "FiftyOne.Foundation",
+        "Version": "1.2.0.5",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.215+00:00",
+        "ModifiedDate": "2013-09-16T05:55:24+00:00",
+        "Data": {
+          "PublicKeyToken": "e0b3a8da0bbce49c"
+        }
+      },
+      {
+        "ModuleId": 24,
+        "Name": "Glimpse.AspNet",
+        "Version": "1.5.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.231+00:00",
+        "ModifiedDate": "2013-10-31T11:11:28+00:00",
+        "Data": {
+          "FileVersion": "1.5.0",
+          "ProductVersion": "1.5.0"
+        }
+      },
+      {
+        "ModuleId": 25,
+        "Name": "Glimpse.Core",
+        "Version": "1.7.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.262+00:00",
+        "ModifiedDate": "2013-10-31T11:11:30+00:00",
+        "Data": {
+          "FileVersion": "1.7.0",
+          "ProductVersion": "1.7.0"
+        }
+      },
+      {
+        "ModuleId": 26,
+        "Name": "Glimpse.Elmah",
+        "Version": "1.1.1.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.324+00:00",
+        "ModifiedDate": "2013-10-31T11:11:30+00:00"
+      },
+      {
+        "ModuleId": 27,
+        "Name": "Html5Asp",
+        "Version": "1.0.1.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.34+00:00",
+        "ModifiedDate": "2013-09-16T05:55:24+00:00"
+      },
+      {
+        "ModuleId": 28,
+        "Name": "Example2.OpenJDK.Core",
+        "Version": "0.42.0.6",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.371+00:00",
+        "ModifiedDate": "2013-09-16T05:55:24+00:00",
+        "Data": {
+          "PublicKeyToken": "13235d27fcbfff58",
+          "ProductVersion": " "
+        }
+      },
+      {
+        "ModuleId": 29,
+        "Name": "Example2.Runtime",
+        "Version": "0.42.0.6",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.418+00:00",
+        "ModifiedDate": "2013-09-16T05:55:22+00:00",
+        "Data": {
+          "PublicKeyToken": "13235d27fcbfff58"
+        }
+      },
+      {
+        "ModuleId": 30,
+        "Name": "Example2.Runtime.JNI",
+        "Version": "0.42.0.6",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.465+00:00",
+        "ModifiedDate": "2013-09-16T05:55:22+00:00",
+        "Data": {
+          "PublicKeyToken": "13235d27fcbfff58"
+        }
+      },
+      {
+        "ModuleId": 31,
+        "Name": "ImageResizer",
+        "Version": "3.0.10.740",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.496+00:00",
+        "ModifiedDate": "2013-09-16T05:55:24+00:00",
+        "Data": {
+          "ProductVersion": "3-alpha-10"
+        }
+      },
+      {
+        "ModuleId": 32,
+        "Name": "ImageResizer.Plugins.DiskCache",
+        "Version": "3.0.10.740",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.527+00:00",
+        "ModifiedDate": "2013-09-16T05:55:20+00:00",
+        "Data": {
+          "ProductVersion": "3-alpha-10"
+        }
+      },
+      {
+        "ModuleId": 33,
+        "Name": "ImageResizer.Plugins.PrettyGifs",
+        "Version": "3.0.10.740",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.558+00:00",
+        "ModifiedDate": "2013-09-16T05:55:26+00:00",
+        "Data": {
+          "ProductVersion": "3-alpha-10"
+        }
+      },
+      {
+        "ModuleId": 34,
+        "Name": "Example156.UrlRewriter",
+        "Version": "2.0.0.6",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.589+00:00",
+        "ModifiedDate": "2013-09-16T05:55:22+00:00",
+        "Data": {
+          "PublicKeyToken": "0573f3650687980d"
+        }
+      },
+      {
+        "ModuleId": 35,
+        "Name": "Interop.VISUALSOFTCRYPTLib",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.621+00:00",
+        "ModifiedDate": "2013-09-16T05:55:22+00:00"
+      },
+      {
+        "ModuleId": 36,
+        "Name": "Example3_IppServices",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.636+00:00",
+        "ModifiedDate": "2013-10-25T06:18:48+00:00",
+        "Data": {
+          "PublicKeyToken": "61c9d7040bc431b0"
+        }
+      },
+      {
+        "ModuleId": 37,
+        "Name": "example.Payments.DALModels",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.792+00:00",
+        "ModifiedDate": "2014-01-06T10:46:54+00:00",
+        "Data": {
+          "PublicKeyToken": "74e4833c82fc78ec"
+        }
+      },
+      {
+        "ModuleId": 38,
+        "Name": "example.Payments.Example3PDAL",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.855+00:00",
+        "ModifiedDate": "2014-01-06T10:46:56+00:00",
+        "Data": {
+          "PublicKeyToken": "8d89e86eaaad6866"
+        }
+      },
+      {
+        "ModuleId": 39,
+        "Name": "example.Payments.SOAP.Service",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:37.933+00:00",
+        "ModifiedDate": "2014-01-06T10:47:04+00:00"
+      },
+      {
+        "ModuleId": 40,
+        "Name": "example.Utils",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:38.042+00:00",
+        "ModifiedDate": "2014-01-07T05:19:26+00:00"
+      },
+      {
+        "ModuleId": 41,
+        "Name": "Example4.Utils",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:38.104+00:00",
+        "ModifiedDate": "2014-01-07T05:19:26+00:00"
+      },
+      {
+        "ModuleId": 42,
+        "Name": "NLog.Extended",
+        "Version": "2.0.1.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:38.354+00:00",
+        "ModifiedDate": "2013-09-16T05:55:22+00:00",
+        "Data": {
+          "PublicKeyToken": "5120e14c03d0593c"
+        }
+      },
+      {
+        "ModuleId": 43,
+        "Name": "Example5",
+        "Version": "1.0.0.0",
+        "IsEntry": false,
+        "CreatedDate": "2013-11-25T16:36:38.494+00:00",
+        "ModifiedDate": "2013-10-04T02:59:16+00:00"
+      }
+    ],
+    "Data": {
+      "@ext": {
+        "WebEventCode": 0,
+        "ErrorCode": -2147467259
+      }
     }
-  ],
-  "TargetMethod": {
-    "IsSignatureTarget": true,
-    "DeclaringNamespace": "System.Web",
-    "DeclaringType": "HttpRequest",
-    "DeclaringTypeFullName": "System.Web.HttpRequest",
-    "FullName": "System.Web.HttpRequest.ValidateInputIfRequiredByConfig",
-    "Signature": "System.Web.HttpRequest.ValidateInputIfRequiredByConfig()",
-    "Name": "ValidateInputIfRequiredByConfig",
-    "ModuleId": -1,
-    "ExtendedData": {},
-    "GenericArguments": [],
-    "Parameters": []
   }
 }

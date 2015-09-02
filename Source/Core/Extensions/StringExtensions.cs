@@ -3,11 +3,149 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Linq;
+using System.Security.Cryptography;
 
 namespace Exceptionless.Core.Extensions {
     public static class StringExtensions {
+        public static bool IsPrivateNetwork(this string ip) {
+            if (String.IsNullOrEmpty(ip))
+                return false;
+
+            if (String.Equals(ip, "::1") || String.Equals(ip, "127.0.0.1"))
+                return true;
+
+            // 10.0.0.0 – 10.255.255.255 (Class A)
+            if (ip.StartsWith("10."))
+                return true;
+
+            // 172.16.0.0 – 172.31.255.255 (Class B)
+            if (ip.StartsWith("172.")) {
+                for (var range = 16; range < 32; range++) {
+                    if (ip.StartsWith("172." + range + "."))
+                        return true;
+                }
+            }
+
+            // 192.168.0.0 – 192.168.255.255 (Class C)
+            return ip.StartsWith("192.168.");
+        }
+
+        public static string GetNewToken() {
+            return GetRandomString(40);
+        }
+
+        public static string GetRandomString(int length, string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") {
+            if (length < 0)
+                throw new ArgumentOutOfRangeException("length", "length cannot be less than zero.");
+
+            if (string.IsNullOrEmpty(allowedChars))
+                throw new ArgumentException("allowedChars may not be empty.");
+
+            const int byteSize = 0x100;
+            var allowedCharSet = new HashSet<char>(allowedChars).ToArray();
+            if (byteSize < allowedCharSet.Length)
+                throw new ArgumentException(String.Format("allowedChars may contain no more than {0} characters.", byteSize));
+
+            using (var rng = new RNGCryptoServiceProvider()) {
+                var result = new StringBuilder();
+                var buf = new byte[128];
+
+                while (result.Length < length) {
+                    rng.GetBytes(buf);
+                    for (var i = 0; i < buf.Length && result.Length < length; ++i) {
+                        var outOfRangeStart = byteSize - (byteSize % allowedCharSet.Length);
+                        if (outOfRangeStart <= buf[i])
+                            continue;
+                        result.Append(allowedCharSet[buf[i] % allowedCharSet.Length]);
+                    }
+                }
+
+                return result.ToString();
+            }
+        }
+
+        // TODO: Add support for detecting the culture number separators as well as suffix (Ex. 100d)
+        public static bool IsNumeric(this string value) {
+            if (String.IsNullOrEmpty(value))
+                return false;
+
+            for (int i = 0; i < value.Length; i++) {
+                if (Char.IsNumber(value[i]))
+                    continue;
+
+                if (i == 0 && value[i] == '-')
+                    continue;
+
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool IsValidIdentifier(this string value) {
+            if (value == null)
+                return false;
+
+            for (int index = 0; index < value.Length; index++) {
+                if (!Char.IsLetterOrDigit(value[index]) && value[index] != '-')
+                    return false;
+            }
+
+            return true;
+        }
+
+        public static string ToSaltedHash(this string password, string salt) {
+            byte[] passwordBytes = Encoding.Unicode.GetBytes(password);
+            byte[] saltBytes = Convert.FromBase64String(salt);
+
+            var hashStrategy = HashAlgorithm.Create("HMACSHA256") as KeyedHashAlgorithm;
+            if (hashStrategy.Key.Length == saltBytes.Length)
+                hashStrategy.Key = saltBytes;
+            else if (hashStrategy.Key.Length < saltBytes.Length) {
+                var keyBytes = new byte[hashStrategy.Key.Length];
+                Buffer.BlockCopy(saltBytes, 0, keyBytes, 0, keyBytes.Length);
+                hashStrategy.Key = keyBytes;
+            } else {
+                var keyBytes = new byte[hashStrategy.Key.Length];
+                for (int i = 0; i < keyBytes.Length; ) {
+                    int len = Math.Min(saltBytes.Length, keyBytes.Length - i);
+                    Buffer.BlockCopy(saltBytes, 0, keyBytes, i, len);
+                    i += len;
+                }
+                hashStrategy.Key = keyBytes;
+            }
+            byte[] result = hashStrategy.ComputeHash(passwordBytes);
+            return Convert.ToBase64String(result);
+        }
+
+        public static string ToDelimitedString(this IEnumerable<string> values, string delimiter = ",") {
+            if (String.IsNullOrEmpty(delimiter))
+                delimiter = ",";
+            
+            var sb = new StringBuilder();
+            foreach (var i in values) {
+                if (sb.Length > 0)
+                    sb.Append(delimiter);
+
+                sb.Append(i);
+            }
+
+            return sb.ToString();
+        }
+
+        public static string[] FromDelimitedString(this string value, string delimiter = ",") {
+            if (String.IsNullOrEmpty(value))
+                return null;
+
+            if (String.IsNullOrEmpty(delimiter))
+                delimiter = ",";
+
+            return value.Split(new[] { delimiter }, StringSplitOptions.RemoveEmptyEntries).ToArray();
+        }
+
         public static string ToLowerUnderscoredWords(this string value) {
-            var builder = new StringBuilder();
+            var builder = new StringBuilder(value.Length + 10);
             for (int index = 0; index < value.Length; index++) {
                 char c = value[index];
                 if (Char.IsUpper(c)) {
@@ -21,6 +159,176 @@ namespace Exceptionless.Core.Extensions {
             }
 
             return builder.ToString();
+        }
+
+        public static bool AnyWildcardMatches(this string value, IEnumerable<string> patternsToMatch, bool ignoreCase = false) {
+            if (ignoreCase)
+                value = value.ToLower();
+
+            return patternsToMatch.Any(pattern => CheckForMatch(pattern, value, ignoreCase));
+        }
+
+        private static bool CheckForMatch(string pattern, string value, bool ignoreCase = true) {
+            bool startsWithWildcard = pattern.StartsWith("*");
+            if (startsWithWildcard)
+                pattern = pattern.Substring(1);
+
+            bool endsWithWildcard = pattern.EndsWith("*");
+            if (endsWithWildcard)
+                pattern = pattern.Substring(0, pattern.Length - 1);
+
+            if (ignoreCase)
+                pattern = pattern.ToLower();
+
+            if (startsWithWildcard && endsWithWildcard)
+                return value.Contains(pattern);
+
+            if (startsWithWildcard)
+                return value.EndsWith(pattern);
+
+            if (endsWithWildcard)
+                return value.StartsWith(pattern);
+
+            return value.Equals(pattern);
+        }
+
+        public static string ToConcatenatedString<T>(this IEnumerable<T> values, Func<T, string> stringSelector) {
+            return values.ToConcatenatedString(stringSelector, String.Empty);
+        }
+
+        public static string ToConcatenatedString<T>(this IEnumerable<T> values, Func<T, string> action, string separator) {
+            var sb = new StringBuilder();
+            foreach (var item in values) {
+                if (sb.Length > 0)
+                    sb.Append(separator);
+
+                sb.Append(action(item));
+            }
+
+            return sb.ToString();
+        }
+
+        private static readonly Regex _whitespace = new Regex(@"\s");
+        public static string RemoveWhiteSpace(this string s) {
+            return _whitespace.Replace(s, String.Empty);
+        }
+
+        public static string ReplaceFirst(this string input, string find, string replace) {
+            if (String.IsNullOrEmpty(input))
+                return input;
+
+            var i = input.IndexOf(find, StringComparison.Ordinal);
+            if (i < 0)
+                return input;
+
+            var pre = input.Substring(0, i);
+            var post = input.Substring(i + find.Length);
+            return String.Concat(pre, replace, post);
+        }
+
+        public static IEnumerable<string> SplitLines(this string text) {
+            return text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Where(l => !String.IsNullOrWhiteSpace(l)).Select(l => l.Trim());
+        }
+
+        public static string StripInvisible(this string s) {
+            return s
+                .Replace("\r\n", " ")
+                .Replace('\n', ' ')
+                .Replace('\t', ' ');
+        }
+
+        public static string NormalizeLineEndings(this string text, string lineEnding = null) {
+            if (String.IsNullOrEmpty(lineEnding))
+                lineEnding = Environment.NewLine;
+
+            text = text.Replace("\r\n", "\n");
+            if (lineEnding != "\n")
+                text = text.Replace("\r\n", lineEnding);
+
+            return text;
+        }
+
+        public static string Truncate(this string text, int keep) {
+            if (String.IsNullOrEmpty(text))
+                return String.Empty;
+
+            string buffer = NormalizeLineEndings(text);
+            if (buffer.Length <= keep)
+                return buffer;
+
+            return String.Concat(buffer.Substring(0, keep - 3), "...");
+        }
+
+        public static string Truncate(this string text, int length, string ellipsis, bool keepFullWordAtEnd) {
+            if (String.IsNullOrEmpty(text))
+                return String.Empty;
+
+            if (text.Length < length)
+                return text;
+
+            text = text.Substring(0, length);
+
+            if (keepFullWordAtEnd && text.LastIndexOf(' ') > 0)
+                text = text.Substring(0, text.LastIndexOf(' '));
+
+            return String.Format("{0}{1}", text, ellipsis);
+        }
+
+        public static string ToLowerFiltered(this string value, char[] charsToRemove) {
+            var builder = new StringBuilder(value.Length);
+
+            for (int index = 0; index < value.Length; index++) {
+                char c = value[index];
+                if (Char.IsUpper(c))
+                    c = Char.ToLower(c);
+
+                bool includeChar = true;
+                for (int i = 0; i < charsToRemove.Length; i++) {
+                    if (charsToRemove[i] == c) {
+                        includeChar = false;
+                        break;
+                    }
+                }
+
+                if (includeChar)
+                    builder.Append(c);
+            }
+
+            return builder.ToString();
+        }
+
+        public static string[] SplitAndTrim(this string s, params string[] separator) {
+            if (s.IsNullOrEmpty())
+                return new string[0];
+
+            var result = ((separator == null) || (separator.Length == 0))
+                ? s.Split((char[])null, StringSplitOptions.RemoveEmptyEntries)
+                : s.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < result.Length; i++)
+                result[i] = result[i].Trim();
+
+            return result;
+        }
+
+        public static string[] SplitAndTrim(this string s, params char[] separator) {
+            if (s.IsNullOrEmpty())
+                return new string[0];
+
+            var result = s.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < result.Length; i++)
+                result[i] = result[i].Trim();
+
+            return result;
+
+        }
+
+        public static bool IsNullOrEmpty(this string item) {
+            return String.IsNullOrEmpty(item);
+        }
+
+        public static bool IsNullOrWhiteSpace(this string item) {
+            return String.IsNullOrEmpty(item) || item.All(Char.IsWhiteSpace);
         }
 
         public static string HexEscape(this string value, params char[] anyCharOf) {
@@ -79,11 +387,11 @@ namespace Exceptionless.Core.Extensions {
             return str;
         }
 
-        public static string HtmlEntityDecode(string encodedText) {
+        public static string HtmlEntityDecode(this string encodedText) {
             return _entityResolver.Replace(encodedText, new MatchEvaluator(ResolveEntityAngleAmp));
         }
 
-        public static string HtmlEntityDecode(string encodedText, bool encodeTagsToo) {
+        public static string HtmlEntityDecode(this string encodedText, bool encodeTagsToo) {
             if (encodeTagsToo)
                 return _entityResolver.Replace(encodedText, new MatchEvaluator(ResolveEntityAngleAmp));
             else
@@ -117,10 +425,10 @@ namespace Exceptionless.Core.Extensions {
             return !matchToProcess.Groups["decimal"].Success ? (!matchToProcess.Groups["hex"].Success ? (!matchToProcess.Groups["html"].Success ? "Y" : EntityLookup(matchToProcess.Groups["html"].Value)) : Convert.ToChar(HexToInt(matchToProcess.Groups["hex"].Value)).ToString()) : Convert.ToChar(Convert.ToInt32(matchToProcess.Groups["decimal"].Value)).ToString();
         }
 
-        public static int HexToInt(string hexstr) {
+        public static int HexToInt(string input) {
             int num = 0;
-            hexstr = hexstr.ToUpper();
-            char[] chArray = hexstr.ToCharArray();
+            input = input.ToUpper();
+            char[] chArray = input.ToCharArray();
             for (int index = chArray.Length - 1; index >= 0; --index) {
                 if ((int)chArray[index] >= 48 && (int)chArray[index] <= 57)
                     num += ((int)chArray[index] - 48) * (int)Math.Pow(16.0, (double)(chArray.Length - 1 - index));

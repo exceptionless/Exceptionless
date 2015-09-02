@@ -1,0 +1,285 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Exceptionless.Api.Tests</RootNamespace>
+    <AssemblyName>Exceptionless.Api.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ApprovalTests, Version=3.0.0.0, Culture=neutral, PublicKeyToken=11bd7d124fc62e0f, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\ApprovalTests.3.0.8\lib\net40\ApprovalTests.dll</HintPath>
+    </Reference>
+    <Reference Include="ApprovalUtilities, Version=3.0.0.0, Culture=neutral, PublicKeyToken=11bd7d124fc62e0f, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\ApprovalUtilities.3.0.8\lib\net45\ApprovalUtilities.dll</HintPath>
+    </Reference>
+    <Reference Include="ApprovalUtilities.Net45">
+      <HintPath>..\..\packages\ApprovalUtilities.3.0.8\lib\net45\ApprovalUtilities.Net45.dll</HintPath>
+    </Reference>
+    <Reference Include="AutoMapper, Version=3.3.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\AutoMapper.3.3.1\lib\net40\AutoMapper.dll</HintPath>
+    </Reference>
+    <Reference Include="AutoMapper.Net4, Version=3.3.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\AutoMapper.3.3.1\lib\net40\AutoMapper.Net4.dll</HintPath>
+    </Reference>
+    <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Elasticsearch.Net.1.4.3\lib\net45\Elasticsearch.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.38.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.38\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.RandomData, Version=1.0.15.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.RandomData.1.0.15.0\lib\net40\Exceptionless.RandomData.dll</HintPath>
+    </Reference>
+    <Reference Include="FluentValidation">
+      <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
+    </Reference>
+    <Reference Include="Foundatio">
+      <HintPath>..\..\packages\Foundatio.1.0.213\lib\net45\Foundatio.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MaxMind.Db, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\MaxMind.Db.1.0.0.0\lib\net40\MaxMind.Db.dll</HintPath>
+    </Reference>
+    <Reference Include="MaxMind.GeoIP2, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\MaxMind.GeoIP2.2.1.0.0\lib\net40\MaxMind.GeoIP2.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.Owin.3.0.1\lib\net45\Microsoft.Owin.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Bson, Version=1.10.0.62, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\mongocsharpdriver.1.10.0\lib\net35\MongoDB.Bson.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Driver, Version=1.10.0.62, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\mongocsharpdriver.1.10.0\lib\net35\MongoDB.Driver.dll</HintPath>
+    </Reference>
+    <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\NEST.1.4.3\lib\net45\Nest.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Nito.AsyncEx">
+      <HintPath>..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.dll</HintPath>
+    </Reference>
+    <Reference Include="Nito.AsyncEx.Concurrent">
+      <HintPath>..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Concurrent.dll</HintPath>
+    </Reference>
+    <Reference Include="Nito.AsyncEx.Enlightenment">
+      <HintPath>..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog, Version=3.2.1.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NLog.3.2.1\lib\net45\NLog.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Owin">
+      <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
+    </Reference>
+    <Reference Include="RestSharp">
+      <HintPath>..\..\packages\RestSharp.104.0\lib\net4\RestSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="SimpleInjector, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\SimpleInjector.2.7.3\lib\net45\SimpleInjector.dll</HintPath>
+    </Reference>
+    <Reference Include="SimpleInjector.Diagnostics, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\SimpleInjector.2.7.3\lib\net45\SimpleInjector.Diagnostics.dll</HintPath>
+    </Reference>
+    <Reference Include="SimpleInjector.Extensions.ExecutionContextScoping, Version=2.4.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\SimpleInjector.Extensions.ExecutionContextScoping.2.7.3\lib\net45\SimpleInjector.Extensions.ExecutionContextScoping.dll</HintPath>
+    </Reference>
+    <Reference Include="SimpleInjector.Integration.WebApi, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\SimpleInjector.Integration.WebApi.2.7.3\lib\net45\SimpleInjector.Integration.WebApi.dll</HintPath>
+    </Reference>
+    <Reference Include="SimpleInjector.Packaging, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\SimpleInjector.Packaging.2.7.3\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Http.Formatting, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Client.5.2.3\lib\net45\System.Net.Http.Formatting.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Web.Http, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Core.5.2.3\lib\net45\System.Web.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Http.Owin, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Owin.5.2.3\lib\net45\System.Web.Http.Owin.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml" />
+    <Reference Include="xunit">
+      <HintPath>..\..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    </Reference>
+    <Reference Include="xunit.extensions">
+      <HintPath>..\..\packages\xunit.extensions.1.9.2\lib\net20\xunit.extensions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Controllers\EventControllerTests.cs" />
+    <Compile Include="Controllers\MongoTestHelper.cs" />
+    <Compile Include="Jobs\TestJob.cs" />
+    <Compile Include="Mail\MailerTests.cs" />
+    <Compile Include="Mail\NullMailer.cs" />
+    <Compile Include="Miscellaneous\DeltaTests.cs" />
+    <Compile Include="Miscellaneous\EfficientPagingTests.cs" />
+    <Compile Include="Jobs\JobTests.cs" />
+    <Compile Include="Miscellaneous\SystemHealthCheckerTests.cs" />
+    <Compile Include="Miscellaneous\RunTests.cs" />
+    <Compile Include="Pipeline\EventPipelineTests.cs" />
+    <Compile Include="Plugins\EventUpgraderTests.cs" />
+    <Compile Include="Plugins\GeoTests.cs" />
+    <Compile Include="Plugins\EventParserTests.cs" />
+    <Compile Include="Plugins\SummaryDataTests.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repositories\ElasticSearchRepositoryTests.cs" />
+    <Compile Include="Repositories\StackRepositoryTests.cs" />
+    <Compile Include="Repositories\WebHookRepositoryTests.cs" />
+    <Compile Include="Repositories\EventRepositoryTests.cs" />
+    <Compile Include="Repositories\OrganizationRepositoryTests.cs" />
+    <Compile Include="Repositories\MongoRepositoryTests.cs" />
+    <Compile Include="Search\StackIndexTests.cs" />
+    <Compile Include="Search\EventIndexTests.cs" />
+    <Compile Include="SerializerTests.cs" />
+    <Compile Include="Stats\StatsTests.cs" />
+    <Compile Include="Utility\Approvals.cs" />
+    <Compile Include="Utility\CountDownLatch.cs" />
+    <Compile Include="Utility\RandomEventGenerator.cs" />
+    <Compile Include="Utility\StackData.cs" />
+    <Compile Include="Utility\EventData.cs" />
+    <Compile Include="Utility\IoC.cs" />
+    <Compile Include="Utility\OrganizationData.cs" />
+    <Compile Include="Utility\ProjectData.cs" />
+    <Compile Include="Utility\TestConstants.cs" />
+    <Compile Include="Utility\UserData.cs" />
+    <Compile Include="Validation\EventValidatorTests.cs" />
+    <Compile Include="Plugins\WebHookDataTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Api\Exceptionless.Api.csproj">
+      <Project>{50717168-44e5-4e69-95ec-eed839630323}</Project>
+      <Name>Exceptionless.Api</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
+      <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
+      <Name>Exceptionless.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="ErrorData\1477.expected.json" />
+    <None Include="ErrorData\1477.json" />
+    <None Include="ErrorData\1858.expected.json" />
+    <None Include="ErrorData\1858.json" />
+    <None Include="ErrorData\1954.expected.json" />
+    <None Include="ErrorData\1954.json" />
+    <None Include="ErrorData\404WithNoRequestInfo.expected.json" />
+    <None Include="ErrorData\404WithNoRequestInfo.json" />
+    <None Include="ErrorData\444.expected.json" />
+    <None Include="ErrorData\444.json" />
+    <None Include="ErrorData\500.expected.json" />
+    <None Include="ErrorData\500.json" />
+    <None Include="ErrorData\550.expected.json" />
+    <None Include="ErrorData\550.json" />
+    <None Include="ErrorData\601.expected.json" />
+    <None Include="ErrorData\601.json" />
+    <None Include="ErrorData\667.expected.json" />
+    <None Include="ErrorData\667.json" />
+    <None Include="ErrorData\684.expected.json" />
+    <None Include="ErrorData\684.json" />
+    <None Include="ErrorData\700.expected.json" />
+    <None Include="ErrorData\700.json" />
+    <None Include="ErrorData\750.expected.json" />
+    <None Include="ErrorData\750.json" />
+    <None Include="ErrorData\818.expected.json" />
+    <None Include="ErrorData\818.json" />
+    <None Include="ErrorData\881.expected.json" />
+    <None Include="ErrorData\881.json" />
+    <None Include="ErrorData\977.expected.json" />
+    <None Include="ErrorData\977.json" />
+    <None Include="ErrorData\DataInExceptionInfo.expected.json" />
+    <None Include="ErrorData\DataInExceptionInfo.json" />
+    <None Include="nlog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Plugins\WebHookData\v1.0.event.expected.json" />
+    <None Include="Plugins\WebHookData\v1.0.stack.expected.json" />
+    <None Include="Plugins\WebHookData\v2.0.event.expected.json" />
+    <None Include="Plugins\WebHookData\v2.0.stack.expected.json" />
+    <None Include="Search\Data\event1.json" />
+    <None Include="Search\Data\event1.summary.json" />
+    <None Include="Search\Data\event2.summary.json" />
+    <None Include="Search\Data\event3.json" />
+    <None Include="Search\Data\event3.summary.json" />
+    <None Include="Search\Data\stack1.summary.json" />
+    <None Include="Search\Data\stack2.summary.json" />
+    <None Include="Search\Data\stack3.json" />
+    <None Include="Search\Data\stack2.json" />
+    <None Include="Search\Data\stack1.json" />
+    <None Include="Search\Data\event2.json" />
+    <None Include="Search\Data\stack3.summary.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets" Condition="Exists('..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets')" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

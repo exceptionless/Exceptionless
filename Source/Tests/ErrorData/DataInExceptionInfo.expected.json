@@ -1,0 +1,17 @@
+﻿{
+  "Data": {
+    "User": "\"You\""
+  },
+  "Type": "error",
+  "@error": {
+    "Inner": {
+      "Data": {
+        "@ext": {
+          "Data": {
+            "Blah": "Blah"
+          }
+        }
+      }
+    }
+  }
+}

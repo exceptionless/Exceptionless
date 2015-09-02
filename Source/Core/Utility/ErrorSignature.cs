@@ -1,27 +1,15 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Utility {
     public class ErrorSignature {
-        private readonly HashSet<string> _userNamespaces = new HashSet<string>();
-        private readonly HashSet<string> _userCommonMethods = new HashSet<string>();
+        private readonly HashSet<string> _userNamespaces;
+        private readonly HashSet<string> _userCommonMethods;
         private static readonly string[] _defaultNonUserNamespaces = { "System", "Microsoft" };
         // TODO: Add support for user public key token on signed assemblies
 
@@ -156,7 +144,7 @@ namespace Exceptionless.Core.Utility {
             // Assume user method if no namespace
             bool isEmptyNamespaceMethod = EmptyNamespaceIsUserMethod && frame.DeclaringNamespace.IsNullOrEmpty();
             if (!isEmptyNamespaceMethod) {
-                bool isUserNamespace = IsUserNamespace(frame.DeclaringTypeFullName);
+                bool isUserNamespace = IsUserNamespace(frame.DeclaringNamespace);
                 if (!isUserNamespace)
                     return false;
             }
@@ -164,12 +152,15 @@ namespace Exceptionless.Core.Utility {
             return !UserCommonMethods.Any(frame.GetSignature().Contains);
         }
 
-        private bool IsUserNamespace(string fullName) {
+        private bool IsUserNamespace(string ns) {
+            if (String.IsNullOrEmpty(ns))
+                return false;
+
             // if no user namespaces were set, return any non-system namespace as true
             if (UserNamespaces == null || _userNamespaces.Count == 0)
-                return !_defaultNonUserNamespaces.Any(fullName.StartsWith);
+                return !_defaultNonUserNamespaces.Any(ns.StartsWith);
 
-            return UserNamespaces.Any(fullName.StartsWith);
+            return UserNamespaces.Any(ns.StartsWith);
         }
 
         private void AddSpecialCaseDetails(InnerError error) {
@@ -180,11 +171,12 @@ namespace Exceptionless.Core.Utility {
             if (extraProperties == null)
                 return;
 
-            if (extraProperties.ContainsKey("Number"))
-                SignatureInfo.Add("Number", extraProperties["Number"].ToString());
+            object value;
+            if (extraProperties.TryGetValue("Number", out value))
+                SignatureInfo.Add("Number", value.ToString());
 
-            if (extraProperties.ContainsKey("ErrorCode"))
-                SignatureInfo.Add("ErrorCode", extraProperties["ErrorCode"].ToString());
+            if (extraProperties.TryGetValue("ErrorCode", out value))
+                SignatureInfo.Add("ErrorCode", value.ToString());
         }
     }
 }

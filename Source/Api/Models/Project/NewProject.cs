@@ -1,9 +1,8 @@
 ﻿using System;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Api.Models {
     public class NewProject : UpdateProject, IOwnedByOrganization {   
         public string OrganizationId { get; set; }
-        public string TimeZone { get; set; }
     }
 }

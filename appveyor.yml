@@ -1,0 +1,49 @@
+version: 2.0.{build}
+clone_depth: 2
+configuration: Release
+
+environment:
+  JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
+  ES_VERSION: 1.5.0
+  MONGO_VERSION: 3.0.0
+  API_URL: https://#{api.hostheader}
+  OCTOPUS_API_URL: https://deploy.codesmithtools.com/api
+  OCTOPUS_API_KEY:
+    secure: 9Uk1fnTNb36QtrWfRCe9vrqVsBaEXGcM1K1mRoLUB0A=
+
+init:
+  - git config --global core.autocrlf true
+
+install:
+  - ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
+
+assembly_info:
+  patch: true
+  file: Source\GlobalAssemblyInfo.cs
+  assembly_version: "{version}.0"
+  assembly_file_version: "{version}.0"
+  assembly_informational_version: "{version} $(GIT_HASH)"
+
+before_build:
+  - nuget restore -verbosity quiet
+
+build:
+  parallel: true
+  verbosity: minimal
+
+before_test:
+  - ps: .\Libraries\Start-MongoDb.ps1
+  - ps: .\Libraries\Start-ElasticSearch.ps1
+#  - ps: .\Libraries\Enable-Rdp.ps1
+
+after_test:
+  - ps: nuget pack .\Source\Api\Exceptionless.Api.nuspec -Version "$env:APPVEYOR_BUILD_VERSION" -NoPackageAnalysis
+  - ps: Get-ChildItem .\*.nupkg | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
+  - ps: nuget install OctopusTools
+  - ps: '&(ls .\OctopusTools*\Octo.exe) create-release --project="Exceptionless Master" --version "$env:APPVEYOR_BUILD_VERSION" --server "$env:OCTOPUS_API_URL" --apiKey "$env:OCTOPUS_API_KEY" --deployto Dev'
+
+notifications:
+  - provider: Slack
+    auth_token:
+      secure: PigIGGo7UUDwdb0KGM/s7OfpAng/OMJx7q33jKfzudFBiXi1EBEd0DRmkbCc7CiX
+    channel: notifications

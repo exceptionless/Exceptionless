@@ -1,46 +1,56 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Component;
-using Exceptionless.Core.Plugins.EventPipeline;
+using System.Linq;
+using System.Threading.Tasks;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(60)]
     public class UpdateStatsAction : EventPipelineActionBase {
-        private readonly IOrganizationRepository _organizationRepository;
-        private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly EventStatsHelper _statsHelper;
 
-        public UpdateStatsAction(EventStatsHelper statsHelper, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository) {
-            _organizationRepository = organizationRepository;
-            _projectRepository = projectRepository;
+        public UpdateStatsAction(IStackRepository stackRepository) {
             _stackRepository = stackRepository;
-            _statsHelper = statsHelper;
         }
 
         protected override bool IsCritical { get { return true; } }
 
-        public override void Process(EventContext ctx) {
-            _organizationRepository.IncrementStats(ctx.Event.OrganizationId, eventCount: 1, stackCount: ctx.IsNew ? 1 : 0);
-            _projectRepository.IncrementStats(ctx.Event.ProjectId, eventCount: 1, stackCount: ctx.IsNew ? 1 : 0);
-            if (!ctx.IsNew)
-                _stackRepository.IncrementStats(ctx.Event.StackId, ctx.Event.Date.UtcDateTime);
+        public override Task ProcessAsync(EventContext ctx) {
+            return Task.FromResult(0);
+        }
 
-            IEnumerable<TimeSpan> offsets = _projectRepository.GetTargetTimeOffsetsForStats(ctx.Event.ProjectId);
-            _statsHelper.Process(ctx.Event, ctx.IsNew, offsets);
+        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+            var stacks = contexts.Where(c => !c.IsNew).GroupBy(c => c.Event.StackId);
+            foreach (var stackGroup in stacks) {
+                try {
+                    int count = stackGroup.Count();
+                    DateTime minDate = stackGroup.Min(s => s.Event.Date.UtcDateTime);
+                    DateTime maxDate = stackGroup.Max(s => s.Event.Date.UtcDateTime);
+                    _stackRepository.IncrementEventCounter(stackGroup.First().Event.OrganizationId, stackGroup.First().Event.ProjectId, stackGroup.Key, minDate, maxDate, count);
+
+                    // Update stacks in memory since they are used in notifications.
+                    foreach (var ctx in stackGroup) {
+                        if (ctx.Stack.FirstOccurrence > minDate)
+                            ctx.Stack.FirstOccurrence = minDate;
+
+                        if (ctx.Stack.LastOccurrence < maxDate)
+                            ctx.Stack.LastOccurrence = maxDate;
+
+                        ctx.Stack.TotalOccurrences += count;
+                    }
+                } catch (Exception ex) {
+                    foreach (var context in stackGroup) {
+                        bool cont = false;
+                        try {
+                            cont = HandleError(ex, context);
+                        } catch {}
+
+                        if (!cont)
+                            context.SetError(ex.Message, ex);
+                    }
+                }
+            }
         }
     }
 }

@@ -1,26 +1,33 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
-using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
+using Foundatio.Messaging;
+using Foundatio.Queues;
+using Foundatio.Storage;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/admin")]
     [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class AdminController : ExceptionlessApiController {
-        private readonly IOrganizationRepository _repository;
-        private readonly BillingManager _billingManager;
+        private readonly IFileStorage _fileStorage;
         private readonly IMessagePublisher _messagePublisher;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IQueue<EventPost> _eventPostQueue;
 
-        public AdminController(IOrganizationRepository repository, BillingManager billingManager, IMessagePublisher messagePublisher) {
-            _repository = repository;
-            _billingManager = billingManager;
+        public AdminController(IFileStorage fileStorage, IMessagePublisher messagePublisher, IOrganizationRepository organizationRepository, IQueue<EventPost> eventPostQueue) {
+            _fileStorage = fileStorage;
             _messagePublisher = messagePublisher;
+            _organizationRepository = organizationRepository;
+            _eventPostQueue = eventPostQueue;
         }
 
         [HttpPost]
@@ -29,24 +36,53 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            Organization organization = _repository.GetById(organizationId);
+            var organization = _organizationRepository.GetById(organizationId);
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            BillingPlan plan = _billingManager.GetBillingPlan(planId);
+            var plan = BillingManager.GetBillingPlan(planId);
             if (plan == null)
                 return Ok(new { Success = false, Message = "Invalid PlanId." });
 
             organization.BillingStatus = !String.Equals(plan.Id, BillingManager.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
             organization.RemoveSuspension();
-            _billingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
+            BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
 
-            _repository.Save(organization);
-            _messagePublisher.PublishAsync(new PlanChanged {
+            _organizationRepository.Save(organization);
+            _messagePublisher.Publish(new PlanChanged {
                 OrganizationId = organization.Id
             });
 
             return Ok(new { Success = true });
+        }
+
+        [HttpPost]
+        [Route("set-bonus")]
+        public IHttpActionResult SetBonus(string organizationId, int bonusEvents, DateTime? expires = null) {
+            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
+                return Ok(new { Success = false, Message = "Invalid Organization Id." });
+
+            var organization = _organizationRepository.GetById(organizationId);
+            if (organization == null)
+                return Ok(new { Success = false, Message = "Invalid Organization Id." });
+
+            organization.BonusEventsPerMonth = bonusEvents;
+            organization.BonusExpiration = expires;
+            _organizationRepository.Save(organization);
+
+            return Ok(new { Success = true });
+        }
+
+        [HttpGet]
+        [Route("requeue")]
+        public async Task<IHttpActionResult> RequeueAsync(string path = null, bool archive = false) {
+            if (String.IsNullOrEmpty(path))
+                path = @"q\*";
+
+            foreach (var file in await _fileStorage.GetFileListAsync(path))
+                _eventPostQueue.Enqueue(new EventPost { FilePath = file.Path, ShouldArchive = archive });
+
+            return Ok();
         }
     }
 }

@@ -1,4 +1,4 @@
-{
+﻿{
   "Id": "80000000818f3b0fe0e9b146",
   "OccurrenceDate": "2014-03-05T21:39:10.72-06:00",
   "Tags": [
@@ -19,8 +19,8 @@
       "Name": "Example.Utils.v12.2",
       "Version": "12.2.1.0",
       "IsEntry": false,
-      "CreatedDate": "2014-02-28T07:09:32.903",
-      "ModifiedDate": "2013-09-01T20:52:10",
+      "CreatedDate": "2014-02-28T07:09:32.903+00:00",
+      "ModifiedDate": "2013-09-01T20:52:10+00:00",
       "ExtendedData": {
         "PublicKeyToken": "b88d1754d700e49a",
         "FileVersion": "12.2.1.13242"

@@ -1,0 +1,17 @@
+﻿{
+  "id": "2ecd0826e447a44e78877ab2",
+  "title": "The provided anti-forgery token was meant for user \"\", but the current user is \"test@exceptionless.com\".",
+  "first_occurrence": "0001-01-01T00:00:00",
+  "last_occurrence": "0001-01-01T00:00:00",
+  "new": 1,
+  "total": 1,
+  "unique": 1,
+  "template_key": "stack-error-summary",
+  "data": {
+    "title": "The provided anti-forgery token was meant for user \"\", but the current user is \"test@exceptionless.com\".",
+    "type": "HttpAntiForgeryException",
+    "type_full_name": "System.Web.Mvc.HttpAntiForgeryException",
+    "method": "ValidateTokens",
+    "method_full_name": "System.Web.Helpers.AntiXsrf.TokenValidator.ValidateTokens(HttpContextBase httpContext, IIdentity identity, AntiForgeryToken sessionToken, AntiForgeryToken fieldToken)"
+  }
+}

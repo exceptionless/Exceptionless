@@ -1,101 +1,106 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Extensions;
-using CodeSmith.Core.Helpers;
-using Exceptionless.Models;
-using Exceptionless.Models.Data;
-using MongoDB.Bson;
+using System.Linq;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Tests.Utility {
     internal static class EventData {
-        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
+        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null) {
             for (int i = 0; i < count; i++)
-                yield return GenerateEvent(generateId, id, organizationId, projectId, stackId, startDate, endDate, timeZoneOffset: timeZoneOffset);
+                yield return GenerateEvent(organizationIds, projectIds, stackIds, startDate, endDate, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden, maxErrorNestingLevel: maxErrorNestingLevel, referenceIds: referenceIds);
         }
 
-        public static List<PersistentEvent> GenerateSampleEvents() {
-            return new List<PersistentEvent> {
-                GenerateSampleEvent(),
-                GenerateSampleEvent(TestConstants.EventId2),
-                GenerateSampleEvent(TestConstants.EventId7),
-                GenerateSampleEvent(TestConstants.EventId8),
-            };
+        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null) {
+            for (int i = 0; i < count; i++)
+                yield return GenerateEvent(organizationId, projectId, stackId, startDate, endDate, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden, maxErrorNestingLevel: maxErrorNestingLevel, referenceId: referenceId);
         }
 
-        public static PersistentEvent GenerateSampleEvent(string id = TestConstants.EventId) {
-            return GenerateEvent(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
+        public static PersistentEvent GenerateSampleEvent() {
+            return GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, maxErrorNestingLevel: 4);
         }
 
-        public static PersistentEvent GenerateEvent(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTimeOffset? occurrenceDate = null, int nestingLevel = 0, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
-            if (!startDate.HasValue)
-                startDate = DateTime.Now.AddDays(-90);
-            if (!endDate.HasValue)
-                endDate = DateTime.Now;
+        public static PersistentEvent GenerateEvent(string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null) {
+            return GenerateEvent(
+                    organizationId != null ? new[] { organizationId } : null,
+                    projectId != null ? new[] { projectId } : null,
+                    stackId != null ? new[] { stackId } : null,
+                    startDate, endDate, occurrenceDate, maxErrorNestingLevel, generateTags, generateData, isFixed, isHidden,
+                    referenceId != null ? new[] { referenceId } : null
+                );
+        }
+
+        public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null) {
+            if (!startDate.HasValue || startDate > DateTimeOffset.Now.AddHours(1))
+                startDate = DateTimeOffset.Now.AddDays(-30);
+            if (!endDate.HasValue || endDate > DateTimeOffset.Now.AddHours(1))
+                endDate = DateTimeOffset.Now;
 
             var ev = new PersistentEvent {
-                Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
-                OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
-                ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,
-                Date = occurrenceDate.HasValue ? occurrenceDate.Value : new DateTimeOffset(RandomHelper.GetDateTime(startDate, endDate), timeZoneOffset.HasValue ? timeZoneOffset.Value : TimeZoneInfo.Local.BaseUtcOffset)
+                OrganizationId = organizationIds.Random(TestConstants.OrganizationId),
+                ProjectId = projectIds.Random(TestConstants.ProjectId),
+                ReferenceId = referenceIds.Random(),
+                Date = occurrenceDate.HasValue ? occurrenceDate.Value : RandomData.GetDateTimeOffset(startDate, endDate),
+                IsFixed = isFixed,
+                IsHidden = isHidden,
+                StackId = stackIds.Random()
             };
 
-            if (!stackId.IsNullOrEmpty())
-                ev.StackId = stackId;
+            if (generateData) {
+                for (int i = 0; i < RandomData.GetInt(1, 5); i++) {
+                    string key = RandomData.GetWord();
+                    while (ev.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
+                        key = RandomData.GetWord();
 
-            for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, minimiumNestingLevel + 5); i++) {
-                string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
-                while (ev.Data.ContainsKey(key))
-                    key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
-
-                ev.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+                    ev.Data.Add(key, RandomData.GetWord());
+                }
             }
 
-            for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, minimiumNestingLevel + 5); i++) {
-                string tag = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
-                while (ev.Tags.Contains(tag))
-                    tag = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
-
-                ev.Tags.Add(tag);
+            if (generateTags) {
+                for (int i = 0; i < RandomData.GetInt(1, 3); i++) {
+                    string tag = TestConstants.EventTags.Random();
+                    if (!ev.Tags.Contains(tag))
+                        ev.Tags.Add(tag);
+                }
             }
 
-            ev.SetEvent(GenerateEvent(nestingLevel, minimiumNestingLevel));
+            ev.Type = Event.KnownTypes.Error;
+
+            // limit error variation so that stacking will occur
+            if (_randomErrors == null)
+                _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError(maxErrorNestingLevel)));
+            
+            ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
 
             return ev;
         }
 
-        private static Event GenerateEvent(int nestingLevel = 0, int minimiumNestingLevel = 0) {
-            var error = new Event();
+        private static List<Error> _randomErrors; 
+
+        private static Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
+            var error = new Error();
             error.Message = @"Generated exception message.";
             error.Type = TestConstants.ExceptionTypes.Random();
-            if (RandomHelper.GetBool())
-                error.Code = RandomHelper.GetRange(-234523453, 98690899).ToString();
+            if (RandomData.GetBool())
+                error.Code = RandomData.GetInt(-234523453, 98690899).ToString();
 
-            for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, minimiumNestingLevel + 5); i++) {
-                string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
-                while (error.Data.ContainsKey(key))
-                    key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+            if (generateData) {
+                for (int i = 0; i < RandomData.GetInt(1, 5); i++) {
+                    string key = RandomData.GetWord();
+                    while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
+                        key = RandomData.GetWord();
 
-                error.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+                    error.Data.Add(key, RandomData.GetWord());
+                }
             }
 
             var stack = new StackFrameCollection();
-            for (int i = 0; i < RandomHelper.GetRange(1, 10); i++)
+            for (int i = 0; i < RandomData.GetInt(1, 10); i++)
                 stack.Add(GenerateStackFrame());
             error.StackTrace = stack;
 
-            if (minimiumNestingLevel > 0 || (nestingLevel < 5 && RandomHelper.GetBool()))
-                error.Inner = GenerateEvent(nestingLevel + 1);
+            if (currentNestingLevel < maxErrorNestingLevel && RandomData.GetBool())
+                error.Inner = GenerateError(maxErrorNestingLevel, generateData, currentNestingLevel + 1);
 
             return error;
         }

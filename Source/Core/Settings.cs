@@ -1,21 +1,10 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
+using MongoDB.Driver;
 
 namespace Exceptionless.Core {
     public class Settings {
@@ -23,13 +12,15 @@ namespace Exceptionless.Core {
 
         public string BaseURL { get; private set; }
 
+        public string InternalProjectId { get; private set; }
+
         public WebsiteMode WebsiteMode { get; private set; }
 
         public string TestEmailAddress { get; private set; }
 
         public List<string> AllowedOutboundAddresses { get; private set; }
 
-        public bool EnableJobsModule { get; private set; }
+        public bool RunJobsInProcess { get; private set; }
 
         public bool LogJobLocks { get; private set; }
 
@@ -53,29 +44,47 @@ namespace Exceptionless.Core {
 
         public int ApiThrottleLimit { get; private set; }
 
-        public bool EnableSummaryNotifications { get; private set; }
+        public long MaximumEventPostSize { get; private set; }
+
+        public bool EnableDailySummary { get; private set; }
 
         public bool ShouldAutoUpgradeDatabase { get; private set; }
 
-        public string AppStatsServerName { get; private set; }
+        public string MetricsServerName { get; private set; }
 
-        public int AppStatsServerPort { get; private set; }
+        public int MetricsServerPort { get; private set; }
 
-        public bool EnableAppStats { get; private set; }
+        public bool EnableMetricsReporting { get; private set; }
 
-        public RedisConnectionInfo RedisConnectionInfo { get; private set; }
+        public string RedisConnectionString { get; private set; }
+
+        public bool EnableRedis { get; private set; }
 
         public string MongoConnectionString { get; private set; }
 
+        public string MongoDatabaseName {
+            get {
+                if (String.IsNullOrEmpty(MongoConnectionString))
+                    return null;
+
+                var url = new MongoUrl(MongoConnectionString);
+                string databaseName = url.DatabaseName;
+                if (AppendMachineNameToDatabase)
+                    databaseName += String.Concat("-", Environment.MachineName.ToLower());
+
+                return databaseName;
+            }
+        }
+
+        public string ElasticSearchConnectionString { get; set; }
+
         public string Version { get; private set; }
 
-        public bool EnableIntercom { get { return !String.IsNullOrEmpty(IntercomAppId); } }
+        public bool EnableIntercom { get { return !String.IsNullOrEmpty(IntercomAppSecret); } }
 
-        public string IntercomAppId { get; private set; }
+        public string IntercomAppSecret { get; private set; }
 
-        public bool EnableGoogleAnalytics { get { return !String.IsNullOrEmpty(GoogleAnalyticsId); } }
-
-        public string GoogleAnalyticsId { get; private set; }
+        public bool EnableAccountCreation { get; private set; }
 
         public string MicrosoftAppId { get; private set; }
 
@@ -89,28 +98,27 @@ namespace Exceptionless.Core {
 
         public string GitHubAppSecret { get; private set; }
 
+        public string GoogleAppId { get; private set; }
+
+        public string GoogleAppSecret { get; private set; }
+
         public bool EnableBilling { get { return !String.IsNullOrEmpty(StripeApiKey); } }
 
         public string StripeApiKey { get; private set; }
 
-        public string StripePublishableApiKey { get; private set; }
+        public string StorageFolder { get; private set; }
 
-        public bool UseAzureServiceBus { get { return !String.IsNullOrEmpty(AzureServiceBusConnectionString); } }
+        public string AzureStorageConnectionString { get; set; }
 
-        public string AzureServiceBusConnectionString { get; private set; }
+        public bool EnableAzureStorage { get; private set; }
 
-        public bool UseAzureCache { get { return !String.IsNullOrEmpty(AzureCacheEndpoint); } }
-
-        public string AzureCacheEndpoint { get; private set; }
-
-        public string AzureCacheAuthorizationToken { get; private set; }
+        public int BulkBatchSize { get; private set; }
         
         private static Settings Init() {
             var settings = new Settings();
+            settings.EnableSSL = GetBool("EnableSSL");
 
-            settings.EnableSSL = ConfigurationManager.AppSettings.GetBool("EnableSSL", false);
-
-            string value = ConfigurationManager.AppSettings["BaseURL"];
+            string value = GetString("BaseURL");
             if (!String.IsNullOrEmpty(value)) {
                 if (value.EndsWith("/"))
                     value = value.Substring(0, value.Length - 1);
@@ -123,49 +131,63 @@ namespace Exceptionless.Core {
                 settings.BaseURL = value;
             }
 
-            settings.WebsiteMode = ConfigurationManager.AppSettings.GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
-            settings.TestEmailAddress = ConfigurationManager.AppSettings["TestEmailAddress"];
-            settings.AllowedOutboundAddresses = ConfigurationManager.AppSettings.GetStringList("AllowedOutboundAddresses", "exceptionless.com").Select(v => v.ToLowerInvariant()).ToList();
-            settings.EnableJobsModule = ConfigurationManager.AppSettings.GetBool("EnableJobsModule", true);
-            settings.LogJobLocks = ConfigurationManager.AppSettings.GetBool("LogJobLocks", false);
-            settings.LogJobEvents = ConfigurationManager.AppSettings.GetBool("LogJobEvents", false);
-            settings.LogJobCompleted = ConfigurationManager.AppSettings.GetBool("LogJobCompleted", false);
-            settings.LogStackingInfo = ConfigurationManager.AppSettings.GetBool("LogStackingInfo", false);
-            settings.AppendMachineNameToDatabase = ConfigurationManager.AppSettings.GetBool("AppendMachineNameToDatabase", false);
-            settings.SaveIncomingErrorsToDisk = ConfigurationManager.AppSettings.GetBool("SaveIncomingErrorsToDisk", false);
-            settings.IncomingErrorPath = ConfigurationManager.AppSettings["IncomingErrorPath"];
-            settings.EnableLogErrorReporting = ConfigurationManager.AppSettings.GetBool("EnableLogErrorReporting", false);
-            settings.EnableSignalR = ConfigurationManager.AppSettings.GetBool("EnableSignalR", true);
-            settings.BotThrottleLimit = ConfigurationManager.AppSettings.GetInt("BotThrottleLimit", 25);
-            settings.ApiThrottleLimit = ConfigurationManager.AppSettings.GetInt("ApiThrottleLimit", Int32.MaxValue);
-            settings.EnableSummaryNotifications = ConfigurationManager.AppSettings.GetBool("EnableSummaryNotifications", false);
-            settings.ShouldAutoUpgradeDatabase = ConfigurationManager.AppSettings.GetBool("ShouldAutoUpgradeDatabase", true);
-            settings.AppStatsServerName = ConfigurationManager.AppSettings["AppStatsServerName"] ?? "127.0.0.1";
-            settings.AppStatsServerPort = ConfigurationManager.AppSettings.GetInt("AppStatsServerPort", 12000);
-            settings.EnableAppStats = ConfigurationManager.AppSettings.GetBool("EnableAppStats", false);
-            settings.IntercomAppId = ConfigurationManager.AppSettings["IntercomAppId"];
-            settings.GoogleAnalyticsId = ConfigurationManager.AppSettings["GoogleAnalyticsId"];
-            settings.MicrosoftAppId = ConfigurationManager.AppSettings["MicrosoftAppId"];
-            settings.MicrosoftAppSecret = ConfigurationManager.AppSettings["MicrosoftAppSecret"];
-            settings.FacebookAppId = ConfigurationManager.AppSettings["FacebookAppId"];
-            settings.FacebookAppSecret = ConfigurationManager.AppSettings["FacebookAppSecret"];
-            settings.GitHubAppId = ConfigurationManager.AppSettings["GitHubAppId"];
-            settings.GitHubAppSecret = ConfigurationManager.AppSettings["GitHubAppSecret"];
-            settings.StripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
-            settings.StripePublishableApiKey = ConfigurationManager.AppSettings["StripePublishableApiKey"];
-            settings.AzureServiceBusConnectionString = ConfigurationManager.AppSettings["AzureServiceBusConnectionString"] ?? Environment.GetEnvironmentVariable("AzureServiceBusConnectionString");
-            settings.AzureCacheEndpoint = ConfigurationManager.AppSettings["AzureCacheEndpoint"] ?? Environment.GetEnvironmentVariable("AzureCacheEndpoint");
-            settings.AzureCacheAuthorizationToken = ConfigurationManager.AppSettings["AzureCacheAuthorizationToken"] ?? Environment.GetEnvironmentVariable("AzureCacheAuthorizationToken");
-            
-            ConnectionStringSettings redisConnectionInfo = ConfigurationManager.ConnectionStrings["RedisConnectionString"];
-            if (redisConnectionInfo != null)
-                settings.RedisConnectionInfo = String.IsNullOrEmpty(redisConnectionInfo.ConnectionString) ? null : RedisConnectionInfo.Parse(redisConnectionInfo.ConnectionString);
+            settings.InternalProjectId = GetString("InternalProjectId");
+            settings.WebsiteMode = GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
+            settings.TestEmailAddress = GetString("TestEmailAddress");
+            settings.AllowedOutboundAddresses = GetStringList("AllowedOutboundAddresses", "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
+            settings.RunJobsInProcess = GetBool("RunJobsInProcess", true);
+            settings.LogJobLocks = GetBool("LogJobLocks");
+            settings.LogJobEvents = GetBool("LogJobEvents");
+            settings.LogJobCompleted = GetBool("LogJobCompleted");
+            settings.LogStackingInfo = GetBool("LogStackingInfo");
+            settings.AppendMachineNameToDatabase = GetBool("AppendMachineNameToDatabase");
+            settings.SaveIncomingErrorsToDisk = GetBool("SaveIncomingErrorsToDisk");
+            settings.IncomingErrorPath = GetString("IncomingErrorPath");
+            settings.EnableLogErrorReporting = GetBool("EnableLogErrorReporting");
+            settings.EnableSignalR = GetBool("EnableSignalR", true);
+            settings.BotThrottleLimit = GetInt("BotThrottleLimit", 25);
+            settings.ApiThrottleLimit = GetInt("ApiThrottleLimit", Int32.MaxValue);
+            settings.MaximumEventPostSize = GetInt("MaximumEventPostSize", Int32.MaxValue);
+            settings.EnableDailySummary = GetBool("EnableDailySummary");
+            settings.ShouldAutoUpgradeDatabase = GetBool("ShouldAutoUpgradeDatabase", true);
+            settings.MetricsServerName = GetString("MetricsServerName") ?? "127.0.0.1";
+            settings.MetricsServerPort = GetInt("MetricsServerPort", 12000);
+            settings.EnableMetricsReporting = GetBool("EnableMetricsReporting");
+            settings.IntercomAppSecret = GetString("IntercomAppSecret");
+            settings.EnableAccountCreation = GetBool("EnableAccountCreation", true);
+            settings.GoogleAppId = GetString("GoogleAppId");
+            settings.GoogleAppSecret = GetString("GoogleAppSecret");
+            settings.MicrosoftAppId = GetString("MicrosoftAppId");
+            settings.MicrosoftAppSecret = GetString("MicrosoftAppSecret");
+            settings.FacebookAppId = GetString("FacebookAppId");
+            settings.FacebookAppSecret = GetString("FacebookAppSecret");
+            settings.GitHubAppId = GetString("GitHubAppId");
+            settings.GitHubAppSecret = GetString("GitHubAppSecret");
+            settings.StripeApiKey = GetString("StripeApiKey");
+            settings.StorageFolder = GetString("StorageFolder");
+            settings.BulkBatchSize = GetInt("BulkBatchSize", 1000);
 
-            ConnectionStringSettings mongoConnectionString = ConfigurationManager.ConnectionStrings["MongoConnectionString"];
-            if (mongoConnectionString != null)
-                settings.MongoConnectionString = mongoConnectionString.ConnectionString;
+            string connectionString = GetConnectionString("RedisConnectionString");
+            if (!String.IsNullOrEmpty(connectionString)) {
+                settings.RedisConnectionString = connectionString;
+                settings.EnableRedis = GetBool("EnableRedis", !String.IsNullOrEmpty(settings.RedisConnectionString));
+            }
 
-            settings.Version = ThisAssembly.AssemblyInformationalVersion;
+            connectionString = GetConnectionString("AzureStorageConnectionString");
+            if (!String.IsNullOrEmpty(connectionString)) {
+                settings.AzureStorageConnectionString = connectionString;
+                settings.EnableAzureStorage = GetBool("EnableAzureStorage", !String.IsNullOrEmpty(settings.AzureStorageConnectionString));
+            }
+
+            connectionString = GetConnectionString("MongoConnectionString");
+            if (!String.IsNullOrEmpty(connectionString))
+                settings.MongoConnectionString = connectionString;
+
+            connectionString = GetConnectionString("ElasticSearchConnectionString");
+            if (!String.IsNullOrEmpty(connectionString))
+                settings.ElasticSearchConnectionString = connectionString;
+
+            settings.Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
 
             return settings;
         }
@@ -181,51 +203,74 @@ namespace Exceptionless.Core {
         public static Settings Current { get { return _instance.Value; } }
 
         #endregion
-    }
 
-    public class RedisConnectionInfo {
-        public string Host { get; set; }
-        public int Port { get; set; }
-        public string Password { get; set; }
-
-        public override string ToString() {
-            var builder = new StringBuilder();
-
-            if (!String.IsNullOrWhiteSpace(Password))
-                builder.Append(Password).Append("@");
-
-            builder.Append(Host);
-
-            if (Port != 0 && Port != 6379)
-                builder.Append(":").Append(Port);
-
-            return builder.ToString();
+        private static bool GetBool(string name, bool defaultValue = false) {
+            string value = GetEnvironmentalVariable(name);
+            if (String.IsNullOrEmpty(value))
+                return ConfigurationManager.AppSettings.GetBool(name, defaultValue);
+            
+            bool boolean;
+            return Boolean.TryParse(value, out boolean) ? boolean : defaultValue;
         }
 
-        public static RedisConnectionInfo Parse(string connectionString) {
-            string host = "localhost";
-            string password = "";
-            int port = 6379;
+        private static string GetConnectionString(string name) {
+            string value = GetEnvironmentalVariable(name);
+            if (!String.IsNullOrEmpty(value))
+                return value;
 
-            string[] parts = connectionString.Split('@');
-            if (parts.Length == 1)
-                host = parts[0];
-            else if (parts.Length == 2) {
-                password = parts[0];
-                host = parts[1];
+            var connectionString = ConfigurationManager.ConnectionStrings[name];
+            return connectionString != null ? connectionString.ConnectionString : null;
+        }
+
+        private static T GetEnum<T>(string name, T? defaultValue = null) where T : struct {
+            string value = GetEnvironmentalVariable(name);
+            if (String.IsNullOrEmpty(value))
+                return ConfigurationManager.AppSettings.GetEnum(name, defaultValue);
+
+            try {
+                return (T)Enum.Parse(typeof(T), value, true);
+            } catch (ArgumentException ex) {
+                if (defaultValue.HasValue && defaultValue is T)
+                    return (T)defaultValue;
+
+                string message = String.Format("Configuration key '{0}' has value '{1}' that could not be parsed as a member of the {2} enum type.", name, value, typeof(T).Name);
+                throw new ConfigurationErrorsException(message, ex);
             }
+        }
 
-            parts = host.Split(':');
-            if (parts.Length > 1) {
-                host = parts[0];
-                Int32.TryParse(parts[1], out port);
+        private static int GetInt(string name, int defaultValue = 0) {
+            string value = GetEnvironmentalVariable(name);
+            if (String.IsNullOrEmpty(value))
+                return ConfigurationManager.AppSettings.GetInt(name, defaultValue);
+
+            int number;
+            return Int32.TryParse(value, out number) ? number : defaultValue;
+        }
+
+        private static string GetString(string name) {
+            return GetEnvironmentalVariable(name) ?? ConfigurationManager.AppSettings[name];
+        }
+
+        private static List<string> GetStringList(string name, string defaultValues = null, char[] separators = null) {
+            string value = GetEnvironmentalVariable(name);
+            if (String.IsNullOrEmpty(value))
+                return ConfigurationManager.AppSettings.GetStringList(name, defaultValues, separators);
+
+            if (separators == null)
+                separators = new[] { ',' };
+
+            return value.Split(separators, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+        }
+
+        private static string GetEnvironmentalVariable(string name) {
+            if (String.IsNullOrEmpty(name))
+                return null;
+
+            try {
+                return Environment.GetEnvironmentVariable(name);
+            } catch (Exception) {
+                return null;
             }
-
-            return new RedisConnectionInfo {
-                Host = host,
-                Port = port,
-                Password = password
-            };
         }
     }
 

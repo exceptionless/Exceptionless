@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Linq;
-using System.Net.Mail;
-using CodeSmith.Core.Dependency;
+using Exceptionless.Core.Dependency;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Models;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.Formatting {
@@ -13,14 +12,14 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
         /// </summary>
-        public string GetStackSummaryHtml(PersistentEvent ev) {
+        public SummaryData GetStackSummaryData(Stack stack) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    string result = plugin.GetStackSummaryHtml(ev);
-                    if (!String.IsNullOrEmpty(result))
+                    var result = plugin.GetStackSummaryData(stack);
+                    if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling GetStackSummaryHtml in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error calling GetStackSummaryHtml in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("Stack", stack).Write();
                 }
             }
 
@@ -30,14 +29,14 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the event.
         /// </summary>
-        public string GetEventSummaryHtml(PersistentEvent ev) {
+        public SummaryData GetEventSummaryData(PersistentEvent ev) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    string result = plugin.GetEventSummaryHtml(ev);
-                    if (!String.IsNullOrEmpty(result))
+                    var result = plugin.GetEventSummaryData(ev);
+                    if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling GetEventSummaryHtml in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error calling GetEventSummaryHtml in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("PersistentEvent", ev).Write();
                 }
             }
 
@@ -54,7 +53,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (!String.IsNullOrEmpty(result))
                         return result;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling GetStackTitle in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error calling GetStackTitle in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("PersistentEvent", ev).Write();
                 }
             }
 
@@ -71,7 +70,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling GetEventNotificationMailMessage in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error calling GetEventNotificationMailMessage in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("EventNotification", model).Write();
                 }
             }
 
@@ -88,7 +87,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (!String.IsNullOrEmpty(result))
                         return result;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling GetEventViewName in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error calling GetEventViewName in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("PersistentEvent", ev).Write();
                 }
             }
 

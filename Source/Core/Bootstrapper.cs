@@ -1,31 +1,36 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Configuration;
-using CodeSmith.Core.Dependency;
+using System.Linq;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Caching;
-using Exceptionless.Core.Messaging;
-using Exceptionless.Core.Plugins.EventPipeline;
-using Exceptionless.Core.Plugins.Formatting;
-using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Dependency;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Geo;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues;
+using Exceptionless.Core.Models.Admin;
+using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Plugins.EventProcessor;
+using Exceptionless.Core.Plugins.Formatting;
+using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Validation;
+using Exceptionless.Serializer;
+using FluentValidation;
+using Foundatio.Caching;
+using Foundatio.Lock;
+using Foundatio.Messaging;
+using Foundatio.Metrics;
+using Foundatio.Queues;
+using Foundatio.Serializer;
+using Foundatio.Storage;
 using MongoDB.Driver;
+using Nest;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
 using SimpleInjector;
 using SimpleInjector.Packaging;
@@ -35,64 +40,97 @@ namespace Exceptionless.Core {
         public void RegisterServices(Container container) {
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
 
-            if (Settings.Current.EnableAppStats)
-                container.RegisterSingle<IAppStatsClient>(() => new AppStatsClient(Settings.Current.AppStatsServerName, Settings.Current.AppStatsServerPort));
-            else
-                container.RegisterSingle<IAppStatsClient, InMemoryAppStatsClient>();
+            JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
+                DateParseHandling = DateParseHandling.DateTimeOffset
+            };
 
-            if (Settings.Current.RedisConnectionInfo == null)
-                throw new ConfigurationErrorsException("RedisConnectionString was not found in the Web.config.");
+            var contractResolver = new ExceptionlessContractResolver();
+            contractResolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOne.VersionOneWebHookStack), typeof(VersionOne.VersionOneWebHookEvent));
 
-            container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
-            container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
+            var settings = new JsonSerializerSettings {
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                DateParseHandling = DateParseHandling.DateTimeOffset,
+                ContractResolver = contractResolver
+            };
+            settings.AddModelConverters();
+
+            container.RegisterSingle<IContractResolver>(() => contractResolver);
+            container.RegisterSingle<JsonSerializerSettings>(settings);
+            container.RegisterSingle<JsonSerializer>(JsonSerializer.Create(settings));
+            container.RegisterSingle<ISerializer>(() => new JsonNetSerializer(settings));
+
+            var metricsClient = new InMemoryMetricsClient();
+            metricsClient.StartDisplayingStats();
+            container.RegisterSingle<IMetricsClient>(metricsClient);
 
             container.RegisterSingle<MongoDatabase>(() => {
                 if (String.IsNullOrEmpty(Settings.Current.MongoConnectionString))
                     throw new ConfigurationErrorsException("MongoConnectionString was not found in the Web.config.");
 
                 MongoDefaults.MaxConnectionIdleTime = TimeSpan.FromMinutes(1);
-                var url = new MongoUrl(Settings.Current.MongoConnectionString);
-                string databaseName = url.DatabaseName;
-                if (Settings.Current.AppendMachineNameToDatabase)
-                    databaseName += String.Concat("-", Environment.MachineName.ToLower());
-
-                MongoServer server = new MongoClient(url).GetServer();
-                return server.GetDatabase(databaseName);
+                MongoServer server = new MongoClient(new MongoUrl(Settings.Current.MongoConnectionString)).GetServer();
+                return server.GetDatabase(Settings.Current.MongoDatabaseName);
             });
 
-            container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
-            container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>());
-            container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>());
+            container.RegisterSingle<IElasticClient>(() => ElasticSearchConfiguration.GetElasticClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
 
-            container.Register<EventStatsHelper>();
-            container.RegisterSingle<InMemoryMessageBus>();
-            container.Register<IMessagePublisher>(container.GetInstance<InMemoryMessageBus>);
-            container.Register<IMessageSubscriber>(container.GetInstance<InMemoryMessageBus>);
+            container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
+
+            container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: MetricNames.PostsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: MetricNames.EventsUserDescriptionQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingle<IQueue<EventNotificationWorkItem>>(() => new InMemoryQueue<EventNotificationWorkItem>(statName: MetricNames.EventNotificationQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: MetricNames.WebHookQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingle<IQueue<StatusMessage>>(() => new InMemoryQueue<StatusMessage>());
+
+            container.RegisterSingle<IMessageBus, InMemoryMessageBus>();
+
+            container.RegisterSingle<IMessagePublisher>(container.GetInstance<IMessageBus>);
+            container.RegisterSingle<IMessageSubscriber>(container.GetInstance<IMessageBus>);
+
+            if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
+                container.RegisterSingle<IFileStorage>(new FolderFileStorage(Settings.Current.StorageFolder));
+            else
+                container.RegisterSingle<IFileStorage>(new InMemoryFileStorage());
 
             container.RegisterSingle<IStackRepository, StackRepository>();
             container.RegisterSingle<IEventRepository, EventRepository>();
             container.RegisterSingle<IOrganizationRepository, OrganizationRepository>();
-            container.RegisterSingle<IJobLockRepository, JobLockRepository>();
-            container.RegisterSingle<IJobHistoryRepository, JobHistoryRepository>();
             container.RegisterSingle<IProjectRepository, ProjectRepository>();
             container.RegisterSingle<IUserRepository, UserRepository>();
             container.RegisterSingle<IWebHookRepository, WebHookRepository>();
-            container.RegisterSingle<IDayProjectStatsRepository, DayProjectStatsRepository>();
-            container.RegisterSingle<IMonthProjectStatsRepository, MonthProjectStatsRepository>();
-            container.RegisterSingle<IMonthStackStatsRepository, MonthStackStatsRepository>();
-            container.RegisterSingle<IDayStackStatsRepository, DayStackStatsRepository>();
+            container.RegisterSingle<ITokenRepository, TokenRepository>();
+            container.RegisterSingle<IApplicationRepository, ApplicationRepository>();
+
+            container.RegisterSingle<IGeoIPResolver, MindMaxGeoIPResolver>();
+
+            container.RegisterSingle<IValidator<Application>, ApplicationValidator>();
+            container.RegisterSingle<IValidator<Organization>, OrganizationValidator>();
+            container.RegisterSingle<IValidator<PersistentEvent>, PersistentEventValidator>();
+            container.RegisterSingle<IValidator<Project>, ProjectValidator>();
+            container.RegisterSingle<IValidator<Stack>, StackValidator>();
+            container.RegisterSingle<IValidator<Models.Admin.Token>, TokenValidator>();
+            container.RegisterSingle<IValidator<UserDescription>, UserDescriptionValidator>();
+            container.RegisterSingle<IValidator<User>, UserValidator>();
+            container.RegisterSingle<IValidator<WebHook>, WebHookValidator>();
 
             container.RegisterSingle<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingle<IMailer, Mailer>();
+            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+                container.RegisterSingle<IMailSender, SmtpMailSender>();
+            else
+                container.RegisterSingle<IMailSender>(() => new InMemoryMailSender());
 
-            container.Register<MongoJobHistoryProvider>();
-            container.Register<MongoJobLockProvider>();
-            container.Register<MongoMachineJobLockProvider>();
+            container.Register<ILockProvider, CacheLockProvider>();
             container.Register<StripeEventHandler>();
             container.RegisterSingle<BillingManager>();
             container.RegisterSingle<DataHelper>();
+            container.RegisterSingle<EventStats>();
+            container.RegisterSingle<EventPipeline>();
             container.RegisterSingle<EventPluginManager>();
             container.RegisterSingle<FormattingPluginManager>();
+
+            container.RegisterSingle<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
         }
     }
 }

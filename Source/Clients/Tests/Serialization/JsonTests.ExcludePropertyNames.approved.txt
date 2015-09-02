@@ -1,6 +1,0 @@
-﻿{
-  "PropLevel1": "value",
-  "Nested1": {
-    "Nested2": {}
-  }
-}

@@ -1,24 +1,12 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Extensions;
-using Exceptionless.Core;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
+using Exceptionless.DateTimeExtensions;
+using Foundatio.Caching;
 
 namespace Exceptionless.Api.Utility {
     public class ThrottlingHandler : DelegatingHandler {
@@ -36,11 +24,8 @@ namespace Exceptionless.Api.Utility {
 
         protected virtual string GetUserIdentifier(HttpRequestMessage request) {
             var authType = request.GetAuthType();
-            if (authType == AuthType.Project) {
-                var project = request.GetProject();
-                if (project != null)
-                    return project.OrganizationId;
-            }
+            if (authType == AuthType.Token)
+                return request.GetDefaultOrganizationId();
 
             if (authType == AuthType.User) {
                 var user = request.GetUser();
@@ -50,50 +35,52 @@ namespace Exceptionless.Api.Utility {
 
             // fallback to using the IP address
             var ip = request.GetClientIpAddress();
-            return Settings.Current.WebsiteMode == WebsiteMode.Dev && String.IsNullOrEmpty(ip) ? "127.0.0.1" : ip;
+            if (String.IsNullOrEmpty(ip))
+                ip = "127.0.0.1";
+
+            return ip;
         }
 
         protected virtual string GetCacheKey(string userIdentifier) {
             return String.Concat("api", ":", userIdentifier, ":", DateTime.UtcNow.Floor(_period).Ticks);
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             string identifier = GetUserIdentifier(request);
             if (String.IsNullOrEmpty(identifier))
                 return CreateResponse(request, HttpStatusCode.Forbidden, "Could not identify client.");
 
-            string cacheKey = GetCacheKey(identifier);
-            long requestCount = _cacheClient.Increment(cacheKey, 1);
-            if (requestCount == 1)
-                _cacheClient.SetExpiration(cacheKey, _period);
+            long requestCount = 1;
+            try {
+                string cacheKey = GetCacheKey(identifier);
+                requestCount = _cacheClient.Increment(cacheKey, 1);
+                if (requestCount == 1)
+                    _cacheClient.SetExpiration(cacheKey, _period);
+            } catch {}
 
-            Task<HttpResponseMessage> response = null;
+            HttpResponseMessage response;
             long maxRequests = _maxRequestsForUserIdentifier(identifier);
             if (requestCount > maxRequests)
                 response = CreateResponse(request, HttpStatusCode.Conflict, _message);
             else
-                response = base.SendAsync(request, cancellationToken);
+                response = await base.SendAsync(request, cancellationToken);
 
-            return response.ContinueWith(task => {
-                long remaining = maxRequests - requestCount;
-                if (remaining < 0)
-                    remaining = 0;
+            long remaining = maxRequests - requestCount;
+            if (remaining < 0)
+                remaining = 0;
 
-                HttpResponseMessage httpResponse = task.Result;
-                httpResponse.Headers.Add(ExceptionlessHeaders.RateLimit, maxRequests.ToString());
-                httpResponse.Headers.Add(ExceptionlessHeaders.RateLimitRemaining, remaining.ToString());
+            response.Headers.Add(ExceptionlessHeaders.RateLimit, maxRequests.ToString());
+            response.Headers.Add(ExceptionlessHeaders.RateLimitRemaining, remaining.ToString());
 
-                return httpResponse;
-            }, cancellationToken);
+            return response;
         }
 
-        protected Task<HttpResponseMessage> CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
-            var tsc = new TaskCompletionSource<HttpResponseMessage>();
+        private HttpResponseMessage CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
             HttpResponseMessage response = request.CreateResponse(statusCode);
             response.ReasonPhrase = message;
             response.Content = new StringContent(message);
-            tsc.SetResult(response);
-            return tsc.Task;
+
+            return response;
         }
     }
 }

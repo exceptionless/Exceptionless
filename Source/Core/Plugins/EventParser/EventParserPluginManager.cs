@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodeSmith.Core.Dependency;
-using Exceptionless.Models;
+using Exceptionless.Core.Dependency;
+using Exceptionless.Core.Models;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.EventParser {
@@ -15,8 +15,6 @@ namespace Exceptionless.Core.Plugins.EventParser {
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    // TODO: Ensure that an event isn't to big..
-
                     var events = plugin.ParseEvents(input, apiVersion, userAgent);
                     if (events == null)
                         continue;
@@ -25,6 +23,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
                     events.ForEach(e => {
                         if (e.Date == DateTimeOffset.MinValue)
                             e.Date = DateTimeOffset.Now;
+
                         if (String.IsNullOrWhiteSpace(e.Type))
                             e.Type = e.Data.ContainsKey(Event.KnownDataKeys.Error) || e.Data.ContainsKey(Event.KnownDataKeys.SimpleError) ? Event.KnownTypes.Error : Event.KnownTypes.Log;
                     });
