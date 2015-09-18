@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
+using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -12,6 +13,7 @@ using Foundatio.Caching;
 using Foundatio.Messaging;
 using Nest;
 using NLog.Fluent;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class ElasticSearchRepository<T> : ElasticSearchReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
@@ -65,7 +67,7 @@ namespace Exceptionless.Core.Repositories {
             if (sendNotification)
                 await SendNotificationsAsync(ChangeType.Added, documents).AnyContext();
 
-            OnDocumentChanged(ChangeType.Added, documents);
+            await OnDocumentChangedAsync(ChangeType.Added, documents).AnyContext();
         }
         public async Task RemoveAsync(string id, bool sendNotification = true) {
             if (String.IsNullOrEmpty(id))
@@ -94,7 +96,7 @@ namespace Exceptionless.Core.Repositories {
             if (sendNotification)
                 await SendNotificationsAsync(ChangeType.Removed, documents).AnyContext();
 
-            OnDocumentChanged(ChangeType.Removed, documents);
+            await OnDocumentChangedAsync(ChangeType.Removed, documents).AnyContext();
         }
 
         public async Task RemoveAllAsync() {
@@ -180,7 +182,7 @@ namespace Exceptionless.Core.Repositories {
             if (sendNotifications)
                 await SendNotificationsAsync(ChangeType.Saved, documents, originalDocuments).AnyContext();
 
-            OnDocumentChanged(ChangeType.Saved, documents, originalDocuments);
+            await OnDocumentChangedAsync(ChangeType.Saved, documents, originalDocuments).AnyContext();
         }
 
         protected Task<long> UpdateAllAsync(string organizationId, QueryOptions options, object update, bool sendNotifications = true) {
@@ -247,9 +249,9 @@ namespace Exceptionless.Core.Repositories {
             return recordsAffected;
         }
 
-        public event EventHandler<DocumentChangeEventArgs<T>> DocumentChanging;
+        public Foundatio.Utility.AsyncEvent<DocumentChangeEventArgs<T>> DocumentChanging { get; set; } = new Foundatio.Utility.AsyncEvent<DocumentChangeEventArgs<T>>(true);
 
-        private async Task OnDocumentChangingAsync(ChangeType changeType, ICollection<T> documents, ICollection<T> orginalDocuments = null) {
+        private async Task OnDocumentChangingAsync(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {
             if (changeType != ChangeType.Added)
                 await InvalidateCacheAsync(documents).AnyContext();
 
@@ -262,13 +264,13 @@ namespace Exceptionless.Core.Repositories {
                 documents.EnsureIds();
             }
 
-            DocumentChanging?.Invoke(this, new DocumentChangeEventArgs<T>(changeType, documents, this, orginalDocuments));
+            await (DocumentChanging?.InvokeAsync(this, new DocumentChangeEventArgs<T>(changeType, documents, this, originalDocuments)) ?? TaskHelper.Completed()).AnyContext();
         }
+        
+        public Foundatio.Utility.AsyncEvent<DocumentChangeEventArgs<T>> DocumentChanged { get; set; } = new Foundatio.Utility.AsyncEvent<DocumentChangeEventArgs<T>>(true);
 
-        public event EventHandler<DocumentChangeEventArgs<T>> DocumentChanged;
-
-        private void OnDocumentChanged(ChangeType changeType, ICollection<T> documents, ICollection<T> orginalDocuments = null) {
-            DocumentChanged?.Invoke(this, new DocumentChangeEventArgs<T>(changeType, documents, this, orginalDocuments));
+        private async Task OnDocumentChangedAsync(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {
+            await (DocumentChanged?.InvokeAsync(this, new DocumentChangeEventArgs<T>(changeType, documents, this, originalDocuments)) ?? TaskHelper.Completed()).AnyContext();
         }
 
         protected virtual async Task AddToCacheAsync(ICollection<T> documents, TimeSpan? expiresIn = null) {

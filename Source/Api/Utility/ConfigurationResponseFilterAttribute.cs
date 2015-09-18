@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
@@ -12,7 +15,7 @@ namespace Exceptionless.Api.Utility {
         [Inject]
         public IProjectRepository ProjectRepository { get; set; }
 
-        public override void OnActionExecuted(HttpActionExecutedContext context) {
+        public override async Task OnActionExecutedAsync(HttpActionExecutedContext context, CancellationToken cancellationToken) {
             if (context == null)
                 throw new ArgumentNullException(nameof(context));
 

@@ -74,8 +74,7 @@ namespace Exceptionless.Core.Utility {
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected void NotifyPropertyChanged(string name) {
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(name));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }

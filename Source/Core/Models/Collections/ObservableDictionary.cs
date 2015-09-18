@@ -103,8 +103,7 @@ namespace Exceptionless.Core.Models.Collections {
         public event EventHandler<ChangedEventArgs<KeyValuePair<TKey, TValue>>> Changed;
 
         private void OnChanged(ChangedEventArgs<KeyValuePair<TKey, TValue>> args) {
-            if (Changed != null)
-                Changed(this, args);
+            Changed?.Invoke(this, args);
         }
     }
 

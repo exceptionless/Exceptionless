@@ -20,11 +20,11 @@ namespace Exceptionless.Core.Repositories {
         public StackRepository(IElasticClient elasticClient, StackIndex index, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(elasticClient, index, validator, cacheClient, messagePublisher) {
             _eventRepository = eventRepository;
-            DocumentChanging += OnDocumentChanging;
-            DocumentChanged += OnDocumentChanged;
+            DocumentChanging += OnDocumentChangingAsync;
+            DocumentChanged += OnDocumentChangedAsync;
         }
 
-        private async void OnDocumentChanging(object sender, DocumentChangeEventArgs<Stack> args) {
+        private async Task OnDocumentChangingAsync(object sender, DocumentChangeEventArgs<Stack> args) {
             if (args.ChangeType != ChangeType.Removed)
                 return;
 
@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Repositories {
             }
         }
 
-        private async void OnDocumentChanged(object sender, DocumentChangeEventArgs<Stack> args) {
+        private async Task OnDocumentChangedAsync(object sender, DocumentChangeEventArgs<Stack> args) {
             if (args.ChangeType != ChangeType.Saved)
                 return;
 

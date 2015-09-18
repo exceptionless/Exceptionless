@@ -11,8 +11,7 @@ namespace Exceptionless.Core.Repositories {
             get { return _hasMore; }
             set {
                 _hasMore = value;
-                if (HasMoreChanged != null)
-                    HasMoreChanged(this, new EventArgs<bool>(_hasMore));
+                HasMoreChanged?.Invoke(this, new EventArgs<bool>(_hasMore));
             }
         }
 

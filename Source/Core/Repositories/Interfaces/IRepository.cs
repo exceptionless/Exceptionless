@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Repositories {
     public interface IRepository<T> : IReadOnlyRepository<T> where T : class, IIdentity, new() {
@@ -13,7 +14,8 @@ namespace Exceptionless.Core.Repositories {
         Task RemoveAsync(T document, bool sendNotification = true);
         Task RemoveAsync(ICollection<T> documents, bool sendNotification = true);
         Task RemoveAllAsync();
-        event EventHandler<DocumentChangeEventArgs<T>> DocumentChanging;
-        event EventHandler<DocumentChangeEventArgs<T>> DocumentChanged;
+
+        AsyncEvent<DocumentChangeEventArgs<T>> DocumentChanging { get; set; }
+        AsyncEvent<DocumentChangeEventArgs<T>> DocumentChanged { get; set; }
     }
 }

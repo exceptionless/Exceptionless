@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -23,19 +25,16 @@ namespace Exceptionless.Api.Hubs {
         private readonly ConnectionMapping _userIdConnections = new ConnectionMapping();
 
         public MessageBusHub(IMessageSubscriber subscriber) {
-            subscriber.Subscribe<EntityChanged>(OnEntityChanged);
-            subscriber.Subscribe<PlanChanged>(OnPlanChanged);
-            subscriber.Subscribe<PlanOverage>(OnPlanOverage);
-            subscriber.Subscribe<UserMembershipChanged>(OnUserMembershipChanged);
-            subscriber.Subscribe<ReleaseNotification>(OnReleaseNotification);
-            subscriber.Subscribe<SystemNotification>(OnSystemNotification);
+            subscriber.Subscribe<EntityChanged>(OnEntityChangedAsync);
+            subscriber.Subscribe<PlanChanged>(OnPlanChangedAsync);
+            subscriber.Subscribe<PlanOverage>(OnPlanOverageAsync);
+            subscriber.Subscribe<UserMembershipChanged>(OnUserMembershipChangedAsync);
+            subscriber.Subscribe<ReleaseNotification>(OnReleaseNotificationAsync);
+            subscriber.Subscribe<SystemNotification>(OnSystemNotificationAsync);
         }
 
-        private void OnUserMembershipChanged(UserMembershipChanged userMembershipChanged) {
-            if (userMembershipChanged == null)
-                return;
-
-            if (String.IsNullOrEmpty(userMembershipChanged.OrganizationId))
+        private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken) {
+            if (String.IsNullOrEmpty(userMembershipChanged?.OrganizationId))
                 return;
 
             // manage user organization group membership
@@ -46,59 +45,68 @@ namespace Exceptionless.Api.Hubs {
                     await Groups.Remove(connectionId, userMembershipChanged.OrganizationId).AnyContext();
             }
 
-            try
-            {
+            try {
                 Clients.Group(userMembershipChanged.OrganizationId).userMembershipChanged(userMembershipChanged);
             } catch (NullReferenceException) { } // TODO: Remove this when SignalR bug is fixed.
         }
 
-        private void OnEntityChanged(EntityChanged entityChanged) {
+        private Task OnEntityChangedAsync(EntityChanged entityChanged, CancellationToken cancellationToken) {
             if (entityChanged == null)
-                return;
+                return TaskHelper.Completed();
 
             if (entityChanged.Type == typeof(User).Name && Clients.User(entityChanged.Id) != null) {
                 try {
                     Clients.User(entityChanged.Id).entityChanged(entityChanged);
                 } catch (NullReferenceException) { } // TODO: Remove this when SignalR bug is fixed.
-                return;
+                return TaskHelper.Completed();
             }
 
             if (String.IsNullOrEmpty(entityChanged.OrganizationId))
-                return;
+                return TaskHelper.Completed();
 
             try {
                 Clients.Group(entityChanged.OrganizationId).entityChanged(entityChanged);
             } catch (NullReferenceException) {} // TODO: Remove this when SignalR bug is fixed.
+
+            return TaskHelper.Completed();
         }
 
-        private void OnPlanOverage(PlanOverage planOverage) {
+        private Task OnPlanOverageAsync(PlanOverage planOverage, CancellationToken cancellationToken) {
             if (planOverage == null)
-                return;
+                return TaskHelper.Completed();
 
             try {
                 Clients.Group(planOverage.OrganizationId).planOverage(planOverage);
             } catch (NullReferenceException) {} // TODO: Remove this when SignalR bug is fixed.
+
+            return TaskHelper.Completed();
         }
 
-        private void OnPlanChanged(PlanChanged planChanged) {
+        private Task OnPlanChangedAsync(PlanChanged planChanged, CancellationToken cancellationToken) {
             if (planChanged == null)
-                return;
+                return TaskHelper.Completed();
             
             try {
                 Clients.Group(planChanged.OrganizationId).planChanged(planChanged);
             } catch (NullReferenceException) {} // TODO: Remove this when SignalR bug is fixed.
+
+            return TaskHelper.Completed();
         }
 
-        private void OnReleaseNotification(ReleaseNotification notification) {
+        private Task OnReleaseNotificationAsync(ReleaseNotification notification, CancellationToken cancellationToken) {
             try {
                 Clients.All.releaseNotification(notification);
             } catch (NullReferenceException) {} // TODO: Remove this when SignalR bug is fixed.
+
+            return TaskHelper.Completed();
         }
 
-        private void OnSystemNotification(SystemNotification notification) {
+        private Task OnSystemNotificationAsync(SystemNotification notification, CancellationToken cancellationToken) {
             try {
                 Clients.All.systemNotification(notification);
-            } catch (NullReferenceException) {} // TODO: Remove this when SignalR bug is fixed.
+            } catch (NullReferenceException) { } // TODO: Remove this when SignalR bug is fixed.
+
+            return TaskHelper.Completed();
         }
 
         public override Task OnConnected() {

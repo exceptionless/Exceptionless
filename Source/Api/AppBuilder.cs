@@ -34,11 +34,11 @@ using Swashbuckle.Application;
 
 namespace Exceptionless.Api {
     public static class AppBuilder {
-        public static void Build(IAppBuilder app) {
-            BuildWithContainer(app, CreateContainer());
+        public static Task BuildAsync(IAppBuilder app) {
+            return BuildWithContainerAsync(app, CreateContainer());
         }
 
-        public static void BuildWithContainer(IAppBuilder app, Container container) {
+        public static async Task BuildWithContainerAsync(IAppBuilder app, Container container) {
             if (container == null)
                 throw new ArgumentNullException(nameof(container));
 
