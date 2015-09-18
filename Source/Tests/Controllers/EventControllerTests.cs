@@ -57,7 +57,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.NotNull(metricsClient);
                 
                 Assert.True(metricsClient.WaitForCounter(MetricNames.PostsQueued, work: async () => {
-                    var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string"));
+                    var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string")).AnyContext();
                     Assert.IsType<StatusCodeResult>(actionResult);
                 }));
 
@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
-                var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync());
+                var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync().AnyContext()).AnyContext();
                 Assert.IsType<StatusCodeResult>(actionResult);
                 Assert.Equal(1, _eventQueue.GetQueueCount());
 
@@ -101,7 +101,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
-                var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync());
+                var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync().AnyContext()).AnyContext();
                 Assert.IsType<StatusCodeResult>(actionResult);
                 Assert.Equal(1, _eventQueue.GetQueueCount());
 

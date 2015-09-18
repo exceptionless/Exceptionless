@@ -18,7 +18,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         private readonly FormattingPluginManager _formattingPluginManager = IoC.GetInstance<FormattingPluginManager>();
 
         [Theory]
-        [PropertyData("WebHookData")]
+        [MemberData("WebHookData")]
         public void CreateFromEvent(Version version, bool expectData) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
@@ -32,7 +32,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         [Theory]
-        [PropertyData("WebHookData")]
+        [MemberData("WebHookData")]
         public void CanCreateFromStack(Version version, bool expectData) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;

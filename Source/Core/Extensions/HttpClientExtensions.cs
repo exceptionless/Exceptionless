@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Extensions {
     public static class HttpClientExtensions {
-        public static async Task<HttpResponseMessage> PostAsJsonAsync(this HttpClient httpClient, string url, string json, CancellationToken cancellationToken) {
+        public static Task<HttpResponseMessage> PostAsJsonAsync(this HttpClient httpClient, string url, string json, CancellationToken cancellationToken = default(CancellationToken)) {
             var message = new HttpRequestMessage(HttpMethod.Post, new Uri(url)) {
                 Content = new StringContent(json, Encoding.UTF8, "application/json")
             };
 
-            return await httpClient.SendAsync(message, cancellationToken);
+            return httpClient.SendAsync(message, cancellationToken);
         }
     }
 }

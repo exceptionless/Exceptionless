@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
 using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Api.Security {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
@@ -32,7 +33,7 @@ namespace Exceptionless.Api.Security {
             if (actionContext.Response != null)
                 return actionContext.Response;
 
-            return await continuation();
+            return await continuation().AnyContext();
         }
 
         bool IFilter.AllowMultiple { get { return true; } }

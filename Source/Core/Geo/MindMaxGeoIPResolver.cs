@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Geo {
             if (ip.IsPrivateNetwork())
                 return null;
 
-            var database = await GetDatabaseAsync(cancellationToken);
+            var database = await GetDatabaseAsync(cancellationToken).AnyContext();
             if (database == null)
                 return null;
 
@@ -74,14 +74,14 @@ namespace Exceptionless.Core.Geo {
 
             _databaseLastChecked = DateTime.UtcNow;
 
-            if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH)) {
+            if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH).AnyContext()) {
                 Log.Warn().Message("No GeoIP database was found.").Write();
                 return null;
             }
 
             Log.Info().Message("Loading GeoIP database.").Write();
             try {
-                using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken))
+                using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
                     _database = new DatabaseReader(stream);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Unable to open GeoIP database.").Write();

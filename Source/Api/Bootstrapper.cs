@@ -10,8 +10,8 @@ using SimpleInjector.Packaging;
 namespace Exceptionless.Api {
     public class Bootstrapper : IPackage {
         public void RegisterServices(Container container) {
-            container.RegisterSingle<IUserIdProvider, PrincipalUserIdProvider>();
-            container.RegisterSingle<MessageBusHub>();
+            container.RegisterSingleton<IUserIdProvider, PrincipalUserIdProvider>();
+            container.RegisterSingleton<MessageBusHub>();
             container.Register<OverageHandler>();
             container.Register<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
         }

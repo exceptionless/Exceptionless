@@ -79,7 +79,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(path))
                 path = @"q\*";
 
-            foreach (var file in await _fileStorage.GetFileListAsync(path))
+            foreach (var file in await _fileStorage.GetFileListAsync(path).AnyContext())
                 _eventPostQueue.Enqueue(new EventPost { FilePath = file.Path, ShouldArchive = archive });
 
             return Ok();

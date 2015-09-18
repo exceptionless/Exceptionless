@@ -63,7 +63,7 @@ namespace Exceptionless.Api.Utility {
             if (requestCount > maxRequests)
                 response = CreateResponse(request, HttpStatusCode.Conflict, _message);
             else
-                response = await base.SendAsync(request, cancellationToken);
+                response = await base.SendAsync(request, cancellationToken).AnyContext();
 
             long remaining = maxRequests - requestCount;
             if (remaining < 0)

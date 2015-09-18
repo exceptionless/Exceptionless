@@ -39,13 +39,13 @@ namespace Exceptionless.Core.Jobs {
             if (queueEntry == null)
                 return JobResult.Success;
                 
-            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionDequeued);
+            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionDequeued).AnyContext();
             Log.Trace().Message("Processing user description: id={0}", queueEntry.Id).Write();
 
             try {
                 ProcessUserDescription(queueEntry.Value);
                 Log.Info().Message("Processed user description: id={0}", queueEntry.Id).Write();
-                await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionProcessed);
+                await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionProcessed).AnyContext();
             } catch (DocumentNotFoundException ex){
                 // TODO: Change to async once vnext is released.
                 _metricsClient.Counter(MetricNames.EventsUserDescriptionErrors);

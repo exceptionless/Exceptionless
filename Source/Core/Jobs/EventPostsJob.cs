@@ -64,15 +64,15 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Cancelled;
             }
 
-            EventPostInfo eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, token);
+            EventPostInfo eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, token).AnyContext();
             if (eventPostInfo == null) {
                 queueEntry.Abandon();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token).AnyContext();
                 return JobResult.FailedWithMessage(String.Format("Unable to retrieve post data '{0}'.", queueEntry.Value.FilePath));
             }
 
             bool isInternalProject = eventPostInfo.ProjectId == Settings.Current.InternalProjectId;
-            await _metricsClient.CounterAsync(MetricNames.PostsDequeued);
+            await _metricsClient.CounterAsync(MetricNames.PostsDequeued).AnyContext();
             Log.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPostInfo.ProjectId, eventPostInfo.IpAddress, eventPostInfo.ApiVersion, eventPostInfo.UserAgent).WriteIf(!isInternalProject);
             
             List<PersistentEvent> events = null;
@@ -81,8 +81,8 @@ namespace Exceptionless.Core.Jobs {
                     events = ParseEventPost(eventPostInfo);
                     Log.Info().Message("Parsed {0} events for post: id={1}", events.Count, queueEntry.Id).WriteIf(!isInternalProject);
                 }, MetricNames.PostsParsingTime);
-                await _metricsClient.CounterAsync(MetricNames.PostsParsed);
-                await _metricsClient.GaugeAsync(MetricNames.PostsEventCount, events.Count);
+                await _metricsClient.CounterAsync(MetricNames.PostsParsed).AnyContext();
+                await _metricsClient.GaugeAsync(MetricNames.PostsEventCount, events.Count).AnyContext();
             } catch (Exception ex) {
                 // TODO: Change to async once vnext is released.
                 _metricsClient.Counter(MetricNames.PostsParseErrors);
@@ -100,7 +100,7 @@ namespace Exceptionless.Core.Jobs {
        
             if (events == null) {
                 queueEntry.Abandon();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token).AnyContext();
                 return JobResult.Success;
             }
 
@@ -121,7 +121,7 @@ namespace Exceptionless.Core.Jobs {
 
             if (events == null) {
                 queueEntry.Abandon();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token).AnyContext();
                 return JobResult.Success;
             }
 
@@ -129,7 +129,7 @@ namespace Exceptionless.Core.Jobs {
             var created = DateTime.UtcNow;
             try {
                 events.ForEach(e => e.CreatedUtc = created);
-                var results = await _eventPipeline.RunAsync(events.Take(eventsToProcess).ToList());
+                var results = await _eventPipeline.RunAsync(events.Take(eventsToProcess).ToList()).AnyContext();
                 Log.Info().Message("Ran {0} events through the pipeline: id={1} project={2} success={3} error={4}", results.Count, queueEntry.Id, eventPostInfo.ProjectId, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).WriteIf(!isInternalProject);
                 foreach (var eventContext in results) {
                     if (eventContext.IsCancelled)
@@ -154,7 +154,7 @@ namespace Exceptionless.Core.Jobs {
                             CharSet = eventPostInfo.CharSet,
                             ProjectId = eventPostInfo.ProjectId,
                             UserAgent = eventPostInfo.UserAgent
-                        }, _storage, false, token);
+                        }, _storage, false, token).AnyContext();
                     }
                 }
             } catch (ArgumentException ex) {
@@ -167,14 +167,14 @@ namespace Exceptionless.Core.Jobs {
 
             if (isSingleEvent && errorCount > 0) {
                 queueEntry.Abandon();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token).AnyContext();
             } else {
                 queueEntry.Complete();
                 if (queueEntry.Value.ShouldArchive)
-                    await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, queueEntry.Value.ShouldArchive, token);
+                    await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, queueEntry.Value.ShouldArchive, token).AnyContext();
                 else {
-                    await _storage.DeleteFileAsync(queueEntry.Value.FilePath, token);
-                    await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
+                    await _storage.DeleteFileAsync(queueEntry.Value.FilePath, token).AnyContext();
+                    await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token).AnyContext();
                 }
             }
 

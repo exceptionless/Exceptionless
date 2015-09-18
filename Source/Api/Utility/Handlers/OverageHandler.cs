@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Extensions;
 using Foundatio.Caching;
@@ -34,7 +35,7 @@ namespace Exceptionless.Api.Utility {
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             if (!IsEventPost(request))
-                return await base.SendAsync(request, cancellationToken);
+                return await base.SendAsync(request, cancellationToken).AnyContext();
 
             if (_cacheClient.TryGet("ApiDisabled", false))
                 return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
@@ -46,10 +47,10 @@ namespace Exceptionless.Api.Utility {
             bool tooBig = false;
             if (request.Content != null && request.Content.Headers != null) {
                 long size = request.Content.Headers.ContentLength.GetValueOrDefault();
-                await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
+                await _metricsClient.GaugeAsync(MetricNames.PostsSize, size).AnyContext();
                 if (size > Settings.Current.MaximumEventPostSize) {
                     Log.Warn().Message("Event submission discarded for being too large: {0}", size).Project(project.Id).Write();
-                    await _metricsClient.CounterAsync(MetricNames.PostsDiscarded);
+                    await _metricsClient.CounterAsync(MetricNames.PostsDiscarded).AnyContext();
                     tooBig = true;
                 }
             }
@@ -61,11 +62,11 @@ namespace Exceptionless.Api.Utility {
                 return CreateResponse(request, HttpStatusCode.RequestEntityTooLarge, "Event submission discarded for being too large.");
 
             if (overLimit) {
-                await _metricsClient.CounterAsync(MetricNames.PostsBlocked);
+                await _metricsClient.CounterAsync(MetricNames.PostsBlocked).AnyContext();
                 return CreateResponse(request, HttpStatusCode.PaymentRequired, "Event limit exceeded.");
             }
 
-            return await base.SendAsync(request, cancellationToken);
+            return await base.SendAsync(request, cancellationToken).AnyContext();
         }
 
         private HttpResponseMessage CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {

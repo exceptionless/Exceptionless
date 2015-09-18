@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Api.Utility {
     public class EncodingDelegatingHandler : DelegatingHandler {
@@ -20,7 +21,7 @@ namespace Exceptionless.Api.Utility {
                     request.Content = new CompressedContent(request.Content, encodingType);
             }
 
-            var response = await base.SendAsync(request, cancellationToken);
+            var response = await base.SendAsync(request, cancellationToken).AnyContext();
             if (response.RequestMessage != null && response.RequestMessage.Headers != null && response.RequestMessage.Headers.AcceptEncoding != null && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
                 string encodingType = response.RequestMessage.Headers.AcceptEncoding.First().Value;
 
@@ -64,7 +65,7 @@ namespace Exceptionless.Api.Utility {
         }
 
         private async Task<Stream> CreateDeflateStream() {
-            var stream = await _originalContent.ReadAsStreamAsync();
+            var stream = await _originalContent.ReadAsStreamAsync().AnyContext();
 
             if (_encodingType == "gzip")
                 return new GZipStream(stream, CompressionMode.Decompress);

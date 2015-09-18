@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
@@ -38,7 +39,7 @@ namespace Exceptionless.Core.Utility {
 
         public async Task<HealthCheckResult> CheckElasticSearchAsync() {
             try {
-                var res = await _elasticClient.PingAsync();
+                var res = await _elasticClient.PingAsync().AnyContext();
                 if (!res.IsValid)
                     return HealthCheckResult.NotHealthy("ElasticSearch Ping Failed");
             } catch (Exception ex) {
@@ -50,7 +51,7 @@ namespace Exceptionless.Core.Utility {
 
         public async Task<HealthCheckResult> CheckStorageAsync() {
             try {
-                await _storage.GetFileListAsync(limit: 1);
+                await _storage.GetFileListAsync(limit: 1).AnyContext();
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Storage Not Working: " + ex.Message);
             }
@@ -102,11 +103,11 @@ namespace Exceptionless.Core.Utility {
             if (!result.IsHealthy)
                 return result;
 
-            result = await CheckElasticSearchAsync();
+            result = await CheckElasticSearchAsync().AnyContext();
             if (!result.IsHealthy)
                 return result;
 
-            result = await CheckStorageAsync();
+            result = await CheckStorageAsync().AnyContext();
             if (!result.IsHealthy)
                 return result;
 

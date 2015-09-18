@@ -49,8 +49,8 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             try {
-                await _eventRepository.RemoveAllByProjectIdsAsync(new [] { projectId });
-                await _stackRepository.RemoveAllByProjectIdsAsync(new [] { projectId });
+                await _eventRepository.RemoveAllByProjectIdsAsync(new [] { projectId }).AnyContext();
+                await _stackRepository.RemoveAllByProjectIdsAsync(new [] { projectId }).AnyContext();
 
                 _projectRepository.Save(project);
             } catch (Exception e) {
@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Utility {
                 stack.FirstOccurrence = DateTime.MinValue.ToUniversalTime();
                 _stackRepository.Save(stack);
 
-                await _eventRepository.RemoveAllByStackIdsAsync(new[] { stackId });
+                await _eventRepository.RemoveAllByStackIdsAsync(new[] { stackId }).AnyContext();
             } catch (Exception e) {
                 Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Write();
                 throw;

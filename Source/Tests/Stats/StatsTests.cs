@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -28,9 +29,9 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             RemoveData();
-            await CreateDataAsync(eventCount, false);
+            await CreateDataAsync(eventCount, false).AnyContext();
 
-            await _client.RefreshAsync(d => d.Force());
+            await _client.RefreshAsync(d => d.Force()).AnyContext();
             _metricsClient.DisplayStats();
             var result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
@@ -53,7 +54,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             RemoveData();
-            await CreateDataAsync(eventCount, false);
+            await CreateDataAsync(eventCount, false).AnyContext();
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -78,7 +79,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 1;
             RemoveData();
-            await CreateDataAsync(eventCount);
+            await CreateDataAsync(eventCount).AnyContext();
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -97,7 +98,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             RemoveData();
-            await CreateDataAsync(eventCount, false);
+            await CreateDataAsync(eventCount, false).AnyContext();
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -120,7 +121,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             RemoveData();
-            await CreateDataAsync(eventCount, false);
+            await CreateDataAsync(eventCount, false).AnyContext();
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -143,7 +144,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             RemoveData();
-            await CreateDataAsync(eventCount);
+            await CreateDataAsync(eventCount).AnyContext();
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -159,13 +160,13 @@ namespace Exceptionless.Api.Tests.Stats {
 
         [Fact]
         public async Task CanSetGauges() {
-            await _metricsClient.GaugeAsync("mygauge", 12d);
+            await _metricsClient.GaugeAsync("mygauge", 12d).AnyContext();
             Assert.Equal(12d, _metricsClient.GetGaugeValue("mygauge"));
-            await _metricsClient.GaugeAsync("mygauge", 10d);
-            await _metricsClient.GaugeAsync("mygauge", 5d);
-            await _metricsClient.GaugeAsync("mygauge", 4d);
-            await _metricsClient.GaugeAsync("mygauge", 12d);
-            await _metricsClient.GaugeAsync("mygauge", 20d);
+            await _metricsClient.GaugeAsync("mygauge", 10d).AnyContext();
+            await _metricsClient.GaugeAsync("mygauge", 5d).AnyContext();
+            await _metricsClient.GaugeAsync("mygauge", 4d).AnyContext();
+            await _metricsClient.GaugeAsync("mygauge", 12d).AnyContext();
+            await _metricsClient.GaugeAsync("mygauge", 20d).AnyContext();
             Assert.Equal(20d, _metricsClient.GetGaugeValue("mygauge"));
             _metricsClient.DisplayStats();
         }
@@ -179,7 +180,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var events = EventData.GenerateEvents(eventCount, projectIds: multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId }, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
-                await _eventPipeline.RunAsync(eventGroup);
+                await _eventPipeline.RunAsync(eventGroup).AnyContext();
         }
 
         private void RemoveData() {

@@ -25,8 +25,7 @@ namespace Exceptionless.Core.Mail {
                 client.Credentials = new NetworkCredential(Settings.Current.SmtpUser, Settings.Current.SmtpPassword);
             }
 
-            await client.SendMailAsync(message);
-
+            await client.SendMailAsync(message).AnyContext();
             Interlocked.Increment(ref _messagesSent);
         }
     }

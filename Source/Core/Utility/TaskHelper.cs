@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Component {
     public static class TaskHelper {
@@ -93,12 +94,12 @@ namespace Exceptionless.Core.Component {
                 cancellationToken = CancellationToken.None;
 
             if (initialDelay.HasValue && initialDelay.Value > TimeSpan.Zero)
-                await Task.Delay(initialDelay.Value, cancellationToken.Value);
+                await Task.Delay(initialDelay.Value, cancellationToken.Value).AnyContext();
 
             while (!cancellationToken.Value.IsCancellationRequested) {
-                await Task.Delay(period, cancellationToken.Value);
+                await Task.Delay(period, cancellationToken.Value).AnyContext();
                 try {
-                    await action();
+                    await action().AnyContext();
                 } catch (Exception ex) {
                     Trace.TraceError(ex.Message);
                 }
@@ -111,7 +112,7 @@ namespace Exceptionless.Core.Component {
                 if (timeout.HasValue && DateTime.Now.Subtract(start) > timeout.Value)
                     return false;
 
-                await Task.Delay(TimeSpan.FromMilliseconds(checkInterval));
+                await Task.Delay(TimeSpan.FromMilliseconds(checkInterval)).AnyContext();
             }
 
             return true;

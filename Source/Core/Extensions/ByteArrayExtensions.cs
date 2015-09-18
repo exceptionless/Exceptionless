@@ -32,10 +32,10 @@ namespace Exceptionless.Core.Extensions {
             byte[] compressesData;
             using (var outputStream = new MemoryStream()) {
                 using (var zip = new GZipStream(outputStream, CompressionMode.Compress, true)) {
-                    await zip.WriteAsync(data, 0, data.Length, cancellationToken);
+                    await zip.WriteAsync(data, 0, data.Length, cancellationToken).AnyContext();
                 }
 
-                await outputStream.FlushAsync(cancellationToken);
+                await outputStream.FlushAsync(cancellationToken).AnyContext();
                 compressesData = outputStream.ToArray();
             }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Pipeline {
     public interface IPipelineAction<TContext> where TContext : IPipelineContext {
@@ -45,7 +46,7 @@ namespace Exceptionless.Core.Pipeline {
         public virtual async Task ProcessBatchAsync(ICollection<TContext> contexts) {
             foreach (var ctx in contexts) {
                 try {
-                    await ProcessAsync(ctx);
+                    await ProcessAsync(ctx).AnyContext();
                 } catch (Exception ex) {
                     bool cont = false;
                     try {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
@@ -32,7 +33,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             if (_resolver == null)
                 return;
 
-            var result = await _resolver.ResolveIpAsync(ip);
+            var result = await _resolver.ResolveIpAsync(ip).AnyContext();
             if (canResolve)
                 Assert.NotNull(result);
             else
@@ -45,13 +46,13 @@ namespace Exceptionless.Api.Tests.Plugins {
                 return;
 
             // Load the database
-            await _resolver.ResolveIpAsync("0.0.0.0");
+            await _resolver.ResolveIpAsync("0.0.0.0").AnyContext();
 
             var sw = new Stopwatch();
             sw.Start();
             
             for (int i = 0; i < 1000; i++)
-                Assert.NotNull(await _resolver.ResolveIpAsync("8.8.4.4"));
+                Assert.NotNull(await _resolver.ResolveIpAsync("8.8.4.4").AnyContext());
 
             sw.Stop();
             Assert.InRange(sw.ElapsedMilliseconds, 0, 65);

@@ -691,14 +691,14 @@ namespace Exceptionless.Api.Controllers {
                     }
                 }
 
-                await _tokenRepository.RemoveAllByOrganizationIdsAsync(new [] { organization.Id });
-                await _webHookRepository.RemoveAllByOrganizationIdsAsync(new[] { organization.Id });
+                await _tokenRepository.RemoveAllByOrganizationIdsAsync(new [] { organization.Id }).AnyContext();
+                await _webHookRepository.RemoveAllByOrganizationIdsAsync(new[] { organization.Id }).AnyContext();
 
                 var projects = _projectRepository.GetByOrganizationId(organization.Id);
                 if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Total > 0) {
                     foreach (Project project in projects.Documents) {
                         Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                        await _projectController.ResetDataAsync(project.Id);
+                        await _projectController.ResetDataAsync(project.Id).AnyContext();
                     }
 
                     Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
@@ -706,7 +706,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                await base.DeleteModels(new[] { organization });
+                await base.DeleteModels(new[] { organization }).AnyContext();
             }
         }
 

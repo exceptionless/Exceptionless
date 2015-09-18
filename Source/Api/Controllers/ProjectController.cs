@@ -228,7 +228,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             // TODO: Implement a long running process queue where a task can be inserted and then monitor for progress.
-            await _dataHelper.ResetProjectDataAsync(id);
+            await _dataHelper.ResetProjectDataAsync(id).AnyContext();
 
             return Ok();
         }
@@ -468,12 +468,12 @@ namespace Exceptionless.Api.Controllers {
 
         protected override async Task DeleteModels(ICollection<Project> projects) {
             foreach (var project in projects) {
-                await _tokenRepository.RemoveAllByProjectIdsAsync(new[] { project.Id });
-                await _webHookRepository.RemoveAllByProjectIdsAsync(new[] { project.Id });
-                await _dataHelper.ResetProjectDataAsync(project.Id);
+                await _tokenRepository.RemoveAllByProjectIdsAsync(new[] { project.Id }).AnyContext();
+                await _webHookRepository.RemoveAllByProjectIdsAsync(new[] { project.Id }).AnyContext();
+                await _dataHelper.ResetProjectDataAsync(project.Id).AnyContext();
             }
 
-            await base.DeleteModels(projects);
+            await base.DeleteModels(projects).AnyContext();
         }
 
         private ViewProject PopulateProjectStats(ViewProject project) {

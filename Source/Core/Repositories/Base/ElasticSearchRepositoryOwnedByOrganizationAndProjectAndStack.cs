@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public async Task RemoveAllByStackIdsAsync(string[] stackIds) {
-            await Task.Run(() => RemoveAll(new QueryOptions().WithStackIds(stackIds)));
+            await Task.Run(() => RemoveAll(new QueryOptions().WithStackIds(stackIds))).AnyContext();
         }
 
         protected override void InvalidateCache(ICollection<T> documents, ICollection<T> originalDocuments) {

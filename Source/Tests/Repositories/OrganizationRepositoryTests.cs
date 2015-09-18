@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
@@ -19,16 +20,16 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task CanCreateUpdateRemove() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync().AnyContext();
             _repository.RemoveAll();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync().AnyContext();
             Assert.Equal(0, _repository.Count());
 
             var organization = new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id };
             Assert.Null(organization.Id);
 
             _repository.Add(organization);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync().AnyContext();
             Assert.NotNull(organization.Id);
             
             organization = _repository.GetById(organization.Id);
@@ -42,9 +43,9 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task CanFindMany() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync().AnyContext();
             _repository.RemoveAll();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync().AnyContext();
             Assert.Equal(0, _repository.Count());
 
             _repository.Add(new[] {
@@ -53,7 +54,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 2 }
             });
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync().AnyContext();
             Assert.Equal(3, _repository.Count());
 
             var organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(1).WithLimit(1));
@@ -71,7 +72,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(2, organizations.Total);
 
             _repository.Remove(organizations.Documents);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync().AnyContext();
 
             Assert.Equal(1, _repository.Count());
             _repository.RemoveAll();

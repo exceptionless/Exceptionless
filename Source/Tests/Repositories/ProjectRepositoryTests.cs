@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Nest;
@@ -19,9 +20,9 @@ namespace Exceptionless.Api.Tests.Repositories {
             var project =_repository.Add(ProjectData.GenerateSampleProject());
             Assert.NotNull(project.Id);
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync().AnyContext();
             Assert.Equal(1, _repository.IncrementNextSummaryEndOfDayTicks(new[] { project.Id }));
-            await _client.RefreshAsync();
+            await _client.RefreshAsync().AnyContext();
 
             var updatedProject = _repository.GetById(project.Id, false);
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, updatedProject.NextSummaryEndOfDayTicks);

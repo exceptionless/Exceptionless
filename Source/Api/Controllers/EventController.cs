@@ -290,7 +290,7 @@ namespace Exceptionless.Api.Controllers {
         [ConfigurationResponseFilter]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
-            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionSubmitted);
+            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionSubmitted).AnyContext();
             
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
@@ -318,7 +318,7 @@ namespace Exceptionless.Api.Controllers {
             eventUserDescription.ReferenceId = referenceId;
 
             _eventUserDescriptionQueue.Enqueue(eventUserDescription);
-            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionQueued);
+            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionQueued).AnyContext();
 
             return StatusCode(HttpStatusCode.Accepted);
         }
@@ -342,7 +342,7 @@ namespace Exceptionless.Api.Controllers {
             var userDescription = new UserDescription();
             changes.Patch(userDescription);
 
-            return await SetUserDescriptionAsync(id, userDescription);
+            return await SetUserDescriptionAsync(id, userDescription).AnyContext();
         }
 
         /// <summary>
@@ -396,7 +396,7 @@ namespace Exceptionless.Api.Controllers {
             if (data == null || data.Length == 0)
                 return StatusCode(HttpStatusCode.Accepted);
 
-            await _metricsClient.CounterAsync(MetricNames.PostsSubmitted);
+            await _metricsClient.CounterAsync(MetricNames.PostsSubmitted).AnyContext();
 
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();
@@ -412,7 +412,7 @@ namespace Exceptionless.Api.Controllers {
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
             bool isCompressed = contentEncoding == "gzip" || contentEncoding == "deflate";
             if (!isCompressed && data.Length > 1000) {
-                data = await data.CompressAsync();
+                data = await data.CompressAsync().AnyContext();
                 contentEncoding = "gzip";
             }
 
@@ -425,7 +425,7 @@ namespace Exceptionless.Api.Controllers {
                     ApiVersion = version,
                     Data = data,
                     ContentEncoding = contentEncoding
-                }, _storage);
+                }, _storage).AnyContext();
             } catch (Exception ex) {
                 Log.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
@@ -440,7 +440,7 @@ namespace Exceptionless.Api.Controllers {
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 
-            await _metricsClient.CounterAsync(MetricNames.PostsQueued);
+            await _metricsClient.CounterAsync(MetricNames.PostsQueued).AnyContext();
             return StatusCode(HttpStatusCode.Accepted);
         }
 

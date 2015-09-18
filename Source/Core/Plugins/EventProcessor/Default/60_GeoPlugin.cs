@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
@@ -22,7 +23,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             }
 
             foreach (var ip in GetIpAddresses(context.Event)) {
-                location = await _geoIpResolver.ResolveIpAsync(ip);
+                location = await _geoIpResolver.ResolveIpAsync(ip).AnyContext();
                 if (location == null || !location.IsValid())
                     continue;
 

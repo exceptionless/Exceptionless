@@ -43,7 +43,7 @@ namespace Exceptionless.Core {
         public void RegisterServices(Container container) {
             // Foundation service provider
             ServiceProvider.Current = container;
-            container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
+            container.RegisterSingleton<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
 
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
                 DateParseHandling = DateParseHandling.DateTimeOffset
@@ -59,78 +59,78 @@ namespace Exceptionless.Core {
             };
             settings.AddModelConverters();
             
-            container.RegisterSingle<IContractResolver>(() => contractResolver);
-            container.RegisterSingle<JsonSerializerSettings>(settings);
-            container.RegisterSingle<JsonSerializer>(JsonSerializer.Create(settings));
-            container.RegisterSingle<ISerializer>(() => new JsonNetSerializer(settings));
+            container.RegisterSingleton<IContractResolver>(() => contractResolver);
+            container.RegisterSingleton<JsonSerializerSettings>(settings);
+            container.RegisterSingleton<JsonSerializer>(JsonSerializer.Create(settings));
+            container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
 
             var metricsClient = new InMemoryMetricsClient();
             metricsClient.StartDisplayingStats();
-            container.RegisterSingle<IMetricsClient>(metricsClient);
+            container.RegisterSingleton<IMetricsClient>(metricsClient);
 
-            container.RegisterSingle<IElasticClient>(() => container.GetInstance<ElasticSearchConfiguration>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
-            container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
+            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ElasticSearchConfiguration>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
+            container.RegisterSingleton<ICacheClient, InMemoryCacheClient>();
 
-            container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: MetricNames.PostsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-            container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: MetricNames.EventsUserDescriptionQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-            container.RegisterSingle<IQueue<EventNotificationWorkItem>>(() => new InMemoryQueue<EventNotificationWorkItem>(statName: MetricNames.EventNotificationQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-            container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: MetricNames.WebHookQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-            container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-            container.RegisterSingle<IQueue<StatusMessage>>(() => new InMemoryQueue<StatusMessage>());
+            container.RegisterSingleton<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: MetricNames.PostsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingleton<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: MetricNames.EventsUserDescriptionQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new InMemoryQueue<EventNotificationWorkItem>(statName: MetricNames.EventNotificationQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingleton<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: MetricNames.WebHookQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingleton<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingleton<IQueue<StatusMessage>>(() => new InMemoryQueue<StatusMessage>());
 
             var workItemHandlers = new WorkItemHandlers();
             workItemHandlers.Register<ReindexWorkItem, ReindexWorkItemHandler>();
-            container.RegisterSingle<WorkItemHandlers>(workItemHandlers);
-            container.RegisterSingle<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(statName: MetricNames.WorkItemQueueSize, metrics: container.GetInstance<IMetricsClient>(), workItemTimeout: TimeSpan.FromHours(1)));
+            container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);
+            container.RegisterSingleton<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(statName: MetricNames.WorkItemQueueSize, metrics: container.GetInstance<IMetricsClient>(), workItemTimeout: TimeSpan.FromHours(1)));
             
 
-            container.RegisterSingle<IMessageBus, InMemoryMessageBus>();
-            container.RegisterSingle<IMessagePublisher>(container.GetInstance<IMessageBus>);
-            container.RegisterSingle<IMessageSubscriber>(container.GetInstance<IMessageBus>);
+            container.RegisterSingleton<IMessageBus, InMemoryMessageBus>();
+            container.RegisterSingleton<IMessagePublisher>(container.GetInstance<IMessageBus>);
+            container.RegisterSingleton<IMessageSubscriber>(container.GetInstance<IMessageBus>);
 
             if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
-                container.RegisterSingle<IFileStorage>(new FolderFileStorage(Settings.Current.StorageFolder));
+                container.RegisterSingleton<IFileStorage>(new FolderFileStorage(Settings.Current.StorageFolder));
             else
-                container.RegisterSingle<IFileStorage>(new InMemoryFileStorage());
+                container.RegisterSingleton<IFileStorage>(new InMemoryFileStorage());
 
-            container.RegisterSingle<IStackRepository, StackRepository>();
-            container.RegisterSingle<IEventRepository, EventRepository>();
-            container.RegisterSingle<IOrganizationRepository, OrganizationRepository>();
-            container.RegisterSingle<IProjectRepository, ProjectRepository>();
-            container.RegisterSingle<IUserRepository, UserRepository>();
-            container.RegisterSingle<IWebHookRepository, WebHookRepository>();
-            container.RegisterSingle<ITokenRepository, TokenRepository>();
-            container.RegisterSingle<IApplicationRepository, ApplicationRepository>();
+            container.RegisterSingleton<IStackRepository, StackRepository>();
+            container.RegisterSingleton<IEventRepository, EventRepository>();
+            container.RegisterSingleton<IOrganizationRepository, OrganizationRepository>();
+            container.RegisterSingleton<IProjectRepository, ProjectRepository>();
+            container.RegisterSingleton<IUserRepository, UserRepository>();
+            container.RegisterSingleton<IWebHookRepository, WebHookRepository>();
+            container.RegisterSingleton<ITokenRepository, TokenRepository>();
+            container.RegisterSingleton<IApplicationRepository, ApplicationRepository>();
 
-            container.RegisterSingle<IGeoIPResolver, MindMaxGeoIPResolver>();
+            container.RegisterSingleton<IGeoIPResolver, MindMaxGeoIPResolver>();
 
-            container.RegisterSingle<IValidator<Application>, ApplicationValidator>();
-            container.RegisterSingle<IValidator<Organization>, OrganizationValidator>();
-            container.RegisterSingle<IValidator<PersistentEvent>, PersistentEventValidator>();
-            container.RegisterSingle<IValidator<Project>, ProjectValidator>();
-            container.RegisterSingle<IValidator<Stack>, StackValidator>();
-            container.RegisterSingle<IValidator<Models.Token>, TokenValidator>();
-            container.RegisterSingle<IValidator<UserDescription>, UserDescriptionValidator>();
-            container.RegisterSingle<IValidator<User>, UserValidator>();
-            container.RegisterSingle<IValidator<WebHook>, WebHookValidator>();
+            container.RegisterSingleton<IValidator<Application>, ApplicationValidator>();
+            container.RegisterSingleton<IValidator<Organization>, OrganizationValidator>();
+            container.RegisterSingleton<IValidator<PersistentEvent>, PersistentEventValidator>();
+            container.RegisterSingleton<IValidator<Project>, ProjectValidator>();
+            container.RegisterSingleton<IValidator<Stack>, StackValidator>();
+            container.RegisterSingleton<IValidator<Models.Token>, TokenValidator>();
+            container.RegisterSingleton<IValidator<UserDescription>, UserDescriptionValidator>();
+            container.RegisterSingleton<IValidator<User>, UserValidator>();
+            container.RegisterSingleton<IValidator<WebHook>, WebHookValidator>();
 
-            container.RegisterSingle<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
-            container.RegisterSingle<IMailer, Mailer>();
+            container.RegisterSingleton<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
+            container.RegisterSingleton<IMailer, Mailer>();
             if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
-                container.RegisterSingle<IMailSender, SmtpMailSender>();
+                container.RegisterSingleton<IMailSender, SmtpMailSender>();
             else
-                container.RegisterSingle<IMailSender>(() => new InMemoryMailSender());
+                container.RegisterSingleton<IMailSender>(() => new InMemoryMailSender());
 
             container.Register<ILockProvider, CacheLockProvider>();
             container.Register<StripeEventHandler>();
-            container.RegisterSingle<BillingManager>();
-            container.RegisterSingle<DataHelper>();
-            container.RegisterSingle<EventStats>();
-            container.RegisterSingle<EventPipeline>();
-            container.RegisterSingle<EventPluginManager>();
-            container.RegisterSingle<FormattingPluginManager>();
+            container.RegisterSingleton<BillingManager>();
+            container.RegisterSingleton<DataHelper>();
+            container.RegisterSingleton<EventStats>();
+            container.RegisterSingleton<EventPipeline>();
+            container.RegisterSingleton<EventPluginManager>();
+            container.RegisterSingleton<FormattingPluginManager>();
 
-            container.RegisterSingle<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
+            container.RegisterSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
         }
     }
 }

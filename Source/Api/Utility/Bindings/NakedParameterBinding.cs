@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.Metadata;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Api.Utility {
     public class NakedBodyParameterBinding : HttpParameterBinding {
@@ -20,13 +21,13 @@ namespace Exceptionless.Api.Utility {
             var type = binding.ParameterBindings[0].Descriptor.ParameterType;
 
             if (type == typeof(string)) {
-                string value = await actionContext.Request.Content.ReadAsStringAsync();
+                string value = await actionContext.Request.Content.ReadAsStringAsync().AnyContext();
                 SetValue(actionContext, value);
                 return;
             }
 
             if (type == typeof(byte[])) {
-                byte[] value = await actionContext.Request.Content.ReadAsByteArrayAsync();
+                byte[] value = await actionContext.Request.Content.ReadAsByteArrayAsync().AnyContext();
                 SetValue(actionContext, value);
                 return;
             }

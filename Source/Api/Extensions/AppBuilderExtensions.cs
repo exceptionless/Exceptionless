@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Microsoft.Owin;
 using Owin;
 
@@ -43,7 +44,7 @@ namespace Exceptionless.Api.Extensions {
             try {
                 context.Set(_key, instance);
                 if (Next != null)
-                    await Next.Invoke(context);
+                    await Next.Invoke(context).AnyContext();
             } finally {
                 var disposable = instance as IDisposable;
                 if (disposable != null)

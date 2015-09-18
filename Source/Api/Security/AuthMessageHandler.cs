@@ -56,7 +56,7 @@ namespace Exceptionless.Api.Security {
                             return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
                         request.GetRequestContext().Principal = new ClaimsPrincipal(user.ToIdentity());
-                        return await base.SendAsync(request, cancellationToken);
+                        return await base.SendAsync(request, cancellationToken).AnyContext();
                     }
                 }
             } else {
@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Security {
                     request.GetRequestContext().Principal = principal;
             }
 
-            return await base.SendAsync(request, cancellationToken);
+            return await base.SendAsync(request, cancellationToken).AnyContext();
         }
     }
 }

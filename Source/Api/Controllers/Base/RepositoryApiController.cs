@@ -35,7 +35,7 @@ namespace Exceptionless.Api.Controllers {
             TModel model;
             try {
                 model = AddModel(mapped);
-                await AfterAddAsync(model);
+                await AfterAddAsync(model).AnyContext();
             } catch (ValidationException ex) {
                 return BadRequest(ex.Errors.ToErrorMessage());
             }
@@ -52,7 +52,7 @@ namespace Exceptionless.Api.Controllers {
                 model = modelUpdateFunc(model);
 
             _repository.Save(model);
-            await AfterUpdateAsync(model);
+            await AfterUpdateAsync(model).AnyContext();
 
             if (typeof(TViewModel) == typeof(TModel))
                 return Ok(model);
@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Controllers {
                 models.ForEach(m => modelUpdateFunc(m));
 
             _repository.Save(models);
-            models.ForEach(async m => await AfterUpdateAsync(m));
+            models.ForEach(async m => await AfterUpdateAsync(m).AnyContext());
 
             if (typeof(TViewModel) == typeof(TModel))
                 return Ok(models);
@@ -138,8 +138,8 @@ namespace Exceptionless.Api.Controllers {
                 return Permission(permission);
 
             try {
-                await UpdateModelAsync(original, changes);
-                await AfterPatchAsync(original);
+                await UpdateModelAsync(original, changes).AnyContext();
+                await AfterPatchAsync(original).AnyContext();
             } catch (ValidationException ex) {
                 return BadRequest(ex.Errors.ToErrorMessage());
             }
@@ -188,7 +188,7 @@ namespace Exceptionless.Api.Controllers {
                 return results.Failure.Count == 1 ? Permission(results.Failure.First()) : BadRequest(results);
 
             try {
-                await DeleteModels(items);
+                await DeleteModels(items).AnyContext();
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);

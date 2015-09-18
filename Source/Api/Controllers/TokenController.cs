@@ -95,7 +95,7 @@ namespace Exceptionless.App.Controllers.API {
             if (token != null)
                 return OkModel(token);
 
-            return await PostAsync(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId});
+            return await PostAsync(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId}).AnyContext();
         }
 
         /// <summary>
@@ -150,7 +150,7 @@ namespace Exceptionless.App.Controllers.API {
 
             token.OrganizationId = project.OrganizationId;
             token.ProjectId = projectId;
-            return await PostAsync(token);
+            return await PostAsync(token).AnyContext();
         }
 
         /// <summary>
@@ -175,7 +175,7 @@ namespace Exceptionless.App.Controllers.API {
                 return BadRequest();
 
             token.OrganizationId = organizationId;
-            return await PostAsync(token);
+            return await PostAsync(token).AnyContext();
         }
 
         /// <summary>

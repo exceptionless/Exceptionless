@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
 using Foundatio.Jobs;
@@ -35,12 +36,12 @@ namespace Exceptionless.Core.Jobs {
             if (queueEntry == null)
                 return JobResult.Success;
             
-            await _metricsClient.CounterAsync(MetricNames.EmailsDequeued);
+            await _metricsClient.CounterAsync(MetricNames.EmailsDequeued).AnyContext();
             Log.Trace().Message("Processing message '{0}'.", queueEntry.Id).Write();
             
             try {
-                await _mailSender.SendAsync(queueEntry.Value);
-                await _metricsClient.CounterAsync(MetricNames.EmailsSent);
+                await _mailSender.SendAsync(queueEntry.Value).AnyContext();
+                await _metricsClient.CounterAsync(MetricNames.EmailsSent).AnyContext();
                 Log.Info().Message("Sent message: to={0} subject=\"{1}\"", queueEntry.Value.To, queueEntry.Value.Subject).Write();
             } catch (Exception ex) {
                 // TODO: Change to async once vnext is released.

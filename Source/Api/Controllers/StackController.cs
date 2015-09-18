@@ -424,8 +424,8 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected override async Task DeleteModels(ICollection<Stack> values) {
-            await _eventRepository.RemoveAllByStackIdsAsync(values.Select(s => s.Id).ToArray());
-            await base.DeleteModels(values);
+            await _eventRepository.RemoveAllByStackIdsAsync(values.Select(s => s.Id).ToArray()).AnyContext();
+            await base.DeleteModels(values).AnyContext();
         }
 
         /// <summary>

@@ -127,7 +127,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = DateTime.UtcNow, Type = Event.KnownTypes.Log}),
             };
 
-            await pipeline.RunAsync(contexts);
+            await pipeline.RunAsync(contexts).AnyContext();
             Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
             Assert.Equal(1, contexts.Count(c => c.IsNew));
             Assert.Equal(1, contexts.Count(c => !c.IsNew));
@@ -157,7 +157,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 }),
             };
 
-            await pipeline.RunAsync(contexts);
+            await pipeline.RunAsync(contexts).AnyContext();
             Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
             Assert.Equal(1, contexts.Count(c => c.IsNew));
             Assert.Equal(1, contexts.Count(c => !c.IsNew));
@@ -171,7 +171,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow);
             var context = new EventContext(ev);
-            await pipeline.RunAsync(context);
+            await pipeline.RunAsync(context).AnyContext();
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
 
@@ -189,7 +189,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1)))
             };
 
-            await pipeline.RunAsync(contexts);
+            await pipeline.RunAsync(contexts).AnyContext();
             Assert.Equal(1, contexts.Count(c => c.IsRegression));
             Assert.Equal(1, contexts.Count(c => !c.IsRegression));
 
@@ -198,7 +198,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1)))
             };
 
-            await pipeline.RunAsync(contexts);
+            await pipeline.RunAsync(contexts).AnyContext();
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
         }
 
@@ -217,7 +217,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 ev.OrganizationId = TestConstants.OrganizationId;
 
                 var context = new EventContext(ev);
-                await  pipeline.RunAsync(context);
+                await  pipeline.RunAsync(context).AnyContext();
                 Assert.True(context.IsProcessed);
             }
         }
