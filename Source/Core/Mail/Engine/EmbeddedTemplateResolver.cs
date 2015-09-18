@@ -19,10 +19,10 @@ namespace RazorSharpEmail {
         /// <param name="templateNamespace"></param>
         public EmbeddedTemplateResolver(Assembly assembly, string templateNamespace) {
             if (assembly == null)
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
 
             if (templateNamespace == null)
-                throw new ArgumentNullException("templateNamespace");
+                throw new ArgumentNullException(nameof(templateNamespace));
 
             _assembly = assembly;
             _templateNamespace = templateNamespace;
@@ -34,7 +34,7 @@ namespace RazorSharpEmail {
         /// <param name="type">The type whose namespace is used to scope the manifest resource name.</param>
         public EmbeddedTemplateResolver(Type type) {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
             _assembly = Assembly.GetAssembly(type);
             _templateNamespace = type.Namespace;
@@ -42,7 +42,7 @@ namespace RazorSharpEmail {
 
         public string Resolve(string name) {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             name = name.Replace('\\', '.').Replace('-', '_');
 

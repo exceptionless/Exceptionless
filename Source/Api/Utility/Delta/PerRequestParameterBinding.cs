@@ -24,7 +24,7 @@ namespace Exceptionless.Api.Utility {
             IEnumerable<MediaTypeFormatter> formatters)
             : base(descriptor) {
             if (formatters == null)
-                throw new ArgumentNullException("formatters");
+                throw new ArgumentNullException(nameof(formatters));
 
             _formatters = formatters;
         }

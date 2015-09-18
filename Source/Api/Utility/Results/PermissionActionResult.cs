@@ -10,10 +10,10 @@ namespace Exceptionless.Api.Utility.Results {
     public class PermissionActionResult : IHttpActionResult {
         public PermissionActionResult(PermissionResult permission, HttpRequestMessage request) {
             if (permission == null)
-                throw new ArgumentNullException("permission");
+                throw new ArgumentNullException(nameof(permission));
 
             if (request == null)
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
 
             Permission = permission;
             Request = request;

@@ -7,7 +7,7 @@ namespace Exceptionless.Core.Extensions {
     public static class ContainerExtensions {
         public static void RegisterPackage<TPackage>(this Container container) {
             if (container == null)
-                throw new ArgumentNullException("container");
+                throw new ArgumentNullException(nameof(container));
 
             var package = Activator.CreateInstance(typeof(TPackage)) as IPackage;
             if (package == null)

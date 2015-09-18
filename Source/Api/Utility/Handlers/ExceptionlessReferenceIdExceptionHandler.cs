@@ -20,12 +20,12 @@ namespace Exceptionless.Api.Utility {
 
         public async Task HandleAsync(ExceptionHandlerContext context, CancellationToken cancellationToken) {
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             var exceptionContext = context.ExceptionContext;
             var request = exceptionContext.Request;
             if (request == null)
-                throw new ArgumentException($"{typeof(ExceptionContext).Name}.{"Request"} must not be null", "context");
+                throw new ArgumentException($"{typeof(ExceptionContext).Name}.{"Request"} must not be null", nameof(context));
 
             context.Result = new ResponseMessageResult(CreateErrorResponse(request, exceptionContext.Exception, HttpStatusCode.InternalServerError));
          }

@@ -45,9 +45,9 @@ namespace Exceptionless.Core.Extensions {
 
         public static ClaimsIdentity CreateUserIdentity(string userId, IUserRepository userRepository, string defaultProjectId = null) {
             if (String.IsNullOrEmpty(userId))
-                throw new ArgumentNullException("userId");
+                throw new ArgumentNullException(nameof(userId));
             if (userRepository == null)
-                throw new ArgumentNullException("userRepository");
+                throw new ArgumentNullException(nameof(userRepository));
 
             var user = userRepository.GetById(userId, true);
             if (user == null)

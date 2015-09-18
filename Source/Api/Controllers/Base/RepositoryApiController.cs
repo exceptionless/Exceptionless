@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Utility;
+using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -211,7 +212,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected virtual Task DeleteModels(ICollection<TModel> values) {
             _repository.Remove(values);
-            return Task.FromResult(0);
+            return TaskHelper.Completed();
         }
 
         protected override void CreateMaps() {

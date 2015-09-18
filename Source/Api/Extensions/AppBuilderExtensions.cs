@@ -20,9 +20,9 @@ namespace Exceptionless.Api.Extensions {
 
         public static IAppBuilder CreatePerContext<T>(this IAppBuilder app, string key, Func<IOwinContext, T> createCallback) where T : class {
             if (app == null)
-                throw new ArgumentNullException("app");
+                throw new ArgumentNullException(nameof(app));
             if (createCallback == null)
-                throw new ArgumentNullException("createCallback");
+                throw new ArgumentNullException(nameof(createCallback));
 
             app.Use(typeof(FactoryMiddleware<T>), key, createCallback);
 

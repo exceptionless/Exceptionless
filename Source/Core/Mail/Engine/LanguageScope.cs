@@ -7,7 +7,7 @@ namespace RazorSharpEmail {
         private readonly string _languageForThisScopeInstance;
 
         public static void SetDefaultLanguage(string defaultLanguage) {
-            if (defaultLanguage == null) throw new ArgumentNullException("defaultLanguage");
+            if (defaultLanguage == null) throw new ArgumentNullException(nameof(defaultLanguage));
             DefaultLanguage = defaultLanguage;
         }
 
@@ -25,7 +25,7 @@ namespace RazorSharpEmail {
         public static string CurrentLanguage => _currentLanguage ?? DefaultLanguage;
 
         public LanguageScope(string language) {
-            if (language == null) throw new ArgumentNullException("language");
+            if (language == null) throw new ArgumentNullException(nameof(language));
 
             _languageForThisScopeInstance = language;
             _previousLanguageForThisScopeInstance = _currentLanguage;

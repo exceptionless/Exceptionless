@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IProjectRepository : IRepositoryOwnedByOrganization<Project> {
-        FindResults<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10);
-        long IncrementNextSummaryEndOfDayTicks(ICollection<string> ids);
-        long GetCountByOrganizationId(string organizationId);
+        Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10);
+        Task<long> IncrementNextSummaryEndOfDayTicksAsync(ICollection<string> ids);
+        Task<long> GetCountByOrganizationIdAsync(string organizationId);
     }
 }

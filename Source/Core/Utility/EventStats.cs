@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Utility {
 
             var allowedTerms = new[] { "organization_id", "project_id", "stack_id", "tags", "version" };
             if (!allowedTerms.Contains(term))
-                throw new ArgumentException("Must be a valid term.", "term");
+                throw new ArgumentException("Must be a valid term.", nameof(term));
             
             var filter = new ElasticSearchOptions<PersistentEvent>()
                 .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)

@@ -90,7 +90,7 @@ namespace Exceptionless.Core.Extensions {
 
 		public static void AppendQueryArgs(this UriBuilder builder, IEnumerable<KeyValuePair<string, string>> args) {
             if (builder == null)
-                throw new ArgumentNullException("builder");
+                throw new ArgumentNullException(nameof(builder));
 
 		    if (args == null || !args.Any())
 		        return;
@@ -107,7 +107,7 @@ namespace Exceptionless.Core.Extensions {
 
  		internal static string CreateQueryString(IEnumerable<KeyValuePair<string, string>> args) {
             if (args == null)
-                throw new ArgumentNullException("args");
+                throw new ArgumentNullException(nameof(args));
 #if !PFX_LEGACY_3_5
 			Contract.Ensures(Contract.Result<string>() != null);
 #endif
@@ -135,7 +135,7 @@ namespace Exceptionless.Core.Extensions {
         private static readonly string[] UriRfc3986CharsToEscape = new[] { "!", "*", "'", "(", ")" };
         public static string EscapeUriDataStringRfc3986(string value) {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
 			// Start with RFC 2396 escaping by calling the .NET method to do the work.
 			// This MAY sometimes exhibit RFC 3986 behavior (according to the documentation).

@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Dependency {
 
         public CommonServiceLocatorDependencyResolver(object commonServiceLocator) {
             if (commonServiceLocator == null)
-                throw new ArgumentNullException("commonServiceLocator");
+                throw new ArgumentNullException(nameof(commonServiceLocator));
 
             Type locatorType = commonServiceLocator.GetType();
             MethodInfo getInstance = locatorType.GetMethod("GetInstance", new[] { typeof(Type) });
@@ -81,7 +81,7 @@ namespace Exceptionless.Core.Dependency {
 
             if (getInstance == null || getInstance.ReturnType != typeof(object) || getInstances == null || getInstances.ReturnType != typeof(IEnumerable<object>)) {
                 throw new ArgumentException($"{locatorType.FullName} does not implement required methods.",
-                    "commonServiceLocator");
+                    nameof(commonServiceLocator));
             }
 
             _getServiceDelegate = (Func<Type, object>)Delegate.CreateDelegate(typeof(Func<Type, object>), commonServiceLocator, getInstance);

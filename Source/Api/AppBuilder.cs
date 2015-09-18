@@ -40,7 +40,7 @@ namespace Exceptionless.Api {
 
         public static void BuildWithContainer(IAppBuilder app, Container container) {
             if (container == null)
-                throw new ArgumentNullException("container");
+                throw new ArgumentNullException(nameof(container));
 
             var contractResolver = container.GetInstance<IContractResolver>();
             var exceptionlessContractResolver = contractResolver as ExceptionlessContractResolver;

@@ -22,10 +22,10 @@ namespace Exceptionless.Api.Security {
 
         async Task<HttpResponseMessage> IAuthorizationFilter.ExecuteAuthorizationFilterAsync(HttpActionContext actionContext, CancellationToken cancellationToken, Func<Task<HttpResponseMessage>> continuation) {
             if (actionContext == null)
-                throw new ArgumentNullException("actionContext");
+                throw new ArgumentNullException(nameof(actionContext));
 
             if (continuation == null)
-                throw new ArgumentNullException("continuation");
+                throw new ArgumentNullException(nameof(continuation));
 
             if (Settings.Current.EnableSSL && actionContext.Request.RequestUri.Scheme != Uri.UriSchemeHttps)
                 HandleNonHttpsRequest(actionContext);

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -20,9 +21,9 @@ namespace Exceptionless.Core.Pipeline {
 
         public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager, IMessagePublisher publisher) {
             if (stackRepository == null)
-                throw new ArgumentNullException("stackRepository");
+                throw new ArgumentNullException(nameof(stackRepository));
             if (formattingPluginManager == null)
-                throw new ArgumentNullException("formattingPluginManager");
+                throw new ArgumentNullException(nameof(formattingPluginManager));
 
             _stackRepository = stackRepository;
             _formattingPluginManager = formattingPluginManager;
@@ -127,11 +128,11 @@ namespace Exceptionless.Core.Pipeline {
                 ctx.Event.StackId = ctx.Stack != null ? ctx.Stack.Id : null;
             });
 
-            return Task.FromResult(0);
+            return TaskHelper.Completed();
         }
 
         public override Task ProcessAsync(EventContext ctx) {
-            return Task.FromResult(0);
+            return TaskHelper.Completed();
         }
     }
 }

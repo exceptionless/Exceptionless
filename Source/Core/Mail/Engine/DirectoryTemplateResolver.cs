@@ -37,7 +37,7 @@ namespace RazorSharpEmail {
 
         public string Resolve(string name) {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             return File.ReadAllText(Path.Combine(_directoryFolder, name));
         }

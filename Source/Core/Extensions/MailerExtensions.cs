@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Extensions {
             };
 
             if (message.AlternateViews.Count == 0)
-                throw new ArgumentException("MailMessage must contain an alternative view.", "message");
+                throw new ArgumentException("MailMessage must contain an alternative view.", nameof(message));
 
             foreach (AlternateView view in message.AlternateViews) {
                 if (view.ContentType.MediaType == "text/html")

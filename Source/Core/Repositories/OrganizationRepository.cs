@@ -18,36 +18,36 @@ namespace Exceptionless.Core.Repositories {
     public class OrganizationRepository : ElasticSearchRepository<Organization>, IOrganizationRepository {
         public OrganizationRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<Organization> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
 
-        public Organization GetByInviteToken(string token, out Invite invite) {
+        public async Task<Organization> GetByInviteTokenAsync(string token, out Invite invite) {
             invite = null;
             if (String.IsNullOrEmpty(token))
                 return null;
 
             var filter = Filter<Organization>.Term(OrganizationIndex.Fields.Organization.InviteToken, token);
-            var organization = FindOne(new ElasticSearchOptions<Organization>().WithFilter(filter));
+            var organization = await FindOneAsync(new ElasticSearchOptions<Organization>().WithFilter(filter)).AnyContext();
             if (organization != null)
                 invite = organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
 
             return organization;
         }
 
-        public Organization GetByStripeCustomerId(string customerId) {
+        public Task<Organization> GetByStripeCustomerIdAsync(string customerId) {
             if (String.IsNullOrEmpty(customerId))
-                throw new ArgumentNullException("customerId");
+                throw new ArgumentNullException(nameof(customerId));
 
             var filter = Filter<Organization>.Term(o => o.StripeCustomerId, customerId);
-            return FindOne(new ElasticSearchOptions<Organization>().WithFilter(filter));
+            return FindOneAsync(new ElasticSearchOptions<Organization>().WithFilter(filter));
         }
 
-        public FindResults<Organization> GetByRetentionDaysEnabled(PagingOptions paging) {
+        public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
             var filter = Filter<Organization>.Range(r => r.OnField(o => o.RetentionDays).Greater(0));
-            return Find(new ElasticSearchOptions<Organization>()
+            return FindAsync(new ElasticSearchOptions<Organization>()
                 .WithFilter(filter)
                 .WithFields("id", "name", "retention_days")
                 .WithPaging(paging));
         }
         
-        public FindResults<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
+        public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
             var filter = Filter<Organization>.MatchAll();
             if (!String.IsNullOrWhiteSpace(criteria))
                 filter &= Filter<Organization>.Term(o => o.Name, criteria);
@@ -87,13 +87,13 @@ namespace Exceptionless.Core.Repositories {
                 //    break;
             }
             
-            return Find(new ElasticSearchOptions<Organization>().WithPaging(paging).WithFilter(filter).WithSort(sort));
+            return FindAsync(new ElasticSearchOptions<Organization>().WithPaging(paging).WithFilter(filter).WithSort(sort));
         }
 
-        public BillingPlanStats GetBillingPlanStats() {
-            var results = Find(new ElasticSearchOptions<Organization>()
+        public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
+            var results = (await FindAsync(new ElasticSearchOptions<Organization>()
                 .WithFields("plan_id", "is_suspended", "billing_price", "billing_status")
-                .WithSort(s => s.OnField(o => o.PlanId).Order(Nest.SortOrder.Descending))).Documents;
+                .WithSort(s => s.OnField(o => o.PlanId).Order(Nest.SortOrder.Descending))).AnyContext()).Documents;
 
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> mediumOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();
@@ -161,7 +161,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(organizationId))
                 return false;
 
-            var org = GetById(organizationId, true);
+            var org = await GetByIdAsync(organizationId, true).AnyContext();
             if (org == null || org.MaxEventsPerMonth < 0)
                 return false;
 
@@ -190,9 +190,9 @@ namespace Exceptionless.Core.Repositories {
             bool justWentOverMonthly = monthlyTotal > org.GetMaxEventsPerMonthWithBonus() && monthlyTotal <= org.GetMaxEventsPerMonthWithBonus() + count;
 
             if (justWentOverMonthly)
-                PublishMessage(new PlanOverage { OrganizationId = org.Id });
+                await PublishMessageAsync(new PlanOverage { OrganizationId = org.Id }).AnyContext();
             else if (justWentOverHourly)
-                PublishMessage(new PlanOverage { OrganizationId = org.Id, IsHourly = true });
+                await PublishMessageAsync(new PlanOverage { OrganizationId = org.Id, IsHourly = true }).AnyContext();
 
             bool shouldSaveUsage = false;
             var lastCounterSavedDate = await Cache.GetAsync<DateTime?>(GetUsageSavedCacheKey(organizationId)).AnyContext();
@@ -210,12 +210,12 @@ namespace Exceptionless.Core.Repositories {
                 shouldSaveUsage = true;
 
             if (shouldSaveUsage) {
-                org = GetById(organizationId, false);
+                org = await GetByIdAsync(organizationId, false).AnyContext();
                 org.SetMonthlyUsage(monthlyTotal, monthlyBlocked, monthlyTooBig);
                 if (hourlyTotal > org.GetHourlyEventLimit())
                     org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
 
-                Save(org);
+                await SaveAsync(org).AnyContext();
                 await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
             }
 
@@ -223,7 +223,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public async Task<int> GetRemainingEventLimitAsync(string organizationId) {
-            var org = GetById(organizationId, true);
+            var org = await GetByIdAsync(organizationId, true).AnyContext();
             if (org == null || org.MaxEventsPerMonth < 0)
                 return Int32.MaxValue;
 

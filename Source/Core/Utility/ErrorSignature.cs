@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Utility {
 
         public ErrorSignature(Error error, IEnumerable<string> userNamespaces = null, IEnumerable<string> userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true) {
             if (error == null)
-                throw new ArgumentNullException("error");
+                throw new ArgumentNullException(nameof(error));
 
             Error = error;
 
@@ -132,7 +132,7 @@ namespace Exceptionless.Core.Utility {
 
         private bool IsUserFrame(StackFrame frame) {
             if (frame == null)
-                throw new ArgumentNullException("frame");
+                throw new ArgumentNullException(nameof(frame));
 
             if (frame.Name == null)
                 return false;

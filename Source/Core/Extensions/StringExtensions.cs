@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static string GetRandomString(int length, string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") {
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", "length cannot be less than zero.");
+                throw new ArgumentOutOfRangeException(nameof(length), "length cannot be less than zero.");
 
             if (string.IsNullOrEmpty(allowedChars))
                 throw new ArgumentException("allowedChars may not be empty.");

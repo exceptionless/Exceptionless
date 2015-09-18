@@ -14,7 +14,7 @@ namespace Exceptionless.Api.Utility {
 
         public override void OnActionExecuted(HttpActionExecutedContext context) {
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             if (context.Response == null || context.Response.StatusCode != HttpStatusCode.Accepted)
                 return;

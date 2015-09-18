@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Helpers
 {
@@ -38,7 +39,7 @@ namespace Exceptionless.Core.Helpers
 
         public static T WithRetries<T>(Func<T> action, int attempts = 3, TimeSpan? retryInterval = null) {
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             do {
                 try {
@@ -98,7 +99,7 @@ namespace Exceptionless.Core.Helpers
                 restartInterval = TimeSpan.FromMilliseconds(100);
 
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             return Task.Factory.StartNew(() => {
                 do {
@@ -108,7 +109,7 @@ namespace Exceptionless.Core.Helpers
                         if (maxFaults <= 0)
                             throw;
 
-                        Task.Delay(restartInterval.Value, token.Value).Wait();
+                        await Task.Delay(restartInterval.Value, token.Value).AnyContext();
                     }
                 } while (!token.Value.IsCancellationRequested && maxFaults-- > 0);
             }, token.Value, TaskCreationOptions.LongRunning, TaskScheduler.Default);

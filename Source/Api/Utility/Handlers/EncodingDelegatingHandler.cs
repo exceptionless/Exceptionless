@@ -39,10 +39,10 @@ namespace Exceptionless.Api.Utility {
 
         public CompressedContent(HttpContent content, string encodingType) {
             if (content == null)
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
 
             if (encodingType == null)
-                throw new ArgumentNullException("encodingType");
+                throw new ArgumentNullException(nameof(encodingType));
 
             _originalContent = content;
             _encodingType = encodingType.ToLowerInvariant();

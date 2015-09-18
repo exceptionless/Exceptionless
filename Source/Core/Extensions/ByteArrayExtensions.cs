@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Extensions {
                             zip.CopyTo(outputStream);
                         }
                     else
-                        throw new ArgumentException($"Unsupported encoding type \"{encoding}\".", "encoding");
+                        throw new ArgumentException($"Unsupported encoding type \"{encoding}\".", nameof(encoding));
                 }
 
                 decompressedData = outputStream.ToArray();

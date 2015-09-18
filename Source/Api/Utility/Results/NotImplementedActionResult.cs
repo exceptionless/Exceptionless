@@ -10,11 +10,11 @@ namespace Exceptionless.Api.Utility.Results {
     public class NotImplementedActionResult : IHttpActionResult {
         public NotImplementedActionResult(string message, HttpRequestMessage request) {
             if (message == null) {
-                throw new ArgumentNullException("message");
+                throw new ArgumentNullException(nameof(message));
             }
 
             if (request == null) {
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
             }
 
             Message = message;

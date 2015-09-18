@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Helpers;
 using Xunit;
 
@@ -32,17 +33,17 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
         }
 
         [Fact]
-        public void CanRunInBackgroundAndMaxRestarts() {
+        public async Task CanRunInBackgroundAndMaxRestarts() {
             int runs = 0;
-            Assert.Throws<AggregateException>(() => Run.InBackground(() => {
+            await Assert.ThrowsAsync<AggregateException>(async () => await Run.InBackground(() => {
                 runs++;
                 throw new ApplicationException();
-            }, 5, TimeSpan.FromMilliseconds(0)).Wait());
+            }, 5, TimeSpan.FromMilliseconds(0)).AnyContext()).AnyContext();
             Assert.Equal(6, runs);
         }
 
         [Fact]
-        public void CanRunOnceWithMethod() {
+        public async Task CanRunOnceWithMethod() {
             _counter = 0;
             Run.Once(TestMethod1);
             Assert.Equal(1, _counter);
@@ -50,7 +51,7 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
             Assert.Equal(1, _counter);
             Run.Once(TestMethod2);
             Assert.Equal(3, _counter);
-            Task.Run(() => Run.Once(TestMethod1)).Wait();
+            await Task.Run(() => Run.Once(TestMethod1)).AnyContext();
             Assert.Equal(3, _counter);
         }
 

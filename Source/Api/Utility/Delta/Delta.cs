@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Utility {
         /// <returns>True if successful</returns>
         public bool TrySetPropertyValue(string name, object value, TEntityType target = null) {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (!_propertiesThatExist.ContainsKey(name))
                 return false;
@@ -123,7 +123,7 @@ namespace Exceptionless.Api.Utility {
         /// <returns>True if the Property was found</returns>
         public bool TryGetPropertyValue(string name, out object value, TEntityType target = null) {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (_propertiesThatExist.ContainsKey(name)) {
                 IMemberAccessor cacheHit = _propertiesThatExist[name];
@@ -147,7 +147,7 @@ namespace Exceptionless.Api.Utility {
         /// <returns>Returns <c>true</c> if the Property was found and <c>false</c> if not.</returns>
         public bool TryGetPropertyType(string name, out Type type) {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             IMemberAccessor value;
             if (_propertiesThatExist.TryGetValue(name, out value)) {
@@ -170,7 +170,7 @@ namespace Exceptionless.Api.Utility {
         /// </summary>
         public override bool TrySetMember(SetMemberBinder binder, object value) {
             if (binder == null)
-                throw new ArgumentNullException("binder");
+                throw new ArgumentNullException(nameof(binder));
 
             // add properties that don't exist to the unknown properties collect
             if (!_propertiesThatExist.ContainsKey(binder.Name)) {
@@ -187,7 +187,7 @@ namespace Exceptionless.Api.Utility {
         /// </summary>
         public override bool TryGetMember(GetMemberBinder binder, out object result) {
             if (binder == null)
-                throw new ArgumentNullException("binder");
+                throw new ArgumentNullException(nameof(binder));
 
             return TryGetPropertyValue(binder.Name, out result);
         }
@@ -253,7 +253,7 @@ namespace Exceptionless.Api.Utility {
         /// <param name="target">The target entity to be updated.</param>
         public void CopyChangedValues(object target) {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
 
             Type targetType = target.GetType();
             if (!_propertyCache.ContainsKey(targetType))
@@ -281,7 +281,7 @@ namespace Exceptionless.Api.Utility {
         /// <param name="target">The entity to be updated.</param>
         public void CopyUnchangedValues(object target) {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
 
 
             Type targetType = target.GetType();
@@ -324,7 +324,7 @@ namespace Exceptionless.Api.Utility {
 
         private void Initialize(Type entityType) {
             if (entityType == null)
-                throw new ArgumentNullException("entityType");
+                throw new ArgumentNullException(nameof(entityType));
 
             if (!typeof(TEntityType).IsAssignableFrom(entityType))
                 throw new InvalidOperationException("Delta Entity Type Not Assignable");

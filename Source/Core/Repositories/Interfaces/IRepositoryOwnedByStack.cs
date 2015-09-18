@@ -4,7 +4,7 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IRepositoryOwnedByStack<T> : IRepository<T> where T : class, IOwnedByStack, IIdentity, new() {
-        FindResults<T> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
+        Task<FindResults<T>> GetByStackIdAsync(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         Task RemoveAllByStackIdsAsync(string[] stackIds);
     }
 

@@ -139,8 +139,8 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Parallel.For(0, batchCount, i => {
                     _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                     var events = new RandomEventGenerator().Generate(batchSize);
-                    var compressedEvents = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).CompressAsync().Result;
-                    var actionResult = _eventController.PostAsync(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0").Result;
+                    var compressedEvents = await Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).CompressAsync().AnyContext();
+                    var actionResult = await _eventController.PostAsync(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0").AnyContext();
                     Assert.IsType<StatusCodeResult>(actionResult);
                 });
 

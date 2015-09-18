@@ -76,9 +76,9 @@ namespace Exceptionless.Core.Reflection
         private static PropertyInfo FindProperty(Type type, string name, BindingFlags flags)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             // first try GetProperty
             PropertyInfo property = type.GetProperty(name, flags);
@@ -130,9 +130,9 @@ namespace Exceptionless.Core.Reflection
         private static FieldInfo FindField(Type type, string name, BindingFlags flags)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             // first try GetField
             var field = type.GetField(name, flags);

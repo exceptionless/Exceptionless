@@ -51,7 +51,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static T ToType<T>(this object value) {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             Type targetType = typeof(T);
             TypeConverter converter = TypeDescriptor.GetConverter(targetType);
@@ -84,11 +84,11 @@ namespace Exceptionless.Core.Extensions {
                     object convertedValue = Convert.ChangeType(value, targetType);
                     return (T)convertedValue;
                 } catch (Exception e) {
-                    throw new ArgumentException($"An incompatible value specified.  Target Type: {targetType.FullName} Value Type: {value.GetType().FullName}", "value", e);
+                    throw new ArgumentException($"An incompatible value specified.  Target Type: {targetType.FullName} Value Type: {value.GetType().FullName}", nameof(value), e);
                 }
             }
 
-            throw new ArgumentException($"An incompatible value specified.  Target Type: {targetType.FullName} Value Type: {value.GetType().FullName}", "value");
+            throw new ArgumentException($"An incompatible value specified.  Target Type: {targetType.FullName} Value Type: {value.GetType().FullName}", nameof(value));
         }
 
         public static PropertyInfo[] GetPublicProperties(this Type type) {
