@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
@@ -13,14 +14,14 @@ namespace Exceptionless.Core.Repositories {
         public WebHookRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<WebHook> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
             : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
 
-        public void RemoveByUrl(string targetUrl) {
+        public Task RemoveByUrlAsync(string targetUrl) {
             var filter = Filter<WebHook>.Term(e => e.Url, targetUrl);
-            RemoveAll(new ElasticSearchOptions<WebHook>().WithFilter(filter));
+            return RemoveAllAsync(new ElasticSearchOptions<WebHook>().WithFilter(filter));
         }
 
-        public FindResults<WebHook> GetByOrganizationIdOrProjectId(string organizationId, string projectId) {
+        public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
             var filter = (Filter<WebHook>.Term(e => e.OrganizationId, organizationId) && Filter<WebHook>.Missing(e => e.ProjectId)) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
-            return Find(new ElasticSearchOptions<WebHook>()
+            return FindAsync(new ElasticSearchOptions<WebHook>()
                 .WithFilter(filter)
                 .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))
                 .WithExpiresIn(TimeSpan.FromMinutes(5)));
@@ -36,12 +37,12 @@ namespace Exceptionless.Core.Repositories {
             public const string StackPromoted = "StackPromoted";
         }
         
-        protected override void InvalidateCache(ICollection<WebHook> hooks, ICollection<WebHook> originalHooks) {
+        protected override async Task InvalidateCacheAsync(ICollection<WebHook> hooks, ICollection<WebHook> originalHooks) {
             if (!EnableCache)
                 return;
 
-            hooks.ForEach(h => InvalidateCache(String.Concat("org:", h.OrganizationId, "-project:", h.ProjectId)));
-            base.InvalidateCache(hooks, originalHooks);
+            hooks.ForEach(async h => await InvalidateCacheAsync(String.Concat("org:", h.OrganizationId, "-project:", h.ProjectId)).AnyContext());
+            await base.InvalidateCacheAsync(hooks, originalHooks).AnyContext();
         }
     }
 }
