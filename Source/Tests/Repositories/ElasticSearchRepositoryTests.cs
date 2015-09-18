@@ -72,7 +72,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void CanAddAndGetByCached() {
             var cache = IoC.GetInstance<ICacheClient>() as InMemoryCacheClient;
             Assert.NotNull(cache);
-            cache.FlushAll();
+            await cache.RemoveAllAsync().AnyContext();
 
             var stack = StackData.GenerateSampleStack();
 
@@ -82,7 +82,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(2, cache.Count);
             _client.Refresh();
 
-            cache.FlushAll();
+            await cache.RemoveAllAsync().AnyContext();
             Assert.Equal(0, cache.Count);
             Assert.NotNull(_repository.GetById(stack.Id, true));
             Assert.Equal(1, cache.Count);

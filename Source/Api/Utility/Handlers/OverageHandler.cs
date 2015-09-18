@@ -8,7 +8,6 @@ using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Extensions;
 using Foundatio.Caching;
 using Foundatio.Metrics;
 using NLog.Fluent;
@@ -37,7 +36,7 @@ namespace Exceptionless.Api.Utility {
             if (!IsEventPost(request))
                 return await base.SendAsync(request, cancellationToken).AnyContext();
 
-            if (_cacheClient.TryGet("ApiDisabled", false))
+            if (await _cacheClient.GetAsync<bool>("ApiDisabled").AnyContext())
                 return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
 
             var project = request.GetDefaultProject();

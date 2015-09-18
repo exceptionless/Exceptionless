@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Foundatio.Jobs;
@@ -10,24 +10,21 @@ using Foundatio.Utility;
 using Nest;
 using Newtonsoft.Json.Linq;
 using NLog.Fluent;
-using SimpleInjector;
 
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class ReindexWorkItemHandler : IWorkItemHandler {
         private readonly IElasticClient _client;
-        private readonly Container _container;
 
-        public ReindexWorkItemHandler(IElasticClient client, Container container) {
+        public ReindexWorkItemHandler(IElasticClient client) {
             _client = client;
-            _container = container;
         }
 
-        public Task<IDisposable> GetWorkItemLockAsync(WorkItemContext context) {
+        public Task<IDisposable> GetWorkItemLockAsync(WorkItemContext context, CancellationToken cancellationToken) {
             return Task.FromResult(Disposable.Empty);
         }
 
-        public async Task HandleItemAsync(WorkItemContext context) {
+        public async Task HandleItemAsync(WorkItemContext context, CancellationToken cancellationToken) {
             var workItem = context.GetData<ReindexWorkItem>();
 
             Log.Info().Message("Received reindex work item for new index {0}", workItem.NewIndex).Write();
@@ -89,7 +86,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                     // try each doc individually so we can see which doc is breaking us
                     foreach (var hit in results.Hits) {
                         var h = hit;
-                        var response = _client.Index<JObject>(h.Source, d => d.Index(workItem.NewIndex).Type(h.Type).Id(h.Id));
+                        var response = _client.Index(h.Source, d => d.Index(workItem.NewIndex).Type(h.Type).Id(h.Id));
 
                         if (response.IsValid)
                             continue;

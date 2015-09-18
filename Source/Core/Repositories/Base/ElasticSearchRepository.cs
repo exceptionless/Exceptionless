@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
@@ -274,12 +275,12 @@ namespace Exceptionless.Core.Repositories {
                 DocumentChanged(this, new DocumentChangeEventArgs<T>(changeType, documents, this, orginalDocuments));
         }
 
-        protected virtual void AddToCache(ICollection<T> documents, TimeSpan? expiresIn = null) {
+        protected virtual async Task AddToCacheAsync(ICollection<T> documents, TimeSpan? expiresIn = null) {
             if (!EnableCache)
                 return;
 
             foreach (var document in documents)
-                Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+                await Cache.SetAsync(GetScopedCacheKey(document.Id), document, expiresIn ?? TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS)).AnyContext();
         }
 
         protected virtual void SendNotifications(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {

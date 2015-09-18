@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -47,10 +48,10 @@ namespace Exceptionless.Core.Repositories {
             }
         }
 
-        protected override void AddToCache(ICollection<Stack> documents, TimeSpan? expiresIn = null) {
-            base.AddToCache(documents, expiresIn);
+        protected override async Task AddToCacheAsync(ICollection<Stack> documents, TimeSpan? expiresIn = null) {
+            await base.AddToCacheAsync(documents, expiresIn).AnyContext();
             foreach (var stack in documents)
-                Cache.Set(GetScopedCacheKey(GetStackSignatureCacheKey(stack)), stack, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+                await Cache.SetAsync(GetScopedCacheKey(GetStackSignatureCacheKey(stack)), stack, expiresIn ?? TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS)).AnyContext();
         }
 
         private string GetStackSignatureCacheKey(Stack stack) {

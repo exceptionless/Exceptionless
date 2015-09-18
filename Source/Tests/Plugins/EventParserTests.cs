@@ -31,7 +31,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         };
 
         [Theory]
-        [PropertyData("EventData")]
+        [MemberData("EventData")]
         public void ParseEvents(string input, int expectedEvents, string[] expectedMessage, string expectedType) {
             var events = _eventParserPluginManager.ParseEvents(input, 2, "exceptionless/2.0.0.0");
             Assert.Equal(expectedEvents, events.Count);
@@ -44,7 +44,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         [Theory]
-        [PropertyData("Events")]
+        [MemberData("Events")]
         public void VerifyEventParserSerialization(string eventsFilePath) {
             var json = File.ReadAllText(eventsFilePath);
 
@@ -55,7 +55,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         [Theory]
-        [PropertyData("Events")]
+        [MemberData("Events")]
         public void CanDeserializeEvents(string eventsFilePath) {
             var json = File.ReadAllText(eventsFilePath);
 

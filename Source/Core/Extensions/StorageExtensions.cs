@@ -16,7 +16,10 @@ namespace Exceptionless.Core.Extensions {
                 if (eventPostInfo == null)
                     return null;
 
-                if (!await storage.ExistsAsync(path + ".x").AnyContext() && !await storage.SaveFileAsync(path + ".x", new MemoryStream(Encoding.UTF8.GetBytes(String.Empty)), cancellationToken).AnyContext())
+                if (cancellationToken.IsCancellationRequested)
+                    return null;
+
+                if (!await storage.ExistsAsync(path + ".x").AnyContext() && !await storage.SaveFileAsync(path + ".x", new MemoryStream(Encoding.UTF8.GetBytes(String.Empty))).AnyContext())
                     return null;
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Error retrieving event post data \"{0}\".", path).Write();
@@ -26,9 +29,9 @@ namespace Exceptionless.Core.Extensions {
             return eventPostInfo;
         }
 
-        public static async Task<bool> SetNotActiveAsync(this IFileStorage storage, string path, CancellationToken cancellationToken = default(CancellationToken)) {
+        public static async Task<bool> SetNotActiveAsync(this IFileStorage storage, string path) {
             try {
-                return await storage.DeleteFileAsync(path + ".x", cancellationToken).AnyContext();
+                return await storage.DeleteFileAsync(path + ".x").AnyContext();
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Error deleting work marker \"{0}\".", path + ".x").Write();
             }
@@ -36,7 +39,7 @@ namespace Exceptionless.Core.Extensions {
             return false;
         }
 
-        public static async Task<bool> CompleteEventPostAsync(this IFileStorage storage, string path, string projectId, DateTime created, bool shouldArchive = true, CancellationToken cancellationToken = default(CancellationToken)) {
+        public static async Task<bool> CompleteEventPostAsync(this IFileStorage storage, string path, string projectId, DateTime created, bool shouldArchive = true) {
             // don't move files that are already in the archive
             if (path.StartsWith("archive"))
                 return true;
@@ -45,10 +48,10 @@ namespace Exceptionless.Core.Extensions {
             
             try {
                 if (shouldArchive) {
-                    if (!await storage.RenameFileAsync(path, archivePath, cancellationToken).AnyContext())
+                    if (!await storage.RenameFileAsync(path, archivePath).AnyContext())
                         return false;
                 } else {
-                    if (!await storage.DeleteFileAsync(path, cancellationToken).AnyContext())
+                    if (!await storage.DeleteFileAsync(path).AnyContext())
                         return false;
                 }
             } catch (Exception ex) {
@@ -56,7 +59,7 @@ namespace Exceptionless.Core.Extensions {
                 return false;
             }
 
-            await storage.SetNotActiveAsync(path, cancellationToken).AnyContext();
+            await storage.SetNotActiveAsync(path).AnyContext();
             return true;
         }
     }

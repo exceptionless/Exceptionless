@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
@@ -154,7 +155,7 @@ namespace Exceptionless.Core.Repositories {
             return String.Concat("usage-saved", ":", organizationId);
         }
 
-        public bool IncrementUsage(string organizationId, bool tooBig, int count = 1) {
+        public async Task<bool> IncrementUsageAsync(string organizationId, bool tooBig, int count = 1) {
             const int USAGE_SAVE_MINUTES = 5;
 
             if (String.IsNullOrEmpty(organizationId))
@@ -166,7 +167,7 @@ namespace Exceptionless.Core.Repositories {
 
             long hourlyTotal = Cache.Increment(GetHourlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
             long monthlyTotal = Cache.Increment(GetMonthlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
-            long monthlyBlocked = Cache.Get<long?>(GetMonthlyBlockedCacheKey(organizationId)) ?? org.GetCurrentMonthlyBlocked();
+            long monthlyBlocked = await Cache.GetAsync<long?>(GetMonthlyBlockedCacheKey(organizationId)).AnyContext() ?? org.GetCurrentMonthlyBlocked();
             bool overLimit = hourlyTotal > org.GetHourlyEventLimit() || (monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus();
 
             long monthlyTooBig = Cache.IncrementIf(GetHourlyTooBigCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig());
@@ -194,11 +195,11 @@ namespace Exceptionless.Core.Repositories {
                 PublishMessage(new PlanOverage { OrganizationId = org.Id, IsHourly = true });
 
             bool shouldSaveUsage = false;
-            var lastCounterSavedDate = Cache.Get<DateTime?>(GetUsageSavedCacheKey(organizationId));
+            var lastCounterSavedDate = await Cache.GetAsync<DateTime?>(GetUsageSavedCacheKey(organizationId)).AnyContext();
 
             // don't save on the 1st increment, but set the last saved date so we will save in 5 minutes
             if (!lastCounterSavedDate.HasValue)
-                Cache.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
+                await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
 
             // save usages if we just went over one of the limits
             if (justWentOverHourly || justWentOverMonthly)
@@ -215,19 +216,19 @@ namespace Exceptionless.Core.Repositories {
                     org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
 
                 Save(org);
-                Cache.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
+                await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
             }
 
             return overLimit;
         }
 
-        public int GetRemainingEventLimit(string organizationId) {
+        public async Task<int> GetRemainingEventLimitAsync(string organizationId) {
             var org = GetById(organizationId, true);
             if (org == null || org.MaxEventsPerMonth < 0)
                 return Int32.MaxValue;
 
             string monthlyCacheKey = GetMonthlyTotalCacheKey(organizationId);
-            var monthlyErrorCount = Cache.Get<long?>(monthlyCacheKey);
+            var monthlyErrorCount = await Cache.GetAsync<long?>(monthlyCacheKey).AnyContext();
             if (!monthlyErrorCount.HasValue)
                 monthlyErrorCount = 0;
 

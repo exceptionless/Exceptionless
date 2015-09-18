@@ -3,9 +3,6 @@ using Foundatio.Caching;
 
 namespace Exceptionless.Extensions {
     public static class CacheClientExtensions {
-        public static T TryGet<T>(this ICacheClient client, string key) {
-            return TryGet(client, key, default(T));
-        }
 
         public static T TryGet<T>(this ICacheClient client, string key, T defaultValue) {
             T value;
