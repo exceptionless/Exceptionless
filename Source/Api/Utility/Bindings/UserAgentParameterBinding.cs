@@ -25,7 +25,7 @@ namespace Exceptionless.Api.Utility {
             return Task.FromResult(0);
         }
 
-        public override bool WillReadBody { get { return false; } }
+        public override bool WillReadBody => false;
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]

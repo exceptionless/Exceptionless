@@ -61,14 +61,14 @@ namespace Exceptionless.Core.Billing {
             long currentNumberOfUsers = _userRepository.GetByOrganizationId(organization.Id).Total + organization.Invites.Count;
             int maxUsers = plan.MaxUsers != -1 ? plan.MaxUsers : int.MaxValue;
             if (currentNumberOfUsers > maxUsers) {
-                message = String.Format("Please remove {0} user{1} and try again.", currentNumberOfUsers - maxUsers, (currentNumberOfUsers - maxUsers) > 0 ? "s" : String.Empty);
+                message = $"Please remove {currentNumberOfUsers - maxUsers} user{((currentNumberOfUsers - maxUsers) > 0 ? "s" : String.Empty)} and try again.";
                 return false;
             }
 
             int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : int.MaxValue;
             long projectCount = _projectRepository.GetCountByOrganizationId(organization.Id);
             if (projectCount > maxProjects) {
-                message = String.Format("Please remove {0} project{1} and try again.", projectCount - maxProjects, (projectCount - maxProjects) > 0 ? "s" : String.Empty);
+                message = $"Please remove {projectCount - maxProjects} project{((projectCount - maxProjects) > 0 ? "s" : String.Empty)} and try again.";
                 return false;
             }
 
@@ -107,198 +107,150 @@ namespace Exceptionless.Core.Billing {
             organization.HasPremiumFeatures = plan.HasPremiumFeatures;
         }
 
-        public static BillingPlan FreePlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_FREE",
-                    Name = "Free",
-                    Description = "Free",
-                    Price = 0,
-                    MaxProjects = 1,
-                    MaxUsers = 1,
-                    RetentionDays = 3,
-                    MaxEventsPerMonth = 3000,
-                    HasPremiumFeatures = false
-                };
-            }
-        }
+        public static BillingPlan FreePlan => new BillingPlan {
+            Id = "EX_FREE",
+            Name = "Free",
+            Description = "Free",
+            Price = 0,
+            MaxProjects = 1,
+            MaxUsers = 1,
+            RetentionDays = 3,
+            MaxEventsPerMonth = 3000,
+            HasPremiumFeatures = false
+        };
 
-        public static BillingPlan SmallPlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_SMALL",
-                    Name = "Small",
-                    Description = "Small ($15/month)",
-                    Price = 15,
-                    MaxProjects = 5,
-                    MaxUsers = 10,
-                    RetentionDays = 30,
-                    MaxEventsPerMonth = 15000,
-                    HasPremiumFeatures = true
-                };
-            }
-        }
+        public static BillingPlan SmallPlan => new BillingPlan {
+            Id = "EX_SMALL",
+            Name = "Small",
+            Description = "Small ($15/month)",
+            Price = 15,
+            MaxProjects = 5,
+            MaxUsers = 10,
+            RetentionDays = 30,
+            MaxEventsPerMonth = 15000,
+            HasPremiumFeatures = true
+        };
 
-        public static BillingPlan SmallYearlyPlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_SMALL_YEARLY",
-                    Name = "Small (Yearly)",
-                    Description = "Small Yearly ($165/year - Save $15)",
-                    Price = 165,
-                    MaxProjects = 5,
-                    MaxUsers = 10,
-                    RetentionDays = 30,
-                    MaxEventsPerMonth = 15000,
-                    HasPremiumFeatures = true
-                };
-            }
-        }
+        public static BillingPlan SmallYearlyPlan => new BillingPlan {
+            Id = "EX_SMALL_YEARLY",
+            Name = "Small (Yearly)",
+            Description = "Small Yearly ($165/year - Save $15)",
+            Price = 165,
+            MaxProjects = 5,
+            MaxUsers = 10,
+            RetentionDays = 30,
+            MaxEventsPerMonth = 15000,
+            HasPremiumFeatures = true
+        };
 
-        public static BillingPlan MediumPlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_MEDIUM",
-                    Name = "Medium",
-                    Description = "Medium ($49/month)",
-                    Price = 49,
-                    MaxProjects = 15,
-                    MaxUsers = 25,
-                    RetentionDays = 90,
-                    MaxEventsPerMonth = 75000,
-                    HasPremiumFeatures = true
-                };
-            }
-        }
+        public static BillingPlan MediumPlan => new BillingPlan {
+            Id = "EX_MEDIUM",
+            Name = "Medium",
+            Description = "Medium ($49/month)",
+            Price = 49,
+            MaxProjects = 15,
+            MaxUsers = 25,
+            RetentionDays = 90,
+            MaxEventsPerMonth = 75000,
+            HasPremiumFeatures = true
+        };
 
-        public static BillingPlan MediumYearlyPlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_MEDIUM_YEARLY",
-                    Name = "Medium (Yearly)",
-                    Description = "Medium Yearly ($539/year - Save $49)",
-                    Price = 539,
-                    MaxProjects = 15,
-                    MaxUsers = 25,
-                    RetentionDays = 90,
-                    MaxEventsPerMonth = 75000,
-                    HasPremiumFeatures = true
-                };
-            }
-        }
+        public static BillingPlan MediumYearlyPlan => new BillingPlan {
+            Id = "EX_MEDIUM_YEARLY",
+            Name = "Medium (Yearly)",
+            Description = "Medium Yearly ($539/year - Save $49)",
+            Price = 539,
+            MaxProjects = 15,
+            MaxUsers = 25,
+            RetentionDays = 90,
+            MaxEventsPerMonth = 75000,
+            HasPremiumFeatures = true
+        };
 
-        public static BillingPlan LargePlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_LARGE",
-                    Name = "Large",
-                    Description = "Large ($99/month)",
-                    Price = 99,
-                    MaxProjects = -1,
-                    MaxUsers = -1,
-                    RetentionDays = 180,
-                    MaxEventsPerMonth = 250000,
-                    HasPremiumFeatures = true
-                };
-            }
-        }
+        public static BillingPlan LargePlan => new BillingPlan {
+            Id = "EX_LARGE",
+            Name = "Large",
+            Description = "Large ($99/month)",
+            Price = 99,
+            MaxProjects = -1,
+            MaxUsers = -1,
+            RetentionDays = 180,
+            MaxEventsPerMonth = 250000,
+            HasPremiumFeatures = true
+        };
 
-        public static BillingPlan LargeYearlyPlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_LARGE_YEARLY",
-                    Name = "Large (Yearly)",
-                    Description = "Large Yearly ($1,089/year - Save $99)",
-                    Price = 1089,
-                    MaxProjects = -1,
-                    MaxUsers = -1,
-                    RetentionDays = 180,
-                    MaxEventsPerMonth = 250000,
-                    HasPremiumFeatures = true
-                };
-            }
-        }
+        public static BillingPlan LargeYearlyPlan => new BillingPlan {
+            Id = "EX_LARGE_YEARLY",
+            Name = "Large (Yearly)",
+            Description = "Large Yearly ($1,089/year - Save $99)",
+            Price = 1089,
+            MaxProjects = -1,
+            MaxUsers = -1,
+            RetentionDays = 180,
+            MaxEventsPerMonth = 250000,
+            HasPremiumFeatures = true
+        };
 
-        public static BillingPlan ExtraLargePlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_XL",
-                    Name = "Extra Large",
-                    Description = "Extra Large ($199/month)",
-                    Price = 199,
-                    MaxProjects = -1,
-                    MaxUsers = -1,
-                    RetentionDays = 180,
-                    MaxEventsPerMonth = 1000000,
-                    HasPremiumFeatures = true
-                };
-            }
-        }
+        public static BillingPlan ExtraLargePlan => new BillingPlan {
+            Id = "EX_XL",
+            Name = "Extra Large",
+            Description = "Extra Large ($199/month)",
+            Price = 199,
+            MaxProjects = -1,
+            MaxUsers = -1,
+            RetentionDays = 180,
+            MaxEventsPerMonth = 1000000,
+            HasPremiumFeatures = true
+        };
 
-        public static BillingPlan ExtraLargeYearlyPlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_XL_YEARLY",
-                    Name = "Extra Large (Yearly)",
-                    Description = "Extra Large Yearly ($2,189/year - Save $199)",
-                    Price = 2189,
-                    MaxProjects = -1,
-                    MaxUsers = -1,
-                    RetentionDays = 180,
-                    MaxEventsPerMonth = 1000000,
-                    HasPremiumFeatures = true
-                };
-            }
-        }
+        public static BillingPlan ExtraLargeYearlyPlan => new BillingPlan {
+            Id = "EX_XL_YEARLY",
+            Name = "Extra Large (Yearly)",
+            Description = "Extra Large Yearly ($2,189/year - Save $199)",
+            Price = 2189,
+            MaxProjects = -1,
+            MaxUsers = -1,
+            RetentionDays = 180,
+            MaxEventsPerMonth = 1000000,
+            HasPremiumFeatures = true
+        };
 
-        public static BillingPlan EnterprisePlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_ENT",
-                    Name = "Enterprise",
-                    Description = "Enterprise ($499/month)",
-                    Price = 499,
-                    MaxProjects = -1,
-                    MaxUsers = -1,
-                    RetentionDays = 180,
-                    MaxEventsPerMonth = 3000000,
-                    HasPremiumFeatures = true
-                };
-            }
-        }
+        public static BillingPlan EnterprisePlan => new BillingPlan {
+            Id = "EX_ENT",
+            Name = "Enterprise",
+            Description = "Enterprise ($499/month)",
+            Price = 499,
+            MaxProjects = -1,
+            MaxUsers = -1,
+            RetentionDays = 180,
+            MaxEventsPerMonth = 3000000,
+            HasPremiumFeatures = true
+        };
 
-        public static BillingPlan EnterpriseYearlyPlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_ENT_YEARLY",
-                    Name = "Enterprise (Yearly)",
-                    Description = "Enterprise Yearly ($5,489/year - Save $499)",
-                    Price = 5489,
-                    MaxProjects = -1,
-                    MaxUsers = -1,
-                    RetentionDays = 180,
-                    MaxEventsPerMonth = 3000000,
-                    HasPremiumFeatures = true
-                };
-            }
-        }
+        public static BillingPlan EnterpriseYearlyPlan => new BillingPlan {
+            Id = "EX_ENT_YEARLY",
+            Name = "Enterprise (Yearly)",
+            Description = "Enterprise Yearly ($5,489/year - Save $499)",
+            Price = 5489,
+            MaxProjects = -1,
+            MaxUsers = -1,
+            RetentionDays = 180,
+            MaxEventsPerMonth = 3000000,
+            HasPremiumFeatures = true
+        };
 
-        public static BillingPlan UnlimitedPlan {
-            get {
-                return new BillingPlan {
-                    Id = "EX_UNLIMITED",
-                    Name = "Unlimited",
-                    Description = "Unlimited",
-                    IsHidden = true,
-                    Price = 0,
-                    MaxProjects = -1,
-                    MaxUsers = -1,
-                    RetentionDays = -1,
-                    MaxEventsPerMonth = -1,
-                    HasPremiumFeatures = true
-                };
-            }
-        }
+        public static BillingPlan UnlimitedPlan => new BillingPlan {
+            Id = "EX_UNLIMITED",
+            Name = "Unlimited",
+            Description = "Unlimited",
+            IsHidden = true,
+            Price = 0,
+            MaxProjects = -1,
+            MaxUsers = -1,
+            RetentionDays = -1,
+            MaxEventsPerMonth = -1,
+            HasPremiumFeatures = true
+        };
 
         public static readonly BillingPlan[] Plans = { FreePlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, ExtraLargeYearlyPlan, EnterpriseYearlyPlan, SmallPlan, MediumPlan, LargePlan, ExtraLargePlan, EnterprisePlan, UnlimitedPlan };
     }

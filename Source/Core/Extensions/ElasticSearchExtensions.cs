@@ -35,11 +35,10 @@ namespace Exceptionless.Core.Extensions {
             var sb = new StringBuilder();
 
             if (response.ConnectionStatus != null && response.ConnectionStatus.OriginalException != null)
-                sb.AppendLine(String.Format("Original: ({0} - {1}) {2}", response.ConnectionStatus.HttpStatusCode, response.ConnectionStatus.OriginalException.GetType().Name, response.ConnectionStatus.OriginalException.Message));
+                sb.AppendLine($"Original: ({response.ConnectionStatus.HttpStatusCode} - {response.ConnectionStatus.OriginalException.GetType().Name}) {response.ConnectionStatus.OriginalException.Message}");
 
             if (response.ServerError != null)
-                sb.AppendLine(String.Format("Server: ({0} - {1}) {2}",
-                    response.ServerError.Status, response.ServerError.ExceptionType, response.ServerError.Error));
+                sb.AppendLine($"Server: ({response.ServerError.Status} - {response.ServerError.ExceptionType}) {response.ServerError.Error}");
             
             if (sb.Length == 0)
                 sb.AppendLine("Unknown error.");

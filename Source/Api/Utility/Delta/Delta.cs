@@ -47,7 +47,7 @@ namespace Exceptionless.Api.Utility {
         /// <summary>
         /// The actual type of the entity for which the changes are tracked.
         /// </summary>
-        public Type EntityType { get { return _entityType; } }
+        public Type EntityType => _entityType;
 
         /// <summary>
         /// Clears the Delta and resets the underlying Entity.
@@ -162,9 +162,7 @@ namespace Exceptionless.Api.Utility {
         /// <summary>
         /// A dictionary of values that were set on the delta that don't exist in TEntityType.
         /// </summary>
-        public IDictionary<string, object> UnknownProperties {
-            get { return _unknownProperties; }
-        }
+        public IDictionary<string, object> UnknownProperties => _unknownProperties;
 
         /// <summary>
         /// Overrides the DynamicObject TrySetMember method, so that only the properties

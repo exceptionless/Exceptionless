@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Extensions {
             const int byteSize = 0x100;
             var allowedCharSet = new HashSet<char>(allowedChars).ToArray();
             if (byteSize < allowedCharSet.Length)
-                throw new ArgumentException(String.Format("allowedChars may contain no more than {0} characters.", byteSize));
+                throw new ArgumentException($"allowedChars may contain no more than {byteSize} characters.");
 
             using (var rng = new RNGCryptoServiceProvider()) {
                 var result = new StringBuilder();
@@ -271,7 +271,7 @@ namespace Exceptionless.Core.Extensions {
             if (keepFullWordAtEnd && text.LastIndexOf(' ') > 0)
                 text = text.Substring(0, text.LastIndexOf(' '));
 
-            return String.Format("{0}{1}", text, ellipsis);
+            return $"{text}{ellipsis}";
         }
 
         public static string ToLowerFiltered(this string value, char[] charsToRemove) {

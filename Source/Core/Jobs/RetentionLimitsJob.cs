@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
@@ -21,9 +20,9 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
             _lockProvider = lockProvider;
         }
-
-        protected override IDisposable GetJobLock() {
-            return _lockProvider.AcquireLock("RetentionLimitsJob");
+        
+        protected override Task<IDisposable> GetJobLockAsync() {
+            return _lockProvider.AcquireLockAsync("RetentionLimitsJob");
         }
 
         protected override Task<JobResult> RunInternalAsync(CancellationToken token) {

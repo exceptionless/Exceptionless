@@ -7,7 +7,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Extensions;
 using SortOrder = Exceptionless.Core.Repositories.SortOrder;
 
 namespace Exceptionless.Api.Tests.Repositories {

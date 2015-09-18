@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Pipeline {
             _publisher = publisher;
         }
 
-        protected override bool IsCritical { get { return true; } }
+        protected override bool IsCritical => true;
 
         public override Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var stacks = new Dictionary<string, Tuple<bool, Stack>>();

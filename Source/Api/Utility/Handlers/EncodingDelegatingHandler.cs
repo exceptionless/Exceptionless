@@ -48,7 +48,7 @@ namespace Exceptionless.Api.Utility {
             _encodingType = encodingType.ToLowerInvariant();
 
             if (_encodingType != "gzip" && _encodingType != "deflate")
-                throw new InvalidOperationException(String.Format("Encoding '{0}' is not supported. Only supports gzip or deflate encoding.", _encodingType));
+                throw new InvalidOperationException($"Encoding '{_encodingType}' is not supported. Only supports gzip or deflate encoding.");
 
             // copy the headers from the original content
             foreach (KeyValuePair<string, IEnumerable<string>> header in _originalContent.Headers)

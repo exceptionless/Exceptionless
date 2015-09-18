@@ -80,8 +80,7 @@ namespace Exceptionless.Core.Dependency {
             MethodInfo getInstances = locatorType.GetMethod("GetAllInstances", new[] { typeof(Type) });
 
             if (getInstance == null || getInstance.ReturnType != typeof(object) || getInstances == null || getInstances.ReturnType != typeof(IEnumerable<object>)) {
-                throw new ArgumentException(
-                    String.Format("{0} does not implement required methods.", locatorType.FullName),
+                throw new ArgumentException($"{locatorType.FullName} does not implement required methods.",
                     "commonServiceLocator");
             }
 

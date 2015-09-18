@@ -74,21 +74,13 @@ namespace Exceptionless.Core.Models.Collections {
             _dictionary.CopyTo(array, arrayIndex);
         }
 
-        public ICollection<TKey> Keys {
-            get { return _dictionary.Keys; }
-        }
+        public ICollection<TKey> Keys => _dictionary.Keys;
 
-        public ICollection<TValue> Values {
-            get { return _dictionary.Values; }
-        }
+        public ICollection<TValue> Values => _dictionary.Values;
 
-        public int Count {
-            get { return _dictionary.Count; }
-        }
+        public int Count => _dictionary.Count;
 
-        public bool IsReadOnly {
-            get { return _dictionary.IsReadOnly; }
-        }
+        public bool IsReadOnly => _dictionary.IsReadOnly;
 
         public TValue this[TKey key] {
             get { return _dictionary[key]; }

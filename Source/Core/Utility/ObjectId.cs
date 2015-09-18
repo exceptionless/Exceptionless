@@ -68,35 +68,17 @@ namespace Exceptionless.Core.Utility {
             Unpack(Utils.ParseHexString(value), out _timestamp, out _machine, out _pid, out _increment);
         }
 
-        public static ObjectId Empty
-        {
-            get { return __emptyInstance; }
-        }
+        public static ObjectId Empty => __emptyInstance;
 
-        public int Timestamp
-        {
-            get { return _timestamp; }
-        }
+        public int Timestamp => _timestamp;
 
-        public int Machine
-        {
-            get { return _machine; }
-        }
+        public int Machine => _machine;
 
-        public short Pid
-        {
-            get { return _pid; }
-        }
+        public short Pid => _pid;
 
-        public int Increment
-        {
-            get { return _increment; }
-        }
+        public int Increment => _increment;
 
-        public DateTime CreationTime
-        {
-            get { return __unixEpoch.AddSeconds(_timestamp); }
-        }
+        public DateTime CreationTime => __unixEpoch.AddSeconds(_timestamp);
 
         public static bool operator <(ObjectId lhs, ObjectId rhs) {
             return lhs.CompareTo(rhs) < 0;
@@ -167,7 +149,7 @@ namespace Exceptionless.Core.Utility {
             if (TryParse(s, out objectId)) {
                 return objectId;
             } else {
-                var message = string.Format("'{0}' is not a valid 24 digit hex string.", s);
+                var message = $"'{s}' is not a valid 24 digit hex string.";
                 throw new FormatException(message);
             }
         }
@@ -372,7 +354,7 @@ namespace Exceptionless.Core.Utility {
                         byte b = Convert.ToByte(hex, 16);
                         bytes[i] = b;
                     } catch (FormatException e) {
-                        throw new FormatException(string.Format("Invalid hex string {0}. Problem with substring {1} starting at position {2}", s, hex, 2 * i), e);
+                        throw new FormatException($"Invalid hex string {s}. Problem with substring {hex} starting at position {2 * i}", e);
                     }
                 }
 

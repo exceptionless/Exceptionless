@@ -78,25 +78,25 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected virtual string GetEntityLink(string id) {
-            return Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new {
+            return Url.Link($"Get{typeof(TModel).Name}ById", new {
                 id
             });
         }
 
         protected virtual string GetEntityResourceLink(string id, string type) {
-            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new {
+            return GetResourceLink(Url.Link($"Get{typeof(TModel).Name}ById", new {
                 id
             }), type);
         }
 
         protected virtual string GetEntityLink<TEntityType>(string id) {
-            return Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new {
+            return Url.Link($"Get{typeof(TEntityType).Name}ById", new {
                 id
             });
         }
 
         protected virtual string GetEntityResourceLink<TEntityType>(string id, string type) {
-            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new {
+            return GetResourceLink(Url.Link($"Get{typeof(TEntityType).Name}ById", new {
                 id
             }), type);
         }

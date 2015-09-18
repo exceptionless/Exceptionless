@@ -94,17 +94,11 @@ namespace Exceptionless.Api.Controllers {
             return skip;
         }
 
-        public User ExceptionlessUser {
-            get { return Request.GetUser(); }
-        }
+        public User ExceptionlessUser => Request.GetUser();
 
-        public Project DefaultProject {
-            get { return Request.GetDefaultProject(); }
-        }
+        public Project DefaultProject => Request.GetDefaultProject();
 
-        public AuthType AuthType {
-            get { return User.GetAuthType(); }
-        }
+        public AuthType AuthType => User.GetAuthType();
 
         public bool CanAccessOrganization(string organizationId) {
             return Request.CanAccessOrganization(organizationId);
@@ -207,7 +201,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected string GetResourceLink(string url, string type) {
-            return url != null ? String.Format("<{0}>; rel=\"{1}\"", url, type) : null;
+            return url != null ? $"<{url}>; rel=\"{type}\"" : null;
         }
 
         protected bool NextPageExceedsSkipLimit(int page, int limit) {

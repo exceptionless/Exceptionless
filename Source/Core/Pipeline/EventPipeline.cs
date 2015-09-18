@@ -49,13 +49,13 @@ namespace Exceptionless.Core.Pipeline {
 
                 var project = _projectRepository.GetById(projectId, true);
                 if (project == null)
-                    throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", projectId));
+                    throw new InvalidOperationException($"Unable to load project \"{projectId}\"");
 
                 contexts.ForEach(c => c.Project = project);
 
                 var organization = _organizationRepository.GetById(project.OrganizationId, true);
                 if (organization == null)
-                    throw new InvalidOperationException(String.Format("Unable to load organization \"{0}\"", project.OrganizationId));
+                    throw new InvalidOperationException($"Unable to load organization \"{project.OrganizationId}\"");
 
                 contexts.ForEach(c => {
                     c.Organization = organization;

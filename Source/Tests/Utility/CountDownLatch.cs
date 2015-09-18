@@ -29,6 +29,6 @@ namespace Exceptionless.Api.Tests.Utility {
             return _event.WaitOne(millisecondsTimeout);
         }
 
-        public int Remaining { get { return _remaining; } }
+        public int Remaining => _remaining;
     }
 }

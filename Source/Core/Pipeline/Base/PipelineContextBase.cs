@@ -71,9 +71,7 @@ namespace Exceptionless.Core.Pipeline
         /// <summary>
         /// Gets a value indicating wether or not this context has gotten an error during processing.
         /// </summary>
-        public bool HasError {
-            get { return ErrorMessage != null || Exception != null; }
-        }
+        public bool HasError => ErrorMessage != null || Exception != null;
 
         /// <summary>
         /// Used to set the context into an errored state with an error message and possibly exception with details.

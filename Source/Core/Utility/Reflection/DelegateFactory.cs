@@ -87,7 +87,7 @@ namespace Exceptionless.Core.Reflection
             {
                 ConstructorInfo constructorInfo = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
                 if (constructorInfo == null)
-                    throw new InvalidOperationException(String.Format("Could not get constructor for {0}.", type));
+                    throw new InvalidOperationException($"Could not get constructor for {type}.");
 
                 generator.Emit(OpCodes.Newobj, constructorInfo);
             }
@@ -101,7 +101,7 @@ namespace Exceptionless.Core.Reflection
         {
             MethodInfo getMethod = propertyInfo.GetGetMethod(true);
             if (getMethod == null)
-                throw new InvalidOperationException(String.Format("Property '{0}' does not have a getter.", propertyInfo.Name));
+                throw new InvalidOperationException($"Property '{propertyInfo.Name}' does not have a getter.");
 
             DynamicMethod dynamicMethod = CreateDynamicMethod("Get" + propertyInfo.Name, typeof(object), new[] { typeof(object) }, propertyInfo.DeclaringType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
@@ -136,7 +136,7 @@ namespace Exceptionless.Core.Reflection
         {
             MethodInfo setMethod = propertyInfo.GetSetMethod(true);
             if (setMethod == null)
-                throw new InvalidOperationException(String.Format("Property '{0}' does not have a setter.", propertyInfo.Name));
+                throw new InvalidOperationException($"Property '{propertyInfo.Name}' does not have a setter.");
 
             DynamicMethod dynamicMethod = CreateDynamicMethod("Set" + propertyInfo.Name, null, new[] { typeof(object), typeof(object) }, propertyInfo.DeclaringType);
             ILGenerator generator = dynamicMethod.GetILGenerator();

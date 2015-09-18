@@ -9,7 +9,6 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Tests.Utility;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Plugins {
     [UseReporter(typeof(HappyDiffReporter))]
@@ -24,7 +23,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             settings.Formatting = Formatting.Indented;
             var data = _webHookDataPluginManager.CreateFromEvent(GetWebHookDataContext(version));
             if (expectData) {
-                string filePath = String.Format(@"..\..\Plugins\WebHookData\v{0}.event.expected.json", version);
+                string filePath = $@"..\..\Plugins\WebHookData\v{version}.event.expected.json";
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
             } else {
                 Assert.Null(data);
@@ -38,23 +37,19 @@ namespace Exceptionless.Api.Tests.Plugins {
             settings.Formatting = Formatting.Indented;
             var data = _webHookDataPluginManager.CreateFromStack(GetWebHookDataContext(version));
             if (expectData) {
-                string filePath = String.Format(@"..\..\Plugins\WebHookData\v{0}.stack.expected.json", version);
+                string filePath = $@"..\..\Plugins\WebHookData\v{version}.stack.expected.json";
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
             } else {
                 Assert.Null(data);
             }
         }
 
-        public static IEnumerable<object[]> WebHookData {
-            get {
-                return new List<object[]> {
-                    new object[] { new Version(0, 0), false }, 
-                    new object[] { new Version(1, 0), true }, 
-                    new object[] { new Version(2, 0), true }, 
-                    new object[] { new Version(3, 0), false }
-                }.ToArray();
-            }
-        }
+        public static IEnumerable<object[]> WebHookData => new List<object[]> {
+            new object[] { new Version(0, 0), false }, 
+            new object[] { new Version(1, 0), true }, 
+            new object[] { new Version(2, 0), true }, 
+            new object[] { new Version(3, 0), false }
+        }.ToArray();
 
         private WebHookDataContext GetWebHookDataContext(Version version) {
             var json = File.ReadAllText(Path.GetFullPath(@"..\..\ErrorData\1477.expected.json"));

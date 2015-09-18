@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Pipeline {
             _metricsClient = metricsClient;
         }
 
-        protected override bool ContinueOnError { get { return true; } }
+        protected override bool ContinueOnError => true;
 
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {

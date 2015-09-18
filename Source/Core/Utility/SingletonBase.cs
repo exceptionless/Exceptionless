@@ -16,9 +16,7 @@ namespace Exceptionless.Core {
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         [DebuggerNonUserCode]
-        public static T Current {
-            get { return _instance.Value; }
-        }
+        public static T Current => _instance.Value;
     }
 
     public interface IInitializable {

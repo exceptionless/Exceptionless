@@ -21,10 +21,6 @@ namespace Exceptionless.Core.Mail.Models {
 
         public string MethodFullName { get; set; }
         public string TypeFullName { get; set; }
-        public string TypeName {
-            get {
-                return !String.IsNullOrEmpty(TypeFullName) ? TypeFullName.Split('.').Last() : String.Empty;
-            }
-        }
+        public string TypeName => !String.IsNullOrEmpty(TypeFullName) ? TypeFullName.Split('.').Last() : String.Empty;
     }
 }

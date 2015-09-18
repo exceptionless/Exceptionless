@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Pipeline {
             _stackRepository = stackRepository;
         }
 
-        protected override bool IsCritical { get { return true; } }
+        protected override bool IsCritical => true;
 
         public override Task ProcessAsync(EventContext ctx) {
             return Task.FromResult(0);

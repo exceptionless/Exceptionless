@@ -25,7 +25,7 @@ namespace Exceptionless.Api.Utility {
             var exceptionContext = context.ExceptionContext;
             var request = exceptionContext.Request;
             if (request == null)
-                throw new ArgumentException(String.Format("{0}.{1} must not be null", typeof(ExceptionContext).Name, "Request"), "context");
+                throw new ArgumentException($"{typeof(ExceptionContext).Name}.{"Request"} must not be null", "context");
 
             context.Result = new ResponseMessageResult(CreateErrorResponse(request, exceptionContext.Exception, HttpStatusCode.InternalServerError));
          }

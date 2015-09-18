@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Pipeline {
             _webHookDataPluginManager = webHookDataPluginManager;
         }
 
-        protected override bool ContinueOnError { get { return true; } }
+        protected override bool ContinueOnError => true;
 
         public override async Task ProcessAsync(EventContext ctx) {
             // if they don't have premium features, then we don't need to queue notifications

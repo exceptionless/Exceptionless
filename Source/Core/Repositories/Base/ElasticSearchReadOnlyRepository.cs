@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using AutoMapper;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Caching;
@@ -126,7 +125,7 @@ namespace Exceptionless.Core.Repositories {
             _elasticClient.DisableTrace();
 
             if (!results.IsValid)
-                throw new ApplicationException(String.Format("ElasticSearch error code \"{0}\".", results.ConnectionStatus.HttpStatusCode), results.ConnectionStatus.OriginalException);
+                throw new ApplicationException($"ElasticSearch error code \"{results.ConnectionStatus.HttpStatusCode}\".", results.ConnectionStatus.OriginalException);
 
             options.HasMore = options.UseLimit && results.Total > options.GetLimit();
 
@@ -237,7 +236,7 @@ namespace Exceptionless.Core.Repositories {
             _elasticClient.DisableTrace();
 
             if (!results.IsValid)
-                throw new ApplicationException(String.Format("ElasticSearch error code \"{0}\".", results.ConnectionStatus.HttpStatusCode), results.ConnectionStatus.OriginalException);
+                throw new ApplicationException($"ElasticSearch error code \"{results.ConnectionStatus.HttpStatusCode}\".", results.ConnectionStatus.OriginalException);
 
             result = results.Count;
 

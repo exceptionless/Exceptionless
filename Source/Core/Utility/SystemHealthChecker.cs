@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
@@ -26,9 +24,9 @@ namespace Exceptionless.Core.Utility {
             _messageBus = messageBus;
         }
     
-        public HealthCheckResult CheckCache() {
+        public async Task<HealthCheckResult> CheckCacheAsync() {
             try {
-                if (_cacheClient.Get<string>("__PING__") != null)
+                if (await _cacheClient.GetAsync<string>("__PING__").AnyContext() != null)
                     return HealthCheckResult.NotHealthy("Cache Not Working");
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Cache Not Working: " + ex.Message);
@@ -59,18 +57,20 @@ namespace Exceptionless.Core.Utility {
             return HealthCheckResult.Healthy;
         }
 
-        public HealthCheckResult CheckQueue() {
+        public async Task<HealthCheckResult> CheckQueueAsync() {
             var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
             try {
-                _queue.Enqueue(message);
-                if (_queue.GetQueueCount() == 0)
+                await _queue.EnqueueAsync(message).AnyContext();
+
+                var queueStats = await _queue.GetQueueStatsAsync().AnyContext();
+                if (queueStats.Enqueued == 0)
                     return HealthCheckResult.NotHealthy("Queue Not Working: No items were enqueued.");
       
-                var workItem = _queue.Dequeue(TimeSpan.Zero);
+                var workItem = await _queue.DequeueAsync().AnyContext();
                 if (workItem == null)
                     return HealthCheckResult.NotHealthy("Queue Not Working: No items could be dequeued.");
 
-                workItem.Complete();
+                await workItem.CompleteAsync().AnyContext();
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Queues Not Working: " + ex.Message);
             }
@@ -78,7 +78,7 @@ namespace Exceptionless.Core.Utility {
             return HealthCheckResult.Healthy;
         }
 
-         public HealthCheckResult CheckMessageBus() {
+         public Task<HealthCheckResult> CheckMessageBusAsync() {
             //var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
             //var resetEvent = new AutoResetEvent(false);
             //Action<StatusMessage> handler = msg => resetEvent.Set();
@@ -95,11 +95,11 @@ namespace Exceptionless.Core.Utility {
              //    _messageBus.Unsubscribe(handler);
              //}
         
-             return HealthCheckResult.Healthy;
+             return Task.FromResult(HealthCheckResult.Healthy);
         }
     
         public async Task<HealthCheckResult> CheckAllAsync() {
-            var result = CheckCache();
+            var result = await CheckCacheAsync().AnyContext();
             if (!result.IsHealthy)
                 return result;
 
@@ -111,11 +111,11 @@ namespace Exceptionless.Core.Utility {
             if (!result.IsHealthy)
                 return result;
 
-            result = CheckQueue();
+            result = await CheckQueueAsync().AnyContext();
             if (!result.IsHealthy)
                 return result;
 
-            result = CheckMessageBus();
+            result = await CheckMessageBusAsync().AnyContext();
             if (!result.IsHealthy)
                 return result;
 
@@ -127,11 +127,9 @@ namespace Exceptionless.Core.Utility {
         public bool IsHealthy { get; set; }
         public string Message { get; set; }
 
-        private static readonly HealthCheckResult _healthy = new HealthCheckResult {
+        public static HealthCheckResult Healthy { get; } = new HealthCheckResult {
             IsHealthy = true
         };
-
-        public static HealthCheckResult Healthy { get { return _healthy; } }
 
         public static HealthCheckResult NotHealthy(string message = null) {
             return new HealthCheckResult { IsHealthy = false, Message = message };

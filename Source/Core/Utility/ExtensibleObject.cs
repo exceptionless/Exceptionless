@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Utility {
             object value = _extendedData[name];
 
             if (value == null)
-                throw new InvalidOperationException(String.Format("Property value \"{0}\" is null.  Can't use generic method on null values.", name));
+                throw new InvalidOperationException($"Property value \"{name}\" is null.  Can't use generic method on null values.");
 
             if (value is T)
                 return (T)value;

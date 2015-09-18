@@ -317,7 +317,7 @@ namespace Exceptionless.Api.Controllers {
             eventUserDescription.ProjectId = projectId;
             eventUserDescription.ReferenceId = referenceId;
 
-            _eventUserDescriptionQueue.Enqueue(eventUserDescription);
+            await _eventUserDescriptionQueue.EnqueueAsync(eventUserDescription).AnyContext();
             await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionQueued).AnyContext();
 
             return StatusCode(HttpStatusCode.Accepted);
@@ -434,9 +434,8 @@ namespace Exceptionless.Api.Controllers {
                     .Property("User", ExceptionlessUser)
                     .ContextProperty("HttpActionContext", ActionContext)
                     .WriteIf(projectId != Settings.Current.InternalProjectId);
-
-                // TODO: Change to async once vnext is released.
-                _metricsClient.Counter(MetricNames.PostsQueuedErrors);
+                
+                await _metricsClient.CounterAsync(MetricNames.PostsQueuedErrors).AnyContext();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 

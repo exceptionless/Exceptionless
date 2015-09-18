@@ -6,7 +6,7 @@ using Exceptionless.Core.Plugins.EventProcessor;
 namespace Exceptionless.Core.Pipeline {
     [Priority(6)]
     public class TruncateFieldsAction : EventPipelineActionBase {
-        protected override bool IsCritical { get { return true; } }
+        protected override bool IsCritical => true;
 
         public override async Task ProcessAsync(EventContext ctx) {
             if (ctx.Event.Tags != null)

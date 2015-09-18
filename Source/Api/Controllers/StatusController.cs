@@ -60,32 +60,38 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("queue-stats")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult QueueStats() {
+        public async Task<IHttpActionResult> QueueStatsAsync() {
+            var eventQueueStats = await _eventQueue.GetQueueStatsAsync().AnyContext();
+            var mailQueueStats = await _mailQueue.GetQueueStatsAsync().AnyContext();
+            var userDescriptionQueueStats = await _userDescriptionQueue.GetQueueStatsAsync().AnyContext();
+            var notificationQueueStats = await _notificationQueue.GetQueueStatsAsync().AnyContext();
+            var webHooksQueueStats = await _webHooksQueue.GetQueueStatsAsync().AnyContext();
+
             return Ok(new {
                 EventPosts = new {
-                    Active = _eventQueue.GetQueueCount(),
-                    Deadletter = _eventQueue.GetDeadletterCount(),
-                    Working = _eventQueue.GetWorkingCount()
+                    Active = eventQueueStats.Enqueued,
+                    Deadletter = eventQueueStats.Deadletter,
+                    Working = eventQueueStats.Working
                 },
                 MailMessages = new {
-                    Active = _mailQueue.GetQueueCount(),
-                    Deadletter = _mailQueue.GetDeadletterCount(),
-                    Working = _mailQueue.GetWorkingCount()
+                    Active = mailQueueStats.Enqueued,
+                    Deadletter = mailQueueStats.Deadletter,
+                    Working = mailQueueStats.Working
                 },
                 UserDescriptions = new {
-                    Active = _userDescriptionQueue.GetQueueCount(),
-                    Deadletter = _userDescriptionQueue.GetDeadletterCount(),
-                    Working = _userDescriptionQueue.GetWorkingCount()
+                    Active = userDescriptionQueueStats.Enqueued,
+                    Deadletter = userDescriptionQueueStats.Deadletter,
+                    Working = userDescriptionQueueStats.Working
                 },
                 Notifications = new {
-                    Active = _notificationQueue.GetQueueCount(),
-                    Deadletter = _notificationQueue.GetDeadletterCount(),
-                    Working = _notificationQueue.GetWorkingCount()
+                    Active = notificationQueueStats.Enqueued,
+                    Deadletter = notificationQueueStats.Deadletter,
+                    Working = notificationQueueStats.Working
                 },
                 WebHooks = new {
-                    Active = _webHooksQueue.GetQueueCount(),
-                    Deadletter = _webHooksQueue.GetDeadletterCount(),
-                    Working = _webHooksQueue.GetWorkingCount()
+                    Active = webHooksQueueStats.Enqueued,
+                    Deadletter = webHooksQueueStats.Deadletter,
+                    Working = webHooksQueueStats.Working
                 }
             });
         }
@@ -104,9 +110,9 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("notifications/release")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult PostReleaseNotification([NakedBody]string message = null, bool critical = false) {
+        public async Task<IHttpActionResult> PostReleaseNotificationAsync([NakedBody]string message = null, bool critical = false) {
             var notification = new ReleaseNotification { Critical = critical, Date = DateTimeOffset.UtcNow, Message = message };
-            _messagePublisher.Publish(notification);
+            await _messagePublisher.PublishAsync(notification).AnyContext();
             return Ok(notification);
         }
 
@@ -116,8 +122,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("notifications/system")]
         [ResponseType(typeof(SystemNotification))]
-        public IHttpActionResult GetSystemNotification() {
-            var notification = _cacheClient.Get<SystemNotification>("system-notification");
+        public async Task<IHttpActionResult> GetSystemNotificationAsync() {
+            var notification = await _cacheClient.GetAsync<SystemNotification>("system-notification").AnyContext();
             if (notification == null)
                 return Ok();
 
@@ -127,13 +133,13 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("notifications/system")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult PostSystemNotification([NakedBody]string message) {
+        public async Task<IHttpActionResult> PostSystemNotificationAsync([NakedBody]string message) {
             if (String.IsNullOrEmpty(message))
                 return NotFound();
 
             var notification = new SystemNotification { Date = DateTimeOffset.UtcNow, Message = message };
-            _cacheClient.Set("system-notification", notification);
-            _messagePublisher.Publish(notification);
+            await _cacheClient.SetAsync("system-notification", notification).AnyContext();
+            await _messagePublisher.PublishAsync(notification).AnyContext();
 
             return Ok(notification);
         }
@@ -141,9 +147,9 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("notifications/system")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult RemoveSystemNotification() {
-            _cacheClient.Remove("system-notification");
-            _messagePublisher.Publish(new SystemNotification { Date = DateTimeOffset.UtcNow });
+        public async Task<IHttpActionResult> RemoveSystemNotificationAsync() {
+            await _cacheClient.RemoveAsync("system-notification").AnyContext();
+            await _messagePublisher.PublishAsync(new SystemNotification { Date = DateTimeOffset.UtcNow }).AnyContext();
             return Ok();
         }
     }

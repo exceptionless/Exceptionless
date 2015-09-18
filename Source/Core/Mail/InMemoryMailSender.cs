@@ -34,9 +34,9 @@ namespace Exceptionless.Core.Mail {
             } while (count > 0);
         }
 
-        public long TotalSent { get { return _totalSent; } }
-        public List<MailMessage> SentMessages { get { return _recentMessages.ToList(); } }
-        public MailMessage LastMessage { get { return SentMessages.Last(); } }
+        public long TotalSent => _totalSent;
+        public List<MailMessage> SentMessages => _recentMessages.ToList();
+        public MailMessage LastMessage => SentMessages.Last();
 
         public Task SendAsync(MailMessage model) {
             _recentMessages.Enqueue(model);

@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             if (user == null || String.IsNullOrEmpty(user.Identity) || !String.IsNullOrEmpty(context.Event.SessionId))
                 return;
 
-            string cacheKey = String.Format("session:{0}:{1}", context.Event.ProjectId, user.Identity);
+            string cacheKey = $"session:{context.Event.ProjectId}:{user.Identity}";
             var sessionId = context.Event.Type != Event.KnownTypes.SessionStart ? _cacheClient.Get<string>(cacheKey) : null;
             if (sessionId == null) {
                 sessionId = Guid.NewGuid().ToString("N");

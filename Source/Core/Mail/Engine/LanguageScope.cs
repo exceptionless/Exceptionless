@@ -20,13 +20,9 @@ namespace RazorSharpEmail {
         [ThreadStatic]
         private static string _currentLanguage;
 
-        public static CultureInfo CurrentCulture {
-            get { return CurrentLanguage != null ? CultureInfo.GetCultureInfo(CurrentLanguage) : null; }
-        }
+        public static CultureInfo CurrentCulture => CurrentLanguage != null ? CultureInfo.GetCultureInfo(CurrentLanguage) : null;
 
-        public static string CurrentLanguage {
-            get { return _currentLanguage ?? DefaultLanguage; }
-        }
+        public static string CurrentLanguage => _currentLanguage ?? DefaultLanguage;
 
         public LanguageScope(string language) {
             if (language == null) throw new ArgumentNullException("language");

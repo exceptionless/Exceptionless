@@ -3,7 +3,7 @@
 namespace Exceptionless.Core.Models {
     public class WebHookEvent {
         public string Id { get; set; }
-        public string Url { get { return String.Concat(Settings.Current.BaseURL, "/event/", Id); } }
+        public string Url => String.Concat(Settings.Current.BaseURL, "/event/", Id);
         public DateTimeOffset OccurrenceDate { get; set; }
         public TagSet Tags { get; set; }
         public string Type { get; set; }
@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Models {
         public string OrganizationId { get; set; }
         public string OrganizationName { get; set; }
         public string StackId { get; set; }
-        public string StackUrl { get { return String.Concat(Settings.Current.BaseURL, "/stack/", StackId); } }
+        public string StackUrl => String.Concat(Settings.Current.BaseURL, "/stack/", StackId);
         public string StackTitle { get; set; }
         public string StackDescription { get; set; }
         public TagSet StackTags { get; set; }
@@ -24,6 +24,6 @@ namespace Exceptionless.Core.Models {
         public DateTime? DateFixed { get; set; }
         public bool IsNew { get; set; }
         public bool IsRegression { get; set; }
-        public bool IsCritical { get { return Tags != null && Tags.Contains("Critical"); } }
+        public bool IsCritical => Tags != null && Tags.Contains("Critical");
     }
 }

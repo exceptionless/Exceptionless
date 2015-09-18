@@ -381,7 +381,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="501">"No promoted web hooks are configured for this project.</response>
         [HttpPost]
         [Route("{id:objectid}/promote")]
-        public IHttpActionResult Promote(string id) {
+        public async Task<IHttpActionResult> PromoteAsync(string id) {
             if (String.IsNullOrEmpty(id))
                 return NotFound();
 
@@ -398,12 +398,12 @@ namespace Exceptionless.Api.Controllers {
 
             foreach (WebHook hook in promotedProjectHooks) {
                 var context = new WebHookDataContext(hook.Version, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.IsRegressed);
-                _webHookNotificationQueue.Enqueue(new WebHookNotification {
+                await _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
                     OrganizationId = hook.OrganizationId,
                     ProjectId = hook.ProjectId,
                     Url = hook.Url,
                     Data = _webHookDataPluginManager.CreateFromStack(context)
-                });
+                }).AnyContext();
             }
 
             return Ok();

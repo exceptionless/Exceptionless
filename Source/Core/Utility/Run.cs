@@ -72,7 +72,7 @@ namespace Exceptionless.Core.Helpers
                     SleepBackOffMultiplier(i);
             }
 
-            throw new TimeoutException(string.Format("Exceeded timeout of {0}", timeOut.Value));
+            throw new TimeoutException($"Exceeded timeout of {timeOut.Value}");
         }
 
         private static void SleepBackOffMultiplier(int i) {

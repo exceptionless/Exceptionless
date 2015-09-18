@@ -9,7 +9,7 @@ namespace Exceptionless.Core.Extensions {
     public static class DataDictionaryExtensions {
         public static T GetValue<T>(this DataDictionary extendedData, string key) {
             if (!extendedData.ContainsKey(key))
-                throw new KeyNotFoundException(String.Format("Key \"{0}\" not found in the dictionary.", key));
+                throw new KeyNotFoundException($"Key \"{key}\" not found in the dictionary.");
 
             object data = extendedData[key];
             if (data is T)

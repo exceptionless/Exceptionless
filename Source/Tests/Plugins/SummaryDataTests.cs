@@ -17,7 +17,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         private readonly FormattingPluginManager _formattingPluginManager = IoC.GetInstance<FormattingPluginManager>();
 
         [Theory]
-        [PropertyData("Events")]
+        [MemberData("Events")]
         public void EventSummaryData(string path) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
@@ -39,7 +39,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         [Theory]
-        [PropertyData("Stacks")]
+        [MemberData("Stacks")]
         public void StackSummaryData(string path) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;

@@ -8,13 +8,11 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public class OrganizationIndex : IElasticSearchIndex {
         private const string KEYWORD_LOWERCASE = "keyword_lowercase";
 
-        public string Name { get { return "organizations"; } }
+        public string Name => "organizations";
 
-        public int Version { get { return 1; } }
+        public int Version => 1;
 
-        public string VersionedName {
-            get { return String.Concat(Name, "-v", Version); }
-        }
+        public string VersionedName => String.Concat(Name, "-v", Version);
 
         public virtual IDictionary<Type, string> GetIndexTypeNames() {
             return new Dictionary<Type, string> {

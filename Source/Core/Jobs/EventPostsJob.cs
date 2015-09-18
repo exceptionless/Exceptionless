@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Jobs {
             if (eventPostInfo == null) {
                 queueEntry.Abandon();
                 await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token).AnyContext();
-                return JobResult.FailedWithMessage(String.Format("Unable to retrieve post data '{0}'.", queueEntry.Value.FilePath));
+                return JobResult.FailedWithMessage($"Unable to retrieve post data '{queueEntry.Value.FilePath}'.");
             }
 
             bool isInternalProject = eventPostInfo.ProjectId == Settings.Current.InternalProjectId;
@@ -90,7 +90,7 @@ namespace Exceptionless.Core.Jobs {
                 _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token).Wait(token);
 
                 Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).Write();
-                return JobResult.FromException(ex, String.Format("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message));
+                return JobResult.FromException(ex, $"An error occurred while processing the EventPost '{queueEntry.Id}': {ex.Message}");
             }
 
             if (token.IsCancellationRequested) {

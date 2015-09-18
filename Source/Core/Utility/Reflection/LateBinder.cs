@@ -157,8 +157,7 @@ namespace Exceptionless.Core.Reflection
             }
 
             if (memberAccessor == null)
-                throw new InvalidOperationException(String.Format(
-                    "Could not find property '{0}' in type '{1}'.", name, rootType.Name));
+                throw new InvalidOperationException($"Could not find property '{name}' in type '{rootType.Name}'.");
 
             memberAccessor.SetValue(currentTarget, value);
         }
@@ -180,8 +179,7 @@ namespace Exceptionless.Core.Reflection
             var memberAccessor = FindField(rootType, name);
 
             if (memberAccessor == null)
-                throw new InvalidOperationException(String.Format(
-                    "Could not find field '{0}' in type '{1}'.", name, rootType.Name));
+                throw new InvalidOperationException($"Could not find field '{name}' in type '{rootType.Name}'.");
 
             memberAccessor.SetValue(target, value);
         }
@@ -221,8 +219,7 @@ namespace Exceptionless.Core.Reflection
             }
 
             if (memberAccessor == null)
-                throw new InvalidOperationException(String.Format(
-                    "Could not find property '{0}' in type '{1}'.", name, rootType.Name));
+                throw new InvalidOperationException($"Could not find property '{name}' in type '{rootType.Name}'.");
 
             return memberAccessor.GetValue(currentTarget);
         }
@@ -243,8 +240,7 @@ namespace Exceptionless.Core.Reflection
             Type rootType = target.GetType();
             var memberAccessor = FindField(rootType, name);
             if (memberAccessor == null)
-                throw new InvalidOperationException(String.Format(
-                    "Could not find field '{0}' in type '{1}'.", name, rootType.Name));
+                throw new InvalidOperationException($"Could not find field '{name}' in type '{rootType.Name}'.");
 
             return memberAccessor.GetValue(target);
         }
@@ -261,7 +257,7 @@ namespace Exceptionless.Core.Reflection
 
             var typeAccessor = GetAccessor(type);
             if (typeAccessor == null)
-                throw new InvalidOperationException(String.Format("Could not find constructor for {0}.", type.Name));
+                throw new InvalidOperationException($"Could not find constructor for {type.Name}.");
 
             return typeAccessor.Create();
         }

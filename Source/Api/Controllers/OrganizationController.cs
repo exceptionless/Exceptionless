@@ -200,14 +200,14 @@ namespace Exceptionless.Api.Controllers {
                 var item = new InvoiceLineItem { Amount = line.Amount / 100.0 };
 
                 if (line.Plan != null)
-                    item.Description = String.Format("Exceptionless - {0} Plan ({1}/{2})", line.Plan.Name, (line.Plan.Amount / 100.0).ToString("c"), line.Plan.Interval);
+                    item.Description = $"Exceptionless - {line.Plan.Name} Plan ({(line.Plan.Amount / 100.0).ToString("c")}/{line.Plan.Interval})";
                 else
                     item.Description = line.Description;
 
                 if (stripeInvoice.PeriodStart == stripeInvoice.PeriodEnd)
                     item.Date = stripeInvoice.PeriodStart.ToShortDateString();
                 else
-                    item.Date = String.Format("{0} - {1}", stripeInvoice.PeriodStart.ToShortDateString(), stripeInvoice.PeriodEnd.ToShortDateString());
+                    item.Date = $"{stripeInvoice.PeriodStart.ToShortDateString()} - {stripeInvoice.PeriodEnd.ToShortDateString()}";
 
                 invoice.Items.Add(item);
             }
@@ -215,7 +215,7 @@ namespace Exceptionless.Api.Controllers {
             var coupon = stripeInvoice.StripeDiscount != null ? stripeInvoice.StripeDiscount.StripeCoupon : null;
             if (coupon != null) {
                 double discountAmount = coupon.AmountOff ?? stripeInvoice.Subtotal * (coupon.PercentOff.GetValueOrDefault() / 100.0);
-                string description = String.Format("{0} {1}", coupon.Id, coupon.PercentOff.HasValue ? String.Format("({0}% off)", coupon.PercentOff.Value) : String.Format("({0} off)", (coupon.AmountOff.GetValueOrDefault() / 100.0).ToString("C")));
+                string description = $"{coupon.Id} {(coupon.PercentOff.HasValue ? $"({coupon.PercentOff.Value}% off)" : $"({(coupon.AmountOff.GetValueOrDefault() / 100.0).ToString("C")} off)")}";
                
                 invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
             }
@@ -313,7 +313,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/change-plan")]
         [ResponseType(typeof(ChangePlanResult))]
-        public IHttpActionResult ChangePlan(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null) {
+        public async Task<IHttpActionResult> ChangePlanAsync(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 return NotFound();
 
@@ -403,7 +403,7 @@ namespace Exceptionless.Api.Controllers {
 
                 BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser);
                 _repository.Save(organization);
-                _messagePublisher.Publish(new PlanChanged { OrganizationId = organization.Id });
+                await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id }).AnyContext();
             } catch (Exception e) {
                 Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return Ok(ChangePlanResult.FailWithMessage(e.Message));
@@ -422,7 +422,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
         [ResponseType(typeof(User))]
-        public async Task<IHttpActionResult> AddUser(string id, string email) {
+        public async Task<IHttpActionResult> AddUserAsync(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return NotFound();
 
@@ -439,11 +439,11 @@ namespace Exceptionless.Api.Controllers {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
                     user.OrganizationIds.Add(organization.Id);
                     _userRepository.Save(user);
-                    _messagePublisher.Publish(new UserMembershipChanged {
+                    await _messagePublisher.PublishAsync(new UserMembershipChanged {
                         ChangeType = ChangeType.Added,
                         UserId = user.Id,
                         OrganizationId = organization.Id
-                    });
+                    }).AnyContext();
                 }
 
                 _mailer.SendAddedToOrganization(currentUser, organization, user);
@@ -474,7 +474,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The organization was not found.</response>
         [HttpDelete]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
-        public IHttpActionResult RemoveUser(string id, string email) {
+        public async Task<IHttpActionResult> RemoveUserAsync(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 return NotFound();
 
@@ -507,11 +507,11 @@ namespace Exceptionless.Api.Controllers {
 
                 user.OrganizationIds.Remove(organization.Id);
                 _userRepository.Save(user);
-                _messagePublisher.Publish(new UserMembershipChanged {
+                await _messagePublisher.PublishAsync(new UserMembershipChanged {
                     ChangeType = ChangeType.Removed,
                     UserId = user.Id,
                     OrganizationId = organization.Id
-                });
+                }).AnyContext();
             }
 
             return Ok();

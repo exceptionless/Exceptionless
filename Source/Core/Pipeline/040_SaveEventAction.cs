@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Pipeline {
             _eventRepository = eventRepository;
         }
 
-        protected override bool IsCritical { get { return true; } }
+        protected override bool IsCritical => true;
 
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {

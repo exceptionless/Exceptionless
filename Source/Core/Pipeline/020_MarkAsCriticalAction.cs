@@ -6,7 +6,7 @@ using NLog.Fluent;
 namespace Exceptionless.Core.Pipeline {
     [Priority(20)]
     public class MarkAsCriticalAction : EventPipelineActionBase {
-        protected override bool ContinueOnError { get { return true; } }
+        protected override bool ContinueOnError => true;
 
         public override async Task ProcessAsync(EventContext ctx) {
             if (ctx.Stack == null || !ctx.Stack.OccurrencesAreCritical)

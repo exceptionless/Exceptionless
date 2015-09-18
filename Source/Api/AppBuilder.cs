@@ -173,7 +173,7 @@ namespace Exceptionless.Api {
                 c.SingleApiVersion("v2", "Exceptionless");
                 c.ApiKey("access_token").In("header").Name("access_token").Description("API Key Authentication");
                 c.BasicAuth("basic").Description("Basic HTTP Authentication");
-                c.IncludeXmlComments(String.Format(@"{0}\bin\Exceptionless.Api.xml", AppDomain.CurrentDomain.BaseDirectory));
+                c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\bin\Exceptionless.Api.xml");
                 c.IgnoreObsoleteActions();
                 c.DocumentFilter<FilterRoutesDocumentFilter>();
             }).EnableSwaggerUi("docs/{*assetPath}", c => {

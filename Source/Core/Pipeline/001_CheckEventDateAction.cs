@@ -6,7 +6,7 @@ using NLog.Fluent;
 namespace Exceptionless.Core.Pipeline {
     [Priority(1)]
     public class CheckEventDateAction : EventPipelineActionBase {
-        protected override bool ContinueOnError { get { return true; } }
+        protected override bool ContinueOnError => true;
 
         public override async Task ProcessAsync(EventContext ctx) {
             if (ctx.Organization.RetentionDays <= 0)

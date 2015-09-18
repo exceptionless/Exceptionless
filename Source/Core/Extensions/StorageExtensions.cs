@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Extensions {
             if (path.StartsWith("archive"))
                 return true;
 
-            string archivePath = String.Format("archive\\{0}\\{1}\\{2}", projectId, created.ToString("yy\\\\MM\\\\dd"), Path.GetFileName(path));
+            string archivePath = $"archive\\{projectId}\\{created.ToString("yy\\\\MM\\\\dd")}\\{Path.GetFileName(path)}";
             
             try {
                 if (shouldArchive) {

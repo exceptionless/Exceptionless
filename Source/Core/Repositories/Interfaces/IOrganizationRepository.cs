@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Models;
 

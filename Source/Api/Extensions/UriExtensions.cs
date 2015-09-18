@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string ToQueryString(this NameValueCollection collection) {
-            return collection.AsKeyValuePairs().ToConcatenatedString(pair => pair.Key == null ? pair.Value : String.Format("{0}={1}", pair.Key, pair.Value), "&");
+            return collection.AsKeyValuePairs().ToConcatenatedString(pair => pair.Key == null ? pair.Value : $"{pair.Key}={pair.Value}", "&");
         }
 
         /// <summary>
@@ -119,9 +119,9 @@ namespace Exceptionless.Core.Extensions {
 
 			foreach (var p in args) {
                 if (String.IsNullOrEmpty(p.Key))
-                    throw new NullReferenceException(String.Format("Key \"{0}\" is not allowed to be null.", p.Key));
+                    throw new NullReferenceException($"Key \"{p.Key}\" is not allowed to be null.");
                 if (p.Value == null)
-                    throw new NullReferenceException(String.Format("Value for key \"{0}\" is not allowed to be null.", p.Key));
+                    throw new NullReferenceException($"Value for key \"{p.Key}\" is not allowed to be null.");
 				sb.Append(Uri.EscapeDataString(p.Key));
 				sb.Append('=');
 				sb.Append(EscapeUriDataStringRfc3986(p.Value));

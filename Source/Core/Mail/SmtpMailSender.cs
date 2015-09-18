@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Mail {
     public class SmtpMailSender : IMailSender {
         private long _messagesSent = 0;
 
-        public long SentCount { get { return _messagesSent; } }
+        public long SentCount => _messagesSent;
 
         public async Task SendAsync(MailMessage model) {
             var message = model.ToMailMessage();

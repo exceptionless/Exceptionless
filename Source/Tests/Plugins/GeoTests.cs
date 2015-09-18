@@ -58,20 +58,16 @@ namespace Exceptionless.Api.Tests.Plugins {
             Assert.InRange(sw.ElapsedMilliseconds, 0, 65);
         }
 
-        public static IEnumerable<object[]> IPData {
-            get {
-                return new List<object[]> {
-                    new object[] { null, false },
-                    new object[] { "::1", false },
-                    new object[] { "127.0.0.1", false },
-                    new object[] { "10.0.0.0", false },
-                    new object[] { "172.16.0.0", false },
-                    new object[] { "172.31.255.255", false },
-                    new object[] { "192.168.0.0", false },
-                    new object[] { "8.8.4.4", true },
-                    new object[] { "2001:4860:4860::8844", true }
-                }.ToArray();
-            }
-        }
+        public static IEnumerable<object[]> IPData => new List<object[]> {
+            new object[] { null, false },
+            new object[] { "::1", false },
+            new object[] { "127.0.0.1", false },
+            new object[] { "10.0.0.0", false },
+            new object[] { "172.16.0.0", false },
+            new object[] { "172.31.255.255", false },
+            new object[] { "192.168.0.0", false },
+            new object[] { "8.8.4.4", true },
+            new object[] { "2001:4860:4860::8844", true }
+        }.ToArray();
     }
 }

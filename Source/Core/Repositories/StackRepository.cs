@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Repositories {
 
             foreach (Stack document in args.Documents) {
                 if (_eventRepository.GetCountByStackId(document.Id) > 0)
-                    throw new ApplicationException(String.Format("Stack \"{0}\" can't be deleted because it has events associated to it.", document.Id));
+                    throw new ApplicationException($"Stack \"{document.Id}\" can't be deleted because it has events associated to it.");
             }
         }
 

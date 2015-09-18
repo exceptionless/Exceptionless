@@ -75,7 +75,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Debug.WriteLine("");
             Debug.WriteLine("Before {0}: {1}", sortedIds[2].Item1, sortedIds[2].Item2.ToLongTimeString());
             _client.Refresh(r => r.Force(false));
-            string query = String.Format("stack:{0} project:{1} date:[now-1h TO now+1h]", TestConstants.StackId, TestConstants.ProjectId);
+            string query = $"stack:{TestConstants.StackId} project:{TestConstants.ProjectId} date:[now-1h TO now+1h]";
             var results = _repository.GetByOrganizationIds(new[] { TestConstants.OrganizationId }, query, new PagingOptions().WithLimit(20)).Documents.ToArray();
             Assert.True(results.Length > 0);
 

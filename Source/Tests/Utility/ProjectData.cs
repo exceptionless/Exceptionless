@@ -27,7 +27,7 @@ namespace Exceptionless.Tests.Utility {
             var project = new Project {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : String.Empty : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
-                Name = name ?? String.Format("Project{0}", id)
+                Name = name ?? $"Project{id}"
             };
 
             if (nextSummaryEndOfDayTicks.HasValue)

@@ -25,8 +25,6 @@ namespace Exceptionless.Core.Repositories {
             return DateTime.Now.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS);
         }
 
-        public bool UseCache {
-            get { return !String.IsNullOrEmpty(CacheKey); }
-        }
+        public bool UseCache => !String.IsNullOrEmpty(CacheKey);
     }
 }

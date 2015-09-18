@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Pipeline {
             _pluginManager = pluginManager;
         }
 
-        protected override bool ContinueOnError { get { return true; } }
+        protected override bool ContinueOnError => true;
 
         public override async Task ProcessAsync(EventContext ctx) {
             await _pluginManager.EventProcessedAsync(ctx).AnyContext();

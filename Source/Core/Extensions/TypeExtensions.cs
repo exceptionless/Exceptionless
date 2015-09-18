@@ -67,7 +67,7 @@ namespace Exceptionless.Core.Extensions {
                     return (T)parsedValue;
                 }
 
-                var message = String.Format("The Enum value of '{0}' is not defined as a valid value for '{1}'.", value, targetType.FullName);
+                var message = $"The Enum value of '{value}' is not defined as a valid value for '{targetType.FullName}'.";
                 throw new ArgumentException(message);
             }
 
@@ -84,11 +84,11 @@ namespace Exceptionless.Core.Extensions {
                     object convertedValue = Convert.ChangeType(value, targetType);
                     return (T)convertedValue;
                 } catch (Exception e) {
-                    throw new ArgumentException(String.Format("An incompatible value specified.  Target Type: {0} Value Type: {1}", targetType.FullName, value.GetType().FullName), "value", e);
+                    throw new ArgumentException($"An incompatible value specified.  Target Type: {targetType.FullName} Value Type: {value.GetType().FullName}", "value", e);
                 }
             }
 
-            throw new ArgumentException(String.Format("An incompatible value specified.  Target Type: {0} Value Type: {1}", targetType.FullName, value.GetType().FullName), "value");
+            throw new ArgumentException($"An incompatible value specified.  Target Type: {targetType.FullName} Value Type: {value.GetType().FullName}", "value");
         }
 
         public static PropertyInfo[] GetPublicProperties(this Type type) {

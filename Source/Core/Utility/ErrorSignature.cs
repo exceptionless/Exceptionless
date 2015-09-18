@@ -35,9 +35,9 @@ namespace Exceptionless.Core.Utility {
             Parse();
         }
 
-        public string[] UserNamespaces { get { return _userNamespaces.ToArray(); } }
+        public string[] UserNamespaces => _userNamespaces.ToArray();
 
-        public string[] UserCommonMethods { get { return _userCommonMethods.ToArray(); } }
+        public string[] UserCommonMethods => _userCommonMethods.ToArray();
 
         public Error Error { get; private set; }
 

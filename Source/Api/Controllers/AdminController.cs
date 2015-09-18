@@ -32,7 +32,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("change-plan")]
-        public IHttpActionResult ChangePlan(string organizationId, string planId) {
+        public async Task<IHttpActionResult> ChangePlanAsync(string organizationId, string planId) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -49,9 +49,9 @@ namespace Exceptionless.Api.Controllers {
             BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
 
             _organizationRepository.Save(organization);
-            _messagePublisher.Publish(new PlanChanged {
+            await _messagePublisher.PublishAsync(new PlanChanged {
                 OrganizationId = organization.Id
-            });
+            }).AnyContext();
 
             return Ok(new { Success = true });
         }
@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Controllers {
                 path = @"q\*";
 
             foreach (var file in await _fileStorage.GetFileListAsync(path).AnyContext())
-                _eventPostQueue.Enqueue(new EventPost { FilePath = file.Path, ShouldArchive = archive });
+                await _eventPostQueue.EnqueueAsync(new EventPost { FilePath = file.Path, ShouldArchive = archive }).AnyContext();
 
             return Ok();
         }

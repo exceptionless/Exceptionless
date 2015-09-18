@@ -3,7 +3,6 @@ using System.Linq;
 using Exceptionless.Core.Validation;
 using Exceptionless.Core.Models;
 using Xunit;
-using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Validation {
     public class EventValidatorTests {

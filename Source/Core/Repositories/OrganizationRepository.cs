@@ -7,7 +7,6 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Extensions;
 using FluentValidation;
 using Foundatio.Caching;

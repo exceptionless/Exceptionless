@@ -89,7 +89,7 @@ namespace Exceptionless.Core.Billing {
                 org.IsSuspended = true;
                 org.SuspensionDate = DateTime.Now;
                 org.SuspensionCode = SuspensionCode.Billing;
-                org.SuspensionNotes = String.Format("Stripe subscription status changed to \"{0}\".", status.Value);
+                org.SuspensionNotes = $"Stripe subscription status changed to \"{status.Value}\".";
                 org.SuspendedByUserId = "Stripe";
             } else if (status.Value == BillingStatus.Active || status.Value == BillingStatus.Trialing) {
                 org.RemoveSuspension();

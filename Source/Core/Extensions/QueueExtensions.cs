@@ -8,7 +8,7 @@ using Foundatio.Storage;
 namespace Exceptionless.Core.Extensions {
     public static class QueueExtensions {
         public static async Task<string> EnqueueAsync(this IQueue<EventPost> queue, EventPostInfo data, IFileStorage storage, bool shouldArchive = true, CancellationToken cancellationToken = default(CancellationToken)) {
-            string path = String.Format("q\\{0}.json", Guid.NewGuid().ToString("N"));
+            string path = $"q\\{Guid.NewGuid().ToString("N")}.json";
             if (!await storage.SaveObjectAsync(path, data, cancellationToken).AnyContext())
                 return null;
 

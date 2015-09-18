@@ -75,8 +75,8 @@ namespace Exceptionless.Api.Utility.Results {
             if (!String.IsNullOrEmpty(url.Query))
                 baseUrl = baseUrl.Replace(url.Query, "");
 
-            string previousLink = String.Format("<{0}?{1}>; rel=\"previous\"", baseUrl, previousParameters.ToQueryString());
-            string nextLink = String.Format("<{0}?{1}>; rel=\"next\"", baseUrl, nextParameters.ToQueryString());
+            string previousLink = $"<{baseUrl}?{previousParameters.ToQueryString()}>; rel=\"previous\"";
+            string nextLink = $"<{baseUrl}?{nextParameters.ToQueryString()}>; rel=\"next\"";
 
             var links = new List<string>();
             if (includePrevious)
@@ -128,8 +128,8 @@ namespace Exceptionless.Api.Utility.Results {
             if (!String.IsNullOrEmpty(url.Query))
                 baseUrl = baseUrl.Replace(url.Query, "");
 
-            string previousLink = String.Format("<{0}?{1}>; rel=\"previous\"", baseUrl, previousParameters.ToQueryString());
-            string nextLink = String.Format("<{0}?{1}>; rel=\"next\"", baseUrl, nextParameters.ToQueryString());
+            string previousLink = $"<{baseUrl}?{previousParameters.ToQueryString()}>; rel=\"previous\"";
+            string nextLink = $"<{baseUrl}?{nextParameters.ToQueryString()}>; rel=\"next\"";
 
             var links = new List<string>();
             if (includePrevious)
