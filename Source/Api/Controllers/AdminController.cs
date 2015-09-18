@@ -36,7 +36,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            var organization = _organizationRepository.GetById(organizationId);
+            var organization = await _organizationRepository.GetByIdAsync(organizationId).AnyContext();
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -48,7 +48,7 @@ namespace Exceptionless.Api.Controllers {
             organization.RemoveSuspension();
             BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
 
-            _organizationRepository.Save(organization);
+            await _organizationRepository.SaveAsync(organization).AnyContext();
             await _messagePublisher.PublishAsync(new PlanChanged {
                 OrganizationId = organization.Id
             }).AnyContext();
@@ -58,17 +58,17 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("set-bonus")]
-        public IHttpActionResult SetBonus(string organizationId, int bonusEvents, DateTime? expires = null) {
+        public async Task<IHttpActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            var organization = _organizationRepository.GetById(organizationId);
+            var organization = await _organizationRepository.GetByIdAsync(organizationId).AnyContext();
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
             organization.BonusEventsPerMonth = bonusEvents;
             organization.BonusExpiration = expires;
-            _organizationRepository.Save(organization);
+            await _organizationRepository.SaveAsync(organization).AnyContext();
 
             return Ok(new { Success = true });
         }

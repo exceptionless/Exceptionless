@@ -101,7 +101,7 @@ namespace Exceptionless.Core.Helpers
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
 
-            return Task.Factory.StartNew(() => {
+            return Task.Factory.StartNew(async () => {
                 do {
                     try {
                         action(token.Value);

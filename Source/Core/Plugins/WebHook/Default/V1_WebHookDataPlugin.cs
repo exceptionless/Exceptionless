@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
@@ -6,7 +7,7 @@ using Exceptionless.Core.Pipeline;
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(10)]
     public class VersionOne : WebHookDataPluginBase {
-        public override object CreateFromEvent(WebHookDataContext ctx) {
+        public override async Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
             if (ctx.Version.Major != 1)
                 return null;
 
@@ -21,13 +22,13 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 Id = ctx.Event.Id,
                 OccurrenceDate = ctx.Event.Date,
                 Tags = ctx.Event.Tags,
-                MachineName = environmentInfo != null ? environmentInfo.MachineName : null,
-                RequestPath = requestInfo != null ? requestInfo.GetFullPath() : null,
-                IpAddress = requestInfo != null ? requestInfo.ClientIpAddress : environmentInfo != null ? environmentInfo.IpAddress : null,
+                MachineName = environmentInfo?.MachineName,
+                RequestPath = requestInfo?.GetFullPath(),
+                IpAddress = requestInfo != null ? requestInfo.ClientIpAddress : environmentInfo?.IpAddress,
                 Message = error.Message,
                 Type = error.Type,
                 Code = error.Code,
-                TargetMethod = error.TargetMethod != null ? error.TargetMethod.GetFullName() : null,
+                TargetMethod = error.TargetMethod?.GetFullName(),
                 ProjectId = ctx.Event.ProjectId,
                 ProjectName = ctx.Project.Name,
                 OrganizationId = ctx.Event.OrganizationId,
@@ -45,7 +46,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             };
         }
 
-        public override object CreateFromStack(WebHookDataContext ctx) {
+        public override async Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
             if (ctx.Version.Major != 1)
                 return null;
 

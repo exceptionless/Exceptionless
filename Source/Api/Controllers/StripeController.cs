@@ -4,6 +4,7 @@ using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Billing;
 using Exceptionless.Api.Utility;
+using Exceptionless.Core.Extensions;
 using NLog.Fluent;
 using Stripe;
 #pragma warning disable 1998
@@ -20,7 +21,7 @@ namespace Exceptionless.Api.Controllers {
 
         [Route]
         [HttpPost]
-        public async Task<IHttpActionResult> Post([NakedBody]string json) {
+        public async Task<IHttpActionResult> PostAsync([NakedBody]string json) {
             StripeEvent stripeEvent;
             try {
                 stripeEvent = StripeEventUtility.ParseEvent(json);
@@ -34,7 +35,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Incoming event empty");
             }
 
-            _stripeEventHandler.HandleEvent(stripeEvent);
+            await _stripeEventHandler.HandleEventAsync(stripeEvent).AnyContext();
 
             return Ok();
         }

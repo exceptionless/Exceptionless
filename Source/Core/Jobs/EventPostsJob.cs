@@ -78,16 +78,16 @@ namespace Exceptionless.Core.Jobs {
             int eventsToProcess = events.Count;
             bool isSingleEvent = events.Count == 1;
             if (!isSingleEvent) {
-                var project = _projectRepository.GetById(eventPostInfo.ProjectId, true);
+                var project = await _projectRepository.GetByIdAsync(eventPostInfo.ProjectId, true).AnyContext();
                 // Don't process all the events if it will put the account over its limits.
-                eventsToProcess = _organizationRepository.GetRemainingEventLimit(project.OrganizationId);
+                eventsToProcess = await _organizationRepository.GetRemainingEventLimitAsync(project.OrganizationId).AnyContext();
 
                 // Add 1 because we already counted 1 against their limit when we received the event post.
                 if (eventsToProcess < Int32.MaxValue)
                     eventsToProcess += 1;
 
                 // Increment by count - 1 since we already incremented it by 1 in the OverageHandler.
-                _organizationRepository.IncrementUsage(project.OrganizationId, false, events.Count - 1);
+                await _organizationRepository.IncrementUsageAsync(project.OrganizationId, false, events.Count - 1).AnyContext();
             }
             
             var errorCount = 0;

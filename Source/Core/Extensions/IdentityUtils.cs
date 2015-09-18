@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Security.Principal;
+using System.Threading.Tasks;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
@@ -17,12 +18,12 @@ namespace Exceptionless.Core.Extensions {
         public const string ProjectIdClaim = "ProjectId";
         public const string DefaultProjectIdClaim = "DefaultProjectId";
 
-        public static ClaimsIdentity ToIdentity(this Token token, IUserRepository userRepository) {
+        public static async Task<ClaimsIdentity> ToIdentityAsync(this Token token, IUserRepository userRepository) {
             if (token == null || token.Type != TokenType.Access)
                 return WindowsIdentity.GetAnonymous();
 
             if (!String.IsNullOrEmpty(token.UserId))
-                return CreateUserIdentity(token.UserId, userRepository, token.ProjectId ?? token.DefaultProjectId);
+                return await CreateUserIdentityAsync(token.UserId, userRepository, token.ProjectId ?? token.DefaultProjectId).AnyContext();
 
             var claims = new List<Claim> {
                 new Claim(ClaimTypes.NameIdentifier, token.Id),
@@ -38,18 +39,18 @@ namespace Exceptionless.Core.Extensions {
             if (token.Scopes.Count > 0)
                 claims.AddRange(token.Scopes.Select(scope => new Claim(ClaimTypes.Role, scope)));
             else
-                claims.Add(new Claim(ClaimTypes.Role, Authorization.AuthorizationRoles.Client));
+                claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.Client));
 
             return new ClaimsIdentity(claims, TokenAuthenticationType);
         }
 
-        public static ClaimsIdentity CreateUserIdentity(string userId, IUserRepository userRepository, string defaultProjectId = null) {
+        public static async Task<ClaimsIdentity> CreateUserIdentityAsync(string userId, IUserRepository userRepository, string defaultProjectId = null) {
             if (String.IsNullOrEmpty(userId))
                 throw new ArgumentNullException(nameof(userId));
             if (userRepository == null)
                 throw new ArgumentNullException(nameof(userRepository));
 
-            var user = userRepository.GetById(userId, true);
+            var user = await userRepository.GetByIdAsync(userId, true).AnyContext();
             if (user == null)
                 return WindowsIdentity.GetAnonymous();
             

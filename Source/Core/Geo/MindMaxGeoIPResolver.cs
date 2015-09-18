@@ -29,9 +29,11 @@ namespace Exceptionless.Core.Geo {
 
             ip = ip.Trim();
 
-            Location location;
-            if (_cache.TryGet(ip, out location))
-                return location;
+            var cacheValue = await _cache.TryGetAsync<Location>(ip).AnyContext();
+            if (cacheValue.HasValue)
+                return cacheValue.Value;
+
+            Location location = null;
 
             if (ip.IsPrivateNetwork())
                 return null;
@@ -45,12 +47,12 @@ namespace Exceptionless.Core.Geo {
                 if (city != null && city.Location != null)
                     location = new Location { Latitude = city.Location.Latitude, Longitude = city.Location.Longitude };
 
-                _cache.Set(ip, location);
+                await _cache.SetAsync(ip, location).AnyContext();
                 return location;
             } catch (Exception ex) {
                 if (ex is AddressNotFoundException || ex is GeoIP2Exception) {
                     Log.Trace().Message(ex.Message).Write();
-                    _cache.Set<Location>(ip, null);
+                    await _cache.SetAsync<Location>(ip, null).AnyContext();
                 } else {
                     Log.Error().Exception(ex).Message("Unable to resolve geo location for ip: " + ip).Write();
                 }

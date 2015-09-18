@@ -1,67 +1,37 @@
 ﻿using System;
+using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Foundatio.Caching;
 
 namespace Exceptionless.Extensions {
     public static class CacheClientExtensions {
-
-        public static T TryGet<T>(this ICacheClient client, string key, T defaultValue) {
-            T value;
-            if (client.TryGet(key, out value))
-                return value;
-
-            return defaultValue;
-        }
-
-        public static bool TrySet<T>(this ICacheClient client, string key, T value) {
-            try {
-                return client.Set(key, value);
-            } catch (Exception) {
-                return false;
-            }
-        }
-
-        public static bool TrySet<T>(this ICacheClient client, string key, T value, DateTime expiresAt) {
-            try {
-                return client.Set(key, value, expiresAt);
-            } catch (Exception) {
-                return false;
-            }
-        }
-
-        public static bool TrySet<T>(this ICacheClient client, string key, T value, TimeSpan expiresIn) {
-            try {
-                return client.Set(key, value, expiresIn);
-            } catch (Exception) {
-                return false;
-            }
-        }
-
-        public static long IncrementIf(this ICacheClient client, string key, uint value, TimeSpan timeToLive, bool shouldIncrement, long? startingValue = null) {
+        public static async Task<long> IncrementIfAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, bool shouldIncrement, long? startingValue = null) {
             if (!startingValue.HasValue)
                 startingValue = 0;
 
-            var count = client.Get<long?>(key);
+            var count = await client.GetAsync<long?>(key).AnyContext();
             if (!shouldIncrement)
-                return count.HasValue ? count.Value : startingValue.Value;
+                return count ?? startingValue.Value;
 
             if (count.HasValue)
-                return client.Increment(key, value);
+                return await client.IncrementAsync(key, value).AnyContext();
 
             long newValue = startingValue.Value + value;
-            client.Set(key, newValue, timeToLive);
+            await client.SetAsync(key, newValue, timeToLive).AnyContext();
             return newValue;
         }
 
-        public static long Increment(this ICacheClient client, string key, uint value, TimeSpan timeToLive, long? startingValue = null) {
+        public static async Task<long> IncrementAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, long? startingValue = null) {
             if (!startingValue.HasValue)
                 startingValue = 0;
 
-            var count = client.Get<long?>(key);
-            if (count.HasValue)
-                return client.Increment(key, value);
+            var count = await client.GetAsync<long?>(key).AnyContext();
+            if (count.HasValue) {
+                return await client.IncrementAsync(key, value).AnyContext();
+            }
 
             long newValue = startingValue.Value + value;
-            client.Set(key, newValue, timeToLive);
+            await client.SetAsync(key, newValue, timeToLive).AnyContext();
             return newValue;
         }
     }

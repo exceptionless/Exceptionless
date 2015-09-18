@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventNotificationWorkItem> queueEntry, CancellationToken cancellationToken) {
-            var eventModel = _eventRepository.GetById(queueEntry.Value.EventId);
+            var eventModel = await _eventRepository.GetByIdAsync(queueEntry.Value.EventId).AnyContext();
             if (eventModel == null)
                 return JobResult.FailedWithMessage("Could not load event {0}.", queueEntry.Value.EventId);
 
@@ -49,18 +49,18 @@ namespace Exceptionless.Core.Jobs {
             int emailsSent = 0;
             Log.Trace().Message("Process notification: project={0} event={1} stack={2}", eventNotification.Event.ProjectId, eventNotification.Event.Id, eventNotification.Event.StackId).WriteIf(shouldLog);
 
-            var project = _projectRepository.GetById(eventNotification.Event.ProjectId, true);
+            var project = await _projectRepository.GetByIdAsync(eventNotification.Event.ProjectId, true).AnyContext();
             if (project == null)
                 return JobResult.FailedWithMessage("Could not load project {0}.", eventNotification.Event.ProjectId);
             Log.Trace().Message("Loaded project: name={0}", project.Name).WriteIf(shouldLog);
 
-            var organization = _organizationRepository.GetById(project.OrganizationId, true);
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
             if (organization == null)
                 return JobResult.FailedWithMessage("Could not load organization {0}.", project.OrganizationId);
 
             Log.Trace().Message("Loaded organization: name={0}", organization.Name).WriteIf(shouldLog);
 
-            var stack = _stackRepository.GetById(eventNotification.Event.StackId);
+            var stack = await _stackRepository.GetByIdAsync(eventNotification.Event.StackId).AnyContext();
             if (stack == null)
                 return JobResult.FailedWithMessage("Could not load stack {0}.", eventNotification.Event.StackId);
 
@@ -106,7 +106,7 @@ namespace Exceptionless.Core.Jobs {
                 var settings = kv.Value;
                 Log.Trace().Message("Processing notification: user={0}", kv.Key).WriteIf(shouldLog);
 
-                var user = _userRepository.GetById(kv.Key);
+                var user = await _userRepository.GetByIdAsync(kv.Key).AnyContext();
                 if (user == null || String.IsNullOrEmpty(user.EmailAddress)) {
                     Log.Error().Message("Could not load user {0} or blank email address {1}.", kv.Key, user != null ? user.EmailAddress : "").Write();
                     continue;
@@ -180,7 +180,7 @@ namespace Exceptionless.Core.Jobs {
                 }
                 
                 Log.Trace().Message("Sending email to {0}...", user.EmailAddress).Write();
-                _mailer.SendNotice(user.EmailAddress, model);
+                await _mailer.SendNoticeAsync(user.EmailAddress, model).AnyContext();
                 emailsSent++;
                 Log.Trace().Message("Done sending email.").WriteIf(shouldLog);
             }

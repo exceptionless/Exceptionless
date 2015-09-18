@@ -47,13 +47,13 @@ namespace Exceptionless.Core.Pipeline {
                 if (contexts.Any(c => c.Event.ProjectId != projectId))
                     throw new ArgumentException("All Project Ids must be the same for a batch of events.");
 
-                var project = _projectRepository.GetById(projectId, true);
+                var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
                 if (project == null)
                     throw new InvalidOperationException($"Unable to load project \"{projectId}\"");
 
                 contexts.ForEach(c => c.Project = project);
 
-                var organization = _organizationRepository.GetById(project.OrganizationId, true);
+                var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
                 if (organization == null)
                     throw new InvalidOperationException($"Unable to load organization \"{project.OrganizationId}\"");
 
@@ -81,8 +81,7 @@ namespace Exceptionless.Core.Pipeline {
                 if (errors > 0)
                     await _metricsClient.CounterAsync(MetricNames.EventsProcessErrors, errors).AnyContext();
             } catch (Exception) {
-                // TODO: Update once we update to vnext.
-                _metricsClient.Counter(MetricNames.EventsProcessErrors, contexts.Count);
+                await _metricsClient.CounterAsync(MetricNames.EventsProcessErrors, contexts.Count).AnyContext();
                 throw;
             }
 

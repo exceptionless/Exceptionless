@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Utility {
             if (String.IsNullOrEmpty(projectId))
                 return;
 
-            var project = _projectRepository.GetById(projectId);
+            var project = await _projectRepository.GetByIdAsync(projectId).AnyContext();
             if (project == null)
                 return;
 
@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Utility {
                 await _eventRepository.RemoveAllByProjectIdsAsync(new [] { projectId }).AnyContext();
                 await _stackRepository.RemoveAllByProjectIdsAsync(new [] { projectId }).AnyContext();
 
-                _projectRepository.Save(project);
+                await _projectRepository.SaveAsync(project).AnyContext();
             } catch (Exception e) {
                 Log.Error().Project(projectId).Exception(e).Message("Error resetting project data.").Write();
                 throw;
@@ -63,7 +63,7 @@ namespace Exceptionless.Core.Utility {
             if (String.IsNullOrEmpty(stackId))
                 return;
 
-            Stack stack = _stackRepository.GetById(stackId);
+            Stack stack = await _stackRepository.GetByIdAsync(stackId).AnyContext();
             if (stack == null)
                 return;
 
@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Utility {
                 stack.TotalOccurrences = 0;
                 stack.LastOccurrence = DateTime.MinValue.ToUniversalTime();
                 stack.FirstOccurrence = DateTime.MinValue.ToUniversalTime();
-                _stackRepository.Save(stack);
+                await _stackRepository.SaveAsync(stack).AnyContext();
 
                 await _eventRepository.RemoveAllByStackIdsAsync(new[] { stackId }).AnyContext();
             } catch (Exception e) {
@@ -80,10 +80,10 @@ namespace Exceptionless.Core.Utility {
             }
         }
 
-        public string CreateDefaultOrganizationAndProject(User user) {
+        public async Task<string> CreateDefaultOrganizationAndProjectAsync(User user) {
             string organizationId = user.OrganizationIds.FirstOrDefault();
             if (!String.IsNullOrEmpty(organizationId)) {
-                var defaultProject = _projectRepository.GetByOrganizationId(user.OrganizationIds.First(), useCache: true).Documents.FirstOrDefault();
+                var defaultProject = (await _projectRepository.GetByOrganizationIdAsync(user.OrganizationIds.First(), useCache: true).AnyContext()).Documents.FirstOrDefault();
                 if (defaultProject != null)
                     return defaultProject.Id;
             } else {
@@ -91,34 +91,34 @@ namespace Exceptionless.Core.Utility {
                     Name = "Default Organization"
                 };
                 BillingManager.ApplyBillingPlan(organization, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, user);
-                _organizationRepository.Add(organization);
+                await _organizationRepository.AddAsync(organization).AnyContext();
                 organizationId = organization.Id;
             }
 
             var project = new Project { Name = "Default Project", OrganizationId = organizationId };
             project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             project.AddDefaultOwnerNotificationSettings(user.Id);
-            project = _projectRepository.Add(project);
+            project = await _projectRepository.AddAsync(project).AnyContext();
             
-            _tokenRepository.Add(new Token {
+            await _tokenRepository.AddAsync(new Token {
                 Id = StringExtensions.GetNewToken(),
                 OrganizationId = organizationId,
                 ProjectId = project.Id,
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,
                 Type = TokenType.Access
-            });
+            }).AnyContext();
 
             if (!user.OrganizationIds.Contains(organizationId)) {
                 user.OrganizationIds.Add(organizationId);
-                _userRepository.Save(user, true);
+                await _userRepository.SaveAsync(user, true).AnyContext();
             }
 
             return project.Id;
         }
 
-        public void CreateTestData() {
-            if (_userRepository.GetByEmailAddress(TEST_USER_EMAIL) != null)
+        public async Task CreateTestDataAsync() {
+            if (await _userRepository.GetByEmailAddressAsync(TEST_USER_EMAIL).AnyContext() != null)
                 return;
 
             var user = new User {
@@ -133,72 +133,72 @@ namespace Exceptionless.Core.Utility {
             user.Salt = StringExtensions.GetRandomString(16);
             user.Password = TEST_USER_PASSWORD.ToSaltedHash(user.Salt);
 
-            user = _userRepository.Add(user);
-            CreateTestOrganizationAndProject(user.Id);
-            CreateTestInternalOrganizationAndProject(user.Id);
+            user = await _userRepository.AddAsync(user).AnyContext();
+            await CreateTestOrganizationAndProjectAsync(user.Id).AnyContext();
+            await CreateTestInternalOrganizationAndProjectAsync(user.Id).AnyContext();
         }
 
-        public void CreateTestOrganizationAndProject(string userId) {
-            if (_tokenRepository.GetById(TEST_API_KEY) != null)
+        public async Task CreateTestOrganizationAndProjectAsync(string userId) {
+            if (await _tokenRepository.GetByIdAsync(TEST_API_KEY).AnyContext() != null)
                 return;
 
-            User user = _userRepository.GetById(userId, true);
+            User user = await _userRepository.GetByIdAsync(userId, true).AnyContext();
             var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme" };
             BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
-            organization = _organizationRepository.Add(organization);
+            organization = await _organizationRepository.AddAsync(organization).AnyContext();
 
             var project = new Project { Id = TEST_PROJECT_ID, Name = "Disintegrating Pistol", OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultOwnerNotificationSettings(userId);
-            project = _projectRepository.Add(project, true);
+            project = await _projectRepository.AddAsync(project, true).AnyContext();
 
-            _tokenRepository.Add(new Token {
+            await _tokenRepository.AddAsync(new Token {
                 Id = TEST_API_KEY,
                 OrganizationId = organization.Id,
                 ProjectId = project.Id,
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,
                 Type = TokenType.Access
-            });
+            }).AnyContext();
 
-            _tokenRepository.Add(new Token {
+            await _tokenRepository.AddAsync(new Token {
                 Id = TEST_USER_API_KEY,
                 UserId = user.Id,
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,
                 Type = TokenType.Access
-            });
+            }).AnyContext();
 
             user.OrganizationIds.Add(organization.Id);
-            _userRepository.Save(user, true);
+            await _userRepository.SaveAsync(user, true).AnyContext();
         }
 
-        public void CreateTestInternalOrganizationAndProject(string userId) {
-            if (_tokenRepository.GetById(INTERNAL_API_KEY) != null)
+        public async Task CreateTestInternalOrganizationAndProjectAsync(string userId) {
+            if (await _tokenRepository.GetByIdAsync(INTERNAL_API_KEY).AnyContext() != null)
                 return;
 
-            User user = _userRepository.GetById(userId, true);
+            User user = await _userRepository.GetByIdAsync(userId, true).AnyContext();
             var organization = new Organization { Name = "Exceptionless" };
             BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
-            organization = _organizationRepository.Add(organization);
+            organization = await _organizationRepository.AddAsync(organization).AnyContext();
 
             var project = new Project { Id = INTERNAL_PROJECT_ID, Name = "API", OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             project.AddDefaultOwnerNotificationSettings(userId);
-            project = _projectRepository.Add(project, true);
+            project = await _projectRepository.AddAsync(project, true).AnyContext();
 
-            _tokenRepository.Add(new Token {
+            await _tokenRepository.AddAsync(new Token {
                 Id = INTERNAL_API_KEY,
                 OrganizationId = organization.Id,
                 ProjectId = project.Id,
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,
                 Type = TokenType.Access
-            });
+            }).AnyContext();
 
             user.OrganizationIds.Add(organization.Id);
-            _userRepository.Save(user, true);
+            await _userRepository.SaveAsync(user, true).AnyContext();
         }
     }
 }

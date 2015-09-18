@@ -54,7 +54,7 @@ namespace Exceptionless.Api.Utility {
                 }
             }
 
-            bool overLimit = _organizationRepository.IncrementUsage(project.OrganizationId, tooBig);
+            bool overLimit = await _organizationRepository.IncrementUsageAsync(project.OrganizationId, tooBig).AnyContext();
 
             // block large submissions, client should break them up or remove some of the data.
             if (tooBig)

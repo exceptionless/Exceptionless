@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
@@ -9,10 +8,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
         string Name { get; }
         string VersionedName { get; }
         IDictionary<Type, string> GetIndexTypeNames();
-        Task<CreateIndexDescriptor> CreateIndexAsync(CreateIndexDescriptor idx);
+        CreateIndexDescriptor CreateIndex(CreateIndexDescriptor idx);
     }
 
     public interface ITemplatedElasticSeachIndex : IElasticSearchIndex {
-        Task<PutTemplateDescriptor> CreateTemplateAsync(PutTemplateDescriptor template);
+        PutTemplateDescriptor CreateTemplate(PutTemplateDescriptor template);
     }
 }

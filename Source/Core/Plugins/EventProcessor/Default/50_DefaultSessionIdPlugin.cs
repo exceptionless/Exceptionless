@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
 using Foundatio.Caching;
@@ -20,18 +21,18 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 return;
 
             string cacheKey = $"session:{context.Event.ProjectId}:{user.Identity}";
-            var sessionId = context.Event.Type != Event.KnownTypes.SessionStart ? _cacheClient.Get<string>(cacheKey) : null;
+            var sessionId = context.Event.Type != Event.KnownTypes.SessionStart ? await _cacheClient.GetAsync<string>(cacheKey).AnyContext() : null;
             if (sessionId == null) {
                 sessionId = Guid.NewGuid().ToString("N");
-                _cacheClient.Set(cacheKey, sessionId, _sessionTimeout);
+                await _cacheClient.SetAsync(cacheKey, sessionId, _sessionTimeout).AnyContext();
             } else {
-                _cacheClient.SetExpiration(cacheKey, _sessionTimeout);
+                await _cacheClient.SetExpirationAsync(cacheKey, _sessionTimeout).AnyContext();
             }
 
             context.Event.SessionId = sessionId;
 
             if (context.Event.Type == Event.KnownTypes.SessionEnd)
-                _cacheClient.Remove(cacheKey);
+                await _cacheClient.RemoveAsync(cacheKey).AnyContext();
         }
     }
 }

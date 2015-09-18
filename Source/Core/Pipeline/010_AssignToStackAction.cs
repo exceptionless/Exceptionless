@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool IsCritical => true;
 
-        public override Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var stacks = new Dictionary<string, Tuple<bool, Stack>>();
             foreach (var ctx in contexts) {
                 if (String.IsNullOrEmpty(ctx.Event.StackId)) {
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Pipeline {
                     if (stacks.TryGetValue(signatureHash, out value)) {
                         ctx.Stack = value.Item2;
                     } else {
-                        ctx.Stack = _stackRepository.GetStackBySignatureHash(ctx.Event.ProjectId, signatureHash);
+                        ctx.Stack = await _stackRepository.GetStackBySignatureHashAsync(ctx.Event.ProjectId, signatureHash).AnyContext();
                         if (ctx.Stack != null)
                             stacks.Add(signatureHash, Tuple.Create(false, ctx.Stack));
                     }
@@ -76,7 +76,7 @@ namespace Exceptionless.Core.Pipeline {
                         stacks.Add(signatureHash, Tuple.Create(true, ctx.Stack));
                     }
                 } else {
-                    ctx.Stack = _stackRepository.GetById(ctx.Event.StackId, true);
+                    ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId, true).AnyContext();
                     if (ctx.Stack == null || ctx.Stack.ProjectId != ctx.Event.ProjectId) {
                         ctx.SetError("Invalid StackId.");
                         continue;
@@ -114,21 +114,19 @@ namespace Exceptionless.Core.Pipeline {
 
             var stacksToAdd = stacks.Where(kvp => kvp.Value.Item1 && String.IsNullOrEmpty(kvp.Value.Item2.Id)).Select(kvp => kvp.Value.Item2).ToList();
             if (stacksToAdd.Count > 0) {
-                _stackRepository.Add(stacksToAdd, true, sendNotification: stacksToAdd.Count == 1);
+                await _stackRepository.AddAsync(stacksToAdd, true, sendNotification: stacksToAdd.Count == 1).AnyContext();
                 if (stacksToAdd.Count > 1)
-                    _publisher.Publish(new EntityChanged { ChangeType = ChangeType.Added, Type = typeof(Stack).Name, OrganizationId = contexts.First().Organization.Id, ProjectId = contexts.First().Project.Id });
+                    await _publisher.PublishAsync(new EntityChanged { ChangeType = ChangeType.Added, Type = typeof(Stack).Name, OrganizationId = contexts.First().Organization.Id, ProjectId = contexts.First().Project.Id }).AnyContext();
             }
 
             var stacksToSave = stacks.Where(kvp => kvp.Value.Item1 && !String.IsNullOrEmpty(kvp.Value.Item2.Id)).Select(kvp => kvp.Value.Item2).ToList();
             if (stacksToSave.Count > 0)
-                _stackRepository.Save(stacksToSave, true, sendNotification: false); // notification will get sent later in the update stats step
+                await _stackRepository.SaveAsync(stacksToSave, true, sendNotification: false).AnyContext(); // notification will get sent later in the update stats step
 
             // Set stack ids after they have been saved and created
             contexts.ForEach(ctx => {
-                ctx.Event.StackId = ctx.Stack != null ? ctx.Stack.Id : null;
+                ctx.Event.StackId = ctx.Stack?.Id;
             });
-
-            return TaskHelper.Completed();
         }
 
         public override Task ProcessAsync(EventContext ctx) {

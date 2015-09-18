@@ -75,12 +75,12 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id:objectid}", Name = "GetPersistentEventById")]
         [ResponseType(typeof(PersistentEvent))]
-        public IHttpActionResult GetById(string id, string filter = null, string time = null, string offset = null) {
-            var model = GetModel(id);
+        public async Task<IHttpActionResult> GetByIdAsync(string id, string filter = null, string time = null, string offset = null) {
+            var model = await GetModelAsync(id).AnyContext();
             if (model == null)
                 return NotFound();
 
-            var organization = _organizationRepository.GetById(model.OrganizationId, true);
+            var organization = await _organizationRepository.GetByIdAsync(model.OrganizationId, true).AnyContext();
             if (organization.RetentionDays > 0 && model.Date.UtcDateTime < DateTime.UtcNow.SubtractDays(organization.RetentionDays))
                 return PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
@@ -91,12 +91,12 @@ namespace Exceptionless.Api.Controllers {
             if (!processResult.IsValid)
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
-            var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
+            var systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter)).AnyContext();
 
             var timeInfo = GetTimeInfo(time, offset);
             return OkWithLinks(model,
-                GetEntityResourceLink(_repository.GetPreviousEventId(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
-                GetEntityResourceLink(_repository.GetNextEventId(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "next"),
+                GetEntityResourceLink(await _repository.GetPreviousEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End).AnyContext(), "previous"),
+                GetEntityResourceLink(await _repository.GetNextEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End).AnyContext(), "next"),
                 GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
 
@@ -113,11 +113,11 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public IHttpActionResult Get(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return GetInternal(null, filter, sort, time, offset, mode, page, limit);
+        public Task<IHttpActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return GetInternalAsync(null, filter, sort, time, offset, mode, page, limit);
         }
 
-        private IHttpActionResult GetInternal(string systemFilter = null, string userFilter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        private async Task<IHttpActionResult> GetInternalAsync(string systemFilter = null, string userFilter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page + 1, limit);
@@ -129,7 +129,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(processResult.Message);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+                systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter)).AnyContext();
 
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
@@ -137,7 +137,7 @@ namespace Exceptionless.Api.Controllers {
 
             FindResults<PersistentEvent> events;
             try {
-                events = _repository.GetByFilter(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
+                events = await _repository.GetByFilterAsync(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).AnyContext();
             } catch (ApplicationException ex) {
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
@@ -179,11 +179,11 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public IHttpActionResult GetByOrganization(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit);
+            return await GetInternalAsync(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit).AnyContext();
         }
 
         /// <summary>
@@ -201,15 +201,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public IHttpActionResult GetByProject(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            var project = _projectRepository.GetById(projectId, true);
+            var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("project:", projectId), filter, sort, time, offset, mode, page, limit);
+            return await GetInternalAsync(String.Concat("project:", projectId), filter, sort, time, offset, mode, page, limit).AnyContext();
         }
 
         /// <summary>
@@ -227,15 +227,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public IHttpActionResult GetByStack(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetByStackAsync(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
-            var stack = _stackRepository.GetById(stackId, true);
+            var stack = await _stackRepository.GetByIdAsync(stackId, true).AnyContext();
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("stack:", stackId), filter, sort, time, offset, mode, page, limit);
+            return await GetInternalAsync(String.Concat("stack:", stackId), filter, sort, time, offset, mode, page, limit).AnyContext();
         }
 
         /// <summary>
@@ -246,11 +246,11 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("by-ref/{referenceId:minlength(8)}")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public IHttpActionResult GetByReferenceId(string referenceId) {
+        public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
             
-            return GetInternal(userFilter: String.Concat("reference:", referenceId));
+            return await GetInternalAsync(userFilter: String.Concat("reference:", referenceId)).AnyContext();
         }
 
         /// <summary>
@@ -262,15 +262,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public IHttpActionResult GetByReferenceId(string referenceId, string projectId) {
+        public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string projectId) {
             if (String.IsNullOrEmpty(referenceId) || String.IsNullOrEmpty(projectId))
                 return NotFound();
             
-            var project = _projectRepository.GetById(projectId, true);
+            var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("project:", projectId), String.Concat("reference:", referenceId));
+            return await GetInternalAsync(String.Concat("project:", projectId), String.Concat("reference:", referenceId)).AnyContext();
         }
 
         /// <summary>
@@ -309,11 +309,11 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
-            var project = _projectRepository.GetById(projectId, true);
+            var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
             if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
                 return NotFound();
 
-            var eventUserDescription = Map<EventUserDescription>(description);
+            var eventUserDescription = await MapAsync<EventUserDescription>(description).AnyContext();
             eventUserDescription.ProjectId = projectId;
             eventUserDescription.ReferenceId = referenceId;
 
@@ -405,7 +405,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
-            var project = _projectRepository.GetById(projectId, true);
+            var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
             if (project == null || !Request.GetAssociatedOrganizationIds().Contains(project.OrganizationId))
                 return NotFound();
 
@@ -457,11 +457,11 @@ namespace Exceptionless.Api.Controllers {
             return base.DeleteAsync(ids.FromDelimitedString());
         }
 
-        protected override void CreateMaps() {
+        protected override Task CreateMapsAsync() {
             if (Mapper.FindTypeMapFor<UserDescription, EventUserDescription>() == null)
                 Mapper.CreateMap<UserDescription, EventUserDescription>();
 
-            base.CreateMaps();
+            return base.CreateMapsAsync();
         }
     }
 }

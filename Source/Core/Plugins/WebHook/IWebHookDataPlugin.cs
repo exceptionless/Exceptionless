@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     public interface IWebHookDataPlugin {
-        object CreateFromEvent(WebHookDataContext ctx);
-        object CreateFromStack(WebHookDataContext ctx);
+        Task<object> CreateFromEventAsync(WebHookDataContext ctx);
+        Task<object> CreateFromStackAsync(WebHookDataContext ctx);
     }
 }

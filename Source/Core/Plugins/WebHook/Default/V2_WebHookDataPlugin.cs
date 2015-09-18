@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(20)]
     public class VersionTwo : WebHookDataPluginBase {
-        public override object CreateFromEvent(WebHookDataContext ctx) {
+        public override async Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
             if (ctx.Version.Major != 2)
                 return null;
 
@@ -33,7 +34,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             };
         }
 
-        public override object CreateFromStack(WebHookDataContext ctx) {
+        public override async Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
             if (ctx.Version.Major != 2)
                 return null;
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Component;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 
@@ -28,7 +29,7 @@ namespace Exceptionless.Core.Pipeline {
                     int count = stackGroup.Count();
                     DateTime minDate = stackGroup.Min(s => s.Event.Date.UtcDateTime);
                     DateTime maxDate = stackGroup.Max(s => s.Event.Date.UtcDateTime);
-                    _stackRepository.IncrementEventCounter(stackGroup.First().Event.OrganizationId, stackGroup.First().Event.ProjectId, stackGroup.Key, minDate, maxDate, count);
+                    await _stackRepository.IncrementEventCounterAsync(stackGroup.First().Event.OrganizationId, stackGroup.First().Event.ProjectId, stackGroup.Key, minDate, maxDate, count).AnyContext();
 
                     // Update stacks in memory since they are used in notifications.
                     foreach (var ctx in stackGroup) {

@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Security {
                     else {
                         User user;
                         try {
-                            user = _userRepository.GetByEmailAddress(authInfo.Username);
+                            user = await _userRepository.GetByEmailAddressAsync(authInfo.Username).AnyContext();
                         } catch (Exception) {
                             return new HttpResponseMessage(HttpStatusCode.Unauthorized);
                         }
@@ -75,7 +75,7 @@ namespace Exceptionless.Api.Security {
             }
 
             if (!String.IsNullOrEmpty(token)) {
-                IPrincipal principal = _tokenManager.Validate(token);
+                IPrincipal principal = await _tokenManager.ValidateAsync(token).AnyContext();
                 if (principal != null)
                     request.GetRequestContext().Principal = principal;
             }

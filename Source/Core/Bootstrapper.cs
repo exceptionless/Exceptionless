@@ -67,7 +67,7 @@ namespace Exceptionless.Core {
             metricsClient.StartDisplayingStats();
             container.RegisterSingleton<IMetricsClient>(metricsClient);
 
-            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ElasticSearchConfiguration>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
+            container.RegisterSingleton<IElasticClient>(async () => await container.GetInstance<ElasticSearchConfiguration>().GetClientAsync(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))).AnyContext());
             container.RegisterSingleton<ICacheClient, InMemoryCacheClient>();
 
             container.RegisterSingleton<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: MetricNames.PostsQueueSize, metrics: container.GetInstance<IMetricsClient>()));

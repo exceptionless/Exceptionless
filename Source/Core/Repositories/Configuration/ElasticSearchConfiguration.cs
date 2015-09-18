@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Elasticsearch.Net.ConnectionPool;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
@@ -19,7 +20,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             _workItemQueue = workItemQueue;
         }
 
-        public IElasticClient GetClient(IEnumerable<Uri> serverUris) {
+        public async Task<IElasticClient> GetClientAsync(IEnumerable<Uri> serverUris) {
             var connectionPool = new StaticConnectionPool(serverUris);
             var indexes = GetIndexes();
             var settings = new ConnectionSettings(connectionPool)
@@ -36,39 +37,39 @@ namespace Exceptionless.Core.Repositories.Configuration {
             });
 
             var client = new ElasticClient(settings, new KeepAliveHttpConnection(settings));
-            ConfigureIndexes(client);
+            await ConfigureIndexesAsync(client).AnyContext();
             return client;
         }
 
-        public void ConfigureIndexes(IElasticClient client) {
+        public async Task ConfigureIndexesAsync(IElasticClient client) {
             foreach (var index in GetIndexes()) {
                 IIndicesOperationResponse response = null;
-                int currentVersion = GetAliasVersion(client, index.Name);
+                int currentVersion = await GetAliasVersionAsync(client, index.Name).AnyContext();
                 
                 var templatedIndex = index as ITemplatedElasticSeachIndex;
                 if (templatedIndex != null)
-                    response = client.PutTemplate(index.VersionedName, template => templatedIndex.CreateTemplate(template).AddAlias(index.Name));
-                else if (!client.IndexExists(index.VersionedName).Exists)
-                    response = client.CreateIndex(index.VersionedName, descriptor => index.CreateIndex(descriptor).AddAlias(index.Name));
+                    response = await client.PutTemplateAsync(index.VersionedName, template => templatedIndex.CreateTemplate(template).AddAlias(index.Name)).AnyContext();
+                else if ((await client.IndexExistsAsync(index.VersionedName).AnyContext()).Exists == false)
+                    response = await client.CreateIndexAsync(index.VersionedName, descriptor => index.CreateIndex(descriptor).AddAlias(index.Name)).AnyContext();
                 
                 Debug.Assert(response == null || response.IsValid, response != null && response.ServerError != null ? response.ServerError.Error : "An error occurred creating the index or template.");
 
                 // Add existing indexes to the alias.
-                if (!client.AliasExists(index.Name).Exists) {
+                if ((await client.AliasExistsAsync(index.Name).AnyContext()).Exists == false) {
                     if (templatedIndex != null) {
-                        var indices = client.IndicesStats().Indices.Where(kvp => kvp.Key.StartsWith(index.VersionedName)).Select(kvp => kvp.Key).ToList();
+                        var indices = (await client.IndicesStatsAsync().AnyContext()).Indices.Where(kvp => kvp.Key.StartsWith(index.VersionedName)).Select(kvp => kvp.Key).ToList();
                         if (indices.Count > 0) {
                             var descriptor = new AliasDescriptor();
                             foreach (string name in indices)
                                 descriptor.Add(add => add.Index(name).Alias(index.Name));
 
-                            response = client.Alias(descriptor);
+                            response = await client.AliasAsync(descriptor).AnyContext();
                         }
                     } else {
-                        response = client.Alias(a => a.Add(add => add.Index(index.VersionedName).Alias(index.Name)));
+                        response = await client.AliasAsync(a => a.Add(add => add.Index(index.VersionedName).Alias(index.Name))).AnyContext();
                     }
 
-                    Debug.Assert(response != null && response.IsValid, response != null && response.ServerError != null ? response.ServerError.Error : "An error occurred creating the alias.");
+                    Debug.Assert(response != null && response.IsValid, response?.ServerError != null ? response.ServerError.Error : "An error occurred creating the alias.");
                 }
                 
                 // already on current version
@@ -76,24 +77,24 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     continue;
 
                 // upgrade
-                _workItemQueue.Enqueue(new ReindexWorkItem {
+                await _workItemQueue.EnqueueAsync(new ReindexWorkItem {
                     OldIndex = String.Concat(index.Name, "-v", currentVersion),
                     NewIndex = index.VersionedName,
                     Alias = index.Name,
                     DeleteOld = true
-                });
+                }).AnyContext();
             }
         }
 
-        public void DeleteIndexes(IElasticClient client) {
-            var deleteResponse = client.DeleteIndex(i => i.AllIndices());
+        public async Task DeleteIndexesAsync(IElasticClient client) {
+            var deleteResponse = await client.DeleteIndexAsync(i => i.AllIndices()).AnyContext();
             Debug.Assert(deleteResponse.IsValid, deleteResponse.ServerError != null ? deleteResponse.ServerError.Error : "An error occurred deleting the indexes.");
 
             foreach (var index in GetIndexes()) {
                 var templatedIndex = index as ITemplatedElasticSeachIndex;
                 if (templatedIndex != null) {
-                    if (client.TemplateExists(index.VersionedName).Exists) {
-                        var response = client.DeleteTemplate(index.VersionedName);
+                    if ((await client.TemplateExistsAsync(index.VersionedName).AnyContext()).Exists) {
+                        var response = await client.DeleteTemplateAsync(index.VersionedName).AnyContext();
                         Debug.Assert(response.IsValid, response.ServerError != null ? response.ServerError.Error : "An error occurred deleting the index template.");
                     }
                 }
@@ -108,8 +109,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
             };
         }
 
-        private int GetAliasVersion(IElasticClient client, string alias) {
-            var res = client.GetAlias(a => a.Alias(alias));
+        private async Task<int> GetAliasVersionAsync(IElasticClient client, string alias) {
+            var res = await client.GetAliasAsync(a => a.Alias(alias)).AnyContext();
             if (!res.Indices.Any())
                 return -1;
 

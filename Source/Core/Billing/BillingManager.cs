@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
@@ -16,49 +18,49 @@ namespace Exceptionless.Core.Billing {
             _userRepository = userRepository;
         }
 
-        public bool CanAddOrganization(User user) {
+        public async Task<bool> CanAddOrganizationAsync(User user) {
             if (user == null)
                 return false;
 
-            var organizations = _organizationRepository.GetByIds(user.OrganizationIds).Documents.Where(o => o.PlanId == FreePlan.Id);
+            var organizations = (await _organizationRepository.GetByIdsAsync(user.OrganizationIds).AnyContext()).Documents.Where(o => o.PlanId == FreePlan.Id);
             return !organizations.Any();
         }
 
-        public bool CanAddUser(Organization organization) {
+        public async Task<bool> CanAddUserAsync(Organization organization) {
             if (organization == null || String.IsNullOrWhiteSpace(organization.Id))
                 return false;
 
-            long numberOfUsers = _userRepository.GetByOrganizationId(organization.Id).Total + organization.Invites.Count;
+            long numberOfUsers = (await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext()).Total + organization.Invites.Count;
             return organization.MaxUsers <= -1 || numberOfUsers < organization.MaxUsers;
         }
 
-        public bool CanAddProject(Project project) {
+        public async Task<bool> CanAddProjectAsync(Project project) {
             if (project == null || String.IsNullOrWhiteSpace(project.OrganizationId))
                 return false;
 
-            var organization = _organizationRepository.GetById(project.OrganizationId);
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId).AnyContext();
             if (organization == null)
                 return false;
 
-            long projectCount = _projectRepository.GetCountByOrganizationId(project.OrganizationId);
+            long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(project.OrganizationId).AnyContext();
             return organization.MaxProjects == -1 || projectCount < organization.MaxProjects;
         }
 
-        public bool HasPremiumFeatures(string organizationId) {
-            var organization = _organizationRepository.GetById(organizationId);
+        public async Task<bool> HasPremiumFeaturesAsync(string organizationId) {
+            var organization = await _organizationRepository.GetByIdAsync(organizationId).AnyContext();
             if (organization == null)
                 return false;
 
             return organization.HasPremiumFeatures;
         }
 
-        public bool CanDownGrade(Organization organization, BillingPlan plan, User user, out string message) {
+        public async Task<bool> CanDownGradeAsync(Organization organization, BillingPlan plan, User user, out string message) {
             if (organization == null || String.IsNullOrWhiteSpace(organization.Id)) {
                 message = "Invalid Organization";
                 return false;
             }
 
-            long currentNumberOfUsers = _userRepository.GetByOrganizationId(organization.Id).Total + organization.Invites.Count;
+            long currentNumberOfUsers = (await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext()).Total + organization.Invites.Count;
             int maxUsers = plan.MaxUsers != -1 ? plan.MaxUsers : int.MaxValue;
             if (currentNumberOfUsers > maxUsers) {
                 message = $"Please remove {currentNumberOfUsers - maxUsers} user{((currentNumberOfUsers - maxUsers) > 0 ? "s" : String.Empty)} and try again.";
@@ -66,14 +68,14 @@ namespace Exceptionless.Core.Billing {
             }
 
             int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : int.MaxValue;
-            long projectCount = _projectRepository.GetCountByOrganizationId(organization.Id);
+            long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id).AnyContext();
             if (projectCount > maxProjects) {
                 message = $"Please remove {projectCount - maxProjects} project{((projectCount - maxProjects) > 0 ? "s" : String.Empty)} and try again.";
                 return false;
             }
 
             // Ensure the user can't be apart of more than one free plan.
-            if (String.Equals(plan.Id, FreePlan.Id) && user != null && _organizationRepository.GetByIds(user.OrganizationIds).Documents.Any(o => String.Equals(o.PlanId, FreePlan.Id))) {
+            if (String.Equals(plan.Id, FreePlan.Id) && user != null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds)).Documents.Any(o => String.Equals(o.PlanId, FreePlan.Id))) {
                 message = "You already have one free account. You are not allowed to create more than one free account.";
                 return false;
             }
@@ -99,7 +101,7 @@ namespace Exceptionless.Core.Billing {
             if (updateBillingPrice)
                 organization.BillingPrice = plan.Price;
 
-            organization.BillingChangedByUserId = user != null ? user.Id : null;
+            organization.BillingChangedByUserId = user?.Id;
             organization.MaxUsers = plan.MaxUsers;
             organization.MaxProjects = plan.MaxProjects;
             organization.RetentionDays = plan.RetentionDays;

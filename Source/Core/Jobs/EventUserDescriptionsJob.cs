@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Jobs {
             Log.Trace().Message("Processing user description: id={0}", queueEntry.Id).Write();
 
             try {
-                ProcessUserDescription(queueEntry.Value);
+                await ProcessUserDescriptionAsync(queueEntry.Value).AnyContext();
                 Log.Info().Message("Processed user description: id={0}", queueEntry.Id).Write();
                 await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionProcessed).AnyContext();
             } catch (DocumentNotFoundException ex){
@@ -45,8 +45,8 @@ namespace Exceptionless.Core.Jobs {
             return JobResult.Success;
         }
         
-        private void ProcessUserDescription(EventUserDescription description) {
-            var ev = _eventRepository.GetByReferenceId(description.ProjectId, description.ReferenceId).Documents.FirstOrDefault();
+        private async Task ProcessUserDescriptionAsync(EventUserDescription description) {
+            var ev = (await _eventRepository.GetByReferenceIdAsync(description.ProjectId, description.ReferenceId).AnyContext()).Documents.FirstOrDefault();
             if (ev == null)
                 throw new DocumentNotFoundException(description.ReferenceId);
 
@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Jobs {
 
             ev.SetUserDescription(ud);
 
-            _eventRepository.Save(ev);
+            await _eventRepository.SaveAsync(ev).AnyContext();
         }
     }
 }

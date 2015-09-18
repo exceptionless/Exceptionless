@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Results;
 using Exceptionless.Api.Extensions;
@@ -115,11 +116,12 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public string GetAssociatedOrganizationsFilter(IOrganizationRepository repository, bool filterUsesPremiumFeatures, bool hasOrganizationOrProjectFilter, string retentionDateFieldName = "date") {
+        public async Task<string> GetAssociatedOrganizationsFilterAsync(IOrganizationRepository repository, bool filterUsesPremiumFeatures, bool hasOrganizationOrProjectFilter, string retentionDateFieldName = "date") {
             if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
                 return null;
 
-            var organizations = repository.GetByIds(GetAssociatedOrganizationIds(), useCache: true).Documents.Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
+            var associatedOrganizations = await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), useCache: true).AnyContext();
+            var organizations = associatedOrganizations.Documents.Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
             if (organizations.Count == 0)
                 return "organization:none";
 

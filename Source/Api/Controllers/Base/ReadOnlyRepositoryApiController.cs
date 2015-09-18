@@ -2,12 +2,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Nito.AsyncEx;
 using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
@@ -20,45 +23,45 @@ namespace Exceptionless.Api.Controllers {
             _repository = repository;
         }
 
-        public virtual IHttpActionResult GetById(string id) {
-            TModel model = GetModel(id);
+        public virtual async Task<IHttpActionResult> GetByIdAsync(string id) {
+            TModel model = await GetModelAsync(id).AnyContext();
             if (model == null)
                 return NotFound();
 
-            return OkModel(model);
+            return await OkModelAsync(model).AnyContext();
         }
 
-        protected IHttpActionResult OkModel(TModel model) {
-            return Ok(Map<TViewModel>(model, true));
+        protected async Task<IHttpActionResult> OkModelAsync(TModel model) {
+            return Ok(await MapAsync<TViewModel>(model, true).AnyContext());
         }
 
-        protected virtual TModel GetModel(string id, bool useCache = true) {
+        protected virtual async Task<TModel> GetModelAsync(string id, bool useCache = true) {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            TModel model = _repository.GetById(id, useCache);
+            TModel model = await _repository.GetByIdAsync(id, useCache).AnyContext();
             if (_isOwnedByOrganization && model != null && !CanAccessOrganization(((IOwnedByOrganization)model).OrganizationId))
                 return null;
 
             return model;
         }
 
-        protected virtual ICollection<TModel> GetModels(string[] ids, bool useCache = true) {
+        protected virtual async Task<ICollection<TModel>> GetModelsAsync(string[] ids, bool useCache = true) {
             if (ids == null || ids.Length == 0)
                 return new List<TModel>();
 
-            var models = _repository.GetByIds(ids, useCache: useCache).Documents;
-            if (_isOwnedByOrganization && models != null)
-                models = models.Where(m => CanAccessOrganization(((IOwnedByOrganization)m).OrganizationId)).ToList();
+            var models = (await _repository.GetByIdsAsync(ids, useCache: useCache).AnyContext()).Documents;
+            if (_isOwnedByOrganization)
+                models = models?.Where(m => CanAccessOrganization(((IOwnedByOrganization)m).OrganizationId)).ToList();
 
             return models;
         }
 
-        public virtual IHttpActionResult Get(string userFilter = null, string query = null, string sort = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return GetInternal(null, userFilter, query, sort, offset, mode, page, limit);
+        public virtual Task<IHttpActionResult> GetAsync(string userFilter = null, string query = null, string sort = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return GetInternalAsync(null, userFilter, query, sort, offset, mode, page, limit);
         }
 
-        public IHttpActionResult GetInternal(string systemFilter = null, string userFilter = null, string query = null, string sort = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetInternalAsync(string systemFilter = null, string userFilter = null, string query = null, string sort = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page + 1, limit);
@@ -80,7 +83,7 @@ namespace Exceptionless.Api.Controllers {
 
             FindResults<TModel> models;
             try {
-                models = _repository.GetBySearch(systemFilter, userFilter, query, sortBy.Item1, sortBy.Item2, options);
+                models = await _repository.GetBySearchAsync(systemFilter, userFilter, query, sortBy.Item1, sortBy.Item2, options).AnyContext();
             } catch (ApplicationException ex) {
                 Log.Error().Exception(ex).Property("Search Filter", new {
                     SystemFilter = systemFilter,
@@ -95,44 +98,48 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(MapCollection<TViewModel>(models.Documents, true), options.HasMore, page, models.Total);
+                return OkWithResourceLinks(await MapCollectionAsync<TViewModel>(models.Documents, true).AnyContext(), options.HasMore, page, models.Total);
 
-            return OkWithResourceLinks(MapCollection<TViewModel>(models.Documents, true), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, models.Total);
+            return OkWithResourceLinks(await MapCollectionAsync<TViewModel>(models.Documents, true).AnyContext(), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, models.Total);
         }
         
         #region Mapping
 
         private static bool _mapsCreated = false;
-        private static readonly object _lock = new object();
-        private void EnsureMaps() {
+        private static readonly AsyncLock _lock = new AsyncLock();
+        private async Task EnsureMapsAsync() {
             if (_mapsCreated)
                 return;
 
-            lock (_lock) {
+            using (await _lock.LockAsync()) {
                 if (_mapsCreated)
                     return;
 
-                CreateMaps();
+                await CreateMapsAsync().AnyContext();
 
                 _mapsCreated = true;
             }
         }
        
-        protected virtual void CreateMaps() {
+        protected virtual Task CreateMapsAsync() {
             if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
                 Mapper.CreateMap<TModel, TViewModel>();
+
+            return TaskHelper.Completed();
         }
 
-        protected TDestination Map<TDestination>(object source, bool isResult = false) {
-            EnsureMaps();
+        protected async Task<TDestination> MapAsync<TDestination>(object source, bool isResult = false) {
+            await EnsureMapsAsync().AnyContext();
+
             var destination = Mapper.Map<TDestination>(source);
             if (isResult)
                 AfterResultMap(destination);
             return destination;
         }
 
-        protected ICollection<TDestination> MapCollection<TDestination>(object source, bool isResult = false) {
-            EnsureMaps();
+        protected async Task<ICollection<TDestination>> MapCollectionAsync<TDestination>(object source, bool isResult = false) {
+            await EnsureMapsAsync().AnyContext();
+
             var destination = Mapper.Map<ICollection<TDestination>>(source);
             if (isResult)
                 destination.ForEach(d => AfterResultMap(d));
@@ -141,8 +148,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected virtual void AfterResultMap(object model) {
             var dataModel = model as IData;
-            if (dataModel != null)
-                dataModel.Data.RemoveSensitiveData();
+            dataModel?.Data.RemoveSensitiveData();
 
             var enumerable = model as IEnumerable;
             if (enumerable == null)
@@ -150,8 +156,7 @@ namespace Exceptionless.Api.Controllers {
 
             foreach (var item in enumerable) {
                 var itemDataModel = item as IData;
-                if (itemDataModel != null)
-                    itemDataModel.Data.RemoveSensitiveData();
+                itemDataModel?.Data.RemoveSensitiveData();
             }
         }
 

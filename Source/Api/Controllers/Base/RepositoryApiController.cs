@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Utility;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -28,54 +27,54 @@ namespace Exceptionless.Api.Controllers {
             if (!_isOrganization && orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
                 orgModel.OrganizationId = GetDefaultOrganizationId();
 
-            TModel mapped = Map<TModel>(value);
-            var permission = CanAdd(mapped);
+            TModel mapped = await MapAsync<TModel>(value).AnyContext();
+            var permission = await CanAddAsync(mapped).AnyContext();
             if (!permission.Allowed)
                 return Permission(permission);
 
             TModel model;
             try {
-                model = AddModel(mapped);
+                model = await AddModelAsync(mapped).AnyContext();
                 await AfterAddAsync(model).AnyContext();
             } catch (ValidationException ex) {
                 return BadRequest(ex.Errors.ToErrorMessage());
             }
 
-            return Created(new Uri(GetEntityLink(model.Id)), Map<TViewModel>(model, true));
+            return Created(new Uri(GetEntityLink(model.Id)), await MapAsync<TViewModel>(model, true).AnyContext());
         }
 
         protected async Task<IHttpActionResult> UpdateModelAsync(string id, Func<TModel, TModel> modelUpdateFunc) {
-            TModel model = GetModel(id);
+            TModel model = await GetModelAsync(id).AnyContext();
             if (model == null)
                 return NotFound();
 
             if (modelUpdateFunc != null)
                 model = modelUpdateFunc(model);
 
-            _repository.Save(model);
+            await _repository.SaveAsync(model).AnyContext();
             await AfterUpdateAsync(model).AnyContext();
 
             if (typeof(TViewModel) == typeof(TModel))
                 return Ok(model);
 
-            return Ok(Map<TViewModel>(model, true));
+            return Ok(await MapAsync<TViewModel>(model, true).AnyContext());
         }
 
         protected async Task<IHttpActionResult> UpdateModelsAsync(string[] ids, Func<TModel, TModel> modelUpdateFunc) {
-            var models = GetModels(ids);
+            var models = await GetModelsAsync(ids).AnyContext();
             if (models == null || models.Count == 0)
                 return NotFound();
 
             if (modelUpdateFunc != null)
                 models.ForEach(m => modelUpdateFunc(m));
 
-            _repository.Save(models);
+            await _repository.SaveAsync(models).AnyContext();
             models.ForEach(async m => await AfterUpdateAsync(m).AnyContext());
 
             if (typeof(TViewModel) == typeof(TModel))
                 return Ok(models);
 
-            return Ok(Map<TViewModel>(models, true));
+            return Ok(await MapAsync<TViewModel>(models, true).AnyContext());
         }
 
         protected virtual string GetEntityLink(string id) {
@@ -102,19 +101,19 @@ namespace Exceptionless.Api.Controllers {
             }), type);
         }
 
-        protected virtual PermissionResult CanAdd(TModel value) {
+        protected virtual Task<PermissionResult> CanAddAsync(TModel value) {
             var orgModel = value as IOwnedByOrganization;
             if (_isOrganization || orgModel == null)
-                return PermissionResult.Allow;
+                return Task.FromResult(PermissionResult.Allow);
 
             if (!CanAccessOrganization(orgModel.OrganizationId))
-                return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+                return Task.FromResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
 
-            return PermissionResult.Allow;
+            return Task.FromResult(PermissionResult.Allow);
         }
 
-        protected virtual TModel AddModel(TModel value) {
-            return _repository.Add(value);
+        protected virtual Task<TModel> AddModelAsync(TModel value) {
+            return _repository.AddAsync(value);
         }
 
         protected virtual Task<TModel> AfterAddAsync(TModel value) {
@@ -126,15 +125,15 @@ namespace Exceptionless.Api.Controllers {
         }
 
         public virtual async Task<IHttpActionResult> PatchAsync(string id, Delta<TUpdateModel> changes) {
-            TModel original = GetModel(id, false);
+            TModel original = await GetModelAsync(id, false).AnyContext();
             if (original == null)
                 return NotFound();
 
             // if there are no changes in the delta, then ignore the request
             if (changes == null || !changes.GetChangedPropertyNames().Any())
-                return OkModel(original);
+                return await OkModelAsync(original).AnyContext();
 
-            var permission = CanUpdate(original, changes);
+            var permission = await CanUpdateAsync(original, changes).AnyContext();
             if (!permission.Allowed)
                 return Permission(permission);
 
@@ -145,23 +144,23 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(ex.Errors.ToErrorMessage());
             }
 
-            return OkModel(original);
+            return await OkModelAsync(original).AnyContext();
         }
 
-        protected virtual PermissionResult CanUpdate(TModel original, Delta<TUpdateModel> changes) {
+        protected virtual Task<PermissionResult> CanUpdateAsync(TModel original, Delta<TUpdateModel> changes) {
             var orgModel = original as IOwnedByOrganization;
             if (orgModel != null && !CanAccessOrganization(orgModel.OrganizationId))
-                return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+                return Task.FromResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
 
             if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
-                return PermissionResult.DenyWithMessage("OrganizationId cannot be modified.");
+                return Task.FromResult(PermissionResult.DenyWithMessage("OrganizationId cannot be modified."));
 
-            return PermissionResult.Allow;
+            return Task.FromResult(PermissionResult.Allow);
         }
 
-        protected virtual async Task<TModel> UpdateModelAsync(TModel original, Delta<TUpdateModel> changes) {
+        protected virtual Task<TModel> UpdateModelAsync(TModel original, Delta<TUpdateModel> changes) {
             changes.Patch(original);
-            return _repository.Save(original);
+            return _repository.SaveAsync(original);
         }
 
         protected virtual Task<TModel> AfterPatchAsync(TModel value) {
@@ -169,7 +168,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         public virtual async Task<IHttpActionResult> DeleteAsync(string[] ids) {
-            var items = GetModels(ids, false);
+            var items = await GetModelsAsync(ids, false).AnyContext();
             if (!items.Any())
                 return NotFound();
 
@@ -177,7 +176,7 @@ namespace Exceptionless.Api.Controllers {
             results.AddNotFound(ids.Except(items.Select(i => i.Id)));
 
             foreach (var model in items.ToList()) {
-                var permission = CanDelete(model);
+                var permission = await CanDeleteAsync(model).AnyContext();
                 if (permission.Allowed)
                     continue;
 
@@ -189,7 +188,7 @@ namespace Exceptionless.Api.Controllers {
                 return results.Failure.Count == 1 ? Permission(results.Failure.First()) : BadRequest(results);
 
             try {
-                await DeleteModels(items).AnyContext();
+                await DeleteModelsAsync(items).AnyContext();
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
@@ -202,21 +201,20 @@ namespace Exceptionless.Api.Controllers {
             return BadRequest(results);
         }
 
-        protected virtual PermissionResult CanDelete(TModel value) {
+        protected virtual Task<PermissionResult> CanDeleteAsync(TModel value) {
             var orgModel = value as IOwnedByOrganization;
             if (orgModel != null && !CanAccessOrganization(orgModel.OrganizationId))
-                return PermissionResult.DenyWithNotFound(value.Id);
+                return Task.FromResult(PermissionResult.DenyWithNotFound(value.Id));
 
-            return PermissionResult.Allow;
+            return Task.FromResult(PermissionResult.Allow);
         }
 
-        protected virtual Task DeleteModels(ICollection<TModel> values) {
-            _repository.Remove(values);
-            return TaskHelper.Completed();
+        protected virtual Task DeleteModelsAsync(ICollection<TModel> values) {
+            return _repository.RemoveAsync(values);
         }
 
-        protected override void CreateMaps() {
-            base.CreateMaps();
+        protected override async Task CreateMapsAsync() {
+            await base.CreateMapsAsync().AnyContext();
 
             if (Mapper.FindTypeMapFor<TNewModel, TModel>() == null)
                 Mapper.CreateMap<TNewModel, TModel>();

@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
                 return;
 
-            var project = _projectRepository.GetById(context.Event.ProjectId);
+            var project = await _projectRepository.GetByIdAsync(context.Event.ProjectId).AnyContext();
             if (project == null || !project.DeleteBotDataEnabled)
                 return;
 
@@ -42,12 +42,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 return;
 
             string throttleCacheKey = String.Concat("bot:", ri.ClientIpAddress, ":", DateTime.Now.Floor(_throttlingPeriod).Ticks);
-            var requestCount = _cacheClient.Get<int?>(throttleCacheKey);
+            var requestCount = await _cacheClient.GetAsync<int?>(throttleCacheKey).AnyContext();
             if (requestCount != null) {
-                _cacheClient.Increment(throttleCacheKey, 1);
+                await _cacheClient.IncrementAsync(throttleCacheKey, 1).AnyContext();
                 requestCount++;
             } else {
-                _cacheClient.Set(throttleCacheKey, 1, _throttlingPeriod);
+                await _cacheClient.SetAsync(throttleCacheKey, 1, _throttlingPeriod).AnyContext();
                 requestCount = 1;
             }
 

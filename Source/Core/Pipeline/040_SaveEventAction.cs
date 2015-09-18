@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Component;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 
@@ -19,7 +20,7 @@ namespace Exceptionless.Core.Pipeline {
 
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {
-                _eventRepository.Add(contexts.Select(c => c.Event).ToList());
+                await _eventRepository.AddAsync(contexts.Select(c => c.Event).ToList()).AnyContext();
             } catch (Exception ex) {
                 foreach (var context in contexts) {
                     bool cont = false;

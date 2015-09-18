@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Component;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using NLog.Fluent;
@@ -26,10 +27,10 @@ namespace Exceptionless.Core.Pipeline {
                 try {
                     var context = stackGroup.First();
                     Log.Trace().Message("Marking stack and events as regression.").Write();
-                    _stackRepository.MarkAsRegressed(context.Stack.Id);
-                    _eventRepository.MarkAsRegressedByStack(context.Event.OrganizationId, context.Stack.Id);
+                    await _stackRepository.MarkAsRegressedAsync(context.Stack.Id).AnyContext();
+                    await _eventRepository.MarkAsRegressedByStackAsync(context.Event.OrganizationId, context.Stack.Id).AnyContext();
 
-                    _stackRepository.InvalidateCache(context.Event.ProjectId, context.Event.StackId, context.SignatureHash);
+                    await _stackRepository.InvalidateCacheAsync(context.Event.ProjectId, context.Event.StackId, context.SignatureHash).AnyContext();
 
                     bool isFirstEvent = true;
                     foreach (var ctx in stackGroup) {

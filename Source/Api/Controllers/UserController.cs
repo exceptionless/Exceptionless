@@ -35,8 +35,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("me")]
         [ResponseType(typeof(ViewCurrentUser))]
-        public IHttpActionResult GetCurrentUser() {
-            var currentUser = GetModel(ExceptionlessUser.Id);
+        public async Task<IHttpActionResult> GetCurrentUserAsync() {
+            var currentUser = await GetModelAsync(ExceptionlessUser.Id).AnyContext();
             if (currentUser == null)
                 return NotFound();
 
@@ -51,8 +51,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id:objectid}", Name = "GetUserById")]
         [ResponseType(typeof(ViewUser))]
-        public override IHttpActionResult GetById(string id) {
-            return base.GetById(id);
+        public override Task<IHttpActionResult> GetByIdAsync(string id) {
+            return base.GetByIdAsync(id);
         }
 
         /// <summary>
@@ -65,12 +65,12 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/users")]
         [ResponseType(typeof(List<ViewUser>))]
-        public IHttpActionResult GetByOrganization(string organizationId, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
-            var users = MapCollection<ViewUser>(_repository.GetByOrganizationId(organizationId).Documents, true).ToList();
-            var organization = _organizationRepository.GetById(organizationId, true);
+            var users = (await MapCollectionAsync<ViewUser>((await _repository.GetByOrganizationIdAsync(organizationId).AnyContext()).Documents, true).AnyContext()).ToList();
+            var organization = await _organizationRepository.GetByIdAsync(organizationId, true).AnyContext();
             if (organization.Invites.Any())
                 users.AddRange(organization.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
 
@@ -103,13 +103,13 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/email-address/{email:minlength(1)}")]
         [ResponseType(typeof(UpdateEmailAddressResult))]
-        public IHttpActionResult UpdateEmailAddress(string id, string email) {
-            var user = GetModel(id, false);
+        public async Task<IHttpActionResult> UpdateEmailAddressAsync(string id, string email) {
+            var user = await GetModelAsync(id, false).AnyContext();
             if (user == null)
                 return NotFound();
 
             email = email.ToLower();
-            if (!IsEmailAddressAvailableInternal(email))
+            if (!await IsEmailAddressAvailableInternalAsync(email).AnyContext())
                 return BadRequest("A user with this email address already exists.");
 
             if (String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
@@ -121,7 +121,7 @@ namespace Exceptionless.Api.Controllers {
                 user.CreateVerifyEmailAddressToken();
 
             try {
-                _repository.Save(user);
+                await _repository.SaveAsync(user);
             } catch (ValidationException ex) {
                 return BadRequest(String.Join(", ", ex.Errors));
             } catch (Exception ex) {
@@ -130,7 +130,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!user.IsEmailAddressVerified)
-                ResendVerificationEmail(id);
+                await ResendVerificationEmailAsync(id).AnyContext();
 
             return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
         }
@@ -143,8 +143,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The user could not be found.</response>
         [HttpGet]
         [Route("verify-email-address/{token:token}")]
-        public IHttpActionResult Verify(string token) {
-            var user = _repository.GetByVerifyEmailAddressToken(token);
+        public async Task<IHttpActionResult> VerifyAsync(string token) {
+            var user = await _repository.GetByVerifyEmailAddressTokenAsync(token).AnyContext();
             if (user == null)
                 return NotFound();
 
@@ -152,7 +152,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Verify Email Address Token has expired.");
 
             user.MarkEmailAddressVerified();
-            _repository.Save(user);
+            await _repository.SaveAsync(user).AnyContext();
 
             //ExceptionlessClient.Default.CreateFeatureUsage("Verify Email Address").AddObject(user).Submit();
             return Ok();
@@ -165,15 +165,15 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The user could not be found.</response>
         [HttpGet]
         [Route("{id:objectid}/resend-verification-email")]
-        public IHttpActionResult ResendVerificationEmail(string id) {
-            var user = GetModel(id, false);
+        public async Task<IHttpActionResult> ResendVerificationEmailAsync(string id) {
+            var user = await GetModelAsync(id, false).AnyContext();
             if (user == null)
                 return NotFound();
             
             if (!user.IsEmailAddressVerified) {
                 user.CreateVerifyEmailAddressToken();
-                _repository.Save(user);
-                _mailer.SendVerifyEmail(user);
+                await _repository.SaveAsync(user).AnyContext();
+                await _mailer.SendVerifyEmailAsync(user).AnyContext();
             }
 
             return Ok();
@@ -184,14 +184,14 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public IHttpActionResult AddAdminRole(string id) {
-            var user = GetModel(id, false);
+        public async Task<IHttpActionResult> AddAdminRoleAsync(string id) {
+            var user = await GetModelAsync(id, false).AnyContext();
             if (user == null)
                 return NotFound();
 
             if (!user.Roles.Contains(AuthorizationRoles.GlobalAdmin)) {
                 user.Roles.Add(AuthorizationRoles.GlobalAdmin);
-                _repository.Save(user, true);
+                await _repository.SaveAsync(user, true).AnyContext();
             }
 
             return Ok();
@@ -202,41 +202,41 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public IHttpActionResult DeleteAdminRole(string id) {
-            var user = GetModel(id, false);
+        public async Task<IHttpActionResult> DeleteAdminRoleAsync(string id) {
+            var user = await GetModelAsync(id, false).AnyContext();
             if (user == null)
                 return NotFound();
 
             if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin)) {
                 user.Roles.Remove(AuthorizationRoles.GlobalAdmin);
-                _repository.Save(user, true);
+                await _repository.SaveAsync(user, true).AnyContext();
             }
 
             return StatusCode(HttpStatusCode.NoContent);
         }
 
-        private bool IsEmailAddressAvailableInternal(string email) {
+        private async Task<bool> IsEmailAddressAvailableInternalAsync(string email) {
             if (String.IsNullOrWhiteSpace(email))
                 return false;
 
             if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            return _repository.GetByEmailAddress(email) == null;
+            return await _repository.GetByEmailAddressAsync(email).AnyContext() == null;
         }
 
-        protected override User GetModel(string id, bool useCache = true) {
+        protected override async Task<User> GetModelAsync(string id, bool useCache = true) {
             if (Request.IsGlobalAdmin() || String.Equals(ExceptionlessUser.Id, id))
-                return base.GetModel(id, useCache);
+                return await base.GetModelAsync(id, useCache).AnyContext();
 
             return null;
         }
 
-        protected override ICollection<User> GetModels(string[] ids, bool useCache = true) {
+        protected override Task<ICollection<User>> GetModelsAsync(string[] ids, bool useCache = true) {
             if (Request.IsGlobalAdmin())
-                return base.GetModels(ids, useCache);
+                return base.GetModelsAsync(ids, useCache);
 
-            return base.GetModels(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
+            return base.GetModelsAsync(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
         }
     }
 }

@@ -254,7 +254,7 @@ namespace Exceptionless.Core.Repositories {
             return base.GetByStackIdAsync(stackId, GetPagingWithSortingOptions(paging), useCache, expiresIn);
         }
 
-        public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return base.GetByProjectIdAsync(projectId, GetPagingWithSortingOptions(paging), useCache, expiresIn);
         }
 

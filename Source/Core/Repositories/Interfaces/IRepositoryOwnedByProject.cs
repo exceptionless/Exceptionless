@@ -4,7 +4,7 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IRepositoryOwnedByProject<T> : IRepository<T> where T : class, IOwnedByProject, IIdentity, new() {
-        Task<FindResults<Token>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
+        Task<FindResults<T>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         Task RemoveAllByProjectIdsAsync(string[] projectIds);
     }
 }
