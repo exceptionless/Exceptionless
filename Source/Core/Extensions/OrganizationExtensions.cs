@@ -8,6 +8,13 @@ using Foundatio.Caching;
 
 namespace Exceptionless.Core.Extensions {
     public static class OrganizationExtensions {
+        public static Invite GetInvite(this Organization organization, string token) {
+            if (organization == null || String.IsNullOrEmpty(token))
+                return null;
+
+            return organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
+        }
+
         public static DateTime GetRetentionUtcCutoff(this Organization organization) {
             return organization.RetentionDays <= 0 ? DateTime.MinValue : DateTime.UtcNow.Date.AddDays(-organization.RetentionDays);
         }

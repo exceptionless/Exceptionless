@@ -18,17 +18,12 @@ namespace Exceptionless.Core.Repositories {
     public class OrganizationRepository : ElasticSearchRepository<Organization>, IOrganizationRepository {
         public OrganizationRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<Organization> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
 
-        public async Task<Organization> GetByInviteTokenAsync(string token, out Invite invite) {
-            invite = null;
+        public Task<Organization> GetByInviteTokenAsync(string token) {
             if (String.IsNullOrEmpty(token))
-                return null;
+                throw new ArgumentNullException(nameof(token));
 
             var filter = Filter<Organization>.Term(OrganizationIndex.Fields.Organization.InviteToken, token);
-            var organization = await FindOneAsync(new ElasticSearchOptions<Organization>().WithFilter(filter)).AnyContext();
-            if (organization != null)
-                invite = organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
-
-            return organization;
+            return FindOneAsync(new ElasticSearchOptions<Organization>().WithFilter(filter));
         }
 
         public Task<Organization> GetByStripeCustomerIdAsync(string customerId) {

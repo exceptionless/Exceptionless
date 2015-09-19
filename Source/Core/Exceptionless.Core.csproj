@@ -62,7 +62,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.3.0.452\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.3.0.454\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
@@ -117,8 +117,8 @@
       <HintPath>..\..\packages\SimpleInjector.Packaging.3.0.5\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Stripe.net, Version=4.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Stripe.net.4.2.1\lib\net40\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net, Version=3.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Stripe.net.3.0.2\lib\net40\Stripe.net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -163,6 +163,7 @@
     <Compile Include="Mail\Engine\StringExtensions.cs" />
     <Compile Include="Mail\Engine\TemplatedEmail.cs" />
     <Compile Include="Models\Application.cs" />
+    <Compile Include="Models\Billing\ChangePlanResult.cs" />
     <Compile Include="Models\ClientConfiguration.cs" />
     <Compile Include="Models\Collections\DataDictionary.cs" />
     <Compile Include="Models\Collections\GenericArguments.cs" />

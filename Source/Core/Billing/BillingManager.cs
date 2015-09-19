@@ -54,34 +54,25 @@ namespace Exceptionless.Core.Billing {
             return organization.HasPremiumFeatures;
         }
 
-        public async Task<bool> CanDownGradeAsync(Organization organization, BillingPlan plan, User user, out string message) {
-            if (organization == null || String.IsNullOrWhiteSpace(organization.Id)) {
-                message = "Invalid Organization";
-                return false;
-            }
+        public async Task<ChangePlanResult> CanDownGradeAsync(Organization organization, BillingPlan plan, User user) {
+            if (organization == null || String.IsNullOrWhiteSpace(organization.Id))
+                return ChangePlanResult.FailWithMessage("Invalid Organization");
 
             long currentNumberOfUsers = (await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext()).Total + organization.Invites.Count;
             int maxUsers = plan.MaxUsers != -1 ? plan.MaxUsers : int.MaxValue;
-            if (currentNumberOfUsers > maxUsers) {
-                message = $"Please remove {currentNumberOfUsers - maxUsers} user{((currentNumberOfUsers - maxUsers) > 0 ? "s" : String.Empty)} and try again.";
-                return false;
-            }
+            if (currentNumberOfUsers > maxUsers)
+                return ChangePlanResult.FailWithMessage($"Please remove {currentNumberOfUsers - maxUsers} user{((currentNumberOfUsers - maxUsers) > 0 ? "s" : String.Empty)} and try again.");
 
             int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : int.MaxValue;
             long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id).AnyContext();
-            if (projectCount > maxProjects) {
-                message = $"Please remove {projectCount - maxProjects} project{((projectCount - maxProjects) > 0 ? "s" : String.Empty)} and try again.";
-                return false;
-            }
+            if (projectCount > maxProjects)
+                return ChangePlanResult.FailWithMessage($"Please remove {projectCount - maxProjects} project{((projectCount - maxProjects) > 0 ? "s" : String.Empty)} and try again.");
 
             // Ensure the user can't be apart of more than one free plan.
-            if (String.Equals(plan.Id, FreePlan.Id) && user != null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds)).Documents.Any(o => String.Equals(o.PlanId, FreePlan.Id))) {
-                message = "You already have one free account. You are not allowed to create more than one free account.";
-                return false;
-            }
-
-            message = String.Empty;
-            return true;
+            if (String.Equals(plan.Id, FreePlan.Id) && user != null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds)).Documents.Any(o => String.Equals(o.PlanId, FreePlan.Id)))
+                return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
+            
+            return new ChangePlanResult { Success = true };
         }
 
         public static BillingPlan GetBillingPlan(string planId) {

@@ -332,9 +332,11 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan."));
 
             // Only see if they can downgrade a plan if the plans are different.
-            string message;
-            if (!String.Equals(organization.PlanId, plan.Id) && !await _billingManager.CanDownGradeAsync(organization, plan, ExceptionlessUser, out message).AnyContext())
-                return Ok(ChangePlanResult.FailWithMessage(message));
+            if (!String.Equals(organization.PlanId, plan.Id)) {
+                var result = await _billingManager.CanDownGradeAsync(organization, plan, ExceptionlessUser);
+                if (!result.Success)
+                    return Ok(result);
+            }
 
             var customerService = new StripeCustomerService(Settings.Current.StripeApiKey);
             var subscriptionService = new StripeSubscriptionService(Settings.Current.StripeApiKey);

@@ -486,14 +486,14 @@ namespace Exceptionless.Api.Controllers {
         private async Task AddInvitedUserToOrganizationAsync(string token, User user) {
             if (String.IsNullOrWhiteSpace(token) || user == null)
                 return;
-
-            Invite invite;
-            var organization = await _organizationRepository.GetByInviteTokenAsync(token, out invite).AnyContext();
-            if (organization == null) {
+            
+            var organization = await _organizationRepository.GetByInviteTokenAsync(token).AnyContext();
+            var invite = organization.GetInvite(token);
+            if (organization == null || invite == null) {
                 Log.Info().Message("Unable to add the invited user \"{0}\". Invalid invite token: {1}", user.EmailAddress, token).Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
                 return;
             }
-
+            
             if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
                 Log.Info().Message("Marking the invited users email address \"{0}\" as verified.", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
                 user.MarkEmailAddressVerified();

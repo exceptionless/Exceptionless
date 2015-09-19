@@ -5,7 +5,7 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IOrganizationRepository : IRepository<Organization> {
-        Task<Organization> GetByInviteTokenAsync(string token, out Invite invite);
+        Task<Organization> GetByInviteTokenAsync(string token);
         Task<Organization> GetByStripeCustomerIdAsync(string customerId);
         Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging);
         Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);

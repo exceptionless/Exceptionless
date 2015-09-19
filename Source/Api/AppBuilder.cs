@@ -53,7 +53,7 @@ namespace Exceptionless.Api {
             Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
             SetupRouteConstraints(Config);
-            container.RegisterWebApiFilterProvider(Config);
+            container.RegisterWebApiControllers(Config);
 
             VerifyContainer(container);
 
@@ -196,7 +196,9 @@ namespace Exceptionless.Api {
         public static Container CreateContainer(bool includeInsulation = true) {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
+            container.Options.DefaultScopedLifestyle = new WebApiRequestLifestyle();
             container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
+            container.Options.ResolveUnregisteredCollections = true;
 
             container.RegisterPackage<Core.Bootstrapper>();
             container.RegisterPackage<Bootstrapper>();

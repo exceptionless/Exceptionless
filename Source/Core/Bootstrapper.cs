@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Dependency;
@@ -39,7 +41,7 @@ using SimpleInjector.Packaging;
 
 namespace Exceptionless.Core {
     public class Bootstrapper : IPackage {
-        public void RegisterServices(Container container) {
+        public async Task RegisterServices(Container container) {
             // Foundation service provider
             ServiceProvider.Current = container;
             container.RegisterSingleton<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
@@ -67,22 +69,29 @@ namespace Exceptionless.Core {
             metricsClient.StartDisplayingStats();
             container.RegisterSingleton<IMetricsClient>(metricsClient);
 
-            container.RegisterSingleton<IElasticClient>(async () => await container.GetInstance<ElasticSearchConfiguration>().GetClientAsync(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))).AnyContext());
+            var elasticClient = await container.GetInstance<ElasticSearchConfiguration>().GetClientAsync(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))).AnyContext();
+            container.RegisterSingleton<IElasticClient>(elasticClient);
             container.RegisterSingleton<ICacheClient, InMemoryCacheClient>();
-
-            container.RegisterSingleton<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: MetricNames.PostsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-            container.RegisterSingleton<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: MetricNames.EventsUserDescriptionQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-            container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new InMemoryQueue<EventNotificationWorkItem>(statName: MetricNames.EventNotificationQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-            container.RegisterSingleton<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: MetricNames.WebHookQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-            container.RegisterSingleton<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            
+            container.RegisterSingleton<IEnumerable<IQueueBehavior<EventPost>>>(() => new[] { new MetricsQueueBehavior<EventPost>(container.GetInstance<IMetricsClient>()) });
+            container.RegisterSingleton<IEnumerable<IQueueBehavior<EventUserDescription>>>(() => new[] { new MetricsQueueBehavior<EventUserDescription>(container.GetInstance<IMetricsClient>()) });
+            container.RegisterSingleton<IEnumerable<IQueueBehavior<EventNotificationWorkItem>>>(() => new[] { new MetricsQueueBehavior<EventNotificationWorkItem>(container.GetInstance<IMetricsClient>()) });
+            container.RegisterSingleton<IEnumerable<IQueueBehavior<WebHookNotification>>>(() => new[] { new MetricsQueueBehavior<WebHookNotification>(container.GetInstance<IMetricsClient>()) });
+            container.RegisterSingleton<IEnumerable<IQueueBehavior<MailMessage>>>(() => new[] { new MetricsQueueBehavior<MailMessage>(container.GetInstance<IMetricsClient>()) });
+            container.RegisterSingleton<IEnumerable<IQueueBehavior<WorkItemData>>>(() => new[] { new MetricsQueueBehavior<WorkItemData>(container.GetInstance<IMetricsClient>()) });
+            
+            container.RegisterSingleton<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(behaviors: container.GetAllInstances<IQueueBehavior<EventPost>>()));
+            container.RegisterSingleton<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(behaviors: container.GetAllInstances<IQueueBehavior<EventUserDescription>>()));
+            container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new InMemoryQueue<EventNotificationWorkItem>(behaviors: container.GetAllInstances<IQueueBehavior<EventNotificationWorkItem>>()));
+            container.RegisterSingleton<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(behaviors: container.GetAllInstances<IQueueBehavior<WebHookNotification>>()));
+            container.RegisterSingleton<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(behaviors: container.GetAllInstances<IQueueBehavior<MailMessage>>()));
             container.RegisterSingleton<IQueue<StatusMessage>>(() => new InMemoryQueue<StatusMessage>());
 
             var workItemHandlers = new WorkItemHandlers();
             workItemHandlers.Register<ReindexWorkItem, ReindexWorkItemHandler>();
             container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);
-            container.RegisterSingleton<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(statName: MetricNames.WorkItemQueueSize, metrics: container.GetInstance<IMetricsClient>(), workItemTimeout: TimeSpan.FromHours(1)));
+            container.RegisterSingleton<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(behaviors: container.GetAllInstances<IQueueBehavior<WorkItemData>>(), workItemTimeout: TimeSpan.FromHours(1)));
             
-
             container.RegisterSingleton<IMessageBus, InMemoryMessageBus>();
             container.RegisterSingleton<IMessagePublisher>(container.GetInstance<IMessageBus>);
             container.RegisterSingleton<IMessageSubscriber>(container.GetInstance<IMessageBus>);
