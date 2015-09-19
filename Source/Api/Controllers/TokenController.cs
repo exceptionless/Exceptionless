@@ -205,7 +205,7 @@ namespace Exceptionless.App.Controllers.API {
             if (!String.IsNullOrEmpty(model.OrganizationId) && !IsInOrganization(model.OrganizationId))
                 return null;
 
-            if (!String.IsNullOrEmpty(model.UserId) && model.UserId != Request.GetUser().Id)
+            if (!String.IsNullOrEmpty(model.UserId) && model.UserId != (await Request.GetUserAsync().AnyContext()).Id)
                 return null;
 
             if (model.Type != TokenType.Access)
@@ -271,11 +271,11 @@ namespace Exceptionless.App.Controllers.API {
             return await base.CanAddAsync(value).AnyContext();
         }
 
-        protected override Task<Token> AddModelAsync(Token value) {
+        protected override async Task<Token> AddModelAsync(Token value) {
             value.Id = StringExtensions.GetNewToken();
             value.CreatedUtc = value.ModifiedUtc = DateTime.UtcNow;
             value.Type = TokenType.Access;
-            value.CreatedBy = Request.GetUser().Id;
+            value.CreatedBy = (await Request.GetUserAsync().AnyContext()).Id;
 
             // add implied scopes
             if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin))
@@ -284,7 +284,7 @@ namespace Exceptionless.App.Controllers.API {
             if (value.Scopes.Contains(AuthorizationRoles.User))
                 value.Scopes.Add(AuthorizationRoles.Client);
 
-            return base.AddModelAsync(value);
+            return await base.AddModelAsync(value).AnyContext();
         }
 
         protected override async Task<PermissionResult> CanDeleteAsync(Token value) {

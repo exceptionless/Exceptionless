@@ -5,51 +5,53 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Microsoft.Owin;
+using Nito.AsyncEx;
 
 namespace Exceptionless.Api.Extensions {
     public static class HttpExtensions {
-        public static User GetUser(this HttpRequestMessage message) {
+        public static async Task<User> GetUserAsync(this HttpRequestMessage message) {
             if (message == null)
                 return null;
 
-            var user = message.GetOwinContext().Get<Lazy<User>>("User");
+            var user = message.GetOwinContext().Get<AsyncLazy<User>>("User");
             if (user != null)
-                return user.Value;
+                return await user;
 
             return null;
         }
 
-        public static User GetUser(this IOwinRequest request) {
+        public static async Task<User> GetUserAsync(this IOwinRequest request) {
             if (request == null)
                 return null;
 
-            var user = request.Context.Get<Lazy<User>>("User");
+            var user = request.Context.Get<AsyncLazy<User>>("User");
             if (user != null)
-                return user.Value;
+                return await user;
 
             return null;
         }
 
-        public static Project GetDefaultProject(this HttpRequestMessage message) {
+        public static async Task<Project> GetDefaultProjectAsync(this HttpRequestMessage message) {
             if (message == null)
                 return null;
 
-            var project = message.GetOwinContext().Get<Lazy<Project>>("DefaultProject");
+            var project = message.GetOwinContext().Get<AsyncLazy<Project>>("DefaultProject");
             if (project != null)
-                return project.Value;
+                return await project;
 
             return null;
         }
 
-        public static string GetDefaultProjectId(this HttpRequestMessage message) {
+        public static async Task<string> GetDefaultProjectIdAsync(this HttpRequestMessage message) {
             if (message == null)
                 return null;
 
-            var project = message.GetDefaultProject();
+            var project = await message.GetDefaultProjectAsync().AnyContext();
             if (project != null)
                 return project.Id;
 

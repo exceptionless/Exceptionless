@@ -26,6 +26,7 @@ using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Nito.AsyncEx;
 using NLog.Fluent;
 using Owin;
 using SimpleInjector;
@@ -34,11 +35,11 @@ using Swashbuckle.Application;
 
 namespace Exceptionless.Api {
     public static class AppBuilder {
-        public static Task BuildAsync(IAppBuilder app) {
-            return BuildWithContainerAsync(app, CreateContainer());
+        public static void Build(IAppBuilder app) {
+            BuildWithContainer(app, CreateContainer());
         }
 
-        public static async Task BuildWithContainerAsync(IAppBuilder app, Container container) {
+        public static void BuildWithContainer(IAppBuilder app, Container container) {
             if (container == null)
                 throw new ArgumentNullException(nameof(container));
 
@@ -86,7 +87,7 @@ namespace Exceptionless.Api {
                 }
             });
 
-            app.CreatePerContext<Lazy<User>>("User", ctx => new Lazy<User>(() => {
+            app.CreatePerContext<AsyncLazy<User>>("User", ctx => Task.FromResult(new AsyncLazy<User>(async () => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
@@ -96,9 +97,9 @@ namespace Exceptionless.Api {
 
                 var userRepository = container.GetInstance<IUserRepository>();
                 return await userRepository.GetByIdAsync(userId, true).AnyContext();
-            }));
+            })));
 
-            app.CreatePerContext<Lazy<Project>>("DefaultProject", ctx => new Lazy<Project>(() => {
+            app.CreatePerContext<AsyncLazy<Project>>("DefaultProject", ctx => Task.FromResult(new AsyncLazy<Project>(async () => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
@@ -117,7 +118,7 @@ namespace Exceptionless.Api {
                     if (Settings.Current.WebsiteMode == WebsiteMode.Dev) {
                         var dataHelper = container.GetInstance<DataHelper>();
                         // create a default org and project
-                        projectId = await dataHelper.CreateDefaultOrganizationAndProjectAsync(ctx.Request.GetUser()).AnyContext();
+                        projectId = await dataHelper.CreateDefaultOrganizationAndProjectAsync(await ctx.Request.GetUserAsync().AnyContext()).AnyContext();
                     }
                 }
 
@@ -125,7 +126,7 @@ namespace Exceptionless.Api {
                     return null;
 
                 return await projectRepository.GetByIdAsync(projectId, true).AnyContext();
-            }));
+            })));
 
             app.UseWebApi(Config);
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);
@@ -136,7 +137,7 @@ namespace Exceptionless.Api {
             SetupSwagger(Config);
 
             Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
-            await CreateSampleDataAsync(container).AnyContext();
+            Task.Run(async () => await CreateSampleDataAsync(container).AnyContext());
 
             if (Settings.Current.RunJobsInProcess) {
                 Log.Warn().Message("Jobs running in process.").Write();

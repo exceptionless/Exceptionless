@@ -39,7 +39,7 @@ namespace Exceptionless.Api.Utility {
             if (await _cacheClient.GetAsync<bool>("ApiDisabled").AnyContext())
                 return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
 
-            var project = request.GetDefaultProject();
+            var project = await request.GetDefaultProjectAsync().AnyContext();
             if (project == null)
                 return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
 

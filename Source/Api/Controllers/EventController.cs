@@ -399,7 +399,7 @@ namespace Exceptionless.Api.Controllers {
             await _metricsClient.CounterAsync(MetricNames.PostsSubmitted).AnyContext();
 
             if (projectId == null)
-                projectId = Request.GetDefaultProjectId();
+                projectId = await Request.GetDefaultProjectIdAsync().AnyContext();
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))

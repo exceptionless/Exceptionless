@@ -41,7 +41,7 @@ using SimpleInjector.Packaging;
 
 namespace Exceptionless.Core {
     public class Bootstrapper : IPackage {
-        public async Task RegisterServices(Container container) {
+        public void RegisterServices(Container container) {
             // Foundation service provider
             ServiceProvider.Current = container;
             container.RegisterSingleton<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
@@ -68,9 +68,8 @@ namespace Exceptionless.Core {
             var metricsClient = new InMemoryMetricsClient();
             metricsClient.StartDisplayingStats();
             container.RegisterSingleton<IMetricsClient>(metricsClient);
-
-            var elasticClient = await container.GetInstance<ElasticSearchConfiguration>().GetClientAsync(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))).AnyContext();
-            container.RegisterSingleton<IElasticClient>(elasticClient);
+            
+            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ElasticSearchConfiguration>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
             container.RegisterSingleton<ICacheClient, InMemoryCacheClient>();
             
             container.RegisterSingleton<IEnumerable<IQueueBehavior<EventPost>>>(() => new[] { new MetricsQueueBehavior<EventPost>(container.GetInstance<IMetricsClient>()) });
