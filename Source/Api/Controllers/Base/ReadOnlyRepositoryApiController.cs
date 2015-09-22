@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Controllers {
                 return null;
 
             TModel model = await _repository.GetByIdAsync(id, useCache).AnyContext();
-            if (_isOwnedByOrganization && model != null && !CanAccessOrganization(((IOwnedByOrganization)model).OrganizationId))
+            if (_isOwnedByOrganization && model != null && !await CanAccessOrganizationAsync(((IOwnedByOrganization)model).OrganizationId).AnyContext())
                 return null;
 
             return model;
@@ -51,10 +51,16 @@ namespace Exceptionless.Api.Controllers {
                 return new List<TModel>();
 
             var models = (await _repository.GetByIdsAsync(ids, useCache: useCache).AnyContext()).Documents;
-            if (_isOwnedByOrganization)
-                models = models?.Where(m => CanAccessOrganization(((IOwnedByOrganization)m).OrganizationId)).ToList();
+            if (!_isOwnedByOrganization)
+                return models;
 
-            return models;
+            var results = new List<TModel>();
+            foreach (var model in models) {
+                if (await CanAccessOrganizationAsync(((IOwnedByOrganization)model).OrganizationId).AnyContext())
+                    results.Add(model);
+            }
+
+            return results;
         }
 
         public virtual Task<IHttpActionResult> GetAsync(string userFilter = null, string query = null, string sort = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
@@ -85,6 +91,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 models = await _repository.GetBySearchAsync(systemFilter, userFilter, query, sortBy.Item1, sortBy.Item2, options).AnyContext();
             } catch (ApplicationException ex) {
+                var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
                 Log.Error().Exception(ex).Property("Search Filter", new {
                     SystemFilter = systemFilter,
                     UserFilter = userFilter,
@@ -92,7 +99,7 @@ namespace Exceptionless.Api.Controllers {
                     Offset = offset,
                     Page = page,
                     Limit = limit
-                }).Tag("Search").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                }).Tag("Search").Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
@@ -105,7 +112,7 @@ namespace Exceptionless.Api.Controllers {
         
         #region Mapping
 
-        private static bool _mapsCreated = false;
+        private static bool _mapsCreated;
         private static readonly AsyncLock _lock = new AsyncLock();
         private async Task EnsureMapsAsync() {
             if (_mapsCreated)

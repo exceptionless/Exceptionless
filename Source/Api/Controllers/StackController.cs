@@ -386,7 +386,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Stack stack = await _stackRepository.GetByIdAsync(id).AnyContext();
-            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !await CanAccessOrganizationAsync(stack.OrganizationId).AnyContext())
                 return NotFound();
 
             if (!await _billingManager.HasPremiumFeaturesAsync(stack.OrganizationId).AnyContext())
@@ -467,11 +467,12 @@ namespace Exceptionless.Api.Controllers {
             try {
                 stacks = (await _repository.GetByFilterAsync(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).AnyContext()).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
             } catch (ApplicationException ex) {
+                var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
+                    .Identity(loggedInUser.EmailAddress)
+                    .Property("User", loggedInUser)
                     .ContextProperty("HttpActionContext", ActionContext)
                     .Write();
 
@@ -500,7 +501,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks")]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
+            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId).AnyContext())
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit).AnyContext();
@@ -542,7 +543,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId).AnyContext())
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("project:", projectId), filter, "-first", String.Concat("first|", time), offset, mode, page, limit).AnyContext();
@@ -583,7 +584,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId).AnyContext())
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("project:", projectId), filter, "-last", String.Concat("last|", time), offset, mode, page, limit).AnyContext();
@@ -626,11 +627,12 @@ namespace Exceptionless.Api.Controllers {
             try {
                 terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1).Terms;
             } catch (ApplicationException ex) {
+                var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
+                    .Identity(loggedInUser.EmailAddress)
+                    .Property("User", loggedInUser)
                     .ContextProperty("HttpActionContext", ActionContext)
                     .Write();
 
@@ -670,7 +672,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId).AnyContext())
                 return NotFound();
 
             return await FrequentInternalAsync(String.Concat("project:", projectId), filter, time, offset, mode, page, limit);

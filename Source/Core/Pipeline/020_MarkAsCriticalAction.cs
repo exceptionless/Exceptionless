@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Exceptionless.Core.Component;
 using Exceptionless.Core.Plugins.EventProcessor;
 using NLog.Fluent;
 
@@ -8,12 +9,14 @@ namespace Exceptionless.Core.Pipeline {
     public class MarkAsCriticalAction : EventPipelineActionBase {
         protected override bool ContinueOnError => true;
 
-        public override async Task ProcessAsync(EventContext ctx) {
+        public override Task ProcessAsync(EventContext ctx) {
             if (ctx.Stack == null || !ctx.Stack.OccurrencesAreCritical)
-                return;
+                return TaskHelper.Completed();
 
             Log.Trace().Message("Marking error as critical.").Write();
             ctx.Event.MarkAsCritical();
+
+            return TaskHelper.Completed();
         }
     }
 }

@@ -139,11 +139,12 @@ namespace Exceptionless.Api.Controllers {
             try {
                 events = await _repository.GetByFilterAsync(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).AnyContext();
             } catch (ApplicationException ex) {
+                var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
+                    .Identity(loggedInUser.EmailAddress)
+                    .Property("User", loggedInUser)
                     .ContextProperty("HttpActionContext", ActionContext)
                     .Write();
 
@@ -180,7 +181,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
+            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId).AnyContext())
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit).AnyContext();
@@ -206,7 +207,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId).AnyContext())
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("project:", projectId), filter, sort, time, offset, mode, page, limit).AnyContext();
@@ -232,7 +233,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var stack = await _stackRepository.GetByIdAsync(stackId, true).AnyContext();
-            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !await CanAccessOrganizationAsync(stack.OrganizationId).AnyContext())
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("stack:", stackId), filter, sort, time, offset, mode, page, limit).AnyContext();
@@ -267,7 +268,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
             
             var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId).AnyContext())
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("project:", projectId), String.Concat("reference:", referenceId)).AnyContext();
@@ -303,7 +304,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(result.Errors.ToErrorMessage());
 
             if (projectId == null)
-                projectId = DefaultProject.Id;
+                projectId = (await GetDefaultProjectAsync().AnyContext()).Id;
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
@@ -406,7 +407,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("No project id specified and no default project was found.");
 
             var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
-            if (project == null || !Request.GetAssociatedOrganizationIds().Contains(project.OrganizationId))
+            if (project == null || !(await Request.GetAssociatedOrganizationIdsAsync().AnyContext()).Contains(project.OrganizationId))
                 return NotFound();
 
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
@@ -427,11 +428,12 @@ namespace Exceptionless.Api.Controllers {
                     ContentEncoding = contentEncoding
                 }, _storage).AnyContext();
             } catch (Exception ex) {
+                var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
                 Log.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
                     .Project(projectId)
-                    .Identity(ExceptionlessUser != null ? ExceptionlessUser.EmailAddress : null)
-                    .Property("User", ExceptionlessUser)
+                    .Identity(loggedInUser?.EmailAddress)
+                    .Property("User", loggedInUser)
                     .ContextProperty("HttpActionContext", ActionContext)
                     .WriteIf(projectId != Settings.Current.InternalProjectId);
                 

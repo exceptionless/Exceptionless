@@ -15,10 +15,7 @@ using Nito.AsyncEx;
 namespace Exceptionless.Api.Extensions {
     public static class HttpExtensions {
         public static async Task<User> GetUserAsync(this HttpRequestMessage message) {
-            if (message == null)
-                return null;
-
-            var user = message.GetOwinContext().Get<AsyncLazy<User>>("User");
+            var user = message?.GetOwinContext().Get<AsyncLazy<User>>("User");
             if (user != null)
                 return await user;
 
@@ -26,10 +23,7 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static async Task<User> GetUserAsync(this IOwinRequest request) {
-            if (request == null)
-                return null;
-
-            var user = request.Context.Get<AsyncLazy<User>>("User");
+            var user = request?.Context.Get<AsyncLazy<User>>("User");
             if (user != null)
                 return await user;
 
@@ -37,10 +31,7 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static async Task<Project> GetDefaultProjectAsync(this HttpRequestMessage message) {
-            if (message == null)
-                return null;
-
-            var project = message.GetOwinContext().Get<AsyncLazy<Project>>("DefaultProject");
+            var project = message?.GetOwinContext().Get<AsyncLazy<Project>>("DefaultProject");
             if (project != null)
                 return await project;
 
@@ -59,14 +50,8 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequestMessage message) {
-            if (message == null)
-                return null;
-
-            var context = message.GetOwinContext();
-            if (context == null || context.Request == null || context.Request.User == null)
-                return null;
-
-            return context.Request.User.GetClaimsPrincipal();
+            var context = message?.GetOwinContext();
+            return context?.Request?.User?.GetClaimsPrincipal();
         }
 
         public static AuthType GetAuthType(this HttpRequestMessage message) {
@@ -74,14 +59,14 @@ namespace Exceptionless.Api.Extensions {
                 return AuthType.Anonymous;
 
             var principal = message.GetClaimsPrincipal();
-            return principal == null ? AuthType.Anonymous : principal.GetAuthType();
+            return principal?.GetAuthType() ?? AuthType.Anonymous;
         }
 
-        public static bool CanAccessOrganization(this HttpRequestMessage message, string organizationId) {
+        public static async Task<bool> CanAccessOrganizationAsync(this HttpRequestMessage message, string organizationId) {
             if (message == null)
                 return false;
 
-            if (message.IsInOrganization(organizationId))
+            if (await message.IsInOrganizationAsync(organizationId).AnyContext())
                 return true;
 
             return message.IsGlobalAdmin();
@@ -95,51 +80,43 @@ namespace Exceptionless.Api.Extensions {
             return principal != null && principal.IsInRole(AuthorizationRoles.GlobalAdmin);
         }
 
-        public static bool IsInOrganization(this HttpRequestMessage message, string organizationId) {
+        public static async Task<bool> IsInOrganizationAsync(this HttpRequestMessage message, string organizationId) {
             if (message == null)
                 return false;
 
             if (String.IsNullOrEmpty(organizationId))
                 return false;
 
-            return message.GetAssociatedOrganizationIds().Contains(organizationId);
+            return (await message.GetAssociatedOrganizationIdsAsync().AnyContext()).Contains(organizationId);
         }
 
-        public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequestMessage message) {
+        public static async Task<ICollection<string>> GetAssociatedOrganizationIdsAsync(this HttpRequestMessage message) {
             if (message == null)
                 return new List<string>();
 
-            if (message.GetUser() != null)
-                return message.GetUser().OrganizationIds;
+            var user = await message.GetUserAsync().AnyContext();
+            if (user != null)
+                return user.OrganizationIds;
 
             var principal = message.GetClaimsPrincipal();
             return principal.GetOrganizationIds();
         }
 
-        public static string GetDefaultOrganizationId(this HttpRequestMessage message) {
+        public static async Task<string> GetDefaultOrganizationIdAsync(this HttpRequestMessage message) {
             if (message == null)
                 return null;
 
             // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated orgs.
-            return message.GetAssociatedOrganizationIds().FirstOrDefault();
+            return (await message.GetAssociatedOrganizationIdsAsync().AnyContext()).FirstOrDefault();
         }
 
         public static string GetClientIpAddress(this HttpRequestMessage request) {
-            if (request == null)
-                return null;
-
-            var context = request.GetOwinContext();
-            if (context != null)
-                return context.Request.RemoteIpAddress;
-
-            return null;
+            var context = request?.GetOwinContext();
+            return context?.Request.RemoteIpAddress;
         }
 
         public static string GetQueryString(this HttpRequestMessage request, string key) {
-            if (request == null)
-                return null;
-
-            var queryStrings = request.GetQueryNameValuePairs();
+            var queryStrings = request?.GetQueryNameValuePairs();
             if (queryStrings == null)
                 return null;
 
@@ -151,21 +128,12 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static string GetCookie(this HttpRequestMessage request, string cookieName) {
-            if (request == null)
-                return null;
-
-            CookieHeaderValue cookie = request.Headers.GetCookies(cookieName).FirstOrDefault();
-            if (cookie != null)
-                return cookie[cookieName].Value;
-
-            return null;
+            CookieHeaderValue cookie = request?.Headers.GetCookies(cookieName).FirstOrDefault();
+            return cookie?[cookieName].Value;
         }
 
         public static AuthInfo GetBasicAuth(this HttpRequestMessage request) {
-            if (request == null)
-                return null;
-
-            var authHeader = request.Headers.Authorization;
+            var authHeader = request?.Headers.Authorization;
 
             if (authHeader == null || authHeader.Scheme.ToLower() != "basic")
                 return null;

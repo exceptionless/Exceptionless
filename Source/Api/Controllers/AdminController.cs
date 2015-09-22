@@ -33,7 +33,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("change-plan")]
         public async Task<IHttpActionResult> ChangePlanAsync(string organizationId, string planId) {
-            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
+            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId).AnyContext())
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
             var organization = await _organizationRepository.GetByIdAsync(organizationId).AnyContext();
@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Controllers {
 
             organization.BillingStatus = !String.Equals(plan.Id, BillingManager.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
             organization.RemoveSuspension();
-            BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
+            BillingManager.ApplyBillingPlan(organization, plan, await GetExceptionlessUserAsync().AnyContext(), false);
 
             await _organizationRepository.SaveAsync(organization).AnyContext();
             await _messagePublisher.PublishAsync(new PlanChanged {
@@ -59,7 +59,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("set-bonus")]
         public async Task<IHttpActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null) {
-            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
+            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId).AnyContext())
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
             var organization = await _organizationRepository.GetByIdAsync(organizationId).AnyContext();

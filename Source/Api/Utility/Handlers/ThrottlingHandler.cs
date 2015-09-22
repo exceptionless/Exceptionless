@@ -22,13 +22,13 @@ namespace Exceptionless.Api.Utility {
             _message = message;
         }
 
-        protected virtual string GetUserIdentifier(HttpRequestMessage request) {
+        protected virtual async Task<string> GetUserIdentifierAsync(HttpRequestMessage request) {
             var authType = request.GetAuthType();
             if (authType == AuthType.Token)
-                return request.GetDefaultOrganizationId();
+                return await request.GetDefaultOrganizationIdAsync().AnyContext();
 
             if (authType == AuthType.User) {
-                var user = request.GetUser();
+                var user = await request.GetUserAsync().AnyContext();
                 if (user != null)
                     return user.Id;
             }
@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Utility {
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
-            string identifier = GetUserIdentifier(request);
+            string identifier = await GetUserIdentifierAsync(request).AnyContext();
             if (String.IsNullOrEmpty(identifier))
                 return CreateResponse(request, HttpStatusCode.Forbidden, "Could not identify client.");
 

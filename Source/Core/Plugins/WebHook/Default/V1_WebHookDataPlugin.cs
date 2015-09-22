@@ -7,18 +7,18 @@ using Exceptionless.Core.Pipeline;
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(10)]
     public class VersionOne : WebHookDataPluginBase {
-        public override async Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
+        public override Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
             if (ctx.Version.Major != 1)
-                return null;
+                return Task.FromResult<object>(null);
 
             var error = ctx.Event.GetError();
             if (error == null)
-                return null;
+                return Task.FromResult<object>(null);
 
             var requestInfo = ctx.Event.GetRequestInfo();
             var environmentInfo = ctx.Event.GetEnvironmentInfo();
 
-            return new VersionOneWebHookEvent {
+            return Task.FromResult<object>(new VersionOneWebHookEvent {
                 Id = ctx.Event.Id,
                 OccurrenceDate = ctx.Event.Date,
                 Tags = ctx.Event.Tags,
@@ -43,14 +43,14 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 DateFixed = ctx.Stack.DateFixed,
                 IsRegression = ctx.IsRegression,
                 IsNew = ctx.IsNew
-            };
+            });
         }
 
-        public override async Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
+        public override Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
             if (ctx.Version.Major != 1)
-                return null;
+                return Task.FromResult<object>(null);
 
-              return new VersionOneWebHookStack {
+              return Task.FromResult<object>(new VersionOneWebHookStack {
                 Id = ctx.Stack.Id,
                 Title = ctx.Stack.Title,
                 Description = ctx.Stack.Description,
@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 IsRegression = ctx.Stack.IsRegressed,
                 IsCritical = ctx.Stack.OccurrencesAreCritical || ctx.Stack.Tags != null && ctx.Stack.Tags.Contains("Critical"),
                 FixedInVersion = ctx.Stack.FixedInVersion
-            };
+            });
         }
 
         public class VersionOneWebHookEvent {

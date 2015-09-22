@@ -68,7 +68,7 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var organizations = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds(), options).AnyContext();
+            var organizations = await _repository.GetByIdsAsync(await GetAssociatedOrganizationIdsAsync().AnyContext(), options).AnyContext();
             var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true).AnyContext()).ToList();
             return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations).AnyContext(), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
         }
@@ -177,14 +177,15 @@ namespace Exceptionless.Api.Controllers {
                 var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
                 stripeInvoice = invoiceService.Get(id);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+                Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
             }
 
             if (stripeInvoice == null || String.IsNullOrEmpty(stripeInvoice.CustomerId))
                 return NotFound();
 
             var organization = await _repository.GetByStripeCustomerIdAsync(stripeInvoice.CustomerId).AnyContext();
-            if (organization == null || !CanAccessOrganization(organization.Id))
+            if (organization == null || !await CanAccessOrganizationAsync(organization.Id).AnyContext())
                 return NotFound();
 
             var invoice = new Invoice {
@@ -314,7 +315,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/change-plan")]
         [ResponseType(typeof(ChangePlanResult))]
         public async Task<IHttpActionResult> ChangePlanAsync(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null) {
-            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
+            if (String.IsNullOrEmpty(id) || !await CanAccessOrganizationAsync(id).AnyContext())
                 return NotFound();
 
             if (!Settings.Current.EnableBilling)
@@ -331,9 +332,11 @@ namespace Exceptionless.Api.Controllers {
             if (String.Equals(organization.PlanId, plan.Id) && String.Equals(BillingManager.FreePlan.Id, plan.Id))
                 return Ok(ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan."));
 
+            var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+
             // Only see if they can downgrade a plan if the plans are different.
             if (!String.Equals(organization.PlanId, plan.Id)) {
-                var result = await _billingManager.CanDownGradeAsync(organization, plan, ExceptionlessUser);
+                var result = await _billingManager.CanDownGradeAsync(organization, plan, loggedInUser);
                 if (!result.Success)
                     return Ok(result);
             }
@@ -362,7 +365,7 @@ namespace Exceptionless.Api.Controllers {
                         Card = new StripeCreditCardOptions { TokenId = stripeToken },
                         PlanId = planId,
                         Description = organization.Name,
-                        Email = ExceptionlessUser.EmailAddress
+                        Email = loggedInUser.EmailAddress
                     };
 
                     if (!String.IsNullOrWhiteSpace(couponId))
@@ -393,7 +396,7 @@ namespace Exceptionless.Api.Controllers {
                         subscriptionService.Create(organization.StripeCustomerId, planId, create);
 
                     customerService.Update(organization.StripeCustomerId, new StripeCustomerUpdateOptions {
-                        Email = ExceptionlessUser.EmailAddress
+                        Email = loggedInUser.EmailAddress
                     });
 
                     if (cardUpdated)
@@ -403,11 +406,11 @@ namespace Exceptionless.Api.Controllers {
                     organization.RemoveSuspension();
                 }
 
-                BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser);
+                BillingManager.ApplyBillingPlan(organization, plan, loggedInUser);
                 await _repository.SaveAsync(organization).AnyContext();
                 await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id }).AnyContext();
             } catch (Exception e) {
-                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return Ok(ChangePlanResult.FailWithMessage(e.Message));
             }
 
@@ -425,7 +428,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/users/{email:minlength(1)}")]
         [ResponseType(typeof(User))]
         public async Task<IHttpActionResult> AddUserAsync(string id, string email) {
-            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
+            if (String.IsNullOrEmpty(id) || !await CanAccessOrganizationAsync(id).AnyContext() || String.IsNullOrEmpty(email))
                 return NotFound();
 
             Organization organization = await GetModelAsync(id).AnyContext();
@@ -435,7 +438,7 @@ namespace Exceptionless.Api.Controllers {
             if (!await _billingManager.CanAddUserAsync(organization).AnyContext())
                 return PlanLimitReached("Please upgrade your plan to add an additional user.");
 
-            var currentUser = ExceptionlessUser;
+            var currentUser = await GetExceptionlessUserAsync().AnyContext();
             User user = await _userRepository.GetByEmailAddressAsync(email).AnyContext();
             if (user != null) {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
@@ -477,7 +480,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
         public async Task<IHttpActionResult> RemoveUserAsync(string id, string email) {
-            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
+            if (String.IsNullOrEmpty(id) || !await CanAccessOrganizationAsync(id).AnyContext())
                 return NotFound();
 
             Organization organization = await _repository.GetByIdAsync(id).AnyContext();
@@ -531,7 +534,7 @@ namespace Exceptionless.Api.Controllers {
 
             organization.IsSuspended = true;
             organization.SuspensionDate = DateTime.Now;
-            organization.SuspendedByUserId = ExceptionlessUser.Id;
+            organization.SuspendedByUserId = (await GetExceptionlessUserAsync().AnyContext()).Id;
             organization.SuspensionCode = code;
             organization.SuspensionNotes = notes;
             await _repository.SaveAsync(organization).AnyContext();
@@ -614,7 +617,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private async Task<bool> IsOrganizationNameAvailableInternalAsync(string name) {
-            return !String.IsNullOrWhiteSpace(name) && !(await _repository.GetByIdsAsync(GetAssociatedOrganizationIds()).AnyContext()).Documents.Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
+            return !String.IsNullOrWhiteSpace(name) && !(await _repository.GetByIdsAsync(await GetAssociatedOrganizationIdsAsync().AnyContext()).AnyContext()).Documents.Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         protected override async Task<PermissionResult> CanAddAsync(Organization value) {
@@ -624,21 +627,22 @@ namespace Exceptionless.Api.Controllers {
             if (!await IsOrganizationNameAvailableInternalAsync(value.Name).AnyContext())
                 return PermissionResult.DenyWithMessage("A organization with this name already exists.");
 
-            if (!await _billingManager.CanAddOrganizationAsync(ExceptionlessUser).AnyContext())
+            if (!await _billingManager.CanAddOrganizationAsync(await GetExceptionlessUserAsync().AnyContext()).AnyContext())
                 return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add an additional organization.");
 
             return await base.CanAddAsync(value).AnyContext();
         }
 
         protected override async Task<Organization> AddModelAsync(Organization value) {
-            BillingManager.ApplyBillingPlan(value, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, ExceptionlessUser);
+            var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+            BillingManager.ApplyBillingPlan(value, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, loggedInUser);
 
             var organization = await base.AddModelAsync(value).AnyContext();
 
-            ExceptionlessUser.OrganizationIds.Add(organization.Id);
-            await _userRepository.SaveAsync(ExceptionlessUser, true).AnyContext();
+            loggedInUser.OrganizationIds.Add(organization.Id);
+            await _userRepository.SaveAsync(loggedInUser, true).AnyContext();
             await _messagePublisher.PublishAsync(new UserMembershipChanged {
-                UserId = ExceptionlessUser.Id,
+                UserId = loggedInUser.Id,
                 OrganizationId = organization.Id,
                 ChangeType = ChangeType.Added
             }).AnyContext();
@@ -666,7 +670,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected override async Task DeleteModelsAsync(ICollection<Organization> organizations) {
-            var currentUser = ExceptionlessUser;
+            var currentUser = await GetExceptionlessUserAsync().AnyContext();
 
             foreach (var organization in organizations) {
                 Log.Info().Message("User {0} deleting organization {1}.", currentUser.Id, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();

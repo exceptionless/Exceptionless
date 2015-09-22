@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
     public class CopySimpleDataToIdxAction : EventPipelineActionBase {
-        public override async Task ProcessAsync(EventContext ctx) {
+        public override Task ProcessAsync(EventContext ctx) {
             if (!ctx.Organization.HasPremiumFeatures)
-                return;
+                return TaskHelper.Completed();
 
             // TODO: Do we need a pipeline action to trim keys and remove null values that may be sent by other native clients.
             foreach (string key in ctx.Event.Data.Keys.Where(k => !k.StartsWith("@")).ToArray()) {
@@ -51,6 +52,8 @@ namespace Exceptionless.Core.Pipeline {
                         ctx.Event.Idx[field + "-s"] = input;
                 }
             }
+
+            return TaskHelper.Completed();
         }
     }
 }

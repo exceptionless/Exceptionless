@@ -58,14 +58,15 @@ namespace Exceptionless.Core.Repositories {
             return Cache.RemoveAsync(autoScopeCacheKey ? GetScopedCacheKey(cacheKey) : cacheKey);
         }
 
-        protected virtual async Task InvalidateCacheAsync(ICollection<T> documents, ICollection<T> originalDocuments) {
+        protected virtual Task InvalidateCacheAsync(ICollection<T> documents, ICollection<T> originalDocuments) {
             if (!EnableCache || Cache == null)
-                return;
+                return TaskHelper.Completed();
 
             if (documents == null)
                 throw new ArgumentNullException(nameof(documents));
 
             documents.ForEach(async d => await Cache.RemoveAsync(GetScopedCacheKey(d.Id)).AnyContext());
+            return TaskHelper.Completed();
         }
 
         public Task InvalidateCacheAsync(T document) {

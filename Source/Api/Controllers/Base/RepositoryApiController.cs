@@ -24,8 +24,8 @@ namespace Exceptionless.Api.Controllers {
 
             var orgModel = value as IOwnedByOrganization;
             // if no organization id is specified, default to the user's 1st associated org.
-            if (!_isOrganization && orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
-                orgModel.OrganizationId = GetDefaultOrganizationId();
+            if (!_isOrganization && orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && (await GetAssociatedOrganizationIdsAsync().AnyContext()).Any())
+                orgModel.OrganizationId = await GetDefaultOrganizationIdAsync().AnyContext();
 
             TModel mapped = await MapAsync<TModel>(value).AnyContext();
             var permission = await CanAddAsync(mapped).AnyContext();
@@ -101,15 +101,15 @@ namespace Exceptionless.Api.Controllers {
             }), type);
         }
 
-        protected virtual Task<PermissionResult> CanAddAsync(TModel value) {
+        protected virtual async Task<PermissionResult> CanAddAsync(TModel value) {
             var orgModel = value as IOwnedByOrganization;
             if (_isOrganization || orgModel == null)
-                return Task.FromResult(PermissionResult.Allow);
+                return PermissionResult.Allow;
 
-            if (!CanAccessOrganization(orgModel.OrganizationId))
-                return Task.FromResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
+            if (!await CanAccessOrganizationAsync(orgModel.OrganizationId).AnyContext())
+                return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
-            return Task.FromResult(PermissionResult.Allow);
+            return PermissionResult.Allow;
         }
 
         protected virtual Task<TModel> AddModelAsync(TModel value) {
@@ -147,15 +147,15 @@ namespace Exceptionless.Api.Controllers {
             return await OkModelAsync(original).AnyContext();
         }
 
-        protected virtual Task<PermissionResult> CanUpdateAsync(TModel original, Delta<TUpdateModel> changes) {
+        protected virtual async Task<PermissionResult> CanUpdateAsync(TModel original, Delta<TUpdateModel> changes) {
             var orgModel = original as IOwnedByOrganization;
-            if (orgModel != null && !CanAccessOrganization(orgModel.OrganizationId))
-                return Task.FromResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
+            if (orgModel != null && !await CanAccessOrganizationAsync(orgModel.OrganizationId).AnyContext())
+                return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
             if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
-                return Task.FromResult(PermissionResult.DenyWithMessage("OrganizationId cannot be modified."));
+                return PermissionResult.DenyWithMessage("OrganizationId cannot be modified.");
 
-            return Task.FromResult(PermissionResult.Allow);
+            return PermissionResult.Allow;
         }
 
         protected virtual Task<TModel> UpdateModelAsync(TModel original, Delta<TUpdateModel> changes) {
@@ -190,7 +190,8 @@ namespace Exceptionless.Api.Controllers {
             try {
                 await DeleteModelsAsync(items).AnyContext();
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+                Log.Error().Exception(ex).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 
@@ -201,12 +202,12 @@ namespace Exceptionless.Api.Controllers {
             return BadRequest(results);
         }
 
-        protected virtual Task<PermissionResult> CanDeleteAsync(TModel value) {
+        protected virtual async Task<PermissionResult> CanDeleteAsync(TModel value) {
             var orgModel = value as IOwnedByOrganization;
-            if (orgModel != null && !CanAccessOrganization(orgModel.OrganizationId))
-                return Task.FromResult(PermissionResult.DenyWithNotFound(value.Id));
+            if (orgModel != null && !await CanAccessOrganizationAsync(orgModel.OrganizationId).AnyContext())
+                return PermissionResult.DenyWithNotFound(value.Id);
 
-            return Task.FromResult(PermissionResult.Allow);
+            return PermissionResult.Allow;
         }
 
         protected virtual Task DeleteModelsAsync(ICollection<TModel> values) {
