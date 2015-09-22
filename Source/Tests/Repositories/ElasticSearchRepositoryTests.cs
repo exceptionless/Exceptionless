@@ -14,14 +14,11 @@ namespace Exceptionless.Api.Tests.Repositories {
         public readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         public readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-
-        public ElasticSearchRepositoryTests() {
-            _eventRepository.RemoveAllAsync().AnyContext().GetAwaiter().GetResult();
-            _repository.RemoveAllAsync().AnyContext().GetAwaiter().GetResult();
-        }
-
+        
         [Fact]
         public async Task CanCreateUpdateRemove() {
+            await ResetAsync().AnyContext();
+
             await _repository.RemoveAllAsync().AnyContext();
             Assert.Equal(0, await _repository.CountAsync().AnyContext());
 
@@ -42,6 +39,8 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task CanFindMany() {
+            await ResetAsync().AnyContext();
+
             await _repository.RemoveAllAsync().AnyContext();
             Assert.Equal(0, await _repository.CountAsync().AnyContext());
 
@@ -71,6 +70,8 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task CanAddAndGetByCached() {
+            await ResetAsync().AnyContext();
+
             var cache = IoC.GetInstance<ICacheClient>() as InMemoryCacheClient;
             Assert.NotNull(cache);
             await cache.RemoveAllAsync().AnyContext();
@@ -91,5 +92,15 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.RemoveAllAsync().AnyContext();
             Assert.Equal(0, cache.Count);
         }
+        
+        private bool _isReset;
+        private async Task ResetAsync() {
+            if (!_isReset) {
+                _isReset = true;
+                await _eventRepository.RemoveAllAsync().AnyContext();
+                await _repository.RemoveAllAsync().AnyContext();
+            }
+        }
+
     }
 }

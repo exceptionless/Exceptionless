@@ -26,6 +26,7 @@ using Foundatio.Queues;
 using Microsoft.Owin;
 using Nest;
 using Newtonsoft.Json;
+using Nito.AsyncEx;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Controllers {
@@ -40,16 +41,10 @@ namespace Exceptionless.Api.Tests.Controllers {
         private readonly IQueue<EventPost> _eventQueue = IoC.GetInstance<IQueue<EventPost>>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
-
-        public EventControllerTests() {
-            ResetDatabaseAsync().AnyContext().GetAwaiter().GetResult();
-            AddSamplesAsync().AnyContext().GetAwaiter().GetResult();
-        }
-
+        
         [Fact]
         public async Task CanPostString() {
-            await _eventQueue.DeleteQueueAsync().AnyContext();
-            await RemoveAllEventsAsync().AnyContext();
+            await ResetAsync().AnyContext();
 
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), false, false);
@@ -63,11 +58,12 @@ namespace Exceptionless.Api.Tests.Controllers {
                 }).AnyContext());
 
                 Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Completed);
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
                 await processEventsJob.RunAsync().AnyContext();
 
-                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Completed);
                 Assert.Equal(1, await EventCountAsync().AnyContext());
             } finally {
                 await RemoveAllEventsAsync().AnyContext();
@@ -76,19 +72,19 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostCompressedString() {
-            await _eventQueue.DeleteQueueAsync().AnyContext();
-            await RemoveAllEventsAsync().AnyContext();
+            await ResetAsync().AnyContext();
 
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                 var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync().AnyContext()).AnyContext();
                 Assert.IsType<StatusCodeResult>(actionResult);
                 Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Completed);
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
                 await processEventsJob.RunAsync().AnyContext();
 
-                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Completed);
                 Assert.Equal(1, await EventCountAsync().AnyContext());
             } finally {
                 await RemoveAllEventsAsync().AnyContext();
@@ -97,19 +93,19 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostSingleEvent() {
-            await _eventQueue.DeleteQueueAsync().AnyContext();
-            await RemoveAllEventsAsync().AnyContext();
-            
+            await ResetAsync().AnyContext();
+
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                 var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync().AnyContext()).AnyContext();
                 Assert.IsType<StatusCodeResult>(actionResult);
                 Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Completed);
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
                 await processEventsJob.RunAsync().AnyContext();
 
-                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Completed);
                 Assert.Equal(1, await EventCountAsync().AnyContext());
             } finally {
                 await RemoveAllEventsAsync().AnyContext();
@@ -118,20 +114,19 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostManyEvents() {
-            await _eventQueue.DeleteQueueAsync().AnyContext();
-            await RemoveAllEventsAsync().AnyContext();
+            await ResetAsync().AnyContext();
 
             const int batchSize = 250;
             const int batchCount = 10;
 
             try {
-                var countdown = new CountDownLatch(10);
+                var countdown = new AsyncCountdownEvent(batchCount);
                 var messageSubscriber = IoC.GetInstance<IMessageSubscriber>();
                 messageSubscriber.Subscribe<EntityChanged>(ch => {
                     if (ch.ChangeType != ChangeType.Added || ch.Type != typeof(PersistentEvent).Name)
                         return;
 
-                    if (countdown.Remaining <= 0)
+                    if (countdown.CurrentCount >= batchCount)
                         throw new ApplicationException("Too many change notifications.");
 
                     countdown.Signal();
@@ -146,18 +141,17 @@ namespace Exceptionless.Api.Tests.Controllers {
                 }).AnyContext();
 
                 Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
-                
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Completed);
+
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
                 var sw = Stopwatch.StartNew();
                 await processEventsJob.RunUntilEmptyAsync().AnyContext();
                 sw.Stop();
                 Trace.WriteLine(sw.Elapsed);
 
-                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
+                Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Completed);
                 Assert.Equal(batchSize * batchCount, await EventCountAsync().AnyContext());
-
-                bool success = countdown.Wait(5000);
-                Assert.True(success);
+                //await countdown.WaitAsync();
             } finally {
                 await _eventQueue.DeleteQueueAsync().AnyContext();
             }
@@ -177,6 +171,18 @@ namespace Exceptionless.Api.Tests.Controllers {
             request.Content.Headers.ContentType.CharSet = charset;
 
             return request;
+        }
+
+        private bool _isReset;
+        private async Task ResetAsync() {
+            if (!_isReset) {
+                _isReset = true;
+                await ResetDatabaseAsync().AnyContext();
+                await AddSamplesAsync().AnyContext();
+            }
+
+            await _eventQueue.DeleteQueueAsync().AnyContext();
+            await RemoveAllEventsAsync().AnyContext();
         }
 
         private async Task ResetDatabaseAsync(bool force = false) {

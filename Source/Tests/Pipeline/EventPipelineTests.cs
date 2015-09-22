@@ -25,14 +25,11 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
-
-        public EventPipelineTests() {
-            RemoveDataAsync(true).AnyContext().GetAwaiter().GetResult();
-            CreateDataAsync().AnyContext().GetAwaiter().GetResult();
-        }
-
+        
         [Fact]
         public async Task NoFutureEvents() {
+            await ResetAsync().AnyContext();
+
             var localTime = DateTime.Now;
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: localTime.AddMinutes(10));
 
@@ -49,6 +46,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CanIndexExtendedData() {
+            await ResetAsync().AnyContext();
+
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: DateTime.Now);
             ev.Data.Add("First Name", "Eric");
             ev.Data.Add("IsVerified", true);
@@ -82,6 +81,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task SyncStackTags() {
+            await ResetAsync().AnyContext();
+
             const string Tag1 = "Tag One";
             const string Tag2 = "Tag Two";
             const string Tag2_Lowercase = "tag two";
@@ -118,6 +119,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task EnsureSingleNewStack() {
+            await ResetAsync().AnyContext();
+
             var pipeline = IoC.GetInstance<EventPipeline>();
 
             string source = Guid.NewGuid().ToString();
@@ -135,6 +138,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
         
         [Fact]
         public async Task EnsureSingleGlobalErrorStack() {
+            await ResetAsync().AnyContext();
+
             var pipeline = IoC.GetInstance<EventPipeline>();
 
             var contexts = new List<EventContext> {
@@ -165,6 +170,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task EnsureSingleRegression() {
+            await ResetAsync().AnyContext();
+
             var pipeline = IoC.GetInstance<EventPipeline>();
             var client = IoC.GetInstance<IElasticClient>();
 
@@ -204,6 +211,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
         [Theory]
         [MemberData("Events")]
         public async Task ProcessEvents(string errorFilePath) {
+            await ResetAsync().AnyContext();
+
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
             var events = parserPluginManager.ParseEvents(File.ReadAllText(errorFilePath), 2, "exceptionless/2.0.0.0");
             Assert.NotNull(events);
@@ -228,6 +237,15 @@ namespace Exceptionless.Api.Tests.Pipeline {
                     result.Add(new object[] { file });
 
                 return result.ToArray();
+            }
+        }
+        
+        private bool _isReset;
+        private async Task ResetAsync() {
+            if (!_isReset) {
+                _isReset = true;
+                await RemoveDataAsync(true).AnyContext();
+                await CreateDataAsync().AnyContext();
             }
         }
 

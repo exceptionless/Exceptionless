@@ -70,6 +70,10 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IMetricsClient>(metricsClient);
             
             container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ElasticSearchConfiguration>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
+            container.RegisterSingleton<EventIndex, EventIndex>();
+            container.RegisterSingleton<OrganizationIndex, OrganizationIndex>();
+            container.RegisterSingleton<StackIndex, StackIndex>();
+
             container.RegisterSingleton<ICacheClient, InMemoryCacheClient>();
             
             container.RegisterSingleton<IEnumerable<IQueueBehavior<EventPost>>>(() => new[] { new MetricsQueueBehavior<EventPost>(container.GetInstance<IMetricsClient>()) });

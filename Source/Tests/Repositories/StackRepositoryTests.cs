@@ -14,14 +14,11 @@ namespace Exceptionless.Api.Tests.Repositories {
         private const int NUMBER_OF_STACKS_TO_CREATE = 50;
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
-
-        public StackRepositoryTests() {
-            RemoveDataAsync().AnyContext().GetAwaiter().GetResult();
-        }
-
+        
         [Fact]
         public async Task MarkAsRegressedTest() {
             await RemoveDataAsync().AnyContext();
+
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: DateTime.Now.SubtractMonths(1))).AnyContext();
             _client.Refresh();
 
@@ -42,6 +39,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Fact]
         public async Task IncrementEventCounterTest() {
             await RemoveDataAsync().AnyContext();
+
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId)).AnyContext();
             _client.Refresh();
 
