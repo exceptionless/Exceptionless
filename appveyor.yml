@@ -1,10 +1,11 @@
 version: 3.0.{build}
+os: Visual Studio 2015
 configuration: Release
 clone_depth: 2
 
 environment:
   JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
-  ES_VERSION: 1.7.0
+  ES_VERSION: 1.7.2
   API_URL: https://#{api.hostheader}
   BUILD_REPO_URL:
     secure: vuYBT6D5arel88+Py/H3nnMPd4hInIXvr2cwhJaZSSSvJnmg+9sX1P5+bTWaJskYpGztHVMg0Iq7hgUCMKjh23w8WBrutLiUsixRE0LBjroIVJaRsYG1okSko0fNKVOCUMQAue0lh2sYqQ/TQlDbwg==
