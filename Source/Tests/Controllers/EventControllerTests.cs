@@ -17,6 +17,7 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
 using Foundatio.Messaging;
@@ -41,14 +42,14 @@ namespace Exceptionless.Api.Tests.Controllers {
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
 
         public EventControllerTests() {
-            ResetDatabase();
-            AddSamples();
+            await ResetDatabaseAsync().AnyContext();
+            await AddSamplesAsync().AnyContext();
         }
 
         [Fact]
-        public void CanPostString() {
-            _eventQueue.DeleteQueue();
-            RemoveAllEvents();
+        public async Task CanPostString() {
+            await _eventQueue.DeleteQueueAsync().AnyContext();
+            await RemoveAllEventsAsync().AnyContext();
 
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), false, false);
@@ -56,27 +57,27 @@ namespace Exceptionless.Api.Tests.Controllers {
                 var metricsClient = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
                 Assert.NotNull(metricsClient);
                 
-                Assert.True(metricsClient.WaitForCounter(MetricNames.PostsQueued, work: async () => {
+                Assert.True(await metricsClient.WaitForCounterAsync(MetricNames.PostsQueued, work: async () => {
                     var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string")).AnyContext();
                     Assert.IsType<StatusCodeResult>(actionResult);
-                }));
+                }).AnyContext());
 
                 Assert.Equal(1, _eventQueue.GetQueueCount());
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
-                processEventsJob.Run();
+                await processEventsJob.RunAsync().AnyContext();
 
                 Assert.Equal(0, _eventQueue.GetQueueCount());
-                Assert.Equal(1, EventCount());
+                Assert.Equal(1, await EventCountAsync().AnyContext());
             } finally {
-                RemoveAllEvents();
+                await RemoveAllEventsAsync().AnyContext();
             }
         }
 
         [Fact]
         public async Task CanPostCompressedString() {
-            _eventQueue.DeleteQueue();
-            RemoveAllEvents();
+            await _eventQueue.DeleteQueueAsync().AnyContext();
+            await RemoveAllEventsAsync().AnyContext();
 
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
@@ -85,19 +86,19 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.Equal(1, _eventQueue.GetQueueCount());
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
-                processEventsJob.Run();
+                await processEventsJob.RunAsync().AnyContext();
 
                 Assert.Equal(0, _eventQueue.GetQueueCount());
-                Assert.Equal(1, EventCount());
+                Assert.Equal(1, await EventCountAsync().AnyContext());
             } finally {
-                RemoveAllEvents();
+                await RemoveAllEventsAsync().AnyContext();
             }
         }
 
         [Fact]
         public async Task CanPostSingleEvent() {
-            _eventQueue.DeleteQueue();
-            RemoveAllEvents();
+            await _eventQueue.DeleteQueueAsync().AnyContext();
+            await RemoveAllEventsAsync().AnyContext();
             
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
@@ -106,19 +107,19 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.Equal(1, _eventQueue.GetQueueCount());
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
-                processEventsJob.Run();
+                await processEventsJob.RunAsync().AnyContext();
 
                 Assert.Equal(0, _eventQueue.GetQueueCount());
-                Assert.Equal(1, EventCount());
+                Assert.Equal(1, await EventCountAsync().AnyContext());
             } finally {
-                RemoveAllEvents();
+                await RemoveAllEventsAsync().AnyContext();
             }
         }
 
         [Fact]
-        public void CanPostManyEvents() {
-            _eventQueue.DeleteQueue();
-            RemoveAllEvents();
+        public async Task CanPostManyEvents() {
+            await _eventQueue.DeleteQueueAsync().AnyContext();
+            await RemoveAllEventsAsync().AnyContext();
 
             const int batchSize = 250;
             const int batchCount = 10;
@@ -136,30 +137,29 @@ namespace Exceptionless.Api.Tests.Controllers {
                     countdown.Signal();
                 });
 
-                Parallel.For(0, batchCount, i => {
+                await Run.InParallel(batchCount, async i => {
                     _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                     var events = new RandomEventGenerator().Generate(batchSize);
                     var compressedEvents = await Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).CompressAsync().AnyContext();
                     var actionResult = await _eventController.PostAsync(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0").AnyContext();
                     Assert.IsType<StatusCodeResult>(actionResult);
-                });
+                }).AnyContext();
 
                 Assert.Equal(batchCount, _eventQueue.GetQueueCount());
-
-                var sw = new Stopwatch();
+                
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
-                sw.Start();
-                processEventsJob.RunUntilEmpty();
+                var sw = Stopwatch.StartNew();
+                await processEventsJob.RunUntilEmptyAsync().AnyContext();
                 sw.Stop();
                 Trace.WriteLine(sw.Elapsed);
 
                 Assert.Equal(0, _eventQueue.GetQueueCount());
-                Assert.Equal(batchSize * batchCount, EventCount());
+                Assert.Equal(batchSize * batchCount, await EventCountAsync().AnyContext());
 
                 bool success = countdown.Wait(5000);
                 Assert.True(success);
             } finally {
-                _eventQueue.DeleteQueue();
+                await _eventQueue.DeleteQueueAsync().AnyContext();
             }
         }
         
@@ -179,60 +179,60 @@ namespace Exceptionless.Api.Tests.Controllers {
             return request;
         }
 
-        private void ResetDatabase(bool force = false) {
+        private async Task ResetDatabaseAsync(bool force = false) {
             if (_databaseReset && !force)
                 return;
             
-            RemoveAllEvents();
-            RemoveAllProjects();
-            RemoveAllOrganizations();
+            await RemoveAllEventsAsync().AnyContext();
+            await RemoveAllProjectsAsync().AnyContext();
+            await RemoveAllOrganizationsAsync().AnyContext();
 
             _databaseReset = true;
         }
 
-        public void RemoveAllOrganizations() {
-            _organizationRepository.RemoveAll();
+        public async Task RemoveAllOrganizationsAsync() {
+            await _organizationRepository.RemoveAllAsync().AnyContext();
             _client.Refresh(r => r.Force());
             _sampleOrganizationsAdded = false;
         }
 
-        public void RemoveAllProjects() {
-            _projectRepository.RemoveAll();
+        public async Task RemoveAllProjectsAsync() {
+            await _projectRepository.RemoveAllAsync().AnyContext();
             _client.Refresh(r => r.Force());
             _sampleProjectsAdded = false;
         }
 
-        public void RemoveAllEvents() {
-            _eventRepository.RemoveAll();
+        public async Task RemoveAllEventsAsync() {
+            await _eventRepository.RemoveAllAsync().AnyContext();
             _client.Refresh(r => r.Force());
         }
 
-        public long EventCount() {
+        public Task<long> EventCountAsync() {
             _client.Refresh(r => r.Force());
-            return _eventRepository.Count();
+            return _eventRepository.CountAsync();
         }
         
-        public void AddSampleProjects() {
+        public async Task AddSampleProjectsAsync() {
             if (_sampleProjectsAdded)
                 return;
 
-            _projectRepository.Add(ProjectData.GenerateSampleProjects());
+            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects()).AnyContext();
             _client.Refresh(r => r.Force());
             _sampleProjectsAdded = true;
         }
         
-        public void AddSampleOrganizations() {
+        public async Task AddSampleOrganizationsAsync() {
             if (_sampleOrganizationsAdded)
                 return;
 
-            _organizationRepository.Add(OrganizationData.GenerateSampleOrganizations());
+            await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations()).AnyContext();
             _client.Refresh(r => r.Force());
             _sampleOrganizationsAdded = true;
         }
 
-        public void AddSamples() {
-            AddSampleProjects();
-            AddSampleOrganizations();
+        public async Task AddSamplesAsync() {
+            await AddSampleProjectsAsync().AnyContext();
+            await AddSampleOrganizationsAsync().AnyContext();
         }
     }
 }

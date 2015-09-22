@@ -14,8 +14,8 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task IncrementNextSummaryEndOfDayTicks() {
-            _repository.RemoveAll();
-            Assert.Equal(0, _repository.Count());
+            await _repository.RemoveAllAsync().AnyContext();
+            Assert.Equal(0, await _repository.CountAsync().AnyContext());
             
             var project =_repository.Add(ProjectData.GenerateSampleProject());
             Assert.NotNull(project.Id);

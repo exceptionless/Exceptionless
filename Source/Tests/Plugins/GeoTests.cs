@@ -8,32 +8,32 @@ using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
 using Foundatio.Storage;
 using Xunit;
-using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Plugins {
     public class GeoTests {
-        protected readonly IGeoIPResolver _resolver;
+        private IGeoIPResolver _resolver;
+        private async Task<IGeoIPResolver> GetResolver() {
+            if (_resolver != null)
+                return _resolver;
 
-        public GeoTests() {
             var dataDirectory = PathHelper.ExpandPath(".\\");
             var storage = new FolderFileStorage(dataDirectory);
 
             if (!await storage.ExistsAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH).AnyContext()) {
-                var job = new DownloadGeoIPDatabaseJob(storage).Run();
-                Assert.NotNull(job);
-                Assert.True(job.IsSuccess);
+                var job = new DownloadGeoIPDatabaseJob(storage);
+                var result = await job.RunAsync().AnyContext();
+                Assert.NotNull(result);
+                Assert.True(result.IsSuccess);
             }
 
-            _resolver = new MindMaxGeoIPResolver(storage);
+            return _resolver = new MindMaxGeoIPResolver(storage);
         }
 
         [Theory]
-        [PropertyData("IPData")]
+        [MemberData("IPData")]
         public async Task CanResolveIp(string ip, bool canResolve) {
-            if (_resolver == null)
-                return;
-
-            var result = await _resolver.ResolveIpAsync(ip).AnyContext();
+            var resolver = await GetResolver().AnyContext();
+            var result = await resolver.ResolveIpAsync(ip).AnyContext();
             if (canResolve)
                 Assert.NotNull(result);
             else
@@ -42,17 +42,14 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Fact]
         public async Task CanResolveIpFromCache() {
-            if (_resolver == null)
-                return;
+            var resolver = await GetResolver().AnyContext();
 
             // Load the database
-            await _resolver.ResolveIpAsync("0.0.0.0").AnyContext();
+            await resolver.ResolveIpAsync("0.0.0.0").AnyContext();
 
-            var sw = new Stopwatch();
-            sw.Start();
-            
+            var sw = Stopwatch.StartNew();
             for (int i = 0; i < 1000; i++)
-                Assert.NotNull(await _resolver.ResolveIpAsync("8.8.4.4").AnyContext());
+                Assert.NotNull(await resolver.ResolveIpAsync("8.8.4.4").AnyContext());
 
             sw.Stop();
             Assert.InRange(sw.ElapsedMilliseconds, 0, 65);

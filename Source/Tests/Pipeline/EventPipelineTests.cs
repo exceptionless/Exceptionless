@@ -16,7 +16,6 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Tests.Utility;
 using Nest;
 using Xunit;
-using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Pipeline {
     public class EventPipelineTests : IDisposable {
@@ -28,28 +27,28 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
 
         public EventPipelineTests() {
-            RemoveData(true);
-            CreateData();
+            await RemoveDataAsync(true).AnyContext();
+            await CreateDataAsync().AnyContext();
         }
 
         [Fact]
-        public void NoFutureEvents() {
+        public async Task NoFutureEvents() {
             var localTime = DateTime.Now;
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: localTime.AddMinutes(10));
 
             var pipeline = IoC.GetInstance<EventPipeline>();
-            pipeline.RunAsync(ev);
+            await pipeline.RunAsync(ev).AnyContext();
 
             var client = IoC.GetInstance<IElasticClient>();
             client.Refresh();
-            ev = _eventRepository.GetById(ev.Id);
+            ev = await _eventRepository.GetByIdAsync(ev.Id).AnyContext();
             Assert.NotNull(ev);
             Assert.True(ev.Date < localTime.AddMinutes(10));
             Assert.True(ev.Date - localTime < TimeSpan.FromSeconds(5));
         }
 
         [Fact]
-        public void CanIndexExtendedData() {
+        public async Task CanIndexExtendedData() {
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: DateTime.Now);
             ev.Data.Add("First Name", "Eric");
             ev.Data.Add("IsVerified", true);
@@ -66,7 +65,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Data.Add("Address", new { State = "Texas" });
 
             var pipeline = IoC.GetInstance<EventPipeline>();
-            pipeline.RunAsync(ev);
+            await pipeline.RunAsync(ev).AnyContext();
             Assert.Equal(11, ev.Idx.Count);
             Assert.True(ev.Idx.ContainsKey("first-name-s"));
             Assert.True(ev.Idx.ContainsKey("isverified-b"));
@@ -82,7 +81,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public void SyncStackTags() {
+        public async Task SyncStackTags() {
             const string Tag1 = "Tag One";
             const string Tag2 = "Tag Two";
             const string Tag2_Lowercase = "tag two";
@@ -92,28 +91,28 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag1);
 
             var pipeline = IoC.GetInstance<EventPipeline>();
-            pipeline.RunAsync(ev);
+            await pipeline.RunAsync(ev).AnyContext();
 
             client.Refresh();
-            ev = _eventRepository.GetById(ev.Id);
+            ev = await _eventRepository.GetByIdAsync(ev.Id).AnyContext();
             Assert.NotNull(ev);
             Assert.NotNull(ev.StackId);
 
-            var stack = _stackRepository.GetById(ev.StackId, true);
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId, true).AnyContext();
             Assert.Equal(new TagSet { Tag1 }, stack.Tags);
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.Now);
             ev.Tags.Add(Tag2);
 
-            pipeline.RunAsync(ev);
-            stack = _stackRepository.GetById(ev.StackId, true);
+            await pipeline.RunAsync(ev).AnyContext();
+            stack = await _stackRepository.GetByIdAsync(ev.StackId, true).AnyContext();
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.Now);
             ev.Tags.Add(Tag2_Lowercase);
 
-            pipeline.RunAsync(ev);
-            stack = _stackRepository.GetById(ev.StackId, true);
+            await pipeline.RunAsync(ev).AnyContext();
+            stack = await _stackRepository.GetByIdAsync(ev.StackId, true).AnyContext();
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
         }
 
@@ -176,13 +175,13 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(context.IsRegression);
 
             client.Refresh();
-            ev = _eventRepository.GetById(ev.Id);
+            ev = await _eventRepository.GetByIdAsync(ev.Id).AnyContext();
             Assert.NotNull(ev);
 
-            var stack = _stackRepository.GetById(ev.StackId);
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId).AnyContext();
             stack.DateFixed = DateTime.UtcNow;
             stack.IsRegressed = false;
-            _stackRepository.Save(stack, true);
+            await _stackRepository.SaveAsync(stack, true).AnyContext();
 
             var contexts = new List<EventContext> {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1))),
@@ -203,7 +202,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Theory]
-        [PropertyData("Events")]
+        [MemberData("Events")]
         public async Task ProcessEvents(string errorFilePath) {
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
             var events = parserPluginManager.ParseEvents(File.ReadAllText(errorFilePath), 2, "exceptionless/2.0.0.0");
@@ -232,7 +231,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             }
         }
 
-        private void CreateData() {
+        private async Task CreateDataAsync() {
             foreach (Organization organization in OrganizationData.GenerateSampleOrganizations()) {
                 if (organization.Id == TestConstants.OrganizationId3)
                     BillingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, UserData.GenerateSampleUser());
@@ -249,15 +248,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
                     organization.SuspensionDate = DateTime.Now;
                 }
 
-                _organizationRepository.Add(organization);
+                await _organizationRepository.AddAsync(organization).AnyContext();
             }
 
-            foreach (Project project in ProjectData.GenerateSampleProjects()) {
-                var organization = _organizationRepository.GetById(project.OrganizationId);
-                _organizationRepository.Save(organization);
-
-                _projectRepository.Add(project);
-            }
+            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects()).AnyContext();
 
             foreach (User user in UserData.GenerateSampleUsers()) {
                 if (user.Id == TestConstants.UserId) {
@@ -265,28 +259,28 @@ namespace Exceptionless.Api.Tests.Pipeline {
                     user.OrganizationIds.Add(TestConstants.OrganizationId3);
                 }
 
-                if (!user.IsEmailAddressVerified) {
+                if (!user.IsEmailAddressVerified)
                     user.CreateVerifyEmailAddressToken();
-                }
-                _userRepository.Add(user);
+
+                await _userRepository.AddAsync(user).AnyContext();
             }
         }
 
-        private void RemoveData(bool removeUserAndProjectAndOrganizationData = false) {
-            _eventRepository.RemoveAll();
-            _stackRepository.RemoveAll();
+        private async Task RemoveDataAsync(bool removeUserAndProjectAndOrganizationData = false) {
+            await _eventRepository.RemoveAllAsync().AnyContext();
+            await _stackRepository.RemoveAllAsync().AnyContext();
 
             if (!removeUserAndProjectAndOrganizationData)
                 return;
 
-            _tokenRepository.RemoveAll();
-            _userRepository.RemoveAll();
-            _projectRepository.RemoveAll();
-            _organizationRepository.RemoveAll();
+            await _tokenRepository.RemoveAllAsync().AnyContext();
+            await _userRepository.RemoveAllAsync().AnyContext();
+            await _projectRepository.RemoveAllAsync().AnyContext();
+            await _organizationRepository.RemoveAllAsync().AnyContext();
         }
 
-        public void Dispose() {
-            RemoveData();
+        public async void Dispose() {
+            await RemoveDataAsync().AnyContext();
         }
     }
 }

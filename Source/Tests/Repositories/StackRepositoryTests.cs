@@ -87,7 +87,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void InvalidateCacheTest() { }
 
         protected void RemoveData() {
-            _repository.RemoveAll();
+            await _repository.RemoveAllAsync().AnyContext();
         }
     }
 }

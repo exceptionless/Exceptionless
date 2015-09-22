@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
@@ -14,62 +16,61 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
 
         public ElasticSearchRepositoryTests() {
-            _eventRepository.RemoveAll();
-            _repository.RemoveAll();
+            await _eventRepository.RemoveAllAsync().AnyContext();
+            await _repository.RemoveAllAsync().AnyContext();
         }
 
         [Fact]
-        public void CanCreateUpdateRemove() {
-            _repository.RemoveAll();
-            Assert.Equal(0, _repository.Count());
+        public async Task CanCreateUpdateRemove() {
+            await _repository.RemoveAllAsync().AnyContext();
+            Assert.Equal(0, await _repository.CountAsync().AnyContext());
 
             var stack = StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
             Assert.Null(stack.Id);
 
-            _repository.Add(stack);
+            await _repository.AddAsync(stack).AnyContext();
             Assert.NotNull(stack.Id);
             _client.Refresh();
 
-            stack = _repository.GetById(stack.Id);
+            stack = await _repository.GetByIdAsync(stack.Id).AnyContext();
             Assert.NotNull(stack);
 
             stack.Description = "New Description";
-            _repository.Save(stack);
-
-            _repository.Remove(stack.Id);
+            await _repository.SaveAsync(stack).AnyContext();
+            await _repository.RemoveAsync(stack.Id).AnyContext();
         }
 
         [Fact]
-        public void CanFindMany() {
-            _repository.RemoveAll();
-            Assert.Equal(0, _repository.Count());
+        public async Task CanFindMany() {
+            await _repository.RemoveAllAsync().AnyContext();
+            Assert.Equal(0, await _repository.CountAsync().AnyContext());
 
-            _repository.Add(StackData.GenerateSampleStacks());
+            await _repository.AddAsync(StackData.GenerateSampleStacks()).AnyContext();
 
             _client.Refresh();
 
-            var stacks = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(1).WithLimit(1));
+            var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(1).WithLimit(1)).AnyContext();
             Assert.NotNull(stacks);
             Assert.Equal(3, stacks.Total);
             Assert.Equal(1, stacks.Documents.Count);
 
-            var stacks2 = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(1));
+            var stacks2 = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(1)).AnyContext();
             Assert.NotNull(stacks);
             Assert.Equal(1, stacks.Documents.Count);
 
             Assert.NotEqual(stacks.Documents.First().Id, stacks2.Documents.First().Id);
 
-            stacks = _repository.GetByOrganizationId(TestConstants.OrganizationId);
+            stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId).AnyContext();
             Assert.NotNull(stacks);
             Assert.Equal(3, stacks.Documents.Count);
 
-            _repository.Remove(stacks.Documents);
-            Assert.Equal(0, _repository.Count());
-            _repository.RemoveAll();
+            await _repository.RemoveAsync(stacks.Documents).AnyContext();
+            Assert.Equal(0, await _repository.CountAsync().AnyContext());
+            await _repository.RemoveAllAsync().AnyContext();
         }
 
         [Fact]
-        public void CanAddAndGetByCached() {
+        public async Task CanAddAndGetByCached() {
             var cache = IoC.GetInstance<ICacheClient>() as InMemoryCacheClient;
             Assert.NotNull(cache);
             await cache.RemoveAllAsync().AnyContext();
@@ -77,17 +78,17 @@ namespace Exceptionless.Api.Tests.Repositories {
             var stack = StackData.GenerateSampleStack();
 
             Assert.Equal(0, cache.Count);
-            _repository.Add(stack, true);
+            await _repository.AddAsync(stack, true).AnyContext();
             Assert.NotNull(stack.Id);
             Assert.Equal(2, cache.Count);
             _client.Refresh();
 
             await cache.RemoveAllAsync().AnyContext();
             Assert.Equal(0, cache.Count);
-            Assert.NotNull(_repository.GetById(stack.Id, true));
+            Assert.NotNull(await _repository.GetByIdAsync(stack.Id, true).AnyContext());
             Assert.Equal(1, cache.Count);
 
-            _repository.RemoveAll();
+            await _repository.RemoveAllAsync().AnyContext();
             Assert.Equal(0, cache.Count);
         }
     }

@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         protected void RemoveData() {
-            _repository.RemoveAll();
+            await _repository.RemoveAllAsync().AnyContext();
         }
 
         public void Dispose() {
