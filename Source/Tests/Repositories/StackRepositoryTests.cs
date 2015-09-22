@@ -13,6 +13,7 @@ namespace Exceptionless.Api.Tests.Repositories {
     public class StackRepositoryTests {
         private const int NUMBER_OF_STACKS_TO_CREATE = 50;
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
+        private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         private readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
         
         [Fact]
@@ -96,6 +97,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         protected async Task RemoveDataAsync() {
+            await _eventRepository.RemoveAllAsync().AnyContext();
             await _repository.RemoveAllAsync().AnyContext();
         }
     }
