@@ -77,12 +77,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     continue;
 
                 // upgrade
-                Task.Run(async () => await _workItemQueue.EnqueueAsync(new ReindexWorkItem {
+                _workItemQueue.EnqueueAsync(new ReindexWorkItem {
                     OldIndex = String.Concat(index.Name, "-v", currentVersion),
                     NewIndex = index.VersionedName,
                     Alias = index.Name,
                     DeleteOld = true
-                }).AnyContext());
+                });
             }
         }
 
