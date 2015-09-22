@@ -27,8 +27,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
 
         public EventPipelineTests() {
-            await RemoveDataAsync(true).AnyContext();
-            await CreateDataAsync().AnyContext();
+            RemoveDataAsync(true).AnyContext().GetAwaiter().GetResult();
+            CreateDataAsync().AnyContext().GetAwaiter().GetResult();
         }
 
         [Fact]

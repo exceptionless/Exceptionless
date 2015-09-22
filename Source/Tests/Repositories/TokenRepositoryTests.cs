@@ -15,48 +15,48 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task GetAndRemoveByProjectIdOrDefaultProjectIdAsync() {
-            RemoveData();
+            await RemoveDataAsync().AnyContext();
 
-            _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
-            _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
-            _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
-            _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
-            _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
-            _repository.Add(new Token { DefaultProjectId = TestConstants.ProjectIdWithNoRoles, UserId = TestConstants.UserId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
+            await _repository.AddAsync(new Token { OrganizationId = TestConstants.OrganizationId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() }).AnyContext();
+            await _repository.AddAsync(new Token { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() }).AnyContext();
+            await _repository.AddAsync(new Token { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() }).AnyContext();
+            await _repository.AddAsync(new Token { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() }).AnyContext();
+            await _repository.AddAsync(new Token { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() }).AnyContext();
+            await _repository.AddAsync(new Token { DefaultProjectId = TestConstants.ProjectIdWithNoRoles, UserId = TestConstants.UserId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() }).AnyContext();
             await _client.RefreshAsync().AnyContext();
 
-            Assert.Equal(5, _repository.GetByOrganizationId(TestConstants.OrganizationId).Total);
-            Assert.Equal(2, _repository.GetByProjectId(TestConstants.ProjectId).Total);
-            Assert.Equal(3, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Total);
+            Assert.Equal(5, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId).AnyContext()).Total);
+            Assert.Equal(2, (await _repository.GetByProjectIdAsync(TestConstants.ProjectId).AnyContext()).Total);
+            Assert.Equal(3, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles).AnyContext()).Total);
 
             await _repository.RemoveAllByProjectIdsAsync(new []{ TestConstants.ProjectId }).AnyContext();
             await _client.RefreshAsync().AnyContext();
 
-            Assert.Equal(4, _repository.GetByOrganizationId(TestConstants.OrganizationId).Total);
-            Assert.Equal(1, _repository.GetByProjectId(TestConstants.ProjectId).Total);
-            Assert.Equal(3, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Total);
+            Assert.Equal(4, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId).AnyContext()).Total);
+            Assert.Equal(1, (await _repository.GetByProjectIdAsync(TestConstants.ProjectId).AnyContext()).Total);
+            Assert.Equal(3, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles).AnyContext()).Total);
 
             await _repository.RemoveAllByProjectIdsAsync(new[] { TestConstants.ProjectIdWithNoRoles }).AnyContext();
             await _client.RefreshAsync().AnyContext();
             
-            Assert.Equal(3, _repository.GetByOrganizationId(TestConstants.OrganizationId).Total);
-            Assert.Equal(1, _repository.GetByProjectId(TestConstants.ProjectId).Total);
-            Assert.Equal(2, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Total);
+            Assert.Equal(3, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId).AnyContext()).Total);
+            Assert.Equal(1, (await _repository.GetByProjectIdAsync(TestConstants.ProjectId).AnyContext()).Total);
+            Assert.Equal(2, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles).AnyContext()).Total);
 
             await _repository.RemoveAllByOrganizationIdsAsync(new[] { TestConstants.OrganizationId }).AnyContext();
             await _client.RefreshAsync().AnyContext();
 
-            Assert.Equal(0, _repository.GetByOrganizationId(TestConstants.OrganizationId).Total);
-            Assert.Equal(0, _repository.GetByProjectId(TestConstants.ProjectId).Total);
-            Assert.Equal(1, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Total);
+            Assert.Equal(0, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId).AnyContext()).Total);
+            Assert.Equal(0, (await _repository.GetByProjectIdAsync(TestConstants.ProjectId).AnyContext()).Total);
+            Assert.Equal(1, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles).AnyContext()).Total);
         }
         
-        protected void RemoveData() {
-            await _repository.RemoveAllAsync().AnyContext();
+        protected Task RemoveDataAsync() {
+            return _repository.RemoveAllAsync();
         }
 
         public void Dispose() {
-            //RemoveData();
+            //await RemoveDataAsync().AnyContext();
         }
     }
 }

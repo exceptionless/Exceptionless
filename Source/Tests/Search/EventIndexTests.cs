@@ -21,7 +21,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public EventIndexTests() {
             if (!_createdEvents) {
                 _createdEvents = true;
-                await CreateEventsAsync().AnyContext();
+                CreateEventsAsync().AnyContext().GetAwaiter().GetResult();
             }
         }
 

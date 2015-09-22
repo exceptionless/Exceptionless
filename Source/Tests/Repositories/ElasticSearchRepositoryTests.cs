@@ -16,8 +16,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
 
         public ElasticSearchRepositoryTests() {
-            await _eventRepository.RemoveAllAsync().AnyContext();
-            await _repository.RemoveAllAsync().AnyContext();
+            _eventRepository.RemoveAllAsync().AnyContext().GetAwaiter().GetResult();
+            _repository.RemoveAllAsync().AnyContext().GetAwaiter().GetResult();
         }
 
         [Fact]

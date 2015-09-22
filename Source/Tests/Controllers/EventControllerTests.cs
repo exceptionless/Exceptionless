@@ -42,8 +42,8 @@ namespace Exceptionless.Api.Tests.Controllers {
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
 
         public EventControllerTests() {
-            await ResetDatabaseAsync().AnyContext();
-            await AddSamplesAsync().AnyContext();
+            ResetDatabaseAsync().AnyContext().GetAwaiter().GetResult();
+            AddSamplesAsync().AnyContext().GetAwaiter().GetResult();
         }
 
         [Fact]
@@ -62,12 +62,12 @@ namespace Exceptionless.Api.Tests.Controllers {
                     Assert.IsType<StatusCodeResult>(actionResult);
                 }).AnyContext());
 
-                Assert.Equal(1, _eventQueue.GetQueueCount());
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
                 await processEventsJob.RunAsync().AnyContext();
 
-                Assert.Equal(0, _eventQueue.GetQueueCount());
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
                 Assert.Equal(1, await EventCountAsync().AnyContext());
             } finally {
                 await RemoveAllEventsAsync().AnyContext();
@@ -83,12 +83,12 @@ namespace Exceptionless.Api.Tests.Controllers {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                 var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync().AnyContext()).AnyContext();
                 Assert.IsType<StatusCodeResult>(actionResult);
-                Assert.Equal(1, _eventQueue.GetQueueCount());
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
                 await processEventsJob.RunAsync().AnyContext();
 
-                Assert.Equal(0, _eventQueue.GetQueueCount());
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
                 Assert.Equal(1, await EventCountAsync().AnyContext());
             } finally {
                 await RemoveAllEventsAsync().AnyContext();
@@ -104,12 +104,12 @@ namespace Exceptionless.Api.Tests.Controllers {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                 var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync().AnyContext()).AnyContext();
                 Assert.IsType<StatusCodeResult>(actionResult);
-                Assert.Equal(1, _eventQueue.GetQueueCount());
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
                 await processEventsJob.RunAsync().AnyContext();
 
-                Assert.Equal(0, _eventQueue.GetQueueCount());
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
                 Assert.Equal(1, await EventCountAsync().AnyContext());
             } finally {
                 await RemoveAllEventsAsync().AnyContext();
@@ -145,7 +145,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                     Assert.IsType<StatusCodeResult>(actionResult);
                 }).AnyContext();
 
-                Assert.Equal(batchCount, _eventQueue.GetQueueCount());
+                Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
                 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
                 var sw = Stopwatch.StartNew();
@@ -153,7 +153,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 sw.Stop();
                 Trace.WriteLine(sw.Elapsed);
 
-                Assert.Equal(0, _eventQueue.GetQueueCount());
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync().AnyContext()).Enqueued);
                 Assert.Equal(batchSize * batchCount, await EventCountAsync().AnyContext());
 
                 bool success = countdown.Wait(5000);

@@ -28,17 +28,17 @@ namespace Exceptionless.Api.Tests.Repositories {
             var organization = new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id };
             Assert.Null(organization.Id);
 
-            _repository.Add(organization);
+            await _repository.AddAsync(organization).AnyContext();
             await _client.RefreshAsync().AnyContext();
             Assert.NotNull(organization.Id);
             
-            organization = _repository.GetById(organization.Id);
+            organization = await _repository.GetByIdAsync(organization.Id).AnyContext();
             Assert.NotNull(organization);
 
             organization.Name = "New organization";
-            _repository.Save(organization);
+            await _repository.SaveAsync(organization).AnyContext();
 
-            _repository.Remove(organization.Id);
+            await _repository.RemoveAsync(organization.Id).AnyContext();
         }
 
         [Fact]
@@ -48,30 +48,30 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _client.RefreshAsync().AnyContext();
             Assert.Equal(0, await _repository.CountAsync().AnyContext());
 
-            _repository.Add(new[] {
+            await _repository.AddAsync(new[] {
                 new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 0 }, 
                 new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 1 }, 
                 new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 2 }
-            });
+            }).AnyContext();
 
             await _client.RefreshAsync().AnyContext();
             Assert.Equal(3, await _repository.CountAsync().AnyContext());
 
-            var organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(1).WithLimit(1));
+            var organizations = await _repository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithPage(1).WithLimit(1)).AnyContext();
             Assert.NotNull(organizations);
             Assert.Equal(1, organizations.Documents.Count);
 
-            var organizations2 = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(2).WithLimit(1));
+            var organizations2 = await _repository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithPage(2).WithLimit(1)).AnyContext();
             Assert.NotNull(organizations);
             Assert.Equal(1, organizations.Documents.Count);
 
             Assert.NotEqual(organizations.Documents.First(), organizations2.Documents.First());
            
-            organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions());
+            organizations = await _repository.GetByRetentionDaysEnabledAsync(new PagingOptions()).AnyContext();
             Assert.NotNull(organizations);
             Assert.Equal(2, organizations.Total);
 
-            _repository.Remove(organizations.Documents);
+            await _repository.RemoveAsync(organizations.Documents).AnyContext();
             await _client.RefreshAsync().AnyContext();
 
             Assert.Equal(1, await _repository.CountAsync().AnyContext());
@@ -88,13 +88,13 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Null(organization.Id);
 
             Assert.Equal(0, cache.Count);
-            _repository.Add(organization, true);
+            await _repository.AddAsync(organization, true).AnyContext();
             Assert.NotNull(organization.Id);
             Assert.Equal(1, cache.Count);
 
             await cache.RemoveAllAsync().AnyContext();
             Assert.Equal(0, cache.Count);
-            _repository.GetById(organization.Id, true);
+            await _repository.GetByIdAsync(organization.Id, true).AnyContext();
             Assert.NotNull(organization.Id);
             Assert.Equal(1, cache.Count);
 
@@ -113,33 +113,33 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(messagePublisher);
             messagePublisher.Subscribe<PlanOverage>(message => messages.Add(message));
 
-            var o = _repository.Add(new Organization {
+            var o = await _repository.AddAsync(new Organization {
                 Name = "Test",
                 MaxEventsPerMonth = 750,
                 PlanId = BillingManager.FreePlan.Id
-            });
+            }).AnyContext();
 
-            Assert.False(_repository.IncrementUsage(o.Id, false, 4));
+            Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 4).AnyContext());
             Assert.Equal(0, messages.Count);
             Assert.Equal(4, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id)).AnyContext());
             Assert.Equal(4, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id)).AnyContext());
             Assert.Equal(0, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id)).AnyContext());
             Assert.Equal(0, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id)).AnyContext());
 
-            Assert.True(_repository.IncrementUsage(o.Id, false, 3));
+            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 3).AnyContext());
             Assert.Equal(1, messages.Count);
             Assert.Equal(7, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id)).AnyContext());
             Assert.Equal(7, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id)).AnyContext());
             Assert.Equal(1, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id)).AnyContext());
             Assert.Equal(1, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id)).AnyContext());
 
-            o = _repository.Add(new Organization {
+            o = await _repository.AddAsync(new Organization {
                 Name = "Test",
                 MaxEventsPerMonth = 750,
                 PlanId = BillingManager.FreePlan.Id
-            });
+            }).AnyContext();
 
-            Assert.True(_repository.IncrementUsage(o.Id, false, 751));
+            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 751).AnyContext());
             //Assert.Equal(2, messages.Count);
             Assert.Equal(751, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id)).AnyContext());
             Assert.Equal(751, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id)).AnyContext());

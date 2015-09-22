@@ -16,7 +16,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         private readonly EventParserPluginManager _eventParserPluginManager = IoC.GetInstance<EventParserPluginManager>();
 
         [Theory]
-        [PropertyData("Errors")]
+        [MemberData("Errors")]
         public void ParseErrors(string errorFilePath) {
             var json = File.ReadAllText(errorFilePath);
             var ctx = new EventUpgraderContext(json);

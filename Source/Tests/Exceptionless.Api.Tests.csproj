@@ -172,7 +172,6 @@
     <Compile Include="Miscellaneous\EfficientPagingTests.cs" />
     <Compile Include="Jobs\JobTests.cs" />
     <Compile Include="Miscellaneous\SystemHealthCheckerTests.cs" />
-    <Compile Include="Miscellaneous\RunTests.cs" />
     <Compile Include="Pipeline\EventPipelineTests.cs" />
     <Compile Include="Plugins\EventUpgraderTests.cs" />
     <Compile Include="Plugins\GeoTests.cs" />

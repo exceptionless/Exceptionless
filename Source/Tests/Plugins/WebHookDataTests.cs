@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using ApprovalTests.Reporters;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
@@ -18,10 +20,10 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Theory]
         [MemberData("WebHookData")]
-        public void CreateFromEvent(Version version, bool expectData) {
+        public async Task CreateFromEvent(Version version, bool expectData) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
-            var data = _webHookDataPluginManager.CreateFromEvent(GetWebHookDataContext(version));
+            var data = await _webHookDataPluginManager.CreateFromEventAsync(GetWebHookDataContext(version)).AnyContext();
             if (expectData) {
                 string filePath = $@"..\..\Plugins\WebHookData\v{version}.event.expected.json";
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
@@ -32,10 +34,10 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Theory]
         [MemberData("WebHookData")]
-        public void CanCreateFromStack(Version version, bool expectData) {
+        public async Task CanCreateFromStack(Version version, bool expectData) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
-            var data = _webHookDataPluginManager.CreateFromStack(GetWebHookDataContext(version));
+            var data = await _webHookDataPluginManager.CreateFromStackAsync(GetWebHookDataContext(version)).AnyContext();
             if (expectData) {
                 string filePath = $@"..\..\Plugins\WebHookData\v{version}.stack.expected.json";
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
