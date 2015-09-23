@@ -4,32 +4,34 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
+using Foundatio.Jobs;
+using Foundatio.Queues;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(30)]
     public class CheckForRegressionAction : EventPipelineActionBase {
         private readonly IStackRepository _stackRepository;
-        private readonly IEventRepository _eventRepository;
+        private readonly IQueue<WorkItemData> _workItemQueue;
 
-        public CheckForRegressionAction(IStackRepository stackRepository, IEventRepository eventRepository) {
+        public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue) {
             _stackRepository = stackRepository;
-            _eventRepository = eventRepository;
+            _workItemQueue = workItemQueue;
         }
 
         protected override bool ContinueOnError => true;
 
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
-            var stacks = contexts.Where(c => c.Stack != null && c.Stack.DateFixed.HasValue && c.Stack.DateFixed.Value < c.Event.Date.UtcDateTime).GroupBy(c => c.Event.StackId);
+            var stacks = contexts.Where(c => c.Stack?.DateFixed != null && c.Stack.DateFixed.Value < c.Event.Date.UtcDateTime).GroupBy(c => c.Event.StackId);
             foreach (var stackGroup in stacks) {
                 try {
                     var context = stackGroup.First();
                     Log.Trace().Message("Marking stack and events as regression.").Write();
                     await _stackRepository.MarkAsRegressedAsync(context.Stack.Id).AnyContext();
-                    await _eventRepository.MarkAsRegressedByStackAsync(context.Event.OrganizationId, context.Stack.Id).AnyContext();
-
+                    await _workItemQueue.EnqueueAsync(new StackWorkItem { OrganizationId = context.Event.OrganizationId, StackId = context.Stack.Id, UpdateIsFixed = true, IsFixed = false }).AnyContext();
                     await _stackRepository.InvalidateCacheAsync(context.Event.ProjectId, context.Event.StackId, context.SignatureHash).AnyContext();
 
                     bool isFirstEvent = true;

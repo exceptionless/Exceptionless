@@ -6,25 +6,20 @@ using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Foundatio.Jobs;
-using Foundatio.Utility;
 using Nest;
 using Newtonsoft.Json.Linq;
 using NLog.Fluent;
 
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
-    public class ReindexWorkItemHandler : IWorkItemHandler {
+    public class ReindexWorkItemHandler : WorkItemHandlerBase {
         private readonly IElasticClient _client;
 
         public ReindexWorkItemHandler(IElasticClient client) {
             _client = client;
         }
-
-        public Task<IDisposable> GetWorkItemLockAsync(WorkItemContext context, CancellationToken cancellationToken) {
-            return Task.FromResult(Disposable.Empty);
-        }
-
-        public async Task HandleItemAsync(WorkItemContext context, CancellationToken cancellationToken) {
+        
+        public override async Task HandleItemAsync(WorkItemContext context, CancellationToken cancellationToken = default(CancellationToken)) {
             var workItem = context.GetData<ReindexWorkItem>();
 
             Log.Info().Message("Received reindex work item for new index {0}", workItem.NewIndex).Write();
@@ -108,11 +103,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 Completed = completed
             };
         }
-
-        private int CalculateProgress(long total, long completed, int startProgress = 0, int endProgress = 100) {
-            return startProgress + (int)((100 * (double)completed / total) * (((double)endProgress - startProgress) / 100));
-        }
-
+        
         private class ReindexResult {
             public long Total { get; set; }
             public long Completed { get; set; }

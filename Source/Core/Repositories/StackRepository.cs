@@ -21,7 +21,6 @@ namespace Exceptionless.Core.Repositories {
             : base(elasticClient, index, validator, cacheClient, messagePublisher) {
             _eventRepository = eventRepository;
             DocumentChanging += OnDocumentChangingAsync;
-            DocumentChanged += OnDocumentChangedAsync;
         }
 
         private async Task OnDocumentChangingAsync(object sender, DocumentChangeEventArgs<Stack> args) {
@@ -31,20 +30,6 @@ namespace Exceptionless.Core.Repositories {
             foreach (Stack document in args.Documents) {
                 if (await _eventRepository.GetCountByStackIdAsync(document.Id).AnyContext() > 0)
                     throw new ApplicationException($"Stack \"{document.Id}\" can't be deleted because it has events associated to it.");
-            }
-        }
-
-        private async Task OnDocumentChangedAsync(object sender, DocumentChangeEventArgs<Stack> args) {
-            if (args.ChangeType != ChangeType.Saved)
-                return;
-
-            foreach (var original in args.OriginalDocuments) {
-                var updated = args.Documents.First(d => d.Id == original.Id);
-                if (original.DateFixed != updated.DateFixed)
-                    await _eventRepository.UpdateFixedByStackAsync(updated.OrganizationId, updated.Id, updated.DateFixed.HasValue).AnyContext();
-
-                if (original.IsHidden != updated.IsHidden)
-                    await _eventRepository.UpdateHiddenByStackAsync(updated.OrganizationId, updated.Id, updated.IsHidden).AnyContext();
             }
         }
 

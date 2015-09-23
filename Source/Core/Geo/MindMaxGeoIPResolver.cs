@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Geo {
 
             try {
                 var city = database.City(ip);
-                if (city != null && city.Location != null)
+                if (city?.Location != null)
                     location = new Location { Latitude = city.Location.Latitude, Longitude = city.Location.Longitude };
 
                 await _cache.SetAsync(ip, location).AnyContext();

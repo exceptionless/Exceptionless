@@ -43,14 +43,14 @@ namespace Exceptionless.Api.Controllers {
             return Created(new Uri(GetEntityLink(model.Id)), await MapAsync<TViewModel>(model, true));
         }
 
-        protected async Task<IHttpActionResult> UpdateModelAsync(string id, Func<TModel, TModel> modelUpdateFunc) {
+        protected async Task<IHttpActionResult> UpdateModelAsync(string id, Func<TModel, Task<TModel>> modelUpdateFunc) {
             TModel model = await GetModelAsync(id);
             if (model == null)
                 return NotFound();
 
             if (modelUpdateFunc != null)
-                model = modelUpdateFunc(model);
-
+                model = await modelUpdateFunc(model);
+            
             await _repository.SaveAsync(model);
             await AfterUpdateAsync(model);
 
@@ -60,13 +60,13 @@ namespace Exceptionless.Api.Controllers {
             return Ok(await MapAsync<TViewModel>(model, true));
         }
 
-        protected async Task<IHttpActionResult> UpdateModelsAsync(string[] ids, Func<TModel, TModel> modelUpdateFunc) {
+        protected async Task<IHttpActionResult> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc) {
             var models = await GetModelsAsync(ids);
             if (models == null || models.Count == 0)
                 return NotFound();
 
             if (modelUpdateFunc != null)
-                models.ForEach(m => modelUpdateFunc(m));
+                models.ForEach(async m => await modelUpdateFunc(m));
 
             await _repository.SaveAsync(models);
             models.ForEach(async m => await AfterUpdateAsync(m));
@@ -187,17 +187,19 @@ namespace Exceptionless.Api.Controllers {
             if (items.Count == 0)
                 return results.Failure.Count == 1 ? Permission(results.Failure.First()) : BadRequest(results);
 
+            IEnumerable<string> workIds;
             try {
-                await DeleteModelsAsync(items);
+                workIds = await DeleteModelsAsync(items) ?? new List<string>();
             } catch (Exception ex) {
                 var loggedInUser = await GetExceptionlessUserAsync();
                 Log.Error().Exception(ex).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
-
+            
             if (results.Failure.Count == 0)
-                return StatusCode(HttpStatusCode.NoContent);
-
+                return WorkInProgress(workIds);
+            
+            results.Workers.AddRange(workIds);
             results.Success.AddRange(items.Select(i => i.Id));
             return BadRequest(results);
         }
@@ -210,8 +212,9 @@ namespace Exceptionless.Api.Controllers {
             return PermissionResult.Allow;
         }
 
-        protected virtual Task DeleteModelsAsync(ICollection<TModel> values) {
-            return _repository.RemoveAsync(values);
+        protected virtual async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<TModel> values) {
+            await _repository.RemoveAsync(values);
+            return new List<string>();
         }
 
         protected override async Task CreateMapsAsync() {

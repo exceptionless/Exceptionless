@@ -6,7 +6,6 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
     public class DataHelper {
@@ -14,8 +13,6 @@ namespace Exceptionless.Core.Utility {
         private readonly IProjectRepository _projectRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly IUserRepository _userRepository;
-        private readonly IEventRepository _eventRepository;
-        private readonly IStackRepository _stackRepository;
 
         public const string TEST_USER_EMAIL = "test@exceptionless.io";
         public const string TEST_USER_PASSWORD = "tester";
@@ -26,58 +23,11 @@ namespace Exceptionless.Core.Utility {
         public const string INTERNAL_API_KEY = "Bx7JgglstPG544R34Tw9T7RlCed3OIwtYXVeyhT2";
         public const string INTERNAL_PROJECT_ID = "54b56e480ef9605a88a13153";
 
-        public DataHelper(IOrganizationRepository organizationRepository,
-            IProjectRepository projectRepository,
-            IUserRepository userRepository,
-            IEventRepository eventRepository,
-            IStackRepository stackRepository,
-            ITokenRepository tokenRepository) {
+        public DataHelper(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, ITokenRepository tokenRepository) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
-            _eventRepository = eventRepository;
-            _stackRepository = stackRepository;
             _tokenRepository = tokenRepository;
-        }
-
-        public async Task ResetProjectDataAsync(string projectId) {
-            if (String.IsNullOrEmpty(projectId))
-                return;
-
-            var project = await _projectRepository.GetByIdAsync(projectId).AnyContext();
-            if (project == null)
-                return;
-
-            try {
-                await _eventRepository.RemoveAllByProjectIdsAsync(new [] { projectId }).AnyContext();
-                await _stackRepository.RemoveAllByProjectIdsAsync(new [] { projectId }).AnyContext();
-
-                await _projectRepository.SaveAsync(project).AnyContext();
-            } catch (Exception e) {
-                Log.Error().Project(projectId).Exception(e).Message("Error resetting project data.").Write();
-                throw;
-            }
-        }
-
-        public async Task ResetStackDataAsync(string stackId) {
-            if (String.IsNullOrEmpty(stackId))
-                return;
-
-            Stack stack = await _stackRepository.GetByIdAsync(stackId).AnyContext();
-            if (stack == null)
-                return;
-
-            try {
-                stack.TotalOccurrences = 0;
-                stack.LastOccurrence = DateTime.MinValue.ToUniversalTime();
-                stack.FirstOccurrence = DateTime.MinValue.ToUniversalTime();
-                await _stackRepository.SaveAsync(stack).AnyContext();
-
-                await _eventRepository.RemoveAllByStackIdsAsync(new[] { stackId }).AnyContext();
-            } catch (Exception e) {
-                Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Write();
-                throw;
-            }
         }
 
         public async Task<string> CreateDefaultOrganizationAndProjectAsync(User user) {

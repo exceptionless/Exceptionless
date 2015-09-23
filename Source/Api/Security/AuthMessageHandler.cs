@@ -26,7 +26,7 @@ namespace Exceptionless.Api.Security {
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             var authHeader = request.Headers.Authorization;
-            string scheme = authHeader != null ? authHeader.Scheme.ToLower() : null;
+            string scheme = authHeader?.Scheme.ToLower();
             string token = null;
             if (authHeader != null && (scheme == BearerScheme || scheme == TokenScheme)) {
                 token = authHeader.Parameter;
@@ -71,7 +71,6 @@ namespace Exceptionless.Api.Security {
                 queryToken = request.GetQueryString("apikey");
                 if (String.IsNullOrEmpty(token) && !String.IsNullOrEmpty(queryToken))
                     token = queryToken;
-
             }
 
             if (!String.IsNullOrEmpty(token)) {

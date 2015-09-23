@@ -16,25 +16,24 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.WorkItems;
+using Foundatio.Jobs;
+using Foundatio.Queues;
 using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
-        private readonly OrganizationRepository _organizationRepository;
-        private readonly ITokenRepository _tokenRepository;
-        private readonly IWebHookRepository _webHookRepository;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager; 
-        private readonly DataHelper _dataHelper;
         private readonly EventStats _stats;
 
-        public ProjectController(IProjectRepository projectRepository, OrganizationRepository organizationRepository, ITokenRepository tokenRepository, IWebHookRepository webHookRepository, BillingManager billingManager, DataHelper dataHelper, EventStats stats) : base(projectRepository) {
+        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, EventStats stats) : base(projectRepository) {
             _organizationRepository = organizationRepository;
-            _tokenRepository = tokenRepository;
-            _webHookRepository = webHookRepository;
+            _workItemQueue = workItemQueue;
             _billingManager = billingManager;
-            _dataHelper = dataHelper;
             _stats = stats;
         }
 
@@ -227,10 +226,12 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            // TODO: Implement a long running process queue where a task can be inserted and then monitor for progress.
-            await _dataHelper.ResetProjectDataAsync(id);
-
-            return Ok();
+            string workItemId = await _workItemQueue.EnqueueAsync(new RemoveProjectWorkItem {
+                ProjectId = project.Id,
+                Reset = true
+            });
+            
+            return WorkInProgress(new [] { workItemId });
         }
 
         [HttpGet]
@@ -463,14 +464,16 @@ namespace Exceptionless.Api.Controllers {
             return await base.CanUpdateAsync(original, changes);
         }
 
-        protected override async Task DeleteModelsAsync(ICollection<Project> projects) {
+        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Project> projects) {
+            var workItems = new List<string>();
             foreach (var project in projects) {
-                await _tokenRepository.RemoveAllByProjectIdsAsync(new[] { project.Id });
-                await _webHookRepository.RemoveAllByProjectIdsAsync(new[] { project.Id });
-                await _dataHelper.ResetProjectDataAsync(project.Id);
+                workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveProjectWorkItem {
+                    ProjectId = project.Id,
+                    Reset = false
+                }));
             }
 
-            await base.DeleteModelsAsync(projects);
+            return workItems;
         }
 
         private async Task<ViewProject> PopulateProjectStatsAsync(ViewProject project) {

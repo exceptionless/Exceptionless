@@ -8,7 +8,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Messaging;
 using Nest;
-using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
@@ -216,11 +215,7 @@ namespace Exceptionless.Core.Repositories {
             var index = unionResults.FindIndex(t => t.Id == ev.Id);
             return index == unionResults.Count - 1 ? null : unionResults[index + 1].Id;
         }
-
-        public Task MarkAsRegressedByStackAsync(string organizationId, string stackId) {
-            return UpdateAllAsync(organizationId, new QueryOptions().WithStackId(stackId), new { is_fixed = false});
-        }
-
+        
         public override Task<FindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return GetByOrganizationIdsAsync(new[] { organizationId }, paging, useCache, expiresIn);
         }

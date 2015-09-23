@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
@@ -92,6 +90,10 @@ namespace Exceptionless.Core {
 
             var workItemHandlers = new WorkItemHandlers();
             workItemHandlers.Register<ReindexWorkItem, ReindexWorkItemHandler>();
+            workItemHandlers.Register<RemoveOrganizationWorkItem, RemoveOrganizationWorkItemHandler>();
+            workItemHandlers.Register<RemoveProjectWorkItem, RemoveProjectWorkItemHandler>();
+            workItemHandlers.Register<StackWorkItem, StackWorkItemHandler>();
+            workItemHandlers.Register<ThrottleBotsWorkItem, ThrottleBotsWorkItemHandler>();
             container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);
             container.RegisterSingleton<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(behaviors: container.GetAllInstances<IQueueBehavior<WorkItemData>>(), workItemTimeout: TimeSpan.FromHours(1)));
             

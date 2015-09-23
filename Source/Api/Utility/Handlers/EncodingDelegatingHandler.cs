@@ -7,7 +7,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Api.Utility {
     public class EncodingDelegatingHandler : DelegatingHandler {

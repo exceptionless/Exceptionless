@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Metrics;

@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.Metadata;
-using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Api.Utility {
     public class NakedBodyParameterBinding : HttpParameterBinding {

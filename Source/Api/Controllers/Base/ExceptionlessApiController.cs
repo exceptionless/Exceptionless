@@ -155,6 +155,10 @@ namespace Exceptionless.Api.Controllers {
             return new StatusCodeActionResult(statusCode, Request, message, reason);
         }
 
+        protected IHttpActionResult WorkInProgress(IEnumerable<string> workers) {
+            return new NegotiatedContentResult<WorkInProgressResult>(HttpStatusCode.Accepted, new WorkInProgressResult(workers), this);
+        }
+
         protected IHttpActionResult BadRequest(ModelActionResults results) {
             return new NegotiatedContentResult<ModelActionResults>(HttpStatusCode.BadRequest, results, this);
         }

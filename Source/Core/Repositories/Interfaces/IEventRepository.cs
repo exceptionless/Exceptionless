@@ -14,7 +14,6 @@ namespace Exceptionless.Core.Repositories {
         Task<string> GetPreviousEventIdAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
         Task<string> GetNextEventIdAsync(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
         Task<string> GetNextEventIdAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
-        Task MarkAsRegressedByStackAsync(string organizationId, string stackId);
         Task UpdateFixedByStackAsync(string organizationId, string stackId, bool value);
         Task UpdateHiddenByStackAsync(string organizationId, string stackId, bool value);
         Task RemoveOldestEventsAsync(string stackId, int maxEventsPerStack);

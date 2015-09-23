@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace Exceptionless.Api.Controllers {
-    public class ModelActionResults {
+    public class ModelActionResults: WorkInProgressResult {
         public ModelActionResults() {
             Success = new List<string>();
             Failure = new List<PermissionResult>();

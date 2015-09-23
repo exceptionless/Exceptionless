@@ -17,6 +17,8 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models.Stats;
+using Exceptionless.Core.Models.WorkItems;
+using Foundatio.Jobs;
 using Foundatio.Queues;
 using Newtonsoft.Json.Linq;
 using NLog.Fluent;
@@ -28,7 +30,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly IEventRepository _eventRepository;
+        private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
@@ -37,14 +39,14 @@ namespace Exceptionless.Api.Controllers {
         private readonly FormattingPluginManager _formattingPluginManager;
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
-            IProjectRepository projectRepository, IEventRepository eventRepository, IWebHookRepository webHookRepository, 
+            IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, 
             WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, 
             EventStats eventStats, BillingManager billingManager,
             FormattingPluginManager formattingPluginManager) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
-            _eventRepository = eventRepository;
+            _workItemQueue = workItemQueue;
             _webHookRepository = webHookRepository;
             _webHookDataPluginManager = webHookDataPluginManager;
             _webHookNotificationQueue = webHookNotificationQueue;
@@ -85,18 +87,28 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             stacks = stacks.Where(s => !s.DateFixed.HasValue).ToList();
-            if (stacks.Count > 0) {
-                foreach (var stack in stacks) {
-                    // TODO: Implement Fixed in version.
-                    stack.DateFixed = DateTime.UtcNow;
-                    //stack.FixedInVersion = "GET CURRENT VERSION FROM ELASTIC SEARCH";
-                    stack.IsRegressed = false;
-                }
+            if (stacks.Count <= 0)
+                return Ok();
 
-                await _stackRepository.SaveAsync(stacks);
+            foreach (var stack in stacks) {
+                // TODO: Implement Fixed in version.
+                stack.DateFixed = DateTime.UtcNow;
+                //stack.FixedInVersion = "GET CURRENT VERSION FROM ELASTIC SEARCH";
+                stack.IsRegressed = false;
             }
 
-            return Ok();
+            await _stackRepository.SaveAsync(stacks);
+
+            var workIds = new List<string>();
+            foreach (var stack in stacks)
+                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                    OrganizationId = stack.OrganizationId,
+                    StackId = stack.Id,
+                    UpdateIsFixed = true,
+                    IsFixed = true
+                }));
+            
+            return WorkInProgress(workIds);
         }
 
         /// <summary>
@@ -313,16 +325,26 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             stacks = stacks.Where(s => s.DateFixed.HasValue).ToList();
-            if (stacks.Count > 0) {
-                foreach (var stack in stacks) {
-                    stack.DateFixed = null;
-                    stack.IsRegressed = false;
-                }
+            if (stacks.Count <= 0)
+                return StatusCode(HttpStatusCode.NoContent);
 
-                await _stackRepository.SaveAsync(stacks);
+            foreach (var stack in stacks) {
+                stack.DateFixed = null;
+                stack.IsRegressed = false;
             }
 
-            return StatusCode(HttpStatusCode.NoContent);
+            await _stackRepository.SaveAsync(stacks);
+
+            var workIds = new List<string>();
+            foreach (var stack in stacks)
+                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                    OrganizationId = stack.OrganizationId,
+                    StackId = stack.Id,
+                    UpdateIsFixed = true,
+                    IsFixed = false
+                }));
+            
+            return WorkInProgress(workIds);
         }
 
         /// <summary>
@@ -338,14 +360,24 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             stacks = stacks.Where(s => !s.IsHidden).ToList();
-            if (stacks.Count > 0) {
-                foreach (var stack in stacks)
-                    stack.IsHidden = true;
+            if (stacks.Count <= 0)
+                return Ok();
 
-                await _stackRepository.SaveAsync(stacks);
-            }
+            foreach (var stack in stacks)
+                stack.IsHidden = true;
 
-            return Ok();
+            await _stackRepository.SaveAsync(stacks);
+
+            var workIds = new List<string>();
+            foreach (var stack in stacks)
+                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                    OrganizationId = stack.OrganizationId,
+                    StackId = stack.Id,
+                    UpdateIsHidden = true,
+                    IsHidden = true
+                }));
+            
+            return WorkInProgress(workIds);
         }
 
         /// <summary>
@@ -362,14 +394,24 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             stacks = stacks.Where(s => s.IsHidden).ToList();
-            if (stacks.Count > 0) {
-                foreach (var stack in stacks)
-                    stack.IsHidden = false;
+            if (stacks.Count <= 0)
+                return StatusCode(HttpStatusCode.NoContent);
 
-                await _stackRepository.SaveAsync(stacks);
-            }
+            foreach (var stack in stacks)
+                stack.IsHidden = false;
 
-            return StatusCode(HttpStatusCode.NoContent);
+            await _stackRepository.SaveAsync(stacks);
+
+            var workIds = new List<string>();
+            foreach (var stack in stacks)
+                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                    OrganizationId = stack.OrganizationId,
+                    StackId = stack.Id,
+                    UpdateIsHidden = true,
+                    IsHidden = false
+                }));
+
+            return WorkInProgress(workIds);
         }
 
         /// <summary>
@@ -423,9 +465,16 @@ namespace Exceptionless.Api.Controllers {
             return base.DeleteAsync(ids.FromDelimitedString());
         }
 
-        protected override async Task DeleteModelsAsync(ICollection<Stack> values) {
-            await _eventRepository.RemoveAllByStackIdsAsync(values.Select(s => s.Id).ToArray());
-            await base.DeleteModelsAsync(values);
+        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Stack> stacks) {
+            var workItems = new List<string>();
+            foreach (var stack in stacks) {
+                workItems.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                    StackId = stack.Id,
+                    Delete = true
+                }));
+            }
+
+            return workItems;
         }
 
         /// <summary>

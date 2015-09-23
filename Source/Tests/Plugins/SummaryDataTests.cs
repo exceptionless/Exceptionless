@@ -9,7 +9,6 @@ using Exceptionless.Core.Models.Stats;
 using Exceptionless.Core.Plugins.Formatting;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Plugins {
     [UseReporter(typeof(HappyDiffReporter))]

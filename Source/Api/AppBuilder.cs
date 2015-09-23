@@ -88,7 +88,7 @@ namespace Exceptionless.Api {
             });
 
             app.CreatePerContext<AsyncLazy<User>>("User", ctx => Task.FromResult(new AsyncLazy<User>(async () => {
-                if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
+                if (ctx.Request.User?.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
                 string userId = ctx.Request.User.GetUserId();
@@ -100,7 +100,7 @@ namespace Exceptionless.Api {
             })));
 
             app.CreatePerContext<AsyncLazy<Project>>("DefaultProject", ctx => Task.FromResult(new AsyncLazy<Project>(async () => {
-                if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
+                if (ctx.Request.User?.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
                 // TODO: Use project id from url. E.G., /projects/{projectId:objectid}/events

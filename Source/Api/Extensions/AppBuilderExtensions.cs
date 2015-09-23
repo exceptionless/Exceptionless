@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
 using Microsoft.Owin;
 using Owin;
 

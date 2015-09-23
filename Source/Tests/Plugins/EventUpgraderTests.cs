@@ -7,7 +7,6 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Xunit;
-using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Plugins {
     [UseReporter(typeof(HappyDiffReporter))]

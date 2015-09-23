@@ -166,7 +166,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             _client.Refresh();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, await _repository.CountAsync().AnyContext());
             
-            await _repository.MarkAsRegressedByStackAsync(TestConstants.OrganizationId, TestConstants.StackId2).AnyContext();
+            await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.StackId2, false).AnyContext();
 
             _client.Refresh();
             var events = await _repository.GetByStackIdAsync(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE)).AnyContext();

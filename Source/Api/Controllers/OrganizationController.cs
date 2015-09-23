@@ -18,10 +18,13 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Foundatio.Caching;
+using Foundatio.Jobs;
 using Foundatio.Messaging;
+using Foundatio.Queues;
 using NLog.Fluent;
 using Stripe;
 #pragma warning disable 1998
@@ -33,22 +36,18 @@ namespace Exceptionless.Api.Controllers {
         private readonly ICacheClient _cacheClient;
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly ITokenRepository _tokenRepository;
-        private readonly IWebHookRepository _webHookRepository;
+        private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
-        private readonly ProjectController _projectController;
         private readonly IMailer _mailer;
         private readonly IMessagePublisher _messagePublisher;
         private readonly EventStats _stats;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IUserRepository userRepository, IProjectRepository projectRepository, ITokenRepository tokenRepository, IWebHookRepository webHookRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats) : base(organizationRepository) {
+        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats) : base(organizationRepository) {
             _cacheClient = cacheClient;
             _userRepository = userRepository;
             _projectRepository = projectRepository;
-            _tokenRepository = tokenRepository;
-            _webHookRepository = webHookRepository;
+            _workItemQueue = workItemQueue;
             _billingManager = billingManager;
-            _projectController = projectController;
             _mailer = mailer;
             _messagePublisher = messagePublisher;
             _stats = stats;
@@ -669,51 +668,20 @@ namespace Exceptionless.Api.Controllers {
             return await base.CanDeleteAsync(value);
         }
 
-        protected override async Task DeleteModelsAsync(ICollection<Organization> organizations) {
+        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
             var currentUser = await GetExceptionlessUserAsync();
 
+            var workItems = new List<string>();
             foreach (var organization in organizations) {
                 Log.Info().Message("User {0} deleting organization {1}.", currentUser.Id, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-
-                if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
-                    Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-
-                    var subscriptionService = new StripeSubscriptionService(Settings.Current.StripeApiKey);
-                    var subs = subscriptionService.List(organization.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
-                    foreach (var sub in subs)
-                        subscriptionService.Cancel(organization.StripeCustomerId, sub.Id);
-                }
-
-                var users = await _userRepository.GetByOrganizationIdAsync(organization.Id);
-                foreach (User user in users.Documents) {
-                    // delete the user if they are not associated to any other organizations and they are not the current user
-                    if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id)) && !String.Equals(user.Id, currentUser.Id)) {
-                        Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                        await _userRepository.RemoveAsync(user.Id);
-                    } else {
-                        Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                        user.OrganizationIds.Remove(organization.Id);
-                        await _userRepository.SaveAsync(user);
-                    }
-                }
-
-                await _tokenRepository.RemoveAllByOrganizationIdsAsync(new [] { organization.Id });
-                await _webHookRepository.RemoveAllByOrganizationIdsAsync(new[] { organization.Id });
-
-                var projects = await _projectRepository.GetByOrganizationIdAsync(organization.Id);
-                if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Total > 0) {
-                    foreach (Project project in projects.Documents) {
-                        Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                        await _projectController.ResetDataAsync(project.Id);
-                    }
-
-                    Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                    await _projectRepository.RemoveAsync(projects.Documents);
-                }
-
-                Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                await base.DeleteModelsAsync(new[] { organization });
+                workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveOrganizationWorkItem {
+                    OrganizationId = organization.Id,
+                    CurrentUserId = currentUser.Id,
+                    IsGlobalAdmin = User.IsInRole(AuthorizationRoles.GlobalAdmin)
+                }));
             }
+
+            return workItems;
         }
 
         protected override async Task CreateMapsAsync() {
