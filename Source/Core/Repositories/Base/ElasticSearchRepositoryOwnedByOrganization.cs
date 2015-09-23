@@ -44,8 +44,8 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public async Task RemoveAllByOrganizationIdsAsync(string[] organizationIds) {
-            await Task.Run(async () => await RemoveAllAsync(new QueryOptions().WithOrganizationIds(organizationIds)).AnyContext()).AnyContext();
+        public Task RemoveAllByOrganizationIdsAsync(string[] organizationIds) {
+            return RemoveAllAsync(new QueryOptions().WithOrganizationIds(organizationIds));
         }
 
         protected override async Task InvalidateCacheAsync(ICollection<T> documents, ICollection<T> originalDocuments) {

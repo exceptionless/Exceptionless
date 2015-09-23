@@ -192,6 +192,7 @@
     <Compile Include="Stats\StatsTests.cs" />
     <Compile Include="Utility\Approvals.cs" />
     <Compile Include="Utility\RandomEventGenerator.cs" />
+    <Compile Include="Utility\Run.cs" />
     <Compile Include="Utility\StackData.cs" />
     <Compile Include="Utility\EventData.cs" />
     <Compile Include="Utility\IoC.cs" />

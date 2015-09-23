@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Repositories {
                 && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(utcStartDate))
                 && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(utcEndDate));
 
-            return Task.Run(async () => await UpdateAllAsync(organizationId, new ElasticSearchOptions<PersistentEvent>().WithFilter(filter), new { is_hidden = true }).AnyContext());
+            return UpdateAllAsync(organizationId, new ElasticSearchOptions<PersistentEvent>().WithFilter(filter), new { is_hidden = true });
         }
         
         public Task<FindResults<PersistentEvent>> GetByFilterAsync(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {

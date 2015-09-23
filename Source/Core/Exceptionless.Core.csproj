@@ -234,7 +234,6 @@
     <Compile Include="Repositories\Configuration\Indexes\StackIndex.cs" />
     <Compile Include="Repositories\Options\ObjectMappingDescriptorExtensions.cs" />
     <Compile Include="Repositories\Options\PagingWithSortByOptions.cs" />
-    <Compile Include="Utility\Run.cs" />
     <Compile Include="Utility\SettingsBase.cs" />
     <Compile Include="Utility\SingletonBase.cs" />
     <Compile Include="Utility\LastReferenceIdManager.cs" />

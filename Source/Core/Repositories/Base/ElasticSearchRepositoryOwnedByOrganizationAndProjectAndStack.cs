@@ -21,8 +21,8 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public async Task RemoveAllByStackIdsAsync(string[] stackIds) {
-            await Task.Run(async () => await RemoveAllAsync(new QueryOptions().WithStackIds(stackIds)).AnyContext()).AnyContext();
+        public Task RemoveAllByStackIdsAsync(string[] stackIds) {
+            return RemoveAllAsync(new QueryOptions().WithStackIds(stackIds));
         }
 
         protected override async Task InvalidateCacheAsync(ICollection<T> documents, ICollection<T> originalDocuments) {

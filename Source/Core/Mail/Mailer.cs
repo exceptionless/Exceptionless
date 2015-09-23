@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Mail {
         }
 
         public Task SendPasswordResetAsync(User user) {
-            if (user == null || String.IsNullOrEmpty(user.PasswordResetToken))
+            if (String.IsNullOrEmpty(user?.PasswordResetToken))
                 return TaskHelper.Completed();
 
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {

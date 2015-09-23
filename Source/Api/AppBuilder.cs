@@ -137,7 +137,8 @@ namespace Exceptionless.Api {
             SetupSwagger(Config);
 
             Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
-            Task.Run(async () => await CreateSampleDataAsync(container));
+            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+                Task.Run(async () => await CreateSampleDataAsync(container));
 
             if (Settings.Current.RunJobsInProcess) {
                 Log.Warn().Message("Jobs running in process.").Write();
