@@ -40,9 +40,9 @@ namespace Exceptionless.Api.Hubs {
             // manage user organization group membership
             foreach (var connectionId in _userIdConnections.GetConnections(userMembershipChanged.UserId)) {
                 if (userMembershipChanged.ChangeType == ChangeType.Added)
-                    await Groups.Add(connectionId, userMembershipChanged.OrganizationId).AnyContext();
+                    await Groups.Add(connectionId, userMembershipChanged.OrganizationId);
                 else if (userMembershipChanged.ChangeType == ChangeType.Removed)
-                    await Groups.Remove(connectionId, userMembershipChanged.OrganizationId).AnyContext();
+                    await Groups.Remove(connectionId, userMembershipChanged.OrganizationId);
             }
 
             try {

@@ -50,7 +50,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("status")]
         [ResponseType(typeof(StatusResult))]
         public async Task<IHttpActionResult> Index() {
-            var result = await _healthChecker.CheckAllAsync().AnyContext();
+            var result = await _healthChecker.CheckAllAsync();
             if (!result.IsHealthy)
                 return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, result.Message, result.Message);
 
@@ -61,11 +61,11 @@ namespace Exceptionless.Api.Controllers {
         [Route("queue-stats")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public async Task<IHttpActionResult> QueueStatsAsync() {
-            var eventQueueStats = await _eventQueue.GetQueueStatsAsync().AnyContext();
-            var mailQueueStats = await _mailQueue.GetQueueStatsAsync().AnyContext();
-            var userDescriptionQueueStats = await _userDescriptionQueue.GetQueueStatsAsync().AnyContext();
-            var notificationQueueStats = await _notificationQueue.GetQueueStatsAsync().AnyContext();
-            var webHooksQueueStats = await _webHooksQueue.GetQueueStatsAsync().AnyContext();
+            var eventQueueStats = await _eventQueue.GetQueueStatsAsync();
+            var mailQueueStats = await _mailQueue.GetQueueStatsAsync();
+            var userDescriptionQueueStats = await _userDescriptionQueue.GetQueueStatsAsync();
+            var notificationQueueStats = await _notificationQueue.GetQueueStatsAsync();
+            var webHooksQueueStats = await _webHooksQueue.GetQueueStatsAsync();
 
             return Ok(new {
                 EventPosts = new {
@@ -112,7 +112,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public async Task<IHttpActionResult> PostReleaseNotificationAsync([NakedBody]string message = null, bool critical = false) {
             var notification = new ReleaseNotification { Critical = critical, Date = DateTimeOffset.UtcNow, Message = message };
-            await _messagePublisher.PublishAsync(notification).AnyContext();
+            await _messagePublisher.PublishAsync(notification);
             return Ok(notification);
         }
 
@@ -123,7 +123,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("notifications/system")]
         [ResponseType(typeof(SystemNotification))]
         public async Task<IHttpActionResult> GetSystemNotificationAsync() {
-            var notification = await _cacheClient.GetAsync<SystemNotification>("system-notification").AnyContext();
+            var notification = await _cacheClient.GetAsync<SystemNotification>("system-notification");
             if (notification == null)
                 return Ok();
 
@@ -138,8 +138,8 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var notification = new SystemNotification { Date = DateTimeOffset.UtcNow, Message = message };
-            await _cacheClient.SetAsync("system-notification", notification).AnyContext();
-            await _messagePublisher.PublishAsync(notification).AnyContext();
+            await _cacheClient.SetAsync("system-notification", notification);
+            await _messagePublisher.PublishAsync(notification);
 
             return Ok(notification);
         }
@@ -148,8 +148,8 @@ namespace Exceptionless.Api.Controllers {
         [Route("notifications/system")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public async Task<IHttpActionResult> RemoveSystemNotificationAsync() {
-            await _cacheClient.RemoveAsync("system-notification").AnyContext();
-            await _messagePublisher.PublishAsync(new SystemNotification { Date = DateTimeOffset.UtcNow }).AnyContext();
+            await _cacheClient.RemoveAsync("system-notification");
+            await _messagePublisher.PublishAsync(new SystemNotification { Date = DateTimeOffset.UtcNow });
             return Ok();
         }
     }

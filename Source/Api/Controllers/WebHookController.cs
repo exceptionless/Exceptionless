@@ -41,14 +41,14 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            var project = await _projectRepository.GetByIdAsync(projectId).AnyContext();
-            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId).AnyContext())
+            var project = await _projectRepository.GetByIdAsync(projectId);
+            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId))
                 return NotFound();
 
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = (await _repository.GetByProjectIdAsync(projectId, options).AnyContext()).Documents;
+            var results = (await _repository.GetByProjectIdAsync(projectId, options)).Documents;
             return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
@@ -113,9 +113,9 @@ namespace Exceptionless.App.Controllers.API {
             if (User.GetProjectId() != null)
                 webHook.ProjectId = User.GetProjectId();
             else
-                webHook.OrganizationId = await Request.GetDefaultOrganizationIdAsync().AnyContext();
+                webHook.OrganizationId = await Request.GetDefaultOrganizationIdAsync();
 
-            return await PostAsync(webHook).AnyContext();
+            return await PostAsync(webHook);
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace Exceptionless.App.Controllers.API {
             if (!targetUrl.Contains("zapier"))
                 return NotFound();
 
-            await _repository.RemoveByUrlAsync(targetUrl).AnyContext();
+            await _repository.RemoveByUrlAsync(targetUrl);
             return Ok();
         }
 
@@ -158,14 +158,14 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            var webHook = await _repository.GetByIdAsync(id, useCache).AnyContext();
+            var webHook = await _repository.GetByIdAsync(id, useCache);
             if (webHook == null)
                 return null;
 
-            if (!String.IsNullOrEmpty(webHook.OrganizationId) && !await IsInOrganizationAsync(webHook.OrganizationId).AnyContext())
+            if (!String.IsNullOrEmpty(webHook.OrganizationId) && !await IsInOrganizationAsync(webHook.OrganizationId))
                 return null;
 
-            if (!String.IsNullOrEmpty(webHook.ProjectId) && !await IsInProjectAsync(webHook.ProjectId).AnyContext())
+            if (!String.IsNullOrEmpty(webHook.ProjectId) && !await IsInProjectAsync(webHook.ProjectId))
                 return null;
 
             return webHook;
@@ -176,13 +176,13 @@ namespace Exceptionless.App.Controllers.API {
             if (ids == null || ids.Length == 0)
                 return results;
 
-            var webHooks = (await _repository.GetByIdsAsync(ids, useCache: useCache).AnyContext()).Documents;
+            var webHooks = (await _repository.GetByIdsAsync(ids, useCache: useCache)).Documents;
             if (webHooks == null)
                 return results;
 
             foreach (var webHook in webHooks) {
-                if ((!String.IsNullOrEmpty(webHook.OrganizationId) && await IsInOrganizationAsync(webHook.OrganizationId).AnyContext()) 
-                    || (!String.IsNullOrEmpty(webHook.ProjectId) && (await IsInProjectAsync(webHook.ProjectId).AnyContext())))
+                if ((!String.IsNullOrEmpty(webHook.OrganizationId) && await IsInOrganizationAsync(webHook.OrganizationId)) 
+                    || (!String.IsNullOrEmpty(webHook.ProjectId) && (await IsInProjectAsync(webHook.ProjectId))))
                     results.Add(webHook);
             }
 
@@ -196,19 +196,19 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(value.ProjectId) && String.IsNullOrEmpty(value.OrganizationId))
                 return PermissionResult.Deny;
 
-            if (!String.IsNullOrEmpty(value.OrganizationId) && !await IsInOrganizationAsync(value.OrganizationId).AnyContext())
+            if (!String.IsNullOrEmpty(value.OrganizationId) && !await IsInOrganizationAsync(value.OrganizationId))
                 return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
             Project project = null;
             if (!String.IsNullOrEmpty(value.ProjectId)) {
-                project = await _projectRepository.GetByIdAsync(value.ProjectId, true).AnyContext();
-                if (!await IsInProjectAsync(project).AnyContext())
+                project = await _projectRepository.GetByIdAsync(value.ProjectId, true);
+                if (!await IsInProjectAsync(project))
                     return PermissionResult.DenyWithMessage("Invalid project id specified.");
 
                 value.OrganizationId = project.OrganizationId;
             }
             
-            if (!await _billingManager.HasPremiumFeaturesAsync(project != null ? project.OrganizationId : value.OrganizationId).AnyContext())
+            if (!await _billingManager.HasPremiumFeaturesAsync(project != null ? project.OrganizationId : value.OrganizationId))
                 return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add integrations.");
 
             return PermissionResult.Allow;
@@ -222,10 +222,10 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override async Task<PermissionResult> CanDeleteAsync(WebHook value) {
-            if (!String.IsNullOrEmpty(value.ProjectId) && !await IsInProjectAsync(value.ProjectId).AnyContext())
+            if (!String.IsNullOrEmpty(value.ProjectId) && !await IsInProjectAsync(value.ProjectId))
                 return PermissionResult.DenyWithNotFound(value.Id);
 
-            if (!String.IsNullOrEmpty(value.OrganizationId) && !await IsInOrganizationAsync(value.OrganizationId).AnyContext())
+            if (!String.IsNullOrEmpty(value.OrganizationId) && !await IsInOrganizationAsync(value.OrganizationId))
                 return PermissionResult.DenyWithNotFound(value.Id);
 
             return PermissionResult.Allow;
@@ -235,7 +235,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return false;
 
-            return await IsInProjectAsync(await _projectRepository.GetByIdAsync(projectId, true).AnyContext());
+            return await IsInProjectAsync(await _projectRepository.GetByIdAsync(projectId, true));
         }
 
         private Task<bool> IsInProjectAsync(Project value) {

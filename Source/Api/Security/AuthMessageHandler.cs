@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Security {
                     else {
                         User user;
                         try {
-                            user = await _userRepository.GetByEmailAddressAsync(authInfo.Username).AnyContext();
+                            user = await _userRepository.GetByEmailAddressAsync(authInfo.Username);
                         } catch (Exception) {
                             return new HttpResponseMessage(HttpStatusCode.Unauthorized);
                         }
@@ -56,7 +56,7 @@ namespace Exceptionless.Api.Security {
                             return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
                         request.GetRequestContext().Principal = new ClaimsPrincipal(user.ToIdentity());
-                        return await base.SendAsync(request, cancellationToken).AnyContext();
+                        return await base.SendAsync(request, cancellationToken);
                     }
                 }
             } else {
@@ -75,12 +75,12 @@ namespace Exceptionless.Api.Security {
             }
 
             if (!String.IsNullOrEmpty(token)) {
-                IPrincipal principal = await _tokenManager.ValidateAsync(token).AnyContext();
+                IPrincipal principal = await _tokenManager.ValidateAsync(token);
                 if (principal != null)
                     request.GetRequestContext().Principal = principal;
             }
 
-            return await base.SendAsync(request, cancellationToken).AnyContext();
+            return await base.SendAsync(request, cancellationToken);
         }
     }
 }

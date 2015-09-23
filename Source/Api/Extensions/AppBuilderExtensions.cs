@@ -40,11 +40,11 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public override async Task Invoke(IOwinContext context) {
-            TResult instance = await _createCallback(context).AnyContext();
+            TResult instance = await _createCallback(context);
             try {
                 context.Set(_key, instance);
                 if (Next != null)
-                    await Next.Invoke(context).AnyContext();
+                    await Next.Invoke(context);
             } finally {
                 var disposable = instance as IDisposable;
                 disposable?.Dispose();

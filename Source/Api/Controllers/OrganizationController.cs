@@ -68,9 +68,9 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var organizations = await _repository.GetByIdsAsync(await GetAssociatedOrganizationIdsAsync().AnyContext(), options).AnyContext();
-            var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true).AnyContext()).ToList();
-            return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations).AnyContext(), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
+            var organizations = await _repository.GetByIdsAsync(await GetAssociatedOrganizationIdsAsync(), options);
+            var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
+            return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
         }
 
         [HttpGet]
@@ -82,9 +82,9 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var organizations = await _repository.GetByCriteriaAsync(criteria, options, sort, paid, suspended).AnyContext();
-            var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true).AnyContext()).ToList();
-            return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations).AnyContext(), options.HasMore, page, organizations.Total);
+            var organizations = await _repository.GetByCriteriaAsync(criteria, options, sort, paid, suspended);
+            var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
+            return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), options.HasMore, page, organizations.Total);
         }
 
         [HttpGet]
@@ -93,7 +93,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IHttpActionResult> PlanStatsAsync() {
-            return Ok(await _repository.GetBillingPlanStatsAsync().AnyContext());
+            return Ok(await _repository.GetBillingPlanStatsAsync());
         }
 
         /// <summary>
@@ -105,12 +105,12 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}", Name = "GetOrganizationById")]
         [ResponseType(typeof(ViewOrganization))]
         public override async Task<IHttpActionResult> GetByIdAsync(string id) {
-            var organization = await GetModelAsync(id).AnyContext();
+            var organization = await GetModelAsync(id);
             if (organization == null)
                 return NotFound();
 
-            var viewOrganization = await MapAsync<ViewOrganization>(organization, true).AnyContext();
-            return Ok(await PopulateOrganizationStatsAsync(viewOrganization).AnyContext());
+            var viewOrganization = await MapAsync<ViewOrganization>(organization, true);
+            return Ok(await PopulateOrganizationStatsAsync(viewOrganization));
         }
 
         /// <summary>
@@ -177,15 +177,15 @@ namespace Exceptionless.Api.Controllers {
                 var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
                 stripeInvoice = invoiceService.Get(id);
             } catch (Exception ex) {
-                var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+                var loggedInUser = await GetExceptionlessUserAsync();
                 Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
             }
 
             if (stripeInvoice == null || String.IsNullOrEmpty(stripeInvoice.CustomerId))
                 return NotFound();
 
-            var organization = await _repository.GetByStripeCustomerIdAsync(stripeInvoice.CustomerId).AnyContext();
-            if (organization == null || !await CanAccessOrganizationAsync(organization.Id).AnyContext())
+            var organization = await _repository.GetByStripeCustomerIdAsync(stripeInvoice.CustomerId);
+            if (organization == null || !await CanAccessOrganizationAsync(organization.Id))
                 return NotFound();
 
             var invoice = new Invoice {
@@ -239,7 +239,7 @@ namespace Exceptionless.Api.Controllers {
             if (!Settings.Current.EnableBilling)
                 return NotFound();
 
-            var organization = await GetModelAsync(id).AnyContext();
+            var organization = await GetModelAsync(id);
             if (organization == null)
                 return NotFound();
 
@@ -254,7 +254,7 @@ namespace Exceptionless.Api.Controllers {
 
             var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
             var invoiceOptions = new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
-            var invoices = (await MapCollectionAsync<InvoiceGridModel>(invoiceService.List(invoiceOptions), true).AnyContext()).ToList();
+            var invoices = (await MapCollectionAsync<InvoiceGridModel>(invoiceService.List(invoiceOptions), true)).ToList();
             return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
         }
 
@@ -270,7 +270,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/plans")]
         [ResponseType(typeof(List<BillingPlan>))]
         public async Task<IHttpActionResult> GetPlansAsync(string id) {
-            var organization = await GetModelAsync(id).AnyContext();
+            var organization = await GetModelAsync(id);
             if (organization == null)
                 return NotFound();
 
@@ -315,13 +315,13 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/change-plan")]
         [ResponseType(typeof(ChangePlanResult))]
         public async Task<IHttpActionResult> ChangePlanAsync(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null) {
-            if (String.IsNullOrEmpty(id) || !await CanAccessOrganizationAsync(id).AnyContext())
+            if (String.IsNullOrEmpty(id) || !await CanAccessOrganizationAsync(id))
                 return NotFound();
 
             if (!Settings.Current.EnableBilling)
                 return Ok(ChangePlanResult.FailWithMessage("Plans cannot be changed while billing is disabled."));
 
-            Organization organization = await _repository.GetByIdAsync(id).AnyContext();
+            Organization organization = await _repository.GetByIdAsync(id);
             if (organization == null)
                 return Ok(ChangePlanResult.FailWithMessage("Invalid OrganizationId."));
 
@@ -332,7 +332,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.Equals(organization.PlanId, plan.Id) && String.Equals(BillingManager.FreePlan.Id, plan.Id))
                 return Ok(ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan."));
 
-            var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+            var loggedInUser = await GetExceptionlessUserAsync();
 
             // Only see if they can downgrade a plan if the plans are different.
             if (!String.Equals(organization.PlanId, plan.Id)) {
@@ -407,8 +407,8 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 BillingManager.ApplyBillingPlan(organization, plan, loggedInUser);
-                await _repository.SaveAsync(organization).AnyContext();
-                await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id }).AnyContext();
+                await _repository.SaveAsync(organization);
+                await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
             } catch (Exception e) {
                 Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return Ok(ChangePlanResult.FailWithMessage(e.Message));
@@ -428,30 +428,30 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/users/{email:minlength(1)}")]
         [ResponseType(typeof(User))]
         public async Task<IHttpActionResult> AddUserAsync(string id, string email) {
-            if (String.IsNullOrEmpty(id) || !await CanAccessOrganizationAsync(id).AnyContext() || String.IsNullOrEmpty(email))
+            if (String.IsNullOrEmpty(id) || !await CanAccessOrganizationAsync(id) || String.IsNullOrEmpty(email))
                 return NotFound();
 
-            Organization organization = await GetModelAsync(id).AnyContext();
+            Organization organization = await GetModelAsync(id);
             if (organization == null)
                 return NotFound();
 
-            if (!await _billingManager.CanAddUserAsync(organization).AnyContext())
+            if (!await _billingManager.CanAddUserAsync(organization))
                 return PlanLimitReached("Please upgrade your plan to add an additional user.");
 
-            var currentUser = await GetExceptionlessUserAsync().AnyContext();
-            User user = await _userRepository.GetByEmailAddressAsync(email).AnyContext();
+            var currentUser = await GetExceptionlessUserAsync();
+            User user = await _userRepository.GetByEmailAddressAsync(email);
             if (user != null) {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
                     user.OrganizationIds.Add(organization.Id);
-                    await _userRepository.SaveAsync(user).AnyContext();
+                    await _userRepository.SaveAsync(user);
                     await _messagePublisher.PublishAsync(new UserMembershipChanged {
                         ChangeType = ChangeType.Added,
                         UserId = user.Id,
                         OrganizationId = organization.Id
-                    }).AnyContext();
+                    });
                 }
 
-                await _mailer.SendAddedToOrganizationAsync(currentUser, organization, user).AnyContext();
+                await _mailer.SendAddedToOrganizationAsync(currentUser, organization, user);
             } else {
                 Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
                 if (invite == null) {
@@ -461,10 +461,10 @@ namespace Exceptionless.Api.Controllers {
                         DateAdded = DateTime.UtcNow
                     };
                     organization.Invites.Add(invite);
-                    await _repository.SaveAsync(organization).AnyContext();
+                    await _repository.SaveAsync(organization);
                 }
 
-                await _mailer.SendInviteAsync(currentUser, organization, invite).AnyContext();
+                await _mailer.SendInviteAsync(currentUser, organization, invite);
             }
 
             return Ok(new User { EmailAddress = email });
@@ -480,43 +480,43 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
         public async Task<IHttpActionResult> RemoveUserAsync(string id, string email) {
-            if (String.IsNullOrEmpty(id) || !await CanAccessOrganizationAsync(id).AnyContext())
+            if (String.IsNullOrEmpty(id) || !await CanAccessOrganizationAsync(id))
                 return NotFound();
 
-            Organization organization = await _repository.GetByIdAsync(id).AnyContext();
+            Organization organization = await _repository.GetByIdAsync(id);
             if (organization == null)
                 return NotFound();
 
-            User user = await _userRepository.GetByEmailAddressAsync(email).AnyContext();
+            User user = await _userRepository.GetByEmailAddressAsync(email);
             if (user == null || !user.OrganizationIds.Contains(id)) {
                 Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
                 if (invite == null)
                     return Ok();
 
                 organization.Invites.Remove(invite);
-                await _repository.SaveAsync(organization).AnyContext();
+                await _repository.SaveAsync(organization);
             } else {
                 if (!user.OrganizationIds.Contains(organization.Id))
                     return BadRequest();
 
-                if ((await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext()).Total == 1)
+                if ((await _userRepository.GetByOrganizationIdAsync(organization.Id)).Total == 1)
                     return BadRequest("An organization must contain at least one user.");
 
-                List<Project> projects = (await _projectRepository.GetByOrganizationIdAsync(organization.Id).AnyContext()).Documents.Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
+                List<Project> projects = (await _projectRepository.GetByOrganizationIdAsync(organization.Id)).Documents.Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
                 if (projects.Count > 0) {
                     foreach (Project project in projects)
                         project.NotificationSettings.Remove(user.Id);
 
-                    await _projectRepository.SaveAsync(projects).AnyContext();
+                    await _projectRepository.SaveAsync(projects);
                 }
 
                 user.OrganizationIds.Remove(organization.Id);
-                await _userRepository.SaveAsync(user).AnyContext();
+                await _userRepository.SaveAsync(user);
                 await _messagePublisher.PublishAsync(new UserMembershipChanged {
                     ChangeType = ChangeType.Removed,
                     UserId = user.Id,
                     OrganizationId = organization.Id
-                }).AnyContext();
+                });
             }
 
             return Ok();
@@ -528,16 +528,16 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IHttpActionResult> SuspendAsync(string id, SuspensionCode code, string notes = null) {
-            var organization = await GetModelAsync(id, false).AnyContext();
+            var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
 
             organization.IsSuspended = true;
             organization.SuspensionDate = DateTime.Now;
-            organization.SuspendedByUserId = (await GetExceptionlessUserAsync().AnyContext()).Id;
+            organization.SuspendedByUserId = (await GetExceptionlessUserAsync()).Id;
             organization.SuspensionCode = code;
             organization.SuspensionNotes = notes;
-            await _repository.SaveAsync(organization).AnyContext();
+            await _repository.SaveAsync(organization);
 
             return Ok();
         }
@@ -548,7 +548,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IHttpActionResult> UnsuspendAsync(string id) {
-            var organization = await GetModelAsync(id, false).AnyContext();
+            var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
 
@@ -557,7 +557,7 @@ namespace Exceptionless.Api.Controllers {
             organization.SuspendedByUserId = null;
             organization.SuspensionCode = null;
             organization.SuspensionNotes = null;
-            await _repository.SaveAsync(organization).AnyContext();
+            await _repository.SaveAsync(organization);
 
             return Ok();
         }
@@ -572,12 +572,12 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
         public async Task<IHttpActionResult> PostDataAsync(string id, string key, string value) {
-            var organization = await GetModelAsync(id, false).AnyContext();
+            var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
 
             organization.Data[key] = value;
-            await _repository.SaveAsync(organization).AnyContext();
+            await _repository.SaveAsync(organization);
 
             return Ok();
         }
@@ -591,12 +591,12 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
         public async Task<IHttpActionResult> DeleteDataAsync(string id, string key) {
-            var organization = await GetModelAsync(id, false).AnyContext();
+            var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
 
             if (organization.Data.Remove(key))
-                await _repository.SaveAsync(organization).AnyContext();
+                await _repository.SaveAsync(organization);
 
             return Ok();
         }
@@ -610,67 +610,67 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("check-name/{*name:minlength(1)}")]
         public async Task<IHttpActionResult> IsNameAvailableAsync(string name) {
-            if (await IsOrganizationNameAvailableInternalAsync(name).AnyContext())
+            if (await IsOrganizationNameAvailableInternalAsync(name))
                 return StatusCode(HttpStatusCode.NoContent);
 
             return StatusCode(HttpStatusCode.Created);
         }
 
         private async Task<bool> IsOrganizationNameAvailableInternalAsync(string name) {
-            return !String.IsNullOrWhiteSpace(name) && !(await _repository.GetByIdsAsync(await GetAssociatedOrganizationIdsAsync().AnyContext()).AnyContext()).Documents.Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
+            return !String.IsNullOrWhiteSpace(name) && !(await _repository.GetByIdsAsync(await GetAssociatedOrganizationIdsAsync())).Documents.Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         protected override async Task<PermissionResult> CanAddAsync(Organization value) {
             if (String.IsNullOrEmpty(value.Name))
                 return PermissionResult.DenyWithMessage("Organization name is required.");
 
-            if (!await IsOrganizationNameAvailableInternalAsync(value.Name).AnyContext())
+            if (!await IsOrganizationNameAvailableInternalAsync(value.Name))
                 return PermissionResult.DenyWithMessage("A organization with this name already exists.");
 
-            if (!await _billingManager.CanAddOrganizationAsync(await GetExceptionlessUserAsync().AnyContext()).AnyContext())
+            if (!await _billingManager.CanAddOrganizationAsync(await GetExceptionlessUserAsync()))
                 return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add an additional organization.");
 
-            return await base.CanAddAsync(value).AnyContext();
+            return await base.CanAddAsync(value);
         }
 
         protected override async Task<Organization> AddModelAsync(Organization value) {
-            var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+            var loggedInUser = await GetExceptionlessUserAsync();
             BillingManager.ApplyBillingPlan(value, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, loggedInUser);
 
-            var organization = await base.AddModelAsync(value).AnyContext();
+            var organization = await base.AddModelAsync(value);
 
             loggedInUser.OrganizationIds.Add(organization.Id);
-            await _userRepository.SaveAsync(loggedInUser, true).AnyContext();
+            await _userRepository.SaveAsync(loggedInUser, true);
             await _messagePublisher.PublishAsync(new UserMembershipChanged {
                 UserId = loggedInUser.Id,
                 OrganizationId = organization.Id,
                 ChangeType = ChangeType.Added
-            }).AnyContext();
+            });
 
             return organization;
         }
 
         protected override async Task<PermissionResult> CanUpdateAsync(Organization original, Delta<NewOrganization> changes) {
             var changed = changes.GetEntity();
-            if (!await IsOrganizationNameAvailableInternalAsync(changed.Name).AnyContext())
+            if (!await IsOrganizationNameAvailableInternalAsync(changed.Name))
                 return PermissionResult.DenyWithMessage("A organization with this name already exists.");
 
-            return await base.CanUpdateAsync(original, changes).AnyContext();
+            return await base.CanUpdateAsync(original, changes);
         }
 
         protected override async Task<PermissionResult> CanDeleteAsync(Organization value) {
             if (!String.IsNullOrEmpty(value.StripeCustomerId) && User.IsInRole(AuthorizationRoles.GlobalAdmin))
                 return PermissionResult.DenyWithMessage("An organization cannot be deleted if it has a subscription.", value.Id);
 
-            List<Project> projects = (await _projectRepository.GetByOrganizationIdAsync(value.Id).AnyContext()).Documents.ToList();
+            List<Project> projects = (await _projectRepository.GetByOrganizationIdAsync(value.Id)).Documents.ToList();
             if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
                 return PermissionResult.DenyWithMessage("An organization cannot be deleted if it contains any projects.", value.Id);
 
-            return await base.CanDeleteAsync(value).AnyContext();
+            return await base.CanDeleteAsync(value);
         }
 
         protected override async Task DeleteModelsAsync(ICollection<Organization> organizations) {
-            var currentUser = await GetExceptionlessUserAsync().AnyContext();
+            var currentUser = await GetExceptionlessUserAsync();
 
             foreach (var organization in organizations) {
                 Log.Info().Message("User {0} deleting organization {1}.", currentUser.Id, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
@@ -684,35 +684,35 @@ namespace Exceptionless.Api.Controllers {
                         subscriptionService.Cancel(organization.StripeCustomerId, sub.Id);
                 }
 
-                var users = await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
+                var users = await _userRepository.GetByOrganizationIdAsync(organization.Id);
                 foreach (User user in users.Documents) {
                     // delete the user if they are not associated to any other organizations and they are not the current user
                     if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id)) && !String.Equals(user.Id, currentUser.Id)) {
                         Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                        await _userRepository.RemoveAsync(user.Id).AnyContext();
+                        await _userRepository.RemoveAsync(user.Id);
                     } else {
                         Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
                         user.OrganizationIds.Remove(organization.Id);
-                        await _userRepository.SaveAsync(user).AnyContext();
+                        await _userRepository.SaveAsync(user);
                     }
                 }
 
-                await _tokenRepository.RemoveAllByOrganizationIdsAsync(new [] { organization.Id }).AnyContext();
-                await _webHookRepository.RemoveAllByOrganizationIdsAsync(new[] { organization.Id }).AnyContext();
+                await _tokenRepository.RemoveAllByOrganizationIdsAsync(new [] { organization.Id });
+                await _webHookRepository.RemoveAllByOrganizationIdsAsync(new[] { organization.Id });
 
-                var projects = await _projectRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
+                var projects = await _projectRepository.GetByOrganizationIdAsync(organization.Id);
                 if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Total > 0) {
                     foreach (Project project in projects.Documents) {
                         Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                        await _projectController.ResetDataAsync(project.Id).AnyContext();
+                        await _projectController.ResetDataAsync(project.Id);
                     }
 
                     Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                    await _projectRepository.RemoveAsync(projects.Documents).AnyContext();
+                    await _projectRepository.RemoveAsync(projects.Documents);
                 }
 
                 Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                await base.DeleteModelsAsync(new[] { organization }).AnyContext();
+                await base.DeleteModelsAsync(new[] { organization });
             }
         }
 
@@ -721,17 +721,17 @@ namespace Exceptionless.Api.Controllers {
                 Mapper.CreateMap<Organization, ViewOrganization>().AfterMap(async (o, vo) => {
                     vo.IsOverHourlyLimit = o.IsOverHourlyLimit();
                     vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
-                    vo.IsOverRequestLimit = await o.IsOverRequestLimitAsync(_cacheClient, Settings.Current.ApiThrottleLimit).AnyContext();
+                    vo.IsOverRequestLimit = await o.IsOverRequestLimitAsync(_cacheClient, Settings.Current.ApiThrottleLimit);
                 });
 
             if (Mapper.FindTypeMapFor<StripeInvoice, InvoiceGridModel>() == null)
                 Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
 
-            await base.CreateMapsAsync().AnyContext();
+            await base.CreateMapsAsync();
         }
     
         private async Task<ViewOrganization> PopulateOrganizationStatsAsync(ViewOrganization organization) {
-            return (await PopulateOrganizationStatsAsync(new List<ViewOrganization> { organization }).AnyContext()).FirstOrDefault();
+            return (await PopulateOrganizationStatsAsync(new List<ViewOrganization> { organization })).FirstOrDefault();
         }
 
         private async Task<List<ViewOrganization>> PopulateOrganizationStatsAsync(List<ViewOrganization> organizations) {
@@ -755,7 +755,7 @@ namespace Exceptionless.Api.Controllers {
                 var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
                 organization.EventCount = organizationStats?.Total ?? 0;
                 organization.StackCount = organizationStats?.Unique ?? 0;
-                organization.ProjectCount = (await _projectRepository.GetByOrganizationIdAsync(organization.Id, useCache: true).AnyContext()).Documents.Count;
+                organization.ProjectCount = (await _projectRepository.GetByOrganizationIdAsync(organization.Id, useCache: true)).Documents.Count;
             }
 
             return organizations;

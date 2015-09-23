@@ -21,13 +21,13 @@ namespace Exceptionless.Api.Utility {
             var type = binding.ParameterBindings[0].Descriptor.ParameterType;
 
             if (type == typeof(string)) {
-                string value = await actionContext.Request.Content.ReadAsStringAsync().AnyContext();
+                string value = await actionContext.Request.Content.ReadAsStringAsync();
                 SetValue(actionContext, value);
                 return;
             }
 
             if (type == typeof(byte[])) {
-                byte[] value = await actionContext.Request.Content.ReadAsByteArrayAsync().AnyContext();
+                byte[] value = await actionContext.Request.Content.ReadAsByteArrayAsync();
                 SetValue(actionContext, value);
                 return;
             }

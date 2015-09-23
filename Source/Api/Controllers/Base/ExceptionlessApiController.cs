@@ -120,7 +120,7 @@ namespace Exceptionless.Api.Controllers {
             if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
                 return null;
 
-            var associatedOrganizations = await repository.GetByIdsAsync(await GetAssociatedOrganizationIdsAsync().AnyContext(), useCache: true).AnyContext();
+            var associatedOrganizations = await repository.GetByIdsAsync(await GetAssociatedOrganizationIdsAsync(), useCache: true);
             var organizations = associatedOrganizations.Documents.Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
             if (organizations.Count == 0)
                 return "organization:none";

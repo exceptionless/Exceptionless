@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Extensions {
             if (message == null)
                 return null;
 
-            var project = await message.GetDefaultProjectAsync().AnyContext();
+            var project = await message.GetDefaultProjectAsync();
             if (project != null)
                 return project.Id;
 
@@ -66,7 +66,7 @@ namespace Exceptionless.Api.Extensions {
             if (message == null)
                 return false;
 
-            if (await message.IsInOrganizationAsync(organizationId).AnyContext())
+            if (await message.IsInOrganizationAsync(organizationId))
                 return true;
 
             return message.IsGlobalAdmin();
@@ -87,14 +87,14 @@ namespace Exceptionless.Api.Extensions {
             if (String.IsNullOrEmpty(organizationId))
                 return false;
 
-            return (await message.GetAssociatedOrganizationIdsAsync().AnyContext()).Contains(organizationId);
+            return (await message.GetAssociatedOrganizationIdsAsync()).Contains(organizationId);
         }
 
         public static async Task<ICollection<string>> GetAssociatedOrganizationIdsAsync(this HttpRequestMessage message) {
             if (message == null)
                 return new List<string>();
 
-            var user = await message.GetUserAsync().AnyContext();
+            var user = await message.GetUserAsync();
             if (user != null)
                 return user.OrganizationIds;
 
@@ -107,7 +107,7 @@ namespace Exceptionless.Api.Extensions {
                 return null;
 
             // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated orgs.
-            return (await message.GetAssociatedOrganizationIdsAsync().AnyContext()).FirstOrDefault();
+            return (await message.GetAssociatedOrganizationIdsAsync()).FirstOrDefault();
         }
 
         public static string GetClientIpAddress(this HttpRequestMessage request) {

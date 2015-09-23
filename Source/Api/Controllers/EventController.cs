@@ -76,11 +76,11 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}", Name = "GetPersistentEventById")]
         [ResponseType(typeof(PersistentEvent))]
         public async Task<IHttpActionResult> GetByIdAsync(string id, string filter = null, string time = null, string offset = null) {
-            var model = await GetModelAsync(id).AnyContext();
+            var model = await GetModelAsync(id);
             if (model == null)
                 return NotFound();
 
-            var organization = await _organizationRepository.GetByIdAsync(model.OrganizationId, true).AnyContext();
+            var organization = await _organizationRepository.GetByIdAsync(model.OrganizationId, true);
             if (organization.RetentionDays > 0 && model.Date.UtcDateTime < DateTime.UtcNow.SubtractDays(organization.RetentionDays))
                 return PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
@@ -91,12 +91,12 @@ namespace Exceptionless.Api.Controllers {
             if (!processResult.IsValid)
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
-            var systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter)).AnyContext();
+            var systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
             var timeInfo = GetTimeInfo(time, offset);
             return OkWithLinks(model,
-                GetEntityResourceLink(await _repository.GetPreviousEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End).AnyContext(), "previous"),
-                GetEntityResourceLink(await _repository.GetNextEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End).AnyContext(), "next"),
+                GetEntityResourceLink(await _repository.GetPreviousEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
+                GetEntityResourceLink(await _repository.GetNextEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "next"),
                 GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
 
@@ -129,7 +129,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(processResult.Message);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter)).AnyContext();
+                systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
 
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
@@ -137,9 +137,9 @@ namespace Exceptionless.Api.Controllers {
 
             FindResults<PersistentEvent> events;
             try {
-                events = await _repository.GetByFilterAsync(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).AnyContext();
+                events = await _repository.GetByFilterAsync(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
-                var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+                var loggedInUser = await GetExceptionlessUserAsync();
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
@@ -181,10 +181,10 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId).AnyContext())
+            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId))
                 return NotFound();
 
-            return await GetInternalAsync(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit).AnyContext();
+            return await GetInternalAsync(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
@@ -206,11 +206,11 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
-            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId).AnyContext())
+            var project = await _projectRepository.GetByIdAsync(projectId, true);
+            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId))
                 return NotFound();
 
-            return await GetInternalAsync(String.Concat("project:", projectId), filter, sort, time, offset, mode, page, limit).AnyContext();
+            return await GetInternalAsync(String.Concat("project:", projectId), filter, sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
@@ -232,11 +232,11 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
-            var stack = await _stackRepository.GetByIdAsync(stackId, true).AnyContext();
-            if (stack == null || !await CanAccessOrganizationAsync(stack.OrganizationId).AnyContext())
+            var stack = await _stackRepository.GetByIdAsync(stackId, true);
+            if (stack == null || !await CanAccessOrganizationAsync(stack.OrganizationId))
                 return NotFound();
 
-            return await GetInternalAsync(String.Concat("stack:", stackId), filter, sort, time, offset, mode, page, limit).AnyContext();
+            return await GetInternalAsync(String.Concat("stack:", stackId), filter, sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
@@ -251,7 +251,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
             
-            return await GetInternalAsync(userFilter: String.Concat("reference:", referenceId)).AnyContext();
+            return await GetInternalAsync(userFilter: String.Concat("reference:", referenceId));
         }
 
         /// <summary>
@@ -267,11 +267,11 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(referenceId) || String.IsNullOrEmpty(projectId))
                 return NotFound();
             
-            var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
-            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId).AnyContext())
+            var project = await _projectRepository.GetByIdAsync(projectId, true);
+            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId))
                 return NotFound();
 
-            return await GetInternalAsync(String.Concat("project:", projectId), String.Concat("reference:", referenceId)).AnyContext();
+            return await GetInternalAsync(String.Concat("project:", projectId), String.Concat("reference:", referenceId));
         }
 
         /// <summary>
@@ -291,7 +291,7 @@ namespace Exceptionless.Api.Controllers {
         [ConfigurationResponseFilter]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
-            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionSubmitted).AnyContext();
+            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionSubmitted);
             
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
@@ -304,22 +304,22 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(result.Errors.ToErrorMessage());
 
             if (projectId == null)
-                projectId = (await GetDefaultProjectAsync().AnyContext()).Id;
+                projectId = (await GetDefaultProjectAsync()).Id;
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
-            var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
+            var project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
                 return NotFound();
 
-            var eventUserDescription = await MapAsync<EventUserDescription>(description).AnyContext();
+            var eventUserDescription = await MapAsync<EventUserDescription>(description);
             eventUserDescription.ProjectId = projectId;
             eventUserDescription.ReferenceId = referenceId;
 
-            await _eventUserDescriptionQueue.EnqueueAsync(eventUserDescription).AnyContext();
-            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionQueued).AnyContext();
+            await _eventUserDescriptionQueue.EnqueueAsync(eventUserDescription);
+            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionQueued);
 
             return StatusCode(HttpStatusCode.Accepted);
         }
@@ -343,7 +343,7 @@ namespace Exceptionless.Api.Controllers {
             var userDescription = new UserDescription();
             changes.Patch(userDescription);
 
-            return await SetUserDescriptionAsync(id, userDescription).AnyContext();
+            return await SetUserDescriptionAsync(id, userDescription);
         }
 
         /// <summary>
@@ -397,23 +397,23 @@ namespace Exceptionless.Api.Controllers {
             if (data == null || data.Length == 0)
                 return StatusCode(HttpStatusCode.Accepted);
 
-            await _metricsClient.CounterAsync(MetricNames.PostsSubmitted).AnyContext();
+            await _metricsClient.CounterAsync(MetricNames.PostsSubmitted);
 
             if (projectId == null)
-                projectId = await Request.GetDefaultProjectIdAsync().AnyContext();
+                projectId = await Request.GetDefaultProjectIdAsync();
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
-            var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
-            if (project == null || !(await Request.GetAssociatedOrganizationIdsAsync().AnyContext()).Contains(project.OrganizationId))
+            var project = await _projectRepository.GetByIdAsync(projectId, true);
+            if (project == null || !(await Request.GetAssociatedOrganizationIdsAsync()).Contains(project.OrganizationId))
                 return NotFound();
 
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
             bool isCompressed = contentEncoding == "gzip" || contentEncoding == "deflate";
             if (!isCompressed && data.Length > 1000) {
-                data = await data.CompressAsync().AnyContext();
+                data = await data.CompressAsync();
                 contentEncoding = "gzip";
             }
 
@@ -426,9 +426,9 @@ namespace Exceptionless.Api.Controllers {
                     ApiVersion = version,
                     Data = data,
                     ContentEncoding = contentEncoding
-                }, _storage).AnyContext();
+                }, _storage);
             } catch (Exception ex) {
-                var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+                var loggedInUser = await GetExceptionlessUserAsync();
                 Log.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
                     .Project(projectId)
@@ -437,11 +437,11 @@ namespace Exceptionless.Api.Controllers {
                     .ContextProperty("HttpActionContext", ActionContext)
                     .WriteIf(projectId != Settings.Current.InternalProjectId);
                 
-                await _metricsClient.CounterAsync(MetricNames.PostsQueuedErrors).AnyContext();
+                await _metricsClient.CounterAsync(MetricNames.PostsQueuedErrors);
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 
-            await _metricsClient.CounterAsync(MetricNames.PostsQueued).AnyContext();
+            await _metricsClient.CounterAsync(MetricNames.PostsQueued);
             return StatusCode(HttpStatusCode.Accepted);
         }
 

@@ -21,7 +21,7 @@ namespace Exceptionless.Api.Utility {
                     request.Content = new CompressedContent(request.Content, encodingType);
             }
 
-            var response = await base.SendAsync(request, cancellationToken).AnyContext();
+            var response = await base.SendAsync(request, cancellationToken);
             if (response.RequestMessage != null && response.RequestMessage.Headers != null && response.RequestMessage.Headers.AcceptEncoding != null && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
                 string encodingType = response.RequestMessage.Headers.AcceptEncoding.First().Value;
 
@@ -65,7 +65,7 @@ namespace Exceptionless.Api.Utility {
         }
 
         private async Task<Stream> CreateDeflateStream() {
-            var stream = await _originalContent.ReadAsStreamAsync().AnyContext();
+            var stream = await _originalContent.ReadAsStreamAsync();
 
             if (_encodingType == "gzip")
                 return new GZipStream(stream, CompressionMode.Decompress);

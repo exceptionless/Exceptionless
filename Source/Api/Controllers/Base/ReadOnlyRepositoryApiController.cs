@@ -24,23 +24,23 @@ namespace Exceptionless.Api.Controllers {
         }
 
         public virtual async Task<IHttpActionResult> GetByIdAsync(string id) {
-            TModel model = await GetModelAsync(id).AnyContext();
+            TModel model = await GetModelAsync(id);
             if (model == null)
                 return NotFound();
 
-            return await OkModelAsync(model).AnyContext();
+            return await OkModelAsync(model);
         }
 
         protected async Task<IHttpActionResult> OkModelAsync(TModel model) {
-            return Ok(await MapAsync<TViewModel>(model, true).AnyContext());
+            return Ok(await MapAsync<TViewModel>(model, true));
         }
 
         protected virtual async Task<TModel> GetModelAsync(string id, bool useCache = true) {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            TModel model = await _repository.GetByIdAsync(id, useCache).AnyContext();
-            if (_isOwnedByOrganization && model != null && !await CanAccessOrganizationAsync(((IOwnedByOrganization)model).OrganizationId).AnyContext())
+            TModel model = await _repository.GetByIdAsync(id, useCache);
+            if (_isOwnedByOrganization && model != null && !await CanAccessOrganizationAsync(((IOwnedByOrganization)model).OrganizationId))
                 return null;
 
             return model;
@@ -50,13 +50,13 @@ namespace Exceptionless.Api.Controllers {
             if (ids == null || ids.Length == 0)
                 return new List<TModel>();
 
-            var models = (await _repository.GetByIdsAsync(ids, useCache: useCache).AnyContext()).Documents;
+            var models = (await _repository.GetByIdsAsync(ids, useCache: useCache)).Documents;
             if (!_isOwnedByOrganization)
                 return models;
 
             var results = new List<TModel>();
             foreach (var model in models) {
-                if (await CanAccessOrganizationAsync(((IOwnedByOrganization)model).OrganizationId).AnyContext())
+                if (await CanAccessOrganizationAsync(((IOwnedByOrganization)model).OrganizationId))
                     results.Add(model);
             }
 
@@ -89,9 +89,9 @@ namespace Exceptionless.Api.Controllers {
 
             FindResults<TModel> models;
             try {
-                models = await _repository.GetBySearchAsync(systemFilter, userFilter, query, sortBy.Item1, sortBy.Item2, options).AnyContext();
+                models = await _repository.GetBySearchAsync(systemFilter, userFilter, query, sortBy.Item1, sortBy.Item2, options);
             } catch (ApplicationException ex) {
-                var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+                var loggedInUser = await GetExceptionlessUserAsync();
                 Log.Error().Exception(ex).Property("Search Filter", new {
                     SystemFilter = systemFilter,
                     UserFilter = userFilter,
@@ -105,9 +105,9 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await MapCollectionAsync<TViewModel>(models.Documents, true).AnyContext(), options.HasMore, page, models.Total);
+                return OkWithResourceLinks(await MapCollectionAsync<TViewModel>(models.Documents, true), options.HasMore, page, models.Total);
 
-            return OkWithResourceLinks(await MapCollectionAsync<TViewModel>(models.Documents, true).AnyContext(), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, models.Total);
+            return OkWithResourceLinks(await MapCollectionAsync<TViewModel>(models.Documents, true), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, models.Total);
         }
         
         #region Mapping
@@ -122,7 +122,7 @@ namespace Exceptionless.Api.Controllers {
                 if (_mapsCreated)
                     return;
 
-                await CreateMapsAsync().AnyContext();
+                await CreateMapsAsync();
 
                 _mapsCreated = true;
             }
@@ -136,7 +136,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected async Task<TDestination> MapAsync<TDestination>(object source, bool isResult = false) {
-            await EnsureMapsAsync().AnyContext();
+            await EnsureMapsAsync();
 
             var destination = Mapper.Map<TDestination>(source);
             if (isResult)
@@ -145,7 +145,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected async Task<ICollection<TDestination>> MapCollectionAsync<TDestination>(object source, bool isResult = false) {
-            await EnsureMapsAsync().AnyContext();
+            await EnsureMapsAsync();
 
             var destination = Mapper.Map<ICollection<TDestination>>(source);
             if (isResult)

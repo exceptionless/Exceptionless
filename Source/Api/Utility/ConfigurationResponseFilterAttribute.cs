@@ -30,7 +30,7 @@ namespace Exceptionless.Api.Utility {
             if (String.IsNullOrEmpty(projectId))
                 return;
 
-            var project = await ProjectRepository.GetByIdAsync(projectId, true).AnyContext();
+            var project = await ProjectRepository.GetByIdAsync(projectId, true);
             if (project == null)
                 return;
 

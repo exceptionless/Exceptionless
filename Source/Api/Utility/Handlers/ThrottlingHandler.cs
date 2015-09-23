@@ -25,10 +25,10 @@ namespace Exceptionless.Api.Utility {
         protected virtual async Task<string> GetUserIdentifierAsync(HttpRequestMessage request) {
             var authType = request.GetAuthType();
             if (authType == AuthType.Token)
-                return await request.GetDefaultOrganizationIdAsync().AnyContext();
+                return await request.GetDefaultOrganizationIdAsync();
 
             if (authType == AuthType.User) {
-                var user = await request.GetUserAsync().AnyContext();
+                var user = await request.GetUserAsync();
                 if (user != null)
                     return user.Id;
             }
@@ -46,16 +46,16 @@ namespace Exceptionless.Api.Utility {
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
-            string identifier = await GetUserIdentifierAsync(request).AnyContext();
+            string identifier = await GetUserIdentifierAsync(request);
             if (String.IsNullOrEmpty(identifier))
                 return CreateResponse(request, HttpStatusCode.Forbidden, "Could not identify client.");
 
             long requestCount = 1;
             try {
                 string cacheKey = GetCacheKey(identifier);
-                requestCount = await _cacheClient.IncrementAsync(cacheKey, 1).AnyContext();
+                requestCount = await _cacheClient.IncrementAsync(cacheKey, 1);
                 if (requestCount == 1)
-                    await _cacheClient.SetExpirationAsync(cacheKey, _period).AnyContext();
+                    await _cacheClient.SetExpirationAsync(cacheKey, _period);
             } catch {}
 
             HttpResponseMessage response;
@@ -63,7 +63,7 @@ namespace Exceptionless.Api.Utility {
             if (requestCount > maxRequests)
                 response = CreateResponse(request, HttpStatusCode.Conflict, _message);
             else
-                response = await base.SendAsync(request, cancellationToken).AnyContext();
+                response = await base.SendAsync(request, cancellationToken);
 
             long remaining = maxRequests - requestCount;
             if (remaining < 0)

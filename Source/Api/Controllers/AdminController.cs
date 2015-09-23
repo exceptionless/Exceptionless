@@ -33,10 +33,10 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("change-plan")]
         public async Task<IHttpActionResult> ChangePlanAsync(string organizationId, string planId) {
-            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId).AnyContext())
+            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            var organization = await _organizationRepository.GetByIdAsync(organizationId).AnyContext();
+            var organization = await _organizationRepository.GetByIdAsync(organizationId);
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -46,12 +46,12 @@ namespace Exceptionless.Api.Controllers {
 
             organization.BillingStatus = !String.Equals(plan.Id, BillingManager.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
             organization.RemoveSuspension();
-            BillingManager.ApplyBillingPlan(organization, plan, await GetExceptionlessUserAsync().AnyContext(), false);
+            BillingManager.ApplyBillingPlan(organization, plan, await GetExceptionlessUserAsync(), false);
 
-            await _organizationRepository.SaveAsync(organization).AnyContext();
+            await _organizationRepository.SaveAsync(organization);
             await _messagePublisher.PublishAsync(new PlanChanged {
                 OrganizationId = organization.Id
-            }).AnyContext();
+            });
 
             return Ok(new { Success = true });
         }
@@ -59,16 +59,16 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("set-bonus")]
         public async Task<IHttpActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null) {
-            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId).AnyContext())
+            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            var organization = await _organizationRepository.GetByIdAsync(organizationId).AnyContext();
+            var organization = await _organizationRepository.GetByIdAsync(organizationId);
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
             organization.BonusEventsPerMonth = bonusEvents;
             organization.BonusExpiration = expires;
-            await _organizationRepository.SaveAsync(organization).AnyContext();
+            await _organizationRepository.SaveAsync(organization);
 
             return Ok(new { Success = true });
         }
@@ -79,8 +79,8 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(path))
                 path = @"q\*";
 
-            foreach (var file in await _fileStorage.GetFileListAsync(path).AnyContext())
-                await _eventPostQueue.EnqueueAsync(new EventPost { FilePath = file.Path, ShouldArchive = archive }).AnyContext();
+            foreach (var file in await _fileStorage.GetFileListAsync(path))
+                await _eventPostQueue.EnqueueAsync(new EventPost { FilePath = file.Path, ShouldArchive = archive });
 
             return Ok();
         }

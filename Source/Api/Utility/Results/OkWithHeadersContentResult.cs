@@ -23,7 +23,7 @@ namespace Exceptionless.Api.Utility.Results {
         public IEnumerable<KeyValuePair<string, IEnumerable<string>>> Headers { get; set; }
 
         public async override Task<HttpResponseMessage> ExecuteAsync(CancellationToken cancellationToken) {
-            HttpResponseMessage response = await base.ExecuteAsync(cancellationToken).AnyContext();
+            HttpResponseMessage response = await base.ExecuteAsync(cancellationToken);
 
             if (Headers != null)
                 foreach (var header in Headers)

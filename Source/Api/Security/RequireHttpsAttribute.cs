@@ -33,7 +33,7 @@ namespace Exceptionless.Api.Security {
             if (actionContext.Response != null)
                 return actionContext.Response;
 
-            return await continuation().AnyContext();
+            return await continuation();
         }
 
         bool IFilter.AllowMultiple => true;

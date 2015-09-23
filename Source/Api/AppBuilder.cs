@@ -96,7 +96,7 @@ namespace Exceptionless.Api {
                     return null;
 
                 var userRepository = container.GetInstance<IUserRepository>();
-                return await userRepository.GetByIdAsync(userId, true).AnyContext();
+                return await userRepository.GetByIdAsync(userId, true);
             })));
 
             app.CreatePerContext<AsyncLazy<Project>>("DefaultProject", ctx => Task.FromResult(new AsyncLazy<Project>(async () => {
@@ -110,7 +110,7 @@ namespace Exceptionless.Api {
                 if (String.IsNullOrEmpty(projectId)) {
                     var firstOrgId = ctx.Request.User.GetOrganizationIds().FirstOrDefault();
                     if (!String.IsNullOrEmpty(firstOrgId)) {
-                        var project = (await projectRepository.GetByOrganizationIdAsync(firstOrgId, useCache: true).AnyContext()).Documents.FirstOrDefault();
+                        var project = (await projectRepository.GetByOrganizationIdAsync(firstOrgId, useCache: true)).Documents.FirstOrDefault();
                         if (project != null)
                             return project;
                     }
@@ -118,14 +118,14 @@ namespace Exceptionless.Api {
                     if (Settings.Current.WebsiteMode == WebsiteMode.Dev) {
                         var dataHelper = container.GetInstance<DataHelper>();
                         // create a default org and project
-                        projectId = await dataHelper.CreateDefaultOrganizationAndProjectAsync(await ctx.Request.GetUserAsync().AnyContext()).AnyContext();
+                        projectId = await dataHelper.CreateDefaultOrganizationAndProjectAsync(await ctx.Request.GetUserAsync());
                     }
                 }
 
                 if (String.IsNullOrEmpty(projectId))
                     return null;
 
-                return await projectRepository.GetByIdAsync(projectId, true).AnyContext();
+                return await projectRepository.GetByIdAsync(projectId, true);
             })));
 
             app.UseWebApi(Config);
@@ -137,7 +137,7 @@ namespace Exceptionless.Api {
             SetupSwagger(Config);
 
             Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
-            Task.Run(async () => await CreateSampleDataAsync(container).AnyContext());
+            Task.Run(async () => await CreateSampleDataAsync(container));
 
             if (Settings.Current.RunJobsInProcess) {
                 Log.Warn().Message("Jobs running in process.").Write();
@@ -187,11 +187,11 @@ namespace Exceptionless.Api {
                 return;
 
             var userRepository = container.GetInstance<IUserRepository>();
-            if (await userRepository.CountAsync().AnyContext() != 0)
+            if (await userRepository.CountAsync() != 0)
                 return;
 
             var dataHelper = container.GetInstance<DataHelper>();
-            await dataHelper.CreateTestDataAsync().AnyContext();
+            await dataHelper.CreateTestDataAsync();
         }
 
         public static Container CreateContainer(bool includeInsulation = true) {

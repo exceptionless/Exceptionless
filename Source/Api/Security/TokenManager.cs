@@ -17,7 +17,7 @@ namespace Exceptionless.Api.Security {
         }
 
         public async Task<Token> GetOrCreateAsync(User user) {
-            var existingToken = (await _tokenRepository.GetByUserIdAsync(user.Id).AnyContext()).Documents.FirstOrDefault(t => t.ExpiresUtc > DateTime.UtcNow && t.Type == TokenType.Access);
+            var existingToken = (await _tokenRepository.GetByUserIdAsync(user.Id)).Documents.FirstOrDefault(t => t.ExpiresUtc > DateTime.UtcNow && t.Type == TokenType.Access);
             if (existingToken != null)
                 return existingToken;
 
@@ -30,20 +30,20 @@ namespace Exceptionless.Api.Security {
                 Type = TokenType.Access
             };
 
-            await _tokenRepository.AddAsync(token).AnyContext();
+            await _tokenRepository.AddAsync(token);
 
             return token;
         }
 
         public async Task<ClaimsPrincipal> ValidateAsync(string token) {
-            var tokenRecord = await _tokenRepository.GetByIdAsync(token, true).AnyContext();
+            var tokenRecord = await _tokenRepository.GetByIdAsync(token, true);
             if (tokenRecord == null)
                 return null;
 
             if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < DateTime.UtcNow)
                 return null;
 
-            var principal = new ClaimsPrincipal(await tokenRecord.ToIdentityAsync(_userRepository).AnyContext());
+            var principal = new ClaimsPrincipal(await tokenRecord.ToIdentityAsync(_userRepository));
             return principal;  
         }
     }

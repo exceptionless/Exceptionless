@@ -52,9 +52,9 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = await _repository.GetByOrganizationIdsAsync(await GetAssociatedOrganizationIdsAsync().AnyContext(), options).AnyContext();
-            var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true).AnyContext()).ToList();
-            return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects).AnyContext(), options.HasMore, page, projects.Total);
+            var projects = await _repository.GetByOrganizationIdsAsync(await GetAssociatedOrganizationIdsAsync(), options);
+            var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
+            return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), options.HasMore, page, projects.Total);
         }
 
         /// <summary>
@@ -68,21 +68,21 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
         [ResponseType(typeof(List<ViewProject>))]
         public async Task<IHttpActionResult> GetByOrganizationAsync(string organization, int page = 1, int limit = 10) {
-            if (!String.IsNullOrEmpty(organization) && !await CanAccessOrganizationAsync(organization).AnyContext())
+            if (!String.IsNullOrEmpty(organization) && !await CanAccessOrganizationAsync(organization))
                 return NotFound();
 
             var organizationIds = new List<string>();
-            if (!String.IsNullOrEmpty(organization) && await CanAccessOrganizationAsync(organization).AnyContext())
+            if (!String.IsNullOrEmpty(organization) && await CanAccessOrganizationAsync(organization))
                 organizationIds.Add(organization);
             else
-                organizationIds.AddRange(await GetAssociatedOrganizationIdsAsync().AnyContext());
+                organizationIds.AddRange(await GetAssociatedOrganizationIdsAsync());
 
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = await _repository.GetByOrganizationIdsAsync(organizationIds, options).AnyContext();
-            var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true).AnyContext()).ToList();
-            return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects).AnyContext(), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+            var projects = await _repository.GetByOrganizationIdsAsync(organizationIds, options);
+            var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
+            return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
         }
 
         /// <summary>
@@ -94,12 +94,12 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}", Name = "GetProjectById")]
         [ResponseType(typeof(ViewProject))]
         public override async Task<IHttpActionResult> GetByIdAsync(string id) {
-            var project = await GetModelAsync(id).AnyContext();
+            var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
 
-            var viewProject = await MapAsync<ViewProject>(project, true).AnyContext();
-            return Ok(await PopulateProjectStatsAsync(viewProject).AnyContext());
+            var viewProject = await MapAsync<ViewProject>(project, true);
+            return Ok(await PopulateProjectStatsAsync(viewProject));
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();
 
-            var project = await GetModelAsync(id).AnyContext();
+            var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
 
@@ -180,7 +180,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/config/{key:minlength(1)}")]
         public async Task<IHttpActionResult> SetConfigAsync(string id, string key, [NakedBody] string value) {
-            var project = await GetModelAsync(id, false).AnyContext();
+            var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
@@ -189,7 +189,7 @@ namespace Exceptionless.Api.Controllers {
 
             project.Configuration.Settings[key] = value;
             project.Configuration.IncrementVersion();
-            await _repository.SaveAsync(project, true).AnyContext();
+            await _repository.SaveAsync(project, true);
 
             return Ok();
         }
@@ -203,13 +203,13 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id:objectid}/config/{key:minlength(1)}")]
         public async Task<IHttpActionResult> DeleteConfigAsync(string id, string key) {
-            var project = await GetModelAsync(id, false).AnyContext();
+            var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
             if (project.Configuration.Settings.Remove(key)) {
                 project.Configuration.IncrementVersion(); 
-                await _repository.SaveAsync(project, true).AnyContext();
+                await _repository.SaveAsync(project, true);
             }
 
             return Ok();
@@ -223,12 +223,12 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id:objectid}/reset-data")]
         public async Task<IHttpActionResult> ResetDataAsync(string id) {
-            var project = await GetModelAsync(id).AnyContext();
+            var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
 
             // TODO: Implement a long running process queue where a task can be inserted and then monitor for progress.
-            await _dataHelper.ResetProjectDataAsync(id).AnyContext();
+            await _dataHelper.ResetProjectDataAsync(id);
 
             return Ok();
         }
@@ -238,7 +238,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IHttpActionResult> GetNotificationSettingsAsync(string id) {
-            var project = await GetModelAsync(id).AnyContext();
+            var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
 
@@ -255,11 +255,11 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         [ResponseType(typeof(NotificationSettings))]
         public async Task<IHttpActionResult> GetNotificationSettingsAsync(string id, string userId) {
-            var project = await GetModelAsync(id).AnyContext();
+            var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals((await GetExceptionlessUserAsync().AnyContext()).Id, userId))
+            if (!Request.IsGlobalAdmin() && !String.Equals((await GetExceptionlessUserAsync()).Id, userId))
                 return NotFound();
 
             NotificationSettings settings;
@@ -277,11 +277,11 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         public async Task<IHttpActionResult> SetNotificationSettingsAsync(string id, string userId, NotificationSettings settings) {
-            var project = await GetModelAsync(id, false).AnyContext();
+            var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals((await GetExceptionlessUserAsync().AnyContext()).Id, userId))
+            if (!Request.IsGlobalAdmin() && !String.Equals((await GetExceptionlessUserAsync()).Id, userId))
                 return NotFound();
 
             if (settings == null)
@@ -289,7 +289,7 @@ namespace Exceptionless.Api.Controllers {
             else
                 project.NotificationSettings[userId] = settings;
 
-            await _repository.SaveAsync(project, true).AnyContext();
+            await _repository.SaveAsync(project, true);
             return Ok();
         }
 
@@ -302,16 +302,16 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         public async Task<IHttpActionResult> DeleteNotificationSettingsAsync(string id, string userId) {
-            var project = await GetModelAsync(id, false).AnyContext();
+            var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals((await GetExceptionlessUserAsync().AnyContext()).Id, userId))
+            if (!Request.IsGlobalAdmin() && !String.Equals((await GetExceptionlessUserAsync()).Id, userId))
                 return NotFound();
 
             if (project.NotificationSettings.ContainsKey(userId)) {
                 project.NotificationSettings.Remove(userId);
-                await _repository.SaveAsync(project, true).AnyContext();
+                await _repository.SaveAsync(project, true);
             }
 
             return Ok();
@@ -327,13 +327,13 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
         public async Task<IHttpActionResult> PromoteTabAsync(string id, string name) {
-            var project = await GetModelAsync(id, false).AnyContext();
+            var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
             if (!project.PromotedTabs.Contains(name)) {
                 project.PromotedTabs.Add(name);
-                await _repository.SaveAsync(project, true).AnyContext();
+                await _repository.SaveAsync(project, true);
             }
 
             return Ok();
@@ -348,13 +348,13 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
         public async Task<IHttpActionResult> DemoteTabAsync(string id, string name) {
-            var project = await GetModelAsync(id, false).AnyContext();
+            var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
             if (project.PromotedTabs.Contains(name)) {
                 project.PromotedTabs.Remove(name);
-                await _repository.SaveAsync(project, true).AnyContext();
+                await _repository.SaveAsync(project, true);
             }
 
             return Ok();
@@ -369,7 +369,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("check-name/{*name:minlength(1)}")]
         public async Task<IHttpActionResult> IsNameAvailableAsync(string name) {
-            if (await IsProjectNameAvailableInternalAsync(null, name).AnyContext())
+            if (await IsProjectNameAvailableInternalAsync(null, name))
                 return StatusCode(HttpStatusCode.NoContent);
 
             return StatusCode(HttpStatusCode.Created);
@@ -379,8 +379,8 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(name))
                 return false;
 
-            ICollection<string> organizationIds = !String.IsNullOrEmpty(organizationId) ? new List<string> { organizationId } : await GetAssociatedOrganizationIdsAsync().AnyContext();
-            return !(await _repository.GetByOrganizationIdsAsync(organizationIds).AnyContext()).Documents.Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
+            ICollection<string> organizationIds = !String.IsNullOrEmpty(organizationId) ? new List<string> { organizationId } : await GetAssociatedOrganizationIdsAsync();
+            return !(await _repository.GetByOrganizationIdsAsync(organizationIds)).Documents.Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -393,12 +393,12 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
         public async Task<IHttpActionResult> PostDataAsync(string id, string key, string value) {
-            var project = await GetModelAsync(id, false).AnyContext();
+            var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
             project.Data[key] = value;
-            await _repository.SaveAsync(project, true).AnyContext();
+            await _repository.SaveAsync(project, true);
 
             return Ok();
         }
@@ -412,12 +412,12 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
         public async Task<IHttpActionResult> DeleteDataAsync(string id, string key) {
-            var project = await GetModelAsync(id, false).AnyContext();
+            var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
             if (project.Data.Remove(key))
-                await _repository.SaveAsync(project, true).AnyContext();
+                await _repository.SaveAsync(project, true);
 
             return Ok();
         }
@@ -426,62 +426,62 @@ namespace Exceptionless.Api.Controllers {
             if (Mapper.FindTypeMapFor<Project, ViewProject>() == null) {
                 Mapper.CreateMap<Project, ViewProject>().AfterMap(async (p, pi) => {
                     try {
-                        pi.OrganizationName = (await _organizationRepository.GetByIdAsync(p.OrganizationId, true).AnyContext()).Name;
+                        pi.OrganizationName = (await _organizationRepository.GetByIdAsync(p.OrganizationId, true)).Name;
                     } catch (Exception ex) {
                         Log.Error().Exception(ex).Message("Unable to load organization. Message: {0}", ex.Message).Write();
                     }
                 });
             }
 
-            await base.CreateMapsAsync().AnyContext();
+            await base.CreateMapsAsync();
         }
 
         protected override async Task<PermissionResult> CanAddAsync(Project value) {
             if (String.IsNullOrEmpty(value.Name))
                 return PermissionResult.DenyWithMessage("Project name is required.");
 
-            if (!await IsProjectNameAvailableInternalAsync(value.OrganizationId, value.Name).AnyContext())
+            if (!await IsProjectNameAvailableInternalAsync(value.OrganizationId, value.Name))
                 return PermissionResult.DenyWithMessage("A project with this name already exists.");
 
-            if (!await _billingManager.CanAddProjectAsync(value).AnyContext())
+            if (!await _billingManager.CanAddProjectAsync(value))
                 return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add additional projects.");
 
-            return await base.CanAddAsync(value).AnyContext();
+            return await base.CanAddAsync(value);
         }
 
         protected override async Task<Project> AddModelAsync(Project value) {
             value.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
-            value.AddDefaultOwnerNotificationSettings((await GetExceptionlessUserAsync().AnyContext()).Id);
-            return await base.AddModelAsync(value).AnyContext();
+            value.AddDefaultOwnerNotificationSettings((await GetExceptionlessUserAsync()).Id);
+            return await base.AddModelAsync(value);
         }
 
         protected override async Task<PermissionResult> CanUpdateAsync(Project original, Delta<UpdateProject> changes) {
             var changed = changes.GetEntity();
-            if (changes.ContainsChangedProperty(p => p.Name) && !await IsProjectNameAvailableInternalAsync(original.OrganizationId, changed.Name).AnyContext())
+            if (changes.ContainsChangedProperty(p => p.Name) && !await IsProjectNameAvailableInternalAsync(original.OrganizationId, changed.Name))
                 return PermissionResult.DenyWithMessage("A project with this name already exists.");
 
-            return await base.CanUpdateAsync(original, changes).AnyContext();
+            return await base.CanUpdateAsync(original, changes);
         }
 
         protected override async Task DeleteModelsAsync(ICollection<Project> projects) {
             foreach (var project in projects) {
-                await _tokenRepository.RemoveAllByProjectIdsAsync(new[] { project.Id }).AnyContext();
-                await _webHookRepository.RemoveAllByProjectIdsAsync(new[] { project.Id }).AnyContext();
-                await _dataHelper.ResetProjectDataAsync(project.Id).AnyContext();
+                await _tokenRepository.RemoveAllByProjectIdsAsync(new[] { project.Id });
+                await _webHookRepository.RemoveAllByProjectIdsAsync(new[] { project.Id });
+                await _dataHelper.ResetProjectDataAsync(project.Id);
             }
 
-            await base.DeleteModelsAsync(projects).AnyContext();
+            await base.DeleteModelsAsync(projects);
         }
 
         private async Task<ViewProject> PopulateProjectStatsAsync(ViewProject project) {
-            return (await PopulateProjectStatsAsync(new List<ViewProject> { project }).AnyContext()).FirstOrDefault();
+            return (await PopulateProjectStatsAsync(new List<ViewProject> { project })).FirstOrDefault();
         }
 
         private async Task<List<ViewProject>> PopulateProjectStatsAsync(List<ViewProject> projects) {
             if (projects.Count <= 0)
                 return projects;
 
-            var organizations = await _organizationRepository.GetByIdsAsync(projects.Select(p => p.Id).ToArray(), useCache: true).AnyContext();
+            var organizations = await _organizationRepository.GetByIdsAsync(projects.Select(p => p.Id).ToArray(), useCache: true);
             StringBuilder builder = new StringBuilder();
             for (int index = 0; index < projects.Count; index++) {
                 if (index > 0)

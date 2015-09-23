@@ -38,14 +38,14 @@ namespace Exceptionless.App.Controllers.API {
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
         [ResponseType(typeof(List<ViewToken>))]
         public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId).AnyContext())
+            if (String.IsNullOrEmpty(organizationId) || !await CanAccessOrganizationAsync(organizationId))
                 return NotFound();
 
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var tokens = await _repository.GetByTypeAndOrganizationIdAsync(TokenType.Access, organizationId, options).AnyContext();
-            var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true).AnyContext()).ToList();
+            var tokens = await _repository.GetByTypeAndOrganizationIdAsync(TokenType.Access, organizationId, options);
+            var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true)).ToList();
             return OkWithResourceLinks(viewTokens, options.HasMore, page, tokens.Total);
         }
 
@@ -63,15 +63,15 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            var project = await _projectRepository.GetByIdAsync(projectId).AnyContext();
-            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId).AnyContext())
+            var project = await _projectRepository.GetByIdAsync(projectId);
+            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId))
                 return NotFound();
 
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var tokens = await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, options).AnyContext();
-            var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true).AnyContext()).ToList();
+            var tokens = await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, options);
+            var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true)).ToList();
             return OkWithResourceLinks(viewTokens, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
         }
 
@@ -87,15 +87,15 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            var project = await _projectRepository.GetByIdAsync(projectId).AnyContext();
-            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId).AnyContext())
+            var project = await _projectRepository.GetByIdAsync(projectId);
+            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId))
                 return NotFound();
 
-            var token = (await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, new PagingOptions { Limit = 1 }).AnyContext()).Documents.FirstOrDefault();
+            var token = (await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, new PagingOptions { Limit = 1 })).Documents.FirstOrDefault();
             if (token != null)
-                return await OkModelAsync(token).AnyContext();
+                return await OkModelAsync(token);
 
-            return await PostAsync(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId}).AnyContext();
+            return await PostAsync(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId});
         }
 
         /// <summary>
@@ -144,13 +144,13 @@ namespace Exceptionless.App.Controllers.API {
             if (token == null)
                 token = new NewToken();
 
-            var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
-            if (!await IsInProjectAsync(project).AnyContext())
+            var project = await _projectRepository.GetByIdAsync(projectId, true);
+            if (!await IsInProjectAsync(project))
                 return BadRequest();
 
             token.OrganizationId = project.OrganizationId;
             token.ProjectId = projectId;
-            return await PostAsync(token).AnyContext();
+            return await PostAsync(token);
         }
 
         /// <summary>
@@ -171,11 +171,11 @@ namespace Exceptionless.App.Controllers.API {
             if (token == null)
                 token = new NewToken();
 
-            if (!await IsInOrganizationAsync(organizationId).AnyContext())
+            if (!await IsInOrganizationAsync(organizationId))
                 return BadRequest();
 
             token.OrganizationId = organizationId;
-            return await PostAsync(token).AnyContext();
+            return await PostAsync(token);
         }
 
         /// <summary>
@@ -198,20 +198,20 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            var model = await _repository.GetByIdAsync(id, useCache).AnyContext();
+            var model = await _repository.GetByIdAsync(id, useCache);
             if (model == null)
                 return null;
 
-            if (!String.IsNullOrEmpty(model.OrganizationId) && !await IsInOrganizationAsync(model.OrganizationId).AnyContext())
+            if (!String.IsNullOrEmpty(model.OrganizationId) && !await IsInOrganizationAsync(model.OrganizationId))
                 return null;
 
-            if (!String.IsNullOrEmpty(model.UserId) && model.UserId != (await Request.GetUserAsync().AnyContext()).Id)
+            if (!String.IsNullOrEmpty(model.UserId) && model.UserId != (await Request.GetUserAsync()).Id)
                 return null;
 
             if (model.Type != TokenType.Access)
                 return null;
 
-            if (!String.IsNullOrEmpty(model.ProjectId) && !await IsInProjectAsync(model.ProjectId).AnyContext())
+            if (!String.IsNullOrEmpty(model.ProjectId) && !await IsInProjectAsync(model.ProjectId))
                 return null;
 
             return model;
@@ -248,8 +248,8 @@ namespace Exceptionless.App.Controllers.API {
                 return PermissionResult.Deny;
 
             if (!String.IsNullOrEmpty(value.ProjectId)) {
-                Project project = await _projectRepository.GetByIdAsync(value.ProjectId, true).AnyContext();
-                if (!await IsInProjectAsync(project).AnyContext())
+                Project project = await _projectRepository.GetByIdAsync(value.ProjectId, true);
+                if (!await IsInProjectAsync(project))
                     return PermissionResult.Deny;
 
                 value.OrganizationId = project.OrganizationId;
@@ -257,25 +257,25 @@ namespace Exceptionless.App.Controllers.API {
             }
 
             if (!String.IsNullOrEmpty(value.DefaultProjectId)) {
-                Project project = await _projectRepository.GetByIdAsync(value.DefaultProjectId, true).AnyContext();
-                if (!await IsInProjectAsync(project).AnyContext())
+                Project project = await _projectRepository.GetByIdAsync(value.DefaultProjectId, true);
+                if (!await IsInProjectAsync(project))
                     return PermissionResult.Deny;
             }
 
             if (!String.IsNullOrEmpty(value.ApplicationId)) {
-                var application = await _applicationRepository.GetByIdAsync(value.ApplicationId, true).AnyContext();
-                if (application == null || !await IsInOrganizationAsync(application.OrganizationId).AnyContext())
+                var application = await _applicationRepository.GetByIdAsync(value.ApplicationId, true);
+                if (application == null || !await IsInOrganizationAsync(application.OrganizationId))
                     return PermissionResult.Deny;
             }
 
-            return await base.CanAddAsync(value).AnyContext();
+            return await base.CanAddAsync(value);
         }
 
         protected override async Task<Token> AddModelAsync(Token value) {
             value.Id = StringExtensions.GetNewToken();
             value.CreatedUtc = value.ModifiedUtc = DateTime.UtcNow;
             value.Type = TokenType.Access;
-            value.CreatedBy = (await Request.GetUserAsync().AnyContext()).Id;
+            value.CreatedBy = (await Request.GetUserAsync()).Id;
 
             // add implied scopes
             if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin))
@@ -284,21 +284,21 @@ namespace Exceptionless.App.Controllers.API {
             if (value.Scopes.Contains(AuthorizationRoles.User))
                 value.Scopes.Add(AuthorizationRoles.Client);
 
-            return await base.AddModelAsync(value).AnyContext();
+            return await base.AddModelAsync(value);
         }
 
         protected override async Task<PermissionResult> CanDeleteAsync(Token value) {
-            if (!String.IsNullOrEmpty(value.ProjectId) && !await IsInProjectAsync(value.ProjectId).AnyContext())
+            if (!String.IsNullOrEmpty(value.ProjectId) && !await IsInProjectAsync(value.ProjectId))
                 return PermissionResult.DenyWithNotFound(value.Id);
 
-            return await base.CanDeleteAsync(value).AnyContext();
+            return await base.CanDeleteAsync(value);
         }
 
         private async Task<bool> IsInProjectAsync(string projectId) {
             if (String.IsNullOrEmpty(projectId))
                 return false;
 
-            return await IsInProjectAsync(await _projectRepository.GetByIdAsync(projectId, true).AnyContext()).AnyContext();
+            return await IsInProjectAsync(await _projectRepository.GetByIdAsync(projectId, true));
         }
 
         private Task<bool> IsInProjectAsync(Project value) {

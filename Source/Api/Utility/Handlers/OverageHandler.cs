@@ -34,38 +34,38 @@ namespace Exceptionless.Api.Utility {
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             if (!IsEventPost(request))
-                return await base.SendAsync(request, cancellationToken).AnyContext();
+                return await base.SendAsync(request, cancellationToken);
 
-            if (await _cacheClient.GetAsync<bool>("ApiDisabled").AnyContext())
+            if (await _cacheClient.GetAsync<bool>("ApiDisabled"))
                 return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
 
-            var project = await request.GetDefaultProjectAsync().AnyContext();
+            var project = await request.GetDefaultProjectAsync();
             if (project == null)
                 return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
 
             bool tooBig = false;
             if (request.Content != null && request.Content.Headers != null) {
                 long size = request.Content.Headers.ContentLength.GetValueOrDefault();
-                await _metricsClient.GaugeAsync(MetricNames.PostsSize, size).AnyContext();
+                await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
                 if (size > Settings.Current.MaximumEventPostSize) {
                     Log.Warn().Message("Event submission discarded for being too large: {0}", size).Project(project.Id).Write();
-                    await _metricsClient.CounterAsync(MetricNames.PostsDiscarded).AnyContext();
+                    await _metricsClient.CounterAsync(MetricNames.PostsDiscarded);
                     tooBig = true;
                 }
             }
 
-            bool overLimit = await _organizationRepository.IncrementUsageAsync(project.OrganizationId, tooBig).AnyContext();
+            bool overLimit = await _organizationRepository.IncrementUsageAsync(project.OrganizationId, tooBig);
 
             // block large submissions, client should break them up or remove some of the data.
             if (tooBig)
                 return CreateResponse(request, HttpStatusCode.RequestEntityTooLarge, "Event submission discarded for being too large.");
 
             if (overLimit) {
-                await _metricsClient.CounterAsync(MetricNames.PostsBlocked).AnyContext();
+                await _metricsClient.CounterAsync(MetricNames.PostsBlocked);
                 return CreateResponse(request, HttpStatusCode.PaymentRequired, "Event limit exceeded.");
             }
 
-            return await base.SendAsync(request, cancellationToken).AnyContext();
+            return await base.SendAsync(request, cancellationToken);
         }
 
         private HttpResponseMessage CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {

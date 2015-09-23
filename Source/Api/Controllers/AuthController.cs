@@ -72,7 +72,7 @@ namespace Exceptionless.Api.Controllers {
 
             User user;
             try {
-                user = await _userRepository.GetByEmailAddressAsync(model.Email).AnyContext();
+                user = await _userRepository.GetByEmailAddressAsync(model.Email);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Critical().Message("Login failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Login").Identity(model.Email).ContextProperty("HttpActionContext", ActionContext).Write();
                 return Unauthorized();
@@ -100,10 +100,10 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!String.IsNullOrEmpty(model.InviteToken))
-                await AddInvitedUserToOrganizationAsync(model.InviteToken, user).AnyContext();
+                await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
 
             Log.Info().Message("\"{0}\" logged in.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
-            return Ok(new TokenResult { Token = await GetTokenAsync(user).AnyContext() });
+            return Ok(new TokenResult { Token = await GetTokenAsync(user) });
         }
 
         /// <summary>
@@ -136,7 +136,7 @@ namespace Exceptionless.Api.Controllers {
 
             User user;
             try {
-                user = await _userRepository.GetByEmailAddressAsync(model.Email).AnyContext();
+                user = await _userRepository.GetByEmailAddressAsync(model.Email);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Critical().Message("Signup failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Signup").Identity(model.Email).ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest();
@@ -156,13 +156,13 @@ namespace Exceptionless.Api.Controllers {
             user.CreateVerifyEmailAddressToken();
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
-            await AddGlobalAdminRoleIfFirstUserAsync(user).AnyContext();
+            await AddGlobalAdminRoleIfFirstUserAsync(user);
 
             user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
             user.Password = model.Password.ToSaltedHash(user.Salt);
 
             try {
-                user = await _userRepository.SaveAsync(user).AnyContext();
+                user = await _userRepository.SaveAsync(user);
             } catch (ValidationException ex) {
                 var errors = String.Join(", ", ex.Errors);
                 Log.Error().Critical().Message("Signup failed for \"{0}\": {1}", model.Email, errors).Tag("Signup").Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
@@ -173,13 +173,13 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!String.IsNullOrEmpty(model.InviteToken))
-                await AddInvitedUserToOrganizationAsync(model.InviteToken, user).AnyContext();
+                await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
 
             if (!user.IsEmailAddressVerified)
-                await _mailer.SendVerifyEmailAsync(user).AnyContext();
+                await _mailer.SendVerifyEmailAsync(user);
 
             Log.Info().Message("\"{0}\" signed up.", user.EmailAddress).Tag("Signup").Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
-            return Ok(new TokenResult { Token = await GetTokenAsync(user).AnyContext() });
+            return Ok(new TokenResult { Token = await GetTokenAsync(user) });
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -219,7 +219,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("unlink/{providerName:minlength(1)}")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IHttpActionResult> RemoveExternalLoginAsync(string providerName, [NakedBody] string providerUserId) {
-            var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+            var loggedInUser = await GetExceptionlessUserAsync();
             if (String.IsNullOrEmpty(providerName) || String.IsNullOrEmpty(providerUserId)) {
                 Log.Error().Message("Remove external login failed for \"{0}\": Invalid Provider Name or Provider User Id.", loggedInUser.EmailAddress).Tag("External Login", providerName).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).Property("Provider User Id", providerUserId).ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("Invalid Provider Name or Provider User Id.");
@@ -231,7 +231,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (loggedInUser.RemoveOAuthAccount(providerName, providerUserId))
-                await _userRepository.SaveAsync(loggedInUser).AnyContext();
+                await _userRepository.SaveAsync(loggedInUser);
 
             Log.Info().Message("\"{0}\" removed an external login: \"{1}\"", loggedInUser.EmailAddress, providerName).Tag("External Login", providerName).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
             return Ok();
@@ -246,7 +246,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("change-password")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IHttpActionResult> ChangePasswordAsync(ChangePasswordModel model) {
-            var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+            var loggedInUser = await GetExceptionlessUserAsync();
             if (model == null || !IsValidPassword(model.Password)) {
                 Log.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", loggedInUser.EmailAddress).Tag("Change Password").Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).Property("Password Length", model != null && model.Password != null ? model.Password.Length : 0).ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("The New Password must be at least 6 characters long.");
@@ -266,7 +266,7 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
-            await ChangePasswordAsync(loggedInUser, model.Password).AnyContext();
+            await ChangePasswordAsync(loggedInUser, model.Password);
 
             Log.Info().Message("\"{0}\" changed their password.", loggedInUser.EmailAddress).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
             return Ok();
@@ -279,11 +279,11 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(email))
                 return StatusCode(HttpStatusCode.NoContent);
 
-            var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+            var loggedInUser = await GetExceptionlessUserAsync();
             if (loggedInUser != null && String.Equals(loggedInUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return StatusCode(HttpStatusCode.Created);
 
-            if (await _userRepository.GetByEmailAddressAsync(email).AnyContext() == null)
+            if (await _userRepository.GetByEmailAddressAsync(email) == null)
                 return StatusCode(HttpStatusCode.NoContent);
 
             return StatusCode(HttpStatusCode.Created);
@@ -302,16 +302,16 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Please specify a valid Email Address.");
             }
 
-            var user = await _userRepository.GetByEmailAddressAsync(email).AnyContext();
+            var user = await _userRepository.GetByEmailAddressAsync(email);
             if (user == null) {
                 Log.Error().Message("Forgot password failed for \"{0}\": No user was found.", email).Tag("Forgot Password").Identity(email).Property("Email Address", email).ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("No user was found with this Email Address.");
             }
 
             user.CreatePasswordResetToken();
-            await _userRepository.SaveAsync(user).AnyContext();
+            await _userRepository.SaveAsync(user);
 
-            await _mailer.SendPasswordResetAsync(user).AnyContext();
+            await _mailer.SendPasswordResetAsync(user);
 
             Log.Info().Message("\"{0}\" forgot their password.", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
             return Ok();
@@ -330,7 +330,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Invalid Password Reset Token.");
             }
 
-            var user = await _userRepository.GetByPasswordResetTokenAsync(model.PasswordResetToken).AnyContext();
+            var user = await _userRepository.GetByPasswordResetTokenAsync(model.PasswordResetToken);
             if (user == null) {
                 Log.Error().Message("Reset password failed: Invalid Password Reset Token.").Tag("Reset Password").ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("Invalid Password Reset Token.");
@@ -347,7 +347,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             user.MarkEmailAddressVerified();
-            await ChangePasswordAsync(user, model.Password).AnyContext();
+            await ChangePasswordAsync(user, model.Password);
 
             Log.Info().Message("\"{0}\" reset their password.", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
             return Ok();
@@ -366,12 +366,12 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Invalid password reset token.");
             }
 
-            var user = await _userRepository.GetByPasswordResetTokenAsync(token).AnyContext();
+            var user = await _userRepository.GetByPasswordResetTokenAsync(token);
             if (user == null)
                 return Ok();
             
             user.ResetPasswordResetToken();
-            await _userRepository.SaveAsync(user).AnyContext();
+            await _userRepository.SaveAsync(user);
 
             Log.Info().Message("\"{0}\" canceled the reset password", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
             return Ok();
@@ -381,7 +381,7 @@ namespace Exceptionless.Api.Controllers {
             if (_isFirstUserChecked)
                 return;
 
-            bool isFirstUser =  await _userRepository.CountAsync().AnyContext() == 0;
+            bool isFirstUser =  await _userRepository.CountAsync() == 0;
             if (isFirstUser)
                 user.Roles.Add(AuthorizationRoles.GlobalAdmin);
 
@@ -413,7 +413,7 @@ namespace Exceptionless.Api.Controllers {
 
             User user;
             try {
-                user = await FromExternalLoginAsync(userInfo).AnyContext();
+                user = await FromExternalLoginAsync(userInfo);
             } catch (ApplicationException) {
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
@@ -427,16 +427,16 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
-                await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user).AnyContext();
+                await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user);
 
             Log.Info().Message("\"{0}\" logged in.", user.EmailAddress).Tag("External Login", client.Name).Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
-            return Ok(new TokenResult { Token = await GetTokenAsync(user).AnyContext() });
+            return Ok(new TokenResult { Token = await GetTokenAsync(user) });
         }
 
         private async Task<User> FromExternalLoginAsync(UserInfo userInfo) {
-            User existingUser = await _userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id).AnyContext();
+            User existingUser = await _userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
 
-            var loggedInUser = await GetExceptionlessUserAsync().AnyContext();
+            var loggedInUser = await GetExceptionlessUserAsync();
             // Link user accounts.
             if (loggedInUser != null) {
                 if (existingUser != null) {
@@ -445,7 +445,7 @@ namespace Exceptionless.Api.Controllers {
                         if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id))
                             return null;
 
-                        await _userRepository.SaveAsync(existingUser).AnyContext();
+                        await _userRepository.SaveAsync(existingUser);
                     } else {
                         // User is already logged in.
                         return loggedInUser;
@@ -454,7 +454,7 @@ namespace Exceptionless.Api.Controllers {
 
                 // Add it to the current user if it doesn't already exist and save it.
                 loggedInUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
-                await _userRepository.SaveAsync(loggedInUser).AnyContext();
+                await _userRepository.SaveAsync(loggedInUser);
                 return loggedInUser;
             }
 
@@ -462,14 +462,14 @@ namespace Exceptionless.Api.Controllers {
             if (existingUser != null) {
                 if (!existingUser.IsEmailAddressVerified) {
                     existingUser.MarkEmailAddressVerified();
-                    await _userRepository.SaveAsync(existingUser).AnyContext();
+                    await _userRepository.SaveAsync(existingUser);
                 }
 
                 return existingUser;
             }
 
             // Check to see if a user already exists with this email address.
-            User user = !String.IsNullOrEmpty(userInfo.Email) ? await _userRepository.GetByEmailAddressAsync(userInfo.Email).AnyContext() : null;
+            User user = !String.IsNullOrEmpty(userInfo.Email) ? await _userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
             if (user == null) {
                 if (!Settings.Current.EnableAccountCreation)
                     throw new ApplicationException("Account Creation is currently disabled.");
@@ -477,12 +477,12 @@ namespace Exceptionless.Api.Controllers {
                 user = new User { FullName = userInfo.GetFullName(), EmailAddress = userInfo.Email };
                 user.Roles.Add(AuthorizationRoles.Client);
                 user.Roles.Add(AuthorizationRoles.User);
-                await AddGlobalAdminRoleIfFirstUserAsync(user).AnyContext();
+                await AddGlobalAdminRoleIfFirstUserAsync(user);
             }
 
             user.MarkEmailAddressVerified();
             user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
-            await _userRepository.SaveAsync(user).AnyContext();
+            await _userRepository.SaveAsync(user);
 
             return user;
         }
@@ -491,7 +491,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(token) || user == null)
                 return;
             
-            var organization = await _organizationRepository.GetByInviteTokenAsync(token).AnyContext();
+            var organization = await _organizationRepository.GetByInviteTokenAsync(token);
             var invite = organization.GetInvite(token);
             if (organization == null || invite == null) {
                 Log.Info().Message("Unable to add the invited user \"{0}\". Invalid invite token: {1}", user.EmailAddress, token).Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
@@ -501,17 +501,17 @@ namespace Exceptionless.Api.Controllers {
             if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
                 Log.Info().Message("Marking the invited users email address \"{0}\" as verified.", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
                 user.MarkEmailAddressVerified();
-                await _userRepository.SaveAsync(user).AnyContext();
+                await _userRepository.SaveAsync(user);
             }
 
             if (!user.OrganizationIds.Contains(organization.Id)) {
                 Log.Info().Message("\"{0}\" joined from invite.", user.EmailAddress).Tag("Invite").Property("Organization", organization).Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
                 user.OrganizationIds.Add(organization.Id);
-                await _userRepository.SaveAsync(user).AnyContext();
+                await _userRepository.SaveAsync(user);
             }
 
             organization.Invites.Remove(invite);
-            await _organizationRepository.SaveAsync(organization).AnyContext();
+            await _organizationRepository.SaveAsync(organization);
         }
 
         private Task ChangePasswordAsync(User user, string password) {
@@ -524,7 +524,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private async Task<string> GetTokenAsync(User user) {
-            var token = await _tokenManager.GetOrCreateAsync(user).AnyContext();
+            var token = await _tokenManager.GetOrCreateAsync(user);
             return token.Id;
         }
 
