@@ -134,7 +134,7 @@ namespace Exceptionless.Core {
             else
                 container.RegisterSingleton<IMailSender>(() => new InMemoryMailSender());
 
-            container.Register<ILockProvider, CacheLockProvider>();
+            container.RegisterSingleton<ILockProvider, CacheLockProvider>();
             container.Register<StripeEventHandler>();
             container.RegisterSingleton<BillingManager>();
             container.RegisterSingleton<DataHelper>();

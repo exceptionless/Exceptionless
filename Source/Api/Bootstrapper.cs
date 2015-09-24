@@ -12,8 +12,8 @@ namespace Exceptionless.Api {
         public void RegisterServices(Container container) {
             container.RegisterSingleton<IUserIdProvider, PrincipalUserIdProvider>();
             container.RegisterSingleton<MessageBusHub>();
-            container.Register<OverageHandler>();
-            container.Register<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+            container.RegisterSingleton<OverageHandler>();
+            container.RegisterSingleton<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
         }
     }
 }

@@ -42,26 +42,23 @@ namespace Exceptionless.Api {
         public static void BuildWithContainer(IAppBuilder app, Container container) {
             if (container == null)
                 throw new ArgumentNullException(nameof(container));
-
-            var contractResolver = container.GetInstance<IContractResolver>();
-            var exceptionlessContractResolver = contractResolver as ExceptionlessContractResolver;
-            exceptionlessContractResolver?.UseDefaultResolverFor(typeof(Connection).Assembly);
-
+            
             Config = new HttpConfiguration();
-            Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
             Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
-            Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
-
+            
             SetupRouteConstraints(Config);
             container.RegisterWebApiControllers(Config);
 
             VerifyContainer(container);
+            
+            Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
 
-            container.Bootstrap(Config);
-            container.Bootstrap(app);
+            var contractResolver = container.GetInstance<IContractResolver>();
+            var exceptionlessContractResolver = contractResolver as ExceptionlessContractResolver;
+            exceptionlessContractResolver?.UseDefaultResolverFor(typeof(Connection).Assembly);
+            Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
-            Log.Info().Message("Starting api...").Write();
             Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
             Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
 
@@ -74,7 +71,12 @@ namespace Exceptionless.Api {
 
             // Reject event posts in orgs over their max event limits.
             Config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
+            
+            container.Bootstrap(Config);
+            container.Bootstrap(app);
 
+            Log.Info().Message("Starting api...").Write();
+           
             app.UseCors(new CorsOptions {
                 PolicyProvider = new CorsPolicyProvider {
                     PolicyResolver = ctx => Task.FromResult(new CorsPolicy {
