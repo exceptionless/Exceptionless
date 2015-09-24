@@ -14,17 +14,17 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task IncrementNextSummaryEndOfDayTicks() {
-            await _repository.RemoveAllAsync().AnyContext();
-            Assert.Equal(0, await _repository.CountAsync().AnyContext());
+            await _repository.RemoveAllAsync();
+            Assert.Equal(0, await _repository.CountAsync());
             
-            var project = await _repository.AddAsync(ProjectData.GenerateSampleProject()).AnyContext();
+            var project = await _repository.AddAsync(ProjectData.GenerateSampleProject());
             Assert.NotNull(project.Id);
 
-            await _client.RefreshAsync().AnyContext();
-            Assert.Equal(1, await _repository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project.Id }).AnyContext());
-            await _client.RefreshAsync().AnyContext();
+            await _client.RefreshAsync();
+            Assert.Equal(1, await _repository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project.Id }));
+            await _client.RefreshAsync();
 
-            var updatedProject = await _repository.GetByIdAsync(project.Id, false).AnyContext();
+            var updatedProject = await _repository.GetByIdAsync(project.Id, false);
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, updatedProject.NextSummaryEndOfDayTicks);
 
             //TODO: Figure out why this isn't updated.

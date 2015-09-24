@@ -17,7 +17,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             var job = JobRunner.CreateJobInstance(typeof(TestJob).AssemblyQualifiedName);
             Assert.NotNull(job);
             Assert.Equal(0, TestJob.RunCount);
-            Assert.Equal(JobResult.Success, await job.RunAsync().AnyContext());
+            Assert.Equal(JobResult.Success, await job.RunAsync());
             Assert.Equal(1, TestJob.RunCount);
         }
 

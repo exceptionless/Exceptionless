@@ -16,12 +16,12 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task GetByOrganizationIdOrProjectId() {
-            await RemoveDataAsync().AnyContext();
+            await RemoveDataAsync();
 
-            await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 0, 0, 0) }).AnyContext();
-            await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 0, 0, 0) }).AnyContext();
-            await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 0, 0, 0) }).AnyContext();
-            await _client.RefreshAsync().AnyContext();
+            await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 0, 0, 0) });
+            await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 0, 0, 0) });
+            await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 0, 0, 0) });
+            await _client.RefreshAsync();
 
             Assert.Equal(3, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);
             Assert.Equal(2, (await _repository.GetByOrganizationIdOrProjectIdAsync(TestConstants.OrganizationId, TestConstants.ProjectId)).Total);
@@ -31,14 +31,14 @@ namespace Exceptionless.Api.Tests.Repositories {
         
         [Fact]
         public async Task CanSaveWebHookVersion() {
-            await RemoveDataAsync().AnyContext();
+            await RemoveDataAsync();
 
-            await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(1, 1, 1, 1) }).AnyContext();
-            await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 2, 2, 2) }).AnyContext();
-            await _client.RefreshAsync().AnyContext();
+            await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(1, 1, 1, 1) });
+            await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 2, 2, 2) });
+            await _client.RefreshAsync();
 
-            Assert.Equal(new Version(1, 1, 1, 1), (await _repository.GetByProjectIdAsync(TestConstants.ProjectId).AnyContext()).Documents.First().Version);
-            Assert.Equal(new Version(2, 2, 2, 2), (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles).AnyContext()).Documents.First().Version);
+            Assert.Equal(new Version(1, 1, 1, 1), (await _repository.GetByProjectIdAsync(TestConstants.ProjectId)).Documents.First().Version);
+            Assert.Equal(new Version(2, 2, 2, 2), (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles)).Documents.First().Version);
         }
 
         protected Task RemoveDataAsync() {
@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         public void Dispose() {
-            //await RemoveDataAsync().AnyContext();
+            //await RemoveDataAsync();
         }
     }
 }

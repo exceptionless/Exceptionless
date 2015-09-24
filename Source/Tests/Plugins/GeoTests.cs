@@ -19,9 +19,9 @@ namespace Exceptionless.Api.Tests.Plugins {
             var dataDirectory = PathHelper.ExpandPath(".\\");
             var storage = new FolderFileStorage(dataDirectory);
 
-            if (!await storage.ExistsAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH).AnyContext()) {
+            if (!await storage.ExistsAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH)) {
                 var job = new DownloadGeoIPDatabaseJob(storage);
-                var result = await job.RunAsync().AnyContext();
+                var result = await job.RunAsync();
                 Assert.NotNull(result);
                 Assert.True(result.IsSuccess);
             }
@@ -32,8 +32,8 @@ namespace Exceptionless.Api.Tests.Plugins {
         [Theory]
         [MemberData("IPData")]
         public async Task CanResolveIp(string ip, bool canResolve) {
-            var resolver = await GetResolver().AnyContext();
-            var result = await resolver.ResolveIpAsync(ip).AnyContext();
+            var resolver = await GetResolver();
+            var result = await resolver.ResolveIpAsync(ip);
             if (canResolve)
                 Assert.NotNull(result);
             else
@@ -42,14 +42,14 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Fact]
         public async Task CanResolveIpFromCache() {
-            var resolver = await GetResolver().AnyContext();
+            var resolver = await GetResolver();
 
             // Load the database
-            await resolver.ResolveIpAsync("0.0.0.0").AnyContext();
+            await resolver.ResolveIpAsync("0.0.0.0");
 
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < 1000; i++)
-                Assert.NotNull(await resolver.ResolveIpAsync("8.8.4.4").AnyContext());
+                Assert.NotNull(await resolver.ResolveIpAsync("8.8.4.4"));
 
             sw.Stop();
             Assert.InRange(sw.ElapsedMilliseconds, 0, 65);

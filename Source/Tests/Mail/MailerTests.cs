@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Tests.Mail {
                 IsRegression = false,
                 TotalOccurrences = 1,
                 ProjectName = "Testing"
-            }).AnyContext();
+            });
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
@@ -57,7 +57,7 @@ namespace Exceptionless.Api.Tests.Mail {
                 IsRegression = false,
                 TotalOccurrences = 1,
                 ProjectName = "Testing"
-            }).AnyContext();
+            });
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
@@ -85,7 +85,7 @@ namespace Exceptionless.Api.Tests.Mail {
                 IsRegression = false,
                 TotalOccurrences = 1,
                 ProjectName = "Testing"
-            }).AnyContext();
+            });
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
@@ -116,7 +116,7 @@ namespace Exceptionless.Api.Tests.Mail {
                 IsRegression = false,
                 TotalOccurrences = 1,
                 ProjectName = "Testing"
-            }).AnyContext();
+            });
         }
 
         [Fact]
@@ -132,8 +132,8 @@ namespace Exceptionless.Api.Tests.Mail {
                 DateAdded = DateTime.Now,
                 EmailAddress = Settings.Current.TestEmailAddress,
                 Token = "1"
-            }).AnyContext();
-            await mailJob.RunAsync().AnyContext();
+            });
+            await mailJob.RunAsync();
 
             Assert.Equal(1, mailerSender.TotalSent);
             Assert.Equal(Settings.Current.TestEmailAddress, mailerSender.LastMessage.To);
@@ -145,21 +145,21 @@ namespace Exceptionless.Api.Tests.Mail {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
-            await mailer.SendAddedToOrganizationAsync(user, organization, user).AnyContext();
+            await mailer.SendAddedToOrganizationAsync(user, organization, user);
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
         public async Task SendPasswordReset() {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
-            await mailer.SendPasswordResetAsync(user).AnyContext();
+            await mailer.SendPasswordResetAsync(user);
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
         public async Task SendVerifyEmail() {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
-            await mailer.SendVerifyEmailAsync(user).AnyContext();
+            await mailer.SendVerifyEmailAsync(user);
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
@@ -201,7 +201,7 @@ namespace Exceptionless.Api.Tests.Mail {
                 UniqueTotal = 1,
                 HasSubmittedEvents = true,
                 IsFreePlan = false
-            }).AnyContext();
+            });
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
@@ -209,7 +209,7 @@ namespace Exceptionless.Api.Tests.Mail {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
-            await mailer.SendPaymentFailedAsync(user, organization).AnyContext();
+            await mailer.SendPaymentFailedAsync(user, organization);
         }
     }
 }

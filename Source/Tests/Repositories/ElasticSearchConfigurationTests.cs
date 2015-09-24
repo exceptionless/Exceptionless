@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.False(alias.IsValid);
             Assert.Equal(0, alias.Indices.Count);
 
-            await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now, OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId }).AnyContext();
+            await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now, OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
             _client.Refresh();
 
             alias = _client.GetAlias(descriptor => descriptor.Alias(_eventIndex.Name));
@@ -52,7 +52,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             indexes = _client.GetIndicesPointingToAlias(_eventIndex.Name);
             Assert.Equal(1, indexes.Count);
 
-            await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now.SubtractMonths(1), OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId }).AnyContext();
+            await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now.SubtractMonths(1), OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
             _client.Refresh();
 
             indexes = _client.GetIndicesPointingToAlias(_eventIndex.Name);

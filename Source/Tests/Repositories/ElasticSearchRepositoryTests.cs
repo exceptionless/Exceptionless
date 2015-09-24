@@ -17,79 +17,79 @@ namespace Exceptionless.Api.Tests.Repositories {
         
         [Fact]
         public async Task CanCreateUpdateRemove() {
-            await ResetAsync().AnyContext();
+            await ResetAsync();
 
-            await _repository.RemoveAllAsync().AnyContext();
-            Assert.Equal(0, await _repository.CountAsync().AnyContext());
+            await _repository.RemoveAllAsync();
+            Assert.Equal(0, await _repository.CountAsync());
 
             var stack = StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
             Assert.Null(stack.Id);
 
-            await _repository.AddAsync(stack).AnyContext();
+            await _repository.AddAsync(stack);
             Assert.NotNull(stack.Id);
             _client.Refresh();
 
-            stack = await _repository.GetByIdAsync(stack.Id).AnyContext();
+            stack = await _repository.GetByIdAsync(stack.Id);
             Assert.NotNull(stack);
 
             stack.Description = "New Description";
-            await _repository.SaveAsync(stack).AnyContext();
-            await _repository.RemoveAsync(stack.Id).AnyContext();
+            await _repository.SaveAsync(stack);
+            await _repository.RemoveAsync(stack.Id);
         }
 
         [Fact]
         public async Task CanFindMany() {
-            await ResetAsync().AnyContext();
+            await ResetAsync();
 
-            await _repository.RemoveAllAsync().AnyContext();
-            Assert.Equal(0, await _repository.CountAsync().AnyContext());
+            await _repository.RemoveAllAsync();
+            Assert.Equal(0, await _repository.CountAsync());
 
-            await _repository.AddAsync(StackData.GenerateSampleStacks()).AnyContext();
+            await _repository.AddAsync(StackData.GenerateSampleStacks());
 
             _client.Refresh();
 
-            var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(1).WithLimit(1)).AnyContext();
+            var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(1).WithLimit(1));
             Assert.NotNull(stacks);
             Assert.Equal(3, stacks.Total);
             Assert.Equal(1, stacks.Documents.Count);
 
-            var stacks2 = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(1)).AnyContext();
+            var stacks2 = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(1));
             Assert.NotNull(stacks);
             Assert.Equal(1, stacks.Documents.Count);
 
             Assert.NotEqual(stacks.Documents.First().Id, stacks2.Documents.First().Id);
 
-            stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId).AnyContext();
+            stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId);
             Assert.NotNull(stacks);
             Assert.Equal(3, stacks.Documents.Count);
 
-            await _repository.RemoveAsync(stacks.Documents).AnyContext();
-            Assert.Equal(0, await _repository.CountAsync().AnyContext());
-            await _repository.RemoveAllAsync().AnyContext();
+            await _repository.RemoveAsync(stacks.Documents);
+            Assert.Equal(0, await _repository.CountAsync());
+            await _repository.RemoveAllAsync();
         }
 
         [Fact]
         public async Task CanAddAndGetByCached() {
-            await ResetAsync().AnyContext();
+            await ResetAsync();
 
             var cache = IoC.GetInstance<ICacheClient>() as InMemoryCacheClient;
             Assert.NotNull(cache);
-            await cache.RemoveAllAsync().AnyContext();
+            await cache.RemoveAllAsync();
 
             var stack = StackData.GenerateSampleStack();
 
             Assert.Equal(0, cache.Count);
-            await _repository.AddAsync(stack, true).AnyContext();
+            await _repository.AddAsync(stack, true);
             Assert.NotNull(stack.Id);
             Assert.Equal(2, cache.Count);
             _client.Refresh();
 
-            await cache.RemoveAllAsync().AnyContext();
+            await cache.RemoveAllAsync();
             Assert.Equal(0, cache.Count);
-            Assert.NotNull(await _repository.GetByIdAsync(stack.Id, true).AnyContext());
+            Assert.NotNull(await _repository.GetByIdAsync(stack.Id, true));
             Assert.Equal(1, cache.Count);
 
-            await _repository.RemoveAllAsync().AnyContext();
+            await _repository.RemoveAllAsync();
             Assert.Equal(0, cache.Count);
         }
         
@@ -97,8 +97,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         private async Task ResetAsync() {
             if (!_isReset) {
                 _isReset = true;
-                await _eventRepository.RemoveAllAsync().AnyContext();
-                await _repository.RemoveAllAsync().AnyContext();
+                await _eventRepository.RemoveAllAsync();
+                await _repository.RemoveAllAsync();
             }
         }
 

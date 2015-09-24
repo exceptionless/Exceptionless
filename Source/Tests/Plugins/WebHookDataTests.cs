@@ -23,7 +23,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public async Task CreateFromEvent(Version version, bool expectData) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
-            var data = await _webHookDataPluginManager.CreateFromEventAsync(GetWebHookDataContext(version)).AnyContext();
+            var data = await _webHookDataPluginManager.CreateFromEventAsync(GetWebHookDataContext(version));
             if (expectData) {
                 string filePath = $@"..\..\Plugins\WebHookData\v{version}.event.expected.json";
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public async Task CanCreateFromStack(Version version, bool expectData) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
-            var data = await _webHookDataPluginManager.CreateFromStackAsync(GetWebHookDataContext(version)).AnyContext();
+            var data = await _webHookDataPluginManager.CreateFromStackAsync(GetWebHookDataContext(version));
             if (expectData) {
                 string filePath = $@"..\..\Plugins\WebHookData\v{version}.stack.expected.json";
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));

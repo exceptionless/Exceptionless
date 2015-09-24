@@ -28,18 +28,18 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
-            await RemoveDataAsync().AnyContext();
-            await CreateDataAsync(eventCount, false).AnyContext();
+            await RemoveDataAsync();
+            await CreateDataAsync(eventCount, false);
 
-            await _client.RefreshAsync(d => d.Force()).AnyContext();
+            await _client.RefreshAsync(d => d.Force());
             _metricsClient.DisplayStats();
             var result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
-            Assert.Equal(await _stackRepository.CountAsync().AnyContext(), result.Unique);
-            Assert.Equal(await _stackRepository.CountAsync().AnyContext(), result.Timeline.Sum(t => t.New));
+            Assert.Equal(await _stackRepository.CountAsync(), result.Unique);
+            Assert.Equal(await _stackRepository.CountAsync(), result.Timeline.Sum(t => t.New));
 
-            var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100)).AnyContext();
+            var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
             foreach (var stack in stacks.Documents) {
                 result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
                 Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, result.Total);
@@ -53,18 +53,18 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
-            await RemoveDataAsync().AnyContext();
-            await CreateDataAsync(eventCount, false).AnyContext();
+            await RemoveDataAsync();
+            await CreateDataAsync(eventCount, false);
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
             var result = _stats.GetOccurrenceStats(DateTime.MinValue, DateTime.MaxValue, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
-            Assert.Equal(await _stackRepository.CountAsync().AnyContext(), result.Unique);
-            Assert.Equal(await _stackRepository.CountAsync().AnyContext(), result.Timeline.Sum(t => t.New));
+            Assert.Equal(await _stackRepository.CountAsync(), result.Unique);
+            Assert.Equal(await _stackRepository.CountAsync(), result.Timeline.Sum(t => t.New));
 
-            var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100)).AnyContext();
+            var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
             foreach (var stack in stacks.Documents) {
                 result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
                 Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, result.Total);
@@ -78,8 +78,8 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 1;
-            await RemoveDataAsync().AnyContext();
-            await CreateDataAsync(eventCount).AnyContext();
+            await RemoveDataAsync();
+            await CreateDataAsync(eventCount);
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -97,8 +97,8 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
-            await RemoveDataAsync().AnyContext();
-            await CreateDataAsync(eventCount, false).AnyContext();
+            await RemoveDataAsync();
+            await CreateDataAsync(eventCount, false);
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -120,8 +120,8 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
-            await RemoveDataAsync().AnyContext();
-            await CreateDataAsync(eventCount, false).AnyContext();
+            await RemoveDataAsync();
+            await CreateDataAsync(eventCount, false);
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -143,8 +143,8 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
-            await RemoveDataAsync().AnyContext();
-            await CreateDataAsync(eventCount).AnyContext();
+            await RemoveDataAsync();
+            await CreateDataAsync(eventCount);
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -160,34 +160,34 @@ namespace Exceptionless.Api.Tests.Stats {
 
         [Fact]
         public async Task CanSetGauges() {
-            await _metricsClient.GaugeAsync("mygauge", 12d).AnyContext();
+            await _metricsClient.GaugeAsync("mygauge", 12d);
             Assert.Equal(12d, _metricsClient.GetGaugeValue("mygauge"));
-            await _metricsClient.GaugeAsync("mygauge", 10d).AnyContext();
-            await _metricsClient.GaugeAsync("mygauge", 5d).AnyContext();
-            await _metricsClient.GaugeAsync("mygauge", 4d).AnyContext();
-            await _metricsClient.GaugeAsync("mygauge", 12d).AnyContext();
-            await _metricsClient.GaugeAsync("mygauge", 20d).AnyContext();
+            await _metricsClient.GaugeAsync("mygauge", 10d);
+            await _metricsClient.GaugeAsync("mygauge", 5d);
+            await _metricsClient.GaugeAsync("mygauge", 4d);
+            await _metricsClient.GaugeAsync("mygauge", 12d);
+            await _metricsClient.GaugeAsync("mygauge", 20d);
             Assert.Equal(20d, _metricsClient.GetGaugeValue("mygauge"));
             _metricsClient.DisplayStats();
         }
 
         private async Task CreateDataAsync(int eventCount = 100, bool multipleProjects = true) {
             var orgs = OrganizationData.GenerateSampleOrganizations();
-            await _organizationRepository.AddAsync(orgs).AnyContext();
+            await _organizationRepository.AddAsync(orgs);
 
             var projects = ProjectData.GenerateSampleProjects();
-            await _projectRepository.AddAsync(projects).AnyContext();
+            await _projectRepository.AddAsync(projects);
 
             var events = EventData.GenerateEvents(eventCount, projectIds: multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId }, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
-                await _eventPipeline.RunAsync(eventGroup).AnyContext();
+                await _eventPipeline.RunAsync(eventGroup);
         }
 
         private async Task RemoveDataAsync() {
-            await _organizationRepository.RemoveAllAsync().AnyContext();
-            await _projectRepository.RemoveAllAsync().AnyContext();
-            await _eventRepository.RemoveAllAsync().AnyContext();
-            await _stackRepository.RemoveAllAsync().AnyContext();
+            await _organizationRepository.RemoveAllAsync();
+            await _projectRepository.RemoveAllAsync();
+            await _eventRepository.RemoveAllAsync();
+            await _stackRepository.RemoveAllAsync();
         }
     }
 }

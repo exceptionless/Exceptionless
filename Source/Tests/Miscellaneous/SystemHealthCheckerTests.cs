@@ -11,7 +11,7 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
         public async Task CheckAll() {
             var checker = IoC.GetInstance<SystemHealthChecker>();
             Assert.NotNull(checker);
-            var health = await checker.CheckAllAsync().AnyContext();
+            var health = await checker.CheckAllAsync();
             Assert.True(health.IsHealthy, health.Message);
         }
     }
