@@ -17,22 +17,22 @@ namespace Exceptionless.Core.Jobs {
             _storage = storage;
         }
 
-        protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
+        protected override async Task<JobResult> RunInternalAsync(CancellationToken cancellationToken = default(CancellationToken)) {
             try {
                 if (await _storage.ExistsAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH).AnyContext()) {
                     Log.Info().Message("Deleting existing GeoIP database.").Write();
-                    await _storage.DeleteFileAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH, token).AnyContext();
+                    await _storage.DeleteFileAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH, cancellationToken).AnyContext();
                 }
 
                 Log.Info().Message("Downloading GeoIP database.").Write();
                 var client = new HttpClient();
-                var file = await client.GetAsync("http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz", token).AnyContext();
+                var file = await client.GetAsync("http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz", cancellationToken).AnyContext();
                 if (!file.IsSuccessStatusCode)
                     return JobResult.FailedWithMessage("Unable to download GeoIP database.");
 
                 Log.Info().Message("Extracting GeoIP database").Write();
                 using (GZipStream decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync().AnyContext(), CompressionMode.Decompress))
-                    await _storage.SaveFileAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH, decompressionStream, token).AnyContext();
+                    await _storage.SaveFileAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH, decompressionStream, cancellationToken).AnyContext();
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("An error occurred while downloading the GeoIP database.").Write();
                 return JobResult.FromException(ex);

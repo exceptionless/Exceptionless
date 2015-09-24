@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Jobs {
             return _lockProvider.AcquireLockAsync("DailySummaryJob");
         }
         
-        protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
+        protected override async Task<JobResult> RunInternalAsync(CancellationToken cancellationToken = default(CancellationToken)) {
             if (!Settings.Current.EnableDailySummary)
                 return JobResult.SuccessWithMessage("Summary notifications are disabled.");
 
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Jobs {
             const int BATCH_SIZE = 25;
 
             var projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
-            while (projects.Count > 0 && !token.IsCancellationRequested) {
+            while (projects.Count > 0 && !cancellationToken.IsCancellationRequested) {
                 var documentsUpdated = await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projects.Select(p => p.Id).ToList()).AnyContext();
                 Log.Info().Message("Got {0} projects to process. ", projects.Count).Write();
                 Debug.Assert(projects.Count == documentsUpdated);

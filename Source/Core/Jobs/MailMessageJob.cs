@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Jobs {
             _metricsClient = metricsClient;
         }
 
-        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<MailMessage> queueEntry, CancellationToken cancellationToken) {
+        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<MailMessage> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
             await _metricsClient.CounterAsync(MetricNames.EmailsDequeued).AnyContext();
             Log.Trace().Message("Processing message '{0}'.", queueEntry.Id).Write();
             

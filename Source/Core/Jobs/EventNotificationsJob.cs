@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Jobs {
             _cacheClient = cacheClient;
         }
 
-        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventNotificationWorkItem> queueEntry, CancellationToken cancellationToken) {
+        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventNotificationWorkItem> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
             var eventModel = await _eventRepository.GetByIdAsync(queueEntry.Value.EventId).AnyContext();
             if (eventModel == null)
                 return JobResult.FailedWithMessage("Could not load event {0}.", queueEntry.Value.EventId);

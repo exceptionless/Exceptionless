@@ -6,11 +6,9 @@ using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Nito.AsyncEx;
-using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> : ExceptionlessApiController where TRepository : IReadOnlyRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() {
@@ -60,53 +58,6 @@ namespace Exceptionless.Api.Controllers {
             }
 
             return results;
-        }
-
-        public virtual Task<IHttpActionResult> GetAsync(string userFilter = null, string query = null, string sort = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return GetInternalAsync(null, userFilter, query, sort, offset, mode, page, limit);
-        }
-
-        public async Task<IHttpActionResult> GetInternalAsync(string systemFilter = null, string userFilter = null, string query = null, string sort = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            page = GetPage(page);
-            limit = GetLimit(limit);
-            var skip = GetSkip(page + 1, limit);
-            if (skip > MAXIMUM_SKIP)
-                return Ok(new object[0]);
-
-            var processResult = QueryProcessor.Process(query);
-            if (!processResult.IsValid)
-                return BadRequest(processResult.Message);
-
-            if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetSystemFilter(processResult.UsesPremiumFeatures, HasOrganizationFilter(query));
-
-            var sortBy = GetSort(sort);
-            var options = new PagingOptions {
-                Page = page,
-                Limit = limit
-            };
-
-            FindResults<TModel> models;
-            try {
-                models = await _repository.GetBySearchAsync(systemFilter, userFilter, query, sortBy.Item1, sortBy.Item2, options);
-            } catch (ApplicationException ex) {
-                var loggedInUser = await GetExceptionlessUserAsync();
-                Log.Error().Exception(ex).Property("Search Filter", new {
-                    SystemFilter = systemFilter,
-                    UserFilter = userFilter,
-                    Sort = sort,
-                    Offset = offset,
-                    Page = page,
-                    Limit = limit
-                }).Tag("Search").Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
-
-                return BadRequest("An error has occurred. Please check your search filter.");
-            }
-
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await MapCollectionAsync<TViewModel>(models.Documents, true), options.HasMore, page, models.Total);
-
-            return OkWithResourceLinks(await MapCollectionAsync<TViewModel>(models.Documents, true), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, models.Total);
         }
         
         #region Mapping

@@ -21,7 +21,7 @@ namespace Exceptionless.Api.Utility {
             }
 
             var response = await base.SendAsync(request, cancellationToken);
-            if (response.RequestMessage != null && response.RequestMessage.Headers != null && response.RequestMessage.Headers.AcceptEncoding != null && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
+            if (response.RequestMessage?.Headers?.AcceptEncoding != null && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
                 string encodingType = response.RequestMessage.Headers.AcceptEncoding.First().Value;
 
                 if (response.Content != null && (encodingType == "gzip" || encodingType == "deflate"))
@@ -75,7 +75,7 @@ namespace Exceptionless.Api.Utility {
             throw new NotSupportedException("Compression type not supported or stream isn't compressed");
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) {
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context) {
             Stream compressedStream = null;
             
             switch (_encodingType) {
@@ -87,10 +87,10 @@ namespace Exceptionless.Api.Utility {
                     break;
             }
 
-            return _originalContent.CopyToAsync(compressedStream).ContinueWith(tsk => {
-                if (compressedStream != null)
-                    compressedStream.Dispose();
-            });
+            if (compressedStream != null) {
+                await _originalContent.CopyToAsync(compressedStream);
+                compressedStream.Dispose();
+            }
         }
 
         protected override Task<Stream> CreateContentReadStreamAsync() {

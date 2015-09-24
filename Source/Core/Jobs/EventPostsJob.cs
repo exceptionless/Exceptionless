@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Jobs {
             AutoComplete = false;
         }
 
-        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventPost> queueEntry, CancellationToken cancellationToken) {
+        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventPost> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
             EventPostInfo eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, cancellationToken).AnyContext();
             if (eventPostInfo == null) {
                 await queueEntry.AbandonAsync().AnyContext();

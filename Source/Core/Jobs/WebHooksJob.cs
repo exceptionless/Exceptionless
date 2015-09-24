@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Jobs {
             _jsonSerializerSettings = settings;
         }
         
-        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<WebHookNotification> queueEntry, CancellationToken cancellationToken) {
+        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<WebHookNotification> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
             WebHookNotification body = queueEntry.Value;
             bool shouldLog = body.ProjectId != Settings.Current.InternalProjectId;
             Log.Trace().Project(body.ProjectId).Message("Process web hook call: id={0} project={1} url={2}", queueEntry.Id, body.ProjectId, body.Url).WriteIf(shouldLog);

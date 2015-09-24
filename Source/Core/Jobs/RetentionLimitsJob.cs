@@ -26,10 +26,10 @@ namespace Exceptionless.Core.Jobs {
             return _lockProvider.AcquireLockAsync("RetentionLimitsJob");
         }
 
-        protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
+        protected override async Task<JobResult> RunInternalAsync(CancellationToken cancellationToken = default(CancellationToken)) {
             var page = 1;
             var organizations = (await _organizationRepository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithLimit(100)).AnyContext()).Documents;
-            while (organizations.Count > 0 && !token.IsCancellationRequested) {
+            while (organizations.Count > 0 && !cancellationToken.IsCancellationRequested) {
                 foreach (var organization in organizations)
                     await EnforceEventCountLimitsAsync(organization).AnyContext();
 

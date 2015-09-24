@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Jobs {
             _metricsClient = metricsClient;
         }
 
-        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventUserDescription> queueEntry, CancellationToken cancellationToken) {
+        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventUserDescription> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
             await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionDequeued).AnyContext();
             Log.Trace().Message("Processing user description: id={0}", queueEntry.Id).Write();
 
