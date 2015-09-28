@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Utility;
 using Foundatio.ServiceProviders;
 using NLog.Fluent;
 using SimpleInjector;
@@ -11,8 +10,7 @@ namespace Exceptionless.Core.Jobs {
         public override IServiceProvider Bootstrap() {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
-            container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
-
+            
             container.RegisterPackage<Bootstrapper>();
 
             Assembly insulationAssembly = null;

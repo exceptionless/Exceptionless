@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Xunit;
 

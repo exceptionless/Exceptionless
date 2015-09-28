@@ -2,7 +2,6 @@
 using System.IO;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;

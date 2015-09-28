@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Foundatio.Jobs;
 using Foundatio.ServiceProviders;

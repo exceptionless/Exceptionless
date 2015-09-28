@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;

@@ -301,7 +301,8 @@ namespace Exceptionless.Api.Controllers {
             var result = _userDescriptionValidator.Validate(description);
             if (!result.IsValid)
                 return BadRequest(result.Errors.ToErrorMessage());
-
+            
+            // TODO: We are possibly looking up the project twice...
             if (projectId == null)
                 projectId = (await Request.GetDefaultProjectAsync(_projectRepository))?.Id;
 
@@ -312,6 +313,9 @@ namespace Exceptionless.Api.Controllers {
             var project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
                 return NotFound();
+
+            // Set the project for the configuration response filter.
+            Request.SetProject(project);
 
             var eventUserDescription = await MapAsync<EventUserDescription>(description);
             eventUserDescription.ProjectId = projectId;
@@ -400,7 +404,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();
-
+            
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
@@ -408,6 +412,10 @@ namespace Exceptionless.Api.Controllers {
             var project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !Request.GetAssociatedOrganizationIds().Contains(project.OrganizationId))
                 return NotFound();
+
+            // TODO: We could save some overhead if we set the project in the overage handler...
+            // Set the project for the configuration response filter.
+            Request.SetProject(project);
 
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
             bool isCompressed = contentEncoding == "gzip" || contentEncoding == "deflate";

@@ -10,23 +10,25 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Microsoft.Owin;
-using Nito.AsyncEx;
 
 namespace Exceptionless.Api.Extensions {
     public static class HttpExtensions {
         public static User GetUser(this HttpRequestMessage message) {
             return message?.GetOwinContext().Get<User>("User");
         }
-
-        public static User GetUser(this IOwinRequest request) {
-            return request?.Context.Get<User>("User");
-        }
-
+        
         public static void SetUser(this HttpRequestMessage message, User user) {
             message?.GetOwinContext().Set("User", user);
         }
-        
+
+        public static Project GetProject(this HttpRequestMessage message) {
+            return message?.GetOwinContext().Get<Project>("Project");
+        }
+
+        public static void SetProject(this HttpRequestMessage message, Project project) {
+            message?.GetOwinContext().Set("Project", project);
+        }
+
         public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequestMessage message) {
             var context = message?.GetOwinContext();
             return context?.Request?.User?.GetClaimsPrincipal();

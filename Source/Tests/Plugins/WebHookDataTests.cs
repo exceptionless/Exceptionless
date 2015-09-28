@@ -4,7 +4,6 @@ using System.IO;
 using System.Threading.Tasks;
 using ApprovalTests.Reporters;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;

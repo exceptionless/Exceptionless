@@ -458,8 +458,6 @@
     <Compile Include="Plugins\EventProcessor\Default\20_ErrorPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\EventPluginManager.cs" />
     <Compile Include="Plugins\EventProcessor\IEventProcessorPlugin.cs" />
-    <Compile Include="Utility\InjectAttribute.cs" />
-    <Compile Include="Utility\InjectAttributePropertySelectionBehavior.cs" />
     <Compile Include="Utility\DataHelper.cs" />
     <Compile Include="Utility\SimpleInjectorCoreDependencyResolver.cs" />
     <Compile Include="Mail\IMailer.cs" />
