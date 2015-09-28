@@ -98,7 +98,7 @@ namespace Exceptionless.Api {
             SetupSwagger(Config);
 
             Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
-            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+            if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
                 Task.Run(async () => await CreateSampleDataAsync(container));
 
             if (Settings.Current.RunJobsInProcess) {

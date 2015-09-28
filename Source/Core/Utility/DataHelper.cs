@@ -29,44 +29,7 @@ namespace Exceptionless.Core.Utility {
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
         }
-
-        public async Task<string> CreateDefaultOrganizationAndProjectAsync(User user) {
-            string organizationId = user.OrganizationIds.FirstOrDefault();
-            if (!String.IsNullOrEmpty(organizationId)) {
-                var defaultProject = (await _projectRepository.GetByOrganizationIdAsync(user.OrganizationIds.First(), useCache: true).AnyContext()).Documents.FirstOrDefault();
-                if (defaultProject != null)
-                    return defaultProject.Id;
-            } else {
-                var organization = new Organization {
-                    Name = "Default Organization"
-                };
-                BillingManager.ApplyBillingPlan(organization, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, user);
-                await _organizationRepository.AddAsync(organization).AnyContext();
-                organizationId = organization.Id;
-            }
-
-            var project = new Project { Name = "Default Project", OrganizationId = organizationId };
-            project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
-            project.AddDefaultOwnerNotificationSettings(user.Id);
-            project = await _projectRepository.AddAsync(project).AnyContext();
-            
-            await _tokenRepository.AddAsync(new Token {
-                Id = StringExtensions.GetNewToken(),
-                OrganizationId = organizationId,
-                ProjectId = project.Id,
-                CreatedUtc = DateTime.UtcNow,
-                ModifiedUtc = DateTime.UtcNow,
-                Type = TokenType.Access
-            }).AnyContext();
-
-            if (!user.OrganizationIds.Contains(organizationId)) {
-                user.OrganizationIds.Add(organizationId);
-                await _userRepository.SaveAsync(user, true).AnyContext();
-            }
-
-            return project.Id;
-        }
-
+        
         public async Task CreateTestDataAsync() {
             if (await _userRepository.GetByEmailAddressAsync(TEST_USER_EMAIL).AnyContext() != null)
                 return;
