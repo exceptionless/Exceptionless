@@ -63,7 +63,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.3.0.476\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.3.0.479\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Core, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -115,9 +115,9 @@
       <HintPath>..\..\packages\NLog.Targets.ElasticSearch.1.0.14.0\lib\net40\NLog.Targets.ElasticSearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OAuth2, Version=0.8.34.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\OAuth2.0.8.34\lib\OAuth2.dll</HintPath>
+    <Reference Include="OAuth2, Version=0.8.35.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\OAuth2.0.8.35\lib\OAuth2.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
@@ -220,7 +220,6 @@
     <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Controllers\UtilityController.cs" />
     <Compile Include="Controllers\WebHookController.cs" />
-    <Compile Include="Extensions\AppBuilderExtensions.cs" />
     <Compile Include="Extensions\DeltaExtensions.cs" />
     <Compile Include="Extensions\HttpExtensions.cs" />
     <Compile Include="Extensions\OAuth2Extensions.cs" />

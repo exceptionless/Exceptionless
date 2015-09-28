@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = await _repository.GetByOrganizationIdsAsync(await GetAssociatedOrganizationIdsAsync(), options);
+            var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), options);
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
             return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), options.HasMore, page, projects.Total);
         }
@@ -67,14 +67,14 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
         [ResponseType(typeof(List<ViewProject>))]
         public async Task<IHttpActionResult> GetByOrganizationAsync(string organization, int page = 1, int limit = 10) {
-            if (!String.IsNullOrEmpty(organization) && !await CanAccessOrganizationAsync(organization))
+            if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
 
             var organizationIds = new List<string>();
-            if (!String.IsNullOrEmpty(organization) && await CanAccessOrganizationAsync(organization))
+            if (!String.IsNullOrEmpty(organization) && CanAccessOrganization(organization))
                 organizationIds.Add(organization);
             else
-                organizationIds.AddRange(await GetAssociatedOrganizationIdsAsync());
+                organizationIds.AddRange(GetAssociatedOrganizationIds());
 
             page = GetPage(page);
             limit = GetLimit(limit);
@@ -260,7 +260,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals((await GetExceptionlessUserAsync()).Id, userId))
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
                 return NotFound();
 
             NotificationSettings settings;
@@ -282,7 +282,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals((await GetExceptionlessUserAsync()).Id, userId))
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
                 return NotFound();
 
             if (settings == null)
@@ -307,7 +307,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals((await GetExceptionlessUserAsync()).Id, userId))
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
                 return NotFound();
 
             if (project.NotificationSettings.ContainsKey(userId)) {
@@ -380,7 +380,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(name))
                 return false;
 
-            ICollection<string> organizationIds = !String.IsNullOrEmpty(organizationId) ? new List<string> { organizationId } : await GetAssociatedOrganizationIdsAsync();
+            ICollection<string> organizationIds = !String.IsNullOrEmpty(organizationId) ? new List<string> { organizationId } : GetAssociatedOrganizationIds();
             return !(await _repository.GetByOrganizationIdsAsync(organizationIds)).Documents.Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
@@ -452,7 +452,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected override async Task<Project> AddModelAsync(Project value) {
             value.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
-            value.AddDefaultOwnerNotificationSettings((await GetExceptionlessUserAsync()).Id);
+            value.AddDefaultOwnerNotificationSettings(ExceptionlessUser.Id);
             return await base.AddModelAsync(value);
         }
 

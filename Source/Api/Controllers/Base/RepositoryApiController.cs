@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -24,8 +25,8 @@ namespace Exceptionless.Api.Controllers {
 
             var orgModel = value as IOwnedByOrganization;
             // if no organization id is specified, default to the user's 1st associated org.
-            if (!_isOrganization && orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && (await GetAssociatedOrganizationIdsAsync()).Any())
-                orgModel.OrganizationId = await GetDefaultOrganizationIdAsync();
+            if (!_isOrganization && orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
+                orgModel.OrganizationId = Request.GetDefaultOrganizationId();
 
             TModel mapped = await MapAsync<TModel>(value);
             var permission = await CanAddAsync(mapped);
@@ -106,7 +107,7 @@ namespace Exceptionless.Api.Controllers {
             if (_isOrganization || orgModel == null)
                 return PermissionResult.Allow;
 
-            if (!await CanAccessOrganizationAsync(orgModel.OrganizationId))
+            if (!CanAccessOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
             return PermissionResult.Allow;
@@ -149,7 +150,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected virtual async Task<PermissionResult> CanUpdateAsync(TModel original, Delta<TUpdateModel> changes) {
             var orgModel = original as IOwnedByOrganization;
-            if (orgModel != null && !await CanAccessOrganizationAsync(orgModel.OrganizationId))
+            if (orgModel != null && !CanAccessOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
             if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
@@ -191,8 +192,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 workIds = await DeleteModelsAsync(items) ?? new List<string>();
             } catch (Exception ex) {
-                var loggedInUser = await GetExceptionlessUserAsync();
-                Log.Error().Exception(ex).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Log.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
             
@@ -206,7 +206,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected virtual async Task<PermissionResult> CanDeleteAsync(TModel value) {
             var orgModel = value as IOwnedByOrganization;
-            if (orgModel != null && !await CanAccessOrganizationAsync(orgModel.OrganizationId))
+            if (orgModel != null && !CanAccessOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithNotFound(value.Id);
 
             return PermissionResult.Allow;

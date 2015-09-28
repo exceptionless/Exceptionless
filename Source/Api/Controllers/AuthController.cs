@@ -219,21 +219,20 @@ namespace Exceptionless.Api.Controllers {
         [Route("unlink/{providerName:minlength(1)}")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IHttpActionResult> RemoveExternalLoginAsync(string providerName, [NakedBody] string providerUserId) {
-            var loggedInUser = await GetExceptionlessUserAsync();
             if (String.IsNullOrEmpty(providerName) || String.IsNullOrEmpty(providerUserId)) {
-                Log.Error().Message("Remove external login failed for \"{0}\": Invalid Provider Name or Provider User Id.", loggedInUser.EmailAddress).Tag("External Login", providerName).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).Property("Provider User Id", providerUserId).ContextProperty("HttpActionContext", ActionContext).Write();
+                Log.Error().Message("Remove external login failed for \"{0}\": Invalid Provider Name or Provider User Id.", ExceptionlessUser.EmailAddress).Tag("External Login", providerName).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Provider User Id", providerUserId).ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("Invalid Provider Name or Provider User Id.");
             }
 
-            if (loggedInUser.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(loggedInUser.Password)) {
-                Log.Error().Message("Remove external login failed for \"{0}\": You must set a local password before removing your external login.", loggedInUser.EmailAddress).Tag("External Login", providerName).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).Property("Provider User Id", providerUserId).ContextProperty("HttpActionContext", ActionContext).Write();
+            if (ExceptionlessUser.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(ExceptionlessUser.Password)) {
+                Log.Error().Message("Remove external login failed for \"{0}\": You must set a local password before removing your external login.", ExceptionlessUser.EmailAddress).Tag("External Login", providerName).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Provider User Id", providerUserId).ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("You must set a local password before removing your external login.");
             }
 
-            if (loggedInUser.RemoveOAuthAccount(providerName, providerUserId))
-                await _userRepository.SaveAsync(loggedInUser);
+            if (ExceptionlessUser.RemoveOAuthAccount(providerName, providerUserId))
+                await _userRepository.SaveAsync(ExceptionlessUser);
 
-            Log.Info().Message("\"{0}\" removed an external login: \"{1}\"", loggedInUser.EmailAddress, providerName).Tag("External Login", providerName).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
+            Log.Info().Message("\"{0}\" removed an external login: \"{1}\"", ExceptionlessUser.EmailAddress, providerName).Tag("External Login", providerName).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
             return Ok();
         }
 
@@ -246,29 +245,28 @@ namespace Exceptionless.Api.Controllers {
         [Route("change-password")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IHttpActionResult> ChangePasswordAsync(ChangePasswordModel model) {
-            var loggedInUser = await GetExceptionlessUserAsync();
             if (model == null || !IsValidPassword(model.Password)) {
-                Log.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", loggedInUser.EmailAddress).Tag("Change Password").Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).Property("Password Length", model != null && model.Password != null ? model.Password.Length : 0).ContextProperty("HttpActionContext", ActionContext).Write();
+                Log.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", ExceptionlessUser.EmailAddress).Tag("Change Password").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Password Length", model != null && model.Password != null ? model.Password.Length : 0).ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("The New Password must be at least 6 characters long.");
             }
 
             // User has a local account..
-            if (!String.IsNullOrWhiteSpace(loggedInUser.Password)) {
+            if (!String.IsNullOrWhiteSpace(ExceptionlessUser.Password)) {
                 if (String.IsNullOrWhiteSpace(model.CurrentPassword)) {
-                    Log.Error().Message("Change password failed for \"{0}\": The current password is incorrect.", loggedInUser.EmailAddress).Tag("Change Password").Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                    Log.Error().Message("Change password failed for \"{0}\": The current password is incorrect.", ExceptionlessUser.EmailAddress).Tag("Change Password").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
                     return BadRequest("The current password is incorrect.");
                 }
 
-                string encodedPassword = model.CurrentPassword.ToSaltedHash(loggedInUser.Salt);
-                if (!String.Equals(encodedPassword, loggedInUser.Password)) {
-                    Log.Error().Message("Change password failed for \"{0}\": The current password is incorrect.", loggedInUser.EmailAddress).Tag("Change Password").Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                string encodedPassword = model.CurrentPassword.ToSaltedHash(ExceptionlessUser.Salt);
+                if (!String.Equals(encodedPassword, ExceptionlessUser.Password)) {
+                    Log.Error().Message("Change password failed for \"{0}\": The current password is incorrect.", ExceptionlessUser.EmailAddress).Tag("Change Password").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
                     return BadRequest("The current password is incorrect.");
                 }
             }
 
-            await ChangePasswordAsync(loggedInUser, model.Password);
+            await ChangePasswordAsync(ExceptionlessUser, model.Password);
 
-            Log.Info().Message("\"{0}\" changed their password.", loggedInUser.EmailAddress).Identity(loggedInUser.EmailAddress).Property("User", loggedInUser).ContextProperty("HttpActionContext", ActionContext).Write();
+            Log.Info().Message("\"{0}\" changed their password.", ExceptionlessUser.EmailAddress).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
             return Ok();
         }
 
@@ -278,9 +276,8 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> IsEmailAddressAvailableAsync(string email) {
             if (String.IsNullOrWhiteSpace(email))
                 return StatusCode(HttpStatusCode.NoContent);
-
-            var loggedInUser = await GetExceptionlessUserAsync();
-            if (loggedInUser != null && String.Equals(loggedInUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
+            
+            if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return StatusCode(HttpStatusCode.Created);
 
             if (await _userRepository.GetByEmailAddressAsync(email) == null)
@@ -435,12 +432,11 @@ namespace Exceptionless.Api.Controllers {
 
         private async Task<User> FromExternalLoginAsync(UserInfo userInfo) {
             User existingUser = await _userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
-
-            var loggedInUser = await GetExceptionlessUserAsync();
+            
             // Link user accounts.
-            if (loggedInUser != null) {
+            if (ExceptionlessUser != null) {
                 if (existingUser != null) {
-                    if (existingUser.Id != loggedInUser.Id) {
+                    if (existingUser.Id != ExceptionlessUser.Id) {
                         // Existing user account is not the current user. Remove it and we'll add it to the current user below.
                         if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id))
                             return null;
@@ -448,14 +444,14 @@ namespace Exceptionless.Api.Controllers {
                         await _userRepository.SaveAsync(existingUser);
                     } else {
                         // User is already logged in.
-                        return loggedInUser;
+                        return ExceptionlessUser;
                     }
                 }
 
                 // Add it to the current user if it doesn't already exist and save it.
-                loggedInUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
-                await _userRepository.SaveAsync(loggedInUser);
-                return loggedInUser;
+                ExceptionlessUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+                await _userRepository.SaveAsync(ExceptionlessUser);
+                return ExceptionlessUser;
             }
 
             // Create a new user account or return an existing one.

@@ -95,32 +95,30 @@ namespace Exceptionless.Api.Controllers {
             return skip;
         }
 
-        public Task<User> GetExceptionlessUserAsync() => Request.GetUserAsync();
-
-        public Task<Project> GetDefaultProjectAsync() => Request.GetDefaultProjectAsync();
-
+        public User ExceptionlessUser => Request.GetUser();
+        
         public AuthType AuthType => User.GetAuthType();
 
-        public Task<bool> CanAccessOrganizationAsync(string organizationId) {
-            return Request.CanAccessOrganizationAsync(organizationId);
+        public bool CanAccessOrganization(string organizationId) {
+            return Request.CanAccessOrganization(organizationId);
         }
 
-        public Task<bool> IsInOrganizationAsync(string organizationId) {
+        public bool IsInOrganization(string organizationId) {
             if (String.IsNullOrEmpty(organizationId))
-                return Task.FromResult(false);
+                return false;
 
-            return Request.IsInOrganizationAsync(organizationId);
+            return Request.IsInOrganization(organizationId);
         }
 
-        public Task<ICollection<string>> GetAssociatedOrganizationIdsAsync() {
-            return Request.GetAssociatedOrganizationIdsAsync();
+        public ICollection<string> GetAssociatedOrganizationIds() {
+            return Request.GetAssociatedOrganizationIds();
         }
 
         public async Task<string> GetAssociatedOrganizationsFilterAsync(IOrganizationRepository repository, bool filterUsesPremiumFeatures, bool hasOrganizationOrProjectFilter, string retentionDateFieldName = "date") {
             if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
                 return null;
 
-            var associatedOrganizations = await repository.GetByIdsAsync(await GetAssociatedOrganizationIdsAsync(), useCache: true);
+            var associatedOrganizations = await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), useCache: true);
             var organizations = associatedOrganizations.Documents.Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
             if (organizations.Count == 0)
                 return "organization:none";
@@ -146,11 +144,7 @@ namespace Exceptionless.Api.Controllers {
 
             return filter.Contains("organization:") || filter.Contains("project:");
         }
-
-        public Task<string> GetDefaultOrganizationIdAsync() {
-            return Request.GetDefaultOrganizationIdAsync();
-        }
-
+        
         protected StatusCodeActionResult StatusCodeWithMessage(HttpStatusCode statusCode, string message, string reason = null) {
             return new StatusCodeActionResult(statusCode, Request, message, reason);
         }

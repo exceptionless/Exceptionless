@@ -9,46 +9,24 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using Microsoft.Owin;
 using Nito.AsyncEx;
 
 namespace Exceptionless.Api.Extensions {
     public static class HttpExtensions {
-        public static async Task<User> GetUserAsync(this HttpRequestMessage message) {
-            var user = message?.GetOwinContext().Get<AsyncLazy<User>>("User");
-            if (user != null)
-                return await user;
-
-            return null;
+        public static User GetUser(this HttpRequestMessage message) {
+            return message?.GetOwinContext().Get<User>("User");
         }
 
-        public static async Task<User> GetUserAsync(this IOwinRequest request) {
-            var user = request?.Context.Get<AsyncLazy<User>>("User");
-            if (user != null)
-                return await user;
-
-            return null;
+        public static User GetUser(this IOwinRequest request) {
+            return request?.Context.Get<User>("User");
         }
 
-        public static async Task<Project> GetDefaultProjectAsync(this HttpRequestMessage message) {
-            var project = message?.GetOwinContext().Get<AsyncLazy<Project>>("DefaultProject");
-            if (project != null)
-                return await project;
-
-            return null;
+        public static void SetUser(this HttpRequestMessage message, User user) {
+            message?.GetOwinContext().Set("User", user);
         }
-
-        public static async Task<string> GetDefaultProjectIdAsync(this HttpRequestMessage message) {
-            if (message == null)
-                return null;
-
-            var project = await message.GetDefaultProjectAsync();
-            if (project != null)
-                return project.Id;
-
-            return message.GetClaimsPrincipal().GetDefaultProjectId();
-        }
-
+        
         public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequestMessage message) {
             var context = message?.GetOwinContext();
             return context?.Request?.User?.GetClaimsPrincipal();
@@ -62,11 +40,11 @@ namespace Exceptionless.Api.Extensions {
             return principal?.GetAuthType() ?? AuthType.Anonymous;
         }
 
-        public static async Task<bool> CanAccessOrganizationAsync(this HttpRequestMessage message, string organizationId) {
+        public static bool CanAccessOrganization(this HttpRequestMessage message, string organizationId) {
             if (message == null)
                 return false;
 
-            if (await message.IsInOrganizationAsync(organizationId))
+            if (message.IsInOrganization(organizationId))
                 return true;
 
             return message.IsGlobalAdmin();
@@ -80,21 +58,21 @@ namespace Exceptionless.Api.Extensions {
             return principal != null && principal.IsInRole(AuthorizationRoles.GlobalAdmin);
         }
 
-        public static async Task<bool> IsInOrganizationAsync(this HttpRequestMessage message, string organizationId) {
+        public static bool IsInOrganization(this HttpRequestMessage message, string organizationId) {
             if (message == null)
                 return false;
 
             if (String.IsNullOrEmpty(organizationId))
                 return false;
 
-            return (await message.GetAssociatedOrganizationIdsAsync()).Contains(organizationId);
+            return message.GetAssociatedOrganizationIds().Contains(organizationId);
         }
 
-        public static async Task<ICollection<string>> GetAssociatedOrganizationIdsAsync(this HttpRequestMessage message) {
+        public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequestMessage message) {
             if (message == null)
                 return new List<string>();
 
-            var user = await message.GetUserAsync();
+            var user = message.GetUser();
             if (user != null)
                 return user.OrganizationIds;
 
@@ -102,12 +80,34 @@ namespace Exceptionless.Api.Extensions {
             return principal.GetOrganizationIds();
         }
 
-        public static async Task<string> GetDefaultOrganizationIdAsync(this HttpRequestMessage message) {
-            if (message == null)
+        public static string GetDefaultOrganizationId(this HttpRequestMessage message) {
+            // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated orgs.
+            return message?.GetAssociatedOrganizationIds().FirstOrDefault();
+        }
+
+        public static string GetDefaultProjectId(this HttpRequestMessage message) {
+            // Use project id from url. E.G., /api/v{version:int=2}/projects/{projectId:objectid}/events
+            //var path = message.RequestUri.AbsolutePath;
+
+            var principal = message.GetClaimsPrincipal();
+            return principal?.GetDefaultProjectId();
+        }
+
+        public static async Task<Project> GetDefaultProjectAsync(this HttpRequestMessage message, IProjectRepository projectRepository) {
+            string projectId = message.GetDefaultProjectId();
+            if (String.IsNullOrEmpty(projectId)) {
+                var firstOrgId = message.GetAssociatedOrganizationIds().FirstOrDefault();
+                if (!String.IsNullOrEmpty(firstOrgId)) {
+                    var project = (await projectRepository.GetByOrganizationIdAsync(firstOrgId, useCache: true)).Documents.FirstOrDefault();
+                    if (project != null)
+                        return project;
+                }
+            }
+
+            if (String.IsNullOrEmpty(projectId))
                 return null;
 
-            // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated orgs.
-            return (await message.GetAssociatedOrganizationIdsAsync()).FirstOrDefault();
+            return await projectRepository.GetByIdAsync(projectId, true);
         }
 
         public static string GetClientIpAddress(this HttpRequestMessage request) {

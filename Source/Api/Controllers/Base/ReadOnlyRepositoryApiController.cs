@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Controllers {
                 return null;
 
             TModel model = await _repository.GetByIdAsync(id, useCache);
-            if (_isOwnedByOrganization && model != null && !await CanAccessOrganizationAsync(((IOwnedByOrganization)model).OrganizationId))
+            if (_isOwnedByOrganization && model != null && !CanAccessOrganization(((IOwnedByOrganization)model).OrganizationId))
                 return null;
 
             return model;
@@ -53,7 +53,7 @@ namespace Exceptionless.Api.Controllers {
 
             var results = new List<TModel>();
             foreach (var model in models) {
-                if (await CanAccessOrganizationAsync(((IOwnedByOrganization)model).OrganizationId))
+                if (CanAccessOrganization(((IOwnedByOrganization)model).OrganizationId))
                     results.Add(model);
             }
 

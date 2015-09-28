@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Metrics;
@@ -14,11 +15,13 @@ using NLog.Fluent;
 namespace Exceptionless.Api.Utility {
     public sealed class OverageHandler : DelegatingHandler {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
         private readonly ICacheClient _cacheClient;
         private readonly IMetricsClient _metricsClient;
 
-        public OverageHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMetricsClient metricsClient) {
+        public OverageHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cacheClient, IMetricsClient metricsClient) {
             _organizationRepository = organizationRepository;
+            _projectRepository = projectRepository;
             _cacheClient = cacheClient;
             _metricsClient = metricsClient;
         }
@@ -37,13 +40,14 @@ namespace Exceptionless.Api.Utility {
 
             if (await _cacheClient.GetAsync<bool>("ApiDisabled"))
                 return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
-
-            var project = await request.GetDefaultProjectAsync();
+            
+            // TODO: We could make event submission even faster if we just read the project id and org id from the token.
+            var project = await request.GetDefaultProjectAsync(_projectRepository);
             if (project == null)
                 return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
 
             bool tooBig = false;
-            if (request.Content != null && request.Content.Headers != null) {
+            if (request.Content?.Headers != null) {
                 long size = request.Content.Headers.ContentLength.GetValueOrDefault();
                 await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
                 if (size > Settings.Current.MaximumEventPostSize) {
@@ -66,7 +70,7 @@ namespace Exceptionless.Api.Utility {
 
             return await base.SendAsync(request, cancellationToken);
         }
-
+        
         private HttpResponseMessage CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
             HttpResponseMessage response = request.CreateResponse(statusCode);
             response.ReasonPhrase = message;

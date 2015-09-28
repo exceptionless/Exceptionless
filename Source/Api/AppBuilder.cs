@@ -71,7 +71,7 @@ namespace Exceptionless.Api {
 
             // Reject event posts in orgs over their max event limits.
             Config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
-            
+
             container.Bootstrap(Config);
             container.Bootstrap(app);
 
@@ -88,48 +88,7 @@ namespace Exceptionless.Api {
                     })
                 }
             });
-
-            app.CreatePerContext<AsyncLazy<User>>("User", ctx => Task.FromResult(new AsyncLazy<User>(async () => {
-                if (ctx.Request.User?.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
-                    return null;
-
-                string userId = ctx.Request.User.GetUserId();
-                if (String.IsNullOrEmpty(userId))
-                    return null;
-
-                var userRepository = container.GetInstance<IUserRepository>();
-                return await userRepository.GetByIdAsync(userId, true);
-            })));
-
-            app.CreatePerContext<AsyncLazy<Project>>("DefaultProject", ctx => Task.FromResult(new AsyncLazy<Project>(async () => {
-                if (ctx.Request.User?.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
-                    return null;
-
-                // TODO: Use project id from url. E.G., /projects/{projectId:objectid}/events
-                string projectId = ctx.Request.User.GetDefaultProjectId();
-                var projectRepository = container.GetInstance<IProjectRepository>();
-
-                if (String.IsNullOrEmpty(projectId)) {
-                    var firstOrgId = ctx.Request.User.GetOrganizationIds().FirstOrDefault();
-                    if (!String.IsNullOrEmpty(firstOrgId)) {
-                        var project = (await projectRepository.GetByOrganizationIdAsync(firstOrgId, useCache: true)).Documents.FirstOrDefault();
-                        if (project != null)
-                            return project;
-                    }
-
-                    if (Settings.Current.WebsiteMode == WebsiteMode.Dev) {
-                        var dataHelper = container.GetInstance<DataHelper>();
-                        // create a default org and project
-                        projectId = await dataHelper.CreateDefaultOrganizationAndProjectAsync(await ctx.Request.GetUserAsync());
-                    }
-                }
-
-                if (String.IsNullOrEmpty(projectId))
-                    return null;
-
-                return await projectRepository.GetByIdAsync(projectId, true);
-            })));
-
+            
             app.UseWebApi(Config);
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);
             if (Settings.Current.EnableRedis)

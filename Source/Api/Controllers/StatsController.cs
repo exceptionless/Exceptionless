@@ -53,12 +53,11 @@ namespace Exceptionless.Api.Controllers {
             try {
                 result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
-                var loggedInUser = await GetExceptionlessUserAsync();
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset })
                     .Tag("Search")
-                    .Identity(loggedInUser.EmailAddress)
-                    .Property("User", loggedInUser)
+                    .Identity(ExceptionlessUser.EmailAddress)
+                    .Property("User", ExceptionlessUser)
                     .ContextProperty("HttpActionContext", ActionContext)
                     .Write();
 
@@ -84,7 +83,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !await CanAccessOrganizationAsync(project.OrganizationId))
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("project:", projectId), filter, time, offset);
@@ -106,7 +105,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Stack stack = await _stackRepository.GetByIdAsync(stackId);
-            if (stack == null || !await CanAccessOrganizationAsync(stack.OrganizationId))
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("stack:", stackId), filter, time, offset);

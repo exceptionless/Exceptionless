@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
@@ -8,11 +7,9 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Api.Security {
     public class TokenManager {
-        private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
             
-        public TokenManager(IUserRepository userRepository, ITokenRepository tokenRepository) {
-            _userRepository = userRepository;
+        public TokenManager(ITokenRepository tokenRepository) {
             _tokenRepository = tokenRepository;
         }
 
@@ -33,18 +30,6 @@ namespace Exceptionless.Api.Security {
             await _tokenRepository.AddAsync(token);
 
             return token;
-        }
-
-        public async Task<ClaimsPrincipal> ValidateAsync(string token) {
-            var tokenRecord = await _tokenRepository.GetByIdAsync(token, true);
-            if (tokenRecord == null)
-                return null;
-
-            if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < DateTime.UtcNow)
-                return null;
-
-            var principal = new ClaimsPrincipal(await tokenRecord.ToIdentityAsync(_userRepository));
-            return principal;  
         }
     }
 }
