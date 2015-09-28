@@ -285,7 +285,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("by-ref/{referenceId:minlength(8)}/user-description")]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
-        [OverrideAuthorization]
+        //[OverrideAuthorization]
         //[Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         [ResponseType(typeof(List<PersistentEvent>))]
