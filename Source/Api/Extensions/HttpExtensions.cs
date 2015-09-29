@@ -94,24 +94,7 @@ namespace Exceptionless.Api.Extensions {
             var principal = message.GetClaimsPrincipal();
             return principal?.GetDefaultProjectId();
         }
-
-        public static async Task<Project> GetDefaultProjectAsync(this HttpRequestMessage message, IProjectRepository projectRepository) {
-            string projectId = message.GetDefaultProjectId();
-            if (String.IsNullOrEmpty(projectId)) {
-                var firstOrgId = message.GetAssociatedOrganizationIds().FirstOrDefault();
-                if (!String.IsNullOrEmpty(firstOrgId)) {
-                    var project = (await projectRepository.GetByOrganizationIdAsync(firstOrgId, useCache: true)).Documents.FirstOrDefault();
-                    if (project != null)
-                        return project;
-                }
-            }
-
-            if (String.IsNullOrEmpty(projectId))
-                return null;
-
-            return await projectRepository.GetByIdAsync(projectId, true);
-        }
-
+        
         public static string GetClientIpAddress(this HttpRequestMessage request) {
             var context = request?.GetOwinContext();
             return context?.Request.RemoteIpAddress;

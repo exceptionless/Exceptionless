@@ -25,19 +25,15 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventUserDescription> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
-            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionDequeued).AnyContext();
             Log.Trace().Message("Processing user description: id={0}", queueEntry.Id).Write();
 
             try {
                 await ProcessUserDescriptionAsync(queueEntry.Value).AnyContext();
                 Log.Info().Message("Processed user description: id={0}", queueEntry.Id).Write();
-                await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionProcessed).AnyContext();
             } catch (DocumentNotFoundException ex){
-                await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionErrors).AnyContext();
                 Log.Error().Exception(ex).Message("An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, queueEntry.Id).Write();
                 return JobResult.FromException(ex);
             } catch (Exception ex) {
-                await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionErrors).AnyContext();
                 Log.Error().Exception(ex).Message("An error occurred while processing the EventUserDescription '{0}': {1}", queueEntry.Id, ex.Message).Write();
                 return JobResult.FromException(ex);
             }

@@ -290,8 +290,6 @@ namespace Exceptionless.Api.Controllers {
         [ConfigurationResponseFilter]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
-            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionSubmitted);
-            
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
 
@@ -302,9 +300,8 @@ namespace Exceptionless.Api.Controllers {
             if (!result.IsValid)
                 return BadRequest(result.Errors.ToErrorMessage());
             
-            // TODO: We are possibly looking up the project twice...
             if (projectId == null)
-                projectId = (await Request.GetDefaultProjectAsync(_projectRepository))?.Id;
+                projectId = Request.GetDefaultProjectId();
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
@@ -322,8 +319,6 @@ namespace Exceptionless.Api.Controllers {
             eventUserDescription.ReferenceId = referenceId;
 
             await _eventUserDescriptionQueue.EnqueueAsync(eventUserDescription);
-            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionQueued);
-
             return StatusCode(HttpStatusCode.Accepted);
         }
 
@@ -400,8 +395,6 @@ namespace Exceptionless.Api.Controllers {
             if (data == null || data.Length == 0)
                 return StatusCode(HttpStatusCode.Accepted);
 
-            await _metricsClient.CounterAsync(MetricNames.PostsSubmitted);
-
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();
             
@@ -442,12 +435,10 @@ namespace Exceptionless.Api.Controllers {
                     .Property("User", ExceptionlessUser)
                     .ContextProperty("HttpActionContext", ActionContext)
                     .WriteIf(projectId != Settings.Current.InternalProjectId);
-                
-                await _metricsClient.CounterAsync(MetricNames.PostsQueuedErrors);
+
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
-
-            await _metricsClient.CounterAsync(MetricNames.PostsQueued);
+            
             return StatusCode(HttpStatusCode.Accepted);
         }
 

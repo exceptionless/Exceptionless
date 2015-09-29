@@ -21,15 +21,12 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<MailMessage> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
-            await _metricsClient.CounterAsync(MetricNames.EmailsDequeued).AnyContext();
             Log.Trace().Message("Processing message '{0}'.", queueEntry.Id).Write();
             
             try {
                 await _mailSender.SendAsync(queueEntry.Value).AnyContext();
-                await _metricsClient.CounterAsync(MetricNames.EmailsSent).AnyContext();
                 Log.Info().Message("Sent message: to={0} subject=\"{1}\"", queueEntry.Value.To, queueEntry.Value.Subject).Write();
             } catch (Exception ex) {
-                await _metricsClient.CounterAsync(MetricNames.EmailsSendErrors).AnyContext();
                 Log.Error().Exception(ex).Message("Error sending message: id={0} error={1}", queueEntry.Id, ex.Message).Write();
                 return JobResult.FromException(ex);
             }

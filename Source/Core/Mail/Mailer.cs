@@ -110,7 +110,6 @@ namespace Exceptionless.Core.Mail {
             CleanAddresses(message);
 
             await _queue.EnqueueAsync(message.ToMailMessage()).AnyContext();
-            await _metricsClient.CounterAsync(MetricNames.EmailsQueued).AnyContext();
         }
 
         private static void CleanAddresses(System.Net.Mail.MailMessage msg) {

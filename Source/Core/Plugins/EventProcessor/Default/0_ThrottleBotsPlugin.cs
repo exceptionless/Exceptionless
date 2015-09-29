@@ -58,8 +58,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             if (requestCount < Settings.Current.BotThrottleLimit)
                 return;
-
-            await _metricsClient.CounterAsync(MetricNames.EventsBotThrottleTriggered).AnyContext();
+            
             Log.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", ri.ClientIpAddress, DateTime.Now.Floor(_throttlingPeriod), context.Event.ProjectId).Project(context.Event.ProjectId).Write();
             
             // the throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
