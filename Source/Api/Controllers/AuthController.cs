@@ -60,7 +60,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("login")]
         [ResponseType(typeof(TokenResult))]
         public async Task<IHttpActionResult> LoginAsync(LoginModel model) {
-            if (model == null || String.IsNullOrWhiteSpace(model.Email)) {
+            if (String.IsNullOrWhiteSpace(model?.Email)) {
                 Log.Error().Message("Login failed: Email Address is required.").Tag("Login").ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("Email Address is required.");
             }
@@ -119,7 +119,7 @@ namespace Exceptionless.Api.Controllers {
             if (!Settings.Current.EnableAccountCreation) 
                 return BadRequest("Account Creation is currently disabled.");
 
-            if (model == null || String.IsNullOrWhiteSpace(model.Email)) {
+            if (String.IsNullOrWhiteSpace(model?.Email)) {
                 Log.Error().Message("Signup failed: Email Address is required.").Tag("Signup").Property("Name", model != null ? model.Name : "<null>").ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("Email Address is required.");
             }
@@ -246,7 +246,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IHttpActionResult> ChangePasswordAsync(ChangePasswordModel model) {
             if (model == null || !IsValidPassword(model.Password)) {
-                Log.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", ExceptionlessUser.EmailAddress).Tag("Change Password").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Password Length", model != null && model.Password != null ? model.Password.Length : 0).ContextProperty("HttpActionContext", ActionContext).Write();
+                Log.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", ExceptionlessUser.EmailAddress).Tag("Change Password").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Password Length", model?.Password != null ? model.Password.Length : 0).ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("The New Password must be at least 6 characters long.");
             }
 
@@ -322,7 +322,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("reset-password")]
         public async Task<IHttpActionResult> ResetPasswordAsync(ResetPasswordModel model) {
-            if (model == null || String.IsNullOrEmpty(model.PasswordResetToken)) {
+            if (String.IsNullOrEmpty(model?.PasswordResetToken)) {
                 Log.Error().Message("Reset password failed: Invalid Password Reset Token.").Tag("Reset Password").ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("Invalid Password Reset Token.");
             }
@@ -386,7 +386,7 @@ namespace Exceptionless.Api.Controllers {
         }
         
         private async Task<IHttpActionResult> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, string appId, string appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client {
-            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code)) {
+            if (String.IsNullOrEmpty(authInfo?.Code)) {
                 Log.Error().Message("External login failed: Unable to get auth info.").Tag("External Login").Property("Auth Info", authInfo).ContextProperty("HttpActionContext", ActionContext).Write();
                 return NotFound();
             }

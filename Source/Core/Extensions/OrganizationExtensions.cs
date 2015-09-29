@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Extensions {
             if (organization.MaxEventsPerMonth <= 0)
                 return -1;
 
-            int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > DateTime.Now ? organization.BonusEventsPerMonth : 0;
+            int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > DateTime.UtcNow ? organization.BonusEventsPerMonth : 0;
 
             return organization.MaxEventsPerMonth + bonusEvents;
         } 

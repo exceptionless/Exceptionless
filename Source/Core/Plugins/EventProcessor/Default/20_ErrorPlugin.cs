@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             var targetInfo = new SettingsDictionary(signature.SignatureInfo);
             var stackingTarget = error.GetStackingTarget();
-            if (stackingTarget != null && stackingTarget.Error != null && stackingTarget.Error.StackTrace != null && stackingTarget.Error.StackTrace.Count > 0 && !targetInfo.ContainsKey("Message"))
+            if (stackingTarget?.Error?.StackTrace != null && stackingTarget.Error.StackTrace.Count > 0 && !targetInfo.ContainsKey("Message"))
                 targetInfo["Message"] = stackingTarget.Error.Message;
 
             error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;

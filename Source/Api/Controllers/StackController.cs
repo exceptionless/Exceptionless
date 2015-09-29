@@ -528,7 +528,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(GetStackSummaries(stacks, timeInfo.Offset, timeInfo.UtcRange.UtcStart, timeInfo.UtcRange.UtcEnd), options.HasMore, page);
+                return OkWithResourceLinks(await GetStackSummariesAsync(stacks, timeInfo.Offset, timeInfo.UtcRange.UtcStart, timeInfo.UtcRange.UtcEnd), options.HasMore, page);
 
             return OkWithResourceLinks(stacks, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
@@ -673,7 +673,7 @@ namespace Exceptionless.Api.Controllers {
             ICollection<TermStatsItem> terms;
 
             try {
-                terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1).Terms;
+                terms = (await _eventStats.GetTermsStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1)).Terms;
             } catch (ApplicationException ex) {
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset, Page = page, Limit = limit })
@@ -725,11 +725,11 @@ namespace Exceptionless.Api.Controllers {
             return await FrequentInternalAsync(String.Concat("project:", projectId), filter, time, offset, mode, page, limit);
         }
 
-        private ICollection<StackSummaryModel> GetStackSummaries(ICollection<Stack> stacks, TimeSpan offset, DateTime utcStart, DateTime utcEnd) {
+        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, TimeSpan offset, DateTime utcStart, DateTime utcEnd) {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
 
-            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", String.Join(" OR ", stacks.Select(r => "stack:" + r.Id)), null, offset, stacks.Count).Terms;
+            var terms = (await _eventStats.GetTermsStatsAsync(utcStart, utcEnd, "stack_id", String.Join(" OR ", stacks.Select(r => "stack:" + r.Id)), null, offset, stacks.Count)).Terms;
             return GetStackSummaries(stacks, terms);
         }
 

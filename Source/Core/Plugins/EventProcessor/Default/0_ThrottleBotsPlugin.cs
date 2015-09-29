@@ -40,13 +40,13 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             // Throttle errors by client ip address to no more than X every 5 minutes.
             var ri = context.Event.GetRequestInfo();
-            if (ri == null || String.IsNullOrEmpty(ri.ClientIpAddress))
+            if (String.IsNullOrEmpty(ri?.ClientIpAddress))
                 return;
 
             if (ri.ClientIpAddress.IsPrivateNetwork())
                 return;
 
-            string throttleCacheKey = String.Concat("bot:", ri.ClientIpAddress, ":", DateTime.Now.Floor(_throttlingPeriod).Ticks);
+            string throttleCacheKey = String.Concat("bot:", ri.ClientIpAddress, ":", DateTime.UtcNow.Floor(_throttlingPeriod).Ticks);
             var requestCount = await _cacheClient.GetAsync<int?>(throttleCacheKey).AnyContext();
             if (requestCount != null) {
                 await _cacheClient.IncrementAsync(throttleCacheKey, 1).AnyContext();
@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (requestCount < Settings.Current.BotThrottleLimit)
                 return;
             
-            Log.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", ri.ClientIpAddress, DateTime.Now.Floor(_throttlingPeriod), context.Event.ProjectId).Project(context.Event.ProjectId).Write();
+            Log.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", ri.ClientIpAddress, DateTime.UtcNow.Floor(_throttlingPeriod), context.Event.ProjectId).Project(context.Event.ProjectId).Write();
             
             // the throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
             await _workItemQueue.EnqueueAsync(new ThrottleBotsWorkItem {

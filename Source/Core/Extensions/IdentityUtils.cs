@@ -78,7 +78,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static AuthType GetAuthType(this IPrincipal principal) {
-            if (principal == null || principal.Identity == null || !principal.Identity.IsAuthenticated)
+            if (principal?.Identity == null || !principal.Identity.IsAuthenticated)
                 return AuthType.Anonymous;
 
             return IsTokenAuthType(principal) ? AuthType.Token : AuthType.User;

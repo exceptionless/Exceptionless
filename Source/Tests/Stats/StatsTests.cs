@@ -32,7 +32,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             await _client.RefreshAsync(d => d.Force());
             _metricsClient.DisplayStats();
-            var result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
+            var result = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
             Assert.Equal(await _stackRepository.CountAsync(), result.Unique);
@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
             foreach (var stack in stacks.Documents) {
-                result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
+                result = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
                 Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, result.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Timeline.Sum(t => t.Total));
@@ -57,7 +57,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
-            var result = _stats.GetOccurrenceStats(DateTime.MinValue, DateTime.MaxValue, null, userFilter: "project:" + TestConstants.ProjectId);
+            var result = await _stats.GetOccurrenceStatsAsync(DateTime.MinValue, DateTime.MaxValue, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
             Assert.Equal(await _stackRepository.CountAsync(), result.Unique);
@@ -65,7 +65,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
             foreach (var stack in stacks.Documents) {
-                result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
+                result = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
                 Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, result.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Timeline.Sum(t => t.Total));
@@ -82,11 +82,11 @@ namespace Exceptionless.Api.Tests.Stats {
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
-            var resultUtc = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null);
+            var resultUtc = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null);
             Assert.Equal(eventCount, resultUtc.Total);
             Assert.Equal(eventCount, resultUtc.Timeline.Sum(t => t.Total));
 
-            var resultLocal = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, displayTimeOffset: TimeSpan.FromHours(-4));
+            var resultLocal = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, displayTimeOffset: TimeSpan.FromHours(-4));
             Assert.Equal(eventCount, resultLocal.Total);
             Assert.Equal(eventCount, resultLocal.Timeline.Sum(t => t.Total));
         }
@@ -101,7 +101,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
-            var result = _stats.GetTermsStats(startDate, DateTime.UtcNow, "tags", null, userFilter: "project:" + TestConstants.ProjectId);
+            var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "tags", null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             // each event can be in multiple tag buckets since an event can have up to 3 sample tags
             Assert.InRange(result.Terms.Sum(t => t.Total), eventCount, eventCount * 3);
@@ -124,7 +124,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
-            var result = _stats.GetTermsStats(startDate, DateTime.UtcNow, "stack_id", null, userFilter: "project:" + TestConstants.ProjectId);
+            var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "stack_id", null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 25);
             // TODO: Figure out why this is less than eventCount
@@ -147,7 +147,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
-            var result = _stats.GetTermsStats(startDate, DateTime.UtcNow, "project_id", null);
+            var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "project_id", null);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 3); // 3 sample projects
             Assert.InRange(result.Terms.Sum(t => t.New), 1, 25 * 3);

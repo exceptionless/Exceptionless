@@ -343,7 +343,7 @@ namespace Exceptionless.Core.Repositories {
 
             if (EnableCache && useCache && foundItems.Count > 0) {
                 foreach (var item in foundItems)
-                    await Cache.SetAsync(GetScopedCacheKey(item.Id), item, expiresIn.HasValue ? DateTime.Now.Add(expiresIn.Value) : DateTime.Now.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS)).AnyContext();
+                    await Cache.SetAsync(GetScopedCacheKey(item.Id), item, expiresIn.HasValue ? DateTime.UtcNow.Add(expiresIn.Value) : DateTime.UtcNow.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS)).AnyContext();
             }
 
             results.AddRange(foundItems);

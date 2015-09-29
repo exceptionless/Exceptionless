@@ -100,28 +100,28 @@ namespace Exceptionless.Core.Repositories {
             if (container == null)
                 container = Filter<T>.MatchAll();
 
-            if (options != null && options.SystemFilter != null)
+            if (options?.SystemFilter != null)
                 container &= options.SystemFilter;
 
-            if (options != null && options.Filter != null)
+            if (options?.Filter != null)
                 container &= options.Filter;
 
             if (options != null && options.UseDateRange)
                 container &= Filter<T>.Range(r => r.OnField(options.DateField).GreaterOrEquals(options.GetStartDate()).LowerOrEquals(options.GetEndDate()));
 
-            if (options != null && !String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null)
+            if (!String.IsNullOrEmpty(options?.BeforeValue) && options.BeforeQuery == null)
                 options.BeforeQuery = Filter<T>.Range(r => r.OnField("_uid").Lower(options.BeforeValue));
 
-            if (options != null && !String.IsNullOrEmpty(options.AfterValue) && options.AfterQuery == null)
+            if (!String.IsNullOrEmpty(options?.AfterValue) && options.AfterQuery == null)
                 options.AfterQuery = Filter<T>.Range(r => r.OnField("_uid").Greater(options.AfterValue));
 
-            if (options != null && options.BeforeQuery != null)
+            if (options?.BeforeQuery != null)
                 container &= options.BeforeQuery;
 
-            if (options != null && options.AfterQuery != null)
+            if (options?.AfterQuery != null)
                 container &= options.AfterQuery;
 
-            if (!isQuery && options != null && !String.IsNullOrEmpty(options.Query))
+            if (!isQuery && !String.IsNullOrEmpty(options?.Query))
                 container &= Filter<T>.Query(q => q.QueryString(qs => qs.DefaultOperator(options.DefaultQueryOperator).Query(options.Query).AnalyzeWildcard()));
 
             return container;
@@ -136,7 +136,7 @@ namespace Exceptionless.Core.Repositories {
 
             container &= Query<T>.Filtered(f => f.Filter(d => filterContainer));
 
-            if (options != null && !String.IsNullOrEmpty(options.Query))
+            if (!String.IsNullOrEmpty(options?.Query))
                 container &= Query<T>.QueryString(qs => qs.DefaultOperator(options.DefaultQueryOperator).Query(options.Query).AnalyzeWildcard());
 
             return container;

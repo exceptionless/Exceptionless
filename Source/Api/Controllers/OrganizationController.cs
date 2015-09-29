@@ -179,7 +179,7 @@ namespace Exceptionless.Api.Controllers {
                 Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
             }
 
-            if (stripeInvoice == null || String.IsNullOrEmpty(stripeInvoice.CustomerId))
+            if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
                 return NotFound();
 
             var organization = await _repository.GetByStripeCustomerIdAsync(stripeInvoice.CustomerId);
@@ -711,7 +711,7 @@ namespace Exceptionless.Api.Controllers {
                     builder.AppendFormat("organization:{0}", organization.Id);
             }
 
-            var result = _stats.GetTermsStats(DateTime.MinValue, DateTime.MaxValue, "organization_id", builder.ToString());
+            var result = await _stats.GetTermsStatsAsync(DateTime.MinValue, DateTime.MaxValue, "organization_id", builder.ToString());
             foreach (var organization in organizations) {
                 var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
                 organization.EventCount = organizationStats?.Total ?? 0;

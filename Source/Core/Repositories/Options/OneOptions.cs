@@ -10,19 +10,19 @@ namespace Exceptionless.Core.Repositories {
         public List<string> Fields { get; set; }
         public string CacheKey { get; set; }
         public TimeSpan? ExpiresIn { get; set; }
-        public DateTime? ExpiresAt { get; set; }
+        public DateTime? ExpiresAtUtc { get; set; }
 
         public DateTime GetCacheExpirationDate() {
-            if (ExpiresAt.HasValue && ExpiresAt.Value < DateTime.Now)
+            if (ExpiresAtUtc.HasValue && ExpiresAtUtc.Value < DateTime.UtcNow)
                 throw new ArgumentException("ExpiresAt can't be in the past.");
 
-            if (ExpiresAt.HasValue)
-                return ExpiresAt.Value;
+            if (ExpiresAtUtc.HasValue)
+                return ExpiresAtUtc.Value;
 
             if (ExpiresIn.HasValue)
-                return DateTime.Now.Add(ExpiresIn.Value);
+                return DateTime.UtcNow.Add(ExpiresIn.Value);
 
-            return DateTime.Now.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS);
+            return DateTime.UtcNow.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS);
         }
 
         public bool UseCache => !String.IsNullOrEmpty(CacheKey);

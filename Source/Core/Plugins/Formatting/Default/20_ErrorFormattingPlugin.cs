@@ -70,7 +70,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var stackingTarget = error.GetStackingTarget();
-            if (stackingTarget == null || stackingTarget.Error == null)
+            if (stackingTarget?.Error == null)
                 return null;
 
             dynamic data = new ExpandoObject();
@@ -88,7 +88,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             }
 
             var requestInfo = ev.GetRequestInfo();
-            if (requestInfo != null && !String.IsNullOrEmpty(requestInfo.Path))
+            if (!String.IsNullOrEmpty(requestInfo?.Path))
                 data.Path = requestInfo.Path;
 
             return new SummaryData { TemplateKey = "event-error-summary", Data = data };
@@ -103,7 +103,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var stackingTarget = error.GetStackingTarget();
-            if (stackingTarget == null || stackingTarget.Error == null)
+            if (stackingTarget?.Error == null)
                 return null;
 
             var requestInfo = model.Event.GetRequestInfo();

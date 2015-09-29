@@ -80,8 +80,8 @@ namespace Exceptionless.Core.Repositories {
             return options;
         }
 
-        public static T WithExpiresAt<T>(this T options, DateTime? expiresAt) where T: OneOptions {
-            options.ExpiresAt = expiresAt;
+        public static T WithExpiresAtUtc<T>(this T options, DateTime? expiresAtUtc) where T: OneOptions {
+            options.ExpiresAtUtc = expiresAtUtc;
             return options;
         }
 

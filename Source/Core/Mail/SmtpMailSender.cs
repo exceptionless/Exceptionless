@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Mail {
         public async Task SendAsync(MailMessage model) {
             var message = model.ToMailMessage();
             message.Headers.Add("X-Mailer-Machine", Environment.MachineName);
-            message.Headers.Add("X-Mailer-Date", DateTime.Now.ToString());
+            message.Headers.Add("X-Mailer-Date", DateTime.UtcNow.ToString());
 
             var client = new SmtpClient();
             if (!String.IsNullOrEmpty(Settings.Current.SmtpHost)) {

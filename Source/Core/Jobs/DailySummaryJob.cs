@@ -99,7 +99,7 @@ namespace Exceptionless.Core.Jobs {
             var paging = new PagingOptions { Limit = 5 };
             List<Stack> newest = (await _stackRepository.GetNewAsync(project.Id, data.UtcStartTime, data.UtcEndTime, paging).AnyContext()).Documents.ToList();
 
-            var result = _stats.GetTermsStats(data.UtcStartTime, data.UtcEndTime, "stack_id", "type:error project:" + data.Id, max: 5);
+            var result = await _stats.GetTermsStatsAsync(data.UtcStartTime, data.UtcEndTime, "stack_id", "type:error project:" + data.Id, max: 5).AnyContext();
             //var termStatsList = result.Terms.Take(5).ToList();
             //var stacks = _stackRepository.GetByIds(termStatsList.Select(s => s.Term).ToList());
             bool hasSubmittedErrors = result.Total > 0;

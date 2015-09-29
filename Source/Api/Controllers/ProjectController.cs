@@ -498,7 +498,7 @@ namespace Exceptionless.Api.Controllers {
                     builder.AppendFormat("project:{0}", project.Id);
             }
 
-            var result = _stats.GetTermsStats(DateTime.MinValue, DateTime.MaxValue, "project_id", builder.ToString());
+            var result = await _stats.GetTermsStatsAsync(DateTime.MinValue, DateTime.MaxValue, "project_id", builder.ToString());
             foreach (var project in projects) {
                 var projectStats = result.Terms.FirstOrDefault(t => t.Term == project.Id);
                 project.EventCount = projectStats?.Total ?? 0;

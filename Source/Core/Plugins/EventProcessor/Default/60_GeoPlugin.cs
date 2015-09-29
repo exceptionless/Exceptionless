@@ -39,11 +39,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 yield return ev.Geo;
 
             var request = ev.GetRequestInfo();
-            if (request != null && !String.IsNullOrWhiteSpace(request.ClientIpAddress))
+            if (!String.IsNullOrWhiteSpace(request?.ClientIpAddress))
                 yield return request.ClientIpAddress;
 
             var environmentInfo = ev.GetEnvironmentInfo();
-            if (environmentInfo == null || String.IsNullOrWhiteSpace(environmentInfo.IpAddress))
+            if (String.IsNullOrWhiteSpace(environmentInfo?.IpAddress))
                 yield break;
 
             foreach (var ip in environmentInfo.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))

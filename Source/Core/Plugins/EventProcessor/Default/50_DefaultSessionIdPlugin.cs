@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
         public override async Task EventProcessingAsync(EventContext context) {
             var user = context.Event.GetUserIdentity();
-            if (user == null || String.IsNullOrEmpty(user.Identity) || !String.IsNullOrEmpty(context.Event.SessionId))
+            if (String.IsNullOrEmpty(user?.Identity) || !String.IsNullOrEmpty(context.Event.SessionId))
                 return;
 
             string cacheKey = $"session:{context.Event.ProjectId}:{user.Identity}";

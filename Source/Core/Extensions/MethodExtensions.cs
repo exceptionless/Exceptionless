@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         internal static void AppendMethod(Method method, StringBuilder sb, bool includeParameters = true) {
-            if (method == null || String.IsNullOrEmpty(method.Name)) {
+            if (String.IsNullOrEmpty(method?.Name)) {
                 sb.Append("<null>");
                 return;
             }

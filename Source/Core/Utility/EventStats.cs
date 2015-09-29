@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
@@ -23,7 +24,7 @@ namespace Exceptionless.Core.Utility {
             _eventIndex = eventIndex;
         }
 
-        public EventTermStatsResult GetTermsStats(DateTime utcStart, DateTime utcEnd, string term, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
+        public async Task<EventTermStatsResult> GetTermsStatsAsync(DateTime utcStart, DateTime utcEnd, string term, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
@@ -42,12 +43,12 @@ namespace Exceptionless.Core.Utility {
                 // TODO: Cache this to save an extra search request when a date range isn't filtered.
                 _elasticClient.EnableTrace();
 
-                var result = _elasticClient.Search<PersistentEvent>(s => s
+                var result = await _elasticClient.SearchAsync<PersistentEvent>(s => s
                     .IgnoreUnavailable()
                     .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.Name)
                     .Filter(d => filter.GetElasticSearchFilter())
                     .SortAscending(ev => ev.Date)
-                    .Take(1));
+                    .Take(1)).AnyContext();
 
                 _elasticClient.DisableTrace();
 
@@ -64,7 +65,7 @@ namespace Exceptionless.Core.Utility {
             var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
 
             _elasticClient.EnableTrace();
-            var res = _elasticClient.Search<PersistentEvent>(s => s
+            var res = await _elasticClient.SearchAsync<PersistentEvent>(s => s
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.Name)
@@ -107,7 +108,7 @@ namespace Exceptionless.Core.Utility {
                         )
                     )
                 )
-            );
+            ).AnyContext();
 
             _elasticClient.DisableTrace();
 
@@ -129,15 +130,15 @@ namespace Exceptionless.Core.Utility {
             };
 
             var unique = filtered.Cardinality("unique");
-            if (unique != null && unique.Value.HasValue)
+            if (unique?.Value != null)
                 stats.Unique = (long)unique.Value;
 
             var firstOccurrence = filtered.Min("first_occurrence");
-            if (firstOccurrence != null && firstOccurrence.Value.HasValue)
+            if (firstOccurrence?.Value != null)
                 stats.FirstOccurrence = firstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
             var lastOccurrence = filtered.Max("last_occurrence");
-            if (lastOccurrence != null && lastOccurrence.Value.HasValue)
+            if (lastOccurrence?.Value != null)
                 stats.LastOccurrence = lastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
             var terms = filtered.Terms("terms");
@@ -147,7 +148,7 @@ namespace Exceptionless.Core.Utility {
             stats.Terms.AddRange(terms.Items.Select(i => {
                 long count = 0;
                 var timelineUnique = i.Cardinality("unique");
-                if (timelineUnique != null && timelineUnique.Value.HasValue)
+                if (timelineUnique?.Value != null)
                     count = (long)timelineUnique.Value;
 
                 var termNew = i.Terms("new");
@@ -159,11 +160,11 @@ namespace Exceptionless.Core.Utility {
                 };
 
                 var termFirstOccurrence = i.Min("first_occurrence");
-                if (termFirstOccurrence != null && termFirstOccurrence.Value.HasValue)
+                if (termFirstOccurrence?.Value != null)
                     item.FirstOccurrence = termFirstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
                 var termLastOccurrence = i.Max("last_occurrence");
-                if (termLastOccurrence != null && termLastOccurrence.Value.HasValue)
+                if (termLastOccurrence?.Value != null)
                     item.LastOccurrence = termLastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
                 var timeLine = i.DateHistogram("timelime");
@@ -180,7 +181,7 @@ namespace Exceptionless.Core.Utility {
             return stats;
         }
 
-        public EventStatsResult GetOccurrenceStats(DateTime utcStart, DateTime utcEnd, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
+        public async Task<EventStatsResult> GetOccurrenceStatsAsync(DateTime utcStart, DateTime utcEnd, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
@@ -195,11 +196,11 @@ namespace Exceptionless.Core.Utility {
                 // TODO: Cache this to save an extra search request when a date range isn't filtered.
                 _elasticClient.EnableTrace();
 
-                var result = _elasticClient.Search<PersistentEvent>(s => s
+                var result = await _elasticClient.SearchAsync<PersistentEvent>(s => s
                     .IgnoreUnavailable().Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.Name)
                     .Filter(d => filter.GetElasticSearchFilter())
                     .SortAscending(ev => ev.Date)
-                    .Take(1));
+                    .Take(1)).AnyContext();
 
                 _elasticClient.DisableTrace();
 
@@ -216,7 +217,7 @@ namespace Exceptionless.Core.Utility {
             var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
 
             _elasticClient.EnableTrace();
-            var res = _elasticClient.Search<PersistentEvent>(s => s
+            var res = await _elasticClient.SearchAsync<PersistentEvent>(s => s
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.Name)
@@ -253,7 +254,7 @@ namespace Exceptionless.Core.Utility {
                         )
                     )
                 )
-            );
+            ).AnyContext();
             _elasticClient.DisableTrace();
 
             if (!res.IsValid) {
@@ -272,7 +273,7 @@ namespace Exceptionless.Core.Utility {
             };
 
             var unique = filtered.Cardinality("unique");
-            if (unique != null && unique.Value.HasValue)
+            if (unique?.Value != null)
                 stats.Unique = (long)unique.Value;
 
             var timeline = filtered.DateHistogram("timelime");
@@ -280,7 +281,7 @@ namespace Exceptionless.Core.Utility {
                 stats.Timeline.AddRange(timeline.Items.Select(i => {
                     long count = 0;
                     var timelineUnique = i.Cardinality("tl_unique");
-                    if (timelineUnique != null && timelineUnique.Value.HasValue)
+                    if (timelineUnique?.Value != null)
                         count = (long)timelineUnique.Value;
 
                     var timelineNew = i.Terms("tl_new");
@@ -304,11 +305,11 @@ namespace Exceptionless.Core.Utility {
                 return stats;
 
             var firstOccurrence = filtered.Min("first_occurrence");
-            if (firstOccurrence != null && firstOccurrence.Value.HasValue)
+            if (firstOccurrence?.Value != null)
                 stats.FirstOccurrence = firstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
             var lastOccurrence = filtered.Max("last_occurrence");
-            if (lastOccurrence != null && lastOccurrence.Value.HasValue)
+            if (lastOccurrence?.Value != null)
                 stats.LastOccurrence = lastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
             return stats;

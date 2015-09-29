@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             }
 
             var requestInfo = ev.GetRequestInfo();
-            if (requestInfo != null && !String.IsNullOrEmpty(requestInfo.Path))
+            if (!String.IsNullOrEmpty(requestInfo?.Path))
                 data.Path = requestInfo.Path;
 
             return new SummaryData { TemplateKey = "event-simple-summary", Data = data };
