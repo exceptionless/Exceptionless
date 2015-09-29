@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 var metricsClient = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
                 Assert.NotNull(metricsClient);
                 
-                Assert.True(await metricsClient.WaitForCounterAsync(MetricNames.PostsQueued, work: async () => {
+                Assert.True(await metricsClient.WaitForCounterAsync("eventpost.enqueued", work: async () => {
                     var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string"));
                     Assert.IsType<StatusCodeResult>(actionResult);
                 }));
