@@ -21,8 +21,7 @@ using NLog.Fluent;
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
-    public class EventPostsJob : JobBase {
-        private readonly IQueue<EventPost> _queue;
+    public class EventPostsJob : QueueProcessorJobBase<EventPost> {
         private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;
         private readonly IMetricsClient _metricsClient;
@@ -30,49 +29,26 @@ namespace Exceptionless.Core.Jobs {
         private readonly IProjectRepository _projectRepository;
         private readonly IFileStorage _storage;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage) {
-            _queue = queue;
+        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage) : base(queue) {
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
             _metricsClient = metricsClient;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _storage = storage;
+
+            AutoComplete = false;
         }
 
-        public void RunUntilEmpty() {
-            while (_queue.GetQueueCount() > 0)
-                Run();
-        }
-
-        protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            QueueEntry<EventPost> queueEntry = null;
-            try {
-                queueEntry = _queue.Dequeue(TimeSpan.FromSeconds(1));
-            } catch (Exception ex) {
-                if (!(ex is TimeoutException)) {
-                    Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next EventPost: {0}", ex.Message).Write();
-                    return JobResult.FromException(ex);
-                }
-            }
-
-            if (queueEntry == null)
-                return JobResult.Success;
-
-            if (token.IsCancellationRequested) {
-                queueEntry.Abandon();
-                return JobResult.Cancelled;
-            }
-
-            EventPostInfo eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, token);
+        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventPost> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
+            EventPostInfo eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, cancellationToken).AnyContext();
             if (eventPostInfo == null) {
-                queueEntry.Abandon();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
-                return JobResult.FailedWithMessage(String.Format("Unable to retrieve post data '{0}'.", queueEntry.Value.FilePath));
+                await queueEntry.AbandonAsync().AnyContext();
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
+                return JobResult.FailedWithMessage($"Unable to retrieve post data '{queueEntry.Value.FilePath}'.");
             }
 
             bool isInternalProject = eventPostInfo.ProjectId == Settings.Current.InternalProjectId;
-            await _metricsClient.CounterAsync(MetricNames.PostsDequeued);
             Log.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPostInfo.ProjectId, eventPostInfo.IpAddress, eventPostInfo.ApiVersion, eventPostInfo.UserAgent).WriteIf(!isInternalProject);
             
             List<PersistentEvent> events = null;
@@ -81,55 +57,43 @@ namespace Exceptionless.Core.Jobs {
                     events = ParseEventPost(eventPostInfo);
                     Log.Info().Message("Parsed {0} events for post: id={1}", events.Count, queueEntry.Id).WriteIf(!isInternalProject);
                 }, MetricNames.PostsParsingTime);
-                await _metricsClient.CounterAsync(MetricNames.PostsParsed);
-                await _metricsClient.GaugeAsync(MetricNames.PostsEventCount, events.Count);
+                await _metricsClient.CounterAsync(MetricNames.PostsParsed).AnyContext();
+                await _metricsClient.GaugeAsync(MetricNames.PostsEventCount, events.Count).AnyContext();
             } catch (Exception ex) {
-                // TODO: Change to async once vnext is released.
-                _metricsClient.Counter(MetricNames.PostsParseErrors);
-                queueEntry.Abandon();
-                _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token).Wait(token);
+                await queueEntry.AbandonAsync().AnyContext();
+                await _metricsClient.CounterAsync(MetricNames.PostsParseErrors).AnyContext();
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
 
                 Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).Write();
-                return JobResult.FromException(ex, String.Format("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message));
+                return JobResult.FromException(ex, $"An error occurred while processing the EventPost '{queueEntry.Id}': {ex.Message}");
             }
 
-            if (token.IsCancellationRequested) {
-                queueEntry.Abandon();
-                return JobResult.Cancelled;
-            }
-       
-            if (events == null) {
-                queueEntry.Abandon();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
-                return JobResult.Success;
+            if (!events.Any() || cancellationToken.IsCancellationRequested) {
+                await queueEntry.AbandonAsync().AnyContext();
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
+                return !events.Any() ? JobResult.Success : JobResult.Cancelled;
             }
 
             int eventsToProcess = events.Count;
             bool isSingleEvent = events.Count == 1;
             if (!isSingleEvent) {
-                var project = _projectRepository.GetById(eventPostInfo.ProjectId, true);
+                var project = await _projectRepository.GetByIdAsync(eventPostInfo.ProjectId, true).AnyContext();
                 // Don't process all the events if it will put the account over its limits.
-                eventsToProcess = _organizationRepository.GetRemainingEventLimit(project.OrganizationId);
+                eventsToProcess = await _organizationRepository.GetRemainingEventLimitAsync(project.OrganizationId).AnyContext();
 
                 // Add 1 because we already counted 1 against their limit when we received the event post.
                 if (eventsToProcess < Int32.MaxValue)
                     eventsToProcess += 1;
 
                 // Increment by count - 1 since we already incremented it by 1 in the OverageHandler.
-                _organizationRepository.IncrementUsage(project.OrganizationId, false, events.Count - 1);
+                await _organizationRepository.IncrementUsageAsync(project.OrganizationId, false, events.Count - 1).AnyContext();
             }
-
-            if (events == null) {
-                queueEntry.Abandon();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
-                return JobResult.Success;
-            }
-
+            
             var errorCount = 0;
             var created = DateTime.UtcNow;
             try {
                 events.ForEach(e => e.CreatedUtc = created);
-                var results = await _eventPipeline.RunAsync(events.Take(eventsToProcess).ToList());
+                var results = await _eventPipeline.RunAsync(events.Take(eventsToProcess).ToList()).AnyContext();
                 Log.Info().Message("Ran {0} events through the pipeline: id={1} project={2} success={3} error={4}", results.Count, queueEntry.Id, eventPostInfo.ProjectId, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).WriteIf(!isInternalProject);
                 foreach (var eventContext in results) {
                     if (eventContext.IsCancelled)
@@ -154,33 +118,33 @@ namespace Exceptionless.Core.Jobs {
                             CharSet = eventPostInfo.CharSet,
                             ProjectId = eventPostInfo.ProjectId,
                             UserAgent = eventPostInfo.UserAgent
-                        }, _storage, false, token);
+                        }, _storage, false, cancellationToken).AnyContext();
                     }
                 }
             } catch (ArgumentException ex) {
                 Log.Error().Exception(ex).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
-                queueEntry.Complete();
+                await queueEntry.CompleteAsync().AnyContext();
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
                 errorCount++;
             }
 
             if (isSingleEvent && errorCount > 0) {
-                queueEntry.Abandon();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
+                await queueEntry.AbandonAsync().AnyContext();
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
             } else {
-                queueEntry.Complete();
+                await queueEntry.CompleteAsync().AnyContext();
                 if (queueEntry.Value.ShouldArchive)
-                    await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, queueEntry.Value.ShouldArchive, token);
+                    await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, queueEntry.Value.ShouldArchive).AnyContext();
                 else {
-                    await _storage.DeleteFileAsync(queueEntry.Value.FilePath, token);
-                    await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
+                    await _storage.DeleteFileAsync(queueEntry.Value.FilePath).AnyContext();
+                    await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
                 }
             }
 
             return JobResult.Success;
         }
-
+        
         private List<PersistentEvent> ParseEventPost(EventPostInfo ep) {
             byte[] data = ep.Data;
             if (!String.IsNullOrEmpty(ep.ContentEncoding))

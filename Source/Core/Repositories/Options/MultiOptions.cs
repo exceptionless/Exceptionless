@@ -11,8 +11,7 @@ namespace Exceptionless.Core.Repositories {
             get { return _hasMore; }
             set {
                 _hasMore = value;
-                if (HasMoreChanged != null)
-                    HasMoreChanged(this, new EventArgs<bool>(_hasMore));
+                HasMoreChanged?.Invoke(this, new EventArgs<bool>(_hasMore));
             }
         }
 
@@ -24,29 +23,17 @@ namespace Exceptionless.Core.Repositories {
         public DateTime? EndDate { get; set; }
         public string DateField { get; set; }
 
-        public bool UseLimit {
-            get { return Limit.HasValue; }
-        }
+        public bool UseLimit => Limit.HasValue;
 
-        public bool UseSkip {
-            get { return UsePaging; }
-        }
+        public bool UseSkip => UsePaging;
 
-        public bool UsePaging {
-            get { return Page.HasValue; }
-        }
+        public bool UsePaging => Page.HasValue;
 
-        public bool UseStartDate {
-            get { return StartDate.HasValue && StartDate.Value > ServiceStartDate; }
-        }
-        
-        public bool UseEndDate {
-            get { return EndDate.HasValue && EndDate.Value < DateTime.UtcNow.AddHours(1); }
-        }
+        public bool UseStartDate => StartDate.HasValue && StartDate.Value > ServiceStartDate;
 
-        public bool UseDateRange {
-            get { return !String.IsNullOrEmpty(DateField) && (UseStartDate || UseEndDate); }
-        }
+        public bool UseEndDate => EndDate.HasValue && EndDate.Value < DateTime.UtcNow.AddHours(1);
+
+        public bool UseDateRange => !String.IsNullOrEmpty(DateField) && (UseStartDate || UseEndDate);
 
         public DateTime GetStartDate() {
             return UseStartDate ? StartDate.GetValueOrDefault() : ServiceStartDate;

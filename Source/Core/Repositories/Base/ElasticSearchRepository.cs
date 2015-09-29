@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Elasticsearch.Net;
+using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -11,6 +13,7 @@ using Foundatio.Caching;
 using Foundatio.Messaging;
 using Nest;
 using NLog.Fluent;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class ElasticSearchRepository<T> : ElasticSearchReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
@@ -29,20 +32,19 @@ namespace Exceptionless.Core.Repositories {
 
         public bool BatchNotifications { get; set; }
 
-        public T Add(T document, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true)
-        {
+        public async Task<T> AddAsync(T document, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
             if (document == null)
-                throw new ArgumentNullException("document");
+                throw new ArgumentNullException(nameof(document));
 
-            Add(new[] { document }, addToCache, expiresIn, sendNotification);
+            await AddAsync(new[] { document }, addToCache, expiresIn, sendNotification).AnyContext();
             return document;
         }
 
-        public void Add(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
+        public async Task AddAsync(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
             if (documents == null || documents.Count == 0)
                 return;
 
-            OnDocumentChanging(ChangeType.Added, documents);
+            await OnDocumentChangingAsync(ChangeType.Added, documents).AnyContext();
 
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
@@ -60,56 +62,56 @@ namespace Exceptionless.Core.Repositories {
             }
 
             if (addToCache)
-                AddToCache(documents, expiresIn);
+                await AddToCacheAsync(documents, expiresIn).AnyContext();
 
             if (sendNotification)
-                SendNotifications(ChangeType.Added, documents);
+                await SendNotificationsAsync(ChangeType.Added, documents).AnyContext();
 
-            OnDocumentChanged(ChangeType.Added, documents);
+            await OnDocumentChangedAsync(ChangeType.Added, documents).AnyContext();
         }
-        public void Remove(string id, bool sendNotification = true) {
+        public async Task RemoveAsync(string id, bool sendNotification = true) {
             if (String.IsNullOrEmpty(id))
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
 
-            var document = GetById(id, true);
-            Remove(new[] { document }, sendNotification);
+            var document = await GetByIdAsync(id, true).AnyContext();
+            await RemoveAsync(new[] { document }, sendNotification).AnyContext();
         }
 
-        public void Remove(T document, bool sendNotification = true) {
+        public Task RemoveAsync(T document, bool sendNotification = true) {
             if (document == null)
-                throw new ArgumentNullException("document");
+                throw new ArgumentNullException(nameof(document));
 
-            Remove(new[] { document }, sendNotification);
+            return RemoveAsync(new[] { document }, sendNotification);
         }
 
-        public void Remove(ICollection<T> documents, bool sendNotification = true) {
+        public async Task RemoveAsync(ICollection<T> documents, bool sendNotification = true) {
             if (documents == null || documents.Count == 0)
-                throw new ArgumentException("Must provide one or more documents to remove.", "documents");
+                throw new ArgumentException("Must provide one or more documents to remove.", nameof(documents));
 
-            OnDocumentChanging(ChangeType.Removed, documents);
+            await OnDocumentChangingAsync(ChangeType.Removed, documents).AnyContext();
 
             string indexName = _isEvent ? _index.VersionedName + "-*" : _index.VersionedName;
-            _elasticClient.DeleteByQuery<T>(q => q.Query(q1 => q1.Ids(documents.Select(d => d.Id))).Index(indexName));
+            await _elasticClient.DeleteByQueryAsync<T>(q => q.Query(q1 => q1.Ids(documents.Select(d => d.Id))).Index(indexName)).AnyContext();
 			
             if (sendNotification)
-                SendNotifications(ChangeType.Removed, documents);
+                await SendNotificationsAsync(ChangeType.Removed, documents).AnyContext();
 
-            OnDocumentChanged(ChangeType.Removed, documents);
+            await OnDocumentChangedAsync(ChangeType.Removed, documents).AnyContext();
         }
 
-        public void RemoveAll() {
+        public async Task RemoveAllAsync() {
             if (EnableCache)
-                Cache.FlushAll();
+                await Cache.RemoveAllAsync().AnyContext();
 
             if (_isEvent)
-                _elasticClient.DeleteIndex(d => d.Index(_index.VersionedName + "-*"));
+                await _elasticClient.DeleteIndexAsync(d => d.Index(_index.VersionedName + "-*")).AnyContext();
             else
-                RemoveAll(new QueryOptions(), false);
+                await RemoveAllAsync(new QueryOptions(), false).AnyContext();
         }
 
-        protected long RemoveAll(QueryOptions options, bool sendNotifications = true) {
+        protected async Task<long> RemoveAllAsync(QueryOptions options, bool sendNotifications = true) {
             if (options == null)
-                throw new ArgumentNullException("options");
+                throw new ArgumentNullException(nameof(options));
 
             var fields = new List<string>(new[] { "id" });
             if (_isOwnedByOrganization)
@@ -129,35 +131,35 @@ namespace Exceptionless.Core.Repositories {
                 .Size(Settings.Current.BulkBatchSize);
 
             _elasticClient.EnableTrace();
-            var documents = _elasticClient.Search<T>(searchDescriptor).Documents.ToList();
+            var documents = (await _elasticClient.SearchAsync<T>(searchDescriptor).AnyContext()).Documents.ToList();
             _elasticClient.DisableTrace();
             while (documents.Count > 0) {
                 recordsAffected += documents.Count;
-                Remove(documents, sendNotifications);
+                await RemoveAsync(documents, sendNotifications).AnyContext();
 
-                documents = _elasticClient.Search<T>(searchDescriptor).Documents.ToList();
+                documents = (await _elasticClient.SearchAsync<T>(searchDescriptor).AnyContext()).Documents.ToList();
             }
             _elasticClient.DisableTrace();
 
             return recordsAffected;
         }
 
-        public T Save(T document, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
+        public async Task<T> SaveAsync(T document, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
             if (document == null)
-                throw new ArgumentNullException("document");
+                throw new ArgumentNullException(nameof(document));
 
-            Save(new[] { document }, addToCache, expiresIn, sendNotifications);
+            await SaveAsync(new[] { document }, addToCache, expiresIn, sendNotifications).AnyContext();
             return document;
         }
 
-        public void Save(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
+        public async Task SaveAsync(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
             if (documents == null || documents.Count == 0)
                 return;
 
             string[] ids = documents.Where(d => !String.IsNullOrEmpty(d.Id)).Select(d => d.Id).ToArray();
-            var originalDocuments = ids.Length > 0 ? GetByIds(documents.Select(d => d.Id).ToArray()).Documents : new List<T>();
+            var originalDocuments = ids.Length > 0 ? (await GetByIdsAsync(documents.Select(d => d.Id).ToArray()).AnyContext()).Documents : new List<T>();
 
-            OnDocumentChanging(ChangeType.Saved, documents, originalDocuments);
+            await OnDocumentChangingAsync(ChangeType.Saved, documents, originalDocuments).AnyContext();
 
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
@@ -175,19 +177,19 @@ namespace Exceptionless.Core.Repositories {
             }
 
             if (addToCache)
-                AddToCache(documents, expiresIn);
+                await AddToCacheAsync(documents, expiresIn).AnyContext();
 
             if (sendNotifications)
-                SendNotifications(ChangeType.Saved, documents, originalDocuments);
+                await SendNotificationsAsync(ChangeType.Saved, documents, originalDocuments).AnyContext();
 
-            OnDocumentChanged(ChangeType.Saved, documents, originalDocuments);
+            await OnDocumentChangedAsync(ChangeType.Saved, documents, originalDocuments).AnyContext();
         }
 
-        protected long UpdateAll(string organizationId, QueryOptions options, object update, bool sendNotifications = true) {
-            return UpdateAll(new[] { organizationId }, options, update, sendNotifications);
+        protected Task<long> UpdateAllAsync(string organizationId, QueryOptions options, object update, bool sendNotifications = true) {
+            return UpdateAllAsync(new[] { organizationId }, options, update, sendNotifications);
         }
 
-        protected long UpdateAll(string[] organizationIds, QueryOptions options, object update, bool sendNotifications = true) {
+        protected async Task<long> UpdateAllAsync(string[] organizationIds, QueryOptions options, object update, bool sendNotifications = true) {
             long recordsAffected = 0;
 
             var searchDescriptor = new SearchDescriptor<T>()
@@ -199,16 +201,16 @@ namespace Exceptionless.Core.Repositories {
                 .Size(Settings.Current.BulkBatchSize);
 
             _elasticClient.EnableTrace();
-            var scanResults = _elasticClient.Search<T>(searchDescriptor);
+            var scanResults = await _elasticClient.SearchAsync<T>(searchDescriptor).AnyContext();
             _elasticClient.DisableTrace();
 
             // Check to see if no scroll id was returned. This will occur when the index doesn't exist.
             if (!scanResults.IsValid || scanResults.ScrollId == null)
                 return 0;
 
-            var results = _elasticClient.Scroll<T>("4s", scanResults.ScrollId);
+            var results = await _elasticClient.ScrollAsync<T>("4s", scanResults.ScrollId).AnyContext();
             while (results.Hits.Any()) {
-                var bulkResult = _elasticClient.Bulk(b => {
+                var bulkResult = await _elasticClient.BulkAsync(b => {
                     string script = update as string;
                     if (script != null)
                         results.Hits.ForEach(h => b.Update<T>(u => u.Id(h.Id).Index(h.Index).Script(script)));
@@ -216,7 +218,7 @@ namespace Exceptionless.Core.Repositories {
                         results.Hits.ForEach(h => b.Update<T, object>(u => u.Id(h.Id).Index(h.Index).Doc(update)));
 
                     return b;
-                });
+                }).AnyContext();
 
                 if (!bulkResult.IsValid) {
                     Log.Error().Message("Error occurred while bulk updating").Exception(bulkResult.ConnectionStatus.OriginalException).Write();
@@ -224,10 +226,10 @@ namespace Exceptionless.Core.Repositories {
                 }
 
                 if (EnableCache)
-                    results.Hits.ForEach(d => InvalidateCache(d.Id));
+                    results.Hits.ForEach(async d => await InvalidateCacheAsync(d.Id).AnyContext());
 
                 recordsAffected += results.Documents.Count();
-                results = _elasticClient.Scroll<T>("4s", results.ScrollId);
+                results = await _elasticClient.ScrollAsync<T>("4s", results.ScrollId).AnyContext();
             }
 
             if (recordsAffected <= 0)
@@ -237,24 +239,23 @@ namespace Exceptionless.Core.Repositories {
                 return recordsAffected;
 
             foreach (var organizationId in organizationIds) {
-                PublishMessage(new EntityChanged {
+                await PublishMessageAsync(new EntityChanged {
                     ChangeType = ChangeType.Saved,
                     OrganizationId = organizationId,
                     Type = _entityType
-                }, TimeSpan.FromSeconds(1.5));
+                }, TimeSpan.FromSeconds(1.5)).AnyContext();
             }
 
             return recordsAffected;
         }
 
-        public event EventHandler<DocumentChangeEventArgs<T>> DocumentChanging;
+        public Foundatio.Utility.AsyncEvent<DocumentChangeEventArgs<T>> DocumentChanging { get; set; } = new Foundatio.Utility.AsyncEvent<DocumentChangeEventArgs<T>>(true);
 
-        private void OnDocumentChanging(ChangeType changeType, ICollection<T> documents, ICollection<T> orginalDocuments = null) {
+        private async Task OnDocumentChangingAsync(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {
             if (changeType != ChangeType.Added)
-                InvalidateCache(documents);
+                await InvalidateCacheAsync(documents).AnyContext();
 
-            if (changeType != ChangeType.Removed)
-            {
+            if (changeType != ChangeType.Removed) {
                 if (_hasDates)
                     documents.Cast<IHaveDates>().SetDates();
                 else if (_hasCreatedDate)
@@ -263,38 +264,38 @@ namespace Exceptionless.Core.Repositories {
                 documents.EnsureIds();
             }
 
-            if (DocumentChanging != null)
-                DocumentChanging(this, new DocumentChangeEventArgs<T>(changeType, documents, this, orginalDocuments));
+            await (DocumentChanging?.InvokeAsync(this, new DocumentChangeEventArgs<T>(changeType, documents, this, originalDocuments)) ?? TaskHelper.Completed()).AnyContext();
+        }
+        
+        public Foundatio.Utility.AsyncEvent<DocumentChangeEventArgs<T>> DocumentChanged { get; set; } = new Foundatio.Utility.AsyncEvent<DocumentChangeEventArgs<T>>(true);
+
+        private async Task OnDocumentChangedAsync(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {
+            await (DocumentChanged?.InvokeAsync(this, new DocumentChangeEventArgs<T>(changeType, documents, this, originalDocuments)) ?? TaskHelper.Completed()).AnyContext();
         }
 
-        public event EventHandler<DocumentChangeEventArgs<T>> DocumentChanged;
-
-        private void OnDocumentChanged(ChangeType changeType, ICollection<T> documents, ICollection<T> orginalDocuments = null) {
-            if (DocumentChanged != null)
-                DocumentChanged(this, new DocumentChangeEventArgs<T>(changeType, documents, this, orginalDocuments));
-        }
-
-        protected virtual void AddToCache(ICollection<T> documents, TimeSpan? expiresIn = null) {
+        protected virtual async Task AddToCacheAsync(ICollection<T> documents, TimeSpan? expiresIn = null) {
             if (!EnableCache)
                 return;
 
             foreach (var document in documents)
-                Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+                await Cache.SetAsync(GetScopedCacheKey(document.Id), document, expiresIn ?? TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS)).AnyContext();
         }
 
-        protected virtual void SendNotifications(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {
+        protected virtual async Task SendNotificationsAsync(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {
             if (BatchNotifications)
-                PublishMessage(changeType, documents);
+                await PublishMessageAsync(changeType, documents).AnyContext();
             else
-                documents.ForEach(d => PublishMessage(changeType, d));
+                documents.ForEach(async d => await PublishMessageAsync(changeType, d).AnyContext());
         }
 
-        protected void PublishMessage(ChangeType changeType, T document, IDictionary<string, object> data = null)
-        {
-            PublishMessage(changeType, new[] { document }, data);
+        protected Task PublishMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null) {
+            return PublishMessageAsync(changeType, new[] { document }, data);
         }
 
-        protected void PublishMessage(ChangeType changeType, IEnumerable<T> documents, IDictionary<string, object> data = null) {
+        protected async Task PublishMessageAsync(ChangeType changeType, IEnumerable<T> documents, IDictionary<string, object> data = null) {
+            if (_messagePublisher == null)
+                return;
+
             if (_isOwnedByOrganization && _isOwnedByProject) {
                 foreach (var projectDocs in documents.Cast<IOwnedByOrganizationAndProjectWithIdentity>().GroupBy(d => d.ProjectId)) {
                     var firstDoc = projectDocs.FirstOrDefault();
@@ -311,7 +312,7 @@ namespace Exceptionless.Core.Repositories {
 						Data = new DataDictionary(data ?? new Dictionary<string, object>())
                     };
 
-                    PublishMessage(message, TimeSpan.FromSeconds(1.5));
+                    await PublishMessageAsync(message, TimeSpan.FromSeconds(1.5)).AnyContext();
                 }
             } else if (_isOwnedByOrganization) {
                 foreach (var orgDocs in documents.Cast<IOwnedByOrganizationWithIdentity>().GroupBy(d => d.OrganizationId)) {
@@ -328,7 +329,7 @@ namespace Exceptionless.Core.Repositories {
 						Data = new DataDictionary(data ?? new Dictionary<string, object>())
                     };
 
-                    PublishMessage(message, TimeSpan.FromSeconds(1.5));
+                    await PublishMessageAsync(message, TimeSpan.FromSeconds(1.5)).AnyContext();
                 }
             } else {
                 foreach (var doc in documents) {
@@ -339,14 +340,16 @@ namespace Exceptionless.Core.Repositories {
 						Data = new DataDictionary(data ?? new Dictionary<string, object>())
                     };
 
-                    PublishMessage(message, TimeSpan.FromSeconds(1.5));
+                    await PublishMessageAsync(message, TimeSpan.FromSeconds(1.5)).AnyContext();
                 }
             }
         }
 
-        protected void PublishMessage<TMessageType>(TMessageType message, TimeSpan? delay = null) where TMessageType : class {
-            if (_messagePublisher != null)
-                _messagePublisher.Publish(message, delay);
+        protected async Task PublishMessageAsync<TMessageType>(TMessageType message, TimeSpan? delay = null) where TMessageType : class {
+            if (_messagePublisher == null)
+                return;
+
+            await _messagePublisher.PublishAsync(message, delay).AnyContext();
         }
     }
 }

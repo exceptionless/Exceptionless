@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
@@ -38,22 +39,22 @@ namespace Exceptionless.Core.Jobs {
             _lockProvider = lockProvider;
         }
 
-        protected override IDisposable GetJobLock() {
-            return _lockProvider.AcquireLock("DailySummaryJob");
+        protected override Task<IDisposable> GetJobLockAsync() {
+            return _lockProvider.AcquireLockAsync("DailySummaryJob");
         }
-
-        protected override Task<JobResult> RunInternalAsync(CancellationToken token) {
+        
+        protected override async Task<JobResult> RunInternalAsync(CancellationToken cancellationToken = default(CancellationToken)) {
             if (!Settings.Current.EnableDailySummary)
-                return Task.FromResult(JobResult.SuccessWithMessage("Summary notifications are disabled."));
+                return JobResult.SuccessWithMessage("Summary notifications are disabled.");
 
             if (_mailer == null)
-                return Task.FromResult(JobResult.SuccessWithMessage("Summary notifications are disabled due to null mailer."));
+                return JobResult.SuccessWithMessage("Summary notifications are disabled due to null mailer.");
 
             const int BATCH_SIZE = 25;
 
-            var projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE).Documents;
-            while (projects.Count > 0 && !token.IsCancellationRequested) {
-                var documentsUpdated = _projectRepository.IncrementNextSummaryEndOfDayTicks(projects.Select(p => p.Id).ToList());
+            var projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
+            while (projects.Count > 0 && !cancellationToken.IsCancellationRequested) {
+                var documentsUpdated = await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projects.Select(p => p.Id).ToList()).AnyContext();
                 Log.Info().Message("Got {0} projects to process. ", projects.Count).Write();
                 Debug.Assert(projects.Count == documentsUpdated);
 
@@ -70,25 +71,25 @@ namespace Exceptionless.Core.Jobs {
                         UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
                     };
 
-                    ProcessSummaryNotification(notification);
+                    await ProcessSummaryNotificationAsync(notification).AnyContext();
                 }
 
-                projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE).Documents;
+                projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
             }
 
-            return Task.FromResult(JobResult.SuccessWithMessage("Successfully sent summary notifications."));
+            return JobResult.SuccessWithMessage("Successfully sent summary notifications.");
         }
 
-        private void ProcessSummaryNotification(SummaryNotification data) {
-            var project = _projectRepository.GetById(data.Id, true);
-            var organization = _organizationRepository.GetById(project.OrganizationId, true);
+        private async Task ProcessSummaryNotificationAsync(SummaryNotification data) {
+            var project = await _projectRepository.GetByIdAsync(data.Id, true).AnyContext();
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
             var userIds = project.NotificationSettings.Where(n => n.Value.SendDailySummary).Select(n => n.Key).ToList();
             if (userIds.Count == 0) {
                 Log.Info().Message("Project \"{0}\" has no users to send summary to.", project.Id).Write();
                 return;
             }
 
-            var users = _userRepository.GetByIds(userIds).Documents.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(organization.Id)).ToList();
+            var users = (await _userRepository.GetByIdsAsync(userIds).AnyContext()).Documents.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(organization.Id)).ToList();
             if (users.Count == 0) {
                 Log.Info().Message("Project \"{0}\" has no users to send summary to.", project.Id).Write();
                 return;
@@ -96,14 +97,14 @@ namespace Exceptionless.Core.Jobs {
 
             Log.Info().Message("Sending daily summary: users={0} project={1}", users.Count, project.Id).Write();
             var paging = new PagingOptions { Limit = 5 };
-            List<Stack> newest = _stackRepository.GetNew(project.Id, data.UtcStartTime, data.UtcEndTime, paging).Documents.ToList();
+            List<Stack> newest = (await _stackRepository.GetNewAsync(project.Id, data.UtcStartTime, data.UtcEndTime, paging).AnyContext()).Documents.ToList();
 
             var result = _stats.GetTermsStats(data.UtcStartTime, data.UtcEndTime, "stack_id", "type:error project:" + data.Id, max: 5);
             //var termStatsList = result.Terms.Take(5).ToList();
             //var stacks = _stackRepository.GetByIds(termStatsList.Select(s => s.Term).ToList());
             bool hasSubmittedErrors = result.Total > 0;
             if (!hasSubmittedErrors)
-                hasSubmittedErrors = _eventRepository.GetCountByProjectId(project.Id) > 0;
+                hasSubmittedErrors = await _eventRepository.GetCountByProjectIdAsync(project.Id).AnyContext() > 0;
 
             var mostFrequent = new List<EventStackResult>();
             //foreach (var termStats in termStatsList) {
@@ -140,7 +141,7 @@ namespace Exceptionless.Core.Jobs {
             };
 
             foreach (var user in users)
-                _mailer.SendDailySummary(user.EmailAddress, notification);
+                await _mailer.SendDailySummaryAsync(user.EmailAddress, notification).AnyContext();
             
             Log.Info().Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Id, notification.Total).Write();
         }

@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Pipeline {
             if (contexts == null || contexts.Count == 0)
                 return contexts ?? new List<EventContext>();
 
-            await _metricsClient.CounterAsync(MetricNames.EventsSubmitted, contexts.Count);
+            await _metricsClient.CounterAsync(MetricNames.EventsSubmitted, contexts.Count).AnyContext();
             try {
                 if (contexts.Any(c => !String.IsNullOrEmpty(c.Event.Id)))
                     throw new ArgumentException("All Event Ids should not be populated.");
@@ -47,15 +47,15 @@ namespace Exceptionless.Core.Pipeline {
                 if (contexts.Any(c => c.Event.ProjectId != projectId))
                     throw new ArgumentException("All Project Ids must be the same for a batch of events.");
 
-                var project = _projectRepository.GetById(projectId, true);
+                var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
                 if (project == null)
-                    throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", projectId));
+                    throw new InvalidOperationException($"Unable to load project \"{projectId}\"");
 
                 contexts.ForEach(c => c.Project = project);
 
-                var organization = _organizationRepository.GetById(project.OrganizationId, true);
+                var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
                 if (organization == null)
-                    throw new InvalidOperationException(String.Format("Unable to load organization \"{0}\"", project.OrganizationId));
+                    throw new InvalidOperationException($"Unable to load organization \"{project.OrganizationId}\"");
 
                 contexts.ForEach(c => {
                     c.Organization = organization;
@@ -70,19 +70,18 @@ namespace Exceptionless.Core.Pipeline {
                 foreach (var key in project.Data.Keys)
                     contexts.ForEach(c => c.SetProperty(key, project.Data[key]));
 
-                await _metricsClient.Time(() => base.RunAsync(contexts), MetricNames.EventsProcessingTime);
+                await _metricsClient.Time(async () => await base.RunAsync(contexts).AnyContext(), MetricNames.EventsProcessingTime).AnyContext();
 
                 var cancelled = contexts.Count(c => c.IsCancelled);
                 if (cancelled > 0)
-                    await _metricsClient.CounterAsync(MetricNames.EventsProcessCancelled, cancelled);
+                    await _metricsClient.CounterAsync(MetricNames.EventsProcessCancelled, cancelled).AnyContext();
 
                 // TODO: Log the errors out to the events proejct id.
                 var errors = contexts.Count(c => c.HasError);
                 if (errors > 0)
-                    await _metricsClient.CounterAsync(MetricNames.EventsProcessErrors, errors);
+                    await _metricsClient.CounterAsync(MetricNames.EventsProcessErrors, errors).AnyContext();
             } catch (Exception) {
-                // TODO: Update once we update to vnext.
-                _metricsClient.Counter(MetricNames.EventsProcessErrors, contexts.Count);
+                await _metricsClient.CounterAsync(MetricNames.EventsProcessErrors, contexts.Count).AnyContext();
                 throw;
             }
 

@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string ToQueryString(this NameValueCollection collection) {
-            return collection.AsKeyValuePairs().ToConcatenatedString(pair => pair.Key == null ? pair.Value : String.Format("{0}={1}", pair.Key, pair.Value), "&");
+            return collection.AsKeyValuePairs().ToConcatenatedString(pair => pair.Key == null ? pair.Value : $"{pair.Key}={pair.Value}", "&");
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace Exceptionless.Core.Extensions {
 
 		public static void AppendQueryArgs(this UriBuilder builder, IEnumerable<KeyValuePair<string, string>> args) {
             if (builder == null)
-                throw new ArgumentNullException("builder");
+                throw new ArgumentNullException(nameof(builder));
 
 		    if (args == null || !args.Any())
 		        return;
@@ -107,7 +107,7 @@ namespace Exceptionless.Core.Extensions {
 
  		internal static string CreateQueryString(IEnumerable<KeyValuePair<string, string>> args) {
             if (args == null)
-                throw new ArgumentNullException("args");
+                throw new ArgumentNullException(nameof(args));
 #if !PFX_LEGACY_3_5
 			Contract.Ensures(Contract.Result<string>() != null);
 #endif
@@ -119,9 +119,9 @@ namespace Exceptionless.Core.Extensions {
 
 			foreach (var p in args) {
                 if (String.IsNullOrEmpty(p.Key))
-                    throw new NullReferenceException(String.Format("Key \"{0}\" is not allowed to be null.", p.Key));
+                    throw new NullReferenceException($"Key \"{p.Key}\" is not allowed to be null.");
                 if (p.Value == null)
-                    throw new NullReferenceException(String.Format("Value for key \"{0}\" is not allowed to be null.", p.Key));
+                    throw new NullReferenceException($"Value for key \"{p.Key}\" is not allowed to be null.");
 				sb.Append(Uri.EscapeDataString(p.Key));
 				sb.Append('=');
 				sb.Append(EscapeUriDataStringRfc3986(p.Value));
@@ -135,7 +135,7 @@ namespace Exceptionless.Core.Extensions {
         private static readonly string[] UriRfc3986CharsToEscape = new[] { "!", "*", "'", "(", ")" };
         public static string EscapeUriDataStringRfc3986(string value) {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
 			// Start with RFC 2396 escaping by calling the .NET method to do the work.
 			// This MAY sometimes exhibit RFC 3986 behavior (according to the documentation).

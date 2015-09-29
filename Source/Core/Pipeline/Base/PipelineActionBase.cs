@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Pipeline {
     public interface IPipelineAction<TContext> where TContext : IPipelineContext {
@@ -30,7 +31,7 @@ namespace Exceptionless.Core.Pipeline {
     /// </summary>
     /// <typeparam name="TContext">The type of the pipeline context.</typeparam>
     public abstract class PipelineActionBase<TContext> : IPipelineAction<TContext> where TContext : class, IPipelineContext {
-        protected virtual bool ContinueOnError { get { return false; } }
+        protected virtual bool ContinueOnError => false;
 
         /// <summary>
         /// Processes this action using the specified pipeline context.
@@ -45,7 +46,7 @@ namespace Exceptionless.Core.Pipeline {
         public virtual async Task ProcessBatchAsync(ICollection<TContext> contexts) {
             foreach (var ctx in contexts) {
                 try {
-                    await ProcessAsync(ctx);
+                    await ProcessAsync(ctx).AnyContext();
                 } catch (Exception ex) {
                     bool cont = false;
                     try {

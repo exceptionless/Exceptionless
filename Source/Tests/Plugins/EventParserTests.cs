@@ -9,33 +9,28 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Plugins {
     [UseReporter(typeof(HappyDiffReporter))]
     public class EventParserTests {
         private readonly EventParserPluginManager _eventParserPluginManager = IoC.GetInstance<EventParserPluginManager>();
 
-        public static IEnumerable<object[]> EventData {
-            get {
-                return new[] {
-                    new object[] { " \t", 0, null, Event.KnownTypes.Log }, 
-                    new object[] { "simple string", 1, new [] { "simple string" }, Event.KnownTypes.Log }, 
-                    new object[] { " \r\nsimple string", 1, new [] { "simple string" }, Event.KnownTypes.Log }, 
-                    new object[] { "{simple string", 1, new [] { "{simple string" }, Event.KnownTypes.Log },
-                    new object[] { "{simple string,simple string}", 1, new [] { "{simple string,simple string}" }, Event.KnownTypes.Log },
-                    new object[] { "{ \"name\": \"value\" }", 1, new string[] { null }, Event.KnownTypes.Log },
-                    new object[] { "{ \"message\": \"simple string\" }", 1, new [] { "simple string" }, Event.KnownTypes.Log },
-                    new object[] { "{ \"message\": \"simple string\", \"data\": { \"" + Event.KnownDataKeys.Error + "\": {} } }", 1, new [] { "simple string" }, Event.KnownTypes.Error },
-                    new object[] { "[simple string", 1, new [] { "[simple string" }, Event.KnownTypes.Log },
-                    new object[] { "[simple string,simple string]", 1, new [] { "[simple string,simple string]" }, Event.KnownTypes.Log },
-                    new object[] { "simple string\r\nsimple string", 2, new [] { "simple string", "simple string" }, Event.KnownTypes.Log }
-                };
-            }
-        }
+        public static IEnumerable<object[]> EventData => new[] {
+            new object[] { " \t", 0, null, Event.KnownTypes.Log }, 
+            new object[] { "simple string", 1, new [] { "simple string" }, Event.KnownTypes.Log }, 
+            new object[] { " \r\nsimple string", 1, new [] { "simple string" }, Event.KnownTypes.Log }, 
+            new object[] { "{simple string", 1, new [] { "{simple string" }, Event.KnownTypes.Log },
+            new object[] { "{simple string,simple string}", 1, new [] { "{simple string,simple string}" }, Event.KnownTypes.Log },
+            new object[] { "{ \"name\": \"value\" }", 1, new string[] { null }, Event.KnownTypes.Log },
+            new object[] { "{ \"message\": \"simple string\" }", 1, new [] { "simple string" }, Event.KnownTypes.Log },
+            new object[] { "{ \"message\": \"simple string\", \"data\": { \"" + Event.KnownDataKeys.Error + "\": {} } }", 1, new [] { "simple string" }, Event.KnownTypes.Error },
+            new object[] { "[simple string", 1, new [] { "[simple string" }, Event.KnownTypes.Log },
+            new object[] { "[simple string,simple string]", 1, new [] { "[simple string,simple string]" }, Event.KnownTypes.Log },
+            new object[] { "simple string\r\nsimple string", 2, new [] { "simple string", "simple string" }, Event.KnownTypes.Log }
+        };
 
         [Theory]
-        [PropertyData("EventData")]
+        [MemberData("EventData")]
         public void ParseEvents(string input, int expectedEvents, string[] expectedMessage, string expectedType) {
             var events = _eventParserPluginManager.ParseEvents(input, 2, "exceptionless/2.0.0.0");
             Assert.Equal(expectedEvents, events.Count);
@@ -48,7 +43,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         [Theory]
-        [PropertyData("Events")]
+        [MemberData("Events")]
         public void VerifyEventParserSerialization(string eventsFilePath) {
             var json = File.ReadAllText(eventsFilePath);
 
@@ -59,7 +54,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         [Theory]
-        [PropertyData("Events")]
+        [MemberData("Events")]
         public void CanDeserializeEvents(string eventsFilePath) {
             var json = File.ReadAllText(eventsFilePath);
 

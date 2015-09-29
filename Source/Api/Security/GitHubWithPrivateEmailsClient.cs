@@ -9,7 +9,7 @@ using OAuth2.Client.Impl;
 using OAuth2.Configuration;
 using OAuth2.Infrastructure;
 using OAuth2.Models;
-using RestSharp;
+using RestSharp.Authenticators;
 
 namespace Exceptionless.Api.Security {
     public class GitHubWithPrivateEmailsClient : GitHubClient {
@@ -78,9 +78,7 @@ namespace Exceptionless.Api.Security {
             }
         }
 
-        protected virtual Endpoint UserEmailServiceEndpoint {
-            get { return new Endpoint { BaseUri = "https://api.github.com/", Resource = "/user/emails" }; }
-        }
+        protected virtual Endpoint UserEmailServiceEndpoint => new Endpoint { BaseUri = "https://api.github.com/", Resource = "/user/emails" };
 
         protected class UserEmails {
             public string Email { get; set; }

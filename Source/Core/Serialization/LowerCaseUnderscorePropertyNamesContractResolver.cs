@@ -8,7 +8,7 @@ namespace Exceptionless.Core.Serialization {
     public class LowerCaseUnderscorePropertyNamesContractResolver : DefaultContractResolver {
         private readonly Func<Type, bool> _useDefaultContract;
 
-        public LowerCaseUnderscorePropertyNamesContractResolver(Func<Type, bool> useDefaultContract = null) : base(true) {
+        public LowerCaseUnderscorePropertyNamesContractResolver(Func<Type, bool> useDefaultContract = null) {
             _useDefaultContract = useDefaultContract;
         }
 
@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Serialization {
         protected override JsonDictionaryContract CreateDictionaryContract(Type objectType) {
             var contract = base.CreateDictionaryContract(objectType);
             if (_useDefaultContract != null && _useDefaultContract(objectType))
-                contract.PropertyNameResolver = propertyName => propertyName;
+                contract.DictionaryKeyResolver = propertyName => propertyName;
 
             return contract;
         }

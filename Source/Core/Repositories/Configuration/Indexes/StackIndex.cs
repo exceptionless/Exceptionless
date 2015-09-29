@@ -5,13 +5,11 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public class StackIndex : IElasticSearchIndex {
-        public string Name { get { return "stacks"; } }
-        
-        public int Version { get { return 1; } }
+        public string Name => "stacks";
 
-        public string VersionedName {
-            get { return String.Concat(Name, "-v", Version); }
-        }
+        public int Version => 1;
+
+        public string VersionedName => String.Concat(Name, "-v", Version);
 
         public virtual IDictionary<Type, string> GetIndexTypeNames() {
             return new Dictionary<Type, string> {

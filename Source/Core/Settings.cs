@@ -42,7 +42,7 @@ namespace Exceptionless.Core {
 
         public string Version { get; private set; }
 
-        public bool EnableIntercom { get { return !String.IsNullOrEmpty(IntercomAppSecret); } }
+        public bool EnableIntercom => !String.IsNullOrEmpty(IntercomAppSecret);
 
         public string IntercomAppSecret { get; private set; }
 
@@ -64,7 +64,7 @@ namespace Exceptionless.Core {
 
         public string GoogleAppSecret { get; private set; }
 
-        public bool EnableBilling { get { return !String.IsNullOrEmpty(StripeApiKey); } }
+        public bool EnableBilling => !String.IsNullOrEmpty(StripeApiKey);
 
         public string StripeApiKey { get; private set; }
 

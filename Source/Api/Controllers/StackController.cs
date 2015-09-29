@@ -17,6 +17,8 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models.Stats;
+using Exceptionless.Core.Models.WorkItems;
+using Foundatio.Jobs;
 using Foundatio.Queues;
 using Newtonsoft.Json.Linq;
 using NLog.Fluent;
@@ -28,7 +30,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly IEventRepository _eventRepository;
+        private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
@@ -37,14 +39,14 @@ namespace Exceptionless.Api.Controllers {
         private readonly FormattingPluginManager _formattingPluginManager;
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
-            IProjectRepository projectRepository, IEventRepository eventRepository, IWebHookRepository webHookRepository, 
+            IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, 
             WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, 
             EventStats eventStats, BillingManager billingManager,
             FormattingPluginManager formattingPluginManager) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
-            _eventRepository = eventRepository;
+            _workItemQueue = workItemQueue;
             _webHookRepository = webHookRepository;
             _webHookDataPluginManager = webHookDataPluginManager;
             _webHookNotificationQueue = webHookNotificationQueue;
@@ -64,8 +66,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id:objectid}", Name = "GetStackById")]
         [ResponseType(typeof(Stack))]
-        public IHttpActionResult GetById(string id, string offset = null) {
-            var stack = GetModel(id);
+        public async Task<IHttpActionResult> GetByIdAsync(string id, string offset = null) {
+            var stack = await GetModelAsync(id);
             if (stack == null)
                 return NotFound();
 
@@ -79,24 +81,34 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost]
         [Route("{ids:objectids}/mark-fixed")]
-        public IHttpActionResult MarkFixed(string ids) {
-            var stacks = GetModels(ids.FromDelimitedString(), false);
+        public async Task<IHttpActionResult> MarkFixedAsync(string ids) {
+            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
             stacks = stacks.Where(s => !s.DateFixed.HasValue).ToList();
-            if (stacks.Count > 0) {
-                foreach (var stack in stacks) {
-                    // TODO: Implement Fixed in version.
-                    stack.DateFixed = DateTime.UtcNow;
-                    //stack.FixedInVersion = "GET CURRENT VERSION FROM ELASTIC SEARCH";
-                    stack.IsRegressed = false;
-                }
+            if (stacks.Count <= 0)
+                return Ok();
 
-                _stackRepository.Save(stacks);
+            foreach (var stack in stacks) {
+                // TODO: Implement Fixed in version.
+                stack.DateFixed = DateTime.UtcNow;
+                //stack.FixedInVersion = "GET CURRENT VERSION FROM ELASTIC SEARCH";
+                stack.IsRegressed = false;
             }
 
-            return Ok();
+            await _stackRepository.SaveAsync(stacks);
+
+            var workIds = new List<string>();
+            foreach (var stack in stacks)
+                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                    OrganizationId = stack.OrganizationId,
+                    StackId = stack.Id,
+                    UpdateIsFixed = true,
+                    IsFixed = true
+                }));
+            
+            return WorkInProgress(workIds);
         }
 
         /// <summary>
@@ -108,7 +120,7 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public IHttpActionResult MarkFixed(JObject data) {
+        public async Task<IHttpActionResult> MarkFixedAsync(JObject data) {
             string id = null;
             JToken value;
             if (data.TryGetValue("ErrorStack", out value))
@@ -123,7 +135,7 @@ namespace Exceptionless.Api.Controllers {
             if (id.StartsWith("http"))
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
-            return MarkFixed(id);
+            return await MarkFixedAsync(id);
         }
 
         /// <summary>
@@ -135,8 +147,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The stack could not be found.</response>
         [HttpPost]
         [Route("{id:objectid}/add-link")]
-        public IHttpActionResult AddLink(string id, [NakedBody] string url) {
-            var stack = GetModel(id, false);
+        public async Task<IHttpActionResult> AddLinkAsync(string id, [NakedBody] string url) {
+            var stack = await GetModelAsync(id, false);
             if (stack == null)
                 return NotFound();
 
@@ -145,7 +157,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!stack.References.Contains(url)) {
                 stack.References.Add(url);
-                _stackRepository.Save(stack);
+                await _stackRepository.SaveAsync(stack);
             }
 
             return Ok();
@@ -160,7 +172,7 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public IHttpActionResult AddLink(JObject data) {
+        public async Task<IHttpActionResult> AddLinkAsync(JObject data) {
             string id = null;
             JToken value;
             if (data.TryGetValue("ErrorStack", out value))
@@ -176,7 +188,7 @@ namespace Exceptionless.Api.Controllers {
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
             var url = data.GetValue("Link").Value<string>();
-            return AddLink(id, url);
+            return await AddLinkAsync(id, url);
         }
 
         /// <summary>
@@ -189,8 +201,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The stack could not be found.</response>
         [HttpPost]
         [Route("{id:objectid}/remove-link")]
-        public IHttpActionResult RemoveLink(string id, [NakedBody] string url) {
-            var stack = GetModel(id, false);
+        public async Task<IHttpActionResult> RemoveLinkAsync(string id, [NakedBody] string url) {
+            var stack = await GetModelAsync(id, false);
             if (stack == null)
                 return NotFound();
 
@@ -199,7 +211,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (stack.References.Contains(url)) {
                 stack.References.Remove(url);
-                _stackRepository.Save(stack);
+                await _stackRepository.SaveAsync(stack);
             }
 
             return StatusCode(HttpStatusCode.NoContent);
@@ -212,8 +224,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost]
         [Route("{ids:objectids}/mark-critical")]
-        public IHttpActionResult MarkCritical(string ids) {
-            var stacks = GetModels(ids.FromDelimitedString(), false);
+        public async Task<IHttpActionResult> MarkCriticalAsync(string ids) {
+            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -222,7 +234,7 @@ namespace Exceptionless.Api.Controllers {
                 foreach (var stack in stacks)
                     stack.OccurrencesAreCritical = true;
 
-                _stackRepository.Save(stacks);
+                await _stackRepository.SaveAsync(stacks);
             }
 
             return Ok();
@@ -236,8 +248,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete]
         [Route("{ids:objectids}/mark-critical")]
-        public IHttpActionResult MarkNotCritical(string ids) {
-            var stacks = GetModels(ids.FromDelimitedString(), false);
+        public async Task<IHttpActionResult> MarkNotCriticalAsync(string ids) {
+            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -246,7 +258,7 @@ namespace Exceptionless.Api.Controllers {
                 foreach (var stack in stacks)
                     stack.OccurrencesAreCritical = false;
 
-                _stackRepository.Save(stacks);
+                await _stackRepository.SaveAsync(stacks);
             }
 
             return StatusCode(HttpStatusCode.NoContent);
@@ -259,8 +271,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost]
         [Route("{ids:objectids}/notifications")]
-        public IHttpActionResult EnableNotifications(string ids) {
-            var stacks = GetModels(ids.FromDelimitedString(), false);
+        public async Task<IHttpActionResult> EnableNotificationsAsync(string ids) {
+            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -269,7 +281,7 @@ namespace Exceptionless.Api.Controllers {
                 foreach (var stack in stacks)
                     stack.DisableNotifications = false;
 
-                _stackRepository.Save(stacks);
+                await _stackRepository.SaveAsync(stacks);
             }
 
             return Ok();
@@ -283,8 +295,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete]
         [Route("{ids:objectids}/notifications")]
-        public IHttpActionResult DisableNotifications(string ids) {
-            var stacks = GetModels(ids.FromDelimitedString(), false);
+        public async Task<IHttpActionResult> DisableNotificationsAsync(string ids) {
+            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -293,7 +305,7 @@ namespace Exceptionless.Api.Controllers {
                 foreach (var stack in stacks)
                     stack.DisableNotifications = true;
 
-                _stackRepository.Save(stacks);
+                await _stackRepository.SaveAsync(stacks);
             }
 
             return StatusCode(HttpStatusCode.NoContent);
@@ -307,22 +319,32 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete]
         [Route("{ids:objectids}/mark-fixed")]
-        public IHttpActionResult MarkNotFixed(string ids) {
-            var stacks = GetModels(ids.FromDelimitedString(), false);
+        public async Task<IHttpActionResult> MarkNotFixedAsync(string ids) {
+            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
             stacks = stacks.Where(s => s.DateFixed.HasValue).ToList();
-            if (stacks.Count > 0) {
-                foreach (var stack in stacks) {
-                    stack.DateFixed = null;
-                    stack.IsRegressed = false;
-                }
+            if (stacks.Count <= 0)
+                return StatusCode(HttpStatusCode.NoContent);
 
-                _stackRepository.Save(stacks);
+            foreach (var stack in stacks) {
+                stack.DateFixed = null;
+                stack.IsRegressed = false;
             }
 
-            return StatusCode(HttpStatusCode.NoContent);
+            await _stackRepository.SaveAsync(stacks);
+
+            var workIds = new List<string>();
+            foreach (var stack in stacks)
+                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                    OrganizationId = stack.OrganizationId,
+                    StackId = stack.Id,
+                    UpdateIsFixed = true,
+                    IsFixed = false
+                }));
+            
+            return WorkInProgress(workIds);
         }
 
         /// <summary>
@@ -332,20 +354,30 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost]
         [Route("{ids:objectids}/mark-hidden")]
-        public IHttpActionResult MarkHidden(string ids) {
-            var stacks = GetModels(ids.FromDelimitedString(), false);
+        public async Task<IHttpActionResult> MarkHiddenAsync(string ids) {
+            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
             stacks = stacks.Where(s => !s.IsHidden).ToList();
-            if (stacks.Count > 0) {
-                foreach (var stack in stacks)
-                    stack.IsHidden = true;
+            if (stacks.Count <= 0)
+                return Ok();
 
-                _stackRepository.Save(stacks);
-            }
+            foreach (var stack in stacks)
+                stack.IsHidden = true;
 
-            return Ok();
+            await _stackRepository.SaveAsync(stacks);
+
+            var workIds = new List<string>();
+            foreach (var stack in stacks)
+                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                    OrganizationId = stack.OrganizationId,
+                    StackId = stack.Id,
+                    UpdateIsHidden = true,
+                    IsHidden = true
+                }));
+            
+            return WorkInProgress(workIds);
         }
 
         /// <summary>
@@ -356,20 +388,30 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete]
         [Route("{ids:objectids}/mark-hidden")]
-        public IHttpActionResult MarkNotHidden(string ids) {
-            var stacks = GetModels(ids.FromDelimitedString(), false);
+        public async Task<IHttpActionResult> MarkNotHiddenAsync(string ids) {
+            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
             stacks = stacks.Where(s => s.IsHidden).ToList();
-            if (stacks.Count > 0) {
-                foreach (var stack in stacks)
-                    stack.IsHidden = false;
+            if (stacks.Count <= 0)
+                return StatusCode(HttpStatusCode.NoContent);
 
-                _stackRepository.Save(stacks);
-            }
+            foreach (var stack in stacks)
+                stack.IsHidden = false;
 
-            return StatusCode(HttpStatusCode.NoContent);
+            await _stackRepository.SaveAsync(stacks);
+
+            var workIds = new List<string>();
+            foreach (var stack in stacks)
+                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                    OrganizationId = stack.OrganizationId,
+                    StackId = stack.Id,
+                    UpdateIsHidden = true,
+                    IsHidden = false
+                }));
+
+            return WorkInProgress(workIds);
         }
 
         /// <summary>
@@ -381,28 +423,28 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="501">"No promoted web hooks are configured for this project.</response>
         [HttpPost]
         [Route("{id:objectid}/promote")]
-        public IHttpActionResult Promote(string id) {
+        public async Task<IHttpActionResult> PromoteAsync(string id) {
             if (String.IsNullOrEmpty(id))
                 return NotFound();
 
-            Stack stack = _stackRepository.GetById(id);
+            Stack stack = await _stackRepository.GetByIdAsync(id);
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
-            if (!_billingManager.HasPremiumFeatures(stack.OrganizationId))
+            if (!await _billingManager.HasPremiumFeaturesAsync(stack.OrganizationId))
                 return PlanLimitReached("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
 
-            List<WebHook> promotedProjectHooks = _webHookRepository.GetByProjectId(stack.ProjectId).Documents.Where(p => p.EventTypes.Contains(WebHookRepository.EventTypes.StackPromoted)).ToList();
+            List<WebHook> promotedProjectHooks = (await _webHookRepository.GetByProjectIdAsync(stack.ProjectId)).Documents.Where(p => p.EventTypes.Contains(WebHookRepository.EventTypes.StackPromoted)).ToList();
             if (!promotedProjectHooks.Any())
                 return NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
 
             foreach (WebHook hook in promotedProjectHooks) {
                 var context = new WebHookDataContext(hook.Version, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.IsRegressed);
-                _webHookNotificationQueue.Enqueue(new WebHookNotification {
+                await _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
                     OrganizationId = hook.OrganizationId,
                     ProjectId = hook.ProjectId,
                     Url = hook.Url,
-                    Data = _webHookDataPluginManager.CreateFromStack(context)
+                    Data = await _webHookDataPluginManager.CreateFromStackAsync(context)
                 });
             }
 
@@ -423,9 +465,16 @@ namespace Exceptionless.Api.Controllers {
             return base.DeleteAsync(ids.FromDelimitedString());
         }
 
-        protected override async Task DeleteModels(ICollection<Stack> values) {
-            await _eventRepository.RemoveAllByStackIdsAsync(values.Select(s => s.Id).ToArray());
-            await base.DeleteModels(values);
+        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Stack> stacks) {
+            var workItems = new List<string>();
+            foreach (var stack in stacks) {
+                workItems.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                    StackId = stack.Id,
+                    Delete = true
+                }));
+            }
+
+            return workItems;
         }
 
         /// <summary>
@@ -441,11 +490,11 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route]
         [ResponseType(typeof(List<Stack>))]
-        public IHttpActionResult Get(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return GetInternal(null, filter, sort, time, offset, mode, page, limit);
+        public Task<IHttpActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return GetInternalAsync(null, filter, sort, time, offset, mode, page, limit);
         }
 
-        private IHttpActionResult GetInternal(string systemFilter, string userFilter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        private async Task<IHttpActionResult> GetInternalAsync(string systemFilter, string userFilter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page + 1, limit);
@@ -457,7 +506,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(validationResult.Message);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter), "last");
+                systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter), "last");
 
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
@@ -465,7 +514,7 @@ namespace Exceptionless.Api.Controllers {
            
             List<Stack> stacks;
             try {
-                stacks = _repository.GetByFilter(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
+                stacks = (await _repository.GetByFilterAsync(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options)).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
             } catch (ApplicationException ex) {
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
@@ -499,11 +548,11 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks")]
         [ResponseType(typeof(List<Stack>))]
-        public IHttpActionResult GetByOrganization(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit);
+            return await GetInternalAsync(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
@@ -519,8 +568,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("new")]
         [ResponseType(typeof(List<Stack>))]
-        public IHttpActionResult New(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return GetInternal(null, filter, "-first", String.Concat("first|", time), offset, mode, page, limit);
+        public Task<IHttpActionResult> NewAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return GetInternalAsync(null, filter, "-first", String.Concat("first|", time), offset, mode, page, limit);
         }
 
         /// <summary>
@@ -537,15 +586,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
         [ResponseType(typeof(List<Stack>))]
-        public IHttpActionResult NewByProject(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> NewByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            Project project = _projectRepository.GetById(projectId, true);
+            Project project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("project:", projectId), filter, "-first", String.Concat("first|", time), offset, mode, page, limit);
+            return await GetInternalAsync(String.Concat("project:", projectId), filter, "-first", String.Concat("first|", time), offset, mode, page, limit);
         }
 
         /// <summary>
@@ -560,8 +609,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("recent")]
         [ResponseType(typeof(List<Stack>))]
-        public IHttpActionResult Recent(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return GetInternal(null, filter, "-last", String.Concat("last|", time), offset, mode, page, limit);
+        public Task<IHttpActionResult> RecentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return GetInternalAsync(null, filter, "-last", String.Concat("last|", time), offset, mode, page, limit);
         }
 
         /// <summary>
@@ -578,15 +627,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
         [ResponseType(typeof(List<Stack>))]
-        public IHttpActionResult RecentByProject(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> RecentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            Project project = _projectRepository.GetById(projectId, true);
+            Project project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("project:", projectId), filter, "-last", String.Concat("last|", time), offset, mode, page, limit);
+            return await GetInternalAsync(String.Concat("project:", projectId), filter, "-last", String.Concat("last|", time), offset, mode, page, limit);
         }
 
         /// <summary>
@@ -601,11 +650,11 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("frequent")]
         [ResponseType(typeof(List<Stack>))]
-        public IHttpActionResult Frequent(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return FrequentInternal(null, filter, time, offset, mode, page, limit);
+        public Task<IHttpActionResult> FrequentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return FrequentInternalAsync(null, filter, time, offset, mode, page, limit);
         }
 
-        private IHttpActionResult FrequentInternal(string systemFilter = null, string userFilter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        private async Task<IHttpActionResult> FrequentInternalAsync(string systemFilter = null, string userFilter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page, limit);
@@ -617,7 +666,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(validationResult.Message);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+                systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
             
             var timeInfo = GetTimeInfo(time, offset);
 
@@ -641,7 +690,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(new object[0]);
 
             var stackIds = terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
-            var stacks = _stackRepository.GetByIds(stackIds).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
+            var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase)) {
                 var summaries = GetStackSummaries(stacks, terms);
@@ -665,15 +714,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
         [ResponseType(typeof(List<Stack>))]
-        public IHttpActionResult FrequentByProject(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> FrequentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            Project project = _projectRepository.GetById(projectId, true);
+            Project project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return FrequentInternal(String.Concat("project:", projectId), filter, time, offset, mode, page, limit);
+            return await FrequentInternalAsync(String.Concat("project:", projectId), filter, time, offset, mode, page, limit);
         }
 
         private ICollection<StackSummaryModel> GetStackSummaries(ICollection<Stack> stacks, TimeSpan offset, DateTime utcStart, DateTime utcEnd) {

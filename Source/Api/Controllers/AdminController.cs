@@ -32,11 +32,11 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("change-plan")]
-        public IHttpActionResult ChangePlan(string organizationId, string planId) {
+        public async Task<IHttpActionResult> ChangePlanAsync(string organizationId, string planId) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            var organization = _organizationRepository.GetById(organizationId);
+            var organization = await _organizationRepository.GetByIdAsync(organizationId);
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -48,8 +48,8 @@ namespace Exceptionless.Api.Controllers {
             organization.RemoveSuspension();
             BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
 
-            _organizationRepository.Save(organization);
-            _messagePublisher.Publish(new PlanChanged {
+            await _organizationRepository.SaveAsync(organization);
+            await _messagePublisher.PublishAsync(new PlanChanged {
                 OrganizationId = organization.Id
             });
 
@@ -58,17 +58,17 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("set-bonus")]
-        public IHttpActionResult SetBonus(string organizationId, int bonusEvents, DateTime? expires = null) {
+        public async Task<IHttpActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            var organization = _organizationRepository.GetById(organizationId);
+            var organization = await _organizationRepository.GetByIdAsync(organizationId);
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
             organization.BonusEventsPerMonth = bonusEvents;
             organization.BonusExpiration = expires;
-            _organizationRepository.Save(organization);
+            await _organizationRepository.SaveAsync(organization);
 
             return Ok(new { Success = true });
         }
@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Controllers {
                 path = @"q\*";
 
             foreach (var file in await _fileStorage.GetFileListAsync(path))
-                _eventPostQueue.Enqueue(new EventPost { FilePath = file.Path, ShouldArchive = archive });
+                await _eventPostQueue.EnqueueAsync(new EventPost { FilePath = file.Path, ShouldArchive = archive });
 
             return Ok();
         }

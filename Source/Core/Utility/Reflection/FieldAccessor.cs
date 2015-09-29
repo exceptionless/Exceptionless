@@ -41,46 +41,31 @@ namespace Exceptionless.Core.Reflection
         /// Gets the type of the member.
         /// </summary>
         /// <value>The type of the member.</value>
-        public override Type MemberType
-        {
-            get { return _memberType; }
-        }
+        public override Type MemberType => _memberType;
 
         /// <summary>
         /// Gets the member info.
         /// </summary>
         /// <value>The member info.</value>
-        public override MemberInfo MemberInfo
-        {
-            get { return _fieldInfo; }
-        }
+        public override MemberInfo MemberInfo => _fieldInfo;
 
         /// <summary>
         /// Gets the name of the member.
         /// </summary>
         /// <value>The name of the member.</value>
-        public override string Name
-        {
-            get { return _name; }
-        }
+        public override string Name => _name;
 
         /// <summary>
         /// Gets a value indicating whether this member has getter.
         /// </summary>
         /// <value><c>true</c> if this member has getter; otherwise, <c>false</c>.</value>
-        public override bool HasGetter
-        {
-            get { return _hasGetter; }
-        }
+        public override bool HasGetter => _hasGetter;
 
         /// <summary>
         /// Gets a value indicating whether this member has setter.
         /// </summary>
         /// <value><c>true</c> if this member has setter; otherwise, <c>false</c>.</value>
-        public override bool HasSetter
-        {
-            get { return _hasSetter; }
-        }
+        public override bool HasSetter => _hasSetter;
 
         /// <summary>
         /// Returns the value of the member.
@@ -92,11 +77,11 @@ namespace Exceptionless.Core.Reflection
         public override object GetValue(object instance)
         {
             if (_lateBoundGet == null || !HasGetter)
-                throw new InvalidOperationException(String.Format("Field '{0}' does not have a getter.", Name));
+                throw new InvalidOperationException($"Field '{Name}' does not have a getter.");
 
             var get = _lateBoundGet.Value;
             if (get == null)
-                throw new InvalidOperationException(String.Format("Field '{0}' does not have a getter.", Name));
+                throw new InvalidOperationException($"Field '{Name}' does not have a getter.");
 
             return get(instance);
         }
@@ -109,11 +94,11 @@ namespace Exceptionless.Core.Reflection
         public override void SetValue(object instance, object value)
         {
             if (_lateBoundSet == null || !HasSetter)
-                throw new InvalidOperationException(String.Format("Field '{0}' does not have a setter.", Name));
+                throw new InvalidOperationException($"Field '{Name}' does not have a setter.");
 
             var set = _lateBoundSet.Value;
             if (set == null)
-                throw new InvalidOperationException(String.Format("Field '{0}' does not have a setter.", Name));
+                throw new InvalidOperationException($"Field '{Name}' does not have a setter.");
 
             set(instance, value);
         }

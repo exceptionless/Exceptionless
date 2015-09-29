@@ -28,10 +28,7 @@ namespace Exceptionless.Core.Reflection
         /// Gets the <see cref="Type"/> this accessor is for.
         /// </summary>
         /// <value>The <see cref="Type"/> this accessor is for.</value>
-        public Type Type
-        {
-            get { return _type; }
-        }
+        public Type Type => _type;
 
         /// <summary>
         /// Creates a new instance of accessors type.
@@ -41,7 +38,7 @@ namespace Exceptionless.Core.Reflection
         {
             var constructor = _lateBoundConstructor.Value;
             if (constructor == null)
-                throw new InvalidOperationException(String.Format("Could not find constructor for '{0}'.", Type.Name));
+                throw new InvalidOperationException($"Could not find constructor for '{Type.Name}'.");
 
             return constructor.Invoke();
         }
@@ -79,9 +76,9 @@ namespace Exceptionless.Core.Reflection
         private static PropertyInfo FindProperty(Type type, string name, BindingFlags flags)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             // first try GetProperty
             PropertyInfo property = type.GetProperty(name, flags);
@@ -133,9 +130,9 @@ namespace Exceptionless.Core.Reflection
         private static FieldInfo FindField(Type type, string name, BindingFlags flags)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             // first try GetField
             var field = type.GetField(name, flags);

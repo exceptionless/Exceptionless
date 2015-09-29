@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
@@ -35,11 +35,11 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route]
         [ResponseType(typeof(EventStatsResult))]
-        public IHttpActionResult Get(string filter = null, string time = null, string offset = null) {
-            return GetInternal(null, filter, time, offset);
+        public Task<IHttpActionResult> GetAsync(string filter = null, string time = null, string offset = null) {
+            return GetInternalAsync(null, filter, time, offset);
         }
 
-        private IHttpActionResult GetInternal(string systemFilter, string userFilter = null, string time = null, string offset = null) {
+        private async Task<IHttpActionResult> GetInternalAsync(string systemFilter, string userFilter = null, string time = null, string offset = null) {
             var timeInfo = GetTimeInfo(time, offset);
 
             var processResult = QueryProcessor.Process(userFilter);
@@ -47,7 +47,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(processResult.Message);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+                systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
 
             EventStatsResult result;
             try {
@@ -78,15 +78,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stats")]
         [ResponseType(typeof(EventStatsResult))]
-        public IHttpActionResult GetByProject(string projectId, string filter = null, string time = null, string offset = null) {
+        public async Task<IHttpActionResult> GetByProjectAsync(string projectId, string filter = null, string time = null, string offset = null) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            Project project = _projectRepository.GetById(projectId, true);
+            Project project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("project:", projectId), filter, time, offset);
+            return await GetInternalAsync(String.Concat("project:", projectId), filter, time, offset);
         }
 
         /// <summary>
@@ -100,15 +100,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/stats")]
         [ResponseType(typeof(EventStatsResult))]
-        public IHttpActionResult GetByStack(string stackId, string filter = null, string time = null, string offset = null) {
+        public async Task<IHttpActionResult> GetByStackAsync(string stackId, string filter = null, string time = null, string offset = null) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
-            Stack stack = _stackRepository.GetById(stackId);
+            Stack stack = await _stackRepository.GetByIdAsync(stackId);
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("stack:", stackId), filter, time, offset);
+            return await GetInternalAsync(String.Concat("stack:", stackId), filter, time, offset);
         }
     }
 }

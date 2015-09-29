@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Repositories.Base {
 
         public override string ToString() {
             if (!String.IsNullOrEmpty(Id))
-                return String.Format("Document \"{0}\" could not be found", Id);
+                return $"Document \"{Id}\" could not be found";
 
             return base.ToString();
         }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
@@ -27,7 +28,7 @@ namespace Exceptionless.Core.Pipeline {
             _webHookDataPluginManager = webHookDataPluginManager;
         }
 
-        protected override bool ContinueOnError { get { return true; } }
+        protected override bool ContinueOnError => true;
 
         public override async Task ProcessAsync(EventContext ctx) {
             // if they don't have premium features, then we don't need to queue notifications
@@ -35,16 +36,16 @@ namespace Exceptionless.Core.Pipeline {
                 return;
 
             if (ShouldQueueNotification(ctx))
-                _notificationQueue.Enqueue(new EventNotificationWorkItem {
+                await _notificationQueue.EnqueueAsync(new EventNotificationWorkItem {
                     EventId = ctx.Event.Id,
                     IsNew = ctx.IsNew,
                     IsCritical = ctx.Event.IsCritical(),
                     IsRegression = ctx.IsRegression,
                     TotalOccurrences = ctx.Stack.TotalOccurrences,
                     ProjectName = ctx.Project.Name
-                });
+                }).AnyContext();
 
-            foreach (WebHook hook in _webHookRepository.GetByOrganizationIdOrProjectId(ctx.Event.OrganizationId, ctx.Event.ProjectId).Documents) {
+            foreach (WebHook hook in (await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId).AnyContext()).Documents) {
                 if (!ShouldCallWebHook(hook, ctx))
                     continue;
 
@@ -53,10 +54,10 @@ namespace Exceptionless.Core.Pipeline {
                     OrganizationId = ctx.Event.OrganizationId,
                     ProjectId = ctx.Event.ProjectId,
                     Url = hook.Url,
-                    Data = _webHookDataPluginManager.CreateFromEvent(context)
+                    Data = await _webHookDataPluginManager.CreateFromEventAsync(context).AnyContext()
                 };
 
-                _webHookNotificationQueue.Enqueue(notification);
+                await _webHookNotificationQueue.EnqueueAsync(notification).AnyContext();
                 Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Property("Web Hook Notification", notification).Write();
             }
         }

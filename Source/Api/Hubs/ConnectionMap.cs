@@ -6,7 +6,7 @@ namespace Exceptionless.Api.Hubs {
     public class ConnectionMapping {
         private readonly Dictionary<string, HashSet<string>> _connections = new Dictionary<string, HashSet<string>>();
 
-        public int Count { get { return _connections.Count; } }
+        public int Count => _connections.Count;
 
         public void Add(string key, string connectionId) {
             if (String.IsNullOrEmpty(key))

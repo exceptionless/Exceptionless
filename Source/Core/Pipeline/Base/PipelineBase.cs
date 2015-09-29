@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Pipeline {
         /// </summary>
         /// <param name="context">The context to run the actions with.</param>
         public virtual async Task<TContext> RunAsync(TContext context) {
-            await RunAsync(new[] { context });
+            await RunAsync(new[] { context }).AnyContext();
             return context;
         }
 
@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Pipeline {
             PipelineRunning(contexts);
 
             foreach (var action in _actions) {
-                await action.ProcessBatchAsync(contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList());
+                await action.ProcessBatchAsync(contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList()).AnyContext();
                 if (contexts.All(c => c.IsCancelled || c.HasError))
                     break;
             }

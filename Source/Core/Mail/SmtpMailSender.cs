@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Mail {
     public class SmtpMailSender : IMailSender {
         private long _messagesSent = 0;
 
-        public long SentCount { get { return _messagesSent; } }
+        public long SentCount => _messagesSent;
 
         public async Task SendAsync(MailMessage model) {
             var message = model.ToMailMessage();
@@ -25,8 +25,7 @@ namespace Exceptionless.Core.Mail {
                 client.Credentials = new NetworkCredential(Settings.Current.SmtpUser, Settings.Current.SmtpPassword);
             }
 
-            await client.SendMailAsync(message);
-
+            await client.SendMailAsync(message).AnyContext();
             Interlocked.Increment(ref _messagesSent);
         }
     }

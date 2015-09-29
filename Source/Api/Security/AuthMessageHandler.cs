@@ -2,7 +2,6 @@
 using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
-using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Api.Extensions;
@@ -16,17 +15,23 @@ namespace Exceptionless.Api.Security {
         public const string BasicScheme = "basic";
         public const string TokenScheme = "token";
 
-        private readonly TokenManager _tokenManager;
+        private readonly ITokenRepository _tokenRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IOrganizationRepository _organizationRepository;
 
-        public AuthMessageHandler(TokenManager tokenManager, IUserRepository userRepository) {
-            _tokenManager = tokenManager;
+        public AuthMessageHandler(ITokenRepository tokenRepository, IUserRepository userRepository, IOrganizationRepository organizationRepository) {
+            _tokenRepository = tokenRepository;
             _userRepository = userRepository;
+            _organizationRepository = organizationRepository;
+        }
+
+        protected virtual Task<HttpResponseMessage> BaseSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+            return base.SendAsync(request, cancellationToken);
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             var authHeader = request.Headers.Authorization;
-            string scheme = authHeader != null ? authHeader.Scheme.ToLower() : null;
+            string scheme = authHeader?.Scheme.ToLower();
             string token = null;
             if (authHeader != null && (scheme == BearerScheme || scheme == TokenScheme)) {
                 token = authHeader.Parameter;
@@ -40,7 +45,7 @@ namespace Exceptionless.Api.Security {
                     else {
                         User user;
                         try {
-                            user = _userRepository.GetByEmailAddress(authInfo.Username);
+                            user = await _userRepository.GetByEmailAddressAsync(authInfo.Username);
                         } catch (Exception) {
                             return new HttpResponseMessage(HttpStatusCode.Unauthorized);
                         }
@@ -55,8 +60,9 @@ namespace Exceptionless.Api.Security {
                         if (!String.Equals(encodedPassword, user.Password))
                             return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
-                        request.GetRequestContext().Principal = new ClaimsPrincipal(user.ToIdentity());
-                        return await base.SendAsync(request, cancellationToken);
+                        SetupUserRequest(request, user);
+
+                        return await BaseSendAsync(request, cancellationToken);
                     }
                 }
             } else {
@@ -71,16 +77,38 @@ namespace Exceptionless.Api.Security {
                 queryToken = request.GetQueryString("apikey");
                 if (String.IsNullOrEmpty(token) && !String.IsNullOrEmpty(queryToken))
                     token = queryToken;
-
             }
 
-            if (!String.IsNullOrEmpty(token)) {
-                IPrincipal principal = _tokenManager.Validate(token);
-                if (principal != null)
-                    request.GetRequestContext().Principal = principal;
+            if (String.IsNullOrEmpty(token))
+                return await BaseSendAsync(request, cancellationToken);
+
+            var tokenRecord = await _tokenRepository.GetByIdAsync(token, true);
+            if (tokenRecord == null)
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+
+            if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < DateTime.UtcNow)
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+
+            if (!String.IsNullOrEmpty(tokenRecord.UserId)) {
+                var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, true);
+                if (user == null)
+                    return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+
+                SetupUserRequest(request, user);
+            } else {
+                SetupTokenRequest(request, tokenRecord);
             }
 
-            return await base.SendAsync(request, cancellationToken);
+            return await BaseSendAsync(request, cancellationToken);
+        }
+
+        private void SetupUserRequest(HttpRequestMessage request, User user) {
+            request.GetRequestContext().Principal = new ClaimsPrincipal(user.ToIdentity());
+            request.SetUser(user);
+        }
+
+        private void SetupTokenRequest(HttpRequestMessage request, Token token) {
+            request.GetRequestContext().Principal = new ClaimsPrincipal(token.ToIdentity());
         }
     }
 }

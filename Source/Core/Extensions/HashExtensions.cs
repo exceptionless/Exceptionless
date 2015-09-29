@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Extensions {
         public static string ComputeHash(this string input, HashAlgorithm algorithm)
         {
             if (String.IsNullOrEmpty(input))
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             byte[] data = algorithm.ComputeHash(Encoding.Unicode.GetBytes(input));
 
@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Extensions {
         public static string ComputeHash(this Stream input, HashAlgorithm algorithm)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
 #if !SILVERLIGHT
             var stream = new BufferedStream(input, 1024 * 8);
@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Extensions {
         public static string ComputeHash(this byte[] input, HashAlgorithm algorithm)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             byte[] data = algorithm.ComputeHash(input);
 

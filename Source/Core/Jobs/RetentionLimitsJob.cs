@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
@@ -21,25 +21,25 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
             _lockProvider = lockProvider;
         }
-
-        protected override IDisposable GetJobLock() {
-            return _lockProvider.AcquireLock("RetentionLimitsJob");
+        
+        protected override Task<IDisposable> GetJobLockAsync() {
+            return _lockProvider.AcquireLockAsync("RetentionLimitsJob");
         }
 
-        protected override Task<JobResult> RunInternalAsync(CancellationToken token) {
+        protected override async Task<JobResult> RunInternalAsync(CancellationToken cancellationToken = default(CancellationToken)) {
             var page = 1;
-            var organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithLimit(100)).Documents;
-            while (organizations.Count > 0 && !token.IsCancellationRequested) {
+            var organizations = (await _organizationRepository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithLimit(100)).AnyContext()).Documents;
+            while (organizations.Count > 0 && !cancellationToken.IsCancellationRequested) {
                 foreach (var organization in organizations)
-                    EnforceEventCountLimits(organization);
+                    await EnforceEventCountLimitsAsync(organization).AnyContext();
 
-                organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(++page).WithLimit(100)).Documents;
+                organizations = (await _organizationRepository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithPage(++page).WithLimit(100)).AnyContext()).Documents;
             }
 
-            return Task.FromResult(JobResult.Success);
+            return JobResult.Success;
         }
 
-        private void EnforceEventCountLimits(Organization organization) {
+        private async Task EnforceEventCountLimitsAsync(Organization organization) {
             Log.Info().Message("Enforcing event count limits for organization '{0}' with Id: '{1}'", organization.Name, organization.Id).Write();
 
             try {
@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Jobs {
                     retentionDays = nextPlan.RetentionDays;
 
                 DateTime cutoff = DateTime.UtcNow.Date.SubtractDays(retentionDays);
-                _eventRepository.RemoveAllByDate(organization.Id, cutoff);
+                await _eventRepository.RemoveAllByDateAsync(organization.Id, cutoff).AnyContext();
             } catch (Exception ex) {
                 Log.Error().Message("Error enforcing limits: org={0} id={1} message=\"{2}\"", organization.Name, organization.Id, ex.Message).Exception(ex).Write();
             }

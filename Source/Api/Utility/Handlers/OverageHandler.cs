@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Extensions;
 using Foundatio.Caching;
 using Foundatio.Metrics;
 using NLog.Fluent;
@@ -15,11 +15,13 @@ using NLog.Fluent;
 namespace Exceptionless.Api.Utility {
     public sealed class OverageHandler : DelegatingHandler {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
         private readonly ICacheClient _cacheClient;
         private readonly IMetricsClient _metricsClient;
 
-        public OverageHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMetricsClient metricsClient) {
+        public OverageHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cacheClient, IMetricsClient metricsClient) {
             _organizationRepository = organizationRepository;
+            _projectRepository = projectRepository;
             _cacheClient = cacheClient;
             _metricsClient = metricsClient;
         }
@@ -36,25 +38,21 @@ namespace Exceptionless.Api.Utility {
             if (!IsEventPost(request))
                 return await base.SendAsync(request, cancellationToken);
 
-            if (_cacheClient.TryGet("ApiDisabled", false))
+            if (await _cacheClient.GetAsync<bool>("ApiDisabled"))
                 return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
 
-            var project = request.GetDefaultProject();
-            if (project == null)
-                return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
-
             bool tooBig = false;
-            if (request.Content != null && request.Content.Headers != null) {
+            if (request.Content?.Headers != null) {
                 long size = request.Content.Headers.ContentLength.GetValueOrDefault();
                 await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
                 if (size > Settings.Current.MaximumEventPostSize) {
-                    Log.Warn().Message("Event submission discarded for being too large: {0}", size).Project(project.Id).Write();
+                    Log.Warn().Message("Event submission discarded for being too large: {0}", size).Project(request.GetDefaultProjectId()).Write();
                     await _metricsClient.CounterAsync(MetricNames.PostsDiscarded);
                     tooBig = true;
                 }
             }
 
-            bool overLimit = _organizationRepository.IncrementUsage(project.OrganizationId, tooBig);
+            bool overLimit = await _organizationRepository.IncrementUsageAsync(request.GetDefaultOrganizationId(), tooBig);
 
             // block large submissions, client should break them up or remove some of the data.
             if (tooBig)
@@ -67,7 +65,7 @@ namespace Exceptionless.Api.Utility {
 
             return await base.SendAsync(request, cancellationToken);
         }
-
+        
         private HttpResponseMessage CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
             HttpResponseMessage response = request.CreateResponse(statusCode);
             response.ReasonPhrase = message;

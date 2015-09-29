@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static InnerError GetInnermostError(this InnerError error) {
             if (error == null)
-                throw new ArgumentNullException("error");
+                throw new ArgumentNullException(nameof(error));
 
             InnerError current = error;
             while (current.Inner != null)

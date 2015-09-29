@@ -4,7 +4,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Principal;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using IIdentity = System.Security.Principal.IIdentity;
 
@@ -17,12 +16,12 @@ namespace Exceptionless.Core.Extensions {
         public const string ProjectIdClaim = "ProjectId";
         public const string DefaultProjectIdClaim = "DefaultProjectId";
 
-        public static ClaimsIdentity ToIdentity(this Token token, IUserRepository userRepository) {
+        public static ClaimsIdentity ToIdentity(this Token token) {
             if (token == null || token.Type != TokenType.Access)
                 return WindowsIdentity.GetAnonymous();
 
             if (!String.IsNullOrEmpty(token.UserId))
-                return CreateUserIdentity(token.UserId, userRepository, token.ProjectId ?? token.DefaultProjectId);
+                throw new ApplicationException("Can't create token type identity for user token.");
 
             var claims = new List<Claim> {
                 new Claim(ClaimTypes.NameIdentifier, token.Id),
@@ -38,24 +37,11 @@ namespace Exceptionless.Core.Extensions {
             if (token.Scopes.Count > 0)
                 claims.AddRange(token.Scopes.Select(scope => new Claim(ClaimTypes.Role, scope)));
             else
-                claims.Add(new Claim(ClaimTypes.Role, Authorization.AuthorizationRoles.Client));
+                claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.Client));
 
             return new ClaimsIdentity(claims, TokenAuthenticationType);
         }
-
-        public static ClaimsIdentity CreateUserIdentity(string userId, IUserRepository userRepository, string defaultProjectId = null) {
-            if (String.IsNullOrEmpty(userId))
-                throw new ArgumentNullException("userId");
-            if (userRepository == null)
-                throw new ArgumentNullException("userRepository");
-
-            var user = userRepository.GetById(userId, true);
-            if (user == null)
-                return WindowsIdentity.GetAnonymous();
-            
-            return CreateUserIdentity(user.EmailAddress, user.Id, user.OrganizationIds.ToArray(), user.Roles.ToArray(), defaultProjectId);
-        }
-
+        
         public static ClaimsIdentity ToIdentity(this User user, string defaultProjectId = null) {
             if (user == null)
                 return WindowsIdentity.GetAnonymous();
@@ -120,14 +106,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static ClaimsIdentity GetClaimsIdentity(this IPrincipal principal) {
             var claimsPrincipal = GetClaimsPrincipal(principal);
-            if (claimsPrincipal == null)
-                return null;
-
-            var identity = claimsPrincipal.Identity as ClaimsIdentity;
-            if (identity == null)
-                return null;
-
-            return identity;
+            return claimsPrincipal?.Identity as ClaimsIdentity;
         }
 
         public static string GetUserId(this IPrincipal principal) {

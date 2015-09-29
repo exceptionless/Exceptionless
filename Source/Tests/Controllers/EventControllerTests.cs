@@ -25,6 +25,7 @@ using Foundatio.Queues;
 using Microsoft.Owin;
 using Nest;
 using Newtonsoft.Json;
+using Nito.AsyncEx;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Controllers {
@@ -39,16 +40,10 @@ namespace Exceptionless.Api.Tests.Controllers {
         private readonly IQueue<EventPost> _eventQueue = IoC.GetInstance<IQueue<EventPost>>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
-
-        public EventControllerTests() {
-            ResetDatabase();
-            AddSamples();
-        }
-
+        
         [Fact]
-        public void CanPostString() {
-            _eventQueue.DeleteQueue();
-            RemoveAllEvents();
+        public async Task CanPostString() {
+            await ResetAsync();
 
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), false, false);
@@ -56,110 +51,108 @@ namespace Exceptionless.Api.Tests.Controllers {
                 var metricsClient = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
                 Assert.NotNull(metricsClient);
                 
-                Assert.True(metricsClient.WaitForCounter(MetricNames.PostsQueued, work: async () => {
+                Assert.True(await metricsClient.WaitForCounterAsync("eventpost.enqueued", work: async () => {
                     var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string"));
                     Assert.IsType<StatusCodeResult>(actionResult);
                 }));
 
-                Assert.Equal(1, _eventQueue.GetQueueCount());
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
-                processEventsJob.Run();
+                await processEventsJob.RunAsync();
 
-                Assert.Equal(0, _eventQueue.GetQueueCount());
-                Assert.Equal(1, EventCount());
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Completed);
+                Assert.Equal(1, await EventCountAsync());
             } finally {
-                RemoveAllEvents();
+                await RemoveAllEventsAsync();
             }
         }
 
         [Fact]
         public async Task CanPostCompressedString() {
-            _eventQueue.DeleteQueue();
-            RemoveAllEvents();
+            await ResetAsync();
 
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                 var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync());
                 Assert.IsType<StatusCodeResult>(actionResult);
-                Assert.Equal(1, _eventQueue.GetQueueCount());
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
-                processEventsJob.Run();
+                await processEventsJob.RunAsync();
 
-                Assert.Equal(0, _eventQueue.GetQueueCount());
-                Assert.Equal(1, EventCount());
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Completed);
+                Assert.Equal(1, await EventCountAsync());
             } finally {
-                RemoveAllEvents();
+                await RemoveAllEventsAsync();
             }
         }
 
         [Fact]
         public async Task CanPostSingleEvent() {
-            _eventQueue.DeleteQueue();
-            RemoveAllEvents();
-            
+            await ResetAsync();
+
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                 var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync());
                 Assert.IsType<StatusCodeResult>(actionResult);
-                Assert.Equal(1, _eventQueue.GetQueueCount());
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
 
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
-                processEventsJob.Run();
+                await processEventsJob.RunAsync();
 
-                Assert.Equal(0, _eventQueue.GetQueueCount());
-                Assert.Equal(1, EventCount());
+                Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Completed);
+                Assert.Equal(1, await EventCountAsync());
             } finally {
-                RemoveAllEvents();
+                await RemoveAllEventsAsync();
             }
         }
 
         [Fact]
-        public void CanPostManyEvents() {
-            _eventQueue.DeleteQueue();
-            RemoveAllEvents();
+        public async Task CanPostManyEvents() {
+            await ResetAsync();
 
             const int batchSize = 250;
             const int batchCount = 10;
 
             try {
-                var countdown = new CountDownLatch(10);
+                var countdown = new AsyncCountdownEvent(batchCount);
                 var messageSubscriber = IoC.GetInstance<IMessageSubscriber>();
                 messageSubscriber.Subscribe<EntityChanged>(ch => {
                     if (ch.ChangeType != ChangeType.Added || ch.Type != typeof(PersistentEvent).Name)
                         return;
 
-                    if (countdown.Remaining <= 0)
+                    if (countdown.CurrentCount >= batchCount)
                         throw new ApplicationException("Too many change notifications.");
 
                     countdown.Signal();
                 });
 
-                Parallel.For(0, batchCount, i => {
+                await Run.InParallel(batchCount, async i => {
                     _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                     var events = new RandomEventGenerator().Generate(batchSize);
-                    var compressedEvents = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).CompressAsync().Result;
-                    var actionResult = _eventController.PostAsync(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0").Result;
+                    var compressedEvents = await Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).CompressAsync();
+                    var actionResult = await _eventController.PostAsync(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0");
                     Assert.IsType<StatusCodeResult>(actionResult);
                 });
 
-                Assert.Equal(batchCount, _eventQueue.GetQueueCount());
+                Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
+                Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
 
-                var sw = new Stopwatch();
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
-                sw.Start();
-                processEventsJob.RunUntilEmpty();
+                var sw = Stopwatch.StartNew();
+                await processEventsJob.RunUntilEmptyAsync();
                 sw.Stop();
                 Trace.WriteLine(sw.Elapsed);
 
-                Assert.Equal(0, _eventQueue.GetQueueCount());
-                Assert.Equal(batchSize * batchCount, EventCount());
-
-                bool success = countdown.Wait(5000);
-                Assert.True(success);
+                Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync()).Completed);
+                Assert.Equal(batchSize * batchCount, await EventCountAsync());
+                //await countdown.WaitAsync();
             } finally {
-                _eventQueue.DeleteQueue();
+                await _eventQueue.DeleteQueueAsync();
             }
         }
         
@@ -179,60 +172,72 @@ namespace Exceptionless.Api.Tests.Controllers {
             return request;
         }
 
-        private void ResetDatabase(bool force = false) {
+        private bool _isReset;
+        private async Task ResetAsync() {
+            if (!_isReset) {
+                _isReset = true;
+                await ResetDatabaseAsync();
+                await AddSamplesAsync();
+            }
+
+            await _eventQueue.DeleteQueueAsync();
+            await RemoveAllEventsAsync();
+        }
+
+        private async Task ResetDatabaseAsync(bool force = false) {
             if (_databaseReset && !force)
                 return;
             
-            RemoveAllEvents();
-            RemoveAllProjects();
-            RemoveAllOrganizations();
+            await RemoveAllEventsAsync();
+            await RemoveAllProjectsAsync();
+            await RemoveAllOrganizationsAsync();
 
             _databaseReset = true;
         }
 
-        public void RemoveAllOrganizations() {
-            _organizationRepository.RemoveAll();
+        public async Task RemoveAllOrganizationsAsync() {
+            await _organizationRepository.RemoveAllAsync();
             _client.Refresh(r => r.Force());
             _sampleOrganizationsAdded = false;
         }
 
-        public void RemoveAllProjects() {
-            _projectRepository.RemoveAll();
+        public async Task RemoveAllProjectsAsync() {
+            await _projectRepository.RemoveAllAsync();
             _client.Refresh(r => r.Force());
             _sampleProjectsAdded = false;
         }
 
-        public void RemoveAllEvents() {
-            _eventRepository.RemoveAll();
+        public async Task RemoveAllEventsAsync() {
+            await _eventRepository.RemoveAllAsync();
             _client.Refresh(r => r.Force());
         }
 
-        public long EventCount() {
+        public Task<long> EventCountAsync() {
             _client.Refresh(r => r.Force());
-            return _eventRepository.Count();
+            return _eventRepository.CountAsync();
         }
         
-        public void AddSampleProjects() {
+        public async Task AddSampleProjectsAsync() {
             if (_sampleProjectsAdded)
                 return;
 
-            _projectRepository.Add(ProjectData.GenerateSampleProjects());
+            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects());
             _client.Refresh(r => r.Force());
             _sampleProjectsAdded = true;
         }
         
-        public void AddSampleOrganizations() {
+        public async Task AddSampleOrganizationsAsync() {
             if (_sampleOrganizationsAdded)
                 return;
 
-            _organizationRepository.Add(OrganizationData.GenerateSampleOrganizations());
+            await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations());
             _client.Refresh(r => r.Force());
             _sampleOrganizationsAdded = true;
         }
 
-        public void AddSamples() {
-            AddSampleProjects();
-            AddSampleOrganizations();
+        public async Task AddSamplesAsync() {
+            await AddSampleProjectsAsync();
+            await AddSampleOrganizationsAsync();
         }
     }
 }

@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Utility {
 
         public ObjectId(byte[] bytes) {
             if (bytes == null) {
-                throw new ArgumentNullException("bytes");
+                throw new ArgumentNullException(nameof(bytes));
             }
             Unpack(bytes, out _timestamp, out _machine, out _pid, out _increment);
         }
@@ -49,10 +49,10 @@ namespace Exceptionless.Core.Utility {
 
         public ObjectId(int timestamp, int machine, short pid, int increment) {
             if ((machine & 0xff000000) != 0) {
-                throw new ArgumentOutOfRangeException("machine", "The machine value must be between 0 and 16777215 (it must fit in 3 bytes).");
+                throw new ArgumentOutOfRangeException(nameof(machine), "The machine value must be between 0 and 16777215 (it must fit in 3 bytes).");
             }
             if ((increment & 0xff000000) != 0) {
-                throw new ArgumentOutOfRangeException("increment", "The increment value must be between 0 and 16777215 (it must fit in 3 bytes).");
+                throw new ArgumentOutOfRangeException(nameof(increment), "The increment value must be between 0 and 16777215 (it must fit in 3 bytes).");
             }
 
             _timestamp = timestamp;
@@ -63,40 +63,22 @@ namespace Exceptionless.Core.Utility {
 
         public ObjectId(string value) {
             if (value == null) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             Unpack(Utils.ParseHexString(value), out _timestamp, out _machine, out _pid, out _increment);
         }
 
-        public static ObjectId Empty
-        {
-            get { return __emptyInstance; }
-        }
+        public static ObjectId Empty => __emptyInstance;
 
-        public int Timestamp
-        {
-            get { return _timestamp; }
-        }
+        public int Timestamp => _timestamp;
 
-        public int Machine
-        {
-            get { return _machine; }
-        }
+        public int Machine => _machine;
 
-        public short Pid
-        {
-            get { return _pid; }
-        }
+        public short Pid => _pid;
 
-        public int Increment
-        {
-            get { return _increment; }
-        }
+        public int Increment => _increment;
 
-        public DateTime CreationTime
-        {
-            get { return __unixEpoch.AddSeconds(_timestamp); }
-        }
+        public DateTime CreationTime => __unixEpoch.AddSeconds(_timestamp);
 
         public static bool operator <(ObjectId lhs, ObjectId rhs) {
             return lhs.CompareTo(rhs) < 0;
@@ -137,10 +119,10 @@ namespace Exceptionless.Core.Utility {
 
         public static byte[] Pack(int timestamp, int machine, short pid, int increment) {
             if ((machine & 0xff000000) != 0) {
-                throw new ArgumentOutOfRangeException("machine", "The machine value must be between 0 and 16777215 (it must fit in 3 bytes).");
+                throw new ArgumentOutOfRangeException(nameof(machine), "The machine value must be between 0 and 16777215 (it must fit in 3 bytes).");
             }
             if ((increment & 0xff000000) != 0) {
-                throw new ArgumentOutOfRangeException("increment", "The increment value must be between 0 and 16777215 (it must fit in 3 bytes).");
+                throw new ArgumentOutOfRangeException(nameof(increment), "The increment value must be between 0 and 16777215 (it must fit in 3 bytes).");
             }
 
             byte[] bytes = new byte[12];
@@ -161,13 +143,13 @@ namespace Exceptionless.Core.Utility {
 
         public static ObjectId Parse(string s) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             ObjectId objectId;
             if (TryParse(s, out objectId)) {
                 return objectId;
             } else {
-                var message = string.Format("'{0}' is not a valid 24 digit hex string.", s);
+                var message = $"'{s}' is not a valid 24 digit hex string.";
                 throw new FormatException(message);
             }
         }
@@ -187,10 +169,10 @@ namespace Exceptionless.Core.Utility {
 
         public static void Unpack(byte[] bytes, out int timestamp, out int machine, out short pid, out int increment) {
             if (bytes == null) {
-                throw new ArgumentNullException("bytes");
+                throw new ArgumentNullException(nameof(bytes));
             }
             if (bytes.Length != 12) {
-                throw new ArgumentOutOfRangeException("bytes", "Byte array must be 12 bytes long.");
+                throw new ArgumentOutOfRangeException(nameof(bytes), "Byte array must be 12 bytes long.");
             }
             timestamp = (bytes[0] << 24) + (bytes[1] << 16) + (bytes[2] << 8) + bytes[3];
             machine = (bytes[4] << 16) + (bytes[5] << 8) + bytes[6];
@@ -211,7 +193,7 @@ namespace Exceptionless.Core.Utility {
         private static int GetTimestampFromDateTime(DateTime timestamp) {
             var secondsSinceEpoch = (long)Math.Floor((Utils.ToUniversalTime(timestamp) - __unixEpoch).TotalSeconds);
             if (secondsSinceEpoch < int.MinValue || secondsSinceEpoch > int.MaxValue) {
-                throw new ArgumentOutOfRangeException("timestamp");
+                throw new ArgumentOutOfRangeException(nameof(timestamp));
             }
             return (int)secondsSinceEpoch;
         }
@@ -358,7 +340,7 @@ namespace Exceptionless.Core.Utility {
 
             public static byte[] ParseHexString(string s) {
                 if (s == null) {
-                    throw new ArgumentNullException("s");
+                    throw new ArgumentNullException(nameof(s));
                 }
 
                 byte[] bytes;
@@ -372,7 +354,7 @@ namespace Exceptionless.Core.Utility {
                         byte b = Convert.ToByte(hex, 16);
                         bytes[i] = b;
                     } catch (FormatException e) {
-                        throw new FormatException(string.Format("Invalid hex string {0}. Problem with substring {1} starting at position {2}", s, hex, 2 * i), e);
+                        throw new FormatException($"Invalid hex string {s}. Problem with substring {hex} starting at position {2 * i}", e);
                     }
                 }
 
@@ -381,7 +363,7 @@ namespace Exceptionless.Core.Utility {
 
             public static string ToHexString(byte[] bytes) {
                 if (bytes == null) {
-                    throw new ArgumentNullException("bytes");
+                    throw new ArgumentNullException(nameof(bytes));
                 }
                 var sb = new StringBuilder(bytes.Length * 2);
                 foreach (var b in bytes) {

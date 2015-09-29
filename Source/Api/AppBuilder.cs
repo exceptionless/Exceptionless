@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,13 +8,11 @@ using System.Web.Http;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Routing;
 using AutoMapper;
-using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
@@ -40,28 +37,24 @@ namespace Exceptionless.Api {
 
         public static void BuildWithContainer(IAppBuilder app, Container container) {
             if (container == null)
-                throw new ArgumentNullException("container");
+                throw new ArgumentNullException(nameof(container));
+            
+            Config = new HttpConfiguration();
+            Config.Formatters.Remove(Config.Formatters.XmlFormatter);
+            Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
+            
+            SetupRouteConstraints(Config);
+            container.RegisterWebApiControllers(Config);
+
+            VerifyContainer(container);
+            
+            Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
 
             var contractResolver = container.GetInstance<IContractResolver>();
             var exceptionlessContractResolver = contractResolver as ExceptionlessContractResolver;
-            if (exceptionlessContractResolver != null)
-                exceptionlessContractResolver.UseDefaultResolverFor(typeof(Connection).Assembly);
-
-            Config = new HttpConfiguration();
-            Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
-            Config.Formatters.Remove(Config.Formatters.XmlFormatter);
-            Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
+            exceptionlessContractResolver?.UseDefaultResolverFor(typeof(Connection).Assembly);
             Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
-            SetupRouteConstraints(Config);
-            container.RegisterWebApiFilterProvider(Config);
-
-            VerifyContainer(container);
-
-            container.Bootstrap(Config);
-            container.Bootstrap(app);
-
-            Log.Info().Message("Starting api...").Write();
             Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
             Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
 
@@ -75,6 +68,11 @@ namespace Exceptionless.Api {
             // Reject event posts in orgs over their max event limits.
             Config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
 
+            container.Bootstrap(Config);
+            container.Bootstrap(app);
+
+            Log.Info().Message("Starting api...").Write();
+           
             app.UseCors(new CorsOptions {
                 PolicyProvider = new CorsPolicyProvider {
                     PolicyResolver = ctx => Task.FromResult(new CorsPolicy {
@@ -86,48 +84,7 @@ namespace Exceptionless.Api {
                     })
                 }
             });
-
-            app.CreatePerContext<Lazy<User>>("User", ctx => new Lazy<User>(() => {
-                if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
-                    return null;
-
-                string userId = ctx.Request.User.GetUserId();
-                if (String.IsNullOrEmpty(userId))
-                    return null;
-
-                var userRepository = container.GetInstance<IUserRepository>();
-                return userRepository.GetById(userId, true);
-            }));
-
-            app.CreatePerContext<Lazy<Project>>("DefaultProject", ctx => new Lazy<Project>(() => {
-                if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
-                    return null;
-
-                // TODO: Use project id from url. E.G., /projects/{projectId:objectid}/events
-                string projectId = ctx.Request.User.GetDefaultProjectId();
-                var projectRepository = container.GetInstance<IProjectRepository>();
-
-                if (String.IsNullOrEmpty(projectId)) {
-                    var firstOrgId = ctx.Request.User.GetOrganizationIds().FirstOrDefault();
-                    if (!String.IsNullOrEmpty(firstOrgId)) {
-                        var project = projectRepository.GetByOrganizationId(firstOrgId, useCache: true).Documents.FirstOrDefault();
-                        if (project != null)
-                            return project;
-                    }
-
-                    if (Settings.Current.WebsiteMode == WebsiteMode.Dev) {
-                        var dataHelper = container.GetInstance<DataHelper>();
-                        // create a default org and project
-                        projectId = dataHelper.CreateDefaultOrganizationAndProject(ctx.Request.GetUser());
-                    }
-                }
-
-                if (String.IsNullOrEmpty(projectId))
-                    return null;
-
-                return projectRepository.GetById(projectId, true);
-            }));
-
+            
             app.UseWebApi(Config);
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);
             if (Settings.Current.EnableRedis)
@@ -137,7 +94,8 @@ namespace Exceptionless.Api {
             SetupSwagger(Config);
 
             Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
-            CreateSampleData(container);
+            if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
+                Task.Run(async () => await CreateSampleDataAsync(container));
 
             if (Settings.Current.RunJobsInProcess) {
                 Log.Warn().Message("Jobs running in process.").Write();
@@ -173,7 +131,7 @@ namespace Exceptionless.Api {
                 c.SingleApiVersion("v2", "Exceptionless");
                 c.ApiKey("access_token").In("header").Name("access_token").Description("API Key Authentication");
                 c.BasicAuth("basic").Description("Basic HTTP Authentication");
-                c.IncludeXmlComments(String.Format(@"{0}\bin\Exceptionless.Api.xml", AppDomain.CurrentDomain.BaseDirectory));
+                c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\bin\Exceptionless.Api.xml");
                 c.IgnoreObsoleteActions();
                 c.DocumentFilter<FilterRoutesDocumentFilter>();
             }).EnableSwaggerUi("docs/{*assetPath}", c => {
@@ -182,22 +140,23 @@ namespace Exceptionless.Api {
             });
         }
 
-        private static void CreateSampleData(Container container) {
+        private static async Task CreateSampleDataAsync(Container container) {
             if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
                 return;
 
             var userRepository = container.GetInstance<IUserRepository>();
-            if (userRepository.Count() != 0)
+            if (await userRepository.CountAsync() != 0)
                 return;
 
             var dataHelper = container.GetInstance<DataHelper>();
-            dataHelper.CreateTestData();
+            await dataHelper.CreateTestDataAsync();
         }
 
         public static Container CreateContainer(bool includeInsulation = true) {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
-            container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
+            container.Options.DefaultScopedLifestyle = new WebApiRequestLifestyle();
+            container.Options.ResolveUnregisteredCollections = true;
 
             container.RegisterPackage<Core.Bootstrapper>();
             container.RegisterPackage<Bootstrapper>();

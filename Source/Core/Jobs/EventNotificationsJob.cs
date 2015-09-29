@@ -18,8 +18,7 @@ using UAParser;
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
-    public class EventNotificationsJob : JobBase {
-        private readonly IQueue<EventNotificationWorkItem> _queue;
+    public class EventNotificationsJob : QueueProcessorJobBase<EventNotificationWorkItem> {
         private readonly IMailer _mailer;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
@@ -30,8 +29,7 @@ namespace Exceptionless.Core.Jobs {
 
         public EventNotificationsJob(IQueue<EventNotificationWorkItem> queue, IMailer mailer,
             IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository,
-            IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient) {
-            _queue = queue;
+            IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient) : base(queue) {
             _mailer = mailer;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -41,75 +39,53 @@ namespace Exceptionless.Core.Jobs {
             _cacheClient = cacheClient;
         }
 
-        protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            QueueEntry<EventNotificationWorkItem> queueEntry = null;
-            try {
-                queueEntry = _queue.Dequeue();
-            } catch (Exception ex) {
-                if (!(ex is TimeoutException))
-                    return JobResult.FromException(ex, "An error occurred while trying to dequeue the next EventNotification: {0}", ex.Message);
-            }
-            if (queueEntry == null)
-                return JobResult.Success;
-
-            var eventModel = _eventRepository.GetById(queueEntry.Value.EventId);
-            if (eventModel == null) {
-                queueEntry.Abandon();
+        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventNotificationWorkItem> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
+            var eventModel = await _eventRepository.GetByIdAsync(queueEntry.Value.EventId).AnyContext();
+            if (eventModel == null)
                 return JobResult.FailedWithMessage("Could not load event {0}.", queueEntry.Value.EventId);
-            }
 
             var eventNotification = new EventNotification(queueEntry.Value, eventModel);
             bool shouldLog = eventNotification.Event.ProjectId != Settings.Current.InternalProjectId;
             int emailsSent = 0;
             Log.Trace().Message("Process notification: project={0} event={1} stack={2}", eventNotification.Event.ProjectId, eventNotification.Event.Id, eventNotification.Event.StackId).WriteIf(shouldLog);
 
-            var project = _projectRepository.GetById(eventNotification.Event.ProjectId, true);
-            if (project == null) {
-                queueEntry.Abandon();
+            var project = await _projectRepository.GetByIdAsync(eventNotification.Event.ProjectId, true).AnyContext();
+            if (project == null)
                 return JobResult.FailedWithMessage("Could not load project {0}.", eventNotification.Event.ProjectId);
-            }
             Log.Trace().Message("Loaded project: name={0}", project.Name).WriteIf(shouldLog);
 
-            var organization = _organizationRepository.GetById(project.OrganizationId, true);
-            if (organization == null) {
-                queueEntry.Abandon();
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
+            if (organization == null)
                 return JobResult.FailedWithMessage("Could not load organization {0}.", project.OrganizationId);
-            }
+
             Log.Trace().Message("Loaded organization: name={0}", organization.Name).WriteIf(shouldLog);
 
-            var stack = _stackRepository.GetById(eventNotification.Event.StackId);
-            if (stack == null) {
-                queueEntry.Abandon();
+            var stack = await _stackRepository.GetByIdAsync(eventNotification.Event.StackId).AnyContext();
+            if (stack == null)
                 return JobResult.FailedWithMessage("Could not load stack {0}.", eventNotification.Event.StackId);
-            }
 
             if (!organization.HasPremiumFeatures) {
-                queueEntry.Complete();
                 Log.Info().Message("Skipping \"{0}\" because organization \"{1}\" does not have premium features.", eventNotification.Event.Id, eventNotification.Event.OrganizationId).WriteIf(shouldLog);
                 return JobResult.Success;
             }
 
             if (stack.DisableNotifications || stack.IsHidden) {
-                queueEntry.Complete();
                 Log.Info().Message("Skipping \"{0}\" because stack \"{1}\" notifications are disabled or stack is hidden.", eventNotification.Event.Id, eventNotification.Event.StackId).WriteIf(shouldLog);
                 return JobResult.Success;
             }
 
-            if (token.IsCancellationRequested) {
-                queueEntry.Abandon();
+            if (cancellationToken.IsCancellationRequested)
                 return JobResult.Cancelled;
-            }
 
             Log.Trace().Message("Loaded stack: title={0}", stack.Title).WriteIf(shouldLog);
             int totalOccurrences = stack.TotalOccurrences;
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
-            var lastTimeSent = _cacheClient.Get<DateTime>(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId));
+            var lastTimeSent = await _cacheClient.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId)).AnyContext();
             if (totalOccurrences > 2
                 && !eventNotification.IsRegression
                 && lastTimeSent != DateTime.MinValue
                 && lastTimeSent > DateTime.Now.AddMinutes(-30)) {
-                queueEntry.Complete();
                 Log.Info().Message("Skipping message because of stack throttling: last sent={0} occurrences={1}", lastTimeSent, totalOccurrences).WriteIf(shouldLog);
                 return JobResult.Success;
             }
@@ -117,23 +93,20 @@ namespace Exceptionless.Core.Jobs {
             // don't send more than 10 notifications for a given project every 30 minutes
             var projectTimeWindow = TimeSpan.FromMinutes(30);
             string cacheKey = String.Concat("notify:project-throttle:", eventNotification.Event.ProjectId, "-", DateTime.UtcNow.Floor(projectTimeWindow).Ticks);
-            long notificationCount = _cacheClient.Increment(cacheKey, 1, projectTimeWindow);
+            long notificationCount = await _cacheClient.IncrementAsync(cacheKey, 1, projectTimeWindow).AnyContext();
             if (notificationCount > 10 && !eventNotification.IsRegression) {
-                queueEntry.Complete();
                 Log.Info().Project(eventNotification.Event.ProjectId).Message("Skipping message because of project throttling: count={0}", notificationCount).WriteIf(shouldLog);
                 return JobResult.Success;
             }
 
-            if (token.IsCancellationRequested) {
-                queueEntry.Abandon();
+            if (cancellationToken.IsCancellationRequested)
                 return JobResult.Cancelled;
-            }
 
             foreach (var kv in project.NotificationSettings) {
                 var settings = kv.Value;
                 Log.Trace().Message("Processing notification: user={0}", kv.Key).WriteIf(shouldLog);
 
-                var user = _userRepository.GetById(kv.Key);
+                var user = await _userRepository.GetByIdAsync(kv.Key).AnyContext();
                 if (user == null || String.IsNullOrEmpty(user.EmailAddress)) {
                     Log.Error().Message("Could not load user {0} or blank email address {1}.", kv.Key, user != null ? user.EmailAddress : "").Write();
                     continue;
@@ -207,18 +180,17 @@ namespace Exceptionless.Core.Jobs {
                 }
                 
                 Log.Trace().Message("Sending email to {0}...", user.EmailAddress).Write();
-                _mailer.SendNotice(user.EmailAddress, model);
+                await _mailer.SendNoticeAsync(user.EmailAddress, model).AnyContext();
                 emailsSent++;
                 Log.Trace().Message("Done sending email.").WriteIf(shouldLog);
             }
 
             // if we sent any emails, mark the last time a notification for this stack was sent.
             if (emailsSent > 0) {
-                _cacheClient.Set(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), DateTime.Now, DateTime.Now.AddMinutes(15));
+                await _cacheClient.SetAsync(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), DateTime.Now, DateTime.Now.AddMinutes(15)).AnyContext();
                 Log.Info().Message("Notifications sent: event={0} stack={1} count={2}", eventNotification.Event.Id, eventNotification.Event.StackId, emailsSent).WriteIf(shouldLog);
             }
-
-            queueEntry.Complete();
+            
             return JobResult.Success;
         }
     }

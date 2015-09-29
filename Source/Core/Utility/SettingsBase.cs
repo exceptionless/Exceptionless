@@ -41,7 +41,7 @@ namespace Exceptionless.Core {
                 if (defaultValue is TEnum)
                     return (TEnum)defaultValue;
 
-                string message = String.Format("Configuration key '{0}' has value '{1}' that could not be parsed as a member of the {2} enum type.", name, value, typeof(TEnum).Name);
+                string message = $"Configuration key '{name}' has value '{value}' that could not be parsed as a member of the {typeof(TEnum).Name} enum type.";
                 throw new ConfigurationErrorsException(message, ex);
             }
         }

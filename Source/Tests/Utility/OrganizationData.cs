@@ -29,7 +29,7 @@ namespace Exceptionless.Tests.Utility {
         public static Organization GenerateOrganization(bool generateId = false, string name = null, string id = null, string inviteEmail = null, bool isSuspended = false) {
             var organization = new Organization {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.OrganizationId : id,
-                Name = name ?? String.Format("Organization{0}", id)
+                Name = name ?? $"Organization{id}"
             };
 
             BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan);

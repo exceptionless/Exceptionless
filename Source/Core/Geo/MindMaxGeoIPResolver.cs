@@ -29,28 +29,30 @@ namespace Exceptionless.Core.Geo {
 
             ip = ip.Trim();
 
-            Location location;
-            if (_cache.TryGet(ip, out location))
-                return location;
+            var cacheValue = await _cache.TryGetAsync<Location>(ip).AnyContext();
+            if (cacheValue.HasValue)
+                return cacheValue.Value;
+
+            Location location = null;
 
             if (ip.IsPrivateNetwork())
                 return null;
 
-            var database = await GetDatabaseAsync(cancellationToken);
+            var database = await GetDatabaseAsync(cancellationToken).AnyContext();
             if (database == null)
                 return null;
 
             try {
                 var city = database.City(ip);
-                if (city != null && city.Location != null)
+                if (city?.Location != null)
                     location = new Location { Latitude = city.Location.Latitude, Longitude = city.Location.Longitude };
 
-                _cache.Set(ip, location);
+                await _cache.SetAsync(ip, location).AnyContext();
                 return location;
             } catch (Exception ex) {
                 if (ex is AddressNotFoundException || ex is GeoIP2Exception) {
                     Log.Trace().Message(ex.Message).Write();
-                    _cache.Set<Location>(ip, null);
+                    await _cache.SetAsync<Location>(ip, null).AnyContext();
                 } else {
                     Log.Error().Exception(ex).Message("Unable to resolve geo location for ip: " + ip).Write();
                 }
@@ -74,14 +76,14 @@ namespace Exceptionless.Core.Geo {
 
             _databaseLastChecked = DateTime.UtcNow;
 
-            if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH)) {
+            if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH).AnyContext()) {
                 Log.Warn().Message("No GeoIP database was found.").Write();
                 return null;
             }
 
             Log.Info().Message("Loading GeoIP database.").Write();
             try {
-                using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken))
+                using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
                     _database = new DatabaseReader(stream);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Unable to open GeoIP database.").Write();

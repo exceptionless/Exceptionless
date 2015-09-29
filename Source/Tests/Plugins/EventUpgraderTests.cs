@@ -7,7 +7,6 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Xunit;
-using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Plugins {
     [UseReporter(typeof(HappyDiffReporter))]
@@ -16,7 +15,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         private readonly EventParserPluginManager _eventParserPluginManager = IoC.GetInstance<EventParserPluginManager>();
 
         [Theory]
-        [PropertyData("Errors")]
+        [MemberData("Errors")]
         public void ParseErrors(string errorFilePath) {
             var json = File.ReadAllText(errorFilePath);
             var ctx = new EventUpgraderContext(json);

@@ -1,22 +1,20 @@
 ﻿using System;
 using System.Linq;
-using System.Security.Claims;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 
 namespace Exceptionless.Api.Security {
     public class TokenManager {
-        private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
             
-        public TokenManager(IUserRepository userRepository, ITokenRepository tokenRepository) {
-            _userRepository = userRepository;
+        public TokenManager(ITokenRepository tokenRepository) {
             _tokenRepository = tokenRepository;
         }
 
-        public Token GetOrCreate(User user) {
-            var existingToken = _tokenRepository.GetByUserId(user.Id).Documents.FirstOrDefault(t => t.ExpiresUtc > DateTime.UtcNow && t.Type == TokenType.Access);
+        public async Task<Token> GetOrCreateAsync(User user) {
+            var existingToken = (await _tokenRepository.GetByUserIdAsync(user.Id)).Documents.FirstOrDefault(t => t.ExpiresUtc > DateTime.UtcNow && t.Type == TokenType.Access);
             if (existingToken != null)
                 return existingToken;
 
@@ -28,21 +26,10 @@ namespace Exceptionless.Api.Security {
                 CreatedBy = user.Id,
                 Type = TokenType.Access
             };
-            _tokenRepository.Add(token);
+
+            await _tokenRepository.AddAsync(token);
 
             return token;
-        }
-
-        public ClaimsPrincipal Validate(string token) {
-            var tokenRecord = _tokenRepository.GetById(token, true);
-            if (tokenRecord == null)
-                return null;
-
-            if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < DateTime.UtcNow)
-                return null;
-
-            var principal = new ClaimsPrincipal(tokenRecord.ToIdentity(_userRepository));
-            return principal;  
         }
     }
 }

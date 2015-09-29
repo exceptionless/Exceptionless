@@ -1,16 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Stack> {
-        Stack GetStackBySignatureHash(string projectId, string signatureHash);
-        FindResults<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query = null);
-        FindResults<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query = null);
-        FindResults<Stack> GetByFilter(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
+        Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash);
+        Task<FindResults<Stack>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query = null);
+        Task<FindResults<Stack>> GetNewAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query = null);
+        Task<FindResults<Stack>> GetByFilterAsync(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
 
-        void MarkAsRegressed(string stackId);
-        void IncrementEventCounter(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true);
-        void InvalidateCache(string projectId, string stackId, string signatureHash);
+        Task MarkAsRegressedAsync(string stackId);
+        Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true);
+        Task InvalidateCacheAsync(string projectId, string stackId, string signatureHash);
     }
 }

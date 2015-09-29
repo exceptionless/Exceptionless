@@ -5,27 +5,25 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IEventRepository : IRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent> {
-        FindResults<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
-        FindResults<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
-        FindResults<PersistentEvent> GetByReferenceId(string projectId, string referenceId);
-        FindResults<PersistentEvent> GetByFilter(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
+        Task<FindResults<PersistentEvent>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
+        Task<FindResults<PersistentEvent>> GetByStackIdOccurrenceDateAsync(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
+        Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId);
+        Task<FindResults<PersistentEvent>> GetByFilterAsync(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
 
-        string GetPreviousEventId(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
-        string GetPreviousEventId(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
-        string GetNextEventId(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
-        string GetNextEventId(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
-        void MarkAsRegressedByStack(string organizationId, string stackId);
-        void UpdateFixedByStack(string organizationId, string stackId, bool value);
-        void UpdateHiddenByStack(string organizationId, string stackId, bool value);
-        void RemoveOldestEvents(string stackId, int maxEventsPerStack);
-        void RemoveAllByDate(string organizationId, DateTime utcCutoffDate);
-        void HideAllByClientIpAndDate(string organizationId, string clientIp, DateTime utcStartDate, DateTime utcEndDate);
+        Task<string> GetPreviousEventIdAsync(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
+        Task<string> GetPreviousEventIdAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
+        Task<string> GetNextEventIdAsync(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
+        Task<string> GetNextEventIdAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
+        Task UpdateFixedByStackAsync(string organizationId, string stackId, bool value);
+        Task UpdateHiddenByStackAsync(string organizationId, string stackId, bool value);
+        Task RemoveOldestEventsAsync(string stackId, int maxEventsPerStack);
+        Task RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate);
         Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStartDate, DateTime utcEndDate);
 
-        FindResults<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, string query = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
+        Task<FindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, string query = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
 
-        long GetCountByOrganizationId(string organizationId);
-        long GetCountByProjectId(string projectId);
-        long GetCountByStackId(string stackId);
+        Task<long> GetCountByOrganizationIdAsync(string organizationId);
+        Task<long> GetCountByProjectIdAsync(string projectId);
+        Task<long> GetCountByStackIdAsync(string stackId);
     }
 }

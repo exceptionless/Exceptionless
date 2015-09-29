@@ -21,7 +21,7 @@ namespace Exceptionless.Api.Utility {
             }
 
             var response = await base.SendAsync(request, cancellationToken);
-            if (response.RequestMessage != null && response.RequestMessage.Headers != null && response.RequestMessage.Headers.AcceptEncoding != null && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
+            if (response.RequestMessage?.Headers?.AcceptEncoding != null && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
                 string encodingType = response.RequestMessage.Headers.AcceptEncoding.First().Value;
 
                 if (response.Content != null && (encodingType == "gzip" || encodingType == "deflate"))
@@ -38,16 +38,16 @@ namespace Exceptionless.Api.Utility {
 
         public CompressedContent(HttpContent content, string encodingType) {
             if (content == null)
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
 
             if (encodingType == null)
-                throw new ArgumentNullException("encodingType");
+                throw new ArgumentNullException(nameof(encodingType));
 
             _originalContent = content;
             _encodingType = encodingType.ToLowerInvariant();
 
             if (_encodingType != "gzip" && _encodingType != "deflate")
-                throw new InvalidOperationException(String.Format("Encoding '{0}' is not supported. Only supports gzip or deflate encoding.", _encodingType));
+                throw new InvalidOperationException($"Encoding '{_encodingType}' is not supported. Only supports gzip or deflate encoding.");
 
             // copy the headers from the original content
             foreach (KeyValuePair<string, IEnumerable<string>> header in _originalContent.Headers)
@@ -75,7 +75,7 @@ namespace Exceptionless.Api.Utility {
             throw new NotSupportedException("Compression type not supported or stream isn't compressed");
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) {
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context) {
             Stream compressedStream = null;
             
             switch (_encodingType) {
@@ -87,10 +87,10 @@ namespace Exceptionless.Api.Utility {
                     break;
             }
 
-            return _originalContent.CopyToAsync(compressedStream).ContinueWith(tsk => {
-                if (compressedStream != null)
-                    compressedStream.Dispose();
-            });
+            if (compressedStream != null) {
+                await _originalContent.CopyToAsync(compressedStream);
+                compressedStream.Dispose();
+            }
         }
 
         protected override Task<Stream> CreateContentReadStreamAsync() {

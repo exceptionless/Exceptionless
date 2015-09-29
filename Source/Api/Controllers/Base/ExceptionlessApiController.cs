@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Results;
 using Exceptionless.Api.Extensions;
@@ -94,17 +95,9 @@ namespace Exceptionless.Api.Controllers {
             return skip;
         }
 
-        public User ExceptionlessUser {
-            get { return Request.GetUser(); }
-        }
-
-        public Project DefaultProject {
-            get { return Request.GetDefaultProject(); }
-        }
-
-        public AuthType AuthType {
-            get { return User.GetAuthType(); }
-        }
+        public User ExceptionlessUser => Request.GetUser();
+        
+        public AuthType AuthType => User.GetAuthType();
 
         public bool CanAccessOrganization(string organizationId) {
             return Request.CanAccessOrganization(organizationId);
@@ -121,11 +114,12 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public string GetAssociatedOrganizationsFilter(IOrganizationRepository repository, bool filterUsesPremiumFeatures, bool hasOrganizationOrProjectFilter, string retentionDateFieldName = "date") {
+        public async Task<string> GetAssociatedOrganizationsFilterAsync(IOrganizationRepository repository, bool filterUsesPremiumFeatures, bool hasOrganizationOrProjectFilter, string retentionDateFieldName = "date") {
             if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
                 return null;
 
-            var organizations = repository.GetByIds(GetAssociatedOrganizationIds(), useCache: true).Documents.Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
+            var associatedOrganizations = await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), useCache: true);
+            var organizations = associatedOrganizations.Documents.Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
             if (organizations.Count == 0)
                 return "organization:none";
 
@@ -150,13 +144,13 @@ namespace Exceptionless.Api.Controllers {
 
             return filter.Contains("organization:") || filter.Contains("project:");
         }
-
-        public string GetDefaultOrganizationId() {
-            return Request.GetDefaultOrganizationId();
-        }
-
+        
         protected StatusCodeActionResult StatusCodeWithMessage(HttpStatusCode statusCode, string message, string reason = null) {
             return new StatusCodeActionResult(statusCode, Request, message, reason);
+        }
+
+        protected IHttpActionResult WorkInProgress(IEnumerable<string> workers) {
+            return new NegotiatedContentResult<WorkInProgressResult>(HttpStatusCode.Accepted, new WorkInProgressResult(workers), this);
         }
 
         protected IHttpActionResult BadRequest(ModelActionResults results) {
@@ -207,7 +201,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected string GetResourceLink(string url, string type) {
-            return url != null ? String.Format("<{0}>; rel=\"{1}\"", url, type) : null;
+            return url != null ? $"<{url}>; rel=\"{type}\"" : null;
         }
 
         protected bool NextPageExceedsSkipLimit(int page, int limit) {

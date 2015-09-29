@@ -205,7 +205,7 @@ namespace Exceptionless.Core.Repositories {
                 utcEnd = DateTime.UtcNow;
 
             if (String.IsNullOrEmpty(nameFormat))
-                nameFormat = String.Format("'{0}-'yyyyMM", typeof(T).Name.ToLower());
+                nameFormat = $"'{typeof(T).Name.ToLower()}-'yyyyMM";
 
             // Use the end of the month as we are using monthly indexes.
             var utcEndOfMonth = utcEnd.Value.EndOfMonth();

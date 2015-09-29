@@ -44,13 +44,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
             foreach (var index in GetIndexes()) {
                 IIndicesOperationResponse response = null;
                 int currentVersion = GetAliasVersion(client, index.Name);
-                
+
                 var templatedIndex = index as ITemplatedElasticSeachIndex;
                 if (templatedIndex != null)
                     response = client.PutTemplate(index.VersionedName, template => templatedIndex.CreateTemplate(template).AddAlias(index.Name));
                 else if (!client.IndexExists(index.VersionedName).Exists)
                     response = client.CreateIndex(index.VersionedName, descriptor => index.CreateIndex(descriptor).AddAlias(index.Name));
-                
+
                 Debug.Assert(response == null || response.IsValid, response != null && response.ServerError != null ? response.ServerError.Error : "An error occurred creating the index or template.");
 
                 // Add existing indexes to the alias.
@@ -70,13 +70,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
                     Debug.Assert(response != null && response.IsValid, response != null && response.ServerError != null ? response.ServerError.Error : "An error occurred creating the alias.");
                 }
-                
+
                 // already on current version
                 if (currentVersion >= index.Version || currentVersion < 1)
                     continue;
 
                 // upgrade
-                _workItemQueue.Enqueue(new ReindexWorkItem {
+                _workItemQueue.EnqueueAsync(new ReindexWorkItem {
                     OldIndex = String.Concat(index.Name, "-v", currentVersion),
                     NewIndex = index.VersionedName,
                     Alias = index.Name,
@@ -103,7 +103,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         private IEnumerable<IElasticSearchIndex> GetIndexes() {
             return new IElasticSearchIndex[] {
                 new StackIndex(),
-                new EventIndex(), 
+                new EventIndex(),
                 new OrganizationIndex()
             };
         }

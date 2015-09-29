@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static void AddItemIfNotEmpty(this IDictionary<string, string> dictionary, string key, string value) {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (!String.IsNullOrEmpty(value))
                 dictionary[key] = value;
@@ -52,9 +52,9 @@ namespace Exceptionless.Core.Extensions {
 
         public static IDictionary<T1, T2> Merge<T1, T2>(this IDictionary<T1, T2> first, IDictionary<T1, T2> second) {
             if (first == null)
-                throw new ArgumentNullException("first");
+                throw new ArgumentNullException(nameof(first));
             if (second == null)
-                throw new ArgumentNullException("second");
+                throw new ArgumentNullException(nameof(second));
 
             var merged = new Dictionary<T1, T2>();
             first.ToList().ForEach(kv => merged[kv.Key] = kv.Value);

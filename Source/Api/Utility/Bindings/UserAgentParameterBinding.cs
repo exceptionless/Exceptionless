@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.Metadata;
+using Exceptionless.Core.Component;
 
 namespace Exceptionless.Api.Utility {
     public class UserAgentParameterBinding : HttpParameterBinding {
@@ -15,17 +16,17 @@ namespace Exceptionless.Api.Utility {
 
             var parameterBinding = binding.ParameterBindings.FirstOrDefault(b => b.Descriptor.ParameterBinderAttribute is UserAgentAttribute);
             if (parameterBinding == null || parameterBinding.Descriptor.ParameterType != typeof(string))
-                return Task.FromResult(0);
+                return TaskHelper.Completed();
 
             if (actionContext.Request.Headers.Contains(ExceptionlessHeaders.Client))
                 SetValue(actionContext, actionContext.Request.Headers.GetValues(ExceptionlessHeaders.Client).First());
             else
                 SetValue(actionContext, actionContext.Request.Headers.UserAgent.ToString());
 
-            return Task.FromResult(0);
+            return TaskHelper.Completed();
         }
 
-        public override bool WillReadBody { get { return false; } }
+        public override bool WillReadBody => false;
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]

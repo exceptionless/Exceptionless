@@ -53,9 +53,9 @@ namespace Exceptionless.Api.Utility {
             long requestCount = 1;
             try {
                 string cacheKey = GetCacheKey(identifier);
-                requestCount = _cacheClient.Increment(cacheKey, 1);
+                requestCount = await _cacheClient.IncrementAsync(cacheKey, 1);
                 if (requestCount == 1)
-                    _cacheClient.SetExpiration(cacheKey, _period);
+                    await _cacheClient.SetExpirationAsync(cacheKey, _period);
             } catch {}
 
             HttpResponseMessage response;

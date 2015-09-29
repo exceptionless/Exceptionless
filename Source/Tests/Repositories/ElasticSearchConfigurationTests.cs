@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -30,7 +31,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public void CanCreateEventAlias() {
+        public async Task CanCreateEventAlias() {
             _configuration.DeleteIndexes(_client);
             _configuration.ConfigureIndexes(_client);
             var indexes = _client.GetIndicesPointingToAlias(_eventIndex.Name);
@@ -40,7 +41,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.False(alias.IsValid);
             Assert.Equal(0, alias.Indices.Count);
 
-            _eventRepository.Add(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now, OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
+            await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now, OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
             _client.Refresh();
 
             alias = _client.GetAlias(descriptor => descriptor.Alias(_eventIndex.Name));
@@ -50,7 +51,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             indexes = _client.GetIndicesPointingToAlias(_eventIndex.Name);
             Assert.Equal(1, indexes.Count);
 
-            _eventRepository.Add(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now.SubtractMonths(1), OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
+            await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now.SubtractMonths(1), OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
             _client.Refresh();
 
             indexes = _client.GetIndicesPointingToAlias(_eventIndex.Name);

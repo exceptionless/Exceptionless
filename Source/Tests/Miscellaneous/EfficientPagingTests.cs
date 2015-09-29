@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Api.Utility.Results;
 using Xunit;
-using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Miscellaneous {
     public class EfficientPagingTests {

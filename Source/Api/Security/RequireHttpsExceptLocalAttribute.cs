@@ -5,7 +5,7 @@ namespace Exceptionless.Api.Security {
     public class RequireHttpsExceptLocalAttribute : RequireHttpsAttribute {
         protected override void HandleNonHttpsRequest(HttpActionContext context) {
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             if (HostIsLocal(context.Request.RequestUri.Host))
                 return;

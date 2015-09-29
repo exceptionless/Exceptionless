@@ -34,7 +34,7 @@ namespace Exceptionless.Api.Utility {
             throw new InvalidOperationException("Only string and byte[] are supported for [NakedBody] parameters");
         }
 
-        public override bool WillReadBody { get { return true; } }
+        public override bool WillReadBody => true;
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]

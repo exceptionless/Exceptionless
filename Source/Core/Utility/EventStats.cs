@@ -29,13 +29,13 @@ namespace Exceptionless.Core.Utility {
 
             var allowedTerms = new[] { "organization_id", "project_id", "stack_id", "tags", "version" };
             if (!allowedTerms.Contains(term))
-                throw new ArgumentException("Must be a valid term.", "term");
+                throw new ArgumentException("Must be a valid term.", nameof(term));
             
             var filter = new ElasticSearchOptions<PersistentEvent>()
                 .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
                 .WithQuery(userFilter)
                 .WithDateRange(utcStart, utcEnd, "date")
-                .WithIndicesFromDateRange(String.Format("'{0}-'yyyyMM", _eventIndex.VersionedName));
+                .WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
 
             // if no start date then figure out first event date
             if (!filter.UseStartDate) {
@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Utility {
                 if (firstEvent != null) {
                     utcStart = firstEvent.Source.Date.UtcDateTime;
                     filter.WithDateRange(utcStart, utcEnd, "date");
-                    filter.WithIndicesFromDateRange(String.Format("'{0}-'yyyyMM", _eventIndex.VersionedName));
+                    filter.WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
                 }
             }
 
@@ -188,7 +188,7 @@ namespace Exceptionless.Core.Utility {
                 .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
                 .WithQuery(userFilter)
                 .WithDateRange(utcStart, utcEnd, "date")
-                .WithIndicesFromDateRange(String.Format("'{0}-'yyyyMM", _eventIndex.VersionedName));
+                .WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
 
             // if no start date then figure out first event date
             if (!filter.UseStartDate) {
@@ -207,7 +207,7 @@ namespace Exceptionless.Core.Utility {
                 if (firstEvent != null) {
                     utcStart = firstEvent.Source.Date.UtcDateTime;
                     filter.WithDateRange(utcStart, utcEnd, "date");
-                    filter.WithIndicesFromDateRange(String.Format("'{0}-'yyyyMM", _eventIndex.VersionedName));
+                    filter.WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
                 }
             }
 
@@ -325,19 +325,19 @@ namespace Exceptionless.Core.Utility {
             var timePerBlock = TimeSpan.FromMinutes(totalTime.TotalMinutes / desiredDataPoints);
             if (timePerBlock.TotalDays > 1) {
                 timePerBlock = timePerBlock.Round(TimeSpan.FromDays(1));
-                interval = String.Format("{0}d", timePerBlock.TotalDays.ToString("0"));
+                interval = $"{timePerBlock.TotalDays.ToString("0")}d";
             } else if (timePerBlock.TotalHours > 1) {
                 timePerBlock = timePerBlock.Round(TimeSpan.FromHours(1));
-                interval = String.Format("{0}h", timePerBlock.TotalHours.ToString("0"));
+                interval = $"{timePerBlock.TotalHours.ToString("0")}h";
             } else if (timePerBlock.TotalMinutes > 1) {
                 timePerBlock = timePerBlock.Round(TimeSpan.FromMinutes(1));
-                interval = String.Format("{0}m", timePerBlock.TotalMinutes.ToString("0"));
+                interval = $"{timePerBlock.TotalMinutes.ToString("0")}m";
             } else {
                 timePerBlock = timePerBlock.Round(TimeSpan.FromSeconds(15));
                 if (timePerBlock.TotalSeconds < 1)
                     timePerBlock = TimeSpan.FromSeconds(15);
 
-                interval = String.Format("{0}s", timePerBlock.TotalSeconds.ToString("0"));
+                interval = $"{timePerBlock.TotalSeconds.ToString("0")}s";
             }
 
             return Tuple.Create(interval, timePerBlock);
