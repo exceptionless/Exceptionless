@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -27,16 +28,16 @@ namespace Exceptionless.Api.Controllers {
     public class AuthController : ExceptionlessApiController {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ITokenRepository _tokenRepository;
         private readonly IMailer _mailer;
-        private readonly TokenManager _tokenManager;
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, TokenManager tokenManager) {
+        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, IMailer mailer) {
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
+            _tokenRepository = tokenRepository;
             _mailer = mailer;
-            _tokenManager = tokenManager;
         }
 
         /// <summary>
@@ -520,7 +521,20 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private async Task<string> GetTokenAsync(User user) {
-            var token = await _tokenManager.GetOrCreateAsync(user);
+            var userTokens = await _tokenRepository.GetByUserIdAsync(user.Id);
+            var validAccessToken = userTokens.Documents.FirstOrDefault(t => (!t.ExpiresUtc.HasValue || t.ExpiresUtc > DateTime.UtcNow) && t.Type == TokenType.Access);
+            if (validAccessToken != null)
+                return validAccessToken.Id;
+
+            var token = await _tokenRepository.AddAsync(new Token {
+                Id = Core.Extensions.StringExtensions.GetNewToken(),
+                UserId = user.Id,
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                CreatedBy = user.Id,
+                Type = TokenType.Access
+            });
+
             return token.Id;
         }
 
