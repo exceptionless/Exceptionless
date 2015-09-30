@@ -159,7 +159,7 @@ namespace Exceptionless.Api.Controllers {
                         Date = e.Date,
                         Data = summaryData.Data
                     };
-                }).ToList(), options.HasMore, page, events.Total);
+                }).ToList(), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
 
             return OkWithResourceLinks(events.Documents, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
         }

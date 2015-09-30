@@ -38,7 +38,7 @@ namespace Exceptionless.Api.Utility {
             if (!IsEventPost(request))
                 return await base.SendAsync(request, cancellationToken);
 
-            if (await _cacheClient.GetAsync<bool>("ApiDisabled"))
+            if (Settings.Current.EventSubmissionDisabled)
                 return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
 
             bool tooBig = false;

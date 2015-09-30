@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 return;
 
             string cacheKey = $"session:{context.Event.ProjectId}:{user.Identity}";
-            var sessionId = context.Event.Type != Event.KnownTypes.SessionStart ? await _cacheClient.GetAsync<string>(cacheKey).AnyContext() : null;
+            var sessionId = context.Event.Type != Event.KnownTypes.SessionStart ? await _cacheClient.GetAsync<string>(cacheKey, null).AnyContext() : null;
             if (sessionId == null) {
                 sessionId = Guid.NewGuid().ToString("N");
                 await _cacheClient.SetAsync(cacheKey, sessionId, _sessionTimeout).AnyContext();

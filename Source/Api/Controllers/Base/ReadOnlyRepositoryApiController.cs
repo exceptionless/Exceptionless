@@ -90,7 +90,8 @@ namespace Exceptionless.Api.Controllers {
 
             var destination = Mapper.Map<TDestination>(source);
             if (isResult)
-                AfterResultMap(destination);
+                await AfterResultMapAsync(destination);
+
             return destination;
         }
 
@@ -99,22 +100,25 @@ namespace Exceptionless.Api.Controllers {
 
             var destination = Mapper.Map<ICollection<TDestination>>(source);
             if (isResult)
-                destination.ForEach(d => AfterResultMap(d));
+                await AfterResultMapAsync(destination);
+
             return destination;
         }
 
-        protected virtual void AfterResultMap(object model) {
+        protected virtual Task AfterResultMapAsync(object model) {
             var dataModel = model as IData;
             dataModel?.Data.RemoveSensitiveData();
 
             var enumerable = model as IEnumerable;
             if (enumerable == null)
-                return;
+                return TaskHelper.Completed();
 
             foreach (var item in enumerable) {
                 var itemDataModel = item as IData;
                 itemDataModel?.Data.RemoveSensitiveData();
             }
+
+            return TaskHelper.Completed();
         }
 
         #endregion

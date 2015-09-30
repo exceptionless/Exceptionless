@@ -92,7 +92,7 @@ namespace Exceptionless.Core.Repositories {
             FindResults<T> result = null;
             if (EnableCache) {
                 if (options.UseCache) {
-                    result = await Cache.GetAsync<FindResults<T>>(GetScopedCacheKey(options.CacheKey)).AnyContext();
+                    result = await Cache.GetAsync<FindResults<T>>(GetScopedCacheKey(options.CacheKey), null).AnyContext();
                     Log.Trace().Message("Cache {0}: type={1}", result != null ? "hit" : "miss", _entityType).Write();
                 }
 
@@ -153,7 +153,7 @@ namespace Exceptionless.Core.Repositories {
 
             if (EnableCache) {
                 if (options.UseCache) {
-                    result = await Cache.GetAsync<T>(GetScopedCacheKey(options.CacheKey)).AnyContext();
+                    result = await Cache.GetAsync<T>(GetScopedCacheKey(options.CacheKey), null).AnyContext();
                     Log.Trace().Message("Cache {0}: type={1}", result != null ? "hit" : "miss", _entityType).Write();
                 }
 
@@ -215,12 +215,11 @@ namespace Exceptionless.Core.Repositories {
         protected async Task<long> CountAsync(ElasticSearchOptions<T> options) {
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
-
-            long? result;
+            
             if (EnableCache && options.UseCache) {
-                result = await Cache.GetAsync<long?>(GetScopedCacheKey("count-" + options.CacheKey)).AnyContext();
-                if (result.HasValue)
-                    return result.Value;
+                var cachedValue = await Cache.GetAsync<long>(GetScopedCacheKey("count-" + options.CacheKey)).AnyContext();
+                if (cachedValue.HasValue)
+                    return cachedValue.Value;
             }
 
             var countDescriptor = new CountDescriptor<T>().Query(f => f.Filtered(s => s.Filter(f2 => options.GetElasticSearchFilter(_supportsSoftDeletes))));
@@ -238,13 +237,11 @@ namespace Exceptionless.Core.Repositories {
 
             if (!results.IsValid)
                 throw new ApplicationException($"ElasticSearch error code \"{results.ConnectionStatus.HttpStatusCode}\".", results.ConnectionStatus.OriginalException);
-
-            result = results.Count;
-
+            
             if (EnableCache && options.UseCache)
-                await Cache.SetAsync(GetScopedCacheKey("count-" + options.CacheKey), result, options.GetCacheExpirationDate()).AnyContext();
+                await Cache.SetAsync(GetScopedCacheKey("count-" + options.CacheKey), results.Count, options.GetCacheExpirationDate()).AnyContext();
 
-            return result.Value;
+            return results.Count;
         }
 
         protected async Task<IDictionary<string, long>> SimpleAggregationAsync(ElasticSearchOptions<T> options, Expression<Func<T, object>> fieldExpression) {
@@ -273,7 +270,7 @@ namespace Exceptionless.Core.Repositories {
 
             T result = null;
             if (EnableCache && useCache) {
-                result = await Cache.GetAsync<T>(GetScopedCacheKey(id)).AnyContext();
+                result = await Cache.GetAsync<T>(GetScopedCacheKey(id), null).AnyContext();
                 if (result != null)
                     return result;
             }
@@ -301,12 +298,14 @@ namespace Exceptionless.Core.Repositories {
             if (ids == null || ids.Count == 0)
                 return new FindResults<T>();
 
+            ids = ids.Where(id => !String.IsNullOrEmpty(id)).Distinct().ToList();
+
             var results = new List<T>();
             if (EnableCache && useCache) {
                 foreach (var id in ids) {
                     var cacheHit = await Cache.GetAsync<T>(GetScopedCacheKey(id)).AnyContext();
-                    if (cacheHit != null)
-                        results.Add(cacheHit);
+                    if (cacheHit.HasValue)
+                        results.Add(cacheHit.Value);
                 }
 
                 var notCachedIds = ids.Except(results.Select(i => i.Id)).ToArray();

@@ -162,7 +162,7 @@ namespace Exceptionless.Core.Repositories {
 
             long hourlyTotal = await Cache.IncrementAsync(GetHourlyTotalCacheKey(organizationId), count, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal()).AnyContext();
             long monthlyTotal = await Cache.IncrementAsync(GetMonthlyTotalCacheKey(organizationId), count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal()).AnyContext();
-            long monthlyBlocked = await Cache.GetAsync<long?>(GetMonthlyBlockedCacheKey(organizationId)).AnyContext() ?? org.GetCurrentMonthlyBlocked();
+            long monthlyBlocked = await Cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organizationId), org.GetCurrentMonthlyBlocked()).AnyContext();
             bool overLimit = hourlyTotal > org.GetHourlyEventLimit() || (monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus();
 
             long monthlyTooBig = await Cache.IncrementIfAsync(GetHourlyTooBigCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig()).AnyContext();
@@ -190,7 +190,7 @@ namespace Exceptionless.Core.Repositories {
                 await PublishMessageAsync(new PlanOverage { OrganizationId = org.Id, IsHourly = true }).AnyContext();
 
             bool shouldSaveUsage = false;
-            var lastCounterSavedDate = await Cache.GetAsync<DateTime?>(GetUsageSavedCacheKey(organizationId)).AnyContext();
+            var lastCounterSavedDate = await Cache.GetAsync<DateTime>(GetUsageSavedCacheKey(organizationId)).AnyContext();
 
             // don't save on the 1st increment, but set the last saved date so we will save in 5 minutes
             if (!lastCounterSavedDate.HasValue)
@@ -223,11 +223,8 @@ namespace Exceptionless.Core.Repositories {
                 return Int32.MaxValue;
 
             string monthlyCacheKey = GetMonthlyTotalCacheKey(organizationId);
-            var monthlyErrorCount = await Cache.GetAsync<long?>(monthlyCacheKey).AnyContext();
-            if (!monthlyErrorCount.HasValue)
-                monthlyErrorCount = 0;
-
-            return Math.Max(0, org.GetMaxEventsPerMonthWithBonus() - (int)monthlyErrorCount.Value);
+            var monthlyErrorCount = await Cache.GetAsync<long>(monthlyCacheKey, 0).AnyContext();
+            return Math.Max(0, org.GetMaxEventsPerMonthWithBonus() - (int)monthlyErrorCount);
         }
     }
 

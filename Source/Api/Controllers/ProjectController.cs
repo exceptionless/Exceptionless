@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -44,16 +45,21 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <param name="mode">If no mode is set then the whole project object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         [HttpGet]
         [Route]
         [ResponseType(typeof(List<ViewProject>))]
-        public async Task<IHttpActionResult> GetAsync(int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetAsync(int page = 1, int limit = 10, string mode = null) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), options);
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
-            return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), options.HasMore, page, projects.Total);
+
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(viewProjects, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+
+            return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
         }
 
         /// <summary>
@@ -62,11 +68,12 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="organization">The identifier of the organization.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <param name="mode">If no mode is set then the whole project object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <response code="404">The organization could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
         [ResponseType(typeof(List<ViewProject>))]
-        public async Task<IHttpActionResult> GetByOrganizationAsync(string organization, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetByOrganizationAsync(string organization, int page = 1, int limit = 10, string mode = null) {
             if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
 
@@ -81,6 +88,10 @@ namespace Exceptionless.Api.Controllers {
             var options = new PagingOptions { Page = page, Limit = limit };
             var projects = await _repository.GetByOrganizationIdsAsync(organizationIds, options);
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
+
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(viewProjects, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+
             return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
         }
 
@@ -423,18 +434,16 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
         
-        protected override async Task CreateMapsAsync() {
-            if (Mapper.FindTypeMapFor<Project, ViewProject>() == null) {
-                Mapper.CreateMap<Project, ViewProject>().AfterMap(async (p, pi) => {
-                    try {
-                        pi.OrganizationName = (await _organizationRepository.GetByIdAsync(p.OrganizationId, true)).Name;
-                    } catch (Exception ex) {
-                        Log.Error().Exception(ex).Message("Unable to load organization. Message: {0}", ex.Message).Write();
-                    }
-                });
-            }
+        protected override async Task AfterResultMapAsync(object model) {
+            await base.AfterResultMapAsync(model);
+            
+            var enumerable = model as IEnumerable ?? new List<object>(new[] { model });
+            IEnumerable models = enumerable as object[] ?? enumerable.Cast<Object>().ToArray();
 
-            await base.CreateMapsAsync();
+            var viewProjects = models.OfType<ViewProject>().ToList();
+            var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), useCache: true)).Documents;
+            foreach (var viewProject in viewProjects)
+                viewProject.OrganizationName = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId)?.Name;
         }
 
         protected override async Task<PermissionResult> CanAddAsync(Project value) {

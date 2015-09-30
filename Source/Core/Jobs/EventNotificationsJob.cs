@@ -81,7 +81,7 @@ namespace Exceptionless.Core.Jobs {
             int totalOccurrences = stack.TotalOccurrences;
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
-            var lastTimeSentUtc = await _cacheClient.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId)).AnyContext();
+            var lastTimeSentUtc = await _cacheClient.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), DateTime.MinValue).AnyContext();
             if (totalOccurrences > 2
                 && !eventNotification.IsRegression
                 && lastTimeSentUtc != DateTime.MinValue
