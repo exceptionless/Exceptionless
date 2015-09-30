@@ -16,8 +16,7 @@ namespace Exceptionless.Core.Extensions {
                 return;
 
             var settings = _connectionSettingsProperty.Value.GetValue(conn) as ConnectionSettings;
-            if (settings != null)
-                settings.EnableTrace();
+            settings?.EnableTrace();
         }
 
         [Conditional("DEBUG")]
@@ -27,8 +26,7 @@ namespace Exceptionless.Core.Extensions {
                 return;
 
             var settings = _connectionSettingsProperty.Value.GetValue(conn) as ConnectionSettings;
-            if (settings != null)
-                settings.EnableTrace(false);
+            settings?.EnableTrace(false);
         }
 
         public static string GetErrorMessage(this IResponse response) {

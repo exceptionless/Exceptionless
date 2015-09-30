@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
-using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Core.Authorization;
@@ -20,7 +19,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Foundatio.Jobs;
 using Foundatio.Queues;
-using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]
