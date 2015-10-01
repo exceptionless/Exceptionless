@@ -55,18 +55,18 @@ namespace Exceptionless.Api {
             exceptionlessContractResolver?.UseDefaultResolverFor(typeof(Connection).Assembly);
             Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
-            //Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
-           // Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
+            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
+            Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
 
-            //Config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
-            //Config.MessageHandlers.Add(container.GetInstance<EncodingDelegatingHandler>());
+            Config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
+            Config.MessageHandlers.Add(container.GetInstance<EncodingDelegatingHandler>());
             Config.MessageHandlers.Add(container.GetInstance<AuthMessageHandler>());
 
             // Throttle api calls to X every 15 minutes by IP address.
-            //Config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
+            Config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
 
             // Reject event posts in orgs over their max event limits.
-            //Config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
+            Config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
 
             container.Bootstrap(Config);
             container.Bootstrap(app);
