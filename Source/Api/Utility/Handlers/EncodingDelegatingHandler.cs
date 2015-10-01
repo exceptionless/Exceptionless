@@ -21,10 +21,9 @@ namespace Exceptionless.Api.Utility {
             }
 
             var response = await base.SendAsync(request, cancellationToken);
-            if (response.RequestMessage?.Headers?.AcceptEncoding != null && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
-                string encodingType = response.RequestMessage.Headers.AcceptEncoding.First().Value;
-
-                if (response.Content != null && (encodingType == "gzip" || encodingType == "deflate"))
+            if (response.Content != null) {
+                string encodingType = response.RequestMessage?.Headers?.AcceptEncoding?.FirstOrDefault()?.Value;
+                if (encodingType == "gzip" || encodingType == "deflate")
                     response.Content = new CompressedContent(response.Content, encodingType);
             }
 
@@ -63,7 +62,7 @@ namespace Exceptionless.Api.Utility {
             return false;
         }
 
-        private async Task<Stream> CreateDeflateStream() {
+        private async Task<Stream> CreateDeflateStreamAsync() {
             var stream = await _originalContent.ReadAsStreamAsync();
 
             if (_encodingType == "gzip")
@@ -94,7 +93,7 @@ namespace Exceptionless.Api.Utility {
         }
 
         protected override Task<Stream> CreateContentReadStreamAsync() {
-            return CreateDeflateStream();
+            return CreateDeflateStreamAsync();
         }
 
         protected override void Dispose(bool disposing) {

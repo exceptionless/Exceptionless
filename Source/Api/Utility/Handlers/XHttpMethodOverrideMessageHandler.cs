@@ -13,7 +13,7 @@ namespace Exceptionless.Api.Utility {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             if (request.Method == HttpMethod.Post && request.Headers.Contains(HTTP_METHOD_OVERRIDE_HEADER)) {
                 string httpMethod = request.Headers.GetValues(HTTP_METHOD_OVERRIDE_HEADER).FirstOrDefault();
-                if (_httpMethods.Contains(httpMethod, StringComparer.InvariantCultureIgnoreCase))
+                if (httpMethod != null && _httpMethods.Contains(httpMethod, StringComparer.InvariantCultureIgnoreCase))
                     request.Method = new HttpMethod(httpMethod);
             }
 

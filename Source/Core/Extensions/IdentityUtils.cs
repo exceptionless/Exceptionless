@@ -45,21 +45,17 @@ namespace Exceptionless.Core.Extensions {
         public static ClaimsIdentity ToIdentity(this User user, string defaultProjectId = null) {
             if (user == null)
                 return WindowsIdentity.GetAnonymous();
-
-            return CreateUserIdentity(user.EmailAddress, user.Id, user.OrganizationIds.ToArray(), user.Roles.ToArray(), defaultProjectId);
-        }
-
-        public static ClaimsIdentity CreateUserIdentity(string emailAddress, string id, string[] organizationIds, string[] roles, string defaultProjectId = null) {
+            
             var claims = new List<Claim> {
-                    new Claim(ClaimTypes.Name, emailAddress),
-                    new Claim(ClaimTypes.NameIdentifier, id),
-                    new Claim(OrganizationIdsClaim, String.Join(",", organizationIds))
+                    new Claim(ClaimTypes.Name, user.EmailAddress),
+                    new Claim(ClaimTypes.NameIdentifier, user.Id),
+                    new Claim(OrganizationIdsClaim, String.Join(",", user.OrganizationIds.ToArray()))
                 };
 
             if (!String.IsNullOrEmpty(defaultProjectId))
                 claims.Add(new Claim(DefaultProjectIdClaim, defaultProjectId));
 
-            var userRoles = new HashSet<string>(roles);
+            var userRoles = new HashSet<string>(user.Roles.ToArray());
             if (userRoles.Any()) {
                 // add implied scopes
                 if (userRoles.Contains(AuthorizationRoles.GlobalAdmin))

@@ -11,15 +11,15 @@ namespace Exceptionless.Api.Security {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public class RequireHttpsAttribute : FilterAttribute, IAuthorizationFilter {
         protected virtual void HandleNonHttpsRequest(HttpActionContext context) {
-            string url = $"https://{context.Request.RequestUri.Host}{context.Request.RequestUri.PathAndQuery}";
+            string url = String.Concat("https://", context.Request.RequestUri.Host, context.Request.RequestUri.PathAndQuery);
 
             HttpResponseMessage response = context.ControllerContext.Request.CreateResponse(HttpStatusCode.Redirect);
             response.Headers.Location = new Uri(url);
 
             context.Response = response;
         }
-
-        async Task<HttpResponseMessage> IAuthorizationFilter.ExecuteAuthorizationFilterAsync(HttpActionContext actionContext, CancellationToken cancellationToken, Func<Task<HttpResponseMessage>> continuation) {
+        
+        Task<HttpResponseMessage> IAuthorizationFilter.ExecuteAuthorizationFilterAsync(HttpActionContext actionContext, CancellationToken cancellationToken, Func<Task<HttpResponseMessage>> continuation) {
             if (actionContext == null)
                 throw new ArgumentNullException(nameof(actionContext));
 
@@ -30,9 +30,9 @@ namespace Exceptionless.Api.Security {
                 HandleNonHttpsRequest(actionContext);
 
             if (actionContext.Response != null)
-                return actionContext.Response;
+                return Task.FromResult(actionContext.Response);
 
-            return await continuation();
+            return continuation();
         }
 
         bool IFilter.AllowMultiple => true;

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Results;
+using Exceptionless.Core.Component;
 using Exceptionless.Core.Utility;
 
 #pragma warning disable 1998
@@ -18,7 +19,7 @@ namespace Exceptionless.Api.Utility {
             _coreLastReferenceIdManager = coreLastReferenceIdManager;
         }
 
-        public async Task HandleAsync(ExceptionHandlerContext context, CancellationToken cancellationToken) {
+        public Task HandleAsync(ExceptionHandlerContext context, CancellationToken cancellationToken) {
             if (context == null)
                 throw new ArgumentNullException(nameof(context));
 
@@ -28,7 +29,8 @@ namespace Exceptionless.Api.Utility {
                 throw new ArgumentException($"{typeof(ExceptionContext).Name}.{"Request"} must not be null", nameof(context));
 
             context.Result = new ResponseMessageResult(CreateErrorResponse(request, exceptionContext.Exception, HttpStatusCode.InternalServerError));
-         }
+            return TaskHelper.Completed();
+        }
 
         private HttpResponseMessage CreateErrorResponse(HttpRequestMessage request, Exception ex, HttpStatusCode statusCode) {
             HttpConfiguration configuration = request.GetConfiguration();
