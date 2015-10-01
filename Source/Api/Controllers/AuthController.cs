@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -27,16 +28,16 @@ namespace Exceptionless.Api.Controllers {
     public class AuthController : ExceptionlessApiController {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ITokenRepository _tokenRepository;
         private readonly IMailer _mailer;
-        private readonly TokenManager _tokenManager;
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, TokenManager tokenManager) {
+        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, IMailer mailer) {
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
+            _tokenRepository = tokenRepository;
             _mailer = mailer;
-            _tokenManager = tokenManager;
         }
 
         /// <summary>
@@ -60,7 +61,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("login")]
         [ResponseType(typeof(TokenResult))]
         public async Task<IHttpActionResult> LoginAsync(LoginModel model) {
-            if (model == null || String.IsNullOrWhiteSpace(model.Email)) {
+            if (String.IsNullOrWhiteSpace(model?.Email)) {
                 Log.Error().Message("Login failed: Email Address is required.").Tag("Login").ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("Email Address is required.");
             }
@@ -119,7 +120,7 @@ namespace Exceptionless.Api.Controllers {
             if (!Settings.Current.EnableAccountCreation) 
                 return BadRequest("Account Creation is currently disabled.");
 
-            if (model == null || String.IsNullOrWhiteSpace(model.Email)) {
+            if (String.IsNullOrWhiteSpace(model?.Email)) {
                 Log.Error().Message("Signup failed: Email Address is required.").Tag("Signup").Property("Name", model != null ? model.Name : "<null>").ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("Email Address is required.");
             }
@@ -246,7 +247,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IHttpActionResult> ChangePasswordAsync(ChangePasswordModel model) {
             if (model == null || !IsValidPassword(model.Password)) {
-                Log.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", ExceptionlessUser.EmailAddress).Tag("Change Password").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Password Length", model != null && model.Password != null ? model.Password.Length : 0).ContextProperty("HttpActionContext", ActionContext).Write();
+                Log.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", ExceptionlessUser.EmailAddress).Tag("Change Password").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Password Length", model?.Password != null ? model.Password.Length : 0).ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("The New Password must be at least 6 characters long.");
             }
 
@@ -322,7 +323,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("reset-password")]
         public async Task<IHttpActionResult> ResetPasswordAsync(ResetPasswordModel model) {
-            if (model == null || String.IsNullOrEmpty(model.PasswordResetToken)) {
+            if (String.IsNullOrEmpty(model?.PasswordResetToken)) {
                 Log.Error().Message("Reset password failed: Invalid Password Reset Token.").Tag("Reset Password").ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("Invalid Password Reset Token.");
             }
@@ -386,7 +387,7 @@ namespace Exceptionless.Api.Controllers {
         }
         
         private async Task<IHttpActionResult> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, string appId, string appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client {
-            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code)) {
+            if (String.IsNullOrEmpty(authInfo?.Code)) {
                 Log.Error().Message("External login failed: Unable to get auth info.").Tag("External Login").Property("Auth Info", authInfo).ContextProperty("HttpActionContext", ActionContext).Write();
                 return NotFound();
             }
@@ -520,7 +521,20 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private async Task<string> GetTokenAsync(User user) {
-            var token = await _tokenManager.GetOrCreateAsync(user);
+            var userTokens = await _tokenRepository.GetByUserIdAsync(user.Id);
+            var validAccessToken = userTokens.Documents.FirstOrDefault(t => (!t.ExpiresUtc.HasValue || t.ExpiresUtc > DateTime.UtcNow) && t.Type == TokenType.Access);
+            if (validAccessToken != null)
+                return validAccessToken.Id;
+
+            var token = await _tokenRepository.AddAsync(new Token {
+                Id = Core.Extensions.StringExtensions.GetNewToken(),
+                UserId = user.Id,
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                CreatedBy = user.Id,
+                Type = TokenType.Access
+            });
+
             return token.Id;
         }
 

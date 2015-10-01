@@ -58,7 +58,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
 
                 if (isNotFound && hasRequestInfo) {
                     doc.RemoveAll("Code", "Type", "Message", "Inner", "StackTrace", "TargetMethod", "Modules");
-                    if (extendedData != null && extendedData["__ExceptionInfo"] != null)
+                    if (extendedData?["__ExceptionInfo"] != null)
                         extendedData.Remove("__ExceptionInfo");
 
                     doc.Add("Type", new JValue("404"));
@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                     error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Inner", "StackTrace", "TargetMethod", "Modules");
 
                     // Copy the exception info from root extended data to the current errors extended data.
-                    if (extendedData != null && extendedData["__ExceptionInfo"] != null) {
+                    if (extendedData?["__ExceptionInfo"] != null) {
                         error.Add("Data", new JObject());
                         ((JObject)error["Data"]).MoveOrRemoveIfNullOrEmpty(extendedData, "__ExceptionInfo");
                     }
@@ -108,7 +108,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             var extendedData = error["Data"] as JObject;
-            if (extendedData == null || extendedData["__ExceptionInfo"] == null)
+            if (extendedData?["__ExceptionInfo"] == null)
                 return;
 
             string json = extendedData["__ExceptionInfo"].ToString();

@@ -10,7 +10,6 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
-using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Filter;
@@ -159,7 +158,7 @@ namespace Exceptionless.Api.Controllers {
                         Date = e.Date,
                         Data = summaryData.Data
                     };
-                }).ToList(), options.HasMore, page, events.Total);
+                }).ToList(), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
 
             return OkWithResourceLinks(events.Documents, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
         }

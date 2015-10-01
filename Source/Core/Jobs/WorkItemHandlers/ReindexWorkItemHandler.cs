@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             const int pageSize = 100;
             const string scroll = "10s";
 
-            var scanResults = _client.Search<JObject>(s => s.Index(workItem.OldIndex).AllTypes().Filter(f => startTime.HasValue ? f.Range(r => r.OnField(workItem.TimestampField ?? "_timestamp").Greater(startTime.Value)) : f.MatchAll()).From(0).Take(pageSize).SearchType(SearchType.Scan).Scroll(scroll));
+            var scanResults = await _client.SearchAsync<JObject>(s => s.Index(workItem.OldIndex).AllTypes().Filter(f => startTime.HasValue ? f.Range(r => r.OnField(workItem.TimestampField ?? "_timestamp").Greater(startTime.Value)) : f.MatchAll()).From(0).Take(pageSize).SearchType(SearchType.Scan).Scroll(scroll)).AnyContext();
 
             if (!scanResults.IsValid || scanResults.ScrollId == null) {
                 Log.Error().Message("Invalid search result: message={0}", scanResults.GetErrorMessage()).Write();

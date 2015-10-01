@@ -60,15 +60,20 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <param name="mode">If no mode is set then the whole organization object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         [HttpGet]
         [Route]
         [ResponseType(typeof(List<ViewOrganization>))]
-        public async Task<IHttpActionResult> GetAsync(int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetAsync(int page = 1, int limit = 10, string mode = null) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var organizations = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds(), options);
             var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
+
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(viewOrganizations, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
+
             return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
         }
 
@@ -77,12 +82,16 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IHttpActionResult> GetForAdminsAsync(string criteria = null, bool? paid = null, bool? suspended = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest) {
+        public async Task<IHttpActionResult> GetForAdminsAsync(string criteria = null, bool? paid = null, bool? suspended = null, string mode = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var organizations = await _repository.GetByCriteriaAsync(criteria, options, sort, paid, suspended);
             var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
+            
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(viewOrganizations, options.HasMore, page, organizations.Total);
+
             return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), options.HasMore, page, organizations.Total);
         }
 
@@ -179,7 +188,7 @@ namespace Exceptionless.Api.Controllers {
                 Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
             }
 
-            if (stripeInvoice == null || String.IsNullOrEmpty(stripeInvoice.CustomerId))
+            if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
                 return NotFound();
 
             var organization = await _repository.GetByStripeCustomerIdAsync(stripeInvoice.CustomerId);
@@ -711,7 +720,7 @@ namespace Exceptionless.Api.Controllers {
                     builder.AppendFormat("organization:{0}", organization.Id);
             }
 
-            var result = _stats.GetTermsStats(DateTime.MinValue, DateTime.MaxValue, "organization_id", builder.ToString());
+            var result = await _stats.GetTermsStatsAsync(DateTime.MinValue, DateTime.MaxValue, "organization_id", builder.ToString());
             foreach (var organization in organizations) {
                 var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
                 organization.EventCount = organizationStats?.Total ?? 0;

@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Billing {
         }
 
         public async Task<bool> CanAddUserAsync(Organization organization) {
-            if (organization == null || String.IsNullOrWhiteSpace(organization.Id))
+            if (String.IsNullOrWhiteSpace(organization?.Id))
                 return false;
 
             long numberOfUsers = (await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext()).Total + organization.Invites.Count;
@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Billing {
         }
 
         public async Task<bool> CanAddProjectAsync(Project project) {
-            if (project == null || String.IsNullOrWhiteSpace(project.OrganizationId))
+            if (String.IsNullOrWhiteSpace(project?.OrganizationId))
                 return false;
 
             var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId).AnyContext();
@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Billing {
         }
 
         public async Task<ChangePlanResult> CanDownGradeAsync(Organization organization, BillingPlan plan, User user) {
-            if (organization == null || String.IsNullOrWhiteSpace(organization.Id))
+            if (String.IsNullOrWhiteSpace(organization?.Id))
                 return ChangePlanResult.FailWithMessage("Invalid Organization");
 
             long currentNumberOfUsers = (await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext()).Total + organization.Invites.Count;

@@ -66,7 +66,7 @@ namespace Exceptionless.Core.Filter {
                 UsesPremiumFeatures = true;
 
             // using all fields search
-            if (node.Field == null || String.IsNullOrEmpty(node.Field.Field))
+            if (String.IsNullOrEmpty(node.Field?.Field))
                 UsesPremiumFeatures = true;
 
             if (node.Field != null && node.Field.Field.StartsWith("data.")) {

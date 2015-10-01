@@ -51,12 +51,12 @@ namespace Exceptionless.Core.Repositories {
 
             if (_isEvent) {
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-                    var result = _elasticClient.IndexMany(group.ToList(), String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM")));
+                    var result = await _elasticClient.IndexManyAsync(group.ToList(), String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM"))).AnyContext();
                     if (!result.IsValid)
                         throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
                 }
             } else {
-                var result = _elasticClient.IndexMany(documents, _index.VersionedName);
+                var result = await _elasticClient.IndexManyAsync(documents, _index.VersionedName).AnyContext();
                 if (!result.IsValid)
                     throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             }
@@ -166,12 +166,12 @@ namespace Exceptionless.Core.Repositories {
 
             if (_isEvent) {
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-                    var result = _elasticClient.IndexMany(group.ToList(), String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM")));
+                    var result = await _elasticClient.IndexManyAsync(group.ToList(), String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM"))).AnyContext();
                     if (!result.IsValid)
                         throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
                 }
             } else {
-                var result = _elasticClient.IndexMany(documents, _index.VersionedName);
+                var result = await _elasticClient.IndexManyAsync(documents, _index.VersionedName).AnyContext();
                 if (!result.IsValid)
                     throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             }

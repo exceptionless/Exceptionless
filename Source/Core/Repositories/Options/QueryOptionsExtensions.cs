@@ -10,12 +10,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static T WithIds<T>(this T options, params string[] ids) where T : QueryOptions {
-            options.Ids.AddRange(ids.Distinct());
+            options.Ids.AddRange(ids.Where(id => !String.IsNullOrEmpty(id)).Distinct());
             return options;
         }
 
         public static T WithIds<T>(this T options, IEnumerable<string> ids) where T : QueryOptions {
-            options.Ids.AddRange(ids.Distinct());
+            options.Ids.AddRange(ids.Where(id => !String.IsNullOrEmpty(id)).Distinct());
             return options;
         }
 
@@ -31,12 +31,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static T WithOrganizationIds<T>(this T options, params string[] ids) where T : QueryOptions {
-            options.OrganizationIds.AddRange(ids.Distinct());
+            options.OrganizationIds.AddRange(ids.Where(id => !String.IsNullOrEmpty(id)).Distinct());
             return options;
         }
 
         public static T WithOrganizationIds<T>(this T options, IEnumerable<string> ids) where T : QueryOptions {
-            options.OrganizationIds.AddRange(ids.Distinct());
+            options.OrganizationIds.AddRange(ids.Where(id => !String.IsNullOrEmpty(id)).Distinct());
             return options;
         }
 
@@ -46,12 +46,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static T WithProjectIds<T>(this T options, params string[] ids) where T : QueryOptions {
-            options.ProjectIds.AddRange(ids.Distinct());
+            options.ProjectIds.AddRange(ids.Where(id => !String.IsNullOrEmpty(id)).Distinct());
             return options;
         }
 
         public static T WithProjectIds<T>(this T options, IEnumerable<string> ids) where T : QueryOptions {
-            options.ProjectIds.AddRange(ids.Distinct());
+            options.ProjectIds.AddRange(ids.Where(id => !String.IsNullOrEmpty(id)).Distinct());
             return options;
         }
 
@@ -61,12 +61,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static T WithStackIds<T>(this T options, params string[] ids) where T : QueryOptions {
-            options.StackIds.AddRange(ids.Distinct());
+            options.StackIds.AddRange(ids.Where(id => !String.IsNullOrEmpty(id)).Distinct());
             return options;
         }
 
         public static T WithStackIds<T>(this T options, IEnumerable<string> ids) where T : QueryOptions {
-            options.StackIds.AddRange(ids.Distinct());
+            options.StackIds.AddRange(ids.Where(id => !String.IsNullOrEmpty(id)).Distinct());
             return options;
         }
 
@@ -80,8 +80,8 @@ namespace Exceptionless.Core.Repositories {
             return options;
         }
 
-        public static T WithExpiresAt<T>(this T options, DateTime? expiresAt) where T: OneOptions {
-            options.ExpiresAt = expiresAt;
+        public static T WithExpiresAtUtc<T>(this T options, DateTime? expiresAtUtc) where T: OneOptions {
+            options.ExpiresAtUtc = expiresAtUtc;
             return options;
         }
 

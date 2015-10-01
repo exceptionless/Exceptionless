@@ -24,6 +24,8 @@ namespace Exceptionless.Core {
 
         public int ApiThrottleLimit { get; private set; }
 
+        public bool EventSubmissionDisabled { get; private set; }
+
         public long MaximumEventPostSize { get; private set; }
 
         public bool EnableDailySummary { get; private set; }
@@ -111,6 +113,7 @@ namespace Exceptionless.Core {
             RunJobsInProcess = GetBool("RunJobsInProcess", true);
             BotThrottleLimit = GetInt("BotThrottleLimit", 25);
             ApiThrottleLimit = GetInt("ApiThrottleLimit", Int32.MaxValue);
+            EventSubmissionDisabled = GetBool(nameof(EventSubmissionDisabled));
             MaximumEventPostSize = GetInt("MaximumEventPostSize", Int32.MaxValue);
             EnableDailySummary = GetBool("EnableDailySummary");
             MetricsServerName = GetString("MetricsServerName") ?? "127.0.0.1";

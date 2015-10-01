@@ -81,12 +81,12 @@ namespace Exceptionless.Core.Jobs {
             int totalOccurrences = stack.TotalOccurrences;
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
-            var lastTimeSent = await _cacheClient.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId)).AnyContext();
+            var lastTimeSentUtc = await _cacheClient.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), DateTime.MinValue).AnyContext();
             if (totalOccurrences > 2
                 && !eventNotification.IsRegression
-                && lastTimeSent != DateTime.MinValue
-                && lastTimeSent > DateTime.Now.AddMinutes(-30)) {
-                Log.Info().Message("Skipping message because of stack throttling: last sent={0} occurrences={1}", lastTimeSent, totalOccurrences).WriteIf(shouldLog);
+                && lastTimeSentUtc != DateTime.MinValue
+                && lastTimeSentUtc > DateTime.UtcNow.AddMinutes(-30)) {
+                Log.Info().Message("Skipping message because of stack throttling: last sent={0} occurrences={1}", lastTimeSentUtc, totalOccurrences).WriteIf(shouldLog);
                 return JobResult.Success;
             }
 
@@ -107,7 +107,7 @@ namespace Exceptionless.Core.Jobs {
                 Log.Trace().Message("Processing notification: user={0}", kv.Key).WriteIf(shouldLog);
 
                 var user = await _userRepository.GetByIdAsync(kv.Key).AnyContext();
-                if (user == null || String.IsNullOrEmpty(user.EmailAddress)) {
+                if (String.IsNullOrEmpty(user?.EmailAddress)) {
                     Log.Error().Message("Could not load user {0} or blank email address {1}.", kv.Key, user != null ? user.EmailAddress : "").Write();
                     continue;
                 }
@@ -145,7 +145,7 @@ namespace Exceptionless.Core.Jobs {
 
                 var requestInfo = eventNotification.Event.GetRequestInfo();
                 // check for known bots if the user has elected to not report them
-                if (shouldReport && requestInfo != null && !String.IsNullOrEmpty(requestInfo.UserAgent)) {
+                if (shouldReport && !String.IsNullOrEmpty(requestInfo?.UserAgent)) {
                     ClientInfo info = null;
                     try {
                         info = Parser.GetDefault().Parse(requestInfo.UserAgent);
@@ -187,7 +187,7 @@ namespace Exceptionless.Core.Jobs {
 
             // if we sent any emails, mark the last time a notification for this stack was sent.
             if (emailsSent > 0) {
-                await _cacheClient.SetAsync(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), DateTime.Now, DateTime.Now.AddMinutes(15)).AnyContext();
+                await _cacheClient.SetAsync(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), DateTime.UtcNow, DateTime.UtcNow.AddMinutes(15)).AnyContext();
                 Log.Info().Message("Notifications sent: event={0} stack={1} count={2}", eventNotification.Event.Id, eventNotification.Event.StackId, emailsSent).WriteIf(shouldLog);
             }
             

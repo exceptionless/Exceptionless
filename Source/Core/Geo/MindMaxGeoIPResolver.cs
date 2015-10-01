@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Geo {
 
             ip = ip.Trim();
 
-            var cacheValue = await _cache.TryGetAsync<Location>(ip).AnyContext();
+            var cacheValue = await _cache.GetAsync<Location>(ip).AnyContext();
             if (cacheValue.HasValue)
                 return cacheValue.Value;
 

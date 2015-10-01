@@ -6,9 +6,7 @@ using Logger = NLog.Fluent.Log;
 namespace Exceptionless.Api.Utility {
     public class NLogExceptionLogger : ExceptionLogger {
         public override void Log(ExceptionLoggerContext context) {
-            string loggerName = context.Exception.TargetSite != null
-                && context.Exception.TargetSite.DeclaringType != null ?
-                context.Exception.TargetSite.DeclaringType.Name : "NLogExceptionLogger";
+            string loggerName = context.Exception.TargetSite?.DeclaringType?.Name ?? "NLogExceptionLogger";
 
             Logger.Error()
                 .Exception(context.Exception)

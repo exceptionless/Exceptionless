@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Metrics;
@@ -38,7 +37,7 @@ namespace Exceptionless.Api.Utility {
             if (!IsEventPost(request))
                 return await base.SendAsync(request, cancellationToken);
 
-            if (await _cacheClient.GetAsync<bool>("ApiDisabled"))
+            if (Settings.Current.EventSubmissionDisabled)
                 return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
 
             bool tooBig = false;

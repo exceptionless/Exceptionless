@@ -51,7 +51,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 else if (!client.IndexExists(index.VersionedName).Exists)
                     response = client.CreateIndex(index.VersionedName, descriptor => index.CreateIndex(descriptor).AddAlias(index.Name));
 
-                Debug.Assert(response == null || response.IsValid, response != null && response.ServerError != null ? response.ServerError.Error : "An error occurred creating the index or template.");
+                Debug.Assert(response == null || response.IsValid, response?.ServerError != null ? response.ServerError.Error : "An error occurred creating the index or template.");
 
                 // Add existing indexes to the alias.
                 if (!client.AliasExists(index.Name).Exists) {
@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                         response = client.Alias(a => a.Add(add => add.Index(index.VersionedName).Alias(index.Name)));
                     }
 
-                    Debug.Assert(response != null && response.IsValid, response != null && response.ServerError != null ? response.ServerError.Error : "An error occurred creating the alias.");
+                    Debug.Assert(response != null && response.IsValid, response?.ServerError != null ? response.ServerError.Error : "An error occurred creating the alias.");
                 }
 
                 // already on current version

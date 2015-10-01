@@ -55,7 +55,7 @@ namespace Exceptionless.Api.Utility {
                 string cacheKey = GetCacheKey(identifier);
                 requestCount = await _cacheClient.IncrementAsync(cacheKey, 1);
                 if (requestCount == 1)
-                    await _cacheClient.SetExpirationAsync(cacheKey, _period);
+                    await _cacheClient.SetExpirationAsync(cacheKey, DateTime.UtcNow.Ceiling(_period));
             } catch {}
 
             HttpResponseMessage response;
@@ -71,7 +71,6 @@ namespace Exceptionless.Api.Utility {
 
             response.Headers.Add(ExceptionlessHeaders.RateLimit, maxRequests.ToString());
             response.Headers.Add(ExceptionlessHeaders.RateLimitRemaining, remaining.ToString());
-
             return response;
         }
 

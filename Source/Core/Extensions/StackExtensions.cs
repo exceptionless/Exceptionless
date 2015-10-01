@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static bool Is404(this Stack stack) {
-            if (stack == null || stack.SignatureInfo == null)
+            if (stack?.SignatureInfo == null)
                 return false;
 
             return stack.SignatureInfo.ContainsKey("HttpMethod") && stack.SignatureInfo.ContainsKey("Path");

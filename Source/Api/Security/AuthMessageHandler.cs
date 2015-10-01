@@ -17,12 +17,10 @@ namespace Exceptionless.Api.Security {
 
         private readonly ITokenRepository _tokenRepository;
         private readonly IUserRepository _userRepository;
-        private readonly IOrganizationRepository _organizationRepository;
 
-        public AuthMessageHandler(ITokenRepository tokenRepository, IUserRepository userRepository, IOrganizationRepository organizationRepository) {
+        public AuthMessageHandler(ITokenRepository tokenRepository, IUserRepository userRepository) {
             _tokenRepository = tokenRepository;
             _userRepository = userRepository;
-            _organizationRepository = organizationRepository;
         }
 
         protected virtual Task<HttpResponseMessage> BaseSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
