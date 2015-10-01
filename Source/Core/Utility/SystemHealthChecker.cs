@@ -26,7 +26,7 @@ namespace Exceptionless.Core.Utility {
     
         public async Task<HealthCheckResult> CheckCacheAsync() {
             try {
-                if (await _cacheClient.GetAsync<string>("__PING__").AnyContext() != null)
+                if ((await _cacheClient.GetAsync<string>("__PING__").AnyContext()).HasValue)
                     return HealthCheckResult.NotHealthy("Cache Not Working");
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Cache Not Working: " + ex.Message);
