@@ -120,17 +120,17 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 4));
             Assert.Equal(0, messages.Count);
-            Assert.Equal(4, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id)));
-            Assert.Equal(4, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id)));
-            Assert.Equal(0, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id)));
-            Assert.Equal(0, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id)));
+            Assert.Equal(4, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), -1));
+            Assert.Equal(4, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), -1));
+            Assert.Equal(0, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), -1));
+            Assert.Equal(0, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), -1));
 
             Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 3));
             Assert.Equal(1, messages.Count);
-            Assert.Equal(7, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id)));
-            Assert.Equal(7, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id)));
-            Assert.Equal(1, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id)));
-            Assert.Equal(1, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id)));
+            Assert.Equal(7, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), -1));
+            Assert.Equal(7, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), -1));
+            Assert.Equal(1, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), -1));
+            Assert.Equal(1, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), -1));
 
             o = await _repository.AddAsync(new Organization {
                 Name = "Test",
@@ -140,10 +140,10 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 751));
             //Assert.Equal(2, messages.Count);
-            Assert.Equal(751, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id)));
-            Assert.Equal(751, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id)));
-            Assert.Equal(745, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id)));
-            Assert.Equal(745, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id)));
+            Assert.Equal(751, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), -1));
+            Assert.Equal(751, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), -1));
+            Assert.Equal(745, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), -1));
+            Assert.Equal(745, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), -1));
         }
 
         private string GetHourlyBlockedCacheKey(string organizationId) {
