@@ -87,8 +87,9 @@ namespace Exceptionless.Core.Repositories {
             
             if (EnableCache && options.UseCache) {
                 var cacheValue = await Cache.GetAsync<FindResults<T>>(GetScopedCacheKey(options.CacheKey)).AnyContext();
+#if DEBUG
                 Log.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
-
+#endif
                 if (cacheValue.HasValue)
                     return cacheValue.Value;
             }
@@ -140,8 +141,9 @@ namespace Exceptionless.Core.Repositories {
             
             if (EnableCache && options.UseCache) {
                 var cacheValue = await Cache.GetAsync<T>(GetScopedCacheKey(options.CacheKey)).AnyContext();
+#if DEBUG
                 Log.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
-
+#endif
                 if (cacheValue.HasValue)
                     return cacheValue.Value;
             }
@@ -255,8 +257,9 @@ namespace Exceptionless.Core.Repositories {
             
             if (EnableCache && useCache) {
                 var cacheValue = await Cache.GetAsync<T>(GetScopedCacheKey(id)).AnyContext();
+#if DEBUG
                 Log.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
-
+#endif
                 if (cacheValue.HasValue)
                     return cacheValue.Value;
             }
