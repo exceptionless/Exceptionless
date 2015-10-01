@@ -432,12 +432,9 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
         
-        protected override async Task AfterResultMapAsync(object model) {
-            await base.AfterResultMapAsync(model);
+        protected override async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {
+            await base.AfterResultMapAsync(models);
             
-            var enumerable = model as IEnumerable ?? new List<object>(new[] { model });
-            IEnumerable models = enumerable as object[] ?? enumerable.Cast<Object>().ToArray();
-
             var viewProjects = models.OfType<ViewProject>().ToList();
             var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), useCache: true)).Documents;
             foreach (var viewProject in viewProjects)

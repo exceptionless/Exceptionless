@@ -55,8 +55,7 @@ namespace Exceptionless.Core.Repositories {
             if (documents == null)
                 throw new ArgumentNullException(nameof(documents));
 
-            var combinedDocuments = new List<T>();
-            combinedDocuments.AddRange(documents);
+            var combinedDocuments = new List<T>(documents);
             if (originalDocuments != null)
                 combinedDocuments.AddRange(originalDocuments);
 

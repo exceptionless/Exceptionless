@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action) {
-            foreach (var item in collection)
+            foreach (var item in collection ?? new List<T>())
                 action(item);
         }
 

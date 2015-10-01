@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
@@ -90,7 +91,7 @@ namespace Exceptionless.Api.Controllers {
 
             var destination = Mapper.Map<TDestination>(source);
             if (isResult)
-                await AfterResultMapAsync(destination);
+                await AfterResultMapAsync(new [] { destination });
 
             return destination;
         }
@@ -104,19 +105,10 @@ namespace Exceptionless.Api.Controllers {
 
             return destination;
         }
-
-        protected virtual Task AfterResultMapAsync(object model) {
-            var dataModel = model as IData;
-            dataModel?.Data.RemoveSensitiveData();
-
-            var enumerable = model as IEnumerable;
-            if (enumerable == null)
-                return TaskHelper.Completed();
-
-            foreach (var item in enumerable) {
-                var itemDataModel = item as IData;
-                itemDataModel?.Data.RemoveSensitiveData();
-            }
+        
+        protected virtual Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {
+            foreach (var model in models.OfType<IData>())
+                model.Data.RemoveSensitiveData();
 
             return TaskHelper.Completed();
         }
