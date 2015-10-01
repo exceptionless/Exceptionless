@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             await ResetAsync();
 
             try {
-                _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), false, false);
+                _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(new User { EmailAddress = TestConstants.UserEmail, Id = TestConstants.UserId, OrganizationIds = new[] { TestConstants.OrganizationId }, Roles = new[] { AuthorizationRoles.Client }}.ToIdentity(TestConstants.ProjectId)), false, false);
 
                 var metricsClient = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
                 Assert.NotNull(metricsClient);
@@ -74,7 +74,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             await ResetAsync();
 
             try {
-                _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
+                _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(new User { EmailAddress = TestConstants.UserEmail, Id = TestConstants.UserId, OrganizationIds = new[] { TestConstants.OrganizationId }, Roles = new[] { AuthorizationRoles.Client } }.ToIdentity(TestConstants.ProjectId)), true, false);
                 var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync());
                 Assert.IsType<StatusCodeResult>(actionResult);
                 Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
@@ -95,7 +95,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             await ResetAsync();
 
             try {
-                _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
+                _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(new User { EmailAddress = TestConstants.UserEmail, Id = TestConstants.UserId, OrganizationIds = new[] { TestConstants.OrganizationId }, Roles = new[] { AuthorizationRoles.Client } }.ToIdentity(TestConstants.ProjectId)), true, false);
                 var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync());
                 Assert.IsType<StatusCodeResult>(actionResult);
                 Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
@@ -132,7 +132,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 });
 
                 await Run.InParallel(batchCount, async i => {
-                    _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
+                    _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(new User { EmailAddress = TestConstants.UserEmail, Id = TestConstants.UserId, OrganizationIds = new[] { TestConstants.OrganizationId }, Roles = new[] { AuthorizationRoles.Client } }.ToIdentity(TestConstants.ProjectId)), true, false);
                     var events = new RandomEventGenerator().Generate(batchSize);
                     var compressedEvents = await Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).CompressAsync();
                     var actionResult = await _eventController.PostAsync(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0");
