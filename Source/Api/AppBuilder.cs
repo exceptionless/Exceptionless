@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
@@ -108,7 +109,7 @@ namespace Exceptionless.Api {
         }
 
         private static void EnableCors(HttpConfiguration config, IAppBuilder app) {
-            const string exposedHeaders = "ETag, Link, X-RateLimit-Limit, X-RateLimit-Remaining, X-Exceptionless-Client, X-Exceptionless-ConfigVersion";
+            var exposedHeaders = new List<string> { "ETag", "Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-Exceptionless-Client", "X-Exceptionless-ConfigVersion" };
             app.UseCors(new CorsOptions {
                 PolicyProvider = new CorsPolicyProvider {
                     PolicyResolver = context => {
@@ -120,13 +121,19 @@ namespace Exceptionless.Api {
                             PreflightMaxAge = 60 * 5
                         };
 
-                        policy.ExposedHeaders.AddRange(exposedHeaders.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries));
+                        policy.ExposedHeaders.AddRange(exposedHeaders);
                         return Task.FromResult(policy);
                     }
                 }
             });
 
-            config.EnableCors(new EnableCorsAttribute("*", "*", "*", exposedHeaders));
+            var enableCorsAttribute = new EnableCorsAttribute("*", "*", "*") {
+                SupportsCredentials = true,
+                PreflightMaxAge = 60 * 5
+            };
+
+            enableCorsAttribute.ExposedHeaders.AddRange(exposedHeaders);
+            config.EnableCors(enableCorsAttribute);
         }
 
         private static void SetupRouteConstraints(HttpConfiguration config) {
