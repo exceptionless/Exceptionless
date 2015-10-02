@@ -44,6 +44,7 @@ namespace Exceptionless.Api {
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
             Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
             
+            EnableCors(Config, app);
             SetupRouteConstraints(Config);
             container.RegisterWebApiControllers(Config);
 
@@ -71,25 +72,6 @@ namespace Exceptionless.Api {
 
             container.Bootstrap(Config);
             container.Bootstrap(app);
-
-            const string exposedHeaders = "ETag, Link, X-RateLimit-Limit, X-RateLimit-Remaining, X-Exceptionless-Client, X-Exceptionless-ConfigVersion";
-            Config.EnableCors();
-            app.UseCors(new CorsOptions {
-                PolicyProvider = new CorsPolicyProvider {
-                    PolicyResolver = context => {
-                        var policy = new CorsPolicy {
-                            AllowAnyHeader = true,
-                            AllowAnyMethod = true,
-                            AllowAnyOrigin = true,
-                            SupportsCredentials = true,
-                            PreflightMaxAge = 60 * 5
-                        };
-
-                        policy.ExposedHeaders.AddRange(exposedHeaders.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries));
-                        return Task.FromResult(policy);
-                    }
-                }
-            });
             
             app.UseWebApi(Config);
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);
@@ -123,6 +105,28 @@ namespace Exceptionless.Api {
             }
 
             Log.Info().Message("Starting api...").Write();
+        }
+
+        private static void EnableCors(HttpConfiguration config, IAppBuilder app) {
+            const string exposedHeaders = "ETag, Link, X-RateLimit-Limit, X-RateLimit-Remaining, X-Exceptionless-Client, X-Exceptionless-ConfigVersion";
+            app.UseCors(new CorsOptions {
+                PolicyProvider = new CorsPolicyProvider {
+                    PolicyResolver = context => {
+                        var policy = new CorsPolicy {
+                            AllowAnyHeader = true,
+                            AllowAnyMethod = true,
+                            AllowAnyOrigin = true,
+                            SupportsCredentials = true,
+                            PreflightMaxAge = 60 * 5
+                        };
+
+                        policy.ExposedHeaders.AddRange(exposedHeaders.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries));
+                        return Task.FromResult(policy);
+                    }
+                }
+            });
+
+            config.EnableCors(new EnableCorsAttribute("*", "*", "*", exposedHeaders));
         }
 
         private static void SetupRouteConstraints(HttpConfiguration config) {
