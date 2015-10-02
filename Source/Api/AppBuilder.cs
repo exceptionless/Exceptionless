@@ -73,7 +73,7 @@ namespace Exceptionless.Api {
             container.Bootstrap(app);
 
             const string exposedHeaders = "ETag, Link, X-RateLimit-Limit, X-RateLimit-Remaining, X-Exceptionless-Client, X-Exceptionless-ConfigVersion";
-            Config.EnableCors(new EnableCorsAttribute("*", "*", "*", exposedHeaders));
+            Config.EnableCors();
             app.UseCors(new CorsOptions {
                 PolicyProvider = new CorsPolicyProvider {
                     PolicyResolver = context => {
