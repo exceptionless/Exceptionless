@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Cors;
 using System.Web.Http;
+using System.Web.Http.Cors;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Routing;
 using AutoMapper;
@@ -71,8 +72,6 @@ namespace Exceptionless.Api {
             container.Bootstrap(Config);
             container.Bootstrap(app);
 
-            Log.Info().Message("Starting api...").Write();
-           
             app.UseCors(new CorsOptions {
                 PolicyProvider = new CorsPolicyProvider {
                     PolicyResolver = ctx => Task.FromResult(new CorsPolicy {
@@ -84,7 +83,9 @@ namespace Exceptionless.Api {
                     })
                 }
             });
-            
+
+            Config.EnableCors(new EnableCorsAttribute(origins: "*", headers: "*", methods: "*"));
+
             app.UseWebApi(Config);
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);
             if (Settings.Current.EnableRedis)
@@ -115,6 +116,8 @@ namespace Exceptionless.Api {
             } else {
                 Log.Info().Message("Jobs running out of process.").Write();
             }
+
+            Log.Info().Message("Starting api...").Write();
         }
 
         private static void SetupRouteConstraints(HttpConfiguration config) {
