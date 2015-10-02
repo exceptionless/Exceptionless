@@ -72,16 +72,22 @@ namespace Exceptionless.Api {
             container.Bootstrap(Config);
             container.Bootstrap(app);
 
-            Config.EnableCors(new EnableCorsAttribute(origins: "*", headers: "*", methods: "*"));
+            const string exposedHeaders = "ETag, Link, X-RateLimit-Limit, X-RateLimit-Remaining, X-Exceptionless-Client, X-Exceptionless-ConfigVersion";
+            Config.EnableCors(new EnableCorsAttribute("*", "*", "*", exposedHeaders));
             app.UseCors(new CorsOptions {
                 PolicyProvider = new CorsPolicyProvider {
-                    PolicyResolver = ctx => Task.FromResult(new CorsPolicy {
-                        AllowAnyHeader = true,
-                        AllowAnyMethod = true,
-                        AllowAnyOrigin = true,
-                        SupportsCredentials = true,
-                        PreflightMaxAge = 60 * 5
-                    })
+                    PolicyResolver = context => {
+                        var policy = new CorsPolicy {
+                            AllowAnyHeader = true,
+                            AllowAnyMethod = true,
+                            AllowAnyOrigin = true,
+                            SupportsCredentials = true,
+                            PreflightMaxAge = 60 * 5
+                        };
+
+                        policy.ExposedHeaders.AddRange(exposedHeaders.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries));
+                        return Task.FromResult(policy);
+                    }
                 }
             });
             
