@@ -45,7 +45,6 @@ namespace Exceptionless.Api {
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
             Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
             
-            EnableCors(Config, app);
             SetupRouteConstraints(Config);
             container.RegisterWebApiControllers(Config);
 
@@ -70,6 +69,8 @@ namespace Exceptionless.Api {
 
             // Reject event posts in orgs over their max event limits.
             Config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
+
+            EnableCors(Config, app);
 
             container.Bootstrap(Config);
             container.Bootstrap(app);
