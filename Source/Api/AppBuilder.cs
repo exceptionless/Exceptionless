@@ -72,6 +72,7 @@ namespace Exceptionless.Api {
             container.Bootstrap(Config);
             container.Bootstrap(app);
 
+            Config.EnableCors(new EnableCorsAttribute(origins: "*", headers: "*", methods: "*"));
             app.UseCors(new CorsOptions {
                 PolicyProvider = new CorsPolicyProvider {
                     PolicyResolver = ctx => Task.FromResult(new CorsPolicy {
@@ -83,9 +84,7 @@ namespace Exceptionless.Api {
                     })
                 }
             });
-
-            Config.EnableCors(new EnableCorsAttribute(origins: "*", headers: "*", methods: "*"));
-
+            
             app.UseWebApi(Config);
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);
             if (Settings.Current.EnableRedis)
