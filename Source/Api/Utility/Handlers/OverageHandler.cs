@@ -7,7 +7,6 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Repositories;
-using Foundatio.Caching;
 using Foundatio.Metrics;
 using NLog.Fluent;
 

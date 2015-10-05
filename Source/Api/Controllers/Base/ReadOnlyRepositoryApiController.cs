@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,7 +8,6 @@ using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Nito.AsyncEx;
 
 namespace Exceptionless.Api.Controllers {
     public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> : ExceptionlessApiController where TRepository : IReadOnlyRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() {
@@ -63,45 +61,43 @@ namespace Exceptionless.Api.Controllers {
         
         #region Mapping
 
+        protected virtual void CreateMaps() {
+            if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
+                Mapper.CreateMap<TModel, TViewModel>();
+        }
+
         private static bool _mapsCreated;
-        private static readonly AsyncLock _lock = new AsyncLock();
-        private async Task EnsureMapsAsync() {
+        private static readonly object _lock = new object();
+        private void EnsureMaps() {
             if (_mapsCreated)
                 return;
 
-            using (await _lock.LockAsync()) {
+            lock (_lock) {
                 if (_mapsCreated)
                     return;
 
-                await CreateMapsAsync();
+                CreateMaps();
 
                 _mapsCreated = true;
             }
         }
-       
-        protected virtual Task CreateMapsAsync() {
-            if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
-                Mapper.CreateMap<TModel, TViewModel>();
-
-            return TaskHelper.Completed();
-        }
 
         protected async Task<TDestination> MapAsync<TDestination>(object source, bool isResult = false) {
-            await EnsureMapsAsync();
+            EnsureMaps();
 
             var destination = Mapper.Map<TDestination>(source);
             if (isResult)
-                await AfterResultMapAsync(new [] { destination });
+                await AfterResultMapAsync(new List<TDestination>(new[] { destination }));
 
             return destination;
         }
 
         protected async Task<ICollection<TDestination>> MapCollectionAsync<TDestination>(object source, bool isResult = false) {
-            await EnsureMapsAsync();
+            EnsureMaps();
 
             var destination = Mapper.Map<ICollection<TDestination>>(source);
             if (isResult)
-                await AfterResultMapAsync(destination);
+                await AfterResultMapAsync<TDestination>(destination);
 
             return destination;
         }

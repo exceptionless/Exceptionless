@@ -69,12 +69,12 @@ namespace Exceptionless.Api.Controllers {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var organizations = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds(), options);
-            var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
+            var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations.Documents, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(viewOrganizations, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
 
-            return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
+            return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
         }
 
         [HttpGet]
@@ -686,20 +686,27 @@ namespace Exceptionless.Api.Controllers {
             return workItems;
         }
 
-        protected override async Task CreateMapsAsync() {
+        protected override void CreateMaps() {
             if (Mapper.FindTypeMapFor<Organization, ViewOrganization>() == null)
-                Mapper.CreateMap<Organization, ViewOrganization>().AfterMap(async (o, vo) => {
+                Mapper.CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
                     vo.IsOverHourlyLimit = o.IsOverHourlyLimit();
                     vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
-                    vo.IsOverRequestLimit = await o.IsOverRequestLimitAsync(_cacheClient, Settings.Current.ApiThrottleLimit);
                 });
 
             if (Mapper.FindTypeMapFor<StripeInvoice, InvoiceGridModel>() == null)
                 Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
 
-            await base.CreateMapsAsync();
+            base.CreateMaps();
         }
-    
+
+        protected override async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {
+            await base.AfterResultMapAsync(models);
+
+            var viewOrganizations = models.OfType<ViewOrganization>().ToList();
+            foreach (var viewOrganization in viewOrganizations)
+                viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, Settings.Current.ApiThrottleLimit);
+        }
+
         private async Task<ViewOrganization> PopulateOrganizationStatsAsync(ViewOrganization organization) {
             return (await PopulateOrganizationStatsAsync(new List<ViewOrganization> { organization })).FirstOrDefault();
         }

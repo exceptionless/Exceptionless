@@ -318,21 +318,25 @@ namespace Exceptionless.Core.Repositories {
             }
 
             _elasticClient.EnableTrace();
-            foreach (var doc in (await _elasticClient.MultiGetAsync(multiGet).AnyContext()).Documents) {
+            var multiGetResults = await _elasticClient.MultiGetAsync(multiGet).AnyContext();
+            _elasticClient.DisableTrace();
+
+            foreach (var doc in multiGetResults.Documents) {
                 if (doc.Found)
                     foundItems.Add(doc.Source as T);
                 else
                     itemsToFind.Add(doc.Id);
             }
-            _elasticClient.DisableTrace();
 
             // fallback to doing a find
             if (itemsToFind.Count > 0)
                 foundItems.AddRange((await FindAsync(new ElasticSearchOptions<T>().WithIds(itemsToFind)).AnyContext()).Documents);
 
             if (EnableCache && useCache && foundItems.Count > 0) {
-                foreach (var item in foundItems)
-                    await Cache.SetAsync(GetScopedCacheKey(item.Id), item, expiresIn.HasValue ? DateTime.UtcNow.Add(expiresIn.Value) : DateTime.UtcNow.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS)).AnyContext();
+                foreach (var item in foundItems) {
+                    var expiresAtUtc = expiresIn.HasValue ? DateTime.UtcNow.Add(expiresIn.Value) : DateTime.UtcNow.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS);
+                    await Cache.SetAsync(GetScopedCacheKey(item.Id), item, expiresAtUtc).AnyContext();
+                }
             }
 
             results.AddRange(foundItems);

@@ -9,7 +9,6 @@ using System.Web.Http;
 using System.Web.Http.Results;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;

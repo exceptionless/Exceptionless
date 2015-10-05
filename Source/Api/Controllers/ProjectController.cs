@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -52,12 +51,12 @@ namespace Exceptionless.Api.Controllers {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), options);
-            var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
+            var viewProjects = await MapCollectionAsync<ViewProject>(projects.Documents, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(viewProjects, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
 
-            return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+            return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects.ToList()), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
         }
 
         /// <summary>

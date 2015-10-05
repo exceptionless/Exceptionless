@@ -308,11 +308,11 @@ namespace Exceptionless.App.Controllers.API {
             return IsInOrganization(value.OrganizationId);
         }
 
-        protected override Task CreateMapsAsync() {
+        protected override void CreateMaps() {
             if (Mapper.FindTypeMapFor<NewToken, Token>() == null)
                 Mapper.CreateMap<NewToken, Token>().ForMember(m => m.Type, m => m.Ignore());
 
-            return base.CreateMapsAsync();
+            base.CreateMaps();
         }
     }
 }

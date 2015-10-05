@@ -23,12 +23,13 @@ namespace Exceptionless.Api.Controllers {
             if (value == null)
                 return BadRequest();
 
-            var orgModel = value as IOwnedByOrganization;
+            TModel mapped = await MapAsync<TModel>(value);
+
+            var orgModel = mapped as IOwnedByOrganization;
             // if no organization id is specified, default to the user's 1st associated org.
             if (!_isOrganization && orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
                 orgModel.OrganizationId = Request.GetDefaultOrganizationId();
 
-            TModel mapped = await MapAsync<TModel>(value);
             var permission = await CanAddAsync(mapped);
             if (!permission.Allowed)
                 return Permission(permission);
@@ -217,14 +218,11 @@ namespace Exceptionless.Api.Controllers {
             return new List<string>();
         }
 
-        protected override async Task CreateMapsAsync() {
-            await base.CreateMapsAsync();
-
+        protected override void CreateMaps() {
             if (Mapper.FindTypeMapFor<TNewModel, TModel>() == null)
                 Mapper.CreateMap<TNewModel, TModel>();
 
-            if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
-                Mapper.CreateMap<TModel, TViewModel>();
+            base.CreateMaps();
         }
     }
 }
