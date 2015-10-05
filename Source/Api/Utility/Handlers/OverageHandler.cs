@@ -7,21 +7,16 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Repositories;
-using Foundatio.Caching;
 using Foundatio.Metrics;
 using NLog.Fluent;
 
 namespace Exceptionless.Api.Utility {
     public sealed class OverageHandler : DelegatingHandler {
         private readonly IOrganizationRepository _organizationRepository;
-        private readonly IProjectRepository _projectRepository;
-        private readonly ICacheClient _cacheClient;
         private readonly IMetricsClient _metricsClient;
 
-        public OverageHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cacheClient, IMetricsClient metricsClient) {
+        public OverageHandler(IOrganizationRepository organizationRepository, IMetricsClient metricsClient) {
             _organizationRepository = organizationRepository;
-            _projectRepository = projectRepository;
-            _cacheClient = cacheClient;
             _metricsClient = metricsClient;
         }
 

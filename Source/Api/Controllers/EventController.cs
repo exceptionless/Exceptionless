@@ -455,11 +455,11 @@ namespace Exceptionless.Api.Controllers {
             return base.DeleteAsync(ids.FromDelimitedString());
         }
 
-        protected override Task CreateMapsAsync() {
+        protected override void CreateMaps() {
             if (Mapper.FindTypeMapFor<UserDescription, EventUserDescription>() == null)
                 Mapper.CreateMap<UserDescription, EventUserDescription>();
 
-            return base.CreateMapsAsync();
+            base.CreateMaps();
         }
     }
 }

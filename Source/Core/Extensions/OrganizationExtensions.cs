@@ -44,8 +44,12 @@ namespace Exceptionless.Core.Extensions {
             return organization.MaxEventsPerMonth + bonusEvents;
         } 
 
-        public static async Task<bool> IsOverRequestLimitAsync(this Organization organization, ICacheClient cacheClient, int apiThrottleLimit) {
-            var cacheKey = String.Concat("api", ":", organization.Id, ":", DateTime.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
+        public static Task<bool> IsOverRequestLimitAsync(this Organization organization, ICacheClient cacheClient, int apiThrottleLimit) {
+            return IsOverRequestLimitAsync(organization.Id, cacheClient, apiThrottleLimit);
+        }
+
+        public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit) {
+            var cacheKey = String.Concat("api", ":", organizationId, ":", DateTime.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
             var limit = await cacheClient.GetAsync<long>(cacheKey).AnyContext();
             return limit.HasValue && limit.Value >= apiThrottleLimit;
         }

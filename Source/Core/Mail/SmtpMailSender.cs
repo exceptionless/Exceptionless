@@ -8,7 +8,7 @@ using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Core.Mail {
     public class SmtpMailSender : IMailSender {
-        private long _messagesSent = 0;
+        private long _messagesSent;
 
         public long SentCount => _messagesSent;
 
