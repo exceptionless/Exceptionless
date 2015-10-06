@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -114,10 +115,16 @@ namespace Exceptionless.Core.Repositories {
             if (options.SortBy.Count > 0)
                 foreach (var sort in options.SortBy)
                     searchDescriptor.Sort(sort);
-
+#if DEBUG
             _elasticClient.EnableTrace();
+            var sw = Stopwatch.StartNew();
+#endif
             var results = await _elasticClient.SearchAsync<T>(searchDescriptor).AnyContext();
+#if DEBUG
+            sw.Stop();
             _elasticClient.DisableTrace();
+            Log.Trace().Message($"FindAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+#endif
 
             if (!results.IsValid)
                 throw new ApplicationException($"ElasticSearch error code \"{results.ConnectionStatus.HttpStatusCode}\".", results.ConnectionStatus.OriginalException);
@@ -140,7 +147,10 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(options));
             
             if (EnableCache && options.UseCache) {
+                var swCache = Stopwatch.StartNew();
                 var cacheValue = await Cache.GetAsync<T>(GetScopedCacheKey(options.CacheKey)).AnyContext();
+                swCache.Stop();
+                Log.Trace().Message($"FindOneAsync: Cache hit {swCache.ElapsedMilliseconds}ms").Write();
 #if DEBUG
                 Log.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
 #endif
@@ -162,10 +172,17 @@ namespace Exceptionless.Core.Repositories {
                     searchDescriptor.Sort(sort);
             }
 
+#if DEBUG
             _elasticClient.EnableTrace();
-            var result = (await _elasticClient.SearchAsync<T>(searchDescriptor).AnyContext()).Documents.FirstOrDefault();
+            var sw = Stopwatch.StartNew();
+#endif
+            var results = await _elasticClient.SearchAsync<T>(searchDescriptor).AnyContext();
+#if DEBUG
+            sw.Stop();
             _elasticClient.DisableTrace();
-            
+            Log.Trace().Message($"FindOneAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+#endif
+            var result = results.Documents.FirstOrDefault();
             if (EnableCache && options.UseCache && result != null)
                 await Cache.SetAsync(GetScopedCacheKey(options.CacheKey), result, options.GetCacheExpirationDate()).AnyContext();
 
@@ -189,14 +206,24 @@ namespace Exceptionless.Core.Repositories {
             var elasticSearchOptions = options as ElasticSearchOptions<T>;
             searchDescriptor.Indices(elasticSearchOptions != null && elasticSearchOptions.Indices.Any()
                 ? elasticSearchOptions.Indices.ToArray()
-                : GetIndices()); 
-            if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0)
-            {
+                : GetIndices());
+            if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0) {
                 foreach (var sort in elasticSearchOptions.SortBy)
                     searchDescriptor.Sort(sort);
             }
 
-            return (await _elasticClient.SearchAsync<T>(searchDescriptor).AnyContext()).HitsMetaData.Total > 0;
+#if DEBUG
+            _elasticClient.EnableTrace();
+            var sw = Stopwatch.StartNew();
+#endif
+            var results = await _elasticClient.SearchAsync<T>(searchDescriptor).AnyContext();
+#if DEBUG
+            sw.Stop();
+            _elasticClient.DisableTrace();
+            Log.Trace().Message($"ExistsAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+#endif
+
+            return results.HitsMetaData.Total > 0;
         }
 
         protected async Task<long> CountAsync(ElasticSearchOptions<T> options) {
@@ -215,12 +242,17 @@ namespace Exceptionless.Core.Repositories {
                 : GetIndices());
 			
             countDescriptor.IgnoreUnavailable();
-
             countDescriptor.Type(typeof(T));
-
+#if DEBUG
             _elasticClient.EnableTrace();
+            var sw = Stopwatch.StartNew();
+#endif
             var results = await _elasticClient.CountAsync<T>(countDescriptor).AnyContext();
+#if DEBUG
+            sw.Stop();
             _elasticClient.DisableTrace();
+            Log.Trace().Message($"CountAsync: {sw.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+#endif
 
             if (!results.IsValid)
                 throw new ApplicationException($"ElasticSearch error code \"{results.ConnectionStatus.HttpStatusCode}\".", results.ConnectionStatus.OriginalException);
@@ -239,16 +271,33 @@ namespace Exceptionless.Core.Repositories {
             searchDescriptor.Indices(options.Indices.Any()
                 ? options.Indices.ToArray()
                 : GetIndices());
-
+#if DEBUG
             _elasticClient.EnableTrace();
-            var aggResults = await _elasticClient.SearchAsync<T>(searchDescriptor).AnyContext();
+            var sw = Stopwatch.StartNew();
+#endif
+            var results = await _elasticClient.SearchAsync<T>(searchDescriptor).AnyContext();
+#if DEBUG
+            sw.Stop();
             _elasticClient.DisableTrace();
+            Log.Trace().Message($"SimpleAggregationAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+#endif
 
-            return aggResults.Aggs.Terms("simple").Items.ToDictionary(ar => ar.Key, ar => ar.DocCount);
+            return results.Aggs.Terms("simple").Items.ToDictionary(ar => ar.Key, ar => ar.DocCount);
         }
 
         public async Task<long> CountAsync() {
-            return (await _elasticClient.CountAsync<T>(c => c.Query(q => q.MatchAll()).Indices(GetIndices())).AnyContext()).Count;
+#if DEBUG
+            _elasticClient.EnableTrace();
+            var sw = Stopwatch.StartNew();
+#endif
+            var result = await _elasticClient.CountAsync<T>(c => c.Query(q => q.MatchAll()).Indices(GetIndices())).AnyContext();
+#if DEBUG
+            sw.Stop();
+            _elasticClient.DisableTrace();
+            Log.Trace().Message($"CountAsync: {sw.ElapsedMilliseconds}ms, Serialization Took {result.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {result.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+#endif
+
+            return result.Count;
         }
 
         public async Task<T> GetByIdAsync(string id, bool useCache = false, TimeSpan? expiresIn = null) {
@@ -256,7 +305,10 @@ namespace Exceptionless.Core.Repositories {
                 return null;
             
             if (EnableCache && useCache) {
+                var swCache = Stopwatch.StartNew();
                 var cacheValue = await Cache.GetAsync<T>(GetScopedCacheKey(id)).AnyContext();
+                swCache.Stop();
+                Log.Trace().Message($"FindOneAsync: Cache hit {swCache.ElapsedMilliseconds}ms").Write();
 #if DEBUG
                 Log.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
 #endif
@@ -268,9 +320,16 @@ namespace Exceptionless.Core.Repositories {
             // try using the object id to figure out what index the entity is located in
             string index = GetIndexName(id);
             if (index != null) {
+#if DEBUG
                 _elasticClient.EnableTrace();
+                var sw = Stopwatch.StartNew();
+#endif
                 result = (await _elasticClient.GetAsync<T>(f => f.Id(id).Index(index).SourceExclude("idx")).AnyContext()).Source;
+#if DEBUG
+                sw.Stop();
                 _elasticClient.DisableTrace();
+                Log.Trace().Message($"GetByIdAsync: {sw.ElapsedMilliseconds}ms").Write();
+#endif
             }
 
             // TODO:see if we can get rid of this.
@@ -317,9 +376,16 @@ namespace Exceptionless.Core.Repositories {
                     itemsToFind.Add(id);
             }
 
+#if DEBUG
             _elasticClient.EnableTrace();
+            var sw = Stopwatch.StartNew();
+#endif
             var multiGetResults = await _elasticClient.MultiGetAsync(multiGet).AnyContext();
+#if DEBUG
+            sw.Stop();
             _elasticClient.DisableTrace();
+            Log.Trace().Message($"FindAsync: {sw.ElapsedMilliseconds}ms, Serialization Took {multiGetResults.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {multiGetResults.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+#endif
 
             foreach (var doc in multiGetResults.Documents) {
                 if (doc.Found)
