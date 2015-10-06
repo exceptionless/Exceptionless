@@ -18,7 +18,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public readonly IOrganizationRepository _repository = IoC.GetInstance<IOrganizationRepository>();
 
         [Fact]
-        public async Task CanCreateUpdateRemove() {
+        public async Task CanCreateUpdateRemoveAsync() {
             await _client.RefreshAsync();
             await _repository.RemoveAllAsync();
             await _client.RefreshAsync();
@@ -41,7 +41,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task CanFindMany() {
+        public async Task CanFindManyAsync() {
             await _client.RefreshAsync();
             await _repository.RemoveAllAsync();
             await _client.RefreshAsync();
@@ -78,7 +78,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
         
         [Fact]
-        public async Task CanAddAndGetByCached() {
+        public async Task CanAddAndGetByCachedAsync() {
             var cache = IoC.GetInstance<ICacheClient>() as InMemoryCacheClient;
             Assert.NotNull(cache);
             await cache.RemoveAllAsync();
@@ -102,7 +102,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task CanIncrementUsage() {
+        public async Task CanIncrementUsageAsync() {
             var cache = IoC.GetInstance<ICacheClient>() as InMemoryCacheClient;
             Assert.NotNull(cache);
             await cache.RemoveAllAsync();

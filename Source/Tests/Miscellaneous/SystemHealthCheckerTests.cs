@@ -7,7 +7,7 @@ using Xunit;
 namespace Exceptionless.Api.Tests.Miscellaneous {
     public class SystemHealthCheckerTests {
         [Fact]
-        public async Task CheckAll() {
+        public async Task CheckAllAsync() {
             var checker = IoC.GetInstance<SystemHealthChecker>();
             Assert.NotNull(checker);
             var health = await checker.CheckAllAsync();

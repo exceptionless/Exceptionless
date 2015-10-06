@@ -20,7 +20,7 @@ namespace Exceptionless.Api.Tests.Mail {
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public async Task SendLogNotification() {
+        public async Task SendLogNotificationAsync() {
             var mailer = IoC.GetInstance<Mailer>();
             await mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
                 Event = new PersistentEvent {
@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Tests.Mail {
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public async Task SendNotFoundNotification() {
+        public async Task SendNotFoundNotificationAsync() {
             var mailer = IoC.GetInstance<Mailer>();
             await mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
                 Event = new PersistentEvent {
@@ -60,7 +60,7 @@ namespace Exceptionless.Api.Tests.Mail {
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public async Task SendSimpleErrorNotification() {
+        public async Task SendSimpleErrorNotificationAsync() {
             PersistentEvent ev = null;
             //var client = new ExceptionlessClient("123456789");
             //try {
@@ -88,7 +88,7 @@ namespace Exceptionless.Api.Tests.Mail {
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public async Task SendErrorNotification() {
+        public async Task SendErrorNotificationAsync() {
             PersistentEvent ev = null;
             //var client = new ExceptionlessClient(c => {
             //    c.ApiKey = "123456789";
@@ -119,7 +119,7 @@ namespace Exceptionless.Api.Tests.Mail {
         }
 
         [Fact]
-        public async Task SendInvite() {
+        public async Task SendInviteAsync() {
             var mailer = IoC.GetInstance<Mailer>();
             var mailerSender = IoC.GetInstance<IMailSender>() as InMemoryMailSender;
             var mailJob = IoC.GetInstance<MailMessageJob>();
@@ -140,7 +140,7 @@ namespace Exceptionless.Api.Tests.Mail {
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public async Task SendAddedToOrganization() {
+        public async Task SendAddedToOrganizationAsync() {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
@@ -148,21 +148,21 @@ namespace Exceptionless.Api.Tests.Mail {
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public async Task SendPasswordReset() {
+        public async Task SendPasswordResetAsync() {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
             await mailer.SendPasswordResetAsync(user);
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public async Task SendVerifyEmail() {
+        public async Task SendVerifyEmailAsync() {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
             await mailer.SendVerifyEmailAsync(user);
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public async Task SendSummaryNotification() {
+        public async Task SendSummaryNotificationAsync() {
             var mailer = IoC.GetInstance<Mailer>();
             await mailer.SendDailySummaryAsync(Settings.Current.TestEmailAddress, new DailySummaryModel {
                 ProjectId = "1",
@@ -204,7 +204,7 @@ namespace Exceptionless.Api.Tests.Mail {
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public async Task SendPaymentFailed() {
+        public async Task SendPaymentFailedAsync() {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();

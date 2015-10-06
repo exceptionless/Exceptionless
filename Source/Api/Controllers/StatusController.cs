@@ -48,7 +48,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("status")]
         [ResponseType(typeof(StatusResult))]
-        public async Task<IHttpActionResult> Index() {
+        public async Task<IHttpActionResult> IndexAsync() {
             var result = await _healthChecker.CheckAllAsync();
             if (!result.IsHealthy)
                 return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, result.Message, result.Message);

@@ -19,7 +19,7 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Theory]
         [MemberData("WebHookData")]
-        public async Task CreateFromEvent(Version version, bool expectData) {
+        public async Task CreateFromEventAsync(Version version, bool expectData) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
             var data = await _webHookDataPluginManager.CreateFromEventAsync(GetWebHookDataContext(version));
@@ -33,7 +33,7 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Theory]
         [MemberData("WebHookData")]
-        public async Task CanCreateFromStack(Version version, bool expectData) {
+        public async Task CanCreateFromStackAsync(Version version, bool expectData) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
             var data = await _webHookDataPluginManager.CreateFromStackAsync(GetWebHookDataContext(version));

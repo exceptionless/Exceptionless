@@ -12,7 +12,7 @@ namespace Exceptionless.Api.Tests.Jobs {
         }
 
         [Fact]
-        public async Task CanRunJobWithNoBootstrapper() {
+        public async Task CanRunJobWithNoBootstrapperAsync() {
             var job = JobRunner.CreateJobInstance(typeof(TestJob).AssemblyQualifiedName);
             Assert.NotNull(job);
             Assert.Equal(0, TestJob.RunCount);

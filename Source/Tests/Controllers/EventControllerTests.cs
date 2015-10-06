@@ -41,7 +41,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
         
         [Fact]
-        public async Task CanPostString() {
+        public async Task CanPostStringAsync() {
             await ResetAsync();
 
             try {
@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         [Fact]
-        public async Task CanPostCompressedString() {
+        public async Task CanPostCompressedStringAsync() {
             await ResetAsync();
 
             try {
@@ -90,7 +90,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         [Fact]
-        public async Task CanPostSingleEvent() {
+        public async Task CanPostSingleEventAsync() {
             await ResetAsync();
 
             try {
@@ -111,7 +111,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         [Fact]
-        public async Task CanPostManyEvents() {
+        public async Task CanPostManyEventsAsync() {
             await ResetAsync();
 
             const int batchSize = 250;
@@ -130,7 +130,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                     countdown.Signal();
                 });
 
-                await Run.InParallel(batchCount, async i => {
+                await Run.InParallelAsync(batchCount, async i => {
                     _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(new User { EmailAddress = TestConstants.UserEmail, Id = TestConstants.UserId, OrganizationIds = new[] { TestConstants.OrganizationId }, Roles = new[] { AuthorizationRoles.Client } }.ToIdentity(TestConstants.ProjectId)), true, false);
                     var events = new RandomEventGenerator().Generate(batchSize);
                     var compressedEvents = await Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).CompressAsync();

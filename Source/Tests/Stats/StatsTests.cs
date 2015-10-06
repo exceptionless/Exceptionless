@@ -23,7 +23,7 @@ namespace Exceptionless.Api.Tests.Stats {
         private readonly EventPipeline _eventPipeline = IoC.GetInstance<EventPipeline>();
 
         [Fact]
-        public async Task CanGetEventStats() {
+        public async Task CanGetEventStatsAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
@@ -48,7 +48,7 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public async Task CanGetEventStatsWithoutDateRange() {
+        public async Task CanGetEventStatsWithoutDateRangeAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
@@ -73,7 +73,7 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public async Task CanGetEventStatsForTimeZone() {
+        public async Task CanGetEventStatsForTimeZoneAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 1;
@@ -92,7 +92,7 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public async Task CanGetEventTermStatsByTag() {
+        public async Task CanGetEventTermStatsByTagAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
@@ -115,7 +115,7 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public async Task CanGetEventTermStatsByStack() {
+        public async Task CanGetEventTermStatsByStackAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
@@ -138,7 +138,7 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public async Task CanGetEventTermStatsByProject() {
+        public async Task CanGetEventTermStatsByProjectAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
@@ -158,7 +158,7 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public async Task CanSetGauges() {
+        public async Task CanSetGaugesAsync() {
             await _metricsClient.GaugeAsync("mygauge", 12d);
             Assert.Equal(12d, _metricsClient.GetGaugeValue("mygauge"));
             await _metricsClient.GaugeAsync("mygauge", 10d);

@@ -22,7 +22,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         
         [Fact(Skip="Performance Testing")]
-        public async Task Get() {
+        public async Task GetAsync() {
             await RemoveDataAsync();
             
             var ev = await _repository.AddAsync(new RandomEventGenerator().GeneratePersistent());
@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task GetPaged() {
+        public async Task GetPagedAsync() {
             await RemoveDataAsync();
 
             var events = new List<PersistentEvent>();
@@ -63,7 +63,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task GetByQuery() {
+        public async Task GetByQueryAsync() {
             await RemoveDataAsync();
             await CreateDataAsync();
 
@@ -86,7 +86,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
        
         [Fact]
-        public async Task GetPreviousEventIdInStackTest() {
+        public async Task GetPreviousEventIdInStackTestAsync() {
             await RemoveDataAsync();
             await CreateDataAsync();
 
@@ -114,7 +114,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task GetNextEventIdInStackTest() {
+        public async Task GetNextEventIdInStackTestAsync() {
             await RemoveDataAsync();
             await CreateDataAsync();
 
@@ -143,7 +143,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task GetByReferenceId() {
+        public async Task GetByReferenceIdAsync() {
             await RemoveDataAsync();
 
             string referenceId = ObjectId.GenerateNewId().ToString();
@@ -157,7 +157,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task MarkAsFixedByStackTest() {
+        public async Task MarkAsFixedByStackTestAsync() {
             await RemoveDataAsync();
 
             const int NUMBER_OF_EVENTS_TO_CREATE = 50;
@@ -176,17 +176,17 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact(Skip = "TODO")]
-        public Task RemoveOldestEventsTest() {
+        public Task RemoveOldestEventsTestAsync() {
             return TaskHelper.Completed();
         }
 
         [Fact(Skip = "TODO")]
-        public Task RemoveAllByDateTest() {
+        public Task RemoveAllByDateTestAsync() {
             return TaskHelper.Completed();
         }
         
         [Fact]
-        public async Task RemoveAllByClientIpAndDate() {
+        public async Task RemoveAllByClientIpAndDateAsync() {
             await RemoveDataAsync();
             const string _clientIpAddress = "123.123.12.256";
 

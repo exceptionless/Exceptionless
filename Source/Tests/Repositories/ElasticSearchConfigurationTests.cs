@@ -31,7 +31,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task CanCreateEventAlias() {
+        public async Task CanCreateEventAliasAsync() {
             _configuration.DeleteIndexes(_client);
             _configuration.ConfigureIndexes(_client);
             var indexes = _client.GetIndicesPointingToAlias(_eventIndex.Name);

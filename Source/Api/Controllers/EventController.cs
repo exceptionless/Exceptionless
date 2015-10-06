@@ -327,7 +327,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IHttpActionResult> LegacyPatch(string id, Delta<UpdateEvent> changes) {
+        public async Task<IHttpActionResult> LegacyPatchAsync(string id, Delta<UpdateEvent> changes) {
             if (changes == null)
                 return Ok();
 

@@ -18,8 +18,8 @@ namespace Exceptionless.Api.Security {
 
             context.Response = response;
         }
-        
-        Task<HttpResponseMessage> IAuthorizationFilter.ExecuteAuthorizationFilterAsync(HttpActionContext actionContext, CancellationToken cancellationToken, Func<Task<HttpResponseMessage>> continuation) {
+
+        public Task<HttpResponseMessage> ExecuteAuthorizationFilterAsync(HttpActionContext actionContext, CancellationToken cancellationToken, Func<Task<HttpResponseMessage>> continuation) {
             if (actionContext == null)
                 throw new ArgumentNullException(nameof(actionContext));
 

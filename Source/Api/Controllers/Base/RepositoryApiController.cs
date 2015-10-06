@@ -68,10 +68,12 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             if (modelUpdateFunc != null)
-                models.ForEach(async m => await modelUpdateFunc(m));
+                foreach (var model in models)
+                    await modelUpdateFunc(model);
 
             await _repository.SaveAsync(models);
-            models.ForEach(async m => await AfterUpdateAsync(m));
+            foreach (var model in models)
+                await AfterUpdateAsync(model);
 
             if (typeof(TViewModel) == typeof(TModel))
                 return Ok(models);

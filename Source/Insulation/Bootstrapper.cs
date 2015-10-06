@@ -6,6 +6,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
@@ -19,6 +20,8 @@ using StackExchange.Redis;
 namespace Exceptionless.Insulation {
     public class Bootstrapper : IPackage {
         public void RegisterServices(Container container) {
+            Logger.RegisterWriter(new NLogAdapter());
+
             if (Settings.Current.EnableMetricsReporting)
                 container.RegisterSingleton<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.MetricsServerName, Settings.Current.MetricsServerPort, "ex"));
             else

@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>AsyncPackage</name>
+    </assembly>
+    <members>
+        <member name="T:AsyncPackage.AsyncLambdaAnalyzer">
+            <summary>
+            Analyzer that examines async lambdas and checks if they are being passed or stored as void-returning delegate types.
+            </summary>
+        </member>
+        <member name="M:AsyncPackage.AsyncLambdaAnalyzer.CheckIfVoidReturningDelegateType(Microsoft.CodeAnalysis.ITypeSymbol)">
+            <summary>
+            Check if the method is a void returning delegate type
+            </summary>
+            <param name="convertedType"></param>
+            <returns>
+            Returns false if analysis failed or if not a void-returning delegate type
+            Returns true if the inputted node has a converted type that is a void-returning delegate type
+            </returns>
+        </member>
+        <member name="T:AsyncPackage.BlockingAsyncAnalyzer">
+            <summary>
+            This analyzer checks to see if asynchronous and synchronous code is mixed. 
+            This causes blocking and deadlocks. The analyzer will check when async 
+            methods are used and then checks if synchronous code is used within the method.
+            A codefix will then change that synchronous code to its asynchronous counterpart.
+            </summary>
+        </member>
+        <member name="T:AsyncPackage.CancellationCodeFix">
+            <summary>
+            Codefix that changes the type of a variable to be Func of Task instead of a void-returning delegate type.
+            </summary>
+        </member>
+        <member name="T:AsyncPackage.AsyncLambdaVariableCodeFix">
+            <summary>
+            Codefix that changes the type of a variable to be Func of Task instead of a void-returning delegate type.
+            </summary>
+        </member>
+        <member name="T:AsyncPackage.CancellationAnalyzer">
+            <summary>
+            This analyzer check to see if there are Cancellation Tokens that can be propagated through async method calls
+            </summary>
+        </member>
+        <member name="T:AsyncPackage.AsyncVoidCodeFix">
+            <summary>
+            This codefix replaces the void return type with Task in any method declaration the AsyncVoidAnalyzer catches
+            </summary>
+        </member>
+        <member name="T:AsyncPackage.AsyncVoidAnalyzer">
+            <summary>
+            This Analyzer determines if a method is Async and needs to be returning a Task instead of having a void return type.
+            </summary>
+        </member>
+        <member name="T:AsyncPackage.RenameAsyncAnalyzer">
+            <summary>
+            This analyzer will run a codefix on any method that qualifies as async that renames it to follow naming conventions
+            </summary>
+        </member>
+        <member name="T:AsyncPackage.RenameAsyncCodeFix">
+            <summary>
+            This codefix adds "Async" to the end of the Method Identifier and does a basic spellcheck in case the user had already tried to type Async
+            </summary>
+        </member>
+        <member name="M:AsyncPackage.RenameAsyncCodeFix.HasAsyncSuffix(System.String)">
+            <summary>
+            This spellchecker obviously has limitations, but it may be helpful to some.
+            </summary>
+            <param name="oldName"></param>
+            <returns>Returns a boolean of whether or not "Async" may have been in the Method name already but was mispelled.</returns>
+        </member>
+        <member name="T:AsyncPackage.BlockingAsyncCodeFix">
+            <summary>
+            Codefix changes the synchronous operations to it's asynchronous equivalent. 
+            </summary>
+        </member>
+    </members>
+</doc>
