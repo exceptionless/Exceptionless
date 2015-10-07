@@ -15,7 +15,6 @@ namespace Exceptionless.Insulation.Jobs {
             ExceptionlessClient.Default.Configuration.SetVersion(Settings.Current.Version);
             ExceptionlessClient.Default.Configuration.UseLogger(new NLogExceptionlessLog(Exceptionless.Logging.LogLevel.Warn));
             ExceptionlessClient.Default.Register();
-            ExceptionlessClient.Default.SubmitLog(typeof(FoundatioBootstrapper).Name, "Startup", Exceptionless.Logging.LogLevel.Warn);
 
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
