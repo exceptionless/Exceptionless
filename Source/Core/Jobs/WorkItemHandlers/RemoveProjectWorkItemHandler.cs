@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
@@ -23,7 +22,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             _webHookRepository = webHookRepository;
         }
         
-        public override async Task HandleItemAsync(WorkItemContext context, CancellationToken cancellationToken = default(CancellationToken)) {
+        public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<RemoveProjectWorkItem>();
             Log.Info().Message($"Received remove project work item for: {workItem.ProjectId} Reset Data: {workItem.Reset}").Write();
 

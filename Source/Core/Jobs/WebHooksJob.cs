@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
@@ -21,14 +20,14 @@ namespace Exceptionless.Core.Jobs {
             _jsonSerializerSettings = settings;
         }
         
-        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<WebHookNotification> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
-            WebHookNotification body = queueEntry.Value;
+        protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<WebHookNotification> context) {
+            WebHookNotification body = context.QueueEntry.Value;
             bool shouldLog = body.ProjectId != Settings.Current.InternalProjectId;
-            Log.Trace().Project(body.ProjectId).Message("Process web hook call: id={0} project={1} url={2}", queueEntry.Id, body.ProjectId, body.Url).WriteIf(shouldLog);
+            Log.Trace().Project(body.ProjectId).Message("Process web hook call: id={0} project={1} url={2}", context.QueueEntry.Id, body.ProjectId, body.Url).WriteIf(shouldLog);
 
             var client = new HttpClient();
             try {
-                var response = await client.PostAsJsonAsync(body.Url, body.Data.ToJson(Formatting.Indented, _jsonSerializerSettings), cancellationToken).AnyContext();
+                var response = await client.PostAsJsonAsync(body.Url, body.Data.ToJson(Formatting.Indented, _jsonSerializerSettings), context.CancellationToken).AnyContext();
                 if (response.StatusCode == HttpStatusCode.Gone) {
                     Log.Warn().Project(body.ProjectId).Message("Deleting web hook: org={0} project={1} url={2}", body.OrganizationId, body.ProjectId, body.Url).Write();
                     await _webHookRepository.RemoveByUrlAsync(body.Url).AnyContext();

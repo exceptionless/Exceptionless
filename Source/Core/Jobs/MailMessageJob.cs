@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -19,14 +18,14 @@ namespace Exceptionless.Core.Jobs {
             _metricsClient = metricsClient;
         }
 
-        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<MailMessage> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
-            Log.Trace().Message("Processing message '{0}'.", queueEntry.Id).Write();
+        protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<MailMessage> context) {
+            Log.Trace().Message("Processing message '{0}'.", context.QueueEntry.Id).Write();
             
             try {
-                await _mailSender.SendAsync(queueEntry.Value).AnyContext();
-                Log.Info().Message("Sent message: to={0} subject=\"{1}\"", queueEntry.Value.To, queueEntry.Value.Subject).Write();
+                await _mailSender.SendAsync(context.QueueEntry.Value).AnyContext();
+                Log.Info().Message("Sent message: to={0} subject=\"{1}\"", context.QueueEntry.Value.To, context.QueueEntry.Value.Subject).Write();
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Error sending message: id={0} error={1}", queueEntry.Id, ex.Message).Write();
+                Log.Error().Exception(ex).Message("Error sending message: id={0} error={1}", context.QueueEntry.Id, ex.Message).Write();
                 return JobResult.FromException(ex);
             }
 

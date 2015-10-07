@@ -39,8 +39,8 @@ namespace Exceptionless.Core.Jobs {
             _lockProvider = lockProvider;
         }
 
-        protected override Task<IDisposable> GetJobLockAsync() {
-            return _lockProvider.AcquireLockAsync("DailySummaryJob");
+        protected override Task<ILock> GetJobLockAsync() {
+            return _lockProvider.AcquireAsync("DailySummaryJob");
         }
         
         protected override async Task<JobResult> RunInternalAsync(CancellationToken cancellationToken = default(CancellationToken)) {

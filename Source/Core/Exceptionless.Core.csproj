@@ -65,7 +65,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.3.0.509\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.3.0.514\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -575,10 +575,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Analyzer Include="..\..\packages\Microsoft.AnalyzerPowerPack.1.0.1\analyzers\dotnet\cs\Microsoft.AnalyzerPowerPack.Common.dll" />
-    <Analyzer Include="..\..\packages\Microsoft.AnalyzerPowerPack.1.0.1\analyzers\dotnet\cs\Microsoft.AnalyzerPowerPack.CSharp.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\Pegasus.3.1.2\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.3.1.2\build\Pegasus.targets')" />

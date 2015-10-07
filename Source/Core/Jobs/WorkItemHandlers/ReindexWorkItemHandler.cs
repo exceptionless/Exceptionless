@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
@@ -19,7 +18,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             _client = client;
         }
         
-        public override async Task HandleItemAsync(WorkItemContext context, CancellationToken cancellationToken = default(CancellationToken)) {
+        public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<ReindexWorkItem>();
 
             Log.Info().Message("Received reindex work item for new index {0}", workItem.NewIndex).Write();

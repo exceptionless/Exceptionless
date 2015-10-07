@@ -4,6 +4,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
+using Exceptionless.Insulation.Logging;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;

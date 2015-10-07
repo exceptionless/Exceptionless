@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -38,13 +37,13 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
             _cacheClient = cacheClient;
         }
-
-        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventNotificationWorkItem> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
-            var eventModel = await _eventRepository.GetByIdAsync(queueEntry.Value.EventId).AnyContext();
+        
+        protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<EventNotificationWorkItem> context) {
+            var eventModel = await _eventRepository.GetByIdAsync(context.QueueEntry.Value.EventId).AnyContext();
             if (eventModel == null)
-                return JobResult.FailedWithMessage("Could not load event {0}.", queueEntry.Value.EventId);
+                return JobResult.FailedWithMessage("Could not load event {0}.", context.QueueEntry.Value.EventId);
 
-            var eventNotification = new EventNotification(queueEntry.Value, eventModel);
+            var eventNotification = new EventNotification(context.QueueEntry.Value, eventModel);
             bool shouldLog = eventNotification.Event.ProjectId != Settings.Current.InternalProjectId;
             int emailsSent = 0;
             Log.Trace().Message("Process notification: project={0} event={1} stack={2}", eventNotification.Event.ProjectId, eventNotification.Event.Id, eventNotification.Event.StackId).WriteIf(shouldLog);
@@ -74,7 +73,7 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Success;
             }
 
-            if (cancellationToken.IsCancellationRequested)
+            if (context.CancellationToken.IsCancellationRequested)
                 return JobResult.Cancelled;
 
             Log.Trace().Message("Loaded stack: title={0}", stack.Title).WriteIf(shouldLog);
@@ -99,7 +98,7 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Success;
             }
 
-            if (cancellationToken.IsCancellationRequested)
+            if (context.CancellationToken.IsCancellationRequested)
                 return JobResult.Cancelled;
 
             foreach (var kv in project.NotificationSettings) {

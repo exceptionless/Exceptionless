@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -30,7 +29,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             _webHookRepository = webHookRepository;
         }
         
-        public override async Task HandleItemAsync(WorkItemContext context, CancellationToken cancellationToken = default(CancellationToken)) {
+        public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<RemoveOrganizationWorkItem>();
             Log.Info().Message($"Received remove organization work item for: {workItem.OrganizationId}").Write();
             

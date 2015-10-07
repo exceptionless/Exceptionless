@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
@@ -40,8 +39,9 @@ namespace Exceptionless.Core.Jobs {
             AutoComplete = false;
         }
 
-        protected override async Task<JobResult> ProcessQueueItemAsync(QueueEntry<EventPost> queueEntry, CancellationToken cancellationToken = default(CancellationToken)) {
-            EventPostInfo eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, cancellationToken).AnyContext();
+        protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<EventPost> context) {
+            var queueEntry = context.QueueEntry;
+            EventPostInfo eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, context.CancellationToken).AnyContext();
             if (eventPostInfo == null) {
                 await queueEntry.AbandonAsync().AnyContext();
                 await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.FromException(ex, $"An error occurred while processing the EventPost '{queueEntry.Id}': {ex.Message}");
             }
 
-            if (!events.Any() || cancellationToken.IsCancellationRequested) {
+            if (!events.Any() || context.CancellationToken.IsCancellationRequested) {
                 await queueEntry.AbandonAsync().AnyContext();
                 await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
                 return !events.Any() ? JobResult.Success : JobResult.Cancelled;
@@ -118,7 +118,7 @@ namespace Exceptionless.Core.Jobs {
                             CharSet = eventPostInfo.CharSet,
                             ProjectId = eventPostInfo.ProjectId,
                             UserAgent = eventPostInfo.UserAgent
-                        }, _storage, false, cancellationToken).AnyContext();
+                        }, _storage, false, context.CancellationToken).AnyContext();
                     }
                 }
             } catch (ArgumentException ex) {

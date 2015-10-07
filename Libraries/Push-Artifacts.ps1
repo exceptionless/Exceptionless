@@ -37,18 +37,25 @@ git rm -r * -q 2>&1 | %{ "$_" }
 
 Write-Host "Copying build artifacts..."
 ROBOCOPY "$sourceDir\Api" "$artifactsDir" /XD "$sourceDir\Api\obj" "$sourceDir\Api\App_Data" /S /XF "*.nuspec" "*.settings" "*.cs" "packages.config" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" /NFL /NDL /NJH /NJS /nc /ns /np
-ROBOCOPY "$artifactsDir\bin" "$artifactsDir\App_Data\JobRunner\bin\" /S /NFL /NDL /NJH /NJS /nc /ns /np
-Copy-Item -Path "$base_dir\packages\Foundatio.*\tools\Job.exe" -Destination "$artifactsDir\App_Data\JobRunner\" 
-Copy-Item -Path "$base_dir\packages\Foundatio.*\tools\Job.pdb" -Destination "$artifactsDir\App_Data\JobRunner\" 
-Copy-Item -Path "$base_dir\packages\Foundatio.*\tools\bin\CommandLine.dll" -Destination "$artifactsDir\App_Data\JobRunner\bin\" 
-Copy-Item -Path "$base_dir\packages\Foundatio.*\tools\bin\CommandLine.xml" -Destination "$artifactsDir\App_Data\JobRunner\bin\" 
-Copy-Item -Path "$sourceDir\WebJobs\App.config" -Destination "$artifactsDir\App_Data\JobRunner\Job.exe.config" 
-Copy-Item -Path "$sourceDir\WebJobs\Job.bat" -Destination "$artifactsDir\App_Data\JobRunner\"
-Copy-Item -Path "$sourceDir\WebJobs\NLog.config" -Destination "$artifactsDir\App_Data\JobRunner\"
-ROBOCOPY "$sourceDir\WebJobs\continuous" "$artifactsDir\App_Data\jobs\continuous" /S /NFL /NDL /NJH /NJS /nc /ns /np
-ROBOCOPY "$sourceDir\WebJobs\triggered" "$artifactsDir\App_Data\jobs\triggered" /S /NFL /NDL /NJH /NJS /nc /ns /np
 
-Get-ChildItem -Path "$artifactsDir\App_Data\jobs" -Recurse -Include *.bat | Foreach-Object { Add-Content -Path $_.FullName -Value "`r`nREM $env:APPVEYOR_BUILD_VERSION" }
+Write-Host "Copying DailySummary job..."
+ROBOCOPY "$sourceDir\Jobs\DailySummary\bin\Release" "$artifactsDir\App_Data\jobs\continuous\DailySummary" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying DownloadGeoIPDatabase job..."
+ROBOCOPY "$sourceDir\Jobs\DownloadGeoIPDatabase\bin\Release" "$artifactsDir\App_Data\jobs\continuous\DownloadGeoIPDatabase" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying EventNotification job..."
+ROBOCOPY "$sourceDir\Jobs\EventNotification\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventNotification" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying EventPost job..."
+ROBOCOPY "$sourceDir\Jobs\EventPost\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventPost" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying EventUserDescription job..."
+ROBOCOPY "$sourceDir\Jobs\EventUserDescription\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventUserDescription" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying MailMessage job..."
+ROBOCOPY "$sourceDir\Jobs\MailMessage\bin\Release" "$artifactsDir\App_Data\jobs\continuous\MailMessage" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying RetentionLimit job..."
+ROBOCOPY "$sourceDir\Jobs\RetentionLimit\bin\Release" "$artifactsDir\App_Data\jobs\continuous\RetentionLimit" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying WebHook job..."
+ROBOCOPY "$sourceDir\Jobs\WebHook\bin\Release" "$artifactsDir\App_Data\jobs\continuous\WebHook" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying WorkItem job..."
+ROBOCOPY "$sourceDir\Jobs\WorkItem\bin\Release" "$artifactsDir\App_Data\jobs\continuous\WorkItem" /S /NFL /NDL /NJH /NJS /nc /ns /np
 
 Write-Host "Committing the latest changes..."
 git add * 2>&1 | %{ "$_" }

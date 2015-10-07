@@ -64,7 +64,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.3.0.509\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.3.0.514\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Core, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -332,8 +332,6 @@
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="..\..\Libraries\Analyzers\AsyncPackage.dll" />
-    <Analyzer Include="..\..\packages\Microsoft.AnalyzerPowerPack.1.0.1\analyzers\dotnet\cs\Microsoft.AnalyzerPowerPack.Common.dll" />
-    <Analyzer Include="..\..\packages\Microsoft.AnalyzerPowerPack.1.0.1\analyzers\dotnet\cs\Microsoft.AnalyzerPowerPack.CSharp.dll" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
