@@ -29,8 +29,13 @@ namespace Exceptionless.Core.Repositories {
             if (!EnableCache)
                 return;
 
-            documents.ForEach(async doc => await InvalidateCacheAsync(String.Concat("project:", doc.ProjectId)).AnyContext());
-            originalDocuments?.ForEach(async doc => await InvalidateCacheAsync(String.Concat("project:", doc.ProjectId)).AnyContext());
+            foreach (var document in documents)
+                await InvalidateCacheAsync(String.Concat("project:", document.ProjectId)).AnyContext();
+
+            if (originalDocuments != null)
+                foreach (var originalDocument in originalDocuments)
+                    await InvalidateCacheAsync(String.Concat("project:", originalDocument.ProjectId)).AnyContext();
+
             await base.InvalidateCacheAsync(documents, originalDocuments).AnyContext();
         }
     }

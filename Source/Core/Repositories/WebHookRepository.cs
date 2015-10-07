@@ -41,7 +41,9 @@ namespace Exceptionless.Core.Repositories {
             if (!EnableCache)
                 return;
 
-            hooks.ForEach(async h => await InvalidateCacheAsync(String.Concat("org:", h.OrganizationId, "-project:", h.ProjectId)).AnyContext());
+            foreach (var hook in hooks)
+                await InvalidateCacheAsync(String.Concat("org:", hook.OrganizationId, "-project:", hook.ProjectId)).AnyContext();
+
             await base.InvalidateCacheAsync(hooks, originalHooks).AnyContext();
         }
     }

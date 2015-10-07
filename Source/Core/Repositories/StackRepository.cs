@@ -133,7 +133,9 @@ namespace Exceptionless.Core.Repositories {
             if (!EnableCache)
                 return;
 
-            stacks.ForEach(async s => await InvalidateCacheAsync(GetStackSignatureCacheKey(s)).AnyContext());
+            foreach (var stack in stacks)
+                await InvalidateCacheAsync(GetStackSignatureCacheKey(stack)).AnyContext();
+
             await base.InvalidateCacheAsync(stacks, originalStacks).AnyContext();
         }
 

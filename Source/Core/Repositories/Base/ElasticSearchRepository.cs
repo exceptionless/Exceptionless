@@ -226,7 +226,8 @@ namespace Exceptionless.Core.Repositories {
                 }
 
                 if (EnableCache)
-                    results.Hits.ForEach(async d => await InvalidateCacheAsync(d.Id).AnyContext());
+                    foreach (var hit in results.Hits)
+                        await InvalidateCacheAsync(hit.Id).AnyContext();
 
                 recordsAffected += results.Documents.Count();
                 results = await _elasticClient.ScrollAsync<T>("4s", results.ScrollId).AnyContext();
@@ -282,10 +283,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected virtual async Task SendNotificationsAsync(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {
-            if (BatchNotifications)
+            if (BatchNotifications) {
                 await PublishMessageAsync(changeType, documents).AnyContext();
-            else
-                documents.ForEach(async d => await PublishMessageAsync(changeType, d).AnyContext());
+            } else {
+                foreach (var document in documents)
+                    await PublishMessageAsync(changeType, document).AnyContext();
+            }
         }
 
         protected Task PublishMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null) {
