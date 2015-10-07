@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Models;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin> {
@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
 
                     return events;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling ParseEvents in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Logger.Error().Exception(ex).Message("Error calling ParseEvents in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
                 }
             }
 

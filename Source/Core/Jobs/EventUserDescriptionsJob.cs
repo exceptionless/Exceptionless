@@ -7,9 +7,10 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
-using NLog.Fluent;
+
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
@@ -23,16 +24,16 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<EventUserDescription> context) {
-            Log.Trace().Message("Processing user description: id={0}", context.QueueEntry.Id).Write();
+            Logger.Trace().Message("Processing user description: id={0}", context.QueueEntry.Id).Write();
 
             try {
                 await ProcessUserDescriptionAsync(context.QueueEntry.Value).AnyContext();
-                Log.Info().Message("Processed user description: id={0}", context.QueueEntry.Id).Write();
+                Logger.Info().Message("Processed user description: id={0}", context.QueueEntry.Id).Write();
             } catch (DocumentNotFoundException ex){
-                Log.Error().Exception(ex).Message("An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, context.QueueEntry.Id).Write();
+                Logger.Error().Exception(ex).Message("An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, context.QueueEntry.Id).Write();
                 return JobResult.FromException(ex);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("An error occurred while processing the EventUserDescription '{0}': {1}", context.QueueEntry.Id, ex.Message).Write();
+                Logger.Error().Exception(ex).Message("An error occurred while processing the EventUserDescription '{0}': {1}", context.QueueEntry.Id, ex.Message).Write();
                 return JobResult.FromException(ex);
             }
 

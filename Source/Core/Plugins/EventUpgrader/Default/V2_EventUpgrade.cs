@@ -3,8 +3,8 @@ using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Logging;
 using Newtonsoft.Json.Linq;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(2000)]
@@ -118,7 +118,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             if (json.Length > 200000) {
-                Log.Error().Project(projectId).Message("Event: {0} __ExceptionInfo is Too Big: {1}", id, json.Length).Write();
+                Logger.Error().Project(projectId).Message("Event: {0} __ExceptionInfo is Too Big: {1}", id, json.Length).Write();
                 return;
             }
 

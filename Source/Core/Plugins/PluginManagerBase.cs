@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Dependency;
-using NLog.Fluent;
 using Exceptionless.Core.Helpers;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins {
     public abstract class PluginManagerBase<TPlugin> {
@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Plugins {
                 try {
                     AddPlugin(type);
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Unable to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message).Write();
+                    Logger.Error().Exception(ex).Message("Unable to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message).Write();
                 }
             }
         }

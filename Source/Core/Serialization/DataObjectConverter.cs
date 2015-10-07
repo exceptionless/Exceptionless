@@ -6,10 +6,10 @@ using System.Reflection;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Reflection;
+using Foundatio.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
-using NLog.Fluent;
 
 namespace Exceptionless.Serializer {
     public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData, new() {
@@ -101,7 +101,7 @@ namespace Exceptionless.Serializer {
 
                     return;
                 } catch (Exception) {
-                    Log.Info().Message("Error deserializing known data type \"{0}\": {1}", p.Name, p.Value.ToString()).Write();
+                    Logger.Info().Message("Error deserializing known data type \"{0}\": {1}", p.Name, p.Value.ToString()).Write();
                 }
             }
 

@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Web.Http.ExceptionHandling;
-using NLog.Fluent;
-using Logger = NLog.Fluent.Log;
+using Foundatio.Logging;
 
 namespace Exceptionless.Api.Utility {
-    public class NLogExceptionLogger : ExceptionLogger {
+    public class FoundatioExceptionLogger : ExceptionLogger {
         public override void Log(ExceptionLoggerContext context) {
-            string loggerName = context.Exception.TargetSite?.DeclaringType?.Name ?? "NLogExceptionLogger";
-
             Logger.Error()
                 .Exception(context.Exception)
-                .ContextProperty("HttpActionContext", context.ExceptionContext.ActionContext)
+                .SetActionContext(context.ExceptionContext.ActionContext)
                 .MarkUnhandled("ExceptionLogger")
                 .Message("Unhandled: {0}", context.Exception.Message)
-                .LoggerName(loggerName)
                 .Write();
         }
     }

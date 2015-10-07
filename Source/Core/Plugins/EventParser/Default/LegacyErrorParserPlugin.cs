@@ -4,8 +4,8 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Models;
+using Foundatio.Logging;
 using Newtonsoft.Json;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(10)]
@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
 
                 return ctx.Documents.FromJson<PersistentEvent>(_settings);
             } catch (Exception ex) {
-                Log.Error().Message("Error parsing event: {0}", ex.Message).Exception(ex).Write();
+                Logger.Error().Message("Error parsing event: {0}", ex.Message).Exception(ex).Write();
                 return null;
             }
         }

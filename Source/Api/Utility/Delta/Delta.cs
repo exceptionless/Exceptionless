@@ -8,9 +8,9 @@ using System.Dynamic;
 using System.Linq;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Reflection;
+using Foundatio.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using NLog.Fluent;
 
 namespace Exceptionless.Api.Utility {
     /// <summary>
@@ -84,7 +84,7 @@ namespace Exceptionless.Api.Utility {
                     try {
                         value = JsonConvert.DeserializeObject(value.ToString(), cacheHit.MemberType);
                     } catch (Exception ex) {
-                        Log.Error().Exception(ex).Message("Error deserializing value: {0}", value.ToString()).Write();
+                        Logger.Error().Exception(ex).Message("Error deserializing value: {0}", value.ToString()).Write();
                         return false;
                     }
                 } else {

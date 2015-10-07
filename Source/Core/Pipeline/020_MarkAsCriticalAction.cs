@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Plugins.EventProcessor;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(20)]
@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Pipeline {
             if (ctx.Stack == null || !ctx.Stack.OccurrencesAreCritical)
                 return TaskHelper.Completed();
 
-            Log.Trace().Message("Marking error as critical.").Write();
+            Logger.Trace().Message("Marking error as critical.").Write();
             ctx.Event.MarkAsCritical();
 
             return TaskHelper.Completed();

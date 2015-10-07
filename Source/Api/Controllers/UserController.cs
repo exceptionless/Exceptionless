@@ -14,7 +14,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using FluentValidation;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/users")]
@@ -125,7 +125,7 @@ namespace Exceptionless.Api.Controllers {
             } catch (ValidationException ex) {
                 return BadRequest(String.Join(", ", ex.Errors));
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
+                Logger.Error().Exception(ex).Property("User", user).SetActionContext(ActionContext).Write();
                 return BadRequest("An error occurred.");
             }
 

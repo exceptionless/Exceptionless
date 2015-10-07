@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Exceptionless.Core.Dependency;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     public class EventUpgraderPluginManager : PluginManagerBase<IEventUpgraderPlugin> {
@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 try {
                     plugin.Upgrade(context);
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling upgrade in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Logger.Error().Exception(ex).Message("Error calling upgrade in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
                     throw;
                 }
             }

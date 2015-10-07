@@ -19,13 +19,13 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using NLog.Fluent;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
@@ -57,7 +57,7 @@ namespace Exceptionless.Api {
             exceptionlessContractResolver?.UseDefaultResolverFor(typeof(Connection).Assembly);
             Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
-            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
+            Config.Services.Add(typeof(IExceptionLogger), new FoundatioExceptionLogger());
             Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
 
             Config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
@@ -88,7 +88,7 @@ namespace Exceptionless.Api {
                 Task.Run(async () => await CreateSampleDataAsync(container));
 
             if (Settings.Current.RunJobsInProcess) {
-                Log.Warn().Message("Jobs running in process.").Write();
+                Logger.Warn().Message("Jobs running in process.").Write();
 
                 var context = new OwinContext(app.Properties);
                 var token = context.Get<CancellationToken>("host.OnAppDisposing");
@@ -103,10 +103,10 @@ namespace Exceptionless.Api {
             
                 JobRunner.RunContinuousAsync<WorkItemJob>(instanceCount: 2, cancellationToken: token);
             } else {
-                Log.Info().Message("Jobs running out of process.").Write();
+                Logger.Info().Message("Jobs running out of process.").Write();
             }
 
-            Log.Info().Message("Starting api...").Write();
+            Logger.Info().Message("Starting api...").Write();
         }
 
         private static void EnableCors(HttpConfiguration config, IAppBuilder app) {
@@ -188,7 +188,7 @@ namespace Exceptionless.Api {
             try {
                 insulationAssembly = Assembly.Load("Exceptionless.Insulation");
             } catch (Exception ex) {
-                Log.Error().Message("Unable to load the insulation assembly.").Exception(ex).Write();
+                Logger.Error().Message("Unable to load the insulation assembly.").Exception(ex).Write();
             }
 
             if (insulationAssembly != null)

@@ -4,8 +4,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Queues.Models;
+using Foundatio.Logging;
 using Foundatio.Storage;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Extensions {
     public static class StorageExtensions {
@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Extensions {
                 if (!await storage.ExistsAsync(path + ".x").AnyContext() && !await storage.SaveFileAsync(path + ".x", new MemoryStream(Encoding.UTF8.GetBytes(String.Empty))).AnyContext())
                     return null;
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Error retrieving event post data \"{0}\".", path).Write();
+                Logger.Error().Exception(ex).Message("Error retrieving event post data \"{0}\".", path).Write();
                 return null;
             }
 
@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Extensions {
             try {
                 return await storage.DeleteFileAsync(path + ".x").AnyContext();
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Error deleting work marker \"{0}\".", path + ".x").Write();
+                Logger.Error().Exception(ex).Message("Error deleting work marker \"{0}\".", path + ".x").Write();
             }
 
             return false;
@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Extensions {
                         return false;
                 }
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Error archiving event post data \"{0}\".", path).Write();
+                Logger.Error().Exception(ex).Message("Error archiving event post data \"{0}\".", path).Write();
                 return false;
             }
 

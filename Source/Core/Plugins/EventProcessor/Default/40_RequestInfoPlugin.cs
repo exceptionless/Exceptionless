@@ -7,7 +7,7 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using NLog.Fluent;
+using Foundatio.Logging;
 using UAParser;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
@@ -64,7 +64,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
                     request.Data[RequestInfo.KnownDataKeys.IsBot] = info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns);
                 } catch (Exception ex) {
-                    Log.Warn().Project(context.Event.ProjectId).Message("Unable to parse user agent {0}. Exception: {1}", request.UserAgent, ex.Message).Write();
+                    Logger.Warn().Project(context.Event.ProjectId).Message("Unable to parse user agent {0}. Exception: {1}", request.UserAgent, ex.Message).Write();
                 }
             }
 

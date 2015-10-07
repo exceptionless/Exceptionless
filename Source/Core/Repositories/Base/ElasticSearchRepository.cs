@@ -10,9 +10,9 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
+using Foundatio.Logging;
 using Foundatio.Messaging;
 using Nest;
-using NLog.Fluent;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Core.Repositories {
@@ -221,7 +221,7 @@ namespace Exceptionless.Core.Repositories {
                 }).AnyContext();
 
                 if (!bulkResult.IsValid) {
-                    Log.Error().Message("Error occurred while bulk updating").Exception(bulkResult.ConnectionStatus.OriginalException).Write();
+                    Logger.Error().Message("Error occurred while bulk updating").Exception(bulkResult.ConnectionStatus.OriginalException).Write();
                     return 0;
                 }
 

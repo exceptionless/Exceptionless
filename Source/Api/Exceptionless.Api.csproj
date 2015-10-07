@@ -120,14 +120,6 @@
       <HintPath>..\..\packages\Nito.AsyncEx.3.0.1\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NLog.4.1.2\lib\net45\NLog.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="NLog.Targets.ElasticSearch, Version=1.0.14.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NLog.Targets.ElasticSearch.1.0.14.0\lib\net40\NLog.Targets.ElasticSearch.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="OAuth2, Version=0.8.35.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\OAuth2.0.8.35\lib\OAuth2.dll</HintPath>
       <Private>True</Private>
@@ -250,6 +242,7 @@
     <Compile Include="Controllers\WebHookController.cs" />
     <Compile Include="Extensions\DeltaExtensions.cs" />
     <Compile Include="Extensions\HttpExtensions.cs" />
+    <Compile Include="Extensions\LogBuilderExtensions.cs" />
     <Compile Include="Extensions\OAuth2Extensions.cs" />
     <Compile Include="Extensions\UriExtensions.cs" />
     <Compile Include="Hubs\ConnectionMap.cs" />
@@ -292,7 +285,7 @@
     <Compile Include="Utility\Handlers\EncodingDelegatingHandler.cs" />
     <Compile Include="Utility\ExceptionlessHeaders.cs" />
     <Compile Include="Utility\Handlers\ExceptionlessReferenceIdExceptionHandler.cs" />
-    <Compile Include="Utility\NLogExceptionLogger.cs" />
+    <Compile Include="Utility\FoundatioExceptionLogger.cs" />
     <Compile Include="Utility\FilterRoutesDocumentFilter.cs" />
     <Compile Include="Utility\LowercaseHttpRoute.cs" />
     <Compile Include="Utility\Bindings\NakedParameterBinding.cs" />
@@ -328,11 +321,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="NLog.xsd">
-      <SubType>Designer</SubType>
-    </None>
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

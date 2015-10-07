@@ -6,12 +6,12 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using Nest;
-using NLog.Fluent;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Repositories {
     public class FindResults<T> {
@@ -89,7 +89,7 @@ namespace Exceptionless.Core.Repositories {
             if (EnableCache && options.UseCache) {
                 var cacheValue = await Cache.GetAsync<FindResults<T>>(GetScopedCacheKey(options.CacheKey)).AnyContext();
 #if DEBUG
-                Log.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
+                Logger.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
 #endif
                 if (cacheValue.HasValue)
                     return cacheValue.Value;
@@ -123,7 +123,7 @@ namespace Exceptionless.Core.Repositories {
 #if DEBUG
             sw.Stop();
             _elasticClient.DisableTrace();
-            Log.Trace().Message($"FindAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+            Logger.Trace().Message($"FindAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
 #endif
 
             if (!results.IsValid)
@@ -150,9 +150,9 @@ namespace Exceptionless.Core.Repositories {
                 var swCache = Stopwatch.StartNew();
                 var cacheValue = await Cache.GetAsync<T>(GetScopedCacheKey(options.CacheKey)).AnyContext();
                 swCache.Stop();
-                Log.Trace().Message($"FindOneAsync: Cache hit {swCache.ElapsedMilliseconds}ms").Write();
+                Logger.Trace().Message($"FindOneAsync: Cache hit {swCache.ElapsedMilliseconds}ms").Write();
 #if DEBUG
-                Log.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
+                Logger.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
 #endif
                 if (cacheValue.HasValue)
                     return cacheValue.Value;
@@ -180,7 +180,7 @@ namespace Exceptionless.Core.Repositories {
 #if DEBUG
             sw.Stop();
             _elasticClient.DisableTrace();
-            Log.Trace().Message($"FindOneAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+            Logger.Trace().Message($"FindOneAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
 #endif
             var result = results.Documents.FirstOrDefault();
             if (EnableCache && options.UseCache && result != null)
@@ -220,7 +220,7 @@ namespace Exceptionless.Core.Repositories {
 #if DEBUG
             sw.Stop();
             _elasticClient.DisableTrace();
-            Log.Trace().Message($"ExistsAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+            Logger.Trace().Message($"ExistsAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
 #endif
 
             return results.HitsMetaData.Total > 0;
@@ -251,7 +251,7 @@ namespace Exceptionless.Core.Repositories {
 #if DEBUG
             sw.Stop();
             _elasticClient.DisableTrace();
-            Log.Trace().Message($"CountAsync: {sw.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+            Logger.Trace().Message($"CountAsync: {sw.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
 #endif
 
             if (!results.IsValid)
@@ -279,7 +279,7 @@ namespace Exceptionless.Core.Repositories {
 #if DEBUG
             sw.Stop();
             _elasticClient.DisableTrace();
-            Log.Trace().Message($"SimpleAggregationAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+            Logger.Trace().Message($"SimpleAggregationAsync: {sw.ElapsedMilliseconds}ms, Elastic Took {results.ElapsedMilliseconds}ms, Serialization Took {results.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {results.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
 #endif
 
             return results.Aggs.Terms("simple").Items.ToDictionary(ar => ar.Key, ar => ar.DocCount);
@@ -294,7 +294,7 @@ namespace Exceptionless.Core.Repositories {
 #if DEBUG
             sw.Stop();
             _elasticClient.DisableTrace();
-            Log.Trace().Message($"CountAsync: {sw.ElapsedMilliseconds}ms, Serialization Took {result.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {result.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+            Logger.Trace().Message($"CountAsync: {sw.ElapsedMilliseconds}ms, Serialization Took {result.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {result.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
 #endif
 
             return result.Count;
@@ -308,9 +308,9 @@ namespace Exceptionless.Core.Repositories {
                 var swCache = Stopwatch.StartNew();
                 var cacheValue = await Cache.GetAsync<T>(GetScopedCacheKey(id)).AnyContext();
                 swCache.Stop();
-                Log.Trace().Message($"FindOneAsync: Cache hit {swCache.ElapsedMilliseconds}ms").Write();
+                Logger.Trace().Message($"FindOneAsync: Cache hit {swCache.ElapsedMilliseconds}ms").Write();
 #if DEBUG
-                Log.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
+                Logger.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
 #endif
                 if (cacheValue.HasValue)
                     return cacheValue.Value;
@@ -328,7 +328,7 @@ namespace Exceptionless.Core.Repositories {
 #if DEBUG
                 sw.Stop();
                 _elasticClient.DisableTrace();
-                Log.Trace().Message($"GetByIdAsync: {sw.ElapsedMilliseconds}ms").Write();
+                Logger.Trace().Message($"GetByIdAsync: {sw.ElapsedMilliseconds}ms").Write();
 #endif
             }
 
@@ -384,7 +384,7 @@ namespace Exceptionless.Core.Repositories {
 #if DEBUG
             sw.Stop();
             _elasticClient.DisableTrace();
-            Log.Trace().Message($"FindAsync: {sw.ElapsedMilliseconds}ms, Serialization Took {multiGetResults.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {multiGetResults.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
+            Logger.Trace().Message($"FindAsync: {sw.ElapsedMilliseconds}ms, Serialization Took {multiGetResults.ConnectionStatus.Metrics.SerializationTime}ms, Deserialization Took {multiGetResults.ConnectionStatus.Metrics.DeserializationTime}ms").Write();
 #endif
 
             foreach (var doc in multiGetResults.Documents) {

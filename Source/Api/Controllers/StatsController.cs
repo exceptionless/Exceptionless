@@ -8,7 +8,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Stats;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stats")]
@@ -53,12 +53,12 @@ namespace Exceptionless.Api.Controllers {
             try {
                 result = await _stats.GetOccurrenceStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
-                Log.Error().Exception(ex)
+                Logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
                     .Property("User", ExceptionlessUser)
-                    .ContextProperty("HttpActionContext", ActionContext)
+                    .SetActionContext(ActionContext)
                     .Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");

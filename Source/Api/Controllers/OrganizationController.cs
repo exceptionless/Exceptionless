@@ -23,9 +23,9 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
-using NLog.Fluent;
 using Stripe;
 #pragma warning disable 1998
 
@@ -185,7 +185,7 @@ namespace Exceptionless.Api.Controllers {
                 var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
                 stripeInvoice = invoiceService.Get(id);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Logger.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
             }
 
             if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
@@ -415,7 +415,7 @@ namespace Exceptionless.Api.Controllers {
                 await _repository.SaveAsync(organization);
                 await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
             } catch (Exception e) {
-                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Logger.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
                 return Ok(ChangePlanResult.FailWithMessage(e.Message));
             }
 
@@ -675,7 +675,7 @@ namespace Exceptionless.Api.Controllers {
         protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
             var workItems = new List<string>();
             foreach (var organization in organizations) {
-                Log.Info().Message("User {0} deleting organization {1}.", ExceptionlessUser.Id, organization.Id).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Logger.Info().Message("User {0} deleting organization {1}.", ExceptionlessUser.Id, organization.Id).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
                 workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveOrganizationWorkItem {
                     OrganizationId = organization.Id,
                     CurrentUserId = ExceptionlessUser.Id,

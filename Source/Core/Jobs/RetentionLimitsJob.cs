@@ -8,7 +8,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Jobs {
     public class RetentionLimitsJob : JobBase {
@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task EnforceEventCountLimitsAsync(Organization organization) {
-            Log.Info().Message("Enforcing event count limits for organization '{0}' with Id: '{1}'", organization.Name, organization.Id).Write();
+            Logger.Info().Message("Enforcing event count limits for organization '{0}' with Id: '{1}'", organization.Name, organization.Id).Write();
 
             try {
                 int retentionDays = organization.RetentionDays;
@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Jobs {
                 DateTime cutoff = DateTime.UtcNow.Date.SubtractDays(retentionDays);
                 await _eventRepository.RemoveAllByDateAsync(organization.Id, cutoff).AnyContext();
             } catch (Exception ex) {
-                Log.Error().Message("Error enforcing limits: org={0} id={1} message=\"{2}\"", organization.Name, organization.Id, ex.Message).Exception(ex).Write();
+                Logger.Error().Message("Error enforcing limits: org={0} id={1} message=\"{2}\"", organization.Name, organization.Id, ex.Message).Exception(ex).Write();
             }
         }
     }

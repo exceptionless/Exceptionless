@@ -20,10 +20,10 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models.Data;
 using FluentValidation;
+using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Storage;
-using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
@@ -138,12 +138,12 @@ namespace Exceptionless.Api.Controllers {
             try {
                 events = await _repository.GetByFilterAsync(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
-                Log.Error().Exception(ex)
+                Logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
                     .Property("User", ExceptionlessUser)
-                    .ContextProperty("HttpActionContext", ActionContext)
+                    .SetActionContext(ActionContext)
                     .Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");
@@ -427,12 +427,12 @@ namespace Exceptionless.Api.Controllers {
                     ContentEncoding = contentEncoding
                 }, _storage);
             } catch (Exception ex) {
-                Log.Error().Exception(ex)
+                Logger.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
                     .Project(projectId)
                     .Identity(ExceptionlessUser?.EmailAddress)
                     .Property("User", ExceptionlessUser)
-                    .ContextProperty("HttpActionContext", ActionContext)
+                    .SetActionContext(ActionContext)
                     .WriteIf(projectId != Settings.Current.InternalProjectId);
 
                 return StatusCode(HttpStatusCode.InternalServerError);

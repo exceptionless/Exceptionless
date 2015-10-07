@@ -9,8 +9,8 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Foundatio.Logging;
 using Foundatio.Messaging;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(10)]
@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Pipeline {
                     }
 
                     if (ctx.Stack == null) {
-                        Log.Trace().Message("Creating new event stack.").Write();
+                        Logger.Trace().Message("Creating new event stack.").Write();
                         ctx.IsNew = true;
 
                         string title = _formattingPluginManager.GetStackTitle(ctx.Event);

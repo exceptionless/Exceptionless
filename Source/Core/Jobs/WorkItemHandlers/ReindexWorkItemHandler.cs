@@ -5,10 +5,9 @@ using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Nest;
 using Newtonsoft.Json.Linq;
-using NLog.Fluent;
-
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class ReindexWorkItemHandler : WorkItemHandlerBase {
@@ -21,7 +20,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<ReindexWorkItem>();
 
-            Log.Info().Message("Received reindex work item for new index {0}", workItem.NewIndex).Write();
+            Logger.Info().Message("Received reindex work item for new index {0}", workItem.NewIndex).Write();
             var startTime = DateTime.UtcNow.AddSeconds(-1);
             await context.ReportProgressAsync(0, "Starting reindex...").AnyContext();
             var result = await ReindexAsync(workItem, context, 0, 90, workItem.StartUtc).AnyContext();
@@ -57,7 +56,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             var scanResults = await _client.SearchAsync<JObject>(s => s.Index(workItem.OldIndex).AllTypes().Filter(f => startTime.HasValue ? f.Range(r => r.OnField(workItem.TimestampField ?? "_timestamp").Greater(startTime.Value)) : f.MatchAll()).From(0).Take(pageSize).SearchType(SearchType.Scan).Scroll(scroll)).AnyContext();
 
             if (!scanResults.IsValid || scanResults.ScrollId == null) {
-                Log.Error().Message("Invalid search result: message={0}", scanResults.GetErrorMessage()).Write();
+                Logger.Error().Message("Invalid search result: message={0}", scanResults.GetErrorMessage()).Write();
                 return new ReindexResult();
             }
 
@@ -76,7 +75,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 var bulkResponse = _client.Bulk(bulkDescriptor);
                 if (!bulkResponse.IsValid) {
                     string message = $"Reindex bulk error: old={workItem.OldIndex} new={workItem.NewIndex} page={page} message={bulkResponse.GetErrorMessage()}";
-                    Log.Warn().Message(message).Write();
+                    Logger.Warn().Message(message).Write();
                     // try each doc individually so we can see which doc is breaking us
                     foreach (var hit in results.Hits) {
                         var h = hit;
@@ -86,7 +85,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                             continue;
 
                         message = $"Reindex error: old={workItem.OldIndex} new={workItem.NewIndex} id={hit.Id} page={page} message={response.GetErrorMessage()}";
-                        Log.Error().Message(message).Write();
+                        Logger.Error().Message(message).Write();
                         throw new ReindexException(response.ConnectionStatus, message);
                     }
                 }

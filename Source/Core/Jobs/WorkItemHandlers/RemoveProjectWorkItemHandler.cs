@@ -4,7 +4,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Foundatio.Jobs;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class RemoveProjectWorkItemHandler : WorkItemHandlerBase {
@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<RemoveProjectWorkItem>();
-            Log.Info().Message($"Received remove project work item for: {workItem.ProjectId} Reset Data: {workItem.Reset}").Write();
+            Logger.Info().Message($"Received remove project work item for: {workItem.ProjectId} Reset Data: {workItem.Reset}").Write();
 
             await context.ReportProgressAsync(0, "Starting deletion...").AnyContext();
             var project = await _projectRepository.GetByIdAsync(workItem.ProjectId).AnyContext();
