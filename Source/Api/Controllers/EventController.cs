@@ -21,7 +21,6 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models.Data;
 using FluentValidation;
 using Foundatio.Logging;
-using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Storage;
 
@@ -34,7 +33,6 @@ namespace Exceptionless.Api.Controllers {
         private readonly IStackRepository _stackRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
-        private readonly IMetricsClient _metricsClient;
         private readonly IValidator<UserDescription> _userDescriptionValidator;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IFileStorage _storage;
@@ -45,7 +43,6 @@ namespace Exceptionless.Api.Controllers {
             IStackRepository stackRepository,
             IQueue<EventPost> eventPostQueue, 
             IQueue<EventUserDescription> eventUserDescriptionQueue,
-            IMetricsClient metricsClient,
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
             IFileStorage storage) : base(repository) {
@@ -54,7 +51,6 @@ namespace Exceptionless.Api.Controllers {
             _stackRepository = stackRepository;
             _eventPostQueue = eventPostQueue;
             _eventUserDescriptionQueue = eventUserDescriptionQueue;
-            _metricsClient = metricsClient;
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
             _storage = storage;
@@ -75,7 +71,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}", Name = "GetPersistentEventById")]
         [ResponseType(typeof(PersistentEvent))]
         public async Task<IHttpActionResult> GetByIdAsync(string id, string filter = null, string time = null, string offset = null) {
-            var model = await GetModelAsync(id);
+            var model = await GetModelAsync(id, false);
             if (model == null)
                 return NotFound();
 
@@ -93,6 +89,8 @@ namespace Exceptionless.Api.Controllers {
             var systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
             var timeInfo = GetTimeInfo(time, offset);
+
+            // TODO: Look into making this one look up instead of three.
             return OkWithLinks(model,
                 GetEntityResourceLink(await _repository.GetPreviousEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
                 GetEntityResourceLink(await _repository.GetNextEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "next"),

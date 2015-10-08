@@ -44,7 +44,7 @@ namespace Exceptionless.App.Controllers.API {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var tokens = await _repository.GetByTypeAndOrganizationIdAsync(TokenType.Access, organizationId, options);
+            var tokens = await _repository.GetByTypeAndOrganizationIdAsync(TokenType.Access, organizationId, options, true);
             var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true)).ToList();
             return OkWithResourceLinks(viewTokens, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
         }

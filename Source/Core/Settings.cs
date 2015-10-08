@@ -40,8 +40,10 @@ namespace Exceptionless.Core {
         public string RedisConnectionString { get; private set; }
 
         public bool EnableRedis { get; private set; }
-        
+       
         public string ElasticSearchConnectionString { get; private set; }
+
+        public bool EnableElasticsearchTracing { get; private set; }
 
         public string Version { get; private set; }
         
@@ -146,6 +148,7 @@ namespace Exceptionless.Core {
             EnableAzureStorage = GetBool("EnableAzureStorage", !String.IsNullOrEmpty(AzureStorageConnectionString));
             
             ElasticSearchConnectionString = GetConnectionString("ElasticSearchConnectionString");
+            EnableElasticsearchTracing = GetBool("EnableElasticsearchTracing");
 
             RedisConnectionString = GetConnectionString("RedisConnectionString");
             EnableRedis = GetBool("EnableRedis", !String.IsNullOrEmpty(RedisConnectionString));

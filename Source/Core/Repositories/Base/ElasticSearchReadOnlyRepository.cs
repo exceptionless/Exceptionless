@@ -147,10 +147,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(options));
             
             if (EnableCache && options.UseCache) {
-                var swCache = Stopwatch.StartNew();
                 var cacheValue = await Cache.GetAsync<T>(GetScopedCacheKey(options.CacheKey)).AnyContext();
-                swCache.Stop();
-                Logger.Trace().Message($"FindOneAsync: Cache hit {swCache.ElapsedMilliseconds}ms").Write();
 #if DEBUG
                 Logger.Trace().Message("Cache {0}: type={1}", cacheValue.HasValue ? "hit" : "miss", _entityType).Write();
 #endif
