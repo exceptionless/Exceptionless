@@ -94,11 +94,9 @@ namespace Exceptionless.Core.Repositories {
                 if (cacheValue.HasValue)
                     return cacheValue.Value;
             }
-            
-            var searchDescriptor = options.SortBy.Count == 0 ?
-                new SearchDescriptor<T>().Query(options.GetElasticSearchQuery(_supportsSoftDeletes))
-                : new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter(_supportsSoftDeletes));
 
+            var searchDescriptor = new SearchDescriptor<T>();
+            searchDescriptor.Query(options.GetElasticSearchQuery(_supportsSoftDeletes));
             searchDescriptor.Indices(options.Indices.Any() ? options.Indices.ToArray() : GetIndices());
             searchDescriptor.IgnoreUnavailable();
             searchDescriptor.Size(options.GetLimit());

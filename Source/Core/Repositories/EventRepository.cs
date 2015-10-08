@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Results;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Messaging;
@@ -121,12 +122,18 @@ namespace Exceptionless.Core.Repositories {
                 .WithSort(s => s.OnField(e => e.Date).Descending())
                 .WithPaging(options));
         }
+        
+        public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, string systemFilter, string userFilter, DateTime? utcStart, DateTime? utcEnd) {
+            var previous = await GetPreviousEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd).AnyContext();
+            var next = await GetNextEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd).AnyContext();
 
-        public async Task<string> GetPreviousEventIdAsync(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
-            return await GetPreviousEventIdAsync(await GetByIdAsync(id, true).AnyContext(), systemFilter, userFilter, utcStart, utcEnd).AnyContext();
+            return new PreviousAndNextEventIdResult {
+                Previous = previous,
+                Next = next
+            };
         }
 
-        public async Task<string> GetPreviousEventIdAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+        private async Task<string> GetPreviousEventIdAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
             if (ev == null)
                 return null;
             
@@ -136,15 +143,19 @@ namespace Exceptionless.Core.Repositories {
             if (!utcEnd.HasValue)
                 utcEnd = DateTime.MaxValue;
 
+            var utcEventDate = ev.Date.ToUniversalTime().DateTime;
+            // utcEnd is before the current event date.
+            if (utcStart > utcEventDate || utcEnd < utcEventDate)
+                return null;
+
             if (String.IsNullOrEmpty(userFilter))
                 userFilter = "stack:" + ev.StackId;
 
             var filter = !Filter<PersistentEvent>.Ids(new[] { ev.Id })
-                && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(ev.Date.ToUniversalTime().DateTime))
                 && Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter)));
 
             var results = await FindAsync(new ElasticSearchOptions<PersistentEvent>()
-                .WithDateRange(utcStart, utcEnd, "date")
+                .WithDateRange(utcStart, utcEventDate, "date")
                 .WithIndicesFromDateRange($"'{_index.VersionedName}-'yyyyMM")
                 .WithSort(s => s.OnField(e => e.Date).Descending())
                 .WithLimit(10)
@@ -168,12 +179,8 @@ namespace Exceptionless.Core.Repositories {
             var index = unionResults.FindIndex(t => t.Id == ev.Id);
             return index == 0 ? null : unionResults[index - 1].Id;
         }
-
-        public async Task<string> GetNextEventIdAsync(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
-            return await GetNextEventIdAsync(await GetByIdAsync(id, true).AnyContext(), systemFilter, userFilter, utcStart, utcEnd).AnyContext();
-        }
-
-        public async Task<string> GetNextEventIdAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+        
+        private async Task<string> GetNextEventIdAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
             if (ev == null)
                 return null;
 
@@ -183,15 +190,19 @@ namespace Exceptionless.Core.Repositories {
             if (!utcEnd.HasValue)
                 utcEnd = DateTime.MaxValue;
 
+            var utcEventDate = ev.Date.ToUniversalTime().DateTime;
+            // utcEnd is before the current event date.
+            if (utcStart > utcEventDate || utcEnd < utcEventDate)
+                return null;
+
             if (String.IsNullOrEmpty(userFilter))
                 userFilter = "stack:" + ev.StackId;
 
             var filter = !Filter<PersistentEvent>.Ids(new[] { ev.Id })
-                && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(ev.Date.ToUniversalTime().DateTime))
                 && Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter)));
 
             var results = await FindAsync(new ElasticSearchOptions<PersistentEvent>()
-                .WithDateRange(utcStart, utcEnd, "date")
+                .WithDateRange(utcEventDate, utcEnd, "date")
                 .WithIndicesFromDateRange($"'{_index.VersionedName}-'yyyyMM")
                 .WithSort(s => s.OnField(e => e.Date).Ascending())
                 .WithLimit(10)

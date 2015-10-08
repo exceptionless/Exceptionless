@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Results;
 
 namespace Exceptionless.Core.Repositories {
     public interface IEventRepository : IRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent> {
@@ -9,11 +11,7 @@ namespace Exceptionless.Core.Repositories {
         Task<FindResults<PersistentEvent>> GetByStackIdOccurrenceDateAsync(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
         Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId);
         Task<FindResults<PersistentEvent>> GetByFilterAsync(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
-
-        Task<string> GetPreviousEventIdAsync(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
-        Task<string> GetPreviousEventIdAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
-        Task<string> GetNextEventIdAsync(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
-        Task<string> GetNextEventIdAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
+        Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
         Task UpdateFixedByStackAsync(string organizationId, string stackId, bool value);
         Task UpdateHiddenByStackAsync(string organizationId, string stackId, bool value);
         Task RemoveOldestEventsAsync(string stackId, int maxEventsPerStack);
@@ -21,9 +19,15 @@ namespace Exceptionless.Core.Repositories {
         Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStartDate, DateTime utcEndDate);
 
         Task<FindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, string query = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
-
         Task<long> GetCountByOrganizationIdAsync(string organizationId);
         Task<long> GetCountByProjectIdAsync(string projectId);
         Task<long> GetCountByStackIdAsync(string stackId);
+    }
+
+    public static class EventRepositoryExtensions {
+        public static async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(this IEventRepository repository, string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+            var ev = await repository.GetByIdAsync(id, true).AnyContext();
+            return await repository.GetPreviousAndNextEventIdsAsync(ev, systemFilter, userFilter, utcStart, utcEnd).AnyContext();
+        }
     }
 }

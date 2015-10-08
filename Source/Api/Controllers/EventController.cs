@@ -87,14 +87,10 @@ namespace Exceptionless.Api.Controllers {
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
             var systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
-
             var timeInfo = GetTimeInfo(time, offset);
+            var result = await _repository.GetPreviousAndNextEventIdsAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End);
 
-            // TODO: Look into making this one look up instead of three.
-            return OkWithLinks(model,
-                GetEntityResourceLink(await _repository.GetPreviousEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
-                GetEntityResourceLink(await _repository.GetNextEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "next"),
-                GetEntityResourceLink<Stack>(model.StackId, "parent"));
+            return OkWithLinks(model, GetEntityResourceLink(result.Previous, "previous"), GetEntityResourceLink(result.Next, "next"), GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
 
         /// <summary>

@@ -128,33 +128,11 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static QueryContainer GetElasticSearchQuery<T>(this ElasticSearchOptions<T> options, bool supportSoftDeletes = false) where T : class {
-            var container = Query<T>.MatchAll();
-
             var filterContainer = Filter<T>.MatchAll();
             filterContainer = ApplyQueryOptionsFilters<T>(options, filterContainer, supportSoftDeletes);
-            filterContainer = ApplyElasticSearchOptionsFilters(options, filterContainer, true);
+            filterContainer = ApplyElasticSearchOptionsFilters(options, filterContainer);
 
-            container &= Query<T>.Filtered(f => f.Filter(d => filterContainer));
-
-            if (!String.IsNullOrEmpty(options?.Query))
-                container &= Query<T>.QueryString(qs => qs.DefaultOperator(options.DefaultQueryOperator).Query(options.Query).AnalyzeWildcard());
-
-            return container;
-        }
-
-        public static QueryContainer GetElasticSearchQuery<T>(this QueryOptions options, bool supportSoftDeletes = false) where T : class {
-            var container = Query<T>.MatchAll();
-
-            var filterContainer = Filter<T>.MatchAll();
-            filterContainer = ApplyQueryOptionsFilters<T>(options, filterContainer, supportSoftDeletes);
-
-            var elasticSearchOptions = options as ElasticSearchOptions<T>;
-            if (elasticSearchOptions != null)
-                filterContainer = ApplyElasticSearchOptionsFilters(elasticSearchOptions, filterContainer);
-
-            container &= Query<T>.Filtered(f => f.Filter(d => filterContainer));
-
-            return container;
+            return Query<T>.Filtered(f => f.Filter(d => filterContainer));
         }
 
         public static ElasticSearchOptions<T> WithPaging<T>(this ElasticSearchOptions<T> options, PagingOptions paging) where T : class {
