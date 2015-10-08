@@ -87,6 +87,9 @@ namespace Foundatio.Logging {
         }
 
         private static IDictionary<string, object> GetContextData(this ILogBuilder logBuilder) {
+            if (logBuilder.LogData.Properties == null)
+                logBuilder.LogData.Properties = new Dictionary<string, object>();
+            
             IDictionary<string, object> contextData = new Dictionary<string, object>();
             if (!logBuilder.LogData.Properties.ContainsKey(ContextData))
                 logBuilder.LogData.Properties[ContextData] = contextData;

@@ -297,8 +297,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _organizationRepository.RemoveAllAsync();
         }
 
-        public void Dispose() {
-            RemoveDataAsync().Wait();
+        public async void Dispose() {
+            await RemoveDataAsync();
         }
     }
 }
