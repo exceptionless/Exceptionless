@@ -25,22 +25,49 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Jobs", "Jobs", "{4F070E46-F0D4-4134-A04E-BD1CB3B4AEA3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailMessageJob", "Source\Jobs\MailMessage\MailMessageJob.csproj", "{95CA459C-111E-4248-BC37-C6345CCFB40D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventPostsJob", "Source\Jobs\EventPost\EventPostsJob.csproj", "{FD2FF108-158B-410D-AF72-C2BA3B555546}"
+	ProjectSection(ProjectDependencies) = postProject
+		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventUserDescriptionsJob", "Source\Jobs\EventUserDescription\EventUserDescriptionsJob.csproj", "{BDA9F1D6-F941-42F0-8B12-FDEA17A5F354}"
+	ProjectSection(ProjectDependencies) = postProject
+		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebHooksJob", "Source\Jobs\WebHook\WebHooksJob.csproj", "{62C680F1-B27A-4802-BD88-D182F03F12D4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorkItemJob", "Source\Jobs\WorkItem\WorkItemJob.csproj", "{51840A88-8415-4A2C-9C93-343B95770D29}"
+	ProjectSection(ProjectDependencies) = postProject
+		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventNotificationsJob", "Source\Jobs\EventNotification\EventNotificationsJob.csproj", "{8BC64C87-4A8C-4259-B1B2-7F6A8857CE6C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DailySummaryJob", "Source\Jobs\DailySummary\DailySummaryJob.csproj", "{B0B479F6-A4B1-401A-A93D-7393877A4400}"
+	ProjectSection(ProjectDependencies) = postProject
+		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DownloadGeoIPDatabaseJob", "Source\Jobs\DownloadGeoIPDatabase\DownloadGeoIPDatabaseJob.csproj", "{BE383D44-18A2-4145-9D04-95F715D5E500}"
+	ProjectSection(ProjectDependencies) = postProject
+		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RetentionLimitsJob", "Source\Jobs\RetentionLimit\RetentionLimitsJob.csproj", "{1A8C938F-D7F4-4E2F-8789-9053156E9077}"
+	ProjectSection(ProjectDependencies) = postProject
+		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
