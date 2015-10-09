@@ -7,8 +7,8 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Foundatio.Logging;
 using Foundatio.Queues;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(70)]
@@ -58,7 +58,7 @@ namespace Exceptionless.Core.Pipeline {
                 };
 
                 await _webHookNotificationQueue.EnqueueAsync(notification).AnyContext();
-                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Property("Web Hook Notification", notification).Write();
+                Logger.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Property("Web Hook Notification", notification).Write();
             }
         }
 

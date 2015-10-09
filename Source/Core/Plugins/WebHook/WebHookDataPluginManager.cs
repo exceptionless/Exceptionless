@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin> {
@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
 
                     return data;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling create from event in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("Event", context.Event).Write();
+                    Logger.Error().Exception(ex).Message("Error calling create from event in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("Event", context.Event).Write();
                 }
             }
 
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
 
                     return data;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling create from stack in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("Stack", context.Stack).Write();
+                    Logger.Error().Exception(ex).Message("Error calling create from stack in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("Stack", context.Stack).Write();
                 }
             }
 

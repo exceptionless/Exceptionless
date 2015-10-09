@@ -5,8 +5,8 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using Exceptionless.Core.Extensions;
+using Foundatio.Logging;
 using Newtonsoft.Json;
-using NLog.Fluent;
 
 namespace Exceptionless.Core {
     public abstract class SettingsBase<T> : SingletonBase<T>, IInitializable where T : class {
@@ -89,7 +89,7 @@ namespace Exceptionless.Core {
 
                     _configVariables = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(configPath));
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Unable to load config.json file. Error: {0}", ex.Message);
+                    Logger.Error().Exception(ex).Message("Unable to load config.json file. Error: {0}", ex.Message);
                     _configVariables = new Dictionary<string, string>();
                     return null;
                 }
@@ -111,7 +111,7 @@ namespace Exceptionless.Core {
                 } catch (Exception ex) {
                     _environmentVariables = new Dictionary<string, string>();
 
-                    NLog.Fluent.Log.Error().Exception(ex).Message("An Error occurred while reading environmental variables.").Write();
+                    Logger.Error().Exception(ex).Message("An Error occurred while reading environmental variables.").Write();
                     return null;
                 }
             }

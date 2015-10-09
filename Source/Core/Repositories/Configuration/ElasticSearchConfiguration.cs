@@ -2,20 +2,25 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using Elasticsearch.Net.ConnectionPool;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
+using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Lock;
 using Foundatio.Queues;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public class ElasticSearchConfiguration {
+        private readonly ThrottlingLockProvider _lockProvider;
         private readonly IQueue<WorkItemData> _workItemQueue;
 
-        public ElasticSearchConfiguration(IQueue<WorkItemData> workItemQueue) {
+        public ElasticSearchConfiguration(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue) {
+            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(1));
             _workItemQueue = workItemQueue;
         }
 
@@ -76,12 +81,14 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     continue;
 
                 // upgrade
-                _workItemQueue.EnqueueAsync(new ReindexWorkItem {
-                    OldIndex = String.Concat(index.Name, "-v", currentVersion),
-                    NewIndex = index.VersionedName,
-                    Alias = index.Name,
-                    DeleteOld = true
-                });
+                _lockProvider.TryUsingAsync("reindex", async () => {
+                    await _workItemQueue.EnqueueAsync(new ReindexWorkItem {
+                        OldIndex = String.Concat(index.Name, "-v", currentVersion),
+                        NewIndex = index.VersionedName,
+                        Alias = index.Name,
+                        DeleteOld = true
+                    });
+                }, TimeSpan.Zero, CancellationToken.None);
             }
         }
 

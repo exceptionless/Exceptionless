@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
@@ -16,7 +15,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             _eventRepository = eventRepository;
         }
 
-        public override async Task HandleItemAsync(WorkItemContext context, CancellationToken cancellationToken = new CancellationToken()) {
+        public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<StackWorkItem>();
             if (workItem.Delete) {
                 await _eventRepository.RemoveAllByStackIdsAsync(new[] { workItem.StackId });

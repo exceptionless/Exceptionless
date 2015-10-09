@@ -27,7 +27,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
         
         [Fact]
-        public async Task NoFutureEvents() {
+        public async Task NoFutureEventsAsync() {
             await ResetAsync();
 
             var localTime = DateTime.Now;
@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task CanIndexExtendedData() {
+        public async Task CanIndexExtendedDataAsync() {
             await ResetAsync();
 
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: DateTime.Now);
@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task SyncStackTags() {
+        public async Task SyncStackTagsAsync() {
             await ResetAsync();
 
             const string Tag1 = "Tag One";
@@ -118,7 +118,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task EnsureSingleNewStack() {
+        public async Task EnsureSingleNewStackAsync() {
             await ResetAsync();
 
             var pipeline = IoC.GetInstance<EventPipeline>();
@@ -137,7 +137,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
         
         [Fact]
-        public async Task EnsureSingleGlobalErrorStack() {
+        public async Task EnsureSingleGlobalErrorStackAsync() {
             await ResetAsync();
 
             var pipeline = IoC.GetInstance<EventPipeline>();
@@ -169,7 +169,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task EnsureSingleRegression() {
+        public async Task EnsureSingleRegressionAsync() {
             await ResetAsync();
 
             var pipeline = IoC.GetInstance<EventPipeline>();
@@ -210,7 +210,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Theory]
         [MemberData("Events")]
-        public async Task ProcessEvents(string errorFilePath) {
+        public async Task ProcessEventsAsync(string errorFilePath) {
             await ResetAsync();
 
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();

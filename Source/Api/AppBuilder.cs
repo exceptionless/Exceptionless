@@ -19,13 +19,14 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using Foundatio.Jobs;
+using Foundatio.Logging;
+using Foundatio.Metrics;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using NLog.Fluent;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
@@ -57,7 +58,7 @@ namespace Exceptionless.Api {
             exceptionlessContractResolver?.UseDefaultResolverFor(typeof(Connection).Assembly);
             Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
-            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
+            Config.Services.Add(typeof(IExceptionLogger), new FoundatioExceptionLogger());
             Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
 
             Config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
@@ -74,7 +75,12 @@ namespace Exceptionless.Api {
 
             container.Bootstrap(Config);
             container.Bootstrap(app);
-            
+
+            if (Settings.Current.WebsiteMode == WebsiteMode.Dev) {
+                var metricsClient = container.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
+                metricsClient?.StartDisplayingStats(TimeSpan.FromSeconds(10), new LoggerTextWriter { Source = "metrics" });
+            }
+
             app.UseWebApi(Config);
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);
             if (Settings.Current.EnableRedis)
@@ -88,25 +94,25 @@ namespace Exceptionless.Api {
                 Task.Run(async () => await CreateSampleDataAsync(container));
 
             if (Settings.Current.RunJobsInProcess) {
-                Log.Warn().Message("Jobs running in process.").Write();
+                Logger.Warn().Message("Jobs running in process.").Write();
 
                 var context = new OwinContext(app.Properties);
                 var token = context.Get<CancellationToken>("host.OnAppDisposing");
-                JobRunner.RunContinuousAsync<EventPostsJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<EventUserDescriptionsJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<MailMessageJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<EventNotificationsJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<WebHooksJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<DailySummaryJob>(cancellationToken: token, interval: TimeSpan.FromHours(1));
-                JobRunner.RunContinuousAsync<DownloadGeoIPDatabaseJob>(cancellationToken: token, interval: TimeSpan.FromDays(1));
-                JobRunner.RunContinuousAsync<RetentionLimitsJob>(cancellationToken: token, interval: TimeSpan.FromDays(1));
+                JobRunner.RunContinuousAsync<EventPostsJob>(initialDelay: TimeSpan.FromSeconds(2), cancellationToken: token);
+                JobRunner.RunContinuousAsync<EventUserDescriptionsJob>(initialDelay: TimeSpan.FromSeconds(3), cancellationToken: token);
+                JobRunner.RunContinuousAsync<MailMessageJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
+                JobRunner.RunContinuousAsync<EventNotificationsJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
+                JobRunner.RunContinuousAsync<WebHooksJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
+                JobRunner.RunContinuousAsync<DailySummaryJob>(initialDelay: TimeSpan.FromMinutes(1), cancellationToken: token, interval: TimeSpan.FromHours(1));
+                JobRunner.RunContinuousAsync<DownloadGeoIPDatabaseJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token, interval: TimeSpan.FromDays(1));
+                JobRunner.RunContinuousAsync<RetentionLimitsJob>(initialDelay: TimeSpan.FromMinutes(5), cancellationToken: token, interval: TimeSpan.FromDays(1));
             
-                JobRunner.RunContinuousAsync<WorkItemJob>(instanceCount: 2, cancellationToken: token);
+                JobRunner.RunContinuousAsync<WorkItemJob>(initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2, cancellationToken: token);
             } else {
-                Log.Info().Message("Jobs running out of process.").Write();
+                Logger.Info().Message("Jobs running out of process.").Write();
             }
 
-            Log.Info().Message("Starting api...").Write();
+            Logger.Info().Message("Starting api...").Write();
         }
 
         private static void EnableCors(HttpConfiguration config, IAppBuilder app) {
@@ -188,7 +194,7 @@ namespace Exceptionless.Api {
             try {
                 insulationAssembly = Assembly.Load("Exceptionless.Insulation");
             } catch (Exception ex) {
-                Log.Error().Message("Unable to load the insulation assembly.").Exception(ex).Write();
+                Logger.Error().Message("Unable to load the insulation assembly.").Exception(ex).Write();
             }
 
             if (insulationAssembly != null)

@@ -7,7 +7,6 @@ using System.Threading;
 using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Utility {
-    [Serializable]
     public struct ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>, IConvertible {
         private static readonly ObjectId __emptyInstance = default(ObjectId);
         private static readonly int __staticMachine;

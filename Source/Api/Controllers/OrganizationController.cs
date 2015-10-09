@@ -23,9 +23,9 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
-using NLog.Fluent;
 using Stripe;
 #pragma warning disable 1998
 
@@ -60,7 +60,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-        /// <param name="mode">If no mode is set then the whole organization object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to statistics than the fully populated object will be returned.</param>
         [HttpGet]
         [Route]
         [ResponseType(typeof(List<ViewOrganization>))]
@@ -71,10 +71,10 @@ namespace Exceptionless.Api.Controllers {
             var organizations = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds(), options);
             var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations.Documents, true);
 
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(viewOrganizations, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "statistics", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
 
-            return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
+            return OkWithResourceLinks(viewOrganizations, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
         }
 
         [HttpGet]
@@ -89,10 +89,10 @@ namespace Exceptionless.Api.Controllers {
             var organizations = await _repository.GetByCriteriaAsync(criteria, options, sort, paid, suspended);
             var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
             
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(viewOrganizations, options.HasMore, page, organizations.Total);
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "statistics", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), options.HasMore, page, organizations.Total);
 
-            return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), options.HasMore, page, organizations.Total);
+            return OkWithResourceLinks(viewOrganizations, options.HasMore, page, organizations.Total);
         }
 
         [HttpGet]
@@ -108,17 +108,21 @@ namespace Exceptionless.Api.Controllers {
         /// Get by id
         /// </summary>
         /// <param name="id">The identifier of the organization.</param>
+        /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to statistics than the fully populated object will be returned.</param>
         /// <response code="404">The organization could not be found.</response>
         [HttpGet]
         [Route("{id:objectid}", Name = "GetOrganizationById")]
         [ResponseType(typeof(ViewOrganization))]
-        public override async Task<IHttpActionResult> GetByIdAsync(string id) {
+        public async Task<IHttpActionResult> GetByIdAsync(string id, string mode = null) {
             var organization = await GetModelAsync(id);
             if (organization == null)
                 return NotFound();
 
             var viewOrganization = await MapAsync<ViewOrganization>(organization, true);
-            return Ok(await PopulateOrganizationStatsAsync(viewOrganization));
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "statistics", StringComparison.InvariantCultureIgnoreCase))
+                return Ok(await PopulateOrganizationStatsAsync(viewOrganization));
+            
+            return Ok(viewOrganization);
         }
 
         /// <summary>
@@ -185,7 +189,7 @@ namespace Exceptionless.Api.Controllers {
                 var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
                 stripeInvoice = invoiceService.Get(id);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Logger.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
             }
 
             if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
@@ -415,7 +419,7 @@ namespace Exceptionless.Api.Controllers {
                 await _repository.SaveAsync(organization);
                 await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
             } catch (Exception e) {
-                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Logger.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
                 return Ok(ChangePlanResult.FailWithMessage(e.Message));
             }
 
@@ -675,7 +679,7 @@ namespace Exceptionless.Api.Controllers {
         protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
             var workItems = new List<string>();
             foreach (var organization in organizations) {
-                Log.Info().Message("User {0} deleting organization {1}.", ExceptionlessUser.Id, organization.Id).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Logger.Info().Message("User {0} deleting organization {1}.", ExceptionlessUser.Id, organization.Id).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
                 workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveOrganizationWorkItem {
                     OrganizationId = organization.Id,
                     CurrentUserId = ExceptionlessUser.Id,

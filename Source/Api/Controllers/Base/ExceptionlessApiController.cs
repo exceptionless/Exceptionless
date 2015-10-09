@@ -139,7 +139,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected bool HasOrganizationOrProjectFilter(string filter) {
-            if (String.IsNullOrWhiteSpace(filter))
+            if (String.IsNullOrEmpty(filter))
                 return false;
 
             return filter.Contains("organization:") || filter.Contains("project:");

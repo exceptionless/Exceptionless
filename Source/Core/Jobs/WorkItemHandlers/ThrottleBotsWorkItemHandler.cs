@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
@@ -13,7 +12,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             _eventRepository = eventRepository;
         }
 
-        public override Task HandleItemAsync(WorkItemContext context, CancellationToken cancellationToken = new CancellationToken()) {
+        public override Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<ThrottleBotsWorkItem>();
             return _eventRepository.HideAllByClientIpAndDateAsync(workItem.OrganizationId, workItem.ClientIpAddress, workItem.UtcStartDate, workItem.UtcEndDate);
         }

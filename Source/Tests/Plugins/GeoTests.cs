@@ -5,13 +5,14 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
+using Foundatio.Caching;
 using Foundatio.Storage;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Plugins {
     public class GeoTests {
         private IGeoIPResolver _resolver;
-        private async Task<IGeoIPResolver> GetResolver() {
+        private async Task<IGeoIPResolver> GetResolverAsync() {
             if (_resolver != null)
                 return _resolver;
 
@@ -19,7 +20,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             var storage = new FolderFileStorage(dataDirectory);
 
             if (!await storage.ExistsAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH)) {
-                var job = new DownloadGeoIPDatabaseJob(storage);
+                var job = new DownloadGeoIPDatabaseJob(new InMemoryCacheClient(), storage);
                 var result = await job.RunAsync();
                 Assert.NotNull(result);
                 Assert.True(result.IsSuccess);
@@ -30,8 +31,8 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Theory]
         [MemberData("IPData")]
-        public async Task CanResolveIp(string ip, bool canResolve) {
-            var resolver = await GetResolver();
+        public async Task CanResolveIpAsync(string ip, bool canResolve) {
+            var resolver = await GetResolverAsync();
             var result = await resolver.ResolveIpAsync(ip);
             if (canResolve)
                 Assert.NotNull(result);
@@ -40,8 +41,8 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         [Fact]
-        public async Task CanResolveIpFromCache() {
-            var resolver = await GetResolver();
+        public async Task CanResolveIpFromCacheAsync() {
+            var resolver = await GetResolverAsync();
 
             // Load the database
             await resolver.ResolveIpAsync("0.0.0.0");

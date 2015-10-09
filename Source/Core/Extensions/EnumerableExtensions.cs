@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Extensions {
             foreach (var item in collection ?? new List<T>())
                 action(item);
         }
-
+        
         public static int IndexOf<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> selector) {
             int index = 0;
             foreach (var item in source) {

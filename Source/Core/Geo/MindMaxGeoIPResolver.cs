@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
+using Foundatio.Logging;
 using Foundatio.Storage;
 using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Geo {
     public class MindMaxGeoIPResolver : IGeoIPResolver, IDisposable {
@@ -51,10 +51,10 @@ namespace Exceptionless.Core.Geo {
                 return location;
             } catch (Exception ex) {
                 if (ex is AddressNotFoundException || ex is GeoIP2Exception) {
-                    Log.Trace().Message(ex.Message).Write();
+                    Logger.Trace().Message(ex.Message).Write();
                     await _cache.SetAsync<Location>(ip, null).AnyContext();
                 } else {
-                    Log.Error().Exception(ex).Message("Unable to resolve geo location for ip: " + ip).Write();
+                    Logger.Error().Exception(ex).Message("Unable to resolve geo location for ip: " + ip).Write();
                 }
 
                 return null;
@@ -77,16 +77,16 @@ namespace Exceptionless.Core.Geo {
             _databaseLastChecked = DateTime.UtcNow;
 
             if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH).AnyContext()) {
-                Log.Warn().Message("No GeoIP database was found.").Write();
+                Logger.Warn().Message("No GeoIP database was found.").Write();
                 return null;
             }
 
-            Log.Info().Message("Loading GeoIP database.").Write();
+            Logger.Info().Message("Loading GeoIP database.").Write();
             try {
                 using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
                     _database = new DatabaseReader(stream);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Unable to open GeoIP database.").Write();
+                Logger.Error().Exception(ex).Message("Unable to open GeoIP database.").Write();
             }
 
             return _database;

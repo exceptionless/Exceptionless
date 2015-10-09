@@ -7,9 +7,9 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
+using Foundatio.Logging;
 using Foundatio.Messaging;
 using Nest;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Repositories {
     public class StackRepository : ElasticSearchRepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
@@ -66,7 +66,7 @@ namespace Exceptionless.Core.Repositories {
                     .Add("count", count))).AnyContext();
             
             if (!result.IsValid) {
-                Log.Error().Message("Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError.Error).Write();
+                Logger.Error().Message("Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError.Error).Write();
                 return;
             }
 
@@ -133,7 +133,9 @@ namespace Exceptionless.Core.Repositories {
             if (!EnableCache)
                 return;
 
-            stacks.ForEach(async s => await InvalidateCacheAsync(GetStackSignatureCacheKey(s)).AnyContext());
+            foreach (var stack in stacks)
+                await InvalidateCacheAsync(GetStackSignatureCacheKey(stack)).AnyContext();
+
             await base.InvalidateCacheAsync(stacks, originalStacks).AnyContext();
         }
 

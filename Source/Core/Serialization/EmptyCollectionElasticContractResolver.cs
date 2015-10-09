@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Serialization {
             contract.DictionaryKeyResolver = propertyName => propertyName;
             return contract;
         }
-
+        
         protected override string ResolvePropertyName(string propertyName) {
             return propertyName.ToLowerUnderscoredWords();
         }

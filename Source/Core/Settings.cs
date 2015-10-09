@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Extensions;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core {
     public class Settings : SettingsBase<Settings> {
@@ -39,10 +40,14 @@ namespace Exceptionless.Core {
         public string RedisConnectionString { get; private set; }
 
         public bool EnableRedis { get; private set; }
-        
+       
         public string ElasticSearchConnectionString { get; private set; }
 
+        public bool EnableElasticsearchTracing { get; private set; }
+
         public string Version { get; private set; }
+        
+        public LogLevel MinimumLogLevel { get; private set; }
 
         public bool EnableIntercom => !String.IsNullOrEmpty(IntercomAppSecret);
 
@@ -143,11 +148,13 @@ namespace Exceptionless.Core {
             EnableAzureStorage = GetBool("EnableAzureStorage", !String.IsNullOrEmpty(AzureStorageConnectionString));
             
             ElasticSearchConnectionString = GetConnectionString("ElasticSearchConnectionString");
+            EnableElasticsearchTracing = GetBool("EnableElasticsearchTracing");
 
             RedisConnectionString = GetConnectionString("RedisConnectionString");
             EnableRedis = GetBool("EnableRedis", !String.IsNullOrEmpty(RedisConnectionString));
 
             Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
+            MinimumLogLevel = GetEnum<LogLevel>("MinimumLogLevel", LogLevel.Info);
         }
     }
 

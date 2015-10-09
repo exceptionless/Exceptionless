@@ -19,9 +19,9 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models.Stats;
 using Exceptionless.Core.Models.WorkItems;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Foundatio.Queues;
 using Newtonsoft.Json.Linq;
-using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stacks")]
@@ -516,12 +516,12 @@ namespace Exceptionless.Api.Controllers {
             try {
                 stacks = (await _repository.GetByFilterAsync(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options)).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
             } catch (ApplicationException ex) {
-                Log.Error().Exception(ex)
+                Logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
                     .Property("User", ExceptionlessUser)
-                    .ContextProperty("HttpActionContext", ActionContext)
+                    .SetActionContext(ActionContext)
                     .Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");
@@ -675,12 +675,12 @@ namespace Exceptionless.Api.Controllers {
             try {
                 terms = (await _eventStats.GetTermsStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1)).Terms;
             } catch (ApplicationException ex) {
-                Log.Error().Exception(ex)
+                Logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
                     .Property("User", ExceptionlessUser)
-                    .ContextProperty("HttpActionContext", ActionContext)
+                    .SetActionContext(ActionContext)
                     .Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");

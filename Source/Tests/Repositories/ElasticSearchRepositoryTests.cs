@@ -15,7 +15,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         
         [Fact]
-        public async Task CanCreateUpdateRemove() {
+        public async Task CanCreateUpdateRemoveAsync() {
             await ResetAsync();
 
             await _repository.RemoveAllAsync();
@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task CanFindMany() {
+        public async Task CanFindManyAsync() {
             await ResetAsync();
 
             await _repository.RemoveAllAsync();
@@ -68,7 +68,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task CanAddAndGetByCached() {
+        public async Task CanAddAndGetByCachedAsync() {
             await ResetAsync();
 
             var cache = IoC.GetInstance<ICacheClient>() as InMemoryCacheClient;

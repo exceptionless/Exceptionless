@@ -11,7 +11,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using FluentValidation;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 #pragma warning disable 1998
 
@@ -68,10 +68,12 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             if (modelUpdateFunc != null)
-                models.ForEach(async m => await modelUpdateFunc(m));
+                foreach (var model in models)
+                    await modelUpdateFunc(model);
 
             await _repository.SaveAsync(models);
-            models.ForEach(async m => await AfterUpdateAsync(m));
+            foreach (var model in models)
+                await AfterUpdateAsync(model);
 
             if (typeof(TViewModel) == typeof(TModel))
                 return Ok(models);
@@ -193,7 +195,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 workIds = await DeleteModelsAsync(items) ?? new List<string>();
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Logger.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
             

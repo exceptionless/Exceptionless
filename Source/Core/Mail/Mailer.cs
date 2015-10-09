@@ -8,9 +8,9 @@ using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Models;
+using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
-using NLog.Fluent;
 using RazorSharpEmail;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
@@ -89,7 +89,7 @@ namespace Exceptionless.Core.Mail {
         public Task SendNoticeAsync(string emailAddress, EventNotification model) {
             var message = _pluginManager.GetEventNotificationMailMessage(model);
             if (message == null) {
-                Log.Warn().Message("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, emailAddress).Write();
+                Logger.Warn().Message("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, emailAddress).Write();
                 return TaskHelper.Completed();
             }
 

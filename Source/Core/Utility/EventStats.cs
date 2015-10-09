@@ -9,8 +9,8 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Stats;
 using Foundatio.Caching;
+using Foundatio.Logging;
 using Nest;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
     public class EventStats {
@@ -113,7 +113,7 @@ namespace Exceptionless.Core.Utility {
             _elasticClient.DisableTrace();
 
             if (!res.IsValid) {
-                Log.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
+                Logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving term stats failed.");
             }
 
@@ -258,7 +258,7 @@ namespace Exceptionless.Core.Utility {
             _elasticClient.DisableTrace();
 
             if (!res.IsValid) {
-                Log.Error().Message("Retrieving stats failed: {0}", res.ServerError.Error).Write();
+                Logger.Error().Message("Retrieving stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving stats failed.");
             }
 

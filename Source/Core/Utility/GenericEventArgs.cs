@@ -1,12 +1,9 @@
 ﻿using System;
 
-namespace Exceptionless.Core.Utility
-{
+namespace Exceptionless.Core.Utility {
     [Serializable]
-    public class EventArgs<T> : EventArgs
-    {
-        public EventArgs(T value)
-        {
+    public class EventArgs<T> : EventArgs {
+        public EventArgs(T value) {
             Value = value;
         }
 
@@ -14,10 +11,8 @@ namespace Exceptionless.Core.Utility
     }
 
     [Serializable]
-    public class EventArgs<T1, T2> : EventArgs<T1>
-    {
-        public EventArgs(T1 value1, T2 value2) : base(value1)
-        {
+    public class EventArgs<T1, T2> : EventArgs<T1> {
+        public EventArgs(T1 value1, T2 value2) : base(value1) {
             Value2 = value2;
         }
 
@@ -25,10 +20,8 @@ namespace Exceptionless.Core.Utility
     }
 
     [Serializable]
-    public class EventArgs<T1, T2, T3> : EventArgs<T1, T2>
-    {
-        public EventArgs(T1 value1, T2 value2, T3 value3) : base(value1, value2)
-        {
+    public class EventArgs<T1, T2, T3> : EventArgs<T1, T2> {
+        public EventArgs(T1 value1, T2 value2, T3 value3) : base(value1, value2) {
             Value3 = value3;
         }
 

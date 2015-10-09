@@ -89,8 +89,11 @@ namespace Exceptionless.Core.Repositories {
             if (originalUsers != null)
                 combinedUsers.AddRange(originalUsers);
 
-            combinedUsers.Select(u => u.EmailAddress).Distinct().ForEach(async email => await InvalidateCacheAsync(email).AnyContext());
-            combinedUsers.SelectMany(u => u.OrganizationIds).Distinct().ForEach(async organizationId => await InvalidateCacheAsync("org:" + organizationId).AnyContext());
+            foreach (var emailAddress in combinedUsers.Select(u => u.EmailAddress).Distinct())
+                await InvalidateCacheAsync(emailAddress).AnyContext();
+
+            foreach (var organizationId in combinedUsers.SelectMany(u => u.OrganizationIds).Distinct())
+                await InvalidateCacheAsync("org:" + organizationId).AnyContext();
 
             await base.InvalidateCacheAsync(users, originalUsers).AnyContext();
         }

@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 try {
                     await plugin.StartupAsync().AnyContext();
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling startup in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Logger.Error().Exception(ex).Message("Error calling startup in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
                 }
             }
         }
@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 try {
                     await plugin.EventProcessingAsync(context).AnyContext();
                 } catch (Exception ex) {
-                    Log.Error().Message("Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
+                    Logger.Error().Message("Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }
             }
         }
@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 try {
                     await plugin.EventProcessedAsync(context).AnyContext();
                 } catch (Exception ex) {
-                    Log.Error().Message("Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
+                    Logger.Error().Message("Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }
             }
         }

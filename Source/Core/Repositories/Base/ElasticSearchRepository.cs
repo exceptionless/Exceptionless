@@ -10,9 +10,9 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
+using Foundatio.Logging;
 using Foundatio.Messaging;
 using Nest;
-using NLog.Fluent;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Core.Repositories {
@@ -221,12 +221,13 @@ namespace Exceptionless.Core.Repositories {
                 }).AnyContext();
 
                 if (!bulkResult.IsValid) {
-                    Log.Error().Message("Error occurred while bulk updating").Exception(bulkResult.ConnectionStatus.OriginalException).Write();
+                    Logger.Error().Message("Error occurred while bulk updating").Exception(bulkResult.ConnectionStatus.OriginalException).Write();
                     return 0;
                 }
 
                 if (EnableCache)
-                    results.Hits.ForEach(async d => await InvalidateCacheAsync(d.Id).AnyContext());
+                    foreach (var hit in results.Hits)
+                        await InvalidateCacheAsync(hit.Id).AnyContext();
 
                 recordsAffected += results.Documents.Count();
                 results = await _elasticClient.ScrollAsync<T>("4s", results.ScrollId).AnyContext();
@@ -282,10 +283,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected virtual async Task SendNotificationsAsync(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {
-            if (BatchNotifications)
+            if (BatchNotifications) {
                 await PublishMessageAsync(changeType, documents).AnyContext();
-            else
-                documents.ForEach(async d => await PublishMessageAsync(changeType, d).AnyContext());
+            } else {
+                foreach (var document in documents)
+                    await PublishMessageAsync(changeType, document).AnyContext();
+            }
         }
 
         protected Task PublishMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null) {

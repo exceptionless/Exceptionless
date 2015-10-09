@@ -33,36 +33,36 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Exceptionless, Version=3.1.1411.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.3.1.1411\lib\net45\Exceptionless.dll</HintPath>
+    <Reference Include="Exceptionless, Version=3.1.1412.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.3.1.1412\lib\net45\Exceptionless.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.Extras, Version=3.1.1411.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.3.1.1411\lib\net45\Exceptionless.Extras.dll</HintPath>
+    <Reference Include="Exceptionless.Extras, Version=3.1.1412.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.3.1.1412\lib\net45\Exceptionless.Extras.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.NLog, Version=3.1.1411.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.NLog.3.1.1411\lib\net45\Exceptionless.NLog.dll</HintPath>
+    <Reference Include="Exceptionless.NLog, Version=3.1.1412.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.NLog.3.1.1412\lib\net45\Exceptionless.NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.Portable, Version=3.1.1411.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.Portable.3.1.1411\lib\net45\Exceptionless.Portable.dll</HintPath>
+    <Reference Include="Exceptionless.Portable, Version=3.1.1412.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.Portable.3.1.1412\lib\net45\Exceptionless.Portable.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.WebApi, Version=3.1.1411.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.3.1.1411\lib\net45\Exceptionless.WebApi.dll</HintPath>
+    <Reference Include="Exceptionless.WebApi, Version=3.1.1412.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.3.1.1412\lib\net45\Exceptionless.WebApi.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.3.0.509\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.3.0.518\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.AzureStorage, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.AzureStorage.3.0.509\lib\net45\Foundatio.AzureStorage.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.AzureStorage.3.0.518\lib\net45\Foundatio.AzureStorage.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Redis, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Redis.3.0.509\lib\net45\Foundatio.Redis.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Redis.3.0.518\lib\net45\Foundatio.Redis.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.KeyVault.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -70,16 +70,16 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Data.Edm, Version=5.6.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.Data.Edm.5.6.4\lib\net40\Microsoft.Data.Edm.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Data.OData, Version=5.6.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.Data.OData.5.6.4\lib\net40\Microsoft.Data.OData.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Data.Services.Client, Version=5.6.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.Data.Services.Client.5.6.4\lib\net40\Microsoft.Data.Services.Client.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Threading.Tasks, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.dll</HintPath>
@@ -94,8 +94,8 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.WindowsAzure.Configuration, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.WindowsAzure.ConfigurationManager.3.1.0\lib\net40\Microsoft.WindowsAzure.Configuration.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.WindowsAzure.Storage, Version=5.0.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\packages\WindowsAzure.Storage.5.0.2\lib\net40\Microsoft.WindowsAzure.Storage.dll</HintPath>
@@ -125,12 +125,12 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleInjector, Version=3.0.5.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.3.0.5\lib\net45\SimpleInjector.dll</HintPath>
+    <Reference Include="SimpleInjector, Version=3.0.6.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.3.0.6\lib\net45\SimpleInjector.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SimpleInjector.Packaging, Version=3.0.5.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.Packaging.3.0.5\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
+    <Reference Include="SimpleInjector.Packaging, Version=3.0.6.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.Packaging.3.0.6\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="StackExchange.Redis, Version=1.0.316.0, Culture=neutral, processorArchitecture=MSIL">
@@ -146,8 +146,8 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Net.Http.Formatting, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Client.5.2.3\lib\net45\System.Net.Http.Formatting.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Net.Http.Primitives, Version=4.2.29.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.Net.Http.2.2.29\lib\net45\System.Net.Http.Primitives.dll</HintPath>
@@ -155,12 +155,12 @@
     </Reference>
     <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Spatial, Version=5.6.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\System.Spatial.5.6.4\lib\net40\System.Spatial.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Web.Http, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Core.5.2.3\lib\net45\System.Web.Http.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -174,6 +174,8 @@
     </Compile>
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="ExceptionlessClientLastReferenceIdManager.cs" />
+    <Compile Include="Jobs\FoundatioBootstrapper.cs" />
+    <Compile Include="Logging\NlogWriter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -184,9 +186,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

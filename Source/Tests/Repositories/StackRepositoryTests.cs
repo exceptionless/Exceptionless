@@ -16,7 +16,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
         
         [Fact]
-        public async Task MarkAsRegressedTest() {
+        public async Task MarkAsRegressedTestAsync() {
             await RemoveDataAsync();
 
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: DateTime.Now.SubtractMonths(1)));
@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task IncrementEventCounterTest() {
+        public async Task IncrementEventCounterTestAsync() {
             await RemoveDataAsync();
 
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
@@ -76,22 +76,22 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public Task GetStackInfoBySignatureHashTest() {
+        public Task GetStackInfoBySignatureHashTestAsync() {
             return TaskHelper.Completed();
         }
         
         [Fact]
-        public Task GetMostRecentTest() {
+        public Task GetMostRecentTestAsync() {
             return TaskHelper.Completed();
         }
         
         [Fact]
-        public Task GetNewTest() {
+        public Task GetNewTestAsync() {
             return TaskHelper.Completed();
         }
         
         [Fact]
-        public Task InvalidateCacheTest() {
+        public Task InvalidateCacheTestAsync() {
             return TaskHelper.Completed();
         }
 

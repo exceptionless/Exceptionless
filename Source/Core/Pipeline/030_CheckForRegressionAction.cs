@@ -8,8 +8,8 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Foundatio.Queues;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(30)]
@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Pipeline {
             foreach (var stackGroup in stacks) {
                 try {
                     var context = stackGroup.First();
-                    Log.Trace().Message("Marking stack and events as regression.").Write();
+                    Logger.Trace().Message("Marking stack and events as regression.").Write();
                     await _stackRepository.MarkAsRegressedAsync(context.Stack.Id).AnyContext();
                     await _workItemQueue.EnqueueAsync(new StackWorkItem { OrganizationId = context.Event.OrganizationId, StackId = context.Stack.Id, UpdateIsFixed = true, IsFixed = false }).AnyContext();
                     await _stackRepository.InvalidateCacheAsync(context.Event.ProjectId, context.Event.StackId, context.SignatureHash).AnyContext();

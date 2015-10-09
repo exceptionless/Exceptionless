@@ -14,7 +14,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly IWebHookRepository _repository = IoC.GetInstance<IWebHookRepository>();
 
         [Fact]
-        public async Task GetByOrganizationIdOrProjectId() {
+        public async Task GetByOrganizationIdOrProjectIdAsync() {
             await RemoveDataAsync();
 
             await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 0, 0, 0) });
@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
         
         [Fact]
-        public async Task CanSaveWebHookVersion() {
+        public async Task CanSaveWebHookVersionAsync() {
             await RemoveDataAsync();
 
             await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(1, 1, 1, 1) });

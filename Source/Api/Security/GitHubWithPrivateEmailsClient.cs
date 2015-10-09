@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Foundatio.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using NLog.Fluent;
 using OAuth2.Client;
 using OAuth2.Client.Impl;
 using OAuth2.Configuration;
@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Security {
 
                 return result;
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Critical().Tag("GitHub").Property("Content", content).Write();
+                Logger.Error().Exception(ex).Critical().Tag("GitHub").Property("Content", content).Write();
                 throw;
             }
         }
@@ -73,7 +73,7 @@ namespace Exceptionless.Api.Security {
             try {
                 return JsonConvert.DeserializeObject<List<UserEmails>>(content);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Critical().Message("Error while parsing email addresses. Message: {0}", content).Tag("GitHub").Property("Content", content).Write();
+                Logger.Error().Exception(ex).Critical().Message("Error while parsing email addresses. Message: {0}", content).Tag("GitHub").Property("Content", content).Write();
                 throw;
             }
         }

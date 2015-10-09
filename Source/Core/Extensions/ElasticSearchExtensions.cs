@@ -11,6 +11,9 @@ namespace Exceptionless.Core.Extensions {
 
         [Conditional("DEBUG")]
         public static void EnableTrace(this IElasticClient client) {
+            if (!Settings.Current.EnableElasticsearchTracing)
+                return;
+
             var conn = client.Connection as HttpConnection;
             if (conn == null)
                 return;
@@ -21,6 +24,9 @@ namespace Exceptionless.Core.Extensions {
 
         [Conditional("DEBUG")]
         public static void DisableTrace(this IElasticClient client) {
+            if (!Settings.Current.EnableElasticsearchTracing)
+                return;
+
             var conn = client.Connection as HttpConnection;
             if (conn == null)
                 return;

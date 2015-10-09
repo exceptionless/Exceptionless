@@ -4,7 +4,7 @@ using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Billing;
 using Exceptionless.Api.Utility;
-using NLog.Fluent;
+using Foundatio.Logging;
 using Stripe;
 #pragma warning disable 1998
 
@@ -25,12 +25,12 @@ namespace Exceptionless.Api.Controllers {
             try {
                 stripeEvent = StripeEventUtility.ParseEvent(json);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Unable to parse incoming event.").Property("event", json).ContextProperty("HttpActionContext", ActionContext).Write();
+                Logger.Error().Exception(ex).Message("Unable to parse incoming event.").Property("event", json).SetActionContext(ActionContext).Write();
                 return BadRequest("Unable to parse incoming event");
             }
 
             if (stripeEvent == null) {
-                Log.Warn().Message("Null stripe event.").ContextProperty("HttpActionContext", ActionContext).Write();
+                Logger.Warn().Message("Null stripe event.").SetActionContext(ActionContext).Write();
                 return BadRequest("Incoming event empty");
             }
 

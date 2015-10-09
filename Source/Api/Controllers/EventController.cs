@@ -20,10 +20,9 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models.Data;
 using FluentValidation;
-using Foundatio.Metrics;
+using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Storage;
-using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
@@ -34,7 +33,6 @@ namespace Exceptionless.Api.Controllers {
         private readonly IStackRepository _stackRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
-        private readonly IMetricsClient _metricsClient;
         private readonly IValidator<UserDescription> _userDescriptionValidator;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IFileStorage _storage;
@@ -45,7 +43,6 @@ namespace Exceptionless.Api.Controllers {
             IStackRepository stackRepository,
             IQueue<EventPost> eventPostQueue, 
             IQueue<EventUserDescription> eventUserDescriptionQueue,
-            IMetricsClient metricsClient,
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
             IFileStorage storage) : base(repository) {
@@ -54,7 +51,6 @@ namespace Exceptionless.Api.Controllers {
             _stackRepository = stackRepository;
             _eventPostQueue = eventPostQueue;
             _eventUserDescriptionQueue = eventUserDescriptionQueue;
-            _metricsClient = metricsClient;
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
             _storage = storage;
@@ -75,7 +71,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}", Name = "GetPersistentEventById")]
         [ResponseType(typeof(PersistentEvent))]
         public async Task<IHttpActionResult> GetByIdAsync(string id, string filter = null, string time = null, string offset = null) {
-            var model = await GetModelAsync(id);
+            var model = await GetModelAsync(id, false);
             if (model == null)
                 return NotFound();
 
@@ -91,12 +87,10 @@ namespace Exceptionless.Api.Controllers {
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
             var systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
-
             var timeInfo = GetTimeInfo(time, offset);
-            return OkWithLinks(model,
-                GetEntityResourceLink(await _repository.GetPreviousEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
-                GetEntityResourceLink(await _repository.GetNextEventIdAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "next"),
-                GetEntityResourceLink<Stack>(model.StackId, "parent"));
+            var result = await _repository.GetPreviousAndNextEventIdsAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End);
+
+            return OkWithLinks(model, GetEntityResourceLink(result.Previous, "previous"), GetEntityResourceLink(result.Next, "next"), GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
 
         /// <summary>
@@ -138,12 +132,12 @@ namespace Exceptionless.Api.Controllers {
             try {
                 events = await _repository.GetByFilterAsync(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
-                Log.Error().Exception(ex)
+                Logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
                     .Property("User", ExceptionlessUser)
-                    .ContextProperty("HttpActionContext", ActionContext)
+                    .SetActionContext(ActionContext)
                     .Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");
@@ -327,7 +321,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IHttpActionResult> LegacyPatch(string id, Delta<UpdateEvent> changes) {
+        public async Task<IHttpActionResult> LegacyPatchAsync(string id, Delta<UpdateEvent> changes) {
             if (changes == null)
                 return Ok();
 
@@ -427,12 +421,12 @@ namespace Exceptionless.Api.Controllers {
                     ContentEncoding = contentEncoding
                 }, _storage);
             } catch (Exception ex) {
-                Log.Error().Exception(ex)
+                Logger.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
                     .Project(projectId)
                     .Identity(ExceptionlessUser?.EmailAddress)
                     .Property("User", ExceptionlessUser)
-                    .ContextProperty("HttpActionContext", ActionContext)
+                    .SetActionContext(ActionContext)
                     .WriteIf(projectId != Settings.Current.InternalProjectId);
 
                 return StatusCode(HttpStatusCode.InternalServerError);

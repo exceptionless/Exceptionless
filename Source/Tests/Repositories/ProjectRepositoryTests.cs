@@ -12,7 +12,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public readonly IProjectRepository _repository = IoC.GetInstance<IProjectRepository>();
 
         [Fact]
-        public async Task IncrementNextSummaryEndOfDayTicks() {
+        public async Task IncrementNextSummaryEndOfDayTicksAsync() {
             await _repository.RemoveAllAsync();
             Assert.Equal(0, await _repository.CountAsync());
             
