@@ -18,6 +18,7 @@ namespace WorkItemJob {
                 ServiceProviderTypeName = "Exceptionless.Insulation.Jobs.FoundatioBootstrapper,Exceptionless.Insulation",
                 InstanceCount = 2,
                 Interval = TimeSpan.Zero,
+                InitialDelay = TimeSpan.FromSeconds(2),
                 RunContinuous = true
             });
         }

@@ -18,6 +18,7 @@ namespace EventNotificationsJob {
                 ServiceProviderTypeName = "Exceptionless.Insulation.Jobs.FoundatioBootstrapper,Exceptionless.Insulation",
                 InstanceCount = 1,
                 Interval = TimeSpan.Zero,
+                InitialDelay = TimeSpan.FromSeconds(5),
                 RunContinuous = true
             });
         }

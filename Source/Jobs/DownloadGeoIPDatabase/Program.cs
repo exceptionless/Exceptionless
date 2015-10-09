@@ -17,7 +17,8 @@ namespace DownloadGeoIPDatabaseJob {
                 JobType = typeof(Exceptionless.Core.Jobs.DownloadGeoIPDatabaseJob),
                 ServiceProviderTypeName = "Exceptionless.Insulation.Jobs.FoundatioBootstrapper,Exceptionless.Insulation",
                 InstanceCount = 1,
-                Interval = TimeSpan.FromDays(1),
+                Interval = TimeSpan.FromHours(4),
+                InitialDelay = TimeSpan.FromSeconds(5),
                 RunContinuous = true
             });
         }

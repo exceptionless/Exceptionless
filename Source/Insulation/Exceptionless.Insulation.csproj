@@ -37,36 +37,36 @@
       <HintPath>..\..\packages\Elasticsearch.Net.1.7.1\lib\net45\Elasticsearch.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless, Version=3.1.1411.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.3.1.1411\lib\net45\Exceptionless.dll</HintPath>
+    <Reference Include="Exceptionless, Version=3.1.1412.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.3.1.1412\lib\net45\Exceptionless.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.Extras, Version=3.1.1411.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.3.1.1411\lib\net45\Exceptionless.Extras.dll</HintPath>
+    <Reference Include="Exceptionless.Extras, Version=3.1.1412.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.3.1.1412\lib\net45\Exceptionless.Extras.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.NLog, Version=3.1.1411.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.NLog.3.1.1411\lib\net45\Exceptionless.NLog.dll</HintPath>
+    <Reference Include="Exceptionless.NLog, Version=3.1.1412.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.NLog.3.1.1412\lib\net45\Exceptionless.NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.Portable, Version=3.1.1411.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.Portable.3.1.1411\lib\net45\Exceptionless.Portable.dll</HintPath>
+    <Reference Include="Exceptionless.Portable, Version=3.1.1412.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.Portable.3.1.1412\lib\net45\Exceptionless.Portable.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.WebApi, Version=3.1.1411.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.3.1.1411\lib\net45\Exceptionless.WebApi.dll</HintPath>
+    <Reference Include="Exceptionless.WebApi, Version=3.1.1412.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.3.1.1412\lib\net45\Exceptionless.WebApi.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.3.0.514\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.3.0.518\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.AzureStorage, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.AzureStorage.3.0.514\lib\net45\Foundatio.AzureStorage.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.AzureStorage.3.0.518\lib\net45\Foundatio.AzureStorage.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Redis, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Redis.3.0.514\lib\net45\Foundatio.Redis.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Redis.3.0.518\lib\net45\Foundatio.Redis.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.KeyVault.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">

@@ -62,11 +62,8 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<JsonSerializerSettings>(settings);
             container.RegisterSingleton<JsonSerializer>(JsonSerializer.Create(settings));
             container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
-
-            var metricsClient = new InMemoryMetricsClient();
-            metricsClient.StartDisplayingStats();
-            container.RegisterSingleton<IMetricsClient>(metricsClient);
             
+            container.RegisterSingleton<IMetricsClient, InMemoryMetricsClient>();
             container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ElasticSearchConfiguration>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
             container.RegisterSingleton<EventIndex, EventIndex>();
             container.RegisterSingleton<OrganizationIndex, OrganizationIndex>();

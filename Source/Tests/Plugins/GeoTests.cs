@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
+using Foundatio.Caching;
 using Foundatio.Storage;
 using Xunit;
 
@@ -19,7 +20,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             var storage = new FolderFileStorage(dataDirectory);
 
             if (!await storage.ExistsAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH)) {
-                var job = new DownloadGeoIPDatabaseJob(storage);
+                var job = new DownloadGeoIPDatabaseJob(new InMemoryCacheClient(), storage);
                 var result = await job.RunAsync();
                 Assert.NotNull(result);
                 Assert.True(result.IsSuccess);

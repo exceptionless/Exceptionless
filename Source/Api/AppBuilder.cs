@@ -20,6 +20,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using Foundatio.Jobs;
 using Foundatio.Logging;
+using Foundatio.Metrics;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
@@ -74,7 +75,12 @@ namespace Exceptionless.Api {
 
             container.Bootstrap(Config);
             container.Bootstrap(app);
-            
+
+            if (Settings.Current.WebsiteMode == WebsiteMode.Dev) {
+                var metricsClient = container.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
+                metricsClient?.StartDisplayingStats(TimeSpan.FromSeconds(10), new LoggerTextWriter { Source = "metrics" });
+            }
+
             app.UseWebApi(Config);
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);
             if (Settings.Current.EnableRedis)
@@ -92,16 +98,16 @@ namespace Exceptionless.Api {
 
                 var context = new OwinContext(app.Properties);
                 var token = context.Get<CancellationToken>("host.OnAppDisposing");
-                JobRunner.RunContinuousAsync<EventPostsJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<EventUserDescriptionsJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<MailMessageJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<EventNotificationsJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<WebHooksJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<DailySummaryJob>(cancellationToken: token, interval: TimeSpan.FromHours(1));
-                JobRunner.RunContinuousAsync<DownloadGeoIPDatabaseJob>(cancellationToken: token, interval: TimeSpan.FromDays(1));
-                JobRunner.RunContinuousAsync<RetentionLimitsJob>(cancellationToken: token, interval: TimeSpan.FromDays(1));
+                JobRunner.RunContinuousAsync<EventPostsJob>(initialDelay: TimeSpan.FromSeconds(2), cancellationToken: token);
+                JobRunner.RunContinuousAsync<EventUserDescriptionsJob>(initialDelay: TimeSpan.FromSeconds(3), cancellationToken: token);
+                JobRunner.RunContinuousAsync<MailMessageJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
+                JobRunner.RunContinuousAsync<EventNotificationsJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
+                JobRunner.RunContinuousAsync<WebHooksJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
+                JobRunner.RunContinuousAsync<DailySummaryJob>(initialDelay: TimeSpan.FromMinutes(1), cancellationToken: token, interval: TimeSpan.FromHours(1));
+                JobRunner.RunContinuousAsync<DownloadGeoIPDatabaseJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token, interval: TimeSpan.FromDays(1));
+                JobRunner.RunContinuousAsync<RetentionLimitsJob>(initialDelay: TimeSpan.FromMinutes(5), cancellationToken: token, interval: TimeSpan.FromDays(1));
             
-                JobRunner.RunContinuousAsync<WorkItemJob>(instanceCount: 2, cancellationToken: token);
+                JobRunner.RunContinuousAsync<WorkItemJob>(initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2, cancellationToken: token);
             } else {
                 Logger.Info().Message("Jobs running out of process.").Write();
             }

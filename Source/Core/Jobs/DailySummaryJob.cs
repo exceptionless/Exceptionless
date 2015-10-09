@@ -13,6 +13,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
+using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
@@ -28,7 +29,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IMailer _mailer;
         private readonly ILockProvider _lockProvider;
 
-        public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, EventStats stats, IMailer mailer, ILockProvider lockProvider) {
+        public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, EventStats stats, IMailer mailer, ICacheClient cacheClient) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
@@ -36,14 +37,14 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
             _stats = stats;
             _mailer = mailer;
-            _lockProvider = lockProvider;
+            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
         }
 
         protected override Task<ILock> GetJobLockAsync() {
-            return _lockProvider.AcquireAsync("DailySummaryJob");
+            return _lockProvider.AcquireAsync(nameof(DailySummaryJob), TimeSpan.FromHours(1), new CancellationToken(true));
         }
-        
-        protected override async Task<JobResult> RunInternalAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+
+        protected override async Task<JobResult> RunInternalAsync(JobRunContext context) {
             if (!Settings.Current.EnableDailySummary)
                 return JobResult.SuccessWithMessage("Summary notifications are disabled.");
 
@@ -53,7 +54,7 @@ namespace Exceptionless.Core.Jobs {
             const int BATCH_SIZE = 25;
 
             var projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
-            while (projects.Count > 0 && !cancellationToken.IsCancellationRequested) {
+            while (projects.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 var documentsUpdated = await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projects.Select(p => p.Id).ToList()).AnyContext();
                 Logger.Info().Message("Got {0} projects to process. ", projects.Count).Write();
                 Debug.Assert(projects.Count == documentsUpdated);
@@ -72,9 +73,14 @@ namespace Exceptionless.Core.Jobs {
                     };
 
                     await ProcessSummaryNotificationAsync(notification).AnyContext();
+
+                    // Sleep so were not hammering the database.
+                    await Task.Delay(TimeSpan.FromSeconds(1));
                 }
 
                 projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
+                if (projects.Count > 0)
+                    await context.JobLock.RenewAsync().AnyContext();
             }
 
             return JobResult.SuccessWithMessage("Successfully sent summary notifications.");
@@ -96,8 +102,9 @@ namespace Exceptionless.Core.Jobs {
             }
 
             Logger.Info().Message("Sending daily summary: users={0} project={1}", users.Count, project.Id).Write();
-            var paging = new PagingOptions { Limit = 5 };
-            List<Stack> newest = (await _stackRepository.GetNewAsync(project.Id, data.UtcStartTime, data.UtcEndTime, paging).AnyContext()).Documents.ToList();
+            //var paging = new PagingOptions { Limit = 5 };
+            //List<Stack> newest = (await _stackRepository.GetNewAsync(project.Id, data.UtcStartTime, data.UtcEndTime, paging).AnyContext()).Documents.ToList();
+            var newest = new List<Stack>();
 
             var result = await _stats.GetTermsStatsAsync(data.UtcStartTime, data.UtcEndTime, "stack_id", "type:error project:" + data.Id, max: 5).AnyContext();
             //var termStatsList = result.Terms.Take(5).ToList();

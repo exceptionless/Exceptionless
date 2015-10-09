@@ -18,6 +18,7 @@ namespace DailySummaryJob {
                 ServiceProviderTypeName = "Exceptionless.Insulation.Jobs.FoundatioBootstrapper,Exceptionless.Insulation",
                 InstanceCount = 1,
                 Interval = TimeSpan.FromHours(1),
+                InitialDelay = TimeSpan.FromMinutes(1),
                 RunContinuous = true
             });
         }

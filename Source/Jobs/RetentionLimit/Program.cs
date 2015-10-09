@@ -17,7 +17,8 @@ namespace RetentionLimitsJob {
                 JobType = typeof(Exceptionless.Core.Jobs.RetentionLimitsJob),
                 ServiceProviderTypeName = "Exceptionless.Insulation.Jobs.FoundatioBootstrapper,Exceptionless.Insulation",
                 InstanceCount = 1,
-                Interval = TimeSpan.FromDays(1),
+                Interval = TimeSpan.FromHours(4),
+                InitialDelay = TimeSpan.FromMinutes(5),
                 RunContinuous = true
             });
         }
