@@ -23,7 +23,6 @@ namespace Exceptionless.Insulation.Jobs {
             container.RegisterPackage<Core.Bootstrapper>();
             container.RegisterPackage<Bootstrapper>();
 
-            container.Register<ISerializer, JsonNetSerializer>();
             container.Verify();
 
             return container;
