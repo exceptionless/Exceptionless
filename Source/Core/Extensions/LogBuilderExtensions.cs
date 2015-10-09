@@ -17,6 +17,9 @@ namespace Foundatio.Logging {
         /// <param name="builder">The log builder object.</param>
         /// <param name="tags">The tags to be added to the event.</param>
         public static ILogBuilder Tag(this ILogBuilder builder, params string[] tags) {
+            if (builder.LogData.Properties == null)
+                builder.LogData.Properties = new Dictionary<string, object>();
+
             var tagList = new List<string>();
             if (builder.LogData.Properties.ContainsKey(Tags) && builder.LogData.Properties[Tags] is List<string>)
                 tagList = builder.LogData.Properties[Tags] as List<string>;
@@ -86,17 +89,17 @@ namespace Foundatio.Logging {
             contextData[SubmissionMethod] = submissionMethod;
         }
 
-        private static IDictionary<string, object> GetContextData(this ILogBuilder logBuilder) {
-            if (logBuilder.LogData.Properties == null)
-                logBuilder.LogData.Properties = new Dictionary<string, object>();
+        private static IDictionary<string, object> GetContextData(this ILogBuilder builder) {
+            if (builder.LogData.Properties == null)
+                builder.LogData.Properties = new Dictionary<string, object>();
             
             IDictionary<string, object> contextData = new Dictionary<string, object>();
-            if (!logBuilder.LogData.Properties.ContainsKey(ContextData))
-                logBuilder.LogData.Properties[ContextData] = contextData;
+            if (!builder.LogData.Properties.ContainsKey(ContextData))
+                builder.LogData.Properties[ContextData] = contextData;
 
-            if (logBuilder.LogData.Properties.ContainsKey(ContextData)
-                && logBuilder.LogData.Properties[ContextData] is IDictionary<string, object>)
-                contextData = (IDictionary<string, object>)logBuilder.LogData.Properties[ContextData];
+            if (builder.LogData.Properties.ContainsKey(ContextData)
+                && builder.LogData.Properties[ContextData] is IDictionary<string, object>)
+                contextData = (IDictionary<string, object>)builder.LogData.Properties[ContextData];
 
             return contextData;
         }
