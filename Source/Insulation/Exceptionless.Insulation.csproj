@@ -188,6 +188,15 @@
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\AsyncFixer.dll" />
+    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\RoslynUtilities.dll" />
+    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.AttributedModel.dll" />
+    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.Convention.dll" />
+    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.Hosting.dll" />
+    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.Runtime.dll" />
+    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.TypedParts.dll" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

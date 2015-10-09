@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await pipeline.RunAsync(ev);
 
             var client = IoC.GetInstance<IElasticClient>();
-            client.Refresh();
+            await client.RefreshAsync();
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
             Assert.True(ev.Date < localTime.AddMinutes(10));
@@ -94,7 +94,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var pipeline = IoC.GetInstance<EventPipeline>();
             await pipeline.RunAsync(ev);
 
-            client.Refresh();
+            await client.RefreshAsync();
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
             Assert.NotNull(ev.StackId);
@@ -181,7 +181,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
 
-            client.Refresh();
+            await client.RefreshAsync();
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
 

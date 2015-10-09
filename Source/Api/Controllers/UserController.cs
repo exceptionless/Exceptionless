@@ -232,11 +232,11 @@ namespace Exceptionless.Api.Controllers {
             return null;
         }
 
-        protected override async Task<ICollection<User>> GetModelsAsync(string[] ids, bool useCache = true) {
+        protected override Task<ICollection<User>> GetModelsAsync(string[] ids, bool useCache = true) {
             if (Request.IsGlobalAdmin())
-                return await base.GetModelsAsync(ids, useCache);
+                return base.GetModelsAsync(ids, useCache);
             
-            return await base.GetModelsAsync(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
+            return base.GetModelsAsync(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
         }
     }
 }

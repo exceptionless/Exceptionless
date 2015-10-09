@@ -105,10 +105,9 @@ namespace Exceptionless.Core.Mail {
             return QueueMessageAsync(msg);
         }
 
-        private async Task QueueMessageAsync(System.Net.Mail.MailMessage message) {
+        private Task QueueMessageAsync(System.Net.Mail.MailMessage message) {
             CleanAddresses(message);
-
-            await _queue.EnqueueAsync(message.ToMailMessage()).AnyContext();
+            return _queue.EnqueueAsync(message.ToMailMessage());
         }
 
         private static void CleanAddresses(System.Net.Mail.MailMessage msg) {

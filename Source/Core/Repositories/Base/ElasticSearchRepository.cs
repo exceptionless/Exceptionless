@@ -47,7 +47,8 @@ namespace Exceptionless.Core.Repositories {
             await OnDocumentChangingAsync(ChangeType.Added, documents).AnyContext();
 
             if (_validator != null)
-                documents.ForEach(_validator.ValidateAndThrow);
+                foreach (var document in documents)
+                    await _validator.ValidateAndThrowAsync(document).AnyContext();
 
             if (_isEvent) {
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
@@ -162,7 +163,8 @@ namespace Exceptionless.Core.Repositories {
             await OnDocumentChangingAsync(ChangeType.Saved, documents, originalDocuments).AnyContext();
 
             if (_validator != null)
-                documents.ForEach(_validator.ValidateAndThrow);
+                foreach (var document in documents)
+                    await _validator.ValidateAndThrowAsync(document).AnyContext();
 
             if (_isEvent) {
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
@@ -270,8 +272,8 @@ namespace Exceptionless.Core.Repositories {
         
         public Foundatio.Utility.AsyncEvent<DocumentChangeEventArgs<T>> DocumentChanged { get; set; } = new Foundatio.Utility.AsyncEvent<DocumentChangeEventArgs<T>>(true);
 
-        private async Task OnDocumentChangedAsync(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {
-            await (DocumentChanged?.InvokeAsync(this, new DocumentChangeEventArgs<T>(changeType, documents, this, originalDocuments)) ?? TaskHelper.Completed()).AnyContext();
+        private Task OnDocumentChangedAsync(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {
+            return DocumentChanged?.InvokeAsync(this, new DocumentChangeEventArgs<T>(changeType, documents, this, originalDocuments)) ?? TaskHelper.Completed();
         }
 
         protected virtual async Task AddToCacheAsync(ICollection<T> documents, TimeSpan? expiresIn = null) {

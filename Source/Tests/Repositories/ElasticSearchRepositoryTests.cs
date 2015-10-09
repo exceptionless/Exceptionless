@@ -26,7 +26,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             await _repository.AddAsync(stack);
             Assert.NotNull(stack.Id);
-            _client.Refresh();
+            await _client.RefreshAsync();
 
             stack = await _repository.GetByIdAsync(stack.Id);
             Assert.NotNull(stack);
@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             await _repository.AddAsync(StackData.GenerateSampleStacks());
 
-            _client.Refresh();
+            await _client.RefreshAsync();
 
             var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(1).WithLimit(1));
             Assert.NotNull(stacks);
@@ -81,7 +81,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.AddAsync(stack, true);
             Assert.NotNull(stack.Id);
             Assert.Equal(2, cache.Count);
-            _client.Refresh();
+            await _client.RefreshAsync();
 
             await cache.RemoveAllAsync();
             Assert.Equal(0, cache.Count);

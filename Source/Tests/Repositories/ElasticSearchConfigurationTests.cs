@@ -34,27 +34,27 @@ namespace Exceptionless.Api.Tests.Repositories {
         public async Task CanCreateEventAliasAsync() {
             _configuration.DeleteIndexes(_client);
             _configuration.ConfigureIndexes(_client);
-            var indexes = _client.GetIndicesPointingToAlias(_eventIndex.Name);
+            var indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.Name);
             Assert.Equal(0, indexes.Count);
 
-            var alias = _client.GetAlias(descriptor => descriptor.Alias(_eventIndex.Name));
+            var alias = await _client.GetAliasAsync(descriptor => descriptor.Alias(_eventIndex.Name));
             Assert.False(alias.IsValid);
             Assert.Equal(0, alias.Indices.Count);
 
             await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now, OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
-            _client.Refresh();
+            await _client.RefreshAsync();
 
-            alias = _client.GetAlias(descriptor => descriptor.Alias(_eventIndex.Name));
+            alias = await _client.GetAliasAsync(descriptor => descriptor.Alias(_eventIndex.Name));
             Assert.True(alias.IsValid);
             Assert.Equal(1, alias.Indices.Count);
 
-            indexes = _client.GetIndicesPointingToAlias(_eventIndex.Name);
+            indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.Name);
             Assert.Equal(1, indexes.Count);
 
             await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now.SubtractMonths(1), OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
-            _client.Refresh();
+            await _client.RefreshAsync();
 
-            indexes = _client.GetIndicesPointingToAlias(_eventIndex.Name);
+            indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.Name);
             Assert.Equal(2, indexes.Count);
         }
     }

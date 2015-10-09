@@ -196,19 +196,19 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         public async Task RemoveAllOrganizationsAsync() {
             await _organizationRepository.RemoveAllAsync();
-            _client.Refresh(r => r.Force());
+            await _client.RefreshAsync(r => r.Force());
             _sampleOrganizationsAdded = false;
         }
 
         public async Task RemoveAllProjectsAsync() {
             await _projectRepository.RemoveAllAsync();
-            _client.Refresh(r => r.Force());
+            await _client.RefreshAsync(r => r.Force());
             _sampleProjectsAdded = false;
         }
 
         public async Task RemoveAllEventsAsync() {
             await _eventRepository.RemoveAllAsync();
-            _client.Refresh(r => r.Force());
+            await _client.RefreshAsync(r => r.Force());
         }
 
         public Task<long> EventCountAsync() {
@@ -221,7 +221,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 return;
 
             await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects());
-            _client.Refresh(r => r.Force());
+            await _client.RefreshAsync(r => r.Force());
             _sampleProjectsAdded = true;
         }
         
@@ -230,7 +230,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 return;
 
             await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations());
-            _client.Refresh(r => r.Force());
+            await _client.RefreshAsync(r => r.Force());
             _sampleOrganizationsAdded = true;
         }
 

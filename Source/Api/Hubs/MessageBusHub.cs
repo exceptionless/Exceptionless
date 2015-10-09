@@ -109,13 +109,13 @@ namespace Exceptionless.Api.Hubs {
             return TaskHelper.Completed();
         }
 
-        public override Task OnConnected() {
+        public override async Task OnConnected() {
             foreach (string organizationId in Context.User.GetOrganizationIds())
-                Groups.Add(Context.ConnectionId, organizationId);
+                await Groups.Add(Context.ConnectionId, organizationId);
 
             _userIdConnections.Add(Context.User.GetUserId(), Context.ConnectionId);
 
-            return base.OnConnected();
+            await base.OnConnected();
         }
 
         public override Task OnDisconnected(bool stopCalled) {
@@ -124,15 +124,15 @@ namespace Exceptionless.Api.Hubs {
             return base.OnDisconnected(stopCalled);
         }
 
-        public override Task OnReconnected() {
+        public override async Task OnReconnected() {
             foreach (string organizationId in Context.User.GetOrganizationIds())
                 if (organizationId != null)
-                    Groups.Add(Context.ConnectionId, organizationId);
+                    await Groups.Add(Context.ConnectionId, organizationId);
 
             if (!_userIdConnections.GetConnections(Context.User.GetUserId()).Contains(Context.ConnectionId))
                 _userIdConnections.Add(Context.User.GetUserId(), Context.ConnectionId);
 
-            return base.OnReconnected();
+            await base.OnReconnected();
         }
     }
 }

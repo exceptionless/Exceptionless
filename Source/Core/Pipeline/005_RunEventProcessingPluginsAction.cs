@@ -14,8 +14,8 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError => true;
 
-        public override async Task ProcessAsync(EventContext ctx) {
-            await _pluginManager.EventProcessingAsync(ctx).AnyContext();
+        public override Task ProcessAsync(EventContext ctx) {
+            return _pluginManager.EventProcessingAsync(ctx);
         }
     }
 }

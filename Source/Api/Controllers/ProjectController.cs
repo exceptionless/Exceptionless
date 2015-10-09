@@ -457,10 +457,10 @@ namespace Exceptionless.Api.Controllers {
             return await base.CanAddAsync(value);
         }
 
-        protected override async Task<Project> AddModelAsync(Project value) {
+        protected override Task<Project> AddModelAsync(Project value) {
             value.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             value.AddDefaultOwnerNotificationSettings(ExceptionlessUser.Id);
-            return await base.AddModelAsync(value);
+            return base.AddModelAsync(value);
         }
 
         protected override async Task<PermissionResult> CanUpdateAsync(Project original, Delta<UpdateProject> changes) {

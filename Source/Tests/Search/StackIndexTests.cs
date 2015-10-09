@@ -229,7 +229,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 }
             }
 
-            _client.Refresh();
+            await _client.RefreshAsync();
         }
 
         private Task<FindResults<Stack>> GetByFilterAsync(string filter) {

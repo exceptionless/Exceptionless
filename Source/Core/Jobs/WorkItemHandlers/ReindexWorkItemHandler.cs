@@ -29,21 +29,21 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             // TODO: Check to make sure the docs have been added to the new index before changing alias
 
             if (!String.IsNullOrEmpty(workItem.Alias)) {
-                _client.Alias(x => x.Remove(a => a.Alias(workItem.Alias).Index(workItem.OldIndex)).Add(a => a.Alias(workItem.Alias).Index(workItem.NewIndex)));
+                await _client.AliasAsync(x => x.Remove(a => a.Alias(workItem.Alias).Index(workItem.OldIndex)).Add(a => a.Alias(workItem.Alias).Index(workItem.NewIndex))).AnyContext();
                 await context.ReportProgressAsync(98, $"Updated alias: {workItem.Alias} Remove: {workItem.OldIndex} Add: {workItem.NewIndex}").AnyContext();
             }
 
-            _client.Refresh();
+            await _client.RefreshAsync().AnyContext();
             var secondPassResult = await ReindexAsync(workItem, context, 90, 98, startTime).AnyContext();
             await context.ReportProgressAsync(98, $"Total: {secondPassResult.Total} Completed: {secondPassResult.Completed}").AnyContext();
 
             if (workItem.DeleteOld) {
-                _client.Refresh();
-                long newDocCount = _client.Count(d => d.Index(workItem.OldIndex)).Count;
-                long oldDocCount = _client.Count(d => d.Index(workItem.OldIndex)).Count;
+                await _client.RefreshAsync().AnyContext();
+                long newDocCount = (await _client.CountAsync(d => d.Index(workItem.OldIndex)).AnyContext()).Count;
+                long oldDocCount = (await _client.CountAsync(d => d.Index(workItem.OldIndex)).AnyContext()).Count;
                 await context.ReportProgressAsync(98, $"Old Docs: {oldDocCount} New Docs: {newDocCount}").AnyContext();
                 if (newDocCount >= oldDocCount)
-                    _client.DeleteIndex(d => d.Index(workItem.OldIndex));
+                    await _client.DeleteIndexAsync(d => d.Index(workItem.OldIndex)).AnyContext();
                 await context.ReportProgressAsync(98, $"Deleted index: {workItem.OldIndex}").AnyContext();
             }
             await context.ReportProgressAsync(100).AnyContext();
@@ -63,7 +63,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             long totalHits = scanResults.Total;
             long completed = 0;
             int page = 0;
-            var results = _client.Scroll<JObject>(scroll, scanResults.ScrollId);
+            var results = await _client.ScrollAsync<JObject>(scroll, scanResults.ScrollId).AnyContext();
             while (results.Documents.Any()) {
                 var bulkDescriptor = new BulkDescriptor();
                 foreach (var hit in results.Hits) {
@@ -72,14 +72,14 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                     bulkDescriptor.Index<JObject>(idx => idx.Index(workItem.NewIndex).Type(h.Type).Id(h.Id).Document(h.Source));
                 }
 
-                var bulkResponse = _client.Bulk(bulkDescriptor);
+                var bulkResponse = await _client.BulkAsync(bulkDescriptor).AnyContext();
                 if (!bulkResponse.IsValid) {
                     string message = $"Reindex bulk error: old={workItem.OldIndex} new={workItem.NewIndex} page={page} message={bulkResponse.GetErrorMessage()}";
                     Logger.Warn().Message(message).Write();
                     // try each doc individually so we can see which doc is breaking us
                     foreach (var hit in results.Hits) {
                         var h = hit;
-                        var response = _client.Index(h.Source, d => d.Index(workItem.NewIndex).Type(h.Type).Id(h.Id));
+                        var response = await _client.IndexAsync(h.Source, d => d.Index(workItem.NewIndex).Type(h.Type).Id(h.Id)).AnyContext();
 
                         if (response.IsValid)
                             continue;
@@ -92,7 +92,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
                 completed += bulkResponse.Items.Count();
                 await context.ReportProgressAsync(CalculateProgress(totalHits, completed, startProgress, endProgress), $"Total: {totalHits} Completed: {completed}").AnyContext();
-                results = _client.Scroll<JObject>(scroll, results.ScrollId);
+                results = await _client.ScrollAsync<JObject>(scroll, results.ScrollId).AnyContext();
                 page++;
             }
 

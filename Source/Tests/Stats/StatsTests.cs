@@ -55,7 +55,7 @@ namespace Exceptionless.Api.Tests.Stats {
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
 
-            _client.Refresh(d => d.Force());
+            await _client.RefreshAsync(d => d.Force());
             _metricsClient.DisplayStats();
             var result = await _stats.GetOccurrenceStatsAsync(DateTime.MinValue, DateTime.MaxValue, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Tests.Stats {
             await RemoveDataAsync();
             await CreateDataAsync(eventCount);
 
-            _client.Refresh(d => d.Force());
+            await _client.RefreshAsync(d => d.Force());
             _metricsClient.DisplayStats();
             var resultUtc = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null);
             Assert.Equal(eventCount, resultUtc.Total);
@@ -99,7 +99,7 @@ namespace Exceptionless.Api.Tests.Stats {
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
 
-            _client.Refresh(d => d.Force());
+            await _client.RefreshAsync(d => d.Force());
             _metricsClient.DisplayStats();
             var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "tags", null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
@@ -122,7 +122,7 @@ namespace Exceptionless.Api.Tests.Stats {
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
 
-            _client.Refresh(d => d.Force());
+            await _client.RefreshAsync(d => d.Force());
             _metricsClient.DisplayStats();
             var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "stack_id", null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
@@ -145,7 +145,7 @@ namespace Exceptionless.Api.Tests.Stats {
             await RemoveDataAsync();
             await CreateDataAsync(eventCount);
 
-            _client.Refresh(d => d.Force());
+            await _client.RefreshAsync(d => d.Force());
             _metricsClient.DisplayStats();
             var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "project_id", null);
             Assert.Equal(eventCount, result.Total);

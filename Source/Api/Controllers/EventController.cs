@@ -289,7 +289,7 @@ namespace Exceptionless.Api.Controllers {
             if (description == null)
                 return BadRequest("Description must be specified.");
 
-            var result = _userDescriptionValidator.Validate(description);
+            var result = await _userDescriptionValidator.ValidateAsync(description);
             if (!result.IsValid)
                 return BadRequest(result.Errors.ToErrorMessage());
             
