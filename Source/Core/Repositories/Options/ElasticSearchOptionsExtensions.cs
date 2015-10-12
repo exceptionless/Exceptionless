@@ -134,6 +134,17 @@ namespace Exceptionless.Core.Repositories {
 
             return Query<T>.Filtered(f => f.Filter(d => filterContainer));
         }
+        
+        public static QueryContainer GetElasticSearchQuery<T>(this QueryOptions options, bool supportSoftDeletes = false) where T : class {
+            var filterContainer = Filter<T>.MatchAll();
+            filterContainer = ApplyQueryOptionsFilters<T>(options, filterContainer, supportSoftDeletes);
+
+            var elasticSearchOptions = options as ElasticSearchOptions<T>;
+            if (elasticSearchOptions != null)
+                filterContainer = ApplyElasticSearchOptionsFilters(elasticSearchOptions, filterContainer);
+
+            return Query<T>.Filtered(f => f.Filter(d => filterContainer));
+        }
 
         public static ElasticSearchOptions<T> WithPaging<T>(this ElasticSearchOptions<T> options, PagingOptions paging) where T : class {
             if (paging == null)

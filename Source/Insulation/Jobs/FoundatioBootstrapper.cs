@@ -4,7 +4,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Logging;
 using Exceptionless.NLog;
 using Foundatio.Logging;
-using Foundatio.Serializer;
 using Foundatio.ServiceProviders;
 using SimpleInjector;
 

@@ -127,7 +127,7 @@ namespace Exceptionless.Core.Repositories {
             long recordsAffected = 0;
             var searchDescriptor = new SearchDescriptor<T>()
                 .Index(_index.Name)
-                .Filter(options.GetElasticSearchFilter<T>(_supportsSoftDeletes) ?? Filter<T>.MatchAll())
+                .Query(options.GetElasticSearchQuery<T>(_supportsSoftDeletes))
                 .Source(s => s.Include(fields.ToArray()))
                 .Size(Settings.Current.BulkBatchSize);
 
@@ -196,7 +196,7 @@ namespace Exceptionless.Core.Repositories {
 
             var searchDescriptor = new SearchDescriptor<T>()
                 .Index(_index.Name)
-                .Filter(options.GetElasticSearchFilter<T>(_supportsSoftDeletes) ?? Filter<T>.MatchAll())
+                .Query(options.GetElasticSearchQuery<T>(_supportsSoftDeletes))
                 .Source(s => s.Include(f => f.Id))
                 .SearchType(SearchType.Scan)
                 .Scroll("4s")

@@ -153,7 +153,7 @@ namespace Exceptionless.Core.Repositories {
                     return cacheValue.Value;
             }
 
-            var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter<T>(_supportsSoftDeletes)).Size(1);
+            var searchDescriptor = new SearchDescriptor<T>().Query(options.GetElasticSearchQuery<T>(_supportsSoftDeletes)).Size(1);
             if (options.Fields.Count > 0)
                 searchDescriptor.Source(s => s.Include(options.Fields.ToArray()));
             else
@@ -196,7 +196,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(options));
 
             options.Fields.Add("id");
-            var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter<T>(_supportsSoftDeletes)).Size(1);
+            var searchDescriptor = new SearchDescriptor<T>().Query(options.GetElasticSearchQuery<T>(_supportsSoftDeletes)).Size(1);
 
             var elasticSearchOptions = options as ElasticSearchOptions<T>;
             searchDescriptor.Indices(elasticSearchOptions != null && elasticSearchOptions.Indices.Any()

@@ -8,18 +8,15 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Stats;
-using Foundatio.Caching;
 using Foundatio.Logging;
 using Nest;
 
 namespace Exceptionless.Core.Utility {
     public class EventStats {
-        private readonly ICacheClient _cacheClient;
         private readonly IElasticClient _elasticClient;
         private readonly EventIndex _eventIndex;
 
-        public EventStats(ICacheClient cacheClient, IElasticClient elasticClient, EventIndex eventIndex) {
-            _cacheClient = cacheClient;
+        public EventStats(IElasticClient elasticClient, EventIndex eventIndex) {
             _elasticClient = elasticClient;
             _eventIndex = eventIndex;
         }
@@ -69,31 +66,17 @@ namespace Exceptionless.Core.Utility {
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.Name)
+                .Query(filter.GetElasticSearchQuery())
                 .Aggregations(agg => agg
-                    .Filter("filtered", f => f
-                        .Filter(d => filter.GetElasticSearchFilter())
-                        .Aggregations(filteredAgg => filteredAgg
-                            .Terms("terms", t => t
-                                .Field(term)
-                                .Size(max)
-                                .Aggregations(agg2 => agg2
-                                    .DateHistogram("timelime", tl => tl
-                                        .Field(ev => ev.Date)
-                                        .MinimumDocumentCount(0)
-                                        .Interval(interval.Item1)
-                                        .TimeZone(HoursAndMinutes(displayTimeOffset.Value))
-                                    )
-                                    .Cardinality("unique", u => u
-                                        .Field(ev => ev.StackId)
-                                        .PrecisionThreshold(100)
-                                    )
-                                    .Terms("new", u => u
-                                        .Field(ev => ev.IsFirstOccurrence)
-                                        .Exclude("F")
-                                    )
-                                    .Min("first_occurrence", o => o.Field(ev => ev.Date))
-                                    .Max("last_occurrence", o => o.Field(ev => ev.Date))
-                                )
+                    .Terms("terms", t => t
+                        .Field(term)
+                        .Size(max)
+                        .Aggregations(agg2 => agg2
+                            .DateHistogram("timelime", tl => tl
+                                .Field(ev => ev.Date)
+                                .MinimumDocumentCount(0)
+                                .Interval(interval.Item1)
+                                .TimeZone(HoursAndMinutes(displayTimeOffset.Value))
                             )
                             .Cardinality("unique", u => u
                                 .Field(ev => ev.StackId)
@@ -107,6 +90,16 @@ namespace Exceptionless.Core.Utility {
                             .Max("last_occurrence", o => o.Field(ev => ev.Date))
                         )
                     )
+                    .Cardinality("unique", u => u
+                        .Field(ev => ev.StackId)
+                        .PrecisionThreshold(100)
+                    )
+                    .Terms("new", u => u
+                        .Field(ev => ev.IsFirstOccurrence)
+                        .Exclude("F")
+                    )
+                    .Min("first_occurrence", o => o.Field(ev => ev.Date))
+                    .Max("last_occurrence", o => o.Field(ev => ev.Date))
                 )
             ).AnyContext();
 
@@ -116,32 +109,28 @@ namespace Exceptionless.Core.Utility {
                 Logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving term stats failed.");
             }
-
-            var filtered = res.Aggs.Filter("filtered");
-            if (filtered == null)
-                return new EventTermStatsResult();
-
-            var newTerms = filtered.Terms("new");
+            
+            var newTerms = res.Aggs.Terms("new");
             var stats = new EventTermStatsResult {
-                Total = filtered.DocCount,
+                Total = res.Total,
                 New = newTerms != null && newTerms.Items.Count > 0 ? newTerms.Items[0].DocCount : 0,
                 Start = utcStart.SafeAdd(displayTimeOffset.Value),
                 End = utcEnd.SafeAdd(displayTimeOffset.Value)
             };
 
-            var unique = filtered.Cardinality("unique");
+            var unique = res.Aggs.Cardinality("unique");
             if (unique?.Value != null)
                 stats.Unique = (long)unique.Value;
 
-            var firstOccurrence = filtered.Min("first_occurrence");
+            var firstOccurrence = res.Aggs.Min("first_occurrence");
             if (firstOccurrence?.Value != null)
                 stats.FirstOccurrence = firstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
-            var lastOccurrence = filtered.Max("last_occurrence");
+            var lastOccurrence = res.Aggs.Max("last_occurrence");
             if (lastOccurrence?.Value != null)
                 stats.LastOccurrence = lastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
-            var terms = filtered.Terms("terms");
+            var terms = res.Aggs.Terms("terms");
             if (terms == null)
                 return stats;
 
@@ -221,38 +210,34 @@ namespace Exceptionless.Core.Utility {
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.Name)
+                .Query(filter.GetElasticSearchQuery())
                 .Aggregations(agg => agg
-                    .Filter("filtered", f => f
-                        .Filter(d => filter.GetElasticSearchFilter())
-                        .Aggregations(filteredAgg => filteredAgg
-                            .DateHistogram("timelime", t => t
-                                .Field(ev => ev.Date)
-                                .MinimumDocumentCount(0)
-                                .Interval(interval.Item1)
-                                .Aggregations(agg2 => agg2
-                                    .Cardinality("tl_unique", u => u
-                                        .Field(ev => ev.StackId)
-                                        .PrecisionThreshold(100)
-                                    )
-                                    .Terms("tl_new", u => u
-                                        .Field(ev => ev.IsFirstOccurrence)
-                                        .Exclude("F")
-                                    )
-                                )
-                                .TimeZone(HoursAndMinutes(displayTimeOffset.Value))
-                            )
-                            .Cardinality("unique", u => u
+                    .DateHistogram("timelime", t => t
+                        .Field(ev => ev.Date)
+                        .MinimumDocumentCount(0)
+                        .Interval(interval.Item1)
+                        .Aggregations(agg2 => agg2
+                            .Cardinality("tl_unique", u => u
                                 .Field(ev => ev.StackId)
                                 .PrecisionThreshold(100)
                             )
-                            .Terms("new", u => u
+                            .Terms("tl_new", u => u
                                 .Field(ev => ev.IsFirstOccurrence)
                                 .Exclude("F")
                             )
-                            .Min("first_occurrence", t => t.Field(ev => ev.Date))
-                            .Max("last_occurrence", t => t.Field(ev => ev.Date))
                         )
+                        .TimeZone(HoursAndMinutes(displayTimeOffset.Value))
                     )
+                    .Cardinality("unique", u => u
+                        .Field(ev => ev.StackId)
+                        .PrecisionThreshold(100)
+                    )
+                    .Terms("new", u => u
+                        .Field(ev => ev.IsFirstOccurrence)
+                        .Exclude("F")
+                    )
+                    .Min("first_occurrence", t => t.Field(ev => ev.Date))
+                    .Max("last_occurrence", t => t.Field(ev => ev.Date))
                 )
             ).AnyContext();
             _elasticClient.DisableTrace();
@@ -261,22 +246,18 @@ namespace Exceptionless.Core.Utility {
                 Logger.Error().Message("Retrieving stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving stats failed.");
             }
-
-            var filtered = res.Aggs.Filter("filtered");
-            if (filtered == null)
-                return new EventStatsResult();
-
-            var newTerms = filtered.Terms("new");
+            
+            var newTerms = res.Aggs.Terms("new");
             var stats = new EventStatsResult {
-                Total = filtered.DocCount,
+                Total = res.Total,
                 New = newTerms != null && newTerms.Items.Count > 0 ? newTerms.Items[0].DocCount : 0
             };
 
-            var unique = filtered.Cardinality("unique");
+            var unique = res.Aggs.Cardinality("unique");
             if (unique?.Value != null)
                 stats.Unique = (long)unique.Value;
 
-            var timeline = filtered.DateHistogram("timelime");
+            var timeline = res.Aggs.DateHistogram("timelime");
             if (timeline != null) {
                 stats.Timeline.AddRange(timeline.Items.Select(i => {
                     long count = 0;
@@ -304,11 +285,11 @@ namespace Exceptionless.Core.Utility {
             if (stats.Timeline.Count <= 0)
                 return stats;
 
-            var firstOccurrence = filtered.Min("first_occurrence");
+            var firstOccurrence = res.Aggs.Min("first_occurrence");
             if (firstOccurrence?.Value != null)
                 stats.FirstOccurrence = firstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
-            var lastOccurrence = filtered.Max("last_occurrence");
+            var lastOccurrence = res.Aggs.Max("last_occurrence");
             if (lastOccurrence?.Value != null)
                 stats.LastOccurrence = lastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
