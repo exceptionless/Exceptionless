@@ -33,21 +33,23 @@ namespace Exceptionless.Api.Hubs {
             subscriber.Subscribe<SystemNotification>(OnSystemNotificationAsync);
         }
 
-        private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken) {
+        private Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken) {
             if (String.IsNullOrEmpty(userMembershipChanged?.OrganizationId))
-                return;
+                return TaskHelper.Completed();
 
             // manage user organization group membership
             foreach (var connectionId in _userIdConnections.GetConnections(userMembershipChanged.UserId)) {
                 if (userMembershipChanged.ChangeType == ChangeType.Added)
-                    await Groups.Add(connectionId, userMembershipChanged.OrganizationId);
+                    Groups.Add(connectionId, userMembershipChanged.OrganizationId);
                 else if (userMembershipChanged.ChangeType == ChangeType.Removed)
-                    await Groups.Remove(connectionId, userMembershipChanged.OrganizationId);
+                    Groups.Remove(connectionId, userMembershipChanged.OrganizationId);
             }
 
             try {
                 Clients.Group(userMembershipChanged.OrganizationId).userMembershipChanged(userMembershipChanged);
             } catch (NullReferenceException) { } // TODO: Remove this when SignalR bug is fixed.
+
+            return TaskHelper.Completed();
         }
 
         private Task OnEntityChangedAsync(EntityChanged entityChanged, CancellationToken cancellationToken) {
@@ -109,30 +111,28 @@ namespace Exceptionless.Api.Hubs {
             return TaskHelper.Completed();
         }
 
-        public override async Task OnConnected() {
+        public override Task OnConnected() {
             foreach (string organizationId in Context.User.GetOrganizationIds())
-                await Groups.Add(Context.ConnectionId, organizationId);
+                Groups.Add(Context.ConnectionId, organizationId);
 
             _userIdConnections.Add(Context.User.GetUserId(), Context.ConnectionId);
-
-            await base.OnConnected();
+            return base.OnConnected();
         }
 
         public override Task OnDisconnected(bool stopCalled) {
             _userIdConnections.Remove(Context.User.GetUserId(), Context.ConnectionId);
-
             return base.OnDisconnected(stopCalled);
         }
 
-        public override async Task OnReconnected() {
+        public override Task OnReconnected() {
             foreach (string organizationId in Context.User.GetOrganizationIds())
                 if (organizationId != null)
-                    await Groups.Add(Context.ConnectionId, organizationId);
+                    Groups.Add(Context.ConnectionId, organizationId);
 
             if (!_userIdConnections.GetConnections(Context.User.GetUserId()).Contains(Context.ConnectionId))
                 _userIdConnections.Add(Context.User.GetUserId(), Context.ConnectionId);
 
-            await base.OnReconnected();
+            return base.OnReconnected();
         }
     }
 }
