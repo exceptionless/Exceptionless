@@ -45,6 +45,8 @@ namespace Exceptionless.Core {
 
         public bool EnableElasticsearchTracing { get; private set; }
 
+        public bool EnableSignalR { get; private set; }
+
         public string Version { get; private set; }
         
         public LogLevel MinimumLogLevel { get; private set; }
@@ -152,6 +154,8 @@ namespace Exceptionless.Core {
 
             RedisConnectionString = GetConnectionString("RedisConnectionString");
             EnableRedis = GetBool("EnableRedis", !String.IsNullOrEmpty(RedisConnectionString));
+
+            EnableSignalR = GetBool(nameof(EnableSignalR), true);
 
             Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
             MinimumLogLevel = GetEnum<LogLevel>("MinimumLogLevel", LogLevel.Info);

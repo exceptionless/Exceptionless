@@ -82,10 +82,13 @@ namespace Exceptionless.Api {
             }
 
             app.UseWebApi(Config);
-            var resolver = new SimpleInjectorSignalRDependencyResolver(container);
-            if (Settings.Current.EnableRedis)
-                resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
-            app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
+
+            if (Settings.Current.EnableSignalR) {
+                var resolver = new SimpleInjectorSignalRDependencyResolver(container);
+                if (Settings.Current.EnableRedis)
+                    resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
+                app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
+            }
 
             SetupSwagger(Config);
 
