@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNet.SignalR;
 using SimpleInjector;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Api.Hubs {
     public class SimpleInjectorSignalRDependencyResolver : DefaultDependencyResolver {
         private readonly Container _container;
 
@@ -12,6 +14,10 @@ namespace Exceptionless.Api.Utility {
 
         public override object GetService(Type serviceType) {
             return ((IServiceProvider)_container).GetService(serviceType) ?? base.GetService(serviceType);
+        }
+
+        public override IEnumerable<object> GetServices(Type serviceType) {
+            return _container.GetAllInstances(serviceType).Concat(base.GetServices(serviceType));
         }
     }
 }

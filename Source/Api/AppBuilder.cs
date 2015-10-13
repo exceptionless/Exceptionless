@@ -10,6 +10,7 @@ using System.Web.Http.Cors;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Routing;
 using AutoMapper;
+using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
@@ -22,6 +23,7 @@ using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Metrics;
 using Microsoft.AspNet.SignalR;
+using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
@@ -48,7 +50,7 @@ namespace Exceptionless.Api {
             
             SetupRouteConstraints(Config);
             container.RegisterWebApiControllers(Config);
-
+            
             VerifyContainer(container);
             
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
@@ -75,47 +77,43 @@ namespace Exceptionless.Api {
 
             container.Bootstrap(Config);
             container.Bootstrap(app);
+            Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
 
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev) {
                 var metricsClient = container.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
                 metricsClient?.StartDisplayingStats(TimeSpan.FromSeconds(10), new LoggerTextWriter { Source = "metrics" });
             }
 
+            SetupSignalR(app, container);
             app.UseWebApi(Config);
-
-            if (Settings.Current.EnableSignalR) {
-                var resolver = new SimpleInjectorSignalRDependencyResolver(container);
-                if (Settings.Current.EnableRedis)
-                    resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
-                app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
-            }
-
             SetupSwagger(Config);
-
-            Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
+            
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
                 Task.Run(async () => await CreateSampleDataAsync(container));
 
-            if (Settings.Current.RunJobsInProcess) {
-                Logger.Warn().Message("Jobs running in process.").Write();
-
-                var context = new OwinContext(app.Properties);
-                var token = context.Get<CancellationToken>("host.OnAppDisposing");
-                JobRunner.RunContinuousAsync<EventPostsJob>(initialDelay: TimeSpan.FromSeconds(2), cancellationToken: token);
-                JobRunner.RunContinuousAsync<EventUserDescriptionsJob>(initialDelay: TimeSpan.FromSeconds(3), cancellationToken: token);
-                JobRunner.RunContinuousAsync<MailMessageJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
-                JobRunner.RunContinuousAsync<EventNotificationsJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
-                JobRunner.RunContinuousAsync<WebHooksJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
-                JobRunner.RunContinuousAsync<DailySummaryJob>(initialDelay: TimeSpan.FromMinutes(1), cancellationToken: token, interval: TimeSpan.FromHours(1));
-                JobRunner.RunContinuousAsync<DownloadGeoIPDatabaseJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token, interval: TimeSpan.FromDays(1));
-                JobRunner.RunContinuousAsync<RetentionLimitsJob>(initialDelay: TimeSpan.FromMinutes(5), cancellationToken: token, interval: TimeSpan.FromDays(1));
-            
-                JobRunner.RunContinuousAsync<WorkItemJob>(initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2, cancellationToken: token);
-            } else {
-                Logger.Info().Message("Jobs running out of process.").Write();
-            }
-
+            RunJobs(app);
             Logger.Info().Message("Starting api...").Write();
+        }
+
+        private static void RunJobs(IAppBuilder app) {
+            if (!Settings.Current.RunJobsInProcess) {
+                Logger.Info().Message("Jobs running out of process.").Write();
+                return;
+            }
+            
+            var context = new OwinContext(app.Properties);
+            var token = context.Get<CancellationToken>("host.OnAppDisposing");
+            JobRunner.RunContinuousAsync<EventPostsJob>(initialDelay: TimeSpan.FromSeconds(2), cancellationToken: token);
+            JobRunner.RunContinuousAsync<EventUserDescriptionsJob>(initialDelay: TimeSpan.FromSeconds(3), cancellationToken: token);
+            JobRunner.RunContinuousAsync<MailMessageJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
+            JobRunner.RunContinuousAsync<EventNotificationsJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
+            JobRunner.RunContinuousAsync<WebHooksJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
+            JobRunner.RunContinuousAsync<DailySummaryJob>(initialDelay: TimeSpan.FromMinutes(1), cancellationToken: token, interval: TimeSpan.FromHours(1));
+            JobRunner.RunContinuousAsync<DownloadGeoIPDatabaseJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token, interval: TimeSpan.FromDays(1));
+            JobRunner.RunContinuousAsync<RetentionLimitsJob>(initialDelay: TimeSpan.FromMinutes(5), cancellationToken: token, interval: TimeSpan.FromDays(1));
+
+            JobRunner.RunContinuousAsync<WorkItemJob>(initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2, cancellationToken: token);
+            Logger.Warn().Message("Jobs running in process.").Write();
         }
 
         private static void EnableCors(HttpConfiguration config, IAppBuilder app) {
@@ -153,6 +151,18 @@ namespace Exceptionless.Api {
             constraintResolver.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
             constraintResolver.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
             config.MapHttpAttributeRoutes(constraintResolver);
+        }
+        
+        private static void SetupSignalR(IAppBuilder app, Container container) {
+            if (!Settings.Current.EnableSignalR)
+                return;
+
+            var resolver = new SimpleInjectorSignalRDependencyResolver(container);
+
+            if (Settings.Current.EnableRedis)
+                resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
+            
+            app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
         }
 
         private static void SetupSwagger(HttpConfiguration config) {
@@ -206,6 +216,7 @@ namespace Exceptionless.Api {
             return container;
         }
 
+        [Conditional("DEBUG")]
         private static void VerifyContainer(Container container) {
             try {
                 container.Verify();

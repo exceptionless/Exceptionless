@@ -246,8 +246,11 @@
     <Compile Include="Extensions\OAuth2Extensions.cs" />
     <Compile Include="Extensions\UriExtensions.cs" />
     <Compile Include="Hubs\ConnectionMap.cs" />
+    <Compile Include="Hubs\IMessageBusHubClientMethods.cs" />
+    <Compile Include="Hubs\MessageBusBroker.cs" />
     <Compile Include="Hubs\MessageBusHub.cs" />
     <Compile Include="Hubs\PrincipalUserIdProvider.cs" />
+    <Compile Include="Hubs\SimpleInjectorSignalRDependencyResolver.cs" />
     <Compile Include="Models\Auth\ChangePasswordModel.cs" />
     <Compile Include="Models\Auth\ExternalAuthInfo.cs" />
     <Compile Include="Models\Auth\LoginModel.cs" />
@@ -298,7 +301,6 @@
     <Compile Include="Utility\Results\PermissionActionResult.cs" />
     <Compile Include="Utility\Results\PlanLimitReachedActionResult.cs" />
     <Compile Include="Utility\Results\StatusCodeActionResult.cs" />
-    <Compile Include="Utility\SimpleInjectorSignalRDependencyResolver.cs" />
     <Compile Include="Utility\Handlers\ThrottlingHandler.cs" />
     <Compile Include="Utility\Constraints\TokenRouteConstraint.cs" />
     <Compile Include="Utility\Constraints\TokensRouteConstraint.cs" />
