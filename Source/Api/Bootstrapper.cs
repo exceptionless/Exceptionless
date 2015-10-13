@@ -14,7 +14,7 @@ namespace Exceptionless.Api {
         public void RegisterServices(Container container) {
             // Register SignalR services.
             container.Register<IUserIdProvider, PrincipalUserIdProvider>();
-            container.Register<MessageBusConnection>(Lifestyle.Scoped);
+            container.Register<MessageBusConnection>();
             container.RegisterSingleton<MessageBusBroker>();
             container.RegisterSingleton<ConnectionMapping>();
             container.RegisterSingleton<IConnectionManager>(() => (IConnectionManager)GlobalHost.DependencyResolver.GetService(typeof(IConnectionManager)));

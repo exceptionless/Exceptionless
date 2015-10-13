@@ -82,9 +82,9 @@ namespace Exceptionless.Api {
                 var metricsClient = container.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
                 metricsClient?.StartDisplayingStats(TimeSpan.FromSeconds(10), new LoggerTextWriter { Source = "metrics" });
             }
-
-            SetupSignalR(app, container);
+            
             app.UseWebApi(Config);
+            SetupSignalR(app, container);
             SetupSwagger(Config);
             
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
@@ -161,7 +161,7 @@ namespace Exceptionless.Api {
             if (Settings.Current.EnableRedis)
                 resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
             
-            app.MapSignalR<MessageBusConnection>("/api/v2/push", new HubConfiguration { Resolver = resolver });
+            app.MapSignalR<MessageBusConnection>("/api/v2/push", new ConnectionConfiguration { Resolver = resolver });
         }
 
         private static void SetupSwagger(HttpConfiguration config) {
