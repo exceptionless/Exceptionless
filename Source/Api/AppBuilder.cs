@@ -23,7 +23,6 @@ using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Metrics;
 using Microsoft.AspNet.SignalR;
-using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;

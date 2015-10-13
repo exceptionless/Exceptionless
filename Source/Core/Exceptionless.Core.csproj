@@ -62,7 +62,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.3.0.518\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.3.0.523\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -117,12 +117,12 @@
       <HintPath>..\..\packages\RestSharp.105.2.3\lib\net46\RestSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SimpleInjector, Version=3.0.6.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.3.0.6\lib\net45\SimpleInjector.dll</HintPath>
+    <Reference Include="SimpleInjector, Version=3.1.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.3.1.0\lib\net45\SimpleInjector.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SimpleInjector.Packaging, Version=3.0.6.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.Packaging.3.0.6\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
+    <Reference Include="SimpleInjector.Packaging, Version=3.1.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.Packaging.3.1.0\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Stripe.net, Version=3.0.2.0, Culture=neutral, processorArchitecture=MSIL">
