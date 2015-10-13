@@ -4,7 +4,7 @@ Please follow the steps below or watch the following video to get started: https
 
 ## Requirements
 
-.NET 4.5.1
+.NET 4.6
 Java 1.8+ (The JAVA_HOME environment variable must also be configured when using Windows.)
 IIS Express 8+
 PowerShell 3+

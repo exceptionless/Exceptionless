@@ -1,57 +1,37 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Exceptionless.Api.Hubs {
     public class ConnectionMapping {
-        private readonly Dictionary<string, HashSet<string>> _connections = new Dictionary<string, HashSet<string>>();
-
-        public int Count => _connections.Count;
+        private readonly ConcurrentDictionary<string, HashSet<string>> _connections = new ConcurrentDictionary<string, HashSet<string>>();
 
         public void Add(string key, string connectionId) {
-            if (String.IsNullOrEmpty(key))
+            if (key == null)
                 return;
 
-            lock (_connections) {
-                HashSet<string> connections;
-                if (!_connections.TryGetValue(key, out connections)) {
-                    connections = new HashSet<string>();
-                    _connections.Add(key, connections);
-                }
-
-                lock (connections)
-                    connections.Add(connectionId);
-            }
+            _connections.AddOrUpdate(key, new HashSet<string>(new[] { connectionId }), (_, hs) => {
+                hs.Add(connectionId);
+                return hs;
+            });
         }
 
         public IEnumerable<string> GetConnections(string key) {
-            if (!String.IsNullOrEmpty(key)) {
-                lock (_connections) {
-                    HashSet<string> connections;
-                    if (_connections.TryGetValue(key, out connections))
-                        return connections;
-                }
-            }
+            if (key == null)
+                return Enumerable.Empty<string>();
 
-            return Enumerable.Empty<string>();
+            return _connections.GetOrAdd(key, new HashSet<string>());
         }
 
         public void Remove(string key, string connectionId) {
-            if (String.IsNullOrEmpty(key))
+            if (key == null)
                 return;
 
-            lock (_connections) {
-                HashSet<string> connections;
-                if (!_connections.TryGetValue(key, out connections))
-                    return;
-
-                lock (connections) {
-                    connections.Remove(connectionId);
-
-                    if (connections.Count == 0)
-                        _connections.Remove(key);
-                }
-            }
+            _connections.AddOrUpdate(key, new HashSet<string>(), (_, hs) => {
+                hs.Remove(connectionId);
+                return hs;
+            });
         }
     }
 }

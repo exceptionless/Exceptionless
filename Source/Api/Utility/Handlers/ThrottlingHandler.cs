@@ -35,7 +35,7 @@ namespace Exceptionless.Api.Utility {
 
             // fallback to using the IP address
             var ip = request.GetClientIpAddress();
-            if (String.IsNullOrEmpty(ip))
+            if (String.IsNullOrEmpty(ip) || ip == "::1")
                 ip = "127.0.0.1";
 
             return ip;

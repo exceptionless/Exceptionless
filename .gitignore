@@ -161,12 +161,11 @@ dump.rdb
 
 #App
 .idea
-bower_components
-dist
-lib
-node_modules
 App_Data
 Exceptionless.sln.GhostDoc.xml
 /Libraries/elasticsearch-*
 /Libraries/MongoDB
-.vs/config/applicationhost.config
+/.vs
+
+*.DS_Store
+*.orig
