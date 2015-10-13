@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Exceptionless.Api.Hubs {
     public class ConnectionMapping {
@@ -17,9 +16,9 @@ namespace Exceptionless.Api.Hubs {
             });
         }
 
-        public IEnumerable<string> GetConnections(string key) {
+        public ICollection<string> GetConnections(string key) {
             if (key == null)
-                return Enumerable.Empty<string>();
+                return new List<String>();
 
             return _connections.GetOrAdd(key, new HashSet<string>());
         }

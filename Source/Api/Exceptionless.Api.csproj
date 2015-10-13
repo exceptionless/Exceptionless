@@ -248,7 +248,7 @@
     <Compile Include="Hubs\ConnectionMap.cs" />
     <Compile Include="Hubs\IMessageBusHubClientMethods.cs" />
     <Compile Include="Hubs\MessageBusBroker.cs" />
-    <Compile Include="Hubs\MessageBusHub.cs" />
+    <Compile Include="Hubs\MessageBusConnection.cs" />
     <Compile Include="Hubs\PrincipalUserIdProvider.cs" />
     <Compile Include="Hubs\SimpleInjectorSignalRDependencyResolver.cs" />
     <Compile Include="Models\Auth\ChangePasswordModel.cs" />

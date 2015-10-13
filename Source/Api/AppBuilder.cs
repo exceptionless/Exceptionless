@@ -161,7 +161,7 @@ namespace Exceptionless.Api {
             if (Settings.Current.EnableRedis)
                 resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
             
-            app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
+            app.MapSignalR<MessageBusConnection>("/api/v2/push", new HubConfiguration { Resolver = resolver });
         }
 
         private static void SetupSwagger(HttpConfiguration config) {
