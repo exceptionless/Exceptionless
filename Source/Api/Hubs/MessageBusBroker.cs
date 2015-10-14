@@ -9,7 +9,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 
 namespace Exceptionless.Api.Hubs {
-    public class MessageBusBroker {
+    public sealed class MessageBusBroker {
         private readonly IConnectionManager _connectionManager;
         private readonly ConnectionMapping _userIdConnections;
         private readonly IMessageSubscriber _subscriber;
@@ -18,7 +18,6 @@ namespace Exceptionless.Api.Hubs {
             _connectionManager = connectionManager;
             _userIdConnections = userIdConnections;
             _subscriber = subscriber;
-
         }
 
         public void Start() {

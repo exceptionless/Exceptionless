@@ -249,6 +249,7 @@
     <Compile Include="Hubs\MessageBusBroker.cs" />
     <Compile Include="Hubs\MessageBusConnection.cs" />
     <Compile Include="Hubs\PrincipalUserIdProvider.cs" />
+    <Compile Include="Hubs\SimpleInjectorSignalRDependencyResolver.cs" />
     <Compile Include="Models\Auth\ChangePasswordModel.cs" />
     <Compile Include="Models\Auth\ExternalAuthInfo.cs" />
     <Compile Include="Models\Auth\LoginModel.cs" />

@@ -5,8 +5,12 @@ using Microsoft.AspNet.SignalR;
 
 namespace Exceptionless.Api.Hubs {
     public class MessageBusConnection : PersistentConnection {
-        private static readonly ConnectionMapping _userIdConnections = new ConnectionMapping();
+        private readonly ConnectionMapping _userIdConnections;
 
+        public MessageBusConnection(ConnectionMapping userIdConnections) {
+            _userIdConnections = userIdConnections;
+        }
+        
         protected override Task OnConnected(IRequest request, string connectionId) {
             foreach (string organizationId in request.User.GetOrganizationIds())
                 Groups.Add(connectionId, organizationId);
