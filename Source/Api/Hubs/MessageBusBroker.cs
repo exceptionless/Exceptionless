@@ -12,17 +12,22 @@ namespace Exceptionless.Api.Hubs {
     public class MessageBusBroker {
         private readonly IConnectionManager _connectionManager;
         private readonly ConnectionMapping _userIdConnections;
+        private readonly IMessageSubscriber _subscriber;
 
         public MessageBusBroker(IConnectionManager connectionManager, ConnectionMapping userIdConnections, IMessageSubscriber subscriber) {
             _connectionManager = connectionManager;
             _userIdConnections = userIdConnections;
+            _subscriber = subscriber;
 
-            subscriber.Subscribe<EntityChanged>(OnEntityChangedAsync);
-            subscriber.Subscribe<PlanChanged>(OnPlanChangedAsync);
-            subscriber.Subscribe<PlanOverage>(OnPlanOverageAsync);
-            subscriber.Subscribe<UserMembershipChanged>(OnUserMembershipChangedAsync);
-            subscriber.Subscribe<ReleaseNotification>(OnReleaseNotificationAsync);
-            subscriber.Subscribe<SystemNotification>(OnSystemNotificationAsync);
+        }
+
+        public void Start() {
+            _subscriber.Subscribe<EntityChanged>(OnEntityChangedAsync);
+            _subscriber.Subscribe<PlanChanged>(OnPlanChangedAsync);
+            _subscriber.Subscribe<PlanOverage>(OnPlanOverageAsync);
+            _subscriber.Subscribe<UserMembershipChanged>(OnUserMembershipChangedAsync);
+            _subscriber.Subscribe<ReleaseNotification>(OnReleaseNotificationAsync);
+            _subscriber.Subscribe<SystemNotification>(OnSystemNotificationAsync);
         }
 
         private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default(CancellationToken)) {
@@ -77,8 +82,7 @@ namespace Exceptionless.Api.Hubs {
             return Context.Connection.TypedBroadcast(notification);
         }
 
-        private IPersistentConnectionContext _context;
-        private IPersistentConnectionContext Context => _context ?? (_context = _connectionManager.GetConnectionContext<MessageBusConnection>());
+        private IPersistentConnectionContext Context => _connectionManager.GetConnectionContext<MessageBusConnection>();
     }
 
     public static class MessageBrokerExtensions {

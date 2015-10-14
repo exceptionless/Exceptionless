@@ -5,13 +5,9 @@ using Microsoft.AspNet.SignalR;
 
 namespace Exceptionless.Api.Hubs {
     public class MessageBusConnection : PersistentConnection {
-        private readonly ConnectionMapping _userIdConnections;
+        private static readonly ConnectionMapping _userIdConnections = new ConnectionMapping();
 
-        public MessageBusConnection(ConnectionMapping userIdConnections) {
-            _userIdConnections = userIdConnections;
-        }
-
-        protected override Task OnConnected(IRequest request, String connectionId) {
+        protected override Task OnConnected(IRequest request, string connectionId) {
             foreach (string organizationId in request.User.GetOrganizationIds())
                 Groups.Add(connectionId, organizationId);
 
@@ -20,13 +16,13 @@ namespace Exceptionless.Api.Hubs {
             return base.OnConnected(request, connectionId);
         }
 
-        protected override Task OnDisconnected(IRequest request, String connectionId, Boolean stopCalled) {
+        protected override Task OnDisconnected(IRequest request, string connectionId, bool stopCalled) {
             _userIdConnections.Remove(request.User.GetUserId(), connectionId);
 
             return base.OnDisconnected(request, connectionId, stopCalled);
         }
 
-        protected override Task OnReconnected(IRequest request, String connectionId) {
+        protected override Task OnReconnected(IRequest request, string connectionId) {
             foreach (string organizationId in request.User.GetOrganizationIds())
                 if (organizationId != null)
                     Groups.Add(connectionId, organizationId);
@@ -35,6 +31,10 @@ namespace Exceptionless.Api.Hubs {
                 _userIdConnections.Add(request.User.GetUserId(), connectionId);
             
             return base.OnReconnected(request, connectionId);
+        }
+
+        protected override bool AuthorizeRequest(IRequest request) {
+            return request.User.Identity.IsAuthenticated;
         }
     }
 }

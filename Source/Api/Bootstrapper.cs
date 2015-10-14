@@ -17,7 +17,7 @@ namespace Exceptionless.Api {
             container.Register<MessageBusConnection>();
             container.RegisterSingleton<MessageBusBroker>();
             container.RegisterSingleton<ConnectionMapping>();
-            container.RegisterSingleton<IConnectionManager>(() => (IConnectionManager)GlobalHost.DependencyResolver.GetService(typeof(IConnectionManager)));
+            container.RegisterSingleton<IConnectionManager>(GlobalHost.ConnectionManager);
 
             container.RegisterSingleton<OverageHandler>();
             container.RegisterSingleton<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));

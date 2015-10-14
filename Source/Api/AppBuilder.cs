@@ -22,6 +22,7 @@ using Exceptionless.Serializer;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Metrics;
+using Foundatio.Utility;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
@@ -80,7 +81,7 @@ namespace Exceptionless.Api {
 
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev) {
                 var metricsClient = container.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
-                metricsClient?.StartDisplayingStats(TimeSpan.FromSeconds(10), new LoggerTextWriter { Source = "metrics" });
+                metricsClient?.StartDisplayingStats(TimeSpan.FromSeconds(10), new TraceTextWriter("metrics"));
             }
             
             app.UseWebApi(Config);
@@ -89,6 +90,9 @@ namespace Exceptionless.Api {
             
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
                 Task.Run(async () => await CreateSampleDataAsync(container));
+
+            var messageBroker = container.GetInstance<MessageBusBroker>();
+            messageBroker.Start();
 
             RunJobs(app);
             Logger.Info().Message("Starting api...").Write();
@@ -156,12 +160,10 @@ namespace Exceptionless.Api {
             if (!Settings.Current.EnableSignalR)
                 return;
 
-            var resolver = new SimpleInjectorSignalRDependencyResolver(container);
-
             if (Settings.Current.EnableRedis)
-                resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
+                GlobalHost.DependencyResolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
             
-            app.MapSignalR<MessageBusConnection>("/api/v2/push", new ConnectionConfiguration { Resolver = resolver });
+            app.MapSignalR<MessageBusConnection>("/api/v2/push", new ConnectionConfiguration());
         }
 
         private static void SetupSwagger(HttpConfiguration config) {
