@@ -21,8 +21,6 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using Foundatio.Jobs;
 using Foundatio.Logging;
-using Foundatio.Metrics;
-using Foundatio.Utility;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
@@ -78,12 +76,7 @@ namespace Exceptionless.Api {
             container.Bootstrap(Config);
             container.Bootstrap(app);
             Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
-
-            if (Settings.Current.WebsiteMode == WebsiteMode.Dev) {
-                var metricsClient = container.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
-                metricsClient?.StartDisplayingStats(TimeSpan.FromSeconds(10), new TraceTextWriter("Metrics"));
-            }
-
+            
             app.UseWebApi(Config);
             SetupSignalR(app, container);
             SetupSwagger(Config);
