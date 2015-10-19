@@ -9,81 +9,104 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 
 namespace Exceptionless.Api.Hubs {
-    public class MessageBusBroker {
+    public sealed class MessageBusBroker {
         private readonly IConnectionManager _connectionManager;
         private readonly ConnectionMapping _userIdConnections;
+        private readonly IMessageSubscriber _subscriber;
 
         public MessageBusBroker(IConnectionManager connectionManager, ConnectionMapping userIdConnections, IMessageSubscriber subscriber) {
             _connectionManager = connectionManager;
             _userIdConnections = userIdConnections;
-
-            subscriber.Subscribe<EntityChanged>(OnEntityChangedAsync);
-            subscriber.Subscribe<PlanChanged>(OnPlanChangedAsync);
-            subscriber.Subscribe<PlanOverage>(OnPlanOverageAsync);
-            subscriber.Subscribe<UserMembershipChanged>(OnUserMembershipChangedAsync);
-            subscriber.Subscribe<ReleaseNotification>(OnReleaseNotificationAsync);
-            subscriber.Subscribe<SystemNotification>(OnSystemNotificationAsync);
+            _subscriber = subscriber;
         }
 
-        private Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default(CancellationToken)) {
+        public void Start() {
+            _subscriber.Subscribe<EntityChanged>(OnEntityChangedAsync);
+            _subscriber.Subscribe<PlanChanged>(OnPlanChangedAsync);
+            _subscriber.Subscribe<PlanOverage>(OnPlanOverageAsync);
+            _subscriber.Subscribe<UserMembershipChanged>(OnUserMembershipChangedAsync);
+            _subscriber.Subscribe<ReleaseNotification>(OnReleaseNotificationAsync);
+            _subscriber.Subscribe<SystemNotification>(OnSystemNotificationAsync);
+        }
+
+        private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default(CancellationToken)) {
             if (String.IsNullOrEmpty(userMembershipChanged?.OrganizationId))
-                return TaskHelper.Completed();
+                return;
 
             // manage user organization group membership
             foreach (var connectionId in _userIdConnections.GetConnections(userMembershipChanged.UserId)) {
                 if (userMembershipChanged.ChangeType == ChangeType.Added)
-                    HubContext.Groups.Add(connectionId, userMembershipChanged.OrganizationId);
+                    await Context.Groups.Add(connectionId, userMembershipChanged.OrganizationId);
                 else if (userMembershipChanged.ChangeType == ChangeType.Removed)
-                    HubContext.Groups.Remove(connectionId, userMembershipChanged.OrganizationId);
+                    await Context.Groups.Remove(connectionId, userMembershipChanged.OrganizationId);
             }
-            
-            HubContext.Clients.Group(userMembershipChanged.OrganizationId).userMembershipChanged(userMembershipChanged);
 
-            return TaskHelper.Completed();
+            await Context.Groups.TypedSend(userMembershipChanged.OrganizationId, userMembershipChanged);
         }
 
-        private Task OnEntityChangedAsync(EntityChanged entityChanged, CancellationToken cancellationToken = default(CancellationToken)) {
+        private async Task OnEntityChangedAsync(EntityChanged entityChanged, CancellationToken cancellationToken = default(CancellationToken)) {
             if (entityChanged == null)
-                return TaskHelper.Completed();
+                return;
 
-            if (entityChanged.Type == typeof(User).Name && HubContext.Clients.User(entityChanged.Id) != null) {
-                HubContext.Clients.User(entityChanged.Id).entityChanged(entityChanged);
-                return TaskHelper.Completed();
+            if (entityChanged.Type == typeof(User).Name) {
+                foreach (var connectionId in _userIdConnections.GetConnections(entityChanged.Id))
+                    await Context.Connection.TypedSend(connectionId, entityChanged);
+
+                return;
             }
 
             if (!String.IsNullOrEmpty(entityChanged.OrganizationId))
-                HubContext.Clients.Group(entityChanged.OrganizationId).entityChanged(entityChanged);
-
-            return TaskHelper.Completed();
+                await Context.Groups.TypedSend(entityChanged.OrganizationId, entityChanged);
         }
 
         private Task OnPlanOverageAsync(PlanOverage planOverage, CancellationToken cancellationToken = default(CancellationToken)) {
             if (planOverage != null)
-                HubContext.Clients.Group(planOverage.OrganizationId).planOverage(planOverage);
+                return Context.Groups.TypedSend(planOverage.OrganizationId, planOverage);
 
             return TaskHelper.Completed();
         }
 
         private Task OnPlanChangedAsync(PlanChanged planChanged, CancellationToken cancellationToken = default(CancellationToken)) {
             if (planChanged != null)
-                HubContext.Clients.Group(planChanged.OrganizationId).planChanged(planChanged);
+                return Context.Groups.TypedSend(planChanged.OrganizationId, planChanged);
 
             return TaskHelper.Completed();
         }
 
         private Task OnReleaseNotificationAsync(ReleaseNotification notification, CancellationToken cancellationToken = default(CancellationToken)) {
-            HubContext.Clients.All.releaseNotification(notification);
-
-            return TaskHelper.Completed();
+            return Context.Connection.TypedBroadcast(notification);
         }
 
         private Task OnSystemNotificationAsync(SystemNotification notification, CancellationToken cancellationToken = default(CancellationToken)) {
-            HubContext.Clients.All.systemNotification(notification);
-
-            return TaskHelper.Completed();
+            return Context.Connection.TypedBroadcast(notification);
         }
 
-        private IHubContext<IMessageBusHubClientMethods> _hubContext;
-        private IHubContext<IMessageBusHubClientMethods> HubContext => _hubContext ?? (_hubContext = _connectionManager.GetHubContext<MessageBusHub, IMessageBusHubClientMethods>());
+        private IPersistentConnectionContext Context => _connectionManager.GetConnectionContext<MessageBusConnection>();
+    }
+
+    public static class MessageBrokerExtensions {
+        public static Task TypedSend(this IConnection connection, string connectionId, object value) {
+            return connection.Send(connectionId, new TypedMessage { Type = GetMessageType(value), Message = value });
+        }
+
+        public static Task TypedBroadcast(this IConnection connection, object value) {
+            return connection.Broadcast(new TypedMessage { Type = GetMessageType(value), Message = value });
+        }
+
+        public static Task TypedSend(this IConnectionGroupManager group, string name, object value) {
+            return group.Send(name, new TypedMessage { Type = GetMessageType(value), Message = value });
+        }
+
+        private static string GetMessageType(object value) {
+            if (value.GetType() == typeof(EntityChanged))
+                return String.Concat(((EntityChanged)value).Type, "Changed");
+
+            return value.GetType().Name;
+        }
+    }
+
+    public class TypedMessage {
+        public string Type { get; set; }
+        public object Message { get; set; }
     }
 }
