@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-        /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to statistics than the fully populated object will be returned.</param>
+        /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         [HttpGet]
         [Route]
         [ResponseType(typeof(List<ViewProject>))]
@@ -53,7 +53,7 @@ namespace Exceptionless.Api.Controllers {
             var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), options);
             var viewProjects = await MapCollectionAsync<ViewProject>(projects.Documents, true);
 
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "statistics", StringComparison.InvariantCultureIgnoreCase))
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects.ToList()), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
             
             return OkWithResourceLinks(viewProjects, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
@@ -65,7 +65,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="organization">The identifier of the organization.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-        /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to statistics than the fully populated object will be returned.</param>
+        /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         /// <response code="404">The organization could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
@@ -86,7 +86,7 @@ namespace Exceptionless.Api.Controllers {
             var projects = await _repository.GetByOrganizationIdsAsync(organizationIds, options, true);
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
 
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "statistics", StringComparison.InvariantCultureIgnoreCase))
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
 
             return OkWithResourceLinks(viewProjects, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
@@ -96,7 +96,7 @@ namespace Exceptionless.Api.Controllers {
         /// Get by id
         /// </summary>
         /// <param name="id">The identifier of the project.</param>
-        /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to statistics than the fully populated object will be returned.</param>
+        /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("{id:objectid}", Name = "GetProjectById")]
@@ -107,7 +107,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var viewProject = await MapAsync<ViewProject>(project, true);
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "statistics", StringComparison.InvariantCultureIgnoreCase))
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
               return Ok(await PopulateProjectStatsAsync(viewProject));
 
             return Ok(viewProject);
