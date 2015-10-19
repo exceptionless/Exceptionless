@@ -151,9 +151,6 @@ namespace Exceptionless.Api {
                 return;
 
             var resolver = container.GetInstance<IDependencyResolver>();
-            //if (Settings.Current.EnableRedis)
-            //    resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
-            
             app.MapSignalR<MessageBusConnection>("/api/v2/push", new ConnectionConfiguration { Resolver = resolver });
             container.GetInstance<MessageBusBroker>().Start();
         }
