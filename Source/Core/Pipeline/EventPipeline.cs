@@ -76,7 +76,7 @@ namespace Exceptionless.Core.Pipeline {
                 if (cancelled > 0)
                     await _metricsClient.CounterAsync(MetricNames.EventsProcessCancelled, cancelled).AnyContext();
 
-                // TODO: Log the errors out to the events proejct id.
+                // TODO: Log the errors out to the events project id.
                 var errors = contexts.Count(c => c.HasError);
                 if (errors > 0)
                     await _metricsClient.CounterAsync(MetricNames.EventsProcessErrors, errors).AnyContext();

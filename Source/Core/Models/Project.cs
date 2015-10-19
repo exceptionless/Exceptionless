@@ -22,6 +22,11 @@ namespace Exceptionless.Core.Models {
 
         public string Name { get; set; }
 
+        /// <summary>
+        /// Returns true if we've detected that the project has recieved data.
+        /// </summary>
+        public bool? IsConfigured { get; set; }
+
         public ClientConfiguration Configuration { get; set; }
 
         public Dictionary<string, NotificationSettings> NotificationSettings { get; set; }

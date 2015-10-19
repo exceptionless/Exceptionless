@@ -440,8 +440,15 @@ namespace Exceptionless.Api.Controllers {
             
             var viewProjects = models.OfType<ViewProject>().ToList();
             var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), useCache: true)).Documents;
-            foreach (var viewProject in viewProjects)
+            foreach (var viewProject in viewProjects) {
                 viewProject.OrganizationName = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId)?.Name;
+                if (!viewProject.IsConfigured.HasValue) {
+                    viewProject.IsConfigured = true;
+                    await _workItemQueue.EnqueueAsync(new SetProjectIsConfiguredWorkItem {
+                        ProjectId = viewProject.Id
+                    });
+                }
+            }
         }
 
         protected override async Task<PermissionResult> CanAddAsync(Project value) {
@@ -458,6 +465,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected override Task<Project> AddModelAsync(Project value) {
+            value.IsConfigured = false;
             value.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             value.AddDefaultOwnerNotificationSettings(ExceptionlessUser.Id);
             return base.AddModelAsync(value);

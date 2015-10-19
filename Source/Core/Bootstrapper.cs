@@ -89,6 +89,7 @@ namespace Exceptionless.Core {
             workItemHandlers.Register<ReindexWorkItem, ReindexWorkItemHandler>();
             workItemHandlers.Register<RemoveOrganizationWorkItem, RemoveOrganizationWorkItemHandler>();
             workItemHandlers.Register<RemoveProjectWorkItem, RemoveProjectWorkItemHandler>();
+            workItemHandlers.Register<SetProjectIsConfiguredWorkItem, SetProjectIsConfiguredWorkItemHandler>();
             workItemHandlers.Register<StackWorkItem, StackWorkItemHandler>();
             workItemHandlers.Register<ThrottleBotsWorkItem, ThrottleBotsWorkItemHandler>();
             container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);

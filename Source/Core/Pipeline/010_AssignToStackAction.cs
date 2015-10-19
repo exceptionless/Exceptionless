@@ -64,7 +64,7 @@ namespace Exceptionless.Core.Pipeline {
                             ProjectId = ctx.Event.ProjectId,
                             SignatureInfo = new SettingsDictionary(ctx.StackSignatureData),
                             SignatureHash = signatureHash,
-                            Title = title != null ? title.Truncate(1000) : null,
+                            Title = title?.Truncate(1000),
                             Tags = ctx.Event.Tags ?? new TagSet(),
                             Type = ctx.Event.Type,
                             TotalOccurrences = 1,
