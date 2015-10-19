@@ -51,7 +51,7 @@ namespace Exceptionless.Core.Repositories {
                     await _validator.ValidateAndThrowAsync(document).AnyContext();
 
             if (_isEvent) {
-                foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
+                foreach (var group in documents.OfType<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
                     var result = await _elasticClient.IndexManyAsync(group.ToList(), String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM"))).AnyContext();
                     if (!result.IsValid)
                         throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
@@ -167,7 +167,7 @@ namespace Exceptionless.Core.Repositories {
                     await _validator.ValidateAndThrowAsync(document).AnyContext();
 
             if (_isEvent) {
-                foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
+                foreach (var group in documents.OfType<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
                     var result = await _elasticClient.IndexManyAsync(group.ToList(), String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM"))).AnyContext();
                     if (!result.IsValid)
                         throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
@@ -260,9 +260,9 @@ namespace Exceptionless.Core.Repositories {
 
             if (changeType != ChangeType.Removed) {
                 if (_hasDates)
-                    documents.Cast<IHaveDates>().SetDates();
+                    documents.OfType<IHaveDates>().SetDates();
                 else if (_hasCreatedDate)
-                    documents.Cast<IHaveCreatedDate>().SetCreatedDates();
+                    documents.OfType<IHaveCreatedDate>().SetCreatedDates();
 
                 documents.EnsureIds();
             }
@@ -302,7 +302,7 @@ namespace Exceptionless.Core.Repositories {
                 return;
 
             if (_isOwnedByOrganization && _isOwnedByProject) {
-                foreach (var projectDocs in documents.Cast<IOwnedByOrganizationAndProjectWithIdentity>().GroupBy(d => d.ProjectId)) {
+                foreach (var projectDocs in documents.OfType<IOwnedByOrganizationAndProjectWithIdentity>().GroupBy(d => d.ProjectId)) {
                     var firstDoc = projectDocs.FirstOrDefault();
                     if (firstDoc == null)
                         continue;
@@ -320,7 +320,7 @@ namespace Exceptionless.Core.Repositories {
                     await PublishMessageAsync(message, TimeSpan.FromSeconds(1.5)).AnyContext();
                 }
             } else if (_isOwnedByOrganization) {
-                foreach (var orgDocs in documents.Cast<IOwnedByOrganizationWithIdentity>().GroupBy(d => d.OrganizationId)) {
+                foreach (var orgDocs in documents.OfType<IOwnedByOrganizationWithIdentity>().GroupBy(d => d.OrganizationId)) {
                     var firstDoc = orgDocs.FirstOrDefault();
                     if (firstDoc == null)
                         continue;

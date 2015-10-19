@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Repositories {
             if (originalDocuments != null)
                 combinedDocuments.AddRange(originalDocuments);
             
-            foreach (var organizationId in combinedDocuments.Cast<IOwnedByOrganization>().SelectMany(d => d.OrganizationId).Distinct())
+            foreach (var organizationId in combinedDocuments.OfType<IOwnedByOrganization>().SelectMany(d => d.OrganizationId).Distinct())
                 await InvalidateCacheAsync("org:" + organizationId).AnyContext();
 
             await base.InvalidateCacheAsync(documents, originalDocuments).AnyContext();

@@ -107,7 +107,7 @@ namespace Exceptionless.Core {
 
             if (_environmentVariables == null) {
                 try {
-                    _environmentVariables = Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().ToDictionary(e => e.Key.ToString(), e => e.Value.ToString());
+                    _environmentVariables = Environment.GetEnvironmentVariables().OfType<DictionaryEntry>().ToDictionary(e => e.Key.ToString(), e => e.Value.ToString());
                 } catch (Exception ex) {
                     _environmentVariables = new Dictionary<string, string>();
 
