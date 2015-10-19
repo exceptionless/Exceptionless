@@ -11,13 +11,13 @@ namespace Exceptionless.Api.Hubs {
             _userIdConnections = userIdConnections;
         }
         
-        protected override Task OnConnected(IRequest request, string connectionId) {
+        protected override async Task OnConnected(IRequest request, string connectionId) {
             foreach (string organizationId in request.User.GetOrganizationIds())
-                Groups.Add(connectionId, organizationId);
+                await Groups.Add(connectionId, organizationId);
 
             _userIdConnections.Add(request.User.GetUserId(), connectionId);
-
-            return base.OnConnected(request, connectionId);
+   
+            await base.OnConnected(request, connectionId);
         }
 
         protected override Task OnDisconnected(IRequest request, string connectionId, bool stopCalled) {
@@ -26,15 +26,14 @@ namespace Exceptionless.Api.Hubs {
             return base.OnDisconnected(request, connectionId, stopCalled);
         }
 
-        protected override Task OnReconnected(IRequest request, string connectionId) {
+        protected override async Task OnReconnected(IRequest request, string connectionId) {
             foreach (string organizationId in request.User.GetOrganizationIds())
-                if (organizationId != null)
-                    Groups.Add(connectionId, organizationId);
+                await Groups.Add(connectionId, organizationId);
 
             if (!_userIdConnections.GetConnections(request.User.GetUserId()).Contains(connectionId))
                 _userIdConnections.Add(request.User.GetUserId(), connectionId);
             
-            return base.OnReconnected(request, connectionId);
+            await base.OnReconnected(request, connectionId);
         }
 
         protected override bool AuthorizeRequest(IRequest request) {

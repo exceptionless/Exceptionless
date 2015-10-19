@@ -27,10 +27,21 @@ namespace Exceptionless.Api.Hubs {
             if (key == null)
                 return;
 
+            bool shouldRemove = false;
             _connections.AddOrUpdate(key, new HashSet<string>(), (_, hs) => {
                 hs.Remove(connectionId);
+                if (hs.Count == 0)
+                    shouldRemove = true;
+
                 return hs;
             });
+
+            if (!shouldRemove)
+                return;
+
+            HashSet<string> connections;
+            if (_connections.TryRemove(key, out connections) && connections.Count > 0)
+                _connections.TryAdd(key, connections);
         }
     }
 }
