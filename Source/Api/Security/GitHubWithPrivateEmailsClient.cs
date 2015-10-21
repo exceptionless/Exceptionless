@@ -38,8 +38,12 @@ namespace Exceptionless.Api.Security {
             });
 
             var response = client.ExecuteAndVerify(request);
-            var userEmails = ParseEmailAddresses(response.Content);
-            userInfo.Email = userEmails.First(u => u.Primary).Email;
+            var userEmails = ParseEmailAddresses(response.Content).Where(u => !String.IsNullOrEmpty(u.Email)).ToList();
+            string primaryEmail = userEmails.FirstOrDefault(u => u.Primary)?.Email;
+            string verifiedEmail = userEmails.FirstOrDefault(u => u.Verified)?.Email;
+            string fallbackEmail = userEmails.FirstOrDefault()?.Email;
+            userInfo.Email = primaryEmail ?? verifiedEmail ?? fallbackEmail;
+
             return userInfo;
         }
 

@@ -10,6 +10,9 @@ using Foundatio.Storage;
 namespace Exceptionless.Core.Extensions {
     public static class StorageExtensions {
         public static async Task<EventPostInfo> GetEventPostAndSetActiveAsync(this IFileStorage storage, string path, CancellationToken cancellationToken = default(CancellationToken)) {
+            if (String.IsNullOrEmpty(path))
+                return null;
+
             EventPostInfo eventPostInfo;
             try {
                 eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(path, cancellationToken).AnyContext();
@@ -30,6 +33,9 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static async Task<bool> SetNotActiveAsync(this IFileStorage storage, string path) {
+            if (String.IsNullOrEmpty(path))
+                return false;
+
             try {
                 return await storage.DeleteFileAsync(path + ".x").AnyContext();
             } catch (Exception ex) {
@@ -40,6 +46,9 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static async Task<bool> CompleteEventPostAsync(this IFileStorage storage, string path, string projectId, DateTime created, bool shouldArchive = true) {
+            if (String.IsNullOrEmpty(path))
+                return false;
+
             // don't move files that are already in the archive
             if (path.StartsWith("archive"))
                 return true;
