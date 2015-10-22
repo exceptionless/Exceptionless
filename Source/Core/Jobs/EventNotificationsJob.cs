@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Jobs {
         protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<EventNotificationWorkItem> context) {
             var eventModel = await _eventRepository.GetByIdAsync(context.QueueEntry.Value.EventId).AnyContext();
             if (eventModel == null)
-                return JobResult.FailedWithMessage("Could not load event {0}.", context.QueueEntry.Value.EventId);
+                return JobResult.FailedWithMessage($"Could not load event: {context.QueueEntry.Value.EventId}");
 
             var eventNotification = new EventNotification(context.QueueEntry.Value, eventModel);
             bool shouldLog = eventNotification.Event.ProjectId != Settings.Current.InternalProjectId;
@@ -50,18 +50,18 @@ namespace Exceptionless.Core.Jobs {
 
             var project = await _projectRepository.GetByIdAsync(eventNotification.Event.ProjectId, true).AnyContext();
             if (project == null)
-                return JobResult.FailedWithMessage("Could not load project {0}.", eventNotification.Event.ProjectId);
-            Logger.Trace().Message("Loaded project: name={0}", project.Name).WriteIf(shouldLog);
+                return JobResult.FailedWithMessage($"Could not load project: {eventNotification.Event.ProjectId}.");
+            Logger.Trace().Message($"Loaded project: name={project.Name}").WriteIf(shouldLog);
 
             var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
             if (organization == null)
-                return JobResult.FailedWithMessage("Could not load organization {0}.", project.OrganizationId);
+                return JobResult.FailedWithMessage($"Could not load organization: {project.OrganizationId}");
 
-            Logger.Trace().Message("Loaded organization: name={0}", organization.Name).WriteIf(shouldLog);
+            Logger.Trace().Message($"Loaded organization: {organization.Name}").WriteIf(shouldLog);
 
             var stack = await _stackRepository.GetByIdAsync(eventNotification.Event.StackId).AnyContext();
             if (stack == null)
-                return JobResult.FailedWithMessage("Could not load stack {0}.", eventNotification.Event.StackId);
+                return JobResult.FailedWithMessage($"Could not load stack: {eventNotification.Event.StackId}");
 
             if (!organization.HasPremiumFeatures) {
                 Logger.Info().Message("Skipping \"{0}\" because organization \"{1}\" does not have premium features.", eventNotification.Event.Id, eventNotification.Event.OrganizationId).WriteIf(shouldLog);

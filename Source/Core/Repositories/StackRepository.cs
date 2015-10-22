@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Repositories {
         public StackRepository(IElasticClient elasticClient, StackIndex index, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(elasticClient, index, validator, cacheClient, messagePublisher) {
             _eventRepository = eventRepository;
-            DocumentChanging += OnDocumentChangingAsync;
+            DocumentChanging.AddHandler(OnDocumentChangingAsync);
         }
 
         private async Task OnDocumentChangingAsync(object sender, DocumentChangeEventArgs<Stack> args) {
