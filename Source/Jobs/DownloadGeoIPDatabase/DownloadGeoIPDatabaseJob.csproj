@@ -36,7 +36,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.3.0.537\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\..\packages\Foundatio.3.0.538\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Threading.Tasks, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -108,15 +108,6 @@
       <Project>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</Project>
       <Name>Exceptionless.Core</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Analyzer Include="..\..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\AsyncFixer.dll" />
-    <Analyzer Include="..\..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\RoslynUtilities.dll" />
-    <Analyzer Include="..\..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.AttributedModel.dll" />
-    <Analyzer Include="..\..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.Convention.dll" />
-    <Analyzer Include="..\..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.Hosting.dll" />
-    <Analyzer Include="..\..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.Runtime.dll" />
-    <Analyzer Include="..\..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.TypedParts.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

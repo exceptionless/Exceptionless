@@ -41,8 +41,8 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AutoMapper, Version=4.0.4.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\AutoMapper.4.0.4\lib\net45\AutoMapper.dll</HintPath>
+    <Reference Include="AutoMapper, Version=4.1.0.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\AutoMapper.4.1.0\lib\net45\AutoMapper.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
@@ -62,7 +62,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.3.0.537\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.3.0.538\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -573,15 +573,6 @@
     <None Include="Mail\Templates\_Layout.html.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\AsyncFixer.dll" />
-    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\RoslynUtilities.dll" />
-    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.AttributedModel.dll" />
-    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.Convention.dll" />
-    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.Hosting.dll" />
-    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.Runtime.dll" />
-    <Analyzer Include="..\..\packages\AsyncFixer.1.0.0.0\tools\analyzers\System.Composition.TypedParts.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
