@@ -188,7 +188,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("github")]
         [ResponseType(typeof(TokenResult))]
         public Task<IHttpActionResult> GitHubAsync(JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), Settings.Current.GitHubAppId, Settings.Current.GitHubAppSecret, (f, c) => new GitHubWithPrivateEmailsClient(f, c));
+            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), Settings.Current.GitHubAppId, Settings.Current.GitHubAppSecret, (f, c) => new GitHubClient(f, c));
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
