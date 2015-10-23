@@ -438,6 +438,7 @@ namespace Exceptionless.Api.Controllers {
         protected override async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {
             await base.AfterResultMapAsync(models);
             
+            // TODO: We can optimize this by normalizing the project model to include the organization name.
             var viewProjects = models.OfType<ViewProject>().ToList();
             var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), useCache: true)).Documents;
             foreach (var viewProject in viewProjects) {

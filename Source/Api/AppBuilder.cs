@@ -22,6 +22,7 @@ using Exceptionless.Serializer;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Microsoft.AspNet.SignalR;
+using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
@@ -151,6 +152,9 @@ namespace Exceptionless.Api {
                 return;
 
             var resolver = container.GetInstance<IDependencyResolver>();
+            var hubPipeline = (IHubPipeline)resolver.GetService(typeof(IHubPipeline));
+            hubPipeline.AddModule(new ErrorHandlingPipelineModule());
+
             app.MapSignalR<MessageBusConnection>("/api/v2/push", new ConnectionConfiguration { Resolver = resolver });
             container.GetInstance<MessageBusBroker>().Start();
         }
