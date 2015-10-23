@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
+using Foundatio.Logging;
 using Microsoft.AspNet.SignalR;
 
 namespace Exceptionless.Api.Hubs {
@@ -12,29 +14,36 @@ namespace Exceptionless.Api.Hubs {
             _userIdConnections = userIdConnections;
         }
         
-        protected override Task OnConnected(IRequest request, string connectionId) {
-            foreach (string organizationId in request.User.GetOrganizationIds())
-                Groups.Add(connectionId, organizationId);
-
-            _userIdConnections.Add(request.User.GetUserId(), connectionId);
-
-            return TaskHelper.Completed();
+        protected override async Task OnConnected(IRequest request, string connectionId) {
+            try {
+                await Task.WhenAll(request.User.GetOrganizationIds().Select(id => Groups.Add(connectionId, id))).AnyContext();
+                _userIdConnections.Add(request.User.GetUserId(), connectionId);
+            } catch (Exception ex) {
+                Logger.Error().Exception(ex).Message($"OnConnected Error: {ex.Message}").Tag("SignalR").Write();
+                throw;
+            }
         }
 
         protected override Task OnDisconnected(IRequest request, string connectionId, bool stopCalled) {
-            _userIdConnections.Remove(request.User.GetUserId(), connectionId);
+            try {
+                _userIdConnections.Remove(request.User.GetUserId(), connectionId);
+            } catch (Exception ex) {
+                Logger.Error().Exception(ex).Message($"OnDisconnected Error: {ex.Message}").Tag("SignalR").Write();
+                throw;
+            }
 
             return TaskHelper.Completed();
         }
 
-        protected override Task OnReconnected(IRequest request, string connectionId) {
-            foreach (string organizationId in request.User.GetOrganizationIds())
-                Groups.Add(connectionId, organizationId);
-
-            if (!_userIdConnections.GetConnections(request.User.GetUserId()).Contains(connectionId))
-                _userIdConnections.Add(request.User.GetUserId(), connectionId);
-
-            return TaskHelper.Completed();
+        protected override async Task OnReconnected(IRequest request, string connectionId) {
+            try {
+                await Task.WhenAll(request.User.GetOrganizationIds().Select(id => Groups.Add(connectionId, id))).AnyContext();
+                if (!_userIdConnections.GetConnections(request.User.GetUserId()).Contains(connectionId))
+                    _userIdConnections.Add(request.User.GetUserId(), connectionId);
+            } catch (Exception ex) {
+                Logger.Error().Exception(ex).Message($"OnReconnected Error: {ex.Message}").Tag("SignalR").Write();
+                throw;
+            }
         }
 
         protected override bool AuthorizeRequest(IRequest request) {
