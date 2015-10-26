@@ -256,7 +256,7 @@
     <Compile Include="Models\WorkItems\ThrottleBotsWorkItem.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\05_ReferenceIdPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
     <Compile Include="Repositories\Base\DocumentChangeEventArgs.cs" />
     <Compile Include="Repositories\Configuration\ElasticSearchConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
