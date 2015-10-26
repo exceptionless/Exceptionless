@@ -3,38 +3,29 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
-using Foundatio.Metrics;
 using Foundatio.Queues;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(0)]
     public class ThrottleBotsPlugin : EventProcessorPluginBase {
         private readonly ICacheClient _cacheClient;
-        private readonly IMetricsClient _metricsClient;
-        private readonly IEventRepository _eventRepository;
-        private readonly IProjectRepository _projectRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
-        public ThrottleBotsPlugin(ICacheClient cacheClient, IEventRepository eventRepository, IProjectRepository projectRepository, IMetricsClient metricsClient, IQueue<WorkItemData> workItemQueue) {
+        public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue) {
             _cacheClient = cacheClient;
-            _metricsClient = metricsClient;
-            _eventRepository = eventRepository;
-            _projectRepository = projectRepository;
             _workItemQueue = workItemQueue;
         }
 
         public override async Task EventProcessingAsync(EventContext context) {
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
                 return;
-
-            var project = await _projectRepository.GetByIdAsync(context.Event.ProjectId).AnyContext();
-            if (project == null || !project.DeleteBotDataEnabled)
+            
+            if (!context.Project.DeleteBotDataEnabled)
                 return;
 
             // Throttle errors by client ip address to no more than X every 5 minutes.
