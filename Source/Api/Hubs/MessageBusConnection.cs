@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
@@ -16,7 +15,9 @@ namespace Exceptionless.Api.Hubs {
         
         protected override async Task OnConnected(IRequest request, string connectionId) {
             try {
-                await Task.WhenAll(request.User.GetOrganizationIds().Select(id => Groups.Add(connectionId, id))).AnyContext();
+                foreach (var organizationId in request.User.GetOrganizationIds())
+                    await Groups.Add(connectionId, organizationId);
+
                 _userIdConnections.Add(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
                 Logger.Error().Exception(ex).Message($"OnConnected Error: {ex.Message}").Tag("SignalR").Write();
@@ -37,7 +38,9 @@ namespace Exceptionless.Api.Hubs {
 
         protected override async Task OnReconnected(IRequest request, string connectionId) {
             try {
-                await Task.WhenAll(request.User.GetOrganizationIds().Select(id => Groups.Add(connectionId, id))).AnyContext();
+                foreach (var organizationId in request.User.GetOrganizationIds())
+                    await Groups.Add(connectionId, organizationId);
+
                 if (!_userIdConnections.GetConnections(request.User.GetUserId()).Contains(connectionId))
                     _userIdConnections.Add(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
