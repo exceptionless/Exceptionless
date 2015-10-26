@@ -11,8 +11,8 @@ using Foundatio.Messaging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public abstract class ElasticSearchRepositoryOwnedByOrganization<T> : ElasticSearchRepository<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
-        public ElasticSearchRepositoryOwnedByOrganization(IElasticClient elasticClient, IElasticSearchIndex index, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
+    public abstract class RepositoryOwnedByOrganization<T> : Repository<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
+        public RepositoryOwnedByOrganization(IElasticClient elasticClient, IElasticSearchIndex index, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
 
         public Task<long> CountByOrganizationIdAsync(string organizationId) {
             var options = new ElasticSearchOptions<T>().WithOrganizationId(organizationId);

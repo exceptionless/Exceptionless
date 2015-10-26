@@ -10,7 +10,7 @@ using Foundatio.Messaging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class WebHookRepository : ElasticSearchRepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
+    public class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
         public WebHookRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<WebHook> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
             : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
 

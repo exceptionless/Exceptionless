@@ -11,7 +11,7 @@ using Nest;
 using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Core.Repositories {
-    public class TokenRepository : ElasticSearchRepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository {
+    public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository {
         public TokenRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<Token> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
             : base(elasticClient, index, validator, cacheClient, messagePublisher) {}
 

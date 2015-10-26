@@ -11,7 +11,7 @@ using Foundatio.Messaging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class EventRepository : ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
+    public class EventRepository : RepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
         public EventRepository(IElasticClient elasticClient, EventIndex index,  IValidator<PersistentEvent> validator = null, IMessagePublisher messagePublisher = null)
             : base(elasticClient, index, validator, null, messagePublisher) {
             EnableCache = false;

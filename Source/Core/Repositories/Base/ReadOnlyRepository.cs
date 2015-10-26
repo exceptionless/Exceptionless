@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Repositories {
         public long Total { get; set; }
     }
 
-    public abstract class ElasticSearchReadOnlyRepository<T> : IReadOnlyRepository<T> where T : class, IIdentity, new() {
+    public abstract class ReadOnlyRepository<T> : IReadOnlyRepository<T> where T : class, IIdentity, new() {
         protected readonly static bool _supportsSoftDeletes = typeof(ISupportSoftDeletes).IsAssignableFrom(typeof(T));
         private static readonly DateTime MIN_OBJECTID_DATE = new DateTime(2000, 1, 1);
         protected static readonly string _entityType = typeof(T).Name;
@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Repositories {
         protected readonly IElasticClient _elasticClient;
         protected readonly IElasticSearchIndex _index;
 
-        protected ElasticSearchReadOnlyRepository(IElasticClient elasticClient, IElasticSearchIndex index, ICacheClient cacheClient = null) {
+        protected ReadOnlyRepository(IElasticClient elasticClient, IElasticSearchIndex index, ICacheClient cacheClient = null) {
             _elasticClient = elasticClient;
             _index = index;
             Cache = cacheClient;

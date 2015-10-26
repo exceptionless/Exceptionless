@@ -10,7 +10,7 @@ using Foundatio.Messaging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class ProjectRepository : ElasticSearchRepositoryOwnedByOrganization<Project>, IProjectRepository {
+    public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
         public ProjectRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<Project> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
             : base(elasticClient, index, validator, cacheClient, messagePublisher) {}
 
