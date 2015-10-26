@@ -29,6 +29,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             foreach (var plugin in Plugins.Values) {
                 try {
                     await plugin.EventProcessingAsync(context).AnyContext();
+                    if (context.IsCancelled) {
+                        Logger.Trace().Message($"Event processing was cancelled by plugin: {plugin.GetType().FullName}").Write();
+                        break;
+                    }
                 } catch (Exception ex) {
                     Logger.Error().Message("Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }
@@ -42,6 +46,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             foreach (var plugin in Plugins.Values) {
                 try {
                     await plugin.EventProcessedAsync(context).AnyContext();
+                    if (context.IsCancelled) {
+                        Logger.Trace().Message($"Event processed was cancelled by plugin: {plugin.GetType().FullName}").Write();
+                        break;
+                    }
                 } catch (Exception ex) {
                     Logger.Error().Message("Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }
