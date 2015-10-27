@@ -19,8 +19,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 return;
 
             // TODO: Look into using a lock on reference id so we can ensure there is no race conditions with setting keys
-            if (!await _cacheClient.AddAsync(GetCacheKey(context), true, TimeSpan.FromMinutes(1)).AnyContext())
-                context.IsCancelled = true;
+            if (await _cacheClient.AddAsync(GetCacheKey(context), true, TimeSpan.FromMinutes(1)).AnyContext())
+                return;
+
+            context.IsCancelled = true;
         }
         
         public override Task EventProcessedAsync(EventContext context) {
@@ -31,7 +33,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         }
         
         private string GetCacheKey(EventContext context) {
-            return String.Concat("project-", context.Project.Id, ":", context.Event.ReferenceId);
+            return String.Concat("project:", context.Project.Id, ":", context.Event.ReferenceId);
         }
     }
 }

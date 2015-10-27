@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private string GetStackSignatureCacheKey(string projectId, string signatureHash) {
-            return String.Concat(projectId, "-", signatureHash, "-", STACKING_VERSION);
+            return String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
         }
 
         public async Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {

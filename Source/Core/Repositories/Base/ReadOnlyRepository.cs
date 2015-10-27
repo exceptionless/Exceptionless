@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected string GetScopedCacheKey(string cacheKey) {
-            return String.Concat(GetTypeName(), "-", cacheKey);
+            return String.Concat(GetTypeName(), ":", cacheKey);
         }
 
         protected async Task<FindResults<T>> FindAsync(ElasticSearchOptions<T> options) {
@@ -226,7 +226,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(options));
             
             if (EnableCache && options.UseCache) {
-                var cachedValue = await Cache.GetAsync<long>(GetScopedCacheKey("count-" + options.CacheKey)).AnyContext();
+                var cachedValue = await Cache.GetAsync<long>(GetScopedCacheKey("count:" + options.CacheKey)).AnyContext();
                 if (cachedValue.HasValue)
                     return cachedValue.Value;
             }
@@ -253,7 +253,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ApplicationException($"ElasticSearch error code \"{results.ConnectionStatus.HttpStatusCode}\".", results.ConnectionStatus.OriginalException);
             
             if (EnableCache && options.UseCache)
-                await Cache.SetAsync(GetScopedCacheKey("count-" + options.CacheKey), results.Count, options.GetCacheExpirationDate()).AnyContext();
+                await Cache.SetAsync(GetScopedCacheKey("count:" + options.CacheKey), results.Count, options.GetCacheExpirationDate()).AnyContext();
 
             return results.Count;
         }
