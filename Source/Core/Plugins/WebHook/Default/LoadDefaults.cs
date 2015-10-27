@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 throw new ArgumentException("Project not found.");
 
             if (ctx.Organization == null)
-                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Event.OrganizationId).AnyContext();
+                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Event.OrganizationId, true).AnyContext();
 
             if (ctx.Organization == null)
                 throw new ArgumentException("Organization not found.");
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 throw new ArgumentException("Project not found.");
 
             if (ctx.Organization == null)
-                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Stack.OrganizationId).AnyContext();
+                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Stack.OrganizationId, true).AnyContext();
 
             if (ctx.Organization == null)
                 throw new ArgumentException("Organization not found.");

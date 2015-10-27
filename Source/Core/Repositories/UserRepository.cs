@@ -11,7 +11,7 @@ using Foundatio.Messaging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class UserRepository : ElasticSearchRepository<User>, IUserRepository {
+    public class UserRepository : Repository<User>, IUserRepository {
         public UserRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<User> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
             : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
 

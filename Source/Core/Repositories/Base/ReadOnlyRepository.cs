@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Repositories {
         public long Total { get; set; }
     }
 
-    public abstract class ElasticSearchReadOnlyRepository<T> : IReadOnlyRepository<T> where T : class, IIdentity, new() {
+    public abstract class ReadOnlyRepository<T> : IReadOnlyRepository<T> where T : class, IIdentity, new() {
         protected readonly static bool _supportsSoftDeletes = typeof(ISupportSoftDeletes).IsAssignableFrom(typeof(T));
         private static readonly DateTime MIN_OBJECTID_DATE = new DateTime(2000, 1, 1);
         protected static readonly string _entityType = typeof(T).Name;
@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Repositories {
         protected readonly IElasticClient _elasticClient;
         protected readonly IElasticSearchIndex _index;
 
-        protected ElasticSearchReadOnlyRepository(IElasticClient elasticClient, IElasticSearchIndex index, ICacheClient cacheClient = null) {
+        protected ReadOnlyRepository(IElasticClient elasticClient, IElasticSearchIndex index, ICacheClient cacheClient = null) {
             _elasticClient = elasticClient;
             _index = index;
             Cache = cacheClient;
@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected string GetScopedCacheKey(string cacheKey) {
-            return String.Concat(GetTypeName(), "-", cacheKey);
+            return String.Concat(GetTypeName(), ":", cacheKey);
         }
 
         protected async Task<FindResults<T>> FindAsync(ElasticSearchOptions<T> options) {
@@ -226,7 +226,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(options));
             
             if (EnableCache && options.UseCache) {
-                var cachedValue = await Cache.GetAsync<long>(GetScopedCacheKey("count-" + options.CacheKey)).AnyContext();
+                var cachedValue = await Cache.GetAsync<long>(GetScopedCacheKey("count:" + options.CacheKey)).AnyContext();
                 if (cachedValue.HasValue)
                     return cachedValue.Value;
             }
@@ -253,7 +253,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ApplicationException($"ElasticSearch error code \"{results.ConnectionStatus.HttpStatusCode}\".", results.ConnectionStatus.OriginalException);
             
             if (EnableCache && options.UseCache)
-                await Cache.SetAsync(GetScopedCacheKey("count-" + options.CacheKey), results.Count, options.GetCacheExpirationDate()).AnyContext();
+                await Cache.SetAsync(GetScopedCacheKey("count:" + options.CacheKey), results.Count, options.GetCacheExpirationDate()).AnyContext();
 
             return results.Count;
         }

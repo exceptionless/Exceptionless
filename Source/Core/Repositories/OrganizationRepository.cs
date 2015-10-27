@@ -15,7 +15,7 @@ using Foundatio.Messaging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class OrganizationRepository : ElasticSearchRepository<Organization>, IOrganizationRepository {
+    public class OrganizationRepository : Repository<Organization>, IOrganizationRepository {
         public OrganizationRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<Organization> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
 
         public Task<Organization> GetByInviteTokenAsync(string token) {

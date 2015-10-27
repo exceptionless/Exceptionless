@@ -256,6 +256,7 @@
     <Compile Include="Models\WorkItems\ThrottleBotsWorkItem.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
     <Compile Include="Repositories\Base\DocumentChangeEventArgs.cs" />
     <Compile Include="Repositories\Configuration\ElasticSearchConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
@@ -377,11 +378,11 @@
     <Compile Include="Repositories\Options\ElasticSearchOptions.cs" />
     <Compile Include="Repositories\Options\ElasticSearchOptionsExtensions.cs" />
     <Compile Include="Repositories\Options\ElasticSearchPagingOptions.cs" />
-    <Compile Include="Repositories\Base\ElasticSearchReadOnlyRepository.cs" />
-    <Compile Include="Repositories\Base\ElasticSearchRepository.cs" />
-    <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganizationAndProject.cs" />
-    <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganization.cs" />
-    <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack.cs" />
+    <Compile Include="Repositories\Base\ReadOnlyRepository.cs" />
+    <Compile Include="Repositories\Base\Repository.cs" />
+    <Compile Include="Repositories\Base\RepositoryOwnedByOrganizationAndProject.cs" />
+    <Compile Include="Repositories\Base\RepositoryOwnedByOrganization.cs" />
+    <Compile Include="Repositories\Base\RepositoryOwnedByOrganizationAndProjectAndStack.cs" />
     <Compile Include="Repositories\EventRepository.cs" />
     <Compile Include="Serialization\DataObjectConverter.cs" />
     <Compile Include="Utility\GenericEventArgs.cs" />
