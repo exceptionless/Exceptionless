@@ -47,6 +47,7 @@ artifacts:
 
 before_deploy:
   - ps: .\Libraries\Create-Release.ps1
+  - ps: Get-ChildItem .\release\*.zip | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName ReleaseArtifacts }
 
 deploy:
   provider: GitHub
