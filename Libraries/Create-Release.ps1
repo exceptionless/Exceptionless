@@ -54,9 +54,7 @@ $apiConfig = [xml](Get-Content $webConfig)
 $apiConfig.SelectSingleNode('//appSettings/add[@key="BaseURL"]/@value').'#text' = 'http://localhost:50000/#'
 $apiConfig.SelectSingleNode('//appSettings/add[@key="EnableDailySummary"]/@value').'#text' = 'true'
 $apiConfig.SelectSingleNode('//system.web/compilation/@debug').'#text' = 'false'
-$customErrors = $apiConfig.CreateElement("customErrors")
-$customErrors.SetAttribute('mode','RemoteOnly')
-$apiConfig.SelectSingleNode('//configuration/system.web').AppendChild($customErrors)
+$apiConfig.SelectSingleNode('//system.web/customErrors/@mode').'#text' = 'RemoteOnly'
 
 # Copy settings from app web.config
 $appConfig = [xml](Get-Content "$releaseArtifactsDir\app\web.config")
@@ -72,3 +70,5 @@ If (Test-Path -Path "$releaseDir\Exceptionless.$($env:APPVEYOR_BUILD_VERSION).zi
 
 Add-Type -assembly "system.io.compression.filesystem"
 [io.compression.zipfile]::CreateFromDirectory($releaseTempDir, "$releaseDir\Exceptionless.$($env:APPVEYOR_BUILD_VERSION).zip")
+
+ Get-ChildItem .\release\*.zip | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName ReleaseArtifacts }
