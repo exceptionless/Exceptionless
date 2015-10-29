@@ -31,8 +31,8 @@ namespace Exceptionless.Core.Extensions {
             if (organization.MaxEventsPerMonth <= 0)
                 return Int32.MaxValue;
 
-            // allow any single hour to have 5 times the monthly limit converted to hours
-            return (int)Math.Ceiling(organization.GetMaxEventsPerMonthWithBonus() / 730d * 5d);
+            // allow any single hour to have 10 times the monthly limit converted to hours
+            return (int)Math.Ceiling(organization.GetMaxEventsPerMonthWithBonus() / 730d * 10d);
         }
 
         public static int GetMaxEventsPerMonthWithBonus(this Organization organization) {
@@ -72,37 +72,37 @@ namespace Exceptionless.Core.Extensions {
        public static int GetCurrentHourlyTotal(this Organization organization) { 
             var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null ? usageInfo.Total : 0;
+            return usageInfo?.Total ?? 0;
         }
 
         public static int GetCurrentHourlyBlocked(this Organization organization) { 
             var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null ? usageInfo.Blocked : 0;
+            return usageInfo?.Blocked ?? 0;
         }
 
         public static int GetCurrentHourlyTooBig(this Organization organization) {
             var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null ? usageInfo.TooBig : 0;
+            return usageInfo?.TooBig ?? 0;
         }
 
         public static int GetCurrentMonthlyTotal(this Organization organization) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null ? usageInfo.Total : 0;
+            return usageInfo?.Total ?? 0;
         }
 
         public static int GetCurrentMonthlyBlocked(this Organization organization) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null ? usageInfo.Blocked : 0;
+            return usageInfo?.Blocked ?? 0;
         }
 
         public static int GetCurrentMonthlyTooBig(this Organization organization) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null ? usageInfo.TooBig : 0;
+            return usageInfo?.TooBig ?? 0;
         }
 
         public static void SetHourlyOverage(this Organization organization, long total, long blocked, long tooBig) {
