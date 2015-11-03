@@ -22,7 +22,9 @@ namespace Exceptionless.Insulation.Jobs {
             container.RegisterPackage<Core.Bootstrapper>();
             container.RegisterPackage<Bootstrapper>();
 
+#if DEBUG
             container.Verify();
+#endif
 
             return container;
         }

@@ -32,8 +32,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .MapDefaultTypeNames(t => t.AddRange(indexes.GetIndexTypeNames()))
                 .SetDefaultTypeNameInferrer(p => p.Name.ToLowerUnderscoredWords())
                 .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords())
-                .MaximumRetries(5)
-                .EnableMetrics();
+                .MaximumRetries(5);
 
             settings.SetJsonSerializerSettingsModifier(s => {
                 s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
