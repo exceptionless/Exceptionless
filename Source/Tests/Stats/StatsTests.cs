@@ -8,6 +8,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Metrics;
+using Foundatio.Repositories.Models;
 using Nest;
 using Xunit;
 

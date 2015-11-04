@@ -5,10 +5,10 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
+using Foundatio.Repositories.Models;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
-using SortOrder = Exceptionless.Core.Repositories.SortOrder;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public class StackIndexTests {
@@ -233,7 +233,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private Task<FindResults<Stack>> GetByFilterAsync(string filter) {
-            return _repository.GetByFilterAsync(null, filter, null, SortOrder.Descending, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            return _repository.GetByFilterAsync(null, filter, null, Foundatio.Repositories.Models.SortOrder.Descending, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }
 }

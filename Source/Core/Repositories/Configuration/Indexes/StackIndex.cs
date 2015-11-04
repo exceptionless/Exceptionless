@@ -1,15 +1,15 @@
 using System;
 using System.Collections.Generic;
 using Exceptionless.Core.Models;
+using Foundatio.Elasticsearch.Configuration;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class StackIndex : IElasticSearchIndex {
-        public string Name => "stacks";
-
+    public class StackIndex : IElasticsearchIndex {
         public int Version => 1;
-
-        public string VersionedName => String.Concat(Name, "-v", Version);
+        public static string Alias => Settings.Current.AppScopePrefix + "stacks";
+        public string AliasName => Alias;
+        public string VersionedName => String.Concat(AliasName, "-v", Version);
 
         public virtual IDictionary<Type, string> GetIndexTypeNames() {
             return new Dictionary<Type, string> {

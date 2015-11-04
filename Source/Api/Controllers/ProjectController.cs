@@ -18,6 +18,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Foundatio.Jobs;
 using Foundatio.Queues;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]

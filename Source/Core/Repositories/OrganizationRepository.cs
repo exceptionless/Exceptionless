@@ -9,21 +9,22 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Extensions;
-using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Messaging;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class OrganizationRepository : Repository<Organization>, IOrganizationRepository {
-        public OrganizationRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<Organization> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
+    public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository {
+        public OrganizationRepository(RepositoryContext<Organization> context, OrganizationIndex index) : base(context, index) {}
 
         public Task<Organization> GetByInviteTokenAsync(string token) {
             if (String.IsNullOrEmpty(token))
                 throw new ArgumentNullException(nameof(token));
 
             var filter = Filter<Organization>.Term(OrganizationIndex.Fields.Organization.InviteToken, token);
-            return FindOneAsync(new ElasticSearchOptions<Organization>().WithFilter(filter));
+            return FindOneAsync(NewQuery().WithFilter(filter));
         }
 
         public Task<Organization> GetByStripeCustomerIdAsync(string customerId) {
@@ -31,12 +32,12 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(customerId));
 
             var filter = Filter<Organization>.Term(o => o.StripeCustomerId, customerId);
-            return FindOneAsync(new ElasticSearchOptions<Organization>().WithFilter(filter));
+            return FindOneAsync(NewQuery().WithFilter(filter));
         }
 
         public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
             var filter = Filter<Organization>.Range(r => r.OnField(o => o.RetentionDays).Greater(0));
-            return FindAsync(new ElasticSearchOptions<Organization>()
+            return FindAsync(NewQuery()
                 .WithFilter(filter)
                 .WithFields("id", "name", "retention_days")
                 .WithPaging(paging));
@@ -82,11 +83,11 @@ namespace Exceptionless.Core.Repositories {
                 //    break;
             }
             
-            return FindAsync(new ElasticSearchOptions<Organization>().WithPaging(paging).WithFilter(filter).WithSort(sort));
+            return FindAsync(NewQuery().WithPaging(paging).WithFilter(filter).WithSort(sort));
         }
 
         public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
-            var results = (await FindAsync(new ElasticSearchOptions<Organization>()
+            var results = (await FindAsync(NewQuery()
                 .WithFields("plan_id", "is_suspended", "billing_price", "billing_status")
                 .WithSort(s => s.OnField(o => o.PlanId).Order(Nest.SortOrder.Descending))).AnyContext()).Documents;
 

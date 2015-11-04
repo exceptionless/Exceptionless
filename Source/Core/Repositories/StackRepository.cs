@@ -2,22 +2,23 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
-using Foundatio.Caching;
+using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Logging;
-using Foundatio.Messaging;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Nest;
+using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
         private const string STACKING_VERSION = "v2";
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(IElasticClient elasticClient, StackIndex index, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(elasticClient, index, validator, cacheClient, messagePublisher) {
+        public StackRepository(RepositoryContext<Stack> context, StackIndex index, IEventRepository eventRepository) : base(context, index) {
             _eventRepository = eventRepository;
             DocumentChanging.AddHandler(OnDocumentChangingAsync);
         }
@@ -49,7 +50,7 @@ namespace Exceptionless.Core.Repositories {
         public async Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
-            var result = await _elasticClient.UpdateAsync<Stack>(s => s
+            var result = await Context.ElasticClient.UpdateAsync<Stack>(s => s
                 .Id(stackId)
                 .RetryOnConflict(3)
                 .Lang("groovy")
@@ -84,19 +85,19 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
-            return FindOneAsync(new ElasticSearchOptions<Stack>()
+            return FindOneAsync(NewQuery()
                 .WithProjectId(projectId)
                 .WithFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))
                 .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash)));
         }
-
+        
         public Task<FindResults<Stack>> GetByFilterAsync(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (String.IsNullOrEmpty(sort)) {
                 sort = "last";
                 sortOrder = SortOrder.Descending;
             }
 
-            var search = new ElasticSearchOptions<Stack>()
+            var search = NewQuery()
                 .WithDateRange(utcStart, utcEnd, field ?? "last")
                 .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<Stack>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
                 .WithQuery(userFilter)
@@ -107,7 +108,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<Stack>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query) {
-            var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithQuery(query).WithSort(s => s.OnField(e => e.LastOccurrence).Descending()).WithPaging(paging);
+            var options = NewQuery().WithProjectId(projectId).WithQuery(query).WithSort(s => s.OnField(e => e.LastOccurrence).Descending()).WithPaging(paging);
             options.Filter = Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).GreaterOrEquals(utcStart));
             options.Filter &= Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).LowerOrEquals(utcEnd));
 
@@ -115,13 +116,13 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<Stack>> GetNewAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query) {
-            var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithQuery(query).WithSort(s => s.OnField(e => e.FirstOccurrence).Descending()).WithPaging(paging);
+            var options = NewQuery().WithProjectId(projectId).WithQuery(query).WithSort(s => s.OnField(e => e.FirstOccurrence).Descending()).WithPaging(paging);
             options.Filter = Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart));
             options.Filter &= Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
 
             return FindAsync(options);
         }
-
+        
         public async Task MarkAsRegressedAsync(string stackId) {
             var stack = await GetByIdAsync(stackId).AnyContext();
             stack.DateFixed = null;

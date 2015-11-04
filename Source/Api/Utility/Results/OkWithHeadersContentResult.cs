@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Results;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Utility.Results {
     public class OkWithHeadersContentResult<T> : OkNegotiatedContentResult<T> {

@@ -4,65 +4,55 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
-using Foundatio.Caching;
-using Foundatio.Messaging;
-using Nest;
+using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Elasticsearch.Configuration;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Repositories {
-    public abstract class RepositoryOwnedByOrganization<T> : Repository<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
-        public RepositoryOwnedByOrganization(IElasticClient elasticClient, IElasticSearchIndex index, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
+    public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
+        public RepositoryOwnedByOrganization(RepositoryContext<T> context, IElasticsearchIndex index) : base(context, index) { }
 
         public Task<long> CountByOrganizationIdAsync(string organizationId) {
-            var options = new ElasticSearchOptions<T>().WithOrganizationId(organizationId);
+            var options = NewQuery().WithOrganizationId(organizationId);
             return CountAsync(options);
         }
 
         public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            if (String.IsNullOrEmpty(organizationId))
-                return Task.FromResult(new FindResults<T> { Documents = new List<T>(), Total = 0 });
-
-            string cacheKey = String.Concat("org:", organizationId);
-            return FindAsync(new ElasticSearchOptions<T>()
-                .WithOrganizationId(organizationId)
-                .WithPaging(paging)
-                .WithCacheKey(useCache ? cacheKey : null)
-                .WithExpiresIn(expiresIn));
+            return GetByOrganizationIdsAsync(new[] { organizationId }, paging, useCache, expiresIn);
         }
 
         public virtual Task<FindResults<T>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (organizationIds == null || organizationIds.Count == 0)
                 return Task.FromResult(new FindResults<T> { Documents = new List<T>(), Total = 0 });
-            
+
             // NOTE: There is no way to currently invalidate this.. If you try and cache this result, you should expect it to be dirty.
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
-            return FindAsync(new ElasticSearchOptions<T>()
+            return FindAsync(NewQuery()
                 .WithOrganizationIds(organizationIds)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? cacheKey : null)
-                .WithExpiresIn(expiresIn));
+                .WithExpiresIn(expiresIn)).AnyContext();
         }
 
         public Task RemoveAllByOrganizationIdsAsync(string[] organizationIds) {
-            return RemoveAllAsync(new QueryOptions().WithOrganizationIds(organizationIds));
+            return RemoveAllAsync(NewQuery().WithOrganizationIds(organizationIds));
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<T> documents, ICollection<T> originalDocuments) {
-            if (!EnableCache)
+        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<T>> documents) {
+            if (!IsCacheEnabled)
                 return;
-
-            if (documents == null)
-                throw new ArgumentNullException(nameof(documents));
-
-            var combinedDocuments = new List<T>(documents);
-            if (originalDocuments != null)
-                combinedDocuments.AddRange(originalDocuments);
             
-            foreach (var organizationId in combinedDocuments.OfType<IOwnedByOrganization>().SelectMany(d => d.OrganizationId).Distinct())
-                await InvalidateCacheAsync("org:" + organizationId).AnyContext();
+            await Cache.RemoveAllAsync(documents.Select(d => d.Value)
+                .Union(documents.Select(d => d.Original))
+                .OfType<IOwnedByOrganization>()
+                .Where(d => !String.IsNullOrEmpty(d.OrganizationId))
+                .Distinct()
+                .Select(d => "org:" + d.OrganizationId)).AnyContext();
 
-            await base.InvalidateCacheAsync(documents, originalDocuments).AnyContext();
+            await base.InvalidateCacheAsync(documents).AnyContext();
         }
     }
 }

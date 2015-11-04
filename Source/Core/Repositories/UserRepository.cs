@@ -5,15 +5,13 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
-using Foundatio.Caching;
-using Foundatio.Messaging;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Repositories.Models;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class UserRepository : Repository<User>, IUserRepository {
-        public UserRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<User> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
-            : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
+    public class UserRepository : RepositoryBase<User>, IUserRepository {
+        public UserRepository(RepositoryContext<User> context, OrganizationIndex index) : base(context, index) { }
 
         public Task<User> GetByEmailAddressAsync(string emailAddress) {
             if (String.IsNullOrWhiteSpace(emailAddress))
@@ -21,7 +19,7 @@ namespace Exceptionless.Core.Repositories {
 
             emailAddress = emailAddress.ToLowerInvariant().Trim();
             var filter = Filter<User>.Term(u => u.EmailAddress, emailAddress);
-            return FindOneAsync(new ElasticSearchOptions<User>().WithFilter(filter).WithCacheKey(emailAddress));
+            return FindOneAsync(NewQuery().WithFilter(filter).WithCacheKey(emailAddress));
         }
 
         public Task<User> GetByPasswordResetTokenAsync(string token) {
@@ -29,7 +27,7 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             var filter = Filter<User>.Term(u => u.PasswordResetToken, token);
-            return FindOneAsync(new ElasticSearchOptions<User>().WithFilter(filter));
+            return FindOneAsync(NewQuery().WithFilter(filter));
         }
 
         public async Task<User> GetUserByOAuthProviderAsync(string provider, string providerUserId) {
@@ -39,7 +37,7 @@ namespace Exceptionless.Core.Repositories {
             provider = provider.ToLowerInvariant();
 
             var filter = Filter<User>.Term(OrganizationIndex.Fields.User.OAuthAccountProviderUserId, new List<string>() { providerUserId });
-            var results = (await FindAsync(new ElasticSearchOptions<User>().WithFilter(filter)).AnyContext()).Documents;
+            var results = (await FindAsync(NewQuery().WithFilter(filter)).AnyContext()).Documents;
 
             return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
         }
@@ -49,7 +47,7 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             var filter = Filter<User>.Term(u => u.VerifyEmailAddressToken, token);
-            return FindOneAsync(new ElasticSearchOptions<User>().WithFilter(filter));
+            return FindOneAsync(NewQuery().WithFilter(filter));
         }
 
         public virtual Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
@@ -62,7 +60,7 @@ namespace Exceptionless.Core.Repositories {
 
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
             var filter = Filter<User>.Term(u => u.OrganizationIds, organizationIds);
-            return FindAsync(new ElasticSearchOptions<User>()
+            return FindAsync(NewQuery()
                 .WithFilter(filter)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? cacheKey : null)
@@ -71,7 +69,7 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<long> CountByOrganizationIdAsync(string organizationId) {
             var filter = Filter<User>.Term(u => u.OrganizationIds, new[] { organizationId });
-            var options = new ElasticSearchOptions<User>()
+            var options = NewQuery()
                 .WithFilter(filter);
 
             return CountAsync(options);

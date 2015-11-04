@@ -1,20 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
-using Foundatio.Caching;
-using Foundatio.Messaging;
-using Nest;
+using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Elasticsearch.Configuration;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganizationAndProject<T> : RepositoryOwnedByOrganization<T>, IRepositoryOwnedByProject<T> where T : class, IOwnedByProject, IIdentity, IOwnedByOrganization, new() {
-        public RepositoryOwnedByOrganizationAndProject(IElasticClient elasticClient, IElasticSearchIndex index, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
+        public RepositoryOwnedByOrganizationAndProject(RepositoryContext<T> context, IElasticsearchIndex index) : base(context, index) { }
 
         public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return FindAsync(new ElasticSearchOptions<T>()
+            return FindAsync(NewQuery()
                 .WithProjectId(projectId)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("project:", projectId) : null)
@@ -22,21 +24,21 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public virtual Task RemoveAllByProjectIdsAsync(string[]  projectIds) {
-            return RemoveAllAsync(new QueryOptions().WithProjectIds(projectIds));
+            return RemoveAllAsync(NewQuery().WithProjectIds(projectIds));
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<T> documents, ICollection<T> originalDocuments) {
-            if (!EnableCache)
+        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<T>> documents) {
+            if (!IsCacheEnabled)
                 return;
 
-            foreach (var document in documents)
-                await InvalidateCacheAsync(String.Concat("project:", document.ProjectId)).AnyContext();
+            await Cache.RemoveAllAsync(documents.Select(d => d.Value)
+                .Union(documents.Select(d => d.Original))
+                .OfType<IOwnedByProject>()
+                .Where(d => !String.IsNullOrEmpty(d.ProjectId))
+                .Distinct()
+                .Select(d => "project:" + d.ProjectId)).AnyContext();
 
-            if (originalDocuments != null)
-                foreach (var originalDocument in originalDocuments)
-                    await InvalidateCacheAsync(String.Concat("project:", originalDocument.ProjectId)).AnyContext();
-
-            await base.InvalidateCacheAsync(documents, originalDocuments).AnyContext();
+            await base.InvalidateCacheAsync(documents).AnyContext();
         }
     }
 }

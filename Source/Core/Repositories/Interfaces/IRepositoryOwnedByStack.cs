@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories {
-    public interface IRepositoryOwnedByStack<T> : IRepository<T> where T : class, IOwnedByStack, IIdentity, new() {
+    public interface IRepositoryOwnedByStack<T> : IRepository<T>, IElasticsearchReadOnlyRepository<T> where T : class, IOwnedByStack, IIdentity, new() {
         Task<FindResults<T>> GetByStackIdAsync(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         Task RemoveAllByStackIdsAsync(string[] stackIds);
     }

@@ -22,6 +22,7 @@ using Exceptionless.Core.Models.Data;
 using FluentValidation;
 using Foundatio.Logging;
 using Foundatio.Queues;
+using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 
 namespace Exceptionless.Api.Controllers {

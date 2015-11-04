@@ -21,6 +21,7 @@ using Exceptionless.Core.Models.WorkItems;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
+using Foundatio.Repositories.Models;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Api.Controllers {

@@ -9,6 +9,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
+using Foundatio.Repositories.Models;
 using Nest;
 using Xunit;
 

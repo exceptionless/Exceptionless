@@ -10,8 +10,9 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
+using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 using Nest;
 using Xunit;
 

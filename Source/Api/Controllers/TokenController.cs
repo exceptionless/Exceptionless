@@ -12,6 +12,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/tokens")]

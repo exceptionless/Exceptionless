@@ -6,7 +6,6 @@ using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Plugins.EventProcessor;
-using Exceptionless.Core.Repositories;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 

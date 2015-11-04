@@ -9,9 +9,10 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories;
 using FluentValidation;
 using Foundatio.Logging;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 
 #pragma warning disable 1998
 

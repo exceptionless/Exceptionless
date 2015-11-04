@@ -11,6 +11,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Foundatio.Repositories.Models;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {

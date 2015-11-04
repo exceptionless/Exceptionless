@@ -1,27 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
-using Foundatio.Caching;
-using Foundatio.Messaging;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Repositories.Models;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
-        public WebHookRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<WebHook> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
-            : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
+        public WebHookRepository(RepositoryContext<WebHook> context, OrganizationIndex index) : base(context, index) { }
 
         public Task RemoveByUrlAsync(string targetUrl) {
             var filter = Filter<WebHook>.Term(e => e.Url, targetUrl);
-            return RemoveAllAsync(new ElasticSearchOptions<WebHook>().WithFilter(filter));
+            return RemoveAllAsync(NewQuery().WithFilter(filter));
         }
 
         public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
             var filter = (Filter<WebHook>.Term(e => e.OrganizationId, organizationId) && Filter<WebHook>.Missing(e => e.ProjectId)) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
-            return FindAsync(new ElasticSearchOptions<WebHook>()
+            return FindAsync(NewQuery()
                 .WithFilter(filter)
                 .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))
                 .WithExpiresIn(TimeSpan.FromMinutes(5)));

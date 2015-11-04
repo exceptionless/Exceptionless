@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
     public class User : IIdentity, IHaveDates {

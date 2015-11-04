@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Exceptionless.Core.Models;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Models {
     public class ViewToken : IIdentity {

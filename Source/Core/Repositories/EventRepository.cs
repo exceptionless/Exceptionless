@@ -6,35 +6,55 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Results;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
-using Foundatio.Messaging;
+using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
+using Foundatio.Utility;
 using Nest;
+using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
-        public EventRepository(IElasticClient elasticClient, EventIndex index,  IValidator<PersistentEvent> validator = null, IMessagePublisher messagePublisher = null)
-            : base(elasticClient, index, validator, null, messagePublisher) {
-            EnableCache = false;
+        private static readonly DateTime MIN_OBJECTID_DATE = new DateTime(2000, 1, 1);
+
+        public EventRepository(RepositoryContext<PersistentEvent> context, EventIndex index) : base(context, index) {
+            DisableCache();
             BatchNotifications = true;
+        }
+
+        protected override string[] DefaultExcludes => new[] { "idx" };
+
+        protected override Func<PersistentEvent, string> GetDocumentIndexFunc {
+            get { return document => GetIndexById(document.Id); }
+        }
+
+        protected override string GetIndexById(string id) {
+            ObjectId objectId;
+            if (ObjectId.TryParse(id, out objectId) && objectId.CreationTime > MIN_OBJECTID_DATE)
+                return String.Concat(_index.VersionedName, "-", objectId.CreationTime.ToString("yyyyMM"));
+
+            return null;
         }
 
         public Task UpdateFixedByStackAsync(string organizationId, string stackId, bool value) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
 
-            return UpdateAllAsync(organizationId, new QueryOptions().WithStackId(stackId), new { is_fixed = value });
+            return UpdateAllAsync(organizationId, NewQuery().WithStackId(stackId), new { is_fixed = value });
         }
 
         public Task UpdateHiddenByStackAsync(string organizationId, string stackId, bool value) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
 
-            return UpdateAllAsync(organizationId, new QueryOptions().WithStackId(stackId), new { is_hidden = value });
+            return UpdateAllAsync(organizationId, NewQuery().WithStackId(stackId), new { is_hidden = value });
         }
 
         public Task RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
             var filter = Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).Lower(utcCutoffDate));
-            return RemoveAllAsync(new ElasticSearchOptions<PersistentEvent>().WithOrganizationId(organizationId).WithFilter(filter), false);
+            return RemoveAllAsync(NewQuery().WithOrganizationId(organizationId).WithFilter(filter), false);
         }
 
         public Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStartDate, DateTime utcEndDate) {
@@ -42,7 +62,7 @@ namespace Exceptionless.Core.Repositories {
                 && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(utcStartDate))
                 && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(utcEndDate));
 
-            return UpdateAllAsync(organizationId, new ElasticSearchOptions<PersistentEvent>().WithFilter(filter), new { is_hidden = true });
+            return UpdateAllAsync(organizationId, NewQuery().WithFilter(filter), new { is_hidden = true });
         }
         
         public Task<FindResults<PersistentEvent>> GetByFilterAsync(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
@@ -51,9 +71,9 @@ namespace Exceptionless.Core.Repositories {
                 sortOrder = SortOrder.Descending;
             }
 
-            var search = new ElasticSearchOptions<PersistentEvent>()
+            var search = NewQuery()
                 .WithDateRange(utcStart, utcEnd, field ?? "date")
-                .WithIndicesFromDateRange($"'{_index.VersionedName}-'yyyyMM")
+                .WithIndices(utcStart, utcStart, $"'{Settings.Current.AppScopePrefix}{_index.VersionedName}-'yyyyMM")
                 .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
                 .WithQuery(userFilter)
                 .WithPaging(paging)
@@ -79,7 +99,7 @@ namespace Exceptionless.Core.Repositories {
             if (utcEnd != DateTime.MaxValue)
                 filter &= Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(utcEnd));
 
-            return FindAsync(new ElasticSearchOptions<PersistentEvent>().WithProjectId(projectId).WithFilter(filter).WithIndices(utcStart, utcEnd).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
+            return FindAsync(NewQuery().WithProjectId(projectId).WithFilter(filter).WithIndices(utcStart, utcEnd).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
         }
 
         public Task<FindResults<PersistentEvent>> GetByStackIdOccurrenceDateAsync(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
@@ -90,12 +110,12 @@ namespace Exceptionless.Core.Repositories {
             if (utcEnd != DateTime.MaxValue)
                 filter &= Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(utcEnd));
 
-            return FindAsync(new ElasticSearchOptions<PersistentEvent>().WithStackId(stackId).WithFilter(filter).WithIndices(utcStart, utcEnd).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
+            return FindAsync(NewQuery().WithStackId(stackId).WithFilter(filter).WithIndices(utcStart, utcEnd).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
         }
 
         public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId) {
             var filter = Filter<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
-            return FindAsync(new ElasticSearchOptions<PersistentEvent>()
+            return FindAsync(NewQuery()
                 .WithProjectId(projectId)
                 .WithFilter(filter)
                 .WithSort(s => s.OnField(e => e.Date).Descending())
@@ -116,7 +136,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private Task<FindResults<PersistentEvent>> GetOldestEventsAsync(string stackId, PagingOptions options) {
-            return FindAsync(new ElasticSearchOptions<PersistentEvent>()
+            return FindAsync(NewQuery()
                 .WithStackId(stackId)
                 .WithFields("id", "organization_id", "project_id", "stack_id")
                 .WithSort(s => s.OnField(e => e.Date).Descending())
@@ -154,10 +174,10 @@ namespace Exceptionless.Core.Repositories {
             var filter = !Filter<PersistentEvent>.Ids(new[] { ev.Id })
                 && Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter)));
 
-            var results = await FindAsync(new ElasticSearchOptions<PersistentEvent>()
+            var results = await FindAsync(NewQuery()
                 .WithDateRange(utcStart, utcEventDate, "date")
-                .WithIndicesFromDateRange($"'{_index.VersionedName}-'yyyyMM")
-                .WithSort(s => s.OnField(e => e.Date).Descending())
+                .WithIndices(utcStart, utcEventDate, $"'{Settings.Current.AppScopePrefix}{_index.VersionedName}-'yyyyMM")
+                .WithSort("date", Foundatio.Repositories.Models.SortOrder.Descending)
                 .WithLimit(10)
                 .WithFields("id", "date")
                 .WithFilter(filter)
@@ -201,9 +221,9 @@ namespace Exceptionless.Core.Repositories {
             var filter = !Filter<PersistentEvent>.Ids(new[] { ev.Id })
                 && Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter)));
 
-            var results = await FindAsync(new ElasticSearchOptions<PersistentEvent>()
+            var results = await FindAsync(NewQuery()
                 .WithDateRange(utcEventDate, utcEnd, "date")
-                .WithIndicesFromDateRange($"'{_index.VersionedName}-'yyyyMM")
+                .WithIndices(utcStart, utcEventDate, $"'{Settings.Current.AppScopePrefix}{_index.VersionedName}-'yyyyMM")
                 .WithSort(s => s.OnField(e => e.Date).Ascending())
                 .WithLimit(10)
                 .WithFields("id", "date")
@@ -232,11 +252,11 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<long> GetCountByOrganizationIdAsync(string organizationId) {
-            return CountAsync(new ElasticSearchOptions<PersistentEvent>().WithOrganizationId(organizationId));
+            return CountAsync(NewQuery().WithOrganizationId(organizationId));
         }
 
         public Task<long> GetCountByStackIdAsync(string stackId) {
-            return CountAsync(new ElasticSearchOptions<PersistentEvent>().WithStackId(stackId));
+            return CountAsync(NewQuery().WithStackId(stackId));
         }
 
         public override Task<FindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
@@ -248,7 +268,7 @@ namespace Exceptionless.Core.Repositories {
                 return Task.FromResult(new FindResults<PersistentEvent>());
 
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
-            return FindAsync(new ElasticSearchOptions<PersistentEvent>()
+            return FindAsync(NewQuery()
                 .WithOrganizationIds(organizationIds)
                 .WithQuery(query)
                 .WithPaging(GetPagingWithSortingOptions(paging))
@@ -265,7 +285,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<long> GetCountByProjectIdAsync(string projectId) {
-            return CountAsync(new ElasticSearchOptions<PersistentEvent>().WithProjectId(projectId));
+            return CountAsync(NewQuery().WithProjectId(projectId));
         }
 
         private ElasticSearchPagingOptions<PersistentEvent> GetPagingWithSortingOptions(PagingOptions paging) {

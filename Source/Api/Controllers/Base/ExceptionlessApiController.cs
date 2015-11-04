@@ -14,6 +14,7 @@ using Exceptionless.Api.Utility.Results;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RequireHttpsExceptLocal]

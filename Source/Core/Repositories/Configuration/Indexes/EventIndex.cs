@@ -2,26 +2,22 @@ using System;
 using System.Collections.Generic;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Elasticsearch.Configuration;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class EventIndex : ITemplatedElasticSeachIndex {
-        public string Name => "events";
-
+    public class EventIndex : ITemplatedElasticsearchIndex {
         public int Version => 1;
-
-        public string VersionedName => String.Concat(Name, "-v", Version);
+        public static string Alias => Settings.Current.AppScopePrefix + "events";
+        public string AliasName => Alias;
+        public string VersionedName => String.Concat(AliasName, "-v", Version);
 
         public virtual IDictionary<Type, string> GetIndexTypeNames() {
             return new Dictionary<Type, string> {
                 { typeof(PersistentEvent), "events" }
             };
         }
-
-        public CreateIndexDescriptor CreateIndex(CreateIndexDescriptor idx) {
-            throw new NotImplementedException();
-        }
-
+        
         public PutTemplateDescriptor CreateTemplate(PutTemplateDescriptor template) {
             const string FLATTEN_ERRORS_SCRIPT = @"
 if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))

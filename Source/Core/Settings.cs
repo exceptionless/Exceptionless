@@ -15,6 +15,12 @@ namespace Exceptionless.Core {
 
         public WebsiteMode WebsiteMode { get; private set; }
 
+        public string AppScope { get; private set; }
+
+        public bool HasAppScope => !String.IsNullOrEmpty(AppScope);
+
+        public string AppScopePrefix => HasAppScope ? AppScope + "-" : String.Empty;
+
         public string TestEmailAddress { get; private set; }
 
         public List<string> AllowedOutboundAddresses { get; private set; }
@@ -115,6 +121,7 @@ namespace Exceptionless.Core {
 
             InternalProjectId = GetString("InternalProjectId");
             WebsiteMode = GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
+            AppScope = GetString("AppScope", String.Empty);
             TestEmailAddress = GetString("TestEmailAddress");
             AllowedOutboundAddresses = GetStringList("AllowedOutboundAddresses", "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
             RunJobsInProcess = GetBool("RunJobsInProcess", true);

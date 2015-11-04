@@ -36,21 +36,21 @@ namespace Exceptionless.Insulation {
                 });
 
                 container.RegisterSingleton<ICacheClient, RedisHybridCacheClient>();
-                container.RegisterSingleton<IQueue<EventPost>>(() => new RedisQueue<EventPost>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), behaviors: container.GetAllInstances<IQueueBehavior<EventPost>>()));
-                container.RegisterSingleton<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), behaviors: container.GetAllInstances<IQueueBehavior<EventUserDescription>>()));
-                container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new RedisQueue<EventNotificationWorkItem>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), behaviors: container.GetAllInstances<IQueueBehavior<EventNotificationWorkItem>>()));
-                container.RegisterSingleton<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), behaviors: container.GetAllInstances<IQueueBehavior<WebHookNotification>>()));
-                container.RegisterSingleton<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), behaviors: container.GetAllInstances<IQueueBehavior<MailMessage>>()));
-                container.RegisterSingleton<IQueue<StatusMessage>>(() => new RedisQueue<StatusMessage>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>()));
-                container.RegisterSingleton<IQueue<WorkItemData>>(() => new RedisQueue<WorkItemData>(container.GetInstance<ConnectionMultiplexer>(), workItemTimeout: TimeSpan.FromHours(1), behaviors: container.GetAllInstances<IQueueBehavior<WorkItemData>>()));
+                container.RegisterSingleton<IQueue<EventPost>>(() => new RedisQueue<EventPost>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventPost>(), behaviors: container.GetAllInstances<IQueueBehavior<EventPost>>()));
+                container.RegisterSingleton<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventUserDescription>(), behaviors: container.GetAllInstances<IQueueBehavior<EventUserDescription>>()));
+                container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new RedisQueue<EventNotificationWorkItem>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventNotificationWorkItem>(), behaviors: container.GetAllInstances<IQueueBehavior<EventNotificationWorkItem>>()));
+                container.RegisterSingleton<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<WebHookNotification>(), behaviors: container.GetAllInstances<IQueueBehavior<WebHookNotification>>()));
+                container.RegisterSingleton<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<MailMessage>(), behaviors: container.GetAllInstances<IQueueBehavior<MailMessage>>()));
+                container.RegisterSingleton<IQueue<StatusMessage>>(() => new RedisQueue<StatusMessage>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<StatusMessage>()));
+                container.RegisterSingleton<IQueue<WorkItemData>>(() => new RedisQueue<WorkItemData>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<WorkItemData>(), workItemTimeout: TimeSpan.FromHours(1), behaviors: container.GetAllInstances<IQueueBehavior<WorkItemData>>()));
 
-                container.RegisterSingleton<IMessageBus>(() => new RedisMessageBus(container.GetInstance<ConnectionMultiplexer>().GetSubscriber(), serializer: container.GetInstance<ISerializer>()));
+                container.RegisterSingleton<IMessageBus>(() => new RedisMessageBus(container.GetInstance<ConnectionMultiplexer>().GetSubscriber(), $"{Settings.Current.AppScopePrefix}messages", container.GetInstance<ISerializer>()));
             } else {
                 Log.Warn().Message("Redis is NOT enabled.").Write();
             }
 
             if (Settings.Current.EnableAzureStorage)
-                container.RegisterSingleton<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString, "ex-events"));
+                container.RegisterSingleton<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events"));
             else
                 Log.Warn().Message("Azure Storage is NOT enabled.").Write();
 
@@ -63,6 +63,10 @@ namespace Exceptionless.Insulation {
             container.AddBootstrapper<HttpConfiguration>(config => client.RegisterWebApi(config));
             client.Configuration.UseInMemoryStorage();
             client.Configuration.UseReferenceIds();
+        }
+
+        private string GetQueueName<T>() {
+            return String.Concat(Settings.Current.AppScopePrefix, typeof(T).Name);
         }
     }
 }

@@ -2,8 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Exceptionless.Core.Models;
-using Exceptionless.Core.Utility;
+using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Extensions {
     public static class EnumerableExtensions {

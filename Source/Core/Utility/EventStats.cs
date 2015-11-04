@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
@@ -29,11 +28,11 @@ namespace Exceptionless.Core.Utility {
             if (!allowedTerms.Contains(term))
                 throw new ArgumentException("Must be a valid term.", nameof(term));
             
-            var filter = new ElasticSearchOptions<PersistentEvent>()
+            var filter = NewQuery()
                 .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
                 .WithQuery(userFilter)
                 .WithDateRange(utcStart, utcEnd, "date")
-                .WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
+                .WithIndicesFromDateRange($"'{Settings.Current.AppScopePrefix}{_eventIndex.VersionedName}-'yyyyMM");
 
             // if no start date then figure out first event date
             if (!filter.UseStartDate) {
@@ -53,7 +52,7 @@ namespace Exceptionless.Core.Utility {
                 if (firstEvent != null) {
                     utcStart = firstEvent.Source.Date.UtcDateTime;
                     filter.WithDateRange(utcStart, utcEnd, "date");
-                    filter.WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
+                    filter.WithIndicesFromDateRange($"'{Settings.Current.AppScopePrefix}{_eventIndex.VersionedName}-'yyyyMM");
                 }
             }
 
@@ -174,11 +173,11 @@ namespace Exceptionless.Core.Utility {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
-            var filter = new ElasticSearchOptions<PersistentEvent>()
+            var filter = NewQuery()
                 .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
                 .WithQuery(userFilter)
                 .WithDateRange(utcStart, utcEnd, "date")
-                .WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
+                .WithIndicesFromDateRange($"'{Settings.Current.AppScopePrefix}{_eventIndex.VersionedName}-'yyyyMM");
 
             // if no start date then figure out first event date
             if (!filter.UseStartDate) {
@@ -197,7 +196,7 @@ namespace Exceptionless.Core.Utility {
                 if (firstEvent != null) {
                     utcStart = firstEvent.Source.Date.UtcDateTime;
                     filter.WithDateRange(utcStart, utcEnd, "date");
-                    filter.WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
+                    filter.WithIndicesFromDateRange($"'{Settings.Current.AppScopePrefix}{_eventIndex.VersionedName}-'yyyyMM");
                 }
             }
 

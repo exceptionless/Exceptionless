@@ -2,17 +2,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Models;
+using Foundatio.Elasticsearch.Configuration;
+using Foundatio.Elasticsearch.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class OrganizationIndex : IElasticSearchIndex {
+    public class OrganizationIndex : IElasticsearchIndex {
         private const string KEYWORD_LOWERCASE = "keyword_lowercase";
 
-        public string Name => "organizations";
-
         public int Version => 1;
-
-        public string VersionedName => String.Concat(Name, "-v", Version);
+        public static string Alias => Settings.Current.AppScopePrefix + "organization";
+        public string AliasName => Alias;
+        public string VersionedName => String.Concat(AliasName, "-v", Version);
 
         public virtual IDictionary<Type, string> GetIndexTypeNames() {
             return new Dictionary<Type, string> {

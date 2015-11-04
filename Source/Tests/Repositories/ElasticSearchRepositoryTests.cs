@@ -5,6 +5,7 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
+using Foundatio.Repositories.Models;
 using Nest;
 using Xunit;
 
