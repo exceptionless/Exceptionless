@@ -11,11 +11,9 @@ using Foundatio.Queues;
 namespace Exceptionless.Core.Jobs {
     public class MailMessageJob : QueueProcessorJobBase<MailMessage> {
         private readonly IMailSender _mailSender;
-        private readonly IMetricsClient _metricsClient;
 
-        public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, IMetricsClient metricsClient) : base(queue) {
+        public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender) : base(queue) {
             _mailSender = mailSender;
-            _metricsClient = metricsClient;
         }
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<MailMessage> context) {
@@ -25,7 +23,6 @@ namespace Exceptionless.Core.Jobs {
                 await _mailSender.SendAsync(context.QueueEntry.Value).AnyContext();
                 Logger.Info().Message("Sent message: to={0} subject=\"{1}\"", context.QueueEntry.Value.To, context.QueueEntry.Value.Subject).Write();
             } catch (Exception ex) {
-                Logger.Error().Exception(ex).Message("Error sending message: id={0} error={1}", context.QueueEntry.Id, ex.Message).Write();
                 return JobResult.FromException(ex);
             }
 
