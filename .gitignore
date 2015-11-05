@@ -160,11 +160,8 @@ $RECYCLE.BIN/
 dump.rdb
 
 #App
-.idea
 App_Data
-Exceptionless.sln.GhostDoc.xml
 /Libraries/elasticsearch-*
-/Libraries/MongoDB
 /.vs
 
 *.DS_Store
