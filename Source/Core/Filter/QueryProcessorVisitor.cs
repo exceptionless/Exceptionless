@@ -97,7 +97,7 @@ namespace Exceptionless.Core.Filter {
             string termType = "s";
 
             var trimmedTerms = terms.Where(t => t != null).Select(t => t.TrimStart('>', '<', '=')).Distinct().ToList();
-            foreach (var term in trimmedTerms.Distinct()) {
+            foreach (var term in trimmedTerms) {
                 if (term.StartsWith("*"))
                     continue;
 
