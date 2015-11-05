@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Exceptionless.Core.Extensions;
 using Exceptionless.LuceneQueryParser;
 using Exceptionless.LuceneQueryParser.Nodes;
@@ -54,24 +55,52 @@ namespace Exceptionless.Core.Filter {
         }
 
         public override void Visit(GroupNode node) {
-            if (node.Field != null && !_freeFields.Contains(node.Field.Field))
-                UsesPremiumFeatures = true;
+            if (node.Field != null) {
+                // using a field not in the free list
+                if (!_freeFields.Contains(node.Field.Field))
+                    UsesPremiumFeatures = true;
+
+                if (node.Field.Field.StartsWith("data.")) {
+                    UsesDataFields = true;
+
+                    var lt = node.Left as TermNode;
+                    var rt = node.Right as TermNode;
+                    string termType = GetTermType(lt?.TermMin, lt?.TermMax, lt?.Term, rt?.TermMin, rt?.TermMax, rt?.Term);
+                    node.Field.Field = "idx." + node.Field.Field.ToLower().Substring(5) + "-" + termType;
+                }
+            }
 
             base.Visit(node);
         }
 
         public override void Visit(TermNode node) {
-            // using a field not in the free list
-            if (node.Field != null && !_freeFields.Contains(node.Field.Field))
-                UsesPremiumFeatures = true;
-
             // using all fields search
             if (String.IsNullOrEmpty(node.Field?.Field))
                 UsesPremiumFeatures = true;
 
-            if (node.Field != null && node.Field.Field.StartsWith("data.")) {
-                string term = node.Term ?? node.TermMin ?? node.TermMax;
-                string termType = "s";
+            if (node.Field != null) {
+                // using a field not in the free list
+                if (!_freeFields.Contains(node.Field.Field))
+                    UsesPremiumFeatures = true;
+
+                if (node.Field.Field.StartsWith("data.")) {
+                    UsesDataFields = true;
+                    string termType = GetTermType(node.TermMin, node.TermMax, node.Term);
+                    node.Field.Field = "idx." + node.Field.Field.ToLower().Substring(5) + "-" + termType;
+                }
+            }
+
+            base.Visit(node);
+        }
+
+        private static string GetTermType(params string[] terms) {
+            string termType = "s";
+
+            var trimmedTerms = terms.Where(t => t != null).Select(t => t.TrimStart('>', '<', '=')).Distinct().ToList();
+            foreach (var term in trimmedTerms.Distinct()) {
+                if (term.StartsWith("*"))
+                    continue;
+
                 bool boolResult;
                 DateTime dateResult;
                 if (Boolean.TryParse(term, out boolResult))
@@ -81,11 +110,14 @@ namespace Exceptionless.Core.Filter {
                 else if (DateTime.TryParse(term, out dateResult))
                     termType = "d";
 
-                UsesDataFields = true;
-                node.Field.Field = "idx." + node.Field.Field.ToLower().Substring(5) + "-" + termType;
+                break;
             }
 
-            base.Visit(node);
+            // Some terms can be a string date range: [now TO now/d+1d}
+            if (String.Equals(termType, "s") && trimmedTerms.All(t => String.Equals(t, "now", StringComparison.OrdinalIgnoreCase) || t.StartsWith("now/", StringComparison.OrdinalIgnoreCase)))
+                termType = "d";
+
+            return termType;
         }
 
         public bool UsesPremiumFeatures { get; set; }
