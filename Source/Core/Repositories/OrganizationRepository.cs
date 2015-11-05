@@ -11,6 +11,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Extensions;
 using Foundatio.Caching;
 using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
@@ -23,8 +24,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(token))
                 throw new ArgumentNullException(nameof(token));
 
-            var filter = Filter<Organization>.Term(OrganizationIndex.Fields.Organization.InviteToken, token);
-            return FindOneAsync(NewQuery().WithFilter(filter));
+            return FindOneAsync(NewQuery().WithFieldEquals(OrganizationIndex.Fields.Organization.InviteToken, token));
         }
 
         public Task<Organization> GetByStripeCustomerIdAsync(string customerId) {
@@ -32,14 +32,14 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(customerId));
 
             var filter = Filter<Organization>.Term(o => o.StripeCustomerId, customerId);
-            return FindOneAsync(NewQuery().WithFilter(filter));
+            return FindOneAsync(NewQuery().WithElasticFilter(filter));
         }
 
         public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
             var filter = Filter<Organization>.Range(r => r.OnField(o => o.RetentionDays).Greater(0));
             return FindAsync(NewQuery()
-                .WithFilter(filter)
-                .WithFields("id", "name", "retention_days")
+                .WithElasticFilter(filter)
+                .WithSelectedFields("id", "name", "retention_days")
                 .WithPaging(paging));
         }
         
@@ -83,12 +83,12 @@ namespace Exceptionless.Core.Repositories {
                 //    break;
             }
             
-            return FindAsync(NewQuery().WithPaging(paging).WithFilter(filter).WithSort(sort));
+            return FindAsync(NewQuery().WithPaging(paging).WithElasticFilter(filter).WithSort(sort));
         }
 
         public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
             var results = (await FindAsync(NewQuery()
-                .WithFields("plan_id", "is_suspended", "billing_price", "billing_status")
+                .WithSelectedFields("plan_id", "is_suspended", "billing_price", "billing_status")
                 .WithSort(s => s.OnField(o => o.PlanId).Order(Nest.SortOrder.Descending))).AnyContext()).Documents;
 
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();

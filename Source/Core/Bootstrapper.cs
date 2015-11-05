@@ -22,6 +22,7 @@ using Exceptionless.Core.Validation;
 using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.Caching;
+using Foundatio.Elasticsearch.Jobs;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Messaging;
@@ -36,6 +37,7 @@ using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
 using SimpleInjector;
 using SimpleInjector.Packaging;
+using ReindexWorkItem = Exceptionless.Core.Models.WorkItems.ReindexWorkItem;
 
 namespace Exceptionless.Core {
     public class Bootstrapper : IPackage {

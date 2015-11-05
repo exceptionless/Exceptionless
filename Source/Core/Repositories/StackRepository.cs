@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Caching;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 using Nest;
 using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
@@ -20,23 +23,26 @@ namespace Exceptionless.Core.Repositories {
 
         public StackRepository(RepositoryContext<Stack> context, StackIndex index, IEventRepository eventRepository) : base(context, index) {
             _eventRepository = eventRepository;
-            DocumentChanging.AddHandler(OnDocumentChangingAsync);
+            DocumentsChanging.AddHandler(OnDocumentChangingAsync);
         }
 
-        private async Task OnDocumentChangingAsync(object sender, DocumentChangeEventArgs<Stack> args) {
+        private async Task OnDocumentChangingAsync(object sender, DocumentsChangeEventArgs<Stack> args) {
             if (args.ChangeType != ChangeType.Removed)
                 return;
 
-            foreach (Stack document in args.Documents) {
-                if (await _eventRepository.GetCountByStackIdAsync(document.Id).AnyContext() > 0)
-                    throw new ApplicationException($"Stack \"{document.Id}\" can't be deleted because it has events associated to it.");
+            foreach (var document in args.Documents) {
+                if (await _eventRepository.GetCountByStackIdAsync(document.Value.Id).AnyContext() > 0)
+                    throw new ApplicationException($"Stack \"{document.Value.Id}\" can't be deleted because it has events associated to it.");
             }
         }
-
+        
         protected override async Task AddToCacheAsync(ICollection<Stack> documents, TimeSpan? expiresIn = null) {
+            if (!IsCacheEnabled)
+                return;
+
             await base.AddToCacheAsync(documents, expiresIn).AnyContext();
             foreach (var stack in documents)
-                await Cache.SetAsync(GetScopedCacheKey(GetStackSignatureCacheKey(stack)), stack, expiresIn ?? TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS)).AnyContext();
+                await Cache.SetAsync(GetStackSignatureCacheKey(stack), stack, expiresIn ?? TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS)).AnyContext();
         }
 
         private string GetStackSignatureCacheKey(Stack stack) {
@@ -99,8 +105,8 @@ namespace Exceptionless.Core.Repositories {
 
             var search = NewQuery()
                 .WithDateRange(utcStart, utcEnd, field ?? "last")
-                .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<Stack>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
-                .WithQuery(userFilter)
+                .WithSystemFilter(systemFilter)
+                .WithFilter(userFilter)
                 .WithPaging(paging)
                 .WithSort(e => e.OnField(sort).Order(sortOrder == SortOrder.Descending ? Nest.SortOrder.Descending : Nest.SortOrder.Ascending));
 
@@ -130,19 +136,24 @@ namespace Exceptionless.Core.Repositories {
             await SaveAsync(stack, true).AnyContext();
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<Stack> stacks, ICollection<Stack> originalStacks) {
-            if (!EnableCache)
+        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<Stack>> documents) {
+            if (!IsCacheEnabled)
+                return;
+            
+            await Cache.RemoveAllAsync(documents.Select(d => d.Value)
+                .Union(documents.Select(d => d.Original).Where(d => d != null))
+                .Select(GetStackSignatureCacheKey)
+                .Distinct()).AnyContext();
+            
+            await base.InvalidateCacheAsync(documents).AnyContext();
+        }
+        
+        public async Task InvalidateCacheAsync(string projectId, string stackId, string signatureHash) {
+            if (!IsCacheEnabled)
                 return;
 
-            foreach (var stack in stacks)
-                await InvalidateCacheAsync(GetStackSignatureCacheKey(stack)).AnyContext();
-
-            await base.InvalidateCacheAsync(stacks, originalStacks).AnyContext();
-        }
-
-        public async Task InvalidateCacheAsync(string projectId, string stackId, string signatureHash) {
-            await InvalidateCacheAsync(stackId).AnyContext();
-            await InvalidateCacheAsync(GetStackSignatureCacheKey(projectId, signatureHash)).AnyContext();
+            await Cache.RemoveAsync(stackId).AnyContext();
+            await Cache.RemoveAsync(GetStackSignatureCacheKey(projectId, signatureHash)).AnyContext();
         }
     }
 }

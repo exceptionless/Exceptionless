@@ -35,8 +35,8 @@ namespace Exceptionless.Core.Repositories {
                 .Union(documents.Select(d => d.Original))
                 .OfType<IOwnedByProject>()
                 .Where(d => !String.IsNullOrEmpty(d.ProjectId))
-                .Distinct()
-                .Select(d => "project:" + d.ProjectId)).AnyContext();
+                .Select(d => "project:" + d.ProjectId)
+                .Distinct()).AnyContext();
 
             await base.InvalidateCacheAsync(documents).AnyContext();
         }

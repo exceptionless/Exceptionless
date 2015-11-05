@@ -11,13 +11,17 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public static string Alias => Settings.Current.AppScopePrefix + "events";
         public string AliasName => Alias;
         public string VersionedName => String.Concat(AliasName, "-v", Version);
-
-        public virtual IDictionary<Type, string> GetIndexTypeNames() {
-            return new Dictionary<Type, string> {
-                { typeof(PersistentEvent), "events" }
+        
+        public IDictionary<Type, IndexType> GetIndexTypes() {
+            return new Dictionary<Type, IndexType> {
+                { typeof(PersistentEvent), new IndexType { Name = "events" } }
             };
         }
-        
+
+        public CreateIndexDescriptor CreateIndex(CreateIndexDescriptor idx) {
+            throw new NotImplementedException();
+        }
+
         public PutTemplateDescriptor CreateTemplate(PutTemplateDescriptor template) {
             const string FLATTEN_ERRORS_SCRIPT = @"
 if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))

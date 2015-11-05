@@ -14,15 +14,16 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public static string Alias => Settings.Current.AppScopePrefix + "organization";
         public string AliasName => Alias;
         public string VersionedName => String.Concat(AliasName, "-v", Version);
-
-        public virtual IDictionary<Type, string> GetIndexTypeNames() {
-            return new Dictionary<Type, string> {
-                { typeof(Application), "application" },
-                { typeof(Organization), "organization" },
-                { typeof(Project), "project" },
-                { typeof(Models.Token), "token" },
-                { typeof(User), "user" },
-                { typeof(WebHook), "webhook" },
+        
+        public IDictionary<Type, IndexType> GetIndexTypes() {
+            return new Dictionary<Type, IndexType> {
+                { typeof(Application), new IndexType { Name = "application" } },
+                //{ typeof(MigrationResult), new IndexType { Name = "migrations"} },
+                { typeof(Organization), new IndexType { Name = "organization" } },
+                { typeof(Project), new IndexType { Name = "project" } },
+                { typeof(Models.Token), new IndexType { Name = "token" } },
+                { typeof(User), new IndexType { Name = "user" } },
+                { typeof(WebHook), new IndexType { Name = "webhook" } }
             };
         }
 

@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
             var filter = Filter<Project>.Range(r => r.OnField(o => o.NextSummaryEndOfDayTicks).Lower(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
-            return FindAsync(NewQuery.WithFilter(filter).WithFields("id", "next_summary_end_of_day_ticks").WithLimit(limit));
+            return FindAsync(NewQuery.WithFilter(filter).WithSelectedFields("id", "next_summary_end_of_day_ticks").WithLimit(limit));
         }
 
         public Task<long> IncrementNextSummaryEndOfDayTicksAsync(ICollection<string> ids) {

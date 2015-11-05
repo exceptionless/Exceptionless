@@ -33,10 +33,10 @@ namespace Exceptionless.Core.Repositories {
             
             await Cache.RemoveAllAsync(documents.Select(d => d.Value)
                 .Union(documents.Select(d => d.Original))
-                .Cast<IOwnedByStack>()
+                .OfType<IOwnedByStack>()
                 .Where(d => !String.IsNullOrEmpty(d.StackId))
-                .Distinct()
-                .Select(d => "stack:" + d.StackId)).AnyContext();
+                .Select(d => "stack:" + d.StackId)
+                .Distinct()).AnyContext();
 
             await base.InvalidateCacheAsync(documents).AnyContext();
         }

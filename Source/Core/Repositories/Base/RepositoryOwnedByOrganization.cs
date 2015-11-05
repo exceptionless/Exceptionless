@@ -49,10 +49,29 @@ namespace Exceptionless.Core.Repositories {
                 .Union(documents.Select(d => d.Original))
                 .OfType<IOwnedByOrganization>()
                 .Where(d => !String.IsNullOrEmpty(d.OrganizationId))
-                .Distinct()
-                .Select(d => "org:" + d.OrganizationId)).AnyContext();
+                .Select(d => "org:" + d.OrganizationId)
+                .Distinct()).AnyContext();
 
             await base.InvalidateCacheAsync(documents).AnyContext();
+        }
+
+        protected Task<long> UpdateAllAsync(string organizationId, object query, object update, bool sendNotifications = true) {
+            return UpdateAllAsync(new[] { organizationId }, query, update, sendNotifications);
+        }
+
+        protected async Task<long> UpdateAllAsync(string[] organizationIds, object query, object update, bool sendNotifications = true) {
+            var recordsAffected = await UpdateAllAsync(query, update, false).AnyContext();
+            if (sendNotifications) {
+                foreach (var organizationId in organizationIds) {
+                    await PublishMessageAsync(new EntityChanged {
+                        ChangeType = ChangeType.Saved,
+                        OrganizationId = organizationId,
+                        Type = EntityType
+                    }, TimeSpan.FromSeconds(1.5)).AnyContext();
+                }
+            }
+
+            return recordsAffected;
         }
     }
 }

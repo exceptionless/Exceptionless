@@ -10,10 +10,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public static string Alias => Settings.Current.AppScopePrefix + "stacks";
         public string AliasName => Alias;
         public string VersionedName => String.Concat(AliasName, "-v", Version);
-
-        public virtual IDictionary<Type, string> GetIndexTypeNames() {
-            return new Dictionary<Type, string> {
-                { typeof(Stack), "stacks" }
+        
+        public IDictionary<Type, IndexType> GetIndexTypes() {
+            return new Dictionary<Type, IndexType> {
+                { typeof(Stack), new IndexType { Name = "stacks" } }
             };
         }
 

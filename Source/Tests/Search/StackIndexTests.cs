@@ -13,7 +13,7 @@ using Xunit;
 namespace Exceptionless.Api.Tests.Repositories {
     public class StackIndexTests {
         private readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
-        private readonly ElasticSearchConfiguration _configuration = IoC.GetInstance<ElasticSearchConfiguration>();
+        private readonly ElasticsearchConfiguration _configuration = IoC.GetInstance<ElasticsearchConfiguration>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         
         [Theory]

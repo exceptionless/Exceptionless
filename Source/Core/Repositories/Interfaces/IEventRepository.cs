@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Repositories {
         Task RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate);
         Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStartDate, DateTime utcEndDate);
 
-        Task<FindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, string query = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
+        Task<FindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, string filter = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         Task<long> GetCountByOrganizationIdAsync(string organizationId);
         Task<long> GetCountByProjectIdAsync(string projectId);
         Task<long> GetCountByStackIdAsync(string stackId);

@@ -5,8 +5,11 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
+using Foundatio.Caching;
 using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
@@ -19,7 +22,7 @@ namespace Exceptionless.Core.Repositories {
 
             emailAddress = emailAddress.ToLowerInvariant().Trim();
             var filter = Filter<User>.Term(u => u.EmailAddress, emailAddress);
-            return FindOneAsync(NewQuery().WithFilter(filter).WithCacheKey(emailAddress));
+            return FindOneAsync(NewQuery().WithElasticFilter(filter).WithCacheKey(emailAddress));
         }
 
         public Task<User> GetByPasswordResetTokenAsync(string token) {
@@ -27,7 +30,7 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             var filter = Filter<User>.Term(u => u.PasswordResetToken, token);
-            return FindOneAsync(NewQuery().WithFilter(filter));
+            return FindOneAsync(NewQuery().WithElasticFilter(filter));
         }
 
         public async Task<User> GetUserByOAuthProviderAsync(string provider, string providerUserId) {
@@ -37,7 +40,7 @@ namespace Exceptionless.Core.Repositories {
             provider = provider.ToLowerInvariant();
 
             var filter = Filter<User>.Term(OrganizationIndex.Fields.User.OAuthAccountProviderUserId, new List<string>() { providerUserId });
-            var results = (await FindAsync(NewQuery().WithFilter(filter)).AnyContext()).Documents;
+            var results = (await FindAsync(NewQuery().WithElasticFilter(filter)).AnyContext()).Documents;
 
             return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
         }
@@ -47,7 +50,7 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             var filter = Filter<User>.Term(u => u.VerifyEmailAddressToken, token);
-            return FindOneAsync(NewQuery().WithFilter(filter));
+            return FindOneAsync(NewQuery().WithElasticFilter(filter));
         }
 
         public virtual Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
@@ -61,7 +64,7 @@ namespace Exceptionless.Core.Repositories {
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
             var filter = Filter<User>.Term(u => u.OrganizationIds, organizationIds);
             return FindAsync(NewQuery()
-                .WithFilter(filter)
+                .WithElasticFilter(filter)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? cacheKey : null)
                 .WithExpiresIn(expiresIn));
@@ -69,31 +72,22 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<long> CountByOrganizationIdAsync(string organizationId) {
             var filter = Filter<User>.Term(u => u.OrganizationIds, new[] { organizationId });
-            var options = NewQuery()
-                .WithFilter(filter);
-
+            var options = NewQuery().WithElasticFilter(filter);
             return CountAsync(options);
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<User> users, ICollection<User> originalUsers) {
-            if (!EnableCache)
+        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<User>> documents) {
+            if (!IsCacheEnabled)
                 return;
+            
+            var users = documents.Select(d => d.Value).Union(documents.Select(d => d.Original).Where(d => d != null)).ToList();
+            foreach (var emailAddress in users.Select(u => u.EmailAddress).Distinct())
+                await Cache.RemoveAsync(emailAddress).AnyContext();
 
-            if (users == null)
-                throw new ArgumentNullException(nameof(users));
+            foreach (var organizationId in users.SelectMany(u => u.OrganizationIds).Distinct())
+                await Cache.RemoveAsync("org:" + organizationId).AnyContext();
 
-            var combinedUsers = new List<User>();
-            combinedUsers.AddRange(users);
-            if (originalUsers != null)
-                combinedUsers.AddRange(originalUsers);
-
-            foreach (var emailAddress in combinedUsers.Select(u => u.EmailAddress).Distinct())
-                await InvalidateCacheAsync(emailAddress).AnyContext();
-
-            foreach (var organizationId in combinedUsers.SelectMany(u => u.OrganizationIds).Distinct())
-                await InvalidateCacheAsync("org:" + organizationId).AnyContext();
-
-            await base.InvalidateCacheAsync(users, originalUsers).AnyContext();
+            await base.InvalidateCacheAsync(documents).AnyContext();
         }
     }
 }
