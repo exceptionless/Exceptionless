@@ -37,7 +37,6 @@ using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
 using SimpleInjector;
 using SimpleInjector.Packaging;
-using ReindexWorkItem = Exceptionless.Core.Models.WorkItems.ReindexWorkItem;
 
 namespace Exceptionless.Core {
     public class Bootstrapper : IPackage {
@@ -66,7 +65,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
             
             container.RegisterSingleton<IMetricsClient, InMemoryMetricsClient>();
-            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ElasticSearchConfiguration>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
+            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ElasticsearchConfiguration>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
             container.RegisterSingleton<EventIndex, EventIndex>();
             container.RegisterSingleton<OrganizationIndex, OrganizationIndex>();
             container.RegisterSingleton<StackIndex, StackIndex>();
