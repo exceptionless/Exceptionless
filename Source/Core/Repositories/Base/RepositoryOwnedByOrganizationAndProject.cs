@@ -13,10 +13,10 @@ using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganizationAndProject<T> : RepositoryOwnedByOrganization<T>, IRepositoryOwnedByProject<T> where T : class, IOwnedByProject, IIdentity, IOwnedByOrganization, new() {
-        public RepositoryOwnedByOrganizationAndProject(RepositoryContext<T> context, IElasticsearchIndex index) : base(context, index) { }
+        public RepositoryOwnedByOrganizationAndProject(ElasticRepositoryContext<T> context, IElasticIndex index) : base(context, index) { }
 
         public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return FindAsync(NewQuery()
+            return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("project:", projectId) : null)
@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public virtual Task RemoveAllByProjectIdsAsync(string[]  projectIds) {
-            return RemoveAllAsync(NewQuery().WithProjectIds(projectIds));
+            return RemoveAllAsync(new ExceptionlessQuery().WithProjectIds(projectIds));
         }
 
         protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<T>> documents) {

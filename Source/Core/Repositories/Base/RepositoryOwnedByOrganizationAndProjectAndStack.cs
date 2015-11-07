@@ -13,10 +13,10 @@ using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganizationAndProjectAndStack<T> : RepositoryOwnedByOrganizationAndProject<T>, IRepositoryOwnedByStack<T> where T : class, IOwnedByProject, IIdentity, IOwnedByStack, IOwnedByOrganization, new() {
-        public RepositoryOwnedByOrganizationAndProjectAndStack(RepositoryContext<T> context, IElasticsearchIndex index) : base(context, index) { }
+        public RepositoryOwnedByOrganizationAndProjectAndStack(ElasticRepositoryContext<T> context, IElasticIndex index) : base(context, index) { }
 
         public virtual Task<FindResults<T>> GetByStackIdAsync(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return FindAsync(NewQuery()
+            return FindAsync(new ExceptionlessQuery()
                 .WithStackId(stackId)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("stack:", stackId) : null)
@@ -24,13 +24,13 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task RemoveAllByStackIdsAsync(string[] stackIds) {
-            return RemoveAllAsync(NewQuery().WithStackIds(stackIds));
+            return RemoveAllAsync(new ExceptionlessQuery().WithStackIds(stackIds));
         }
 
         protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<T>> documents) {
             if (!IsCacheEnabled)
                 return;
-            
+
             await Cache.RemoveAllAsync(documents.Select(d => d.Value)
                 .Union(documents.Select(d => d.Original))
                 .OfType<IOwnedByStack>()

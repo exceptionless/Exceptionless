@@ -27,7 +27,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         #region CRUD
-        
+
         /// <summary>
         /// Get by project
         /// </summary>
@@ -49,8 +49,8 @@ namespace Exceptionless.App.Controllers.API {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = (await _repository.GetByProjectIdAsync(projectId, options)).Documents;
-            return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+            var results = await _repository.GetByProjectIdAsync(projectId, options);
+            return OkWithResourceLinks(results.Documents, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace Exceptionless.App.Controllers.API {
                 return results;
 
             foreach (var webHook in webHooks) {
-                if ((!String.IsNullOrEmpty(webHook.OrganizationId) && IsInOrganization(webHook.OrganizationId)) 
+                if ((!String.IsNullOrEmpty(webHook.OrganizationId) && IsInOrganization(webHook.OrganizationId))
                     || (!String.IsNullOrEmpty(webHook.ProjectId) && (await IsInProjectAsync(webHook.ProjectId))))
                     results.Add(webHook);
             }
@@ -208,7 +208,7 @@ namespace Exceptionless.App.Controllers.API {
 
                 value.OrganizationId = project.OrganizationId;
             }
-            
+
             if (!await _billingManager.HasPremiumFeaturesAsync(project != null ? project.OrganizationId : value.OrganizationId))
                 return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add integrations.");
 

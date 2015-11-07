@@ -12,7 +12,7 @@ using Xunit;
 namespace Exceptionless.Api.Tests.Repositories {
     public class ElasticSearchConfigurationTests {
         public readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        public readonly ElasticsearchConfiguration _configuration = IoC.GetInstance<ElasticsearchConfiguration>();
+        public readonly ElasticConfiguration _configuration = IoC.GetInstance<ElasticConfiguration>();
         public readonly EventIndex _eventIndex = new EventIndex();
         public readonly StackIndex _stackIndex = new StackIndex();
         public readonly EventRepository _eventRepository = IoC.GetInstance<EventRepository>();

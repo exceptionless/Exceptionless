@@ -26,7 +26,10 @@ using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
+using Foundatio.Repositories.Models;
 using Stripe;
+using ChangeType = Exceptionless.Core.Messaging.Models.ChangeType;
+
 #pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
@@ -72,9 +75,9 @@ namespace Exceptionless.Api.Controllers {
             var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations.Documents, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
+                return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()), organizations.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
 
-            return OkWithResourceLinks(viewOrganizations, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
+            return OkWithResourceLinks(viewOrganizations, organizations.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
         }
 
         [HttpGet]
@@ -88,11 +91,11 @@ namespace Exceptionless.Api.Controllers {
             var options = new PagingOptions { Page = page, Limit = limit };
             var organizations = await _repository.GetByCriteriaAsync(criteria, options, sort, paid, suspended);
             var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
-            
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), options.HasMore, page, organizations.Total);
 
-            return OkWithResourceLinks(viewOrganizations, options.HasMore, page, organizations.Total);
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), organizations.HasMore, page, organizations.Total);
+
+            return OkWithResourceLinks(viewOrganizations, organizations.HasMore, page, organizations.Total);
         }
 
         [HttpGet]
@@ -121,7 +124,7 @@ namespace Exceptionless.Api.Controllers {
             var viewOrganization = await MapAsync<ViewOrganization>(organization, true);
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
                 return Ok(await PopulateOrganizationStatsAsync(viewOrganization));
-            
+
             return Ok(viewOrganization);
         }
 
@@ -228,7 +231,7 @@ namespace Exceptionless.Api.Controllers {
             if (coupon != null) {
                 double discountAmount = coupon.AmountOff ?? stripeInvoice.Subtotal * (coupon.PercentOff.GetValueOrDefault() / 100.0);
                 string description = $"{coupon.Id} {(coupon.PercentOff.HasValue ? $"({coupon.PercentOff.Value}% off)" : $"({(coupon.AmountOff.GetValueOrDefault() / 100.0).ToString("C")} off)")}";
-               
+
                 invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
             }
 
@@ -342,7 +345,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (String.Equals(organization.PlanId, plan.Id) && String.Equals(BillingManager.FreePlan.Id, plan.Id))
                 return Ok(ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan."));
-            
+
             // Only see if they can downgrade a plan if the plans are different.
             if (!String.Equals(organization.PlanId, plan.Id)) {
                 var result = await _billingManager.CanDownGradeAsync(organization, plan, ExceptionlessUser);
@@ -397,7 +400,7 @@ namespace Exceptionless.Api.Controllers {
                         create.Card = new StripeCreditCardOptions { TokenId = stripeToken };
                         cardUpdated = true;
                     }
-                    
+
                     var subscription = subscriptionService.List(organization.StripeCustomerId).FirstOrDefault(s => !s.CanceledAt.HasValue);
                     if (subscription != null)
                         subscriptionService.Update(organization.StripeCustomerId, subscription.Id, update);
@@ -446,7 +449,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!await _billingManager.CanAddUserAsync(organization))
                 return PlanLimitReached("Please upgrade your plan to add an additional user.");
-            
+
             User user = await _userRepository.GetByEmailAddressAsync(email);
             if (user != null) {
                 if (!user.OrganizationIds.Contains(organization.Id)) {

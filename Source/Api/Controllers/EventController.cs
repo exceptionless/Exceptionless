@@ -38,11 +38,11 @@ namespace Exceptionless.Api.Controllers {
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IFileStorage _storage;
 
-        public EventController(IEventRepository repository, 
-            IOrganizationRepository organizationRepository, 
-            IProjectRepository projectRepository, 
+        public EventController(IEventRepository repository,
+            IOrganizationRepository organizationRepository,
+            IProjectRepository projectRepository,
             IStackRepository stackRepository,
-            IQueue<EventPost> eventPostQueue, 
+            IQueue<EventPost> eventPostQueue,
             IQueue<EventUserDescription> eventUserDescriptionQueue,
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
@@ -58,7 +58,7 @@ namespace Exceptionless.Api.Controllers {
 
             AllowedFields.Add("date");
         }
-        
+
         /// <summary>
         /// Get by id
         /// </summary>
@@ -143,7 +143,7 @@ namespace Exceptionless.Api.Controllers {
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
-            
+
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(events.Documents.Select(e => {
                     var summaryData = _formattingPluginManager.GetEventSummaryData(e);
@@ -153,9 +153,9 @@ namespace Exceptionless.Api.Controllers {
                         Date = e.Date,
                         Data = summaryData.Data
                     };
-                }).ToList(), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
+                }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
 
-            return OkWithResourceLinks(events.Documents, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
+            return OkWithResourceLinks(events.Documents, events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
         }
 
         /// <summary>
@@ -243,7 +243,7 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
-            
+
             return await GetInternalAsync(userFilter: String.Concat("reference:", referenceId));
         }
 
@@ -259,7 +259,7 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string projectId) {
             if (String.IsNullOrEmpty(referenceId) || String.IsNullOrEmpty(projectId))
                 return NotFound();
-            
+
             var project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
@@ -293,7 +293,7 @@ namespace Exceptionless.Api.Controllers {
             var result = await _userDescriptionValidator.ValidateAsync(description);
             if (!result.IsValid)
                 return BadRequest(result.Errors.ToErrorMessage());
-            
+
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();
 
@@ -342,28 +342,28 @@ namespace Exceptionless.Api.Controllers {
         /// Create
         /// </summary>
         /// <remarks>
-        /// You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it 
-        /// we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON 
+        /// You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it
+        /// we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON
         /// object into the events data collection.
-        /// 
+        ///
         /// You can also post a multiline string. We automatically split strings by the \n character and create a new log event for every line.
-        /// 
+        ///
         /// Simple event:
         /// <code>
         ///     { "message": "Exceptionless is amazing!" }
         /// </code>
-        /// 
+        ///
         /// Multiple events from string content:
         /// <code>
         ///     Exceptionless is amazing!
         ///     Exceptionless is really amazing!
         /// </code>
-        /// 
+        ///
         /// Simple error:
         /// <code>
-        ///     {  
+        ///     {
         ///         "type": "error",
-        ///         "@simple_error": {  
+        ///         "@simple_error": {
         ///             "message": "Simple Exception",
         ///             "type": "System.Exception",
         ///             "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77"
@@ -391,7 +391,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();
-            
+
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
@@ -432,7 +432,7 @@ namespace Exceptionless.Api.Controllers {
 
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
-            
+
             return StatusCode(HttpStatusCode.Accepted);
         }
 

@@ -9,10 +9,10 @@ using Foundatio.Queues;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class ElasticsearchConfiguration : ElasticsearchConfigurationBase {
-        public ElasticsearchConfiguration(IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient) : base(workItemQueue, cacheClient) {}
-        
-        protected override ConnectionSettings GetConnectionSettings(IEnumerable<Uri> serverUris, IEnumerable<IElasticsearchIndex> indexes) {
+    public class ElasticConfiguration : ElasticConfigurationBase {
+        public ElasticConfiguration(IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient) : base(workItemQueue, cacheClient) {}
+
+        protected override ConnectionSettings GetConnectionSettings(IEnumerable<Uri> serverUris, IEnumerable<IElasticIndex> indexes) {
             var settings = base.GetConnectionSettings(serverUris, indexes)
                 .SetDefaultTypeNameInferrer(p => p.Name.ToLowerUnderscoredWords())
                 .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords())
@@ -25,9 +25,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
             return settings;
         }
-        
-        protected override IEnumerable<IElasticsearchIndex> GetIndexes() {
-            return new IElasticsearchIndex[] {
+
+        protected override IEnumerable<IElasticIndex> GetIndexes() {
+            return new IElasticIndex[] {
                 new StackIndex(),
                 new EventIndex(),
                 new OrganizationIndex()

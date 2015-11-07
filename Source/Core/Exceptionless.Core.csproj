@@ -62,11 +62,11 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.3.0.576\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.3.0.581\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Elasticsearch, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Elasticsearch.3.0.576\lib\net45\Foundatio.Elasticsearch.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Elasticsearch.3.0.581\lib\net45\Foundatio.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -214,7 +214,6 @@
     <Compile Include="Models\Enums\SuspensionCode.cs" />
     <Compile Include="Models\Event.cs" />
     <Compile Include="Models\Interfaces\IData.cs" />
-    <Compile Include="Models\Interfaces\IHaveDates.cs" />
     <Compile Include="Models\Interfaces\IOwnedByOrganization.cs" />
     <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProject.cs" />
     <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProjectAndStack.cs" />
@@ -259,11 +258,12 @@
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
-    <Compile Include="Repositories\Configuration\ElasticSearchConfiguration.cs" />
+    <Compile Include="Repositories\Configuration\ElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\StackIndex.cs" />
     <Compile Include="Repositories\Queries\ProjectIdQuery.cs" />
+    <Compile Include="Repositories\Queries\ExceptionlessQuery.cs" />
     <Compile Include="Repositories\Queries\StackIdQuery.cs" />
     <Compile Include="Repositories\Queries\OrganizationIdQuery.cs" />
     <Compile Include="Utility\SettingsBase.cs" />

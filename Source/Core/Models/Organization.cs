@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
     public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates {
@@ -153,8 +154,8 @@ namespace Exceptionless.Core.Models {
         public DataDictionary Data { get; set; }
 
         public DateTime CreatedUtc { get; set; }
-        
-        public DateTime ModifiedUtc { get; set; }
+
+        public DateTime UpdatedUtc { get; set; }
 
         string IOwnedByOrganization.OrganizationId { get { return Id; } set { Id = value; } }
     }

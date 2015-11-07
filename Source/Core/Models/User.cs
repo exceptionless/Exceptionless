@@ -48,6 +48,6 @@ namespace Exceptionless.Core.Models {
         public ICollection<string> Roles { get; set; }
 
         public DateTime CreatedUtc { get; set; }
-        public DateTime ModifiedUtc { get; set; }
+        public DateTime UpdatedUtc { get; set; }
     }
 }

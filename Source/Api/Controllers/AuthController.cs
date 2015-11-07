@@ -44,13 +44,13 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <remarks>
         /// Log in with your email address and password to generate a token scoped with your users roles.
-        /// 
+        ///
         /// <code>{ "email": "noreply@exceptionless.io", "password": "exceptionless" }</code>
-        /// 
+        ///
         /// This token can then be used to access the api. You can use this token in the header (bearer authentication)
         /// or append it onto the query string: ?access_token=MY_TOKEN
-        /// 
-        /// Please note that you can also use this token on the documentation site by placing it in the 
+        ///
+        /// Please note that you can also use this token on the documentation site by placing it in the
         /// headers api_key input box.
         /// </remarks>
         /// <param name="model">The login model.</param>
@@ -82,7 +82,7 @@ namespace Exceptionless.Api.Controllers {
                 Logger.Error().Message("Login failed for \"{0}\": User not found.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
                 return Unauthorized();
             }
-            
+
             if (!user.IsActive) {
                 Logger.Error().Message("Login failed for \"{0}\": The user is inactive.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 return Unauthorized();
@@ -116,7 +116,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("signup")]
         [ResponseType(typeof(TokenResult))]
         public async Task<IHttpActionResult> SignupAsync(SignupModel model) {
-            if (!Settings.Current.EnableAccountCreation) 
+            if (!Settings.Current.EnableAccountCreation)
                 return BadRequest("Account Creation is currently disabled.");
 
             if (String.IsNullOrWhiteSpace(model?.Email)) {
@@ -149,7 +149,7 @@ namespace Exceptionless.Api.Controllers {
 
             user = new User {
                 IsActive = true,
-                FullName = model.Name, 
+                FullName = model.Name,
                 EmailAddress = model.Email,
                 IsEmailAddressVerified = false
             };
@@ -276,7 +276,7 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> IsEmailAddressAvailableAsync(string email) {
             if (String.IsNullOrWhiteSpace(email))
                 return StatusCode(HttpStatusCode.NoContent);
-            
+
             if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return StatusCode(HttpStatusCode.Created);
 
@@ -366,7 +366,7 @@ namespace Exceptionless.Api.Controllers {
             var user = await _userRepository.GetByPasswordResetTokenAsync(token);
             if (user == null)
                 return Ok();
-            
+
             user.ResetPasswordResetToken();
             await _userRepository.SaveAsync(user);
 
@@ -384,7 +384,7 @@ namespace Exceptionless.Api.Controllers {
 
             _isFirstUserChecked = true;
         }
-        
+
         private async Task<IHttpActionResult> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, string appId, string appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client {
             if (String.IsNullOrEmpty(authInfo?.Code)) {
                 Logger.Error().Message("External login failed: Unable to get auth info.").Tag("External Login").Property("Auth Info", authInfo).SetActionContext(ActionContext).Write();
@@ -432,7 +432,7 @@ namespace Exceptionless.Api.Controllers {
 
         private async Task<User> FromExternalLoginAsync(UserInfo userInfo) {
             User existingUser = await _userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
-            
+
             // Link user accounts.
             if (ExceptionlessUser != null) {
                 if (existingUser != null) {
@@ -486,14 +486,14 @@ namespace Exceptionless.Api.Controllers {
         private async Task AddInvitedUserToOrganizationAsync(string token, User user) {
             if (String.IsNullOrWhiteSpace(token) || user == null)
                 return;
-            
+
             var organization = await _organizationRepository.GetByInviteTokenAsync(token);
             var invite = organization.GetInvite(token);
             if (organization == null || invite == null) {
                 Logger.Info().Message("Unable to add the invited user \"{0}\". Invalid invite token: {1}", user.EmailAddress, token).Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 return;
             }
-            
+
             if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
                 Logger.Info().Message("Marking the invited users email address \"{0}\" as verified.", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 user.MarkEmailAddressVerified();
@@ -529,7 +529,7 @@ namespace Exceptionless.Api.Controllers {
                 Id = Core.Extensions.StringExtensions.GetNewToken(),
                 UserId = user.Id,
                 CreatedUtc = DateTime.UtcNow,
-                ModifiedUtc = DateTime.UtcNow,
+                UpdatedUtc = DateTime.UtcNow,
                 CreatedBy = user.Id,
                 Type = TokenType.Access
             });

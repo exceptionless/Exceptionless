@@ -5,6 +5,6 @@ using Foundatio.Elasticsearch.Repositories;
 
 namespace Exceptionless.Core.Repositories {
     public class ApplicationRepository : RepositoryOwnedByOrganization<Application>, IApplicationRepository {
-        public ApplicationRepository(RepositoryContext<Application> context, OrganizationIndex index) : base(context, index) { }
+        public ApplicationRepository(ElasticRepositoryContext<Application> context, OrganizationIndex index) : base(context, index) { }
     }
 }

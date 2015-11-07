@@ -26,7 +26,7 @@ namespace Exceptionless.Api.Controllers {
     public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
-        private readonly BillingManager _billingManager; 
+        private readonly BillingManager _billingManager;
         private readonly EventStats _stats;
 
         public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, EventStats stats) : base(projectRepository) {
@@ -55,9 +55,9 @@ namespace Exceptionless.Api.Controllers {
             var viewProjects = await MapCollectionAsync<ViewProject>(projects.Documents, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects.ToList()), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
-            
-            return OkWithResourceLinks(viewProjects, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+                return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects.ToList()), projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+
+            return OkWithResourceLinks(viewProjects, projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
         }
 
         /// <summary>
@@ -88,9 +88,9 @@ namespace Exceptionless.Api.Controllers {
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+                return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
 
-            return OkWithResourceLinks(viewProjects, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+            return OkWithResourceLinks(viewProjects, projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
         }
 
         /// <summary>
@@ -220,7 +220,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             if (project.Configuration.Settings.Remove(key)) {
-                project.Configuration.IncrementVersion(); 
+                project.Configuration.IncrementVersion();
                 await _repository.SaveAsync(project, true);
             }
 
@@ -243,7 +243,7 @@ namespace Exceptionless.Api.Controllers {
                 ProjectId = project.Id,
                 Reset = true
             });
-            
+
             return WorkInProgress(new [] { workItemId });
         }
 
@@ -435,10 +435,10 @@ namespace Exceptionless.Api.Controllers {
 
             return Ok();
         }
-        
+
         protected override async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {
             await base.AfterResultMapAsync(models);
-            
+
             // TODO: We can optimize this by normalizing the project model to include the organization name.
             var viewProjects = models.OfType<ViewProject>().ToList();
             var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), useCache: true)).Documents;

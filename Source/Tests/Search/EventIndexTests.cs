@@ -14,7 +14,7 @@ using SortOrder = Foundatio.Repositories.Models.SortOrder;
 namespace Exceptionless.Api.Tests.Repositories {
     public class EventIndexTests {
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
-        private readonly ElasticsearchConfiguration _configuration = IoC.GetInstance<ElasticsearchConfiguration>();
+        private readonly ElasticConfiguration _configuration = IoC.GetInstance<ElasticConfiguration>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         
         [Theory]

@@ -27,7 +27,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, updatedProject.NextSummaryEndOfDayTicks);
 
             //TODO: Figure out why this isn't updated.
-            //Assert.NotEqual(project.ModifiedUtc, updatedProject.ModifiedUtc);
+            //Assert.NotEqual(project.UpdatedUtc, updatedProject.UpdatedUtc);
         }
     }
 }

@@ -6,12 +6,12 @@ using Foundatio.Elasticsearch.Configuration;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class EventIndex : ITemplatedElasticsearchIndex {
+    public class EventIndex : ITemplatedElasticIndex {
         public int Version => 1;
         public static string Alias => Settings.Current.AppScopePrefix + "events";
         public string AliasName => Alias;
         public string VersionedName => String.Concat(AliasName, "-v", Version);
-        
+
         public IDictionary<Type, IndexType> GetIndexTypes() {
             return new Dictionary<Type, IndexType> {
                 { typeof(PersistentEvent), new IndexType { Name = "events" } }
@@ -56,7 +56,7 @@ err['all_codes'] = codes.join(' ')";
                     .Transform(t => t.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy))
                     .AllField(i => i.IndexAnalyzer("standardplus").SearchAnalyzer("whitespace_lower"))
                     .Properties(p => p
-                        .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
+                        .String(f => f.Name(e => e.Id).IndexName(Fields.PersistentEvent.Id).Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
                         .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.StackId).IndexName("stack").Index(FieldIndexOption.NotAnalyzed))
@@ -64,7 +64,7 @@ err['all_codes'] = codes.join(' ')";
                         .String(f => f.Name(e => e.SessionId).IndexName("session").Index(FieldIndexOption.Analyzed))
                         .String(f => f.Name(e => e.Type).IndexName("type").Index(FieldIndexOption.Analyzed))
                         .String(f => f.Name(e => e.Source).IndexName("source").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                        .Date(f => f.Name(e => e.Date).IndexName("date"))
+                        .Date(f => f.Name(e => e.Date).IndexName(Fields.PersistentEvent.Date))
                         .String(f => f.Name(e => e.Message).IndexName("message").Index(FieldIndexOption.Analyzed).IncludeInAll())
                         .String(f => f.Name(e => e.Tags).IndexName("tag").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.2))
                         .GeoPoint(f => f.Name(e => e.Geo).IndexLatLon())
@@ -237,6 +237,13 @@ err['all_codes'] = codes.join(' ')";
                     }
                 }
             };
+        }
+
+        public class Fields {
+            public class PersistentEvent {
+                public const string Id = "id";
+                public const string Date = "date";
+            }
         }
     }
 }

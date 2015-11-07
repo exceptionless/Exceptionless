@@ -47,7 +47,7 @@ namespace Exceptionless.App.Controllers.API {
             var options = new PagingOptions { Page = page, Limit = limit };
             var tokens = await _repository.GetByTypeAndOrganizationIdAsync(TokenType.Access, organizationId, options, true);
             var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true)).ToList();
-            return OkWithResourceLinks(viewTokens, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
+            return OkWithResourceLinks(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Exceptionless.App.Controllers.API {
             var options = new PagingOptions { Page = page, Limit = limit };
             var tokens = await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, options);
             var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true)).ToList();
-            return OkWithResourceLinks(viewTokens, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
+            return OkWithResourceLinks(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
         }
 
         /// <summary>
@@ -274,7 +274,7 @@ namespace Exceptionless.App.Controllers.API {
 
         protected override Task<Token> AddModelAsync(Token value) {
             value.Id = StringExtensions.GetNewToken();
-            value.CreatedUtc = value.ModifiedUtc = DateTime.UtcNow;
+            value.CreatedUtc = value.UpdatedUtc = DateTime.UtcNow;
             value.Type = TokenType.Access;
             value.CreatedBy = Request.GetUser().Id;
 

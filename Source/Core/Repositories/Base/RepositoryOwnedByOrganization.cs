@@ -13,10 +13,10 @@ using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
-        public RepositoryOwnedByOrganization(RepositoryContext<T> context, IElasticsearchIndex index) : base(context, index) { }
+        public RepositoryOwnedByOrganization(ElasticRepositoryContext<T> context, IElasticIndex index) : base(context, index) { }
 
         public Task<long> CountByOrganizationIdAsync(string organizationId) {
-            var options = NewQuery().WithOrganizationId(organizationId);
+            var options = new ExceptionlessQuery().WithOrganizationId(organizationId);
             return CountAsync(options);
         }
 
@@ -30,21 +30,21 @@ namespace Exceptionless.Core.Repositories {
 
             // NOTE: There is no way to currently invalidate this.. If you try and cache this result, you should expect it to be dirty.
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
-            return FindAsync(NewQuery()
+            return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationIds(organizationIds)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? cacheKey : null)
-                .WithExpiresIn(expiresIn)).AnyContext();
+                .WithExpiresIn(expiresIn));
         }
 
         public Task RemoveAllByOrganizationIdsAsync(string[] organizationIds) {
-            return RemoveAllAsync(NewQuery().WithOrganizationIds(organizationIds));
+            return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationIds(organizationIds));
         }
 
         protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<T>> documents) {
             if (!IsCacheEnabled)
                 return;
-            
+
             await Cache.RemoveAllAsync(documents.Select(d => d.Value)
                 .Union(documents.Select(d => d.Original))
                 .OfType<IOwnedByOrganization>()

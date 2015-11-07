@@ -23,7 +23,7 @@ namespace Exceptionless.Api.Tests.Utility {
             RegisterServices(container);
 
             var client = container.GetInstance<IElasticClient>();
-            var configuration = container.GetInstance<ElasticsearchConfiguration>();
+            var configuration = container.GetInstance<ElasticConfiguration>();
             configuration.DeleteIndexes(client);
             configuration.ConfigureIndexes(client);
             

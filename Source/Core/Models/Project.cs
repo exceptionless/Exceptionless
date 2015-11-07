@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
     [DebuggerDisplay("Id: {Id}, Name: {Name}, NextSummaryEndOfDayTicks: {NextSummaryEndOfDayTicks}")]
@@ -50,6 +51,6 @@ namespace Exceptionless.Core.Models {
 
         public DateTime CreatedUtc { get; set; }
 
-        public DateTime ModifiedUtc { get; set; }
+        public DateTime UpdatedUtc { get; set; }
     }
 }
