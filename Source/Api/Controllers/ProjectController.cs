@@ -377,12 +377,13 @@ namespace Exceptionless.Api.Controllers {
         /// Check for unique name
         /// </summary>
         /// <param name="name">The project name to check.</param>
+        /// <param name="organizationId">The organizationId of the project.</param>
         /// <response code="201">The project name is available.</response>
         /// <response code="204">The project name is not available.</response>
         [HttpGet]
-        [Route("check-name/{*name:minlength(1)}")]
-        public async Task<IHttpActionResult> IsNameAvailableAsync(string name) {
-            if (await IsProjectNameAvailableInternalAsync(null, name))
+        [Route("check-name/{name:minlength(1)}/{organizationId}")]
+        public async Task<IHttpActionResult> IsNameAvailableAsync(string name, string organizationId) {
+            if (await IsProjectNameAvailableInternalAsync(organizationId, name))
                 return StatusCode(HttpStatusCode.NoContent);
 
             return StatusCode(HttpStatusCode.Created);
