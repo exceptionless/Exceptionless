@@ -17,12 +17,16 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
 using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.Caching;
+using Foundatio.Elasticsearch.Configuration;
 using Foundatio.Elasticsearch.Jobs;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries.Builders;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Messaging;
@@ -43,7 +47,7 @@ namespace Exceptionless.Core {
         public void RegisterServices(Container container) {
             // Foundation service provider
             ServiceProvider.Current = container;
-            container.RegisterSingleton<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
+            container.RegisterSingleton<IDependencyResolver>(() => new SimpleInjectorDependencyResolver(container));
 
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
                 DateParseHandling = DateParseHandling.DateTimeOffset
@@ -58,27 +62,39 @@ namespace Exceptionless.Core {
                 ContractResolver = contractResolver
             };
             settings.AddModelConverters();
-            
+
             container.RegisterSingleton<IContractResolver>(() => contractResolver);
             container.RegisterSingleton<JsonSerializerSettings>(settings);
             container.RegisterSingleton<JsonSerializer>(JsonSerializer.Create(settings));
             container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
-            
+
             container.RegisterSingleton<IMetricsClient, InMemoryMetricsClient>();
-            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ElasticConfiguration>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
+
+            container.RegisterSingleton<QueryBuilderRegistry>(() => {
+                var builder = new QueryBuilderRegistry();
+                builder.RegisterDefaults();
+                builder.Register(new OrganizationIdQueryBuilder());
+                builder.Register(new ProjectIdQueryBuilder());
+                builder.Register(new StackIdQueryBuilder());
+
+                return builder;
+            });
+
+            container.RegisterSingleton<ElasticConfigurationBase, ElasticConfiguration>();
+            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ElasticConfigurationBase>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
             container.RegisterSingleton<EventIndex, EventIndex>();
             container.RegisterSingleton<OrganizationIndex, OrganizationIndex>();
             container.RegisterSingleton<StackIndex, StackIndex>();
 
             container.RegisterSingleton<ICacheClient, InMemoryCacheClient>();
-            
+
             container.RegisterSingleton<IEnumerable<IQueueBehavior<EventPost>>>(() => new[] { new MetricsQueueBehavior<EventPost>(container.GetInstance<IMetricsClient>()) });
             container.RegisterSingleton<IEnumerable<IQueueBehavior<EventUserDescription>>>(() => new[] { new MetricsQueueBehavior<EventUserDescription>(container.GetInstance<IMetricsClient>()) });
             container.RegisterSingleton<IEnumerable<IQueueBehavior<EventNotificationWorkItem>>>(() => new[] { new MetricsQueueBehavior<EventNotificationWorkItem>(container.GetInstance<IMetricsClient>()) });
             container.RegisterSingleton<IEnumerable<IQueueBehavior<WebHookNotification>>>(() => new[] { new MetricsQueueBehavior<WebHookNotification>(container.GetInstance<IMetricsClient>()) });
             container.RegisterSingleton<IEnumerable<IQueueBehavior<MailMessage>>>(() => new[] { new MetricsQueueBehavior<MailMessage>(container.GetInstance<IMetricsClient>()) });
             container.RegisterSingleton<IEnumerable<IQueueBehavior<WorkItemData>>>(() => new[] { new MetricsQueueBehavior<WorkItemData>(container.GetInstance<IMetricsClient>()) });
-            
+
             container.RegisterSingleton<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(behaviors: container.GetAllInstances<IQueueBehavior<EventPost>>()));
             container.RegisterSingleton<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(behaviors: container.GetAllInstances<IQueueBehavior<EventUserDescription>>()));
             container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new InMemoryQueue<EventNotificationWorkItem>(behaviors: container.GetAllInstances<IQueueBehavior<EventNotificationWorkItem>>()));
@@ -95,7 +111,7 @@ namespace Exceptionless.Core {
             workItemHandlers.Register<ThrottleBotsWorkItem, ThrottleBotsWorkItemHandler>();
             container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);
             container.RegisterSingleton<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(behaviors: container.GetAllInstances<IQueueBehavior<WorkItemData>>(), workItemTimeout: TimeSpan.FromHours(1)));
-            
+
             container.RegisterSingleton<IMessageBus, InMemoryMessageBus>();
             container.RegisterSingleton<IMessagePublisher>(container.GetInstance<IMessageBus>);
             container.RegisterSingleton<IMessageSubscriber>(container.GetInstance<IMessageBus>);
@@ -116,15 +132,8 @@ namespace Exceptionless.Core {
 
             container.RegisterSingleton<IGeoIPResolver, MindMaxGeoIPResolver>();
 
-            container.RegisterSingleton<IValidator<Application>, ApplicationValidator>();
-            container.RegisterSingleton<IValidator<Organization>, OrganizationValidator>();
-            container.RegisterSingleton<IValidator<PersistentEvent>, PersistentEventValidator>();
-            container.RegisterSingleton<IValidator<Project>, ProjectValidator>();
-            container.RegisterSingleton<IValidator<Stack>, StackValidator>();
-            container.RegisterSingleton<IValidator<Models.Token>, TokenValidator>();
-            container.RegisterSingleton<IValidator<UserDescription>, UserDescriptionValidator>();
-            container.RegisterSingleton<IValidator<User>, UserValidator>();
-            container.RegisterSingleton<IValidator<WebHook>, WebHookValidator>();
+            container.Register(typeof(IValidator<>), new[] { typeof(Bootstrapper).Assembly }, Lifestyle.Singleton);
+            container.Register(typeof(ElasticRepositoryContext<>), typeof(ElasticRepositoryContext<>), Lifestyle.Singleton);
 
             container.RegisterSingleton<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingleton<IMailer, Mailer>();

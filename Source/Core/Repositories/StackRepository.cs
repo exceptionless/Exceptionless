@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
@@ -81,7 +82,7 @@ namespace Exceptionless.Core.Repositories {
                 await Cache.RemoveAsync(stackId).AnyContext();
 
             if (sendNotifications) {
-                await PublishMessageAsync(new EntityChanged {
+                await PublishMessageAsync(new ExtendedEntityChanged {
                     ChangeType = ChangeType.Saved,
                     Id = stackId,
                     OrganizationId = organizationId,

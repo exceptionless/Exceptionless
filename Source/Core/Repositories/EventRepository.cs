@@ -9,6 +9,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Elasticsearch.Repositories.Queries.Options;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
@@ -24,7 +25,9 @@ namespace Exceptionless.Core.Repositories {
             BatchNotifications = true;
         }
 
-        protected override string[] DefaultExcludes => new[] { "idx" };
+        protected override object Options { get; } = new QueryOptions(typeof(PersistentEvent)) {
+            DefaultExcludes = new[] { "idx" }
+        };
 
         protected override Func<PersistentEvent, string> GetDocumentIndexFunc {
             get { return document => GetIndexById(document.Id); }

@@ -28,7 +28,6 @@ using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
 using Stripe;
-using ChangeType = Exceptionless.Core.Messaging.Models.ChangeType;
 
 #pragma warning disable 1998
 
@@ -61,23 +60,18 @@ namespace Exceptionless.Api.Controllers {
         /// <summary>
         /// Get all
         /// </summary>
-        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
-        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         [HttpGet]
         [Route]
         [ResponseType(typeof(List<ViewOrganization>))]
-        public async Task<IHttpActionResult> GetAsync(int page = 1, int limit = 10, string mode = null) {
-            page = GetPage(page);
-            limit = GetLimit(limit);
-            var options = new PagingOptions { Page = page, Limit = limit };
-            var organizations = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds(), options);
+        public async Task<IHttpActionResult> GetAsync(string mode = null) {
+            var organizations = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds());
             var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations.Documents, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()), organizations.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
+                return Ok(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()));
 
-            return OkWithResourceLinks(viewOrganizations, organizations.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
+            return Ok(viewOrganizations);
         }
 
         [HttpGet]

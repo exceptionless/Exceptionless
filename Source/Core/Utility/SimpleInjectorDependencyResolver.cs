@@ -4,10 +4,10 @@ using Exceptionless.Core.Dependency;
 using SimpleInjector;
 
 namespace Exceptionless.Core.Utility {
-    public class SimpleInjectorCoreDependencyResolver : IDependencyResolver {
+    public class SimpleInjectorDependencyResolver : IDependencyResolver {
         private readonly Container _container;
 
-        public SimpleInjectorCoreDependencyResolver(Container container) {
+        public SimpleInjectorDependencyResolver(Container container) {
             _container = container;
         }
 

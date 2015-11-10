@@ -5,6 +5,7 @@ using Exceptionless.Core.Component;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Foundatio.Messaging;
+using Foundatio.Repositories.Models;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 
@@ -21,7 +22,7 @@ namespace Exceptionless.Api.Hubs {
         }
 
         public void Start() {
-            _subscriber.Subscribe<EntityChanged>(OnEntityChangedAsync);
+            _subscriber.Subscribe<ExtendedEntityChanged>(OnEntityChangedAsync);
             _subscriber.Subscribe<PlanChanged>(OnPlanChangedAsync);
             _subscriber.Subscribe<PlanOverage>(OnPlanOverageAsync);
             _subscriber.Subscribe<UserMembershipChanged>(OnUserMembershipChangedAsync);
@@ -44,7 +45,7 @@ namespace Exceptionless.Api.Hubs {
             await Context.Groups.TypedSend(userMembershipChanged.OrganizationId, userMembershipChanged);
         }
 
-        private async Task OnEntityChangedAsync(EntityChanged entityChanged, CancellationToken cancellationToken = default(CancellationToken)) {
+        private async Task OnEntityChangedAsync(ExtendedEntityChanged entityChanged, CancellationToken cancellationToken = default(CancellationToken)) {
             if (entityChanged == null)
                 return;
 
@@ -98,7 +99,7 @@ namespace Exceptionless.Api.Hubs {
         }
 
         private static string GetMessageType(object value) {
-            if (value.GetType() == typeof(EntityChanged))
+            if (value is EntityChanged)
                 return String.Concat(((EntityChanged)value).Type, "Changed");
 
             return value.GetType().Name;

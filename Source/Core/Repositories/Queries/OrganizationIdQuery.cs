@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Foundatio.Elasticsearch.Repositories.Queries;
-using Foundatio.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Queries {
@@ -11,7 +10,7 @@ namespace Exceptionless.Core.Repositories.Queries {
     }
 
     public class OrganizationIdQueryBuilder : QueryBuilderBase {
-        public override void BuildFilter<T>(IReadOnlyRepository<T> repository, FilterContainer container, object query) {
+        public override void BuildFilter<T>(object query, object options, FilterContainer container) {
             var organizationIdQuery = query as IOrganizationIdQuery;
             if (organizationIdQuery == null || organizationIdQuery.OrganizationIds.Count <= 0)
                 return;

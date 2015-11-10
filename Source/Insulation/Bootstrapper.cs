@@ -35,7 +35,11 @@ namespace Exceptionless.Insulation {
                     return multiplexer;
                 });
 
-                container.RegisterSingleton<ICacheClient, RedisHybridCacheClient>();
+                if (Settings.Current.HasAppScope)
+                    container.RegisterSingleton<ICacheClient>(() => new ScopedCacheClient(new RedisHybridCacheClient(container.GetInstance<ConnectionMultiplexer>()), Settings.Current.AppScope));
+                else
+                    container.RegisterSingleton<ICacheClient, RedisHybridCacheClient>();
+
                 container.RegisterSingleton<IQueue<EventPost>>(() => new RedisQueue<EventPost>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventPost>(), behaviors: container.GetAllInstances<IQueueBehavior<EventPost>>()));
                 container.RegisterSingleton<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventUserDescription>(), behaviors: container.GetAllInstances<IQueueBehavior<EventUserDescription>>()));
                 container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new RedisQueue<EventNotificationWorkItem>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventNotificationWorkItem>(), behaviors: container.GetAllInstances<IQueueBehavior<EventNotificationWorkItem>>()));

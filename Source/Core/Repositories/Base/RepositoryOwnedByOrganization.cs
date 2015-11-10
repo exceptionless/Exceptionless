@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Elasticsearch.Configuration;
@@ -63,7 +64,7 @@ namespace Exceptionless.Core.Repositories {
             var recordsAffected = await UpdateAllAsync(query, update, false).AnyContext();
             if (sendNotifications) {
                 foreach (var organizationId in organizationIds) {
-                    await PublishMessageAsync(new EntityChanged {
+                    await PublishMessageAsync(new ExtendedEntityChanged {
                         ChangeType = ChangeType.Saved,
                         OrganizationId = organizationId,
                         Type = EntityType
