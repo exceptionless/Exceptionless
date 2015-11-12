@@ -31,7 +31,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.AddAsync(organization);
             await _client.RefreshAsync();
             Assert.NotNull(organization.Id);
-            
+
             organization = await _repository.GetByIdAsync(organization.Id);
             Assert.NotNull(organization);
 
@@ -49,8 +49,8 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(0, await _repository.CountAsync());
 
             await _repository.AddAsync(new[] {
-                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 0 }, 
-                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 1 }, 
+                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 0 },
+                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 1 },
                 new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 2 }
             });
 
@@ -66,7 +66,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, organizations.Documents.Count);
 
             Assert.NotEqual(organizations.Documents.First(), organizations2.Documents.First());
-           
+
             organizations = await _repository.GetByRetentionDaysEnabledAsync(new PagingOptions());
             Assert.NotNull(organizations);
             Assert.Equal(2, organizations.Total);
@@ -77,13 +77,13 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, await _repository.CountAsync());
             await _repository.RemoveAllAsync();
         }
-        
+
         [Fact]
         public async Task CanAddAndGetByCachedAsync() {
             var cache = IoC.GetInstance<ICacheClient>() as InMemoryCacheClient;
             Assert.NotNull(cache);
             await cache.RemoveAllAsync();
-            
+
             var organization = new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id };
             Assert.Null(organization.Id);
 
@@ -117,7 +117,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 Name = "Test",
                 MaxEventsPerMonth = 750,
                 PlanId = BillingManager.FreePlan.Id
-            });
+            }, true);
 
             Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 9));
             Assert.Equal(0, messages.Count);

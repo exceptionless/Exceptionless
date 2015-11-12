@@ -10,9 +10,9 @@ namespace Exceptionless.Core.Repositories.Queries {
     }
 
     public class ProjectIdQueryBuilder : QueryBuilderBase {
-        public override void BuildFilter<T>(object query, object options, FilterContainer container) {
+        public override void BuildFilter<T>(object query, object options, ref FilterContainer container) {
             var projectIdQuery = query as IProjectIdQuery;
-            if (projectIdQuery == null || projectIdQuery.ProjectIds.Count <= 0)
+            if (projectIdQuery?.ProjectIds == null || projectIdQuery.ProjectIds.Count <= 0)
                 return;
 
             if (projectIdQuery.ProjectIds.Count == 1)

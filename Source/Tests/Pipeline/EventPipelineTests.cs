@@ -25,7 +25,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
-        
+
         [Fact]
         public async Task NoFutureEventsAsync() {
             await ResetAsync();
@@ -106,6 +106,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag2);
 
             await pipeline.RunAsync(ev);
+            await client.RefreshAsync();
+
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
 
@@ -113,6 +115,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag2_Lowercase);
 
             await pipeline.RunAsync(ev);
+            await client.RefreshAsync();
+
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
         }
@@ -135,7 +139,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(1, contexts.Count(c => !c.IsNew));
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
         }
-        
+
         [Fact]
         public async Task EnsureSingleGlobalErrorStackAsync() {
             await ResetAsync();
@@ -239,7 +243,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 return result.ToArray();
             }
         }
-        
+
         private bool _isReset;
         private async Task ResetAsync() {
             if (!_isReset) {
@@ -266,10 +270,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
                     organization.SuspensionDate = DateTime.Now;
                 }
 
-                await _organizationRepository.AddAsync(organization);
+                await _organizationRepository.AddAsync(organization, true);
             }
 
-            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects());
+            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), true);
 
             foreach (User user in UserData.GenerateSampleUsers()) {
                 if (user.Id == TestConstants.UserId) {
@@ -280,7 +284,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 if (!user.IsEmailAddressVerified)
                     user.CreateVerifyEmailAddressToken();
 
-                await _userRepository.AddAsync(user);
+                await _userRepository.AddAsync(user, true);
             }
         }
 

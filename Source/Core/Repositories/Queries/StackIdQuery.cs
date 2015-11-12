@@ -10,9 +10,9 @@ namespace Exceptionless.Core.Repositories.Queries {
     }
 
     public class StackIdQueryBuilder : QueryBuilderBase {
-        public override void BuildFilter<T>(object query, object options, FilterContainer container) {
+        public override void BuildFilter<T>(object query, object options, ref FilterContainer container) {
             var stackIdQuery = query as IStackIdQuery;
-            if (stackIdQuery == null || stackIdQuery.StackIds.Count <= 0)
+            if (stackIdQuery?.StackIds == null || stackIdQuery.StackIds.Count <= 0)
                 return;
 
             if (stackIdQuery.StackIds.Count == 1)

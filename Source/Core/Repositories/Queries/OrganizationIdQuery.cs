@@ -10,9 +10,9 @@ namespace Exceptionless.Core.Repositories.Queries {
     }
 
     public class OrganizationIdQueryBuilder : QueryBuilderBase {
-        public override void BuildFilter<T>(object query, object options, FilterContainer container) {
+        public override void BuildFilter<T>(object query, object options, ref FilterContainer container) {
             var organizationIdQuery = query as IOrganizationIdQuery;
-            if (organizationIdQuery == null || organizationIdQuery.OrganizationIds.Count <= 0)
+            if (organizationIdQuery?.OrganizationIds == null || organizationIdQuery.OrganizationIds.Count <= 0)
                 return;
 
             if (organizationIdQuery.OrganizationIds.Count == 1)

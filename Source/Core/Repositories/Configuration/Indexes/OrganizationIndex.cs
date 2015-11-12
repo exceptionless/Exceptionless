@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         private const string KEYWORD_LOWERCASE = "keyword_lowercase";
 
         public int Version => 1;
-        public static string Alias => Settings.Current.AppScopePrefix + "organization";
+        public static string Alias => Settings.Current.AppScopePrefix + "organizations";
         public string AliasName => Alias;
         public string VersionedName => String.Concat(AliasName, "-v", Version);
 

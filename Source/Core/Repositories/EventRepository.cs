@@ -7,6 +7,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Results;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Elasticsearch.Extensions;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Elasticsearch.Repositories.Queries.Options;
@@ -30,6 +31,9 @@ namespace Exceptionless.Core.Repositories {
         };
 
         protected override Func<PersistentEvent, string> GetDocumentIndexFunc {
+            //foreach (var group in documents.OfType<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
+            //    var result = await _elasticClient.IndexManyAsync(group.ToList(), String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM"))).AnyContext();
+            //}
             get { return document => GetIndexById(document.Id); }
         }
 
@@ -64,7 +68,7 @@ namespace Exceptionless.Core.Repositories {
             var query = new ExceptionlessQuery()
                 .WithElasticFilter(Filter<PersistentEvent>.Term("client_ip_address", clientIp))
                 .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEnd, $"'{Settings.Current.AppScopePrefix}{_index.VersionedName}-'yyyyMM");
+                .WithIndices(utcStart, utcEnd, $"'{_index.VersionedName}-'yyyyMM");
 
             return UpdateAllAsync(organizationId, query, new { is_hidden = true });
         }
@@ -77,12 +81,13 @@ namespace Exceptionless.Core.Repositories {
 
             var search = new ExceptionlessQuery()
                 .WithDateRange(utcStart, utcEnd, field ?? EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEnd, $"'{Settings.Current.AppScopePrefix}{_index.VersionedName}-'yyyyMM")
+                .WithIndices(utcStart, utcEnd, $"'{_index.VersionedName}-'yyyyMM")
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
                 .WithPaging(paging)
                 .WithSort(sort, sortOrder);
 
+            Context.ElasticClient.EnableTrace();
             return FindAsync(search);
         }
 
@@ -102,7 +107,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithProjectId(projectId)
                 .WithElasticFilter(filter)
                 .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEnd, $"'{Settings.Current.AppScopePrefix}{_index.VersionedName}-'yyyyMM")
+                .WithIndices(utcStart, utcEnd, $"'{_index.VersionedName}-'yyyyMM")
                 .WithPaging(paging)
                 .WithSort(EventIndex.Fields.PersistentEvent.Date, SortOrder.Descending));
         }
@@ -111,7 +116,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithStackId(stackId)
                 .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEnd, $"'{Settings.Current.AppScopePrefix}{_index.VersionedName}-'yyyyMM")
+                .WithIndices(utcStart, utcEnd, $"'{_index.VersionedName}-'yyyyMM")
                 .WithPaging(paging)
                 .WithSort(EventIndex.Fields.PersistentEvent.Date, SortOrder.Descending));
         }
@@ -176,7 +181,7 @@ namespace Exceptionless.Core.Repositories {
 
             var results = await FindAsync(new ExceptionlessQuery()
                 .WithDateRange(utcStart, utcEventDate, EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEventDate, $"'{Settings.Current.AppScopePrefix}{_index.VersionedName}-'yyyyMM")
+                .WithIndices(utcStart, utcEventDate, $"'{_index.VersionedName}-'yyyyMM")
                 .WithSort(EventIndex.Fields.PersistentEvent.Date, SortOrder.Descending)
                 .WithLimit(10)
                 .WithSelectedFields("id", "date")
@@ -221,7 +226,7 @@ namespace Exceptionless.Core.Repositories {
 
             var results = await FindAsync(new ExceptionlessQuery()
                 .WithDateRange(utcEventDate, utcEnd, EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEventDate, $"'{Settings.Current.AppScopePrefix}{_index.VersionedName}-'yyyyMM")
+                .WithIndices(utcStart, utcEventDate, $"'{_index.VersionedName}-'yyyyMM")
                 .WithSort(EventIndex.Fields.PersistentEvent.Date, SortOrder.Ascending)
                 .WithLimit(10)
                 .WithSelectedFields("id", "date")
@@ -280,6 +285,7 @@ namespace Exceptionless.Core.Repositories {
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
             return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationIds(organizationIds)
+                .WithPaging(paging)
                 .WithFilter(filter)
                 .WithSort(EventIndex.Fields.PersistentEvent.Date, SortOrder.Descending)
                 .WithSort("_uid", SortOrder.Descending)

@@ -5,13 +5,13 @@ clone_depth: 2
 
 environment:
   JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
-  ES_VERSION: 1.7.2
+  ES_VERSION: 1.7.3
   API_URL: https://#{api.hostheader}
   BUILD_REPO_URL:
     secure: vuYBT6D5arel88+Py/H3nnMPd4hInIXvr2cwhJaZSSSvJnmg+9sX1P5+bTWaJskYpGztHVMg0Iq7hgUCMKjh23w8WBrutLiUsixRE0LBjroIVJaRsYG1okSko0fNKVOCUMQAue0lh2sYqQ/TQlDbwg==
   BUILD_APP_REPO_URL:
      secure: vuYBT6D5arel88+Py/H3nnMPd4hInIXvr2cwhJaZSSSvJnmg+9sX1P5+bTWaJskYpGztHVMg0Iq7hgUCMKjh23w8WBrutLiUsixRE0LBjroIVJaRsYG1okSko0fNKVOCyOLKGt19Qrk45/TrTFlGMQ==
-     
+
 init:
   - git config --global core.autocrlf true
   - git config --global user.email "builds@exceptionless.io"
@@ -41,13 +41,13 @@ before_test:
 after_test:
   - ps: .\Libraries\Push-Artifacts.ps1
 
-artifacts: 
+artifacts:
   - path: release\*.zip
     name: ReleaseArtifacts
 
 before_deploy:
   - ps: .\Libraries\Create-Release.ps1
-  
+
 deploy:
   provider: GitHub
   auth_token:

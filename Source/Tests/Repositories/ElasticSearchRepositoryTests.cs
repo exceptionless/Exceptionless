@@ -14,7 +14,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         public readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        
+
         [Fact]
         public async Task CanCreateUpdateRemoveAsync() {
             await ResetAsync();
@@ -42,10 +42,10 @@ namespace Exceptionless.Api.Tests.Repositories {
             await ResetAsync();
 
             await _repository.RemoveAllAsync();
+            await _client.RefreshAsync();
             Assert.Equal(0, await _repository.CountAsync());
 
             await _repository.AddAsync(StackData.GenerateSampleStacks());
-
             await _client.RefreshAsync();
 
             var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(1).WithLimit(1));
@@ -64,6 +64,8 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(3, stacks.Documents.Count);
 
             await _repository.RemoveAsync(stacks.Documents);
+            await _client.RefreshAsync();
+
             Assert.Equal(0, await _repository.CountAsync());
             await _repository.RemoveAllAsync();
         }
@@ -92,7 +94,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.RemoveAllAsync();
             Assert.Equal(0, cache.Count);
         }
-        
+
         private bool _isReset;
         private async Task ResetAsync() {
             if (!_isReset) {

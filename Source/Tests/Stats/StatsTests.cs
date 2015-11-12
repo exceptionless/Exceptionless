@@ -30,8 +30,7 @@ namespace Exceptionless.Api.Tests.Stats {
             const int eventCount = 100;
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
-
-            await _client.RefreshAsync(d => d.Force());
+            
             _metricsClient.DisplayStats();
             var result = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
@@ -55,8 +54,7 @@ namespace Exceptionless.Api.Tests.Stats {
             const int eventCount = 100;
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
-
-            await _client.RefreshAsync(d => d.Force());
+            
             _metricsClient.DisplayStats();
             var result = await _stats.GetOccurrenceStatsAsync(DateTime.MinValue, DateTime.MaxValue, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
@@ -80,8 +78,7 @@ namespace Exceptionless.Api.Tests.Stats {
             const int eventCount = 1;
             await RemoveDataAsync();
             await CreateDataAsync(eventCount);
-
-            await _client.RefreshAsync(d => d.Force());
+            
             _metricsClient.DisplayStats();
             var resultUtc = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null);
             Assert.Equal(eventCount, resultUtc.Total);
@@ -99,8 +96,7 @@ namespace Exceptionless.Api.Tests.Stats {
             const int eventCount = 100;
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
-
-            await _client.RefreshAsync(d => d.Force());
+            
             _metricsClient.DisplayStats();
             var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "tags", null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
@@ -122,8 +118,7 @@ namespace Exceptionless.Api.Tests.Stats {
             const int eventCount = 100;
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
-
-            await _client.RefreshAsync(d => d.Force());
+            
             _metricsClient.DisplayStats();
             var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "stack_id", null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
@@ -145,8 +140,7 @@ namespace Exceptionless.Api.Tests.Stats {
             const int eventCount = 100;
             await RemoveDataAsync();
             await CreateDataAsync(eventCount);
-
-            await _client.RefreshAsync(d => d.Force());
+            
             _metricsClient.DisplayStats();
             var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "project_id", null);
             Assert.Equal(eventCount, result.Total);
@@ -173,14 +167,16 @@ namespace Exceptionless.Api.Tests.Stats {
 
         private async Task CreateDataAsync(int eventCount = 100, bool multipleProjects = true) {
             var orgs = OrganizationData.GenerateSampleOrganizations();
-            await _organizationRepository.AddAsync(orgs);
+            await _organizationRepository.AddAsync(orgs, true);
 
             var projects = ProjectData.GenerateSampleProjects();
-            await _projectRepository.AddAsync(projects);
+            await _projectRepository.AddAsync(projects, true);
 
             var events = EventData.GenerateEvents(eventCount, projectIds: multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId }, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
                 await _eventPipeline.RunAsync(eventGroup);
+            
+            await _client.RefreshAsync();
         }
 
         private async Task RemoveDataAsync() {
@@ -188,6 +184,7 @@ namespace Exceptionless.Api.Tests.Stats {
             await _projectRepository.RemoveAllAsync();
             await _eventRepository.RemoveAllAsync();
             await _stackRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
         }
     }
 }
