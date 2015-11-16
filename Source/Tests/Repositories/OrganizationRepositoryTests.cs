@@ -89,6 +89,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Assert.Equal(0, cache.Count);
             await _repository.AddAsync(organization, true);
+            await _client.RefreshAsync();
             Assert.NotNull(organization.Id);
             Assert.Equal(1, cache.Count);
 
@@ -113,11 +114,8 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(messagePublisher);
             messagePublisher.Subscribe<PlanOverage>(message => messages.Add(message));
 
-            var o = await _repository.AddAsync(new Organization {
-                Name = "Test",
-                MaxEventsPerMonth = 750,
-                PlanId = BillingManager.FreePlan.Id
-            }, true);
+            var o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
+            await _client.RefreshAsync();
 
             Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 9));
             Assert.Equal(0, messages.Count);
@@ -133,11 +131,8 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
             Assert.Equal(1, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
 
-            o = await _repository.AddAsync(new Organization {
-                Name = "Test",
-                MaxEventsPerMonth = 750,
-                PlanId = BillingManager.FreePlan.Id
-            });
+            o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
+            await _client.RefreshAsync();
 
             Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 751));
             //Assert.Equal(2, messages.Count);
@@ -148,23 +143,23 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private string GetHourlyBlockedCacheKey(string organizationId) {
-            return String.Concat("usage-blocked", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("organization:usage-blocked", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetHourlyTotalCacheKey(string organizationId) {
-            return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("organization:usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetMonthlyBlockedCacheKey(string organizationId) {
-            return String.Concat("usage-blocked", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+            return String.Concat("organization:usage-blocked", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetMonthlyTotalCacheKey(string organizationId) {
-            return String.Concat("usage-total", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+            return String.Concat("organization:usage-total", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetUsageSavedCacheKey(string organizationId) {
-            return String.Concat("usage-saved", ":", organizationId);
+            return String.Concat("organization:usage-saved", ":", organizationId);
         }
     }
 }
