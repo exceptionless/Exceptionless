@@ -6,6 +6,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Utility;
 using Nest;
 using Xunit;
 
@@ -34,6 +35,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         public async Task CanCreateEventAliasAsync() {
             _configuration.DeleteIndexes(_client);
             _configuration.ConfigureIndexes(_client);
+            await _client.RefreshAsync();
+
             var indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.AliasName);
             Assert.Equal(0, indexes.Count);
 
@@ -41,9 +44,11 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.False(alias.IsValid);
             Assert.Equal(0, alias.Indices.Count);
 
-            await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now, OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
-            await _client.RefreshAsync();
+            var ev = await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now.StartOfMonth().AddDays(1), OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
+            Assert.NotNull(ev?.Id);
+            Assert.True(ObjectId.Parse(ev.Id).CreationTime.IntersectsMinute(DateTime.UtcNow));
 
+            await _client.RefreshAsync();
             alias = await _client.GetAliasAsync(descriptor => descriptor.Alias(_eventIndex.AliasName));
             Assert.True(alias.IsValid);
             Assert.Equal(1, alias.Indices.Count);
@@ -51,9 +56,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.AliasName);
             Assert.Equal(1, indexes.Count);
 
-            await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now.SubtractMonths(1), OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
-            await _client.RefreshAsync();
+            var date = DateTimeOffset.UtcNow.StartOfMonth().SubtractSeconds(1).ToLocalTime();
+            ev = await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = date, OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
+            Assert.NotNull(ev?.Id);
+            Assert.Equal(date, ObjectId.Parse(ev.Id).CreationTime);
 
+            await _client.RefreshAsync();
             indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.AliasName);
             Assert.Equal(2, indexes.Count);
         }

@@ -7,6 +7,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Results;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Elasticsearch.Extensions;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
@@ -19,7 +20,8 @@ using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
-        private static readonly DateTime MIN_OBJECTID_DATE = new DateTime(2000, 1, 1);
+        // NOTE: v1 event submission allowed users to specify there own id which may have been created with invalid date times.
+        private static readonly DateTime _minObjectidDate = new DateTime(2000, 1, 1);
 
         public EventRepository(ElasticRepositoryContext<PersistentEvent> context, EventIndex index) : base(context, index) {
             DisableCache();
@@ -30,16 +32,27 @@ namespace Exceptionless.Core.Repositories {
             DefaultExcludes = new[] { "idx" }
         };
 
+        protected override Func<PersistentEvent, string> GetDocumentIdFunc {
+            get {
+                return document => {
+                    // if date falls in the current months index then return a new object id.
+                    var date = document.Date.ToUniversalTime();
+                    if (date.IntersectsMonth(DateTime.UtcNow))
+                        return ObjectId.GenerateNewId().ToString();
+
+                    // GenerateNewId will translate it to utc.
+                    return ObjectId.GenerateNewId(document.Date.DateTime).ToString();
+                };
+            }
+        }
+
         protected override Func<PersistentEvent, string> GetDocumentIndexFunc {
-            //foreach (var group in documents.OfType<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-            //    var result = await _elasticClient.IndexManyAsync(group.ToList(), String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM"))).AnyContext();
-            //}
             get { return document => GetIndexById(document.Id); }
         }
 
         protected override string GetIndexById(string id) {
             ObjectId objectId;
-            if (ObjectId.TryParse(id, out objectId) && objectId.CreationTime > MIN_OBJECTID_DATE)
+            if (ObjectId.TryParse(id, out objectId) && objectId.CreationTime.ToUniversalTime() > _minObjectidDate)
                 return String.Concat(_index.VersionedName, "-", objectId.CreationTime.ToString("yyyyMM"));
 
             return null;
