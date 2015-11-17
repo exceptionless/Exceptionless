@@ -64,7 +64,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            var project = await _projectRepository.GetByIdAsync(projectId);
+            var project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
@@ -88,7 +88,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            var project = await _projectRepository.GetByIdAsync(projectId);
+            var project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 

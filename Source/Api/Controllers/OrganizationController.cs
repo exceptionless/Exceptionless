@@ -65,8 +65,8 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [ResponseType(typeof(List<ViewOrganization>))]
         public async Task<IHttpActionResult> GetAsync(string mode = null) {
-            var organizations = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds());
-            var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations.Documents, true);
+            var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
+            var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
                 return Ok(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()));
@@ -329,7 +329,7 @@ namespace Exceptionless.Api.Controllers {
             if (!Settings.Current.EnableBilling)
                 return Ok(ChangePlanResult.FailWithMessage("Plans cannot be changed while billing is disabled."));
 
-            Organization organization = await _repository.GetByIdAsync(id);
+            var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return Ok(ChangePlanResult.FailWithMessage("Invalid OrganizationId."));
 
@@ -413,7 +413,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser);
-                await _repository.SaveAsync(organization);
+                await _repository.SaveAsync(organization, true);
                 await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
             } catch (Exception e) {
                 Logger.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
@@ -466,7 +466,7 @@ namespace Exceptionless.Api.Controllers {
                         DateAdded = DateTime.UtcNow
                     };
                     organization.Invites.Add(invite);
-                    await _repository.SaveAsync(organization);
+                    await _repository.SaveAsync(organization, true);
                 }
 
                 await _mailer.SendInviteAsync(ExceptionlessUser, organization, invite);
@@ -485,10 +485,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
         public async Task<IHttpActionResult> RemoveUserAsync(string id, string email) {
-            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
-                return NotFound();
-
-            Organization organization = await _repository.GetByIdAsync(id);
+            var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
 
@@ -499,7 +496,7 @@ namespace Exceptionless.Api.Controllers {
                     return Ok();
 
                 organization.Invites.Remove(invite);
-                await _repository.SaveAsync(organization);
+                await _repository.SaveAsync(organization, true);
             } else {
                 if (!user.OrganizationIds.Contains(organization.Id))
                     return BadRequest();
@@ -542,7 +539,7 @@ namespace Exceptionless.Api.Controllers {
             organization.SuspendedByUserId = ExceptionlessUser.Id;
             organization.SuspensionCode = code;
             organization.SuspensionNotes = notes;
-            await _repository.SaveAsync(organization);
+            await _repository.SaveAsync(organization, true);
 
             return Ok();
         }
@@ -562,7 +559,7 @@ namespace Exceptionless.Api.Controllers {
             organization.SuspendedByUserId = null;
             organization.SuspensionCode = null;
             organization.SuspensionNotes = null;
-            await _repository.SaveAsync(organization);
+            await _repository.SaveAsync(organization, true);
 
             return Ok();
         }
@@ -582,7 +579,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             organization.Data[key] = value;
-            await _repository.SaveAsync(organization);
+            await _repository.SaveAsync(organization, true);
 
             return Ok();
         }
@@ -601,7 +598,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             if (organization.Data.Remove(key))
-                await _repository.SaveAsync(organization);
+                await _repository.SaveAsync(organization, true);
 
             return Ok();
         }
@@ -622,7 +619,11 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private async Task<bool> IsOrganizationNameAvailableInternalAsync(string name) {
-            return !String.IsNullOrWhiteSpace(name) && !(await _repository.GetByIdsAsync(GetAssociatedOrganizationIds())).Documents.Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (String.IsNullOrWhiteSpace(name))
+                return false;
+
+            var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds());
+            return !results.Documents.Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         protected override async Task<PermissionResult> CanAddAsync(Organization value) {

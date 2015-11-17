@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), options);
+            var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), options, true);
             var viewProjects = await MapCollectionAsync<ViewProject>(projects.Documents, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
@@ -393,8 +393,12 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(name))
                 return false;
 
-            ICollection<string> organizationIds = !String.IsNullOrEmpty(organizationId) ? new List<string> { organizationId } : GetAssociatedOrganizationIds();
-            return !(await _repository.GetByOrganizationIdsAsync(organizationIds)).Documents.Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
+            var organizationIds = !String.IsNullOrEmpty(organizationId)
+                ? new List<string> { organizationId }
+                : GetAssociatedOrganizationIds();
+
+            var results = await _repository.GetByOrganizationIdsAsync(organizationIds);
+            return !results.Documents.Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>

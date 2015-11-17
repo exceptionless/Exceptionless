@@ -42,14 +42,14 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            var project = await _projectRepository.GetByIdAsync(projectId);
+            var project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = await _repository.GetByProjectIdAsync(projectId, options);
+            var results = await _repository.GetByProjectIdAsync(projectId, options, true);
             return OkWithResourceLinks(results.Documents, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 

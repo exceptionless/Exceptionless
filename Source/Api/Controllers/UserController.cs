@@ -121,7 +121,7 @@ namespace Exceptionless.Api.Controllers {
                 user.CreateVerifyEmailAddressToken();
 
             try {
-                await _repository.SaveAsync(user);
+                await _repository.SaveAsync(user, true);
             } catch (ValidationException ex) {
                 return BadRequest(String.Join(", ", ex.Errors));
             } catch (Exception ex) {
@@ -152,7 +152,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Verify Email Address Token has expired.");
 
             user.MarkEmailAddressVerified();
-            await _repository.SaveAsync(user);
+            await _repository.SaveAsync(user, true);
 
             //ExceptionlessClient.Default.CreateFeatureUsage("Verify Email Address").AddObject(user).Submit();
             return Ok();
@@ -169,10 +169,10 @@ namespace Exceptionless.Api.Controllers {
             var user = await GetModelAsync(id, false);
             if (user == null)
                 return NotFound();
-            
+
             if (!user.IsEmailAddressVerified) {
                 user.CreateVerifyEmailAddressToken();
-                await _repository.SaveAsync(user);
+                await _repository.SaveAsync(user, true);
                 await _mailer.SendVerifyEmailAsync(user);
             }
 
@@ -218,7 +218,7 @@ namespace Exceptionless.Api.Controllers {
         private async Task<bool> IsEmailAddressAvailableInternalAsync(string email) {
             if (String.IsNullOrWhiteSpace(email))
                 return false;
-            
+
             if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return true;
 
@@ -235,7 +235,7 @@ namespace Exceptionless.Api.Controllers {
         protected override Task<ICollection<User>> GetModelsAsync(string[] ids, bool useCache = true) {
             if (Request.IsGlobalAdmin())
                 return base.GetModelsAsync(ids, useCache);
-            
+
             return base.GetModelsAsync(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
         }
     }
