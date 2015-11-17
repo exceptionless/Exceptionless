@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             return map
                 .Index(VersionedName)
                 .Dynamic()
-                .TimestampField(ts => ts.Enabled().Path(u => u.UpdatedUtc).IgnoreMissing(false))
+                .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
                      .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                      .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
@@ -53,10 +53,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
             return map
                 .Index(VersionedName)
                 .Dynamic()
-                .TimestampField(ts => ts.Enabled().Path(u => u.UpdatedUtc).IgnoreMissing(false))
+                .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
                     .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.Organization.CreatedUtc))
-                    .Date(f => f.Name(e => e.UpdatedUtc).IndexName(Fields.Organization.UpdatedUtc))
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.Organization.ModifiedUtc))
                     .String(f => f.Name(e => e.Id).IndexName(Fields.Organization.Id).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.Name).IndexName(Fields.Organization.Name).Index(FieldIndexOption.Analyzed))
                     .String(f => f.Name(u => u.StripeCustomerId).IndexName("stripe").Index(FieldIndexOption.NotAnalyzed))
@@ -96,10 +96,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
             return map
                 .Index(VersionedName)
                 .Dynamic()
-                .TimestampField(ts => ts.Enabled().Path(u => u.UpdatedUtc).IgnoreMissing(false))
+                .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
                     .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.Project.CreatedUtc))
-                    .Date(f => f.Name(e => e.UpdatedUtc).IndexName(Fields.Project.UpdatedUtc))
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.Project.ModifiedUtc))
                     .String(f => f.Name(e => e.Id).IndexName(Fields.Project.Id).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.Name).IndexName(Fields.Project.Name).Index(FieldIndexOption.Analyzed))
@@ -115,11 +115,11 @@ namespace Exceptionless.Core.Repositories.Configuration {
             return map
                 .Index(VersionedName)
                 .Dynamic()
-                .TimestampField(ts => ts.Enabled().Path(u => u.UpdatedUtc).IgnoreMissing(false))
+                .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
                     .String(f => f.Name(e => e.CreatedBy).IndexName("createdby").Index(FieldIndexOption.NotAnalyzed))
                     .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.Token.CreatedUtc))
-                    .Date(f => f.Name(e => e.UpdatedUtc).IndexName(Fields.Token.UpdatedUtc))
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.Token.ModifiedUtc))
                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.ApplicationId).IndexName("application").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
@@ -136,10 +136,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
             return map
                 .Index(VersionedName)
                 .Dynamic()
-                .TimestampField(ts => ts.Enabled().Path(u => u.UpdatedUtc).IgnoreMissing(false))
+                .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
                     .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.User.CreatedUtc))
-                    .Date(f => f.Name(e => e.UpdatedUtc).IndexName(Fields.User.UpdatedUtc))
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.User.ModifiedUtc))
                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationIds).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.FullName).IndexName("name"))
@@ -174,7 +174,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             public class Organization {
                 public const string Id = "id";
                 public const string CreatedUtc = "created";
-                public const string UpdatedUtc = "updated";
+                public const string ModifiedUtc = "modified";
                 public const string Name = "name";
                 public const string SubscribeDate = "subscribed";
 
@@ -203,17 +203,17 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 public const string Id = "id";
                 public const string Name = "name";
                 public const string CreatedUtc = "created";
-                public const string UpdatedUtc = "updated";
+                public const string ModifiedUtc = "modified";
             }
 
             public class Token {
                 public const string CreatedUtc = "created";
-                public const string UpdatedUtc = "updated";
+                public const string ModifiedUtc = "modified";
             }
 
             public class User {
                 public const string CreatedUtc = "created";
-                public const string UpdatedUtc = "updated";
+                public const string ModifiedUtc = "modified";
                 public const string OAuthAccountProviderUserId = "oauthaccount.provideruserid";
             }
 

@@ -15,7 +15,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public async Task IncrementNextSummaryEndOfDayTicksAsync() {
             await _repository.RemoveAllAsync();
             Assert.Equal(0, await _repository.CountAsync());
-            
+
             var project = await _repository.AddAsync(ProjectData.GenerateSampleProject());
             Assert.NotNull(project.Id);
 
@@ -27,7 +27,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, updatedProject.NextSummaryEndOfDayTicks);
 
             //TODO: Figure out why this isn't updated.
-            //Assert.NotEqual(project.UpdatedUtc, updatedProject.UpdatedUtc);
+            //Assert.NotEqual(project.ModifiedUtc, updatedProject.ModifiedUtc);
         }
     }
 }

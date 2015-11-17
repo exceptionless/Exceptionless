@@ -51,6 +51,8 @@ namespace Exceptionless.Core.Models {
 
         public DateTime CreatedUtc { get; set; }
 
-        public DateTime UpdatedUtc { get; set; }
+        public DateTime ModifiedUtc { get; set; }
+
+        DateTime IHaveDates.UpdatedUtc { get { return ModifiedUtc; } set { ModifiedUtc = value; } }
     }
 }

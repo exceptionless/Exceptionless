@@ -70,7 +70,7 @@ namespace Exceptionless.Core.Utility {
                 OrganizationId = organization.Id,
                 ProjectId = project.Id,
                 CreatedUtc = DateTime.UtcNow,
-                UpdatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
                 Type = TokenType.Access
             }).AnyContext();
 
@@ -78,7 +78,7 @@ namespace Exceptionless.Core.Utility {
                 Id = TEST_USER_API_KEY,
                 UserId = user.Id,
                 CreatedUtc = DateTime.UtcNow,
-                UpdatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
                 Type = TokenType.Access
             }).AnyContext();
 
@@ -105,7 +105,7 @@ namespace Exceptionless.Core.Utility {
                 OrganizationId = organization.Id,
                 ProjectId = project.Id,
                 CreatedUtc = DateTime.UtcNow,
-                UpdatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
                 Type = TokenType.Access
             }).AnyContext();
 

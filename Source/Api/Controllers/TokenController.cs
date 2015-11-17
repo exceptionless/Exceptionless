@@ -274,7 +274,7 @@ namespace Exceptionless.App.Controllers.API {
 
         protected override Task<Token> AddModelAsync(Token value) {
             value.Id = StringExtensions.GetNewToken();
-            value.CreatedUtc = value.UpdatedUtc = DateTime.UtcNow;
+            value.CreatedUtc = value.ModifiedUtc = DateTime.UtcNow;
             value.Type = TokenType.Access;
             value.CreatedBy = Request.GetUser().Id;
 

@@ -529,7 +529,7 @@ namespace Exceptionless.Api.Controllers {
                 Id = Core.Extensions.StringExtensions.GetNewToken(),
                 UserId = user.Id,
                 CreatedUtc = DateTime.UtcNow,
-                UpdatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
                 CreatedBy = user.Id,
                 Type = TokenType.Access
             });

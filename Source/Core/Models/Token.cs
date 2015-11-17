@@ -21,7 +21,8 @@ namespace Exceptionless.Core.Models {
         public string Notes { get; set; }
         public string CreatedBy { get; set; }
         public DateTime CreatedUtc { get; set; }
-        public DateTime UpdatedUtc { get; set; }
+        public DateTime ModifiedUtc { get; set; }
+        DateTime IHaveDates.UpdatedUtc { get { return ModifiedUtc; } set { ModifiedUtc = value; } }
     }
 
     public enum TokenType {
