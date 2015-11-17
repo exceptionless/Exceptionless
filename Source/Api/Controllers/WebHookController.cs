@@ -39,11 +39,8 @@ namespace Exceptionless.App.Controllers.API {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
         [ResponseType(typeof(List<WebHook>))]
         public async Task<IHttpActionResult> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            var project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             page = GetPage(page);
@@ -202,8 +199,8 @@ namespace Exceptionless.App.Controllers.API {
 
             Project project = null;
             if (!String.IsNullOrEmpty(value.ProjectId)) {
-                project = await _projectRepository.GetByIdAsync(value.ProjectId, true);
-                if (!IsInProject(project))
+                project = await GetProjectAsync(value.ProjectId);
+                if (project == null)
                     return PermissionResult.DenyWithMessage("Invalid project id specified.");
 
                 value.OrganizationId = project.OrganizationId;
@@ -232,18 +229,20 @@ namespace Exceptionless.App.Controllers.API {
             return PermissionResult.Allow;
         }
 
-        private async Task<bool> IsInProjectAsync(string projectId) {
+        private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
             if (String.IsNullOrEmpty(projectId))
-                return false;
+                return null;
 
-            return IsInProject(await _projectRepository.GetByIdAsync(projectId, true));
+            var project = await _projectRepository.GetByIdAsync(projectId, useCache);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return null;
+
+            return project;
         }
 
-        private bool IsInProject(Project value) {
-            if (value == null)
-                return false;
-
-            return IsInOrganization(value.OrganizationId);
+        private async Task<bool> IsInProjectAsync(string projectId) {
+            var project = await GetProjectAsync(projectId);
+            return project != null;
         }
 
         private bool IsValidWebHookVersion(Version version) {

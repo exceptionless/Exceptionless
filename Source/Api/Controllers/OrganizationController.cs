@@ -667,7 +667,7 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(value.StripeCustomerId) && User.IsInRole(AuthorizationRoles.GlobalAdmin))
                 return PermissionResult.DenyWithMessage("An organization cannot be deleted if it has a subscription.", value.Id);
 
-            List<Project> projects = (await _projectRepository.GetByOrganizationIdAsync(value.Id)).Documents.ToList();
+            var projects = (await _projectRepository.GetByOrganizationIdAsync(value.Id)).Documents.ToList();
             if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
                 return PermissionResult.DenyWithMessage("An organization cannot be deleted if it contains any projects.", value.Id);
 

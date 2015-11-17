@@ -590,11 +590,8 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> NewByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            Project project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("project:", projectId), filter, "-first", String.Concat("first|", time), offset, mode, page, limit);
@@ -631,11 +628,8 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> RecentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            Project project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("project:", projectId), filter, "-last", String.Concat("last|", time), offset, mode, page, limit);
@@ -718,11 +712,8 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> FrequentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            Project project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             return await FrequentInternalAsync(String.Concat("project:", projectId), filter, time, offset, mode, page, limit);
@@ -754,6 +745,17 @@ namespace Exceptionless.Api.Controllers {
 
                 return summary;
             }).ToList();
+        }
+
+        private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
+            if (String.IsNullOrEmpty(projectId))
+                return null;
+
+            var project = await _projectRepository.GetByIdAsync(projectId, useCache);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return null;
+
+            return project;
         }
     }
 }

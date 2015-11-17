@@ -196,11 +196,8 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            var project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("project:", projectId), filter, sort, time, offset, mode, page, limit);
@@ -257,11 +254,11 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string projectId) {
-            if (String.IsNullOrEmpty(referenceId) || String.IsNullOrEmpty(projectId))
+            if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
 
-            var project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("project:", projectId), String.Concat("reference:", referenceId));
@@ -301,8 +298,8 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
-            var project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             // Set the project for the configuration response filter.
@@ -396,8 +393,8 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
-            var project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !Request.GetAssociatedOrganizationIds().Contains(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             // TODO: We could save some overhead if we set the project in the overage handler...
@@ -448,6 +445,17 @@ namespace Exceptionless.Api.Controllers {
         [Route("{ids:objectids}")]
         public Task<IHttpActionResult> DeleteAsync(string ids) {
             return base.DeleteAsync(ids.FromDelimitedString());
+        }
+
+        private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
+            if (String.IsNullOrEmpty(projectId))
+                return null;
+
+            var project = await _projectRepository.GetByIdAsync(projectId, useCache);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return null;
+
+            return project;
         }
 
         protected override void CreateMaps() {
