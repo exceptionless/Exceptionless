@@ -26,30 +26,29 @@ namespace Exceptionless.Core.Repositories {
         public EventRepository(ElasticRepositoryContext<PersistentEvent> context, EventIndex index) : base(context, index) {
             DisableCache();
             BatchNotifications = true;
-        }
 
+            GetDocumentIdFunc = GetDocumentId;
+            GetDocumentIndexFunc = GetDocumentIndex;
+        }
+        
         protected override object Options { get; } = new QueryOptions(typeof(PersistentEvent)) {
             DefaultExcludes = new[] { "idx" }
         };
+        
+        private string GetDocumentId(PersistentEvent ev) {
+            // if date falls in the current months index then return a new object id.
+            var date = ev.Date.ToUniversalTime();
+            if (date.IntersectsMonth(DateTime.UtcNow))
+                return ObjectId.GenerateNewId().ToString();
 
-        protected override Func<PersistentEvent, string> GetDocumentIdFunc {
-            get {
-                return document => {
-                    // if date falls in the current months index then return a new object id.
-                    var date = document.Date.ToUniversalTime();
-                    if (date.IntersectsMonth(DateTime.UtcNow))
-                        return ObjectId.GenerateNewId().ToString();
-
-                    // GenerateNewId will translate it to utc.
-                    return ObjectId.GenerateNewId(document.Date.DateTime).ToString();
-                };
-            }
+            // GenerateNewId will translate it to utc.
+            return ObjectId.GenerateNewId(ev.Date.DateTime).ToString();
         }
-
-        protected override Func<PersistentEvent, string> GetDocumentIndexFunc {
-            get { return document => GetIndexById(document.Id); }
+        
+        private string GetDocumentIndex(PersistentEvent ev) {
+            return GetIndexById(ev.Id);
         }
-
+        
         protected override string GetIndexById(string id) {
             ObjectId objectId;
             if (ObjectId.TryParse(id, out objectId) && objectId.CreationTime.ToUniversalTime() > _minObjectidDate)
