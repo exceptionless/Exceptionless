@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Foundatio.Elasticsearch.Configuration;
@@ -17,15 +18,15 @@ namespace Exceptionless.Core.Repositories {
 
         protected override string GetTypeName() => EntityType.ToLower();
 
-        protected override object CreateChangeTypeMessage(ChangeType changeType, T document, IDictionary<string, object> data = null) {
-            return new ExtendedEntityChanged {
+        protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null, TimeSpan? delay = null) {
+          return PublishMessageAsync(new ExtendedEntityChanged {
                 ChangeType = changeType,
                 Id = document?.Id,
                 OrganizationId = (document as IOwnedByOrganization)?.OrganizationId,
                 ProjectId = (document as IOwnedByProject)?.ProjectId,
                 Type = EntityType,
                 Data = new DataDictionary(data ?? new Dictionary<string, object>())
-            };
+            }, delay);
         }
     }
 }

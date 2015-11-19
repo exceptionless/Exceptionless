@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Hubs {
             _subscriber.Subscribe<ReleaseNotification>(OnReleaseNotificationAsync);
             _subscriber.Subscribe<SystemNotification>(OnSystemNotificationAsync);
         }
-
+        
         private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default(CancellationToken)) {
             if (String.IsNullOrEmpty(userMembershipChanged?.OrganizationId))
                 return;
