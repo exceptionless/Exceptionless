@@ -11,6 +11,9 @@ namespace Exceptionless.Core {
 
         public string BaseURL { get; private set; }
 
+        /// <summary>
+        /// Internal project id keeps us from recursively logging to ourself
+        /// </summary>
         public string InternalProjectId { get; private set; }
 
         public WebsiteMode WebsiteMode { get; private set; }
@@ -46,7 +49,7 @@ namespace Exceptionless.Core {
         public string RedisConnectionString { get; private set; }
 
         public bool EnableRedis { get; private set; }
-       
+
         public string ElasticSearchConnectionString { get; private set; }
 
         public bool EnableElasticsearchTracing { get; private set; }
@@ -54,7 +57,7 @@ namespace Exceptionless.Core {
         public bool EnableSignalR { get; private set; }
 
         public string Version { get; private set; }
-        
+
         public LogLevel MinimumLogLevel { get; private set; }
 
         public bool EnableIntercom => !String.IsNullOrEmpty(IntercomAppSecret);
@@ -119,7 +122,7 @@ namespace Exceptionless.Core {
                 BaseURL = value;
             }
 
-            InternalProjectId = GetString("InternalProjectId");
+            InternalProjectId = GetString("InternalProjectId", "54b56e480ef9605a88a13153");
             WebsiteMode = GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
             AppScope = GetString("AppScope", String.Empty);
             TestEmailAddress = GetString("TestEmailAddress");
@@ -155,7 +158,7 @@ namespace Exceptionless.Core {
 
             AzureStorageConnectionString = GetConnectionString("AzureStorageConnectionString");
             EnableAzureStorage = GetBool("EnableAzureStorage", !String.IsNullOrEmpty(AzureStorageConnectionString));
-            
+
             ElasticSearchConnectionString = GetConnectionString("ElasticSearchConnectionString");
             EnableElasticsearchTracing = GetBool("EnableElasticsearchTracing");
 
