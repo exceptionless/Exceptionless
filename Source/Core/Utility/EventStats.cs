@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Utility {
             var filter = new ElasticQuery()
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
-                .WithDateRange(utcStart, utcEnd, "date")
+                .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
                 .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
 
             // if no start date then figure out first event date
@@ -51,7 +51,9 @@ namespace Exceptionless.Core.Utility {
                 var firstEvent = result.Hits.FirstOrDefault();
                 if (firstEvent != null) {
                     utcStart = firstEvent.Source.Date.UtcDateTime;
-                    filter.WithDateRange(utcStart, utcEnd, "date");
+                    filter.DateRanges.Clear();
+                    filter.WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date);
+                    filter.Indices.Clear();
                     filter.WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
                 }
             }
@@ -188,7 +190,9 @@ namespace Exceptionless.Core.Utility {
                 var firstEvent = result.Hits.FirstOrDefault();
                 if (firstEvent != null) {
                     utcStart = firstEvent.Source.Date.UtcDateTime;
-                    filter.WithDateRange(utcStart, utcEnd, "date");
+                    filter.DateRanges.Clear();
+                    filter.WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date);
+                    filter.Indices.Clear();
                     filter.WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
                 }
             }
