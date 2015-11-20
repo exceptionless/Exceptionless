@@ -143,7 +143,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationIds).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.FullName).IndexName("name"))
-                    .String(f => f.Name(u => u.EmailAddress).IndexName("email").Analyzer(KEYWORD_LOWERCASE))
+                    .String(f => f.Name(u => u.EmailAddress).IndexName(Fields.User.EmailAddress).Analyzer(KEYWORD_LOWERCASE))
                     .String(f => f.Name(u => u.Password).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.Salt).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.PasswordResetToken).Index(FieldIndexOption.NotAnalyzed))
@@ -215,6 +215,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 public const string CreatedUtc = "created";
                 public const string ModifiedUtc = "modified";
                 public const string OAuthAccountProviderUserId = "oauthaccount.provideruserid";
+                public const string EmailAddress = "email";
             }
 
             public class WebHook {

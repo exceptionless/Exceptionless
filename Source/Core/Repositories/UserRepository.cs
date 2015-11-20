@@ -12,6 +12,7 @@ using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
+using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class UserRepository : RepositoryBase<User>, IUserRepository {
@@ -67,6 +68,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithPaging(paging)
+                .WithSort(OrganizationIndex.Fields.User.EmailAddress, SortOrder.Ascending)
                 .WithCacheKey(useCache ? cacheKey : null)
                 .WithExpiresIn(expiresIn));
         }
