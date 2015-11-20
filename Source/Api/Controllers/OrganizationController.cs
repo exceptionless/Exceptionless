@@ -622,7 +622,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(name))
                 return false;
 
-            var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds());
+            var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true);
             return !results.Documents.Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 

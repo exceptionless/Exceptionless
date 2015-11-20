@@ -149,7 +149,7 @@ namespace Exceptionless.Core.Jobs {
 
             foreach (var user in users)
                 await _mailer.SendDailySummaryAsync(user.EmailAddress, notification).AnyContext();
-            
+
             Logger.Info().Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Id, notification.Total).Write();
         }
     }

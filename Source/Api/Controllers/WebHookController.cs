@@ -174,7 +174,7 @@ namespace Exceptionless.App.Controllers.API {
             if (ids == null || ids.Length == 0)
                 return results;
 
-            var webHooks = (await _repository.GetByIdsAsync(ids, useCache: useCache)).Documents;
+            var webHooks = (await _repository.GetByIdsAsync(ids, useCache)).Documents;
             if (webHooks == null)
                 return results;
 

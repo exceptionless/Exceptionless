@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected async Task<IHttpActionResult> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc) {
-            var models = await GetModelsAsync(ids);
+            var models = await GetModelsAsync(ids, false);
             if (models == null || models.Count == 0)
                 return NotFound();
 

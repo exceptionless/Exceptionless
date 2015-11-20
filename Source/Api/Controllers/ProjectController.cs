@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), options, true);
+            var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), options);
             var viewProjects = await MapCollectionAsync<ViewProject>(projects.Documents, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
@@ -84,7 +84,7 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = await _repository.GetByOrganizationIdsAsync(organizationIds, options, true);
+            var projects = await _repository.GetByOrganizationIdsAsync(organizationIds, options);
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
@@ -445,7 +445,7 @@ namespace Exceptionless.Api.Controllers {
 
             // TODO: We can optimize this by normalizing the project model to include the organization name.
             var viewProjects = models.OfType<ViewProject>().ToList();
-            var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), useCache: true)).Documents;
+            var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true)).Documents;
             foreach (var viewProject in viewProjects) {
                 viewProject.OrganizationName = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId)?.Name;
                 if (!viewProject.IsConfigured.HasValue) {
@@ -505,7 +505,7 @@ namespace Exceptionless.Api.Controllers {
             if (projects.Count <= 0)
                 return projects;
 
-            var organizations = await _organizationRepository.GetByIdsAsync(projects.Select(p => p.Id).ToArray(), useCache: true);
+            var organizations = await _organizationRepository.GetByIdsAsync(projects.Select(p => p.Id).ToArray(), true);
             StringBuilder builder = new StringBuilder();
             for (int index = 0; index < projects.Count; index++) {
                 if (index > 0)
