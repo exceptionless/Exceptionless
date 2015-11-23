@@ -6,16 +6,17 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Foundatio.Repositories.Models;
 using Nest;
 using Xunit;
-using SortOrder = Exceptionless.Core.Repositories.SortOrder;
+using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public class EventIndexTests {
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
-        private readonly ElasticSearchConfiguration _configuration = IoC.GetInstance<ElasticSearchConfiguration>();
+        private readonly ElasticConfiguration _configuration = IoC.GetInstance<ElasticConfiguration>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        
+
         [Theory]
         [InlineData("000000000000000000000000", 0)]
         [InlineData("54dbc16ca0f5c61398427b00", 1)]
@@ -38,7 +39,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("000000000000000000000000", 0)]
         [InlineData("1ecd0826e447ad1e78877ab2", 3)]
@@ -72,7 +73,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("00000", 0)]
         [InlineData("123452366", 1)]
@@ -83,7 +84,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("log", 1)]
         [InlineData("error", 2)]
@@ -95,7 +96,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("_missing_:submission", 2)]
         [InlineData("submission:UnobservedTaskException", 1)]
@@ -116,7 +117,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("Error", 1)]
         public async Task GetByLevelAsync(string level, int count) {
@@ -188,7 +189,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData(false, 2)]
         [InlineData(true, 1)]
@@ -199,7 +200,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData(false, 2)]
         [InlineData(true, 1)]
@@ -223,7 +224,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("SERVER-01", 1)]
         [InlineData("machine:SERVER-01", 1)]
@@ -259,7 +260,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("Mozilla", 2)]
         [InlineData("\"Mozilla/5.0\"", 2)]
@@ -318,7 +319,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("device:Huawei", 1)]
         [InlineData("device:\"Huawei U8686\"", 1)]
@@ -369,7 +370,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("bot:false", 1)]
         [InlineData("-bot:true", 2)]
@@ -378,10 +379,10 @@ namespace Exceptionless.Api.Tests.Repositories {
             await ResetAsync();
 
             var result = await GetByFilterAsync(filter);
-            Assert.NotNull(result); 
+            Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("500", 1)]
         [InlineData("error.code:\"-1\"", 1)]
@@ -394,7 +395,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("\"Invalid hash. Parameter name: hash\"", 1)]
         [InlineData("error.message:\"Invalid hash. Parameter name: hash\"", 1)]
@@ -517,7 +518,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
-                    continue;    
+                    continue;
 
                 var events = parserPluginManager.ParseEvents(File.ReadAllText(file), 2, "exceptionless/2.0.0.0");
                 Assert.NotNull(events);

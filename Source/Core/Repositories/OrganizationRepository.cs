@@ -8,22 +8,25 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Extensions;
-using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Messaging;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 using Nest;
+using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
-    public class OrganizationRepository : Repository<Organization>, IOrganizationRepository {
-        public OrganizationRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<Organization> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
+    public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository {
+        public OrganizationRepository(ElasticRepositoryContext<Organization> context, OrganizationIndex index) : base(context, index) {}
 
         public Task<Organization> GetByInviteTokenAsync(string token) {
             if (String.IsNullOrEmpty(token))
                 throw new ArgumentNullException(nameof(token));
 
-            var filter = Filter<Organization>.Term(OrganizationIndex.Fields.Organization.InviteToken, token);
-            return FindOneAsync(new ElasticSearchOptions<Organization>().WithFilter(filter));
+            return FindOneAsync(new ExceptionlessQuery().WithFieldEquals(OrganizationIndex.Fields.Organization.InviteToken, token));
         }
 
         public Task<Organization> GetByStripeCustomerIdAsync(string customerId) {
@@ -31,17 +34,17 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(customerId));
 
             var filter = Filter<Organization>.Term(o => o.StripeCustomerId, customerId);
-            return FindOneAsync(new ElasticSearchOptions<Organization>().WithFilter(filter));
+            return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
         public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
             var filter = Filter<Organization>.Range(r => r.OnField(o => o.RetentionDays).Greater(0));
-            return FindAsync(new ElasticSearchOptions<Organization>()
-                .WithFilter(filter)
-                .WithFields("id", "name", "retention_days")
+            return FindAsync(new ExceptionlessQuery()
+                .WithElasticFilter(filter)
+                .WithSelectedFields("id", "name", "retention_days")
                 .WithPaging(paging));
         }
-        
+
         public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
             var filter = Filter<Organization>.MatchAll();
             if (!String.IsNullOrWhiteSpace(criteria))
@@ -57,8 +60,8 @@ namespace Exceptionless.Core.Repositories {
             if (suspended.HasValue) {
                 if (suspended.Value)
                     filter &= Filter<Organization>.And(and => ((
-                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) && 
-                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) && 
+                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
+                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
                             !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
                         ) || Filter<Organization>.Term(o => o.IsSuspended, true)));
                 else
@@ -69,26 +72,31 @@ namespace Exceptionless.Core.Repositories {
                         ) || Filter<Organization>.Term(o => o.IsSuspended, false)));
             }
 
-            Func<SortFieldDescriptor<Organization>, IFieldSort> sort = descriptor => descriptor.OnField(o => o.Name).Ascending();
+            var query = new ExceptionlessQuery().WithPaging(paging).WithElasticFilter(filter);
             switch (sortBy) {
                 case OrganizationSortBy.Newest:
-                    sort = descriptor => descriptor.OnField(o => o.Id).Descending();
+                    query.WithSort(OrganizationIndex.Fields.Organization.Id, SortOrder.Descending);
                     break;
                 case OrganizationSortBy.Subscribed:
-                    sort = descriptor => descriptor.OnField(o => o.SubscribeDate).Descending();
+                    query.WithSort(OrganizationIndex.Fields.Organization.SubscribeDate, SortOrder.Descending);
                     break;
                 // case OrganizationSortBy.MostActive:
-                //    sort = descriptor => descriptor.OnField(o => o.TotalEventCount).Descending();
+                //    query.WithSort(OrganizationIndex.Fields.Organization.TotalEventCount, SortOrder.Descending);
                 //    break;
+                default:
+                    query.WithSort(OrganizationIndex.Fields.Organization.Name, SortOrder.Ascending);
+                    break;
             }
-            
-            return FindAsync(new ElasticSearchOptions<Organization>().WithPaging(paging).WithFilter(filter).WithSort(sort));
+
+            return FindAsync(query);
         }
 
         public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
-            var results = (await FindAsync(new ElasticSearchOptions<Organization>()
-                .WithFields("plan_id", "is_suspended", "billing_price", "billing_status")
-                .WithSort(s => s.OnField(o => o.PlanId).Order(Nest.SortOrder.Descending))).AnyContext()).Documents;
+            var query = new ExceptionlessQuery()
+                .WithSelectedFields("plan_id", "is_suspended", "billing_price", "billing_status")
+                .WithSort(OrganizationIndex.Fields.Organization.PlanId, SortOrder.Descending);
+
+            var results = (await FindAsync(query).AnyContext()).Documents;
 
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> mediumOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();
@@ -177,7 +185,7 @@ namespace Exceptionless.Core.Repositories {
                 totalBlocked = (hourlyTotal - count) < org.GetHourlyEventLimit() ? hourlyTotal - org.GetHourlyEventLimit() : count;
             else if ((monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus())
                 totalBlocked = (monthlyTotal - monthlyBlocked - count) < org.GetMaxEventsPerMonthWithBonus() ? monthlyTotal - monthlyBlocked - org.GetMaxEventsPerMonthWithBonus() : count;
-            
+
             long hourlyBlocked = await Cache.IncrementIfAsync(GetHourlyBlockedCacheKey(organizationId), (int)totalBlocked, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked()).AnyContext();
             monthlyBlocked = await Cache.IncrementIfAsync(GetMonthlyBlockedCacheKey(organizationId), (int)totalBlocked, TimeSpan.FromDays(32), overLimit, (uint)monthlyBlocked).AnyContext();
 

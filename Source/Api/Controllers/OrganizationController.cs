@@ -26,7 +26,9 @@ using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
+using Foundatio.Repositories.Models;
 using Stripe;
+
 #pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
@@ -58,23 +60,18 @@ namespace Exceptionless.Api.Controllers {
         /// <summary>
         /// Get all
         /// </summary>
-        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
-        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         [HttpGet]
         [Route]
         [ResponseType(typeof(List<ViewOrganization>))]
-        public async Task<IHttpActionResult> GetAsync(int page = 1, int limit = 10, string mode = null) {
-            page = GetPage(page);
-            limit = GetLimit(limit);
-            var options = new PagingOptions { Page = page, Limit = limit };
-            var organizations = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds(), options);
-            var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations.Documents, true);
+        public async Task<IHttpActionResult> GetAsync(string mode = null) {
+            var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
+            var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
+                return Ok(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()));
 
-            return OkWithResourceLinks(viewOrganizations, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
+            return Ok(viewOrganizations);
         }
 
         [HttpGet]
@@ -88,11 +85,11 @@ namespace Exceptionless.Api.Controllers {
             var options = new PagingOptions { Page = page, Limit = limit };
             var organizations = await _repository.GetByCriteriaAsync(criteria, options, sort, paid, suspended);
             var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
-            
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), options.HasMore, page, organizations.Total);
 
-            return OkWithResourceLinks(viewOrganizations, options.HasMore, page, organizations.Total);
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), organizations.HasMore, page, organizations.Total);
+
+            return OkWithResourceLinks(viewOrganizations, organizations.HasMore, page, organizations.Total);
         }
 
         [HttpGet]
@@ -121,7 +118,7 @@ namespace Exceptionless.Api.Controllers {
             var viewOrganization = await MapAsync<ViewOrganization>(organization, true);
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
                 return Ok(await PopulateOrganizationStatsAsync(viewOrganization));
-            
+
             return Ok(viewOrganization);
         }
 
@@ -228,7 +225,7 @@ namespace Exceptionless.Api.Controllers {
             if (coupon != null) {
                 double discountAmount = coupon.AmountOff ?? stripeInvoice.Subtotal * (coupon.PercentOff.GetValueOrDefault() / 100.0);
                 string description = $"{coupon.Id} {(coupon.PercentOff.HasValue ? $"({coupon.PercentOff.Value}% off)" : $"({(coupon.AmountOff.GetValueOrDefault() / 100.0).ToString("C")} off)")}";
-               
+
                 invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
             }
 
@@ -332,7 +329,7 @@ namespace Exceptionless.Api.Controllers {
             if (!Settings.Current.EnableBilling)
                 return Ok(ChangePlanResult.FailWithMessage("Plans cannot be changed while billing is disabled."));
 
-            Organization organization = await _repository.GetByIdAsync(id);
+            var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return Ok(ChangePlanResult.FailWithMessage("Invalid OrganizationId."));
 
@@ -342,7 +339,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (String.Equals(organization.PlanId, plan.Id) && String.Equals(BillingManager.FreePlan.Id, plan.Id))
                 return Ok(ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan."));
-            
+
             // Only see if they can downgrade a plan if the plans are different.
             if (!String.Equals(organization.PlanId, plan.Id)) {
                 var result = await _billingManager.CanDownGradeAsync(organization, plan, ExceptionlessUser);
@@ -397,7 +394,7 @@ namespace Exceptionless.Api.Controllers {
                         create.Card = new StripeCreditCardOptions { TokenId = stripeToken };
                         cardUpdated = true;
                     }
-                    
+
                     var subscription = subscriptionService.List(organization.StripeCustomerId).FirstOrDefault(s => !s.CanceledAt.HasValue);
                     if (subscription != null)
                         subscriptionService.Update(organization.StripeCustomerId, subscription.Id, update);
@@ -416,7 +413,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser);
-                await _repository.SaveAsync(organization);
+                await _repository.SaveAsync(organization, true);
                 await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
             } catch (Exception e) {
                 Logger.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
@@ -446,7 +443,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!await _billingManager.CanAddUserAsync(organization))
                 return PlanLimitReached("Please upgrade your plan to add an additional user.");
-            
+
             User user = await _userRepository.GetByEmailAddressAsync(email);
             if (user != null) {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
@@ -469,7 +466,7 @@ namespace Exceptionless.Api.Controllers {
                         DateAdded = DateTime.UtcNow
                     };
                     organization.Invites.Add(invite);
-                    await _repository.SaveAsync(organization);
+                    await _repository.SaveAsync(organization, true);
                 }
 
                 await _mailer.SendInviteAsync(ExceptionlessUser, organization, invite);
@@ -488,10 +485,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
         public async Task<IHttpActionResult> RemoveUserAsync(string id, string email) {
-            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
-                return NotFound();
-
-            Organization organization = await _repository.GetByIdAsync(id);
+            var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
 
@@ -502,7 +496,7 @@ namespace Exceptionless.Api.Controllers {
                     return Ok();
 
                 organization.Invites.Remove(invite);
-                await _repository.SaveAsync(organization);
+                await _repository.SaveAsync(organization, true);
             } else {
                 if (!user.OrganizationIds.Contains(organization.Id))
                     return BadRequest();
@@ -545,7 +539,7 @@ namespace Exceptionless.Api.Controllers {
             organization.SuspendedByUserId = ExceptionlessUser.Id;
             organization.SuspensionCode = code;
             organization.SuspensionNotes = notes;
-            await _repository.SaveAsync(organization);
+            await _repository.SaveAsync(organization, true);
 
             return Ok();
         }
@@ -565,7 +559,7 @@ namespace Exceptionless.Api.Controllers {
             organization.SuspendedByUserId = null;
             organization.SuspensionCode = null;
             organization.SuspensionNotes = null;
-            await _repository.SaveAsync(organization);
+            await _repository.SaveAsync(organization, true);
 
             return Ok();
         }
@@ -585,7 +579,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             organization.Data[key] = value;
-            await _repository.SaveAsync(organization);
+            await _repository.SaveAsync(organization, true);
 
             return Ok();
         }
@@ -604,7 +598,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             if (organization.Data.Remove(key))
-                await _repository.SaveAsync(organization);
+                await _repository.SaveAsync(organization, true);
 
             return Ok();
         }
@@ -625,7 +619,11 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private async Task<bool> IsOrganizationNameAvailableInternalAsync(string name) {
-            return !String.IsNullOrWhiteSpace(name) && !(await _repository.GetByIdsAsync(GetAssociatedOrganizationIds())).Documents.Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (String.IsNullOrWhiteSpace(name))
+                return false;
+
+            var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true);
+            return !results.Documents.Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         protected override async Task<PermissionResult> CanAddAsync(Organization value) {
@@ -669,7 +667,7 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(value.StripeCustomerId) && User.IsInRole(AuthorizationRoles.GlobalAdmin))
                 return PermissionResult.DenyWithMessage("An organization cannot be deleted if it has a subscription.", value.Id);
 
-            List<Project> projects = (await _projectRepository.GetByOrganizationIdAsync(value.Id)).Documents.ToList();
+            var projects = (await _projectRepository.GetByOrganizationIdAsync(value.Id)).Documents.ToList();
             if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
                 return PermissionResult.DenyWithMessage("An organization cannot be deleted if it contains any projects.", value.Id);
 

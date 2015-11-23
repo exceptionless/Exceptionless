@@ -82,7 +82,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            Project project = await _projectRepository.GetByIdAsync(projectId, true);
+            var project = await _projectRepository.GetByIdAsync(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 

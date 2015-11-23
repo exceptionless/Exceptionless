@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
     public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates {
@@ -21,6 +22,7 @@ namespace Exceptionless.Core.Models {
         public string CreatedBy { get; set; }
         public DateTime CreatedUtc { get; set; }
         public DateTime ModifiedUtc { get; set; }
+        DateTime IHaveDates.UpdatedUtc { get { return ModifiedUtc; } set { ModifiedUtc = value; } }
     }
 
     public enum TokenType {

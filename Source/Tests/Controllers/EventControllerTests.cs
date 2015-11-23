@@ -21,6 +21,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Repositories.Models;
 using Microsoft.Owin;
 using Nest;
 using Newtonsoft.Json;
@@ -39,7 +40,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         private readonly IQueue<EventPost> _eventQueue = IoC.GetInstance<IQueue<EventPost>>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
-        
+
         [Fact]
         public async Task CanPostStringAsync() {
             await ResetAsync();
@@ -49,7 +50,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
                 var metricsClient = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
                 Assert.NotNull(metricsClient);
-                
+
                 Assert.True(await metricsClient.WaitForCounterAsync("eventpost.enqueued", work: async () => {
                     var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string"));
                     Assert.IsType<StatusCodeResult>(actionResult);
@@ -120,7 +121,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             try {
                 var countdown = new AsyncCountdownEvent(batchCount);
                 var messageSubscriber = IoC.GetInstance<IMessageSubscriber>();
-                messageSubscriber.Subscribe<EntityChanged>(ch => {
+                messageSubscriber.Subscribe<ExtendedEntityChanged>(ch => {
                     if (ch.ChangeType != ChangeType.Added || ch.Type != typeof(PersistentEvent).Name)
                         return;
 
@@ -154,7 +155,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 await _eventQueue.DeleteQueueAsync();
             }
         }
-        
+
         private HttpRequestMessage CreateRequestMessage(ClaimsPrincipal user, bool isCompressed, bool isJson, string charset = "utf-8") {
             var request = new HttpRequestMessage();
 
@@ -186,7 +187,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         private async Task ResetDatabaseAsync(bool force = false) {
             if (_databaseReset && !force)
                 return;
-            
+
             await RemoveAllEventsAsync();
             await RemoveAllProjectsAsync();
             await RemoveAllOrganizationsAsync();
@@ -215,7 +216,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             _client.Refresh(r => r.Force());
             return _eventRepository.CountAsync();
         }
-        
+
         public async Task AddSampleProjectsAsync() {
             if (_sampleProjectsAdded)
                 return;
@@ -224,7 +225,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             await _client.RefreshAsync(r => r.Force());
             _sampleProjectsAdded = true;
         }
-        
+
         public async Task AddSampleOrganizationsAsync() {
             if (_sampleOrganizationsAdded)
                 return;

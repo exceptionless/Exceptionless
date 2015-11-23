@@ -3,11 +3,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Stats;
+using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Elasticsearch.Repositories.Queries.Builders;
 using Foundatio.Logging;
 using Nest;
 
@@ -15,10 +16,12 @@ namespace Exceptionless.Core.Utility {
     public class EventStats {
         private readonly IElasticClient _elasticClient;
         private readonly EventIndex _eventIndex;
+        private readonly QueryBuilderRegistry _queryBuilder;
 
-        public EventStats(IElasticClient elasticClient, EventIndex eventIndex) {
+        public EventStats(IElasticClient elasticClient, EventIndex eventIndex, QueryBuilderRegistry queryBuilder) {
             _elasticClient = elasticClient;
             _eventIndex = eventIndex;
+            _queryBuilder = queryBuilder;
         }
 
         public async Task<EventTermStatsResult> GetTermsStatsAsync(DateTime utcStart, DateTime utcEnd, string term, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
@@ -28,45 +31,42 @@ namespace Exceptionless.Core.Utility {
             var allowedTerms = new[] { "organization_id", "project_id", "stack_id", "tags", "version" };
             if (!allowedTerms.Contains(term))
                 throw new ArgumentException("Must be a valid term.", nameof(term));
-            
-            var filter = new ElasticSearchOptions<PersistentEvent>()
-                .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
-                .WithQuery(userFilter)
-                .WithDateRange(utcStart, utcEnd, "date")
-                .WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
+
+            var filter = new ElasticQuery()
+                .WithSystemFilter(systemFilter)
+                .WithFilter(userFilter)
+                .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
+                .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
 
             // if no start date then figure out first event date
-            if (!filter.UseStartDate) {
+            if (!filter.DateRanges.First().UseStartDate) {
                 // TODO: Cache this to save an extra search request when a date range isn't filtered.
-                _elasticClient.EnableTrace();
-
                 var result = await _elasticClient.SearchAsync<PersistentEvent>(s => s
                     .IgnoreUnavailable()
-                    .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.Name)
-                    .Filter(d => filter.GetElasticSearchFilter())
+                    .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
+                    .Query(d => _queryBuilder.BuildQuery<PersistentEvent>(filter))
                     .SortAscending(ev => ev.Date)
                     .Take(1)).AnyContext();
-
-                _elasticClient.DisableTrace();
 
                 var firstEvent = result.Hits.FirstOrDefault();
                 if (firstEvent != null) {
                     utcStart = firstEvent.Source.Date.UtcDateTime;
-                    filter.WithDateRange(utcStart, utcEnd, "date");
-                    filter.WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
+                    filter.DateRanges.Clear();
+                    filter.WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date);
+                    filter.Indices.Clear();
+                    filter.WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
                 }
             }
 
-            utcStart = filter.GetStartDate();
-            utcEnd = filter.GetEndDate();
+            utcStart = filter.DateRanges.First().GetStartDate();
+            utcEnd = filter.DateRanges.First().GetEndDate();
             var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
 
-            _elasticClient.EnableTrace();
             var res = await _elasticClient.SearchAsync<PersistentEvent>(s => s
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.Name)
-                .Query(filter.GetElasticSearchQuery())
+                .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
+                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
                 .Aggregations(agg => agg
                     .Terms("terms", t => t
                         .Field(term)
@@ -103,13 +103,11 @@ namespace Exceptionless.Core.Utility {
                 )
             ).AnyContext();
 
-            _elasticClient.DisableTrace();
-
             if (!res.IsValid) {
                 Logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving term stats failed.");
             }
-            
+
             var newTerms = res.Aggs.Terms("new");
             var stats = new EventTermStatsResult {
                 Total = res.Total,
@@ -174,43 +172,40 @@ namespace Exceptionless.Core.Utility {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
-            var filter = new ElasticSearchOptions<PersistentEvent>()
-                .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
-                .WithQuery(userFilter)
-                .WithDateRange(utcStart, utcEnd, "date")
-                .WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
+            var filter = new ElasticQuery()
+                .WithSystemFilter(systemFilter)
+                .WithFilter(userFilter)
+                .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
+                .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
 
             // if no start date then figure out first event date
-            if (!filter.UseStartDate) {
+            if (!filter.DateRanges.First().UseStartDate) {
                 // TODO: Cache this to save an extra search request when a date range isn't filtered.
-                _elasticClient.EnableTrace();
-
                 var result = await _elasticClient.SearchAsync<PersistentEvent>(s => s
-                    .IgnoreUnavailable().Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.Name)
-                    .Filter(d => filter.GetElasticSearchFilter())
+                    .IgnoreUnavailable().Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
+                    .Query(d => _queryBuilder.BuildQuery<PersistentEvent>(filter))
                     .SortAscending(ev => ev.Date)
                     .Take(1)).AnyContext();
-
-                _elasticClient.DisableTrace();
 
                 var firstEvent = result.Hits.FirstOrDefault();
                 if (firstEvent != null) {
                     utcStart = firstEvent.Source.Date.UtcDateTime;
-                    filter.WithDateRange(utcStart, utcEnd, "date");
-                    filter.WithIndicesFromDateRange($"'{_eventIndex.VersionedName}-'yyyyMM");
+                    filter.DateRanges.Clear();
+                    filter.WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date);
+                    filter.Indices.Clear();
+                    filter.WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
                 }
             }
 
-            utcStart = filter.GetStartDate();
-            utcEnd = filter.GetEndDate();
+            utcStart = filter.DateRanges.First().GetStartDate();
+            utcEnd = filter.DateRanges.First().GetEndDate();
             var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
 
-            _elasticClient.EnableTrace();
             var res = await _elasticClient.SearchAsync<PersistentEvent>(s => s
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.Name)
-                .Query(filter.GetElasticSearchQuery())
+                .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
+                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
                 .Aggregations(agg => agg
                     .DateHistogram("timelime", t => t
                         .Field(ev => ev.Date)
@@ -240,13 +235,12 @@ namespace Exceptionless.Core.Utility {
                     .Max("last_occurrence", t => t.Field(ev => ev.Date))
                 )
             ).AnyContext();
-            _elasticClient.DisableTrace();
 
             if (!res.IsValid) {
                 Logger.Error().Message("Retrieving stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving stats failed.");
             }
-            
+
             var newTerms = res.Aggs.Terms("new");
             var stats = new EventStatsResult {
                 Total = res.Total,

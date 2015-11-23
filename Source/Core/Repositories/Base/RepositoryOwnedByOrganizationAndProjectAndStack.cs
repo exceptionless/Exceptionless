@@ -1,20 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
-using Foundatio.Caching;
-using Foundatio.Messaging;
-using Nest;
+using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Elasticsearch.Configuration;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganizationAndProjectAndStack<T> : RepositoryOwnedByOrganizationAndProject<T>, IRepositoryOwnedByStack<T> where T : class, IOwnedByProject, IIdentity, IOwnedByStack, IOwnedByOrganization, new() {
-        public RepositoryOwnedByOrganizationAndProjectAndStack(IElasticClient elasticClient, IElasticSearchIndex index, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) {}
+        public RepositoryOwnedByOrganizationAndProjectAndStack(ElasticRepositoryContext<T> context, IElasticIndex index) : base(context, index) { }
 
         public virtual Task<FindResults<T>> GetByStackIdAsync(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return FindAsync(new ElasticSearchOptions<T>()
+            return FindAsync(new ExceptionlessQuery()
                 .WithStackId(stackId)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("stack:", stackId) : null)
@@ -22,17 +24,21 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task RemoveAllByStackIdsAsync(string[] stackIds) {
-            return RemoveAllAsync(new QueryOptions().WithStackIds(stackIds));
+            return RemoveAllAsync(new ExceptionlessQuery().WithStackIds(stackIds));
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<T> documents, ICollection<T> originalDocuments) {
-            if (!EnableCache)
+        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<T>> documents) {
+            if (!IsCacheEnabled)
                 return;
 
-            foreach (var document in documents)
-                await InvalidateCacheAsync(String.Concat("stack:", document.StackId)).AnyContext();
+            await Cache.RemoveAllAsync(documents.Select(d => d.Value)
+                .Union(documents.Select(d => d.Original))
+                .OfType<IOwnedByStack>()
+                .Where(d => !String.IsNullOrEmpty(d.StackId))
+                .Select(d => "stack:" + d.StackId)
+                .Distinct()).AnyContext();
 
-            await base.InvalidateCacheAsync(documents, originalDocuments).AnyContext();
+            await base.InvalidateCacheAsync(documents).AnyContext();
         }
     }
 }

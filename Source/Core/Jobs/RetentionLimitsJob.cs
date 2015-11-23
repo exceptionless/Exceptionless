@@ -10,6 +10,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Jobs {
     public class RetentionLimitsJob : JobBase {

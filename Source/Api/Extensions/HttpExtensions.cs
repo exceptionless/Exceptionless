@@ -14,7 +14,7 @@ namespace Exceptionless.Api.Extensions {
         public static User GetUser(this HttpRequestMessage message) {
             return message?.GetOwinContext().Get<User>("User");
         }
-        
+
         public static void SetUser(this HttpRequestMessage message, User user) {
             message?.GetOwinContext().Set("User", user);
         }
@@ -92,7 +92,7 @@ namespace Exceptionless.Api.Extensions {
             var principal = message.GetClaimsPrincipal();
             return principal?.GetDefaultProjectId();
         }
-        
+
         public static string GetClientIpAddress(this HttpRequestMessage request) {
             var context = request?.GetOwinContext();
             return context?.Request.RemoteIpAddress;

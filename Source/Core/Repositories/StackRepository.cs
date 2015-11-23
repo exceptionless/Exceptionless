@@ -1,41 +1,49 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Caching;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Logging;
-using Foundatio.Messaging;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 using Nest;
+using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
         private const string STACKING_VERSION = "v2";
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(IElasticClient elasticClient, StackIndex index, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(elasticClient, index, validator, cacheClient, messagePublisher) {
+        public StackRepository(ElasticRepositoryContext<Stack> context, StackIndex index, IEventRepository eventRepository) : base(context, index) {
             _eventRepository = eventRepository;
-            DocumentChanging.AddHandler(OnDocumentChangingAsync);
+            DocumentsChanging.AddHandler(OnDocumentChangingAsync);
         }
 
-        private async Task OnDocumentChangingAsync(object sender, DocumentChangeEventArgs<Stack> args) {
+        private async Task OnDocumentChangingAsync(object sender, DocumentsChangeEventArgs<Stack> args) {
             if (args.ChangeType != ChangeType.Removed)
                 return;
 
-            foreach (Stack document in args.Documents) {
-                if (await _eventRepository.GetCountByStackIdAsync(document.Id).AnyContext() > 0)
-                    throw new ApplicationException($"Stack \"{document.Id}\" can't be deleted because it has events associated to it.");
+            foreach (var document in args.Documents) {
+                if (await _eventRepository.GetCountByStackIdAsync(document.Value.Id).AnyContext() > 0)
+                    throw new ApplicationException($"Stack \"{document.Value.Id}\" can't be deleted because it has events associated to it.");
             }
         }
 
         protected override async Task AddToCacheAsync(ICollection<Stack> documents, TimeSpan? expiresIn = null) {
+            if (!IsCacheEnabled)
+                return;
+
             await base.AddToCacheAsync(documents, expiresIn).AnyContext();
             foreach (var stack in documents)
-                await Cache.SetAsync(GetScopedCacheKey(GetStackSignatureCacheKey(stack)), stack, expiresIn ?? TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS)).AnyContext();
+                await Cache.SetAsync(GetStackSignatureCacheKey(stack), stack, expiresIn ?? TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS)).AnyContext();
         }
 
         private string GetStackSignatureCacheKey(Stack stack) {
@@ -49,7 +57,7 @@ namespace Exceptionless.Core.Repositories {
         public async Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
-            var result = await _elasticClient.UpdateAsync<Stack>(s => s
+            var result = await Context.ElasticClient.UpdateAsync<Stack>(s => s
                 .Id(stackId)
                 .RetryOnConflict(3)
                 .Lang("groovy")
@@ -64,62 +72,71 @@ namespace Exceptionless.Core.Repositories {
                     .Add("minOccurrenceDateUtc", minOccurrenceDateUtc)
                     .Add("maxOccurrenceDateUtc", maxOccurrenceDateUtc)
                     .Add("count", count))).AnyContext();
-            
+
             if (!result.IsValid) {
                 Logger.Error().Message("Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError.Error).Write();
                 return;
             }
 
-            await InvalidateCacheAsync(stackId).AnyContext();
+            if (IsCacheEnabled)
+                await Cache.RemoveAsync(stackId).AnyContext();
 
             if (sendNotifications) {
-                await PublishMessageAsync(new EntityChanged {
+                await PublishMessageAsync(new ExtendedEntityChanged {
                     ChangeType = ChangeType.Saved,
                     Id = stackId,
                     OrganizationId = organizationId,
                     ProjectId = projectId,
-                    Type = _entityType
+                    Type = EntityType
                 }, TimeSpan.FromSeconds(1.5)).AnyContext();
             }
         }
 
         public Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
-            return FindOneAsync(new ElasticSearchOptions<Stack>()
+            return FindOneAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
-                .WithFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))
+                .WithElasticFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))
                 .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash)));
         }
 
         public Task<FindResults<Stack>> GetByFilterAsync(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (String.IsNullOrEmpty(sort)) {
-                sort = "last";
+                sort = StackIndex.Fields.Stack.LastOccurrence;
                 sortOrder = SortOrder.Descending;
             }
 
-            var search = new ElasticSearchOptions<Stack>()
-                .WithDateRange(utcStart, utcEnd, field ?? "last")
-                .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<Stack>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
-                .WithQuery(userFilter)
+            var search = new ExceptionlessQuery()
+                .WithDateRange(utcStart, utcEnd, field ?? StackIndex.Fields.Stack.LastOccurrence)
+                .WithSystemFilter(systemFilter)
+                .WithFilter(userFilter)
                 .WithPaging(paging)
-                .WithSort(e => e.OnField(sort).Order(sortOrder == SortOrder.Descending ? Nest.SortOrder.Descending : Nest.SortOrder.Ascending));
+                .WithSort(sort, sortOrder);
 
             return FindAsync(search);
         }
 
-        public Task<FindResults<Stack>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query) {
-            var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithQuery(query).WithSort(s => s.OnField(e => e.LastOccurrence).Descending()).WithPaging(paging);
-            options.Filter = Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).GreaterOrEquals(utcStart));
-            options.Filter &= Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).LowerOrEquals(utcEnd));
+        public Task<FindResults<Stack>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
+            var filterContainer = Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).GreaterOrEquals(utcStart)) && Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).LowerOrEquals(utcEnd));
+            var query = new ExceptionlessQuery()
+                .WithProjectId(projectId)
+                .WithElasticFilter(filterContainer)
+                .WithFilter(filter)
+                .WithSort(StackIndex.Fields.Stack.LastOccurrence, SortOrder.Descending)
+                .WithPaging(paging);
 
-            return FindAsync(options);
+            return FindAsync(query);
         }
 
-        public Task<FindResults<Stack>> GetNewAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query) {
-            var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithQuery(query).WithSort(s => s.OnField(e => e.FirstOccurrence).Descending()).WithPaging(paging);
-            options.Filter = Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart));
-            options.Filter &= Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
+        public Task<FindResults<Stack>> GetNewAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
+            var filterContainer = Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart)) && Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
+            var query = new ExceptionlessQuery()
+                .WithProjectId(projectId)
+                .WithElasticFilter(filterContainer)
+                .WithFilter(filter)
+                .WithSort(StackIndex.Fields.Stack.FirstOccurrence, SortOrder.Descending)
+                .WithPaging(paging);
 
-            return FindAsync(options);
+            return FindAsync(query);
         }
 
         public async Task MarkAsRegressedAsync(string stackId) {
@@ -129,19 +146,24 @@ namespace Exceptionless.Core.Repositories {
             await SaveAsync(stack, true).AnyContext();
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<Stack> stacks, ICollection<Stack> originalStacks) {
-            if (!EnableCache)
+        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<Stack>> documents) {
+            if (!IsCacheEnabled)
                 return;
 
-            foreach (var stack in stacks)
-                await InvalidateCacheAsync(GetStackSignatureCacheKey(stack)).AnyContext();
+            await Cache.RemoveAllAsync(documents.Select(d => d.Value)
+                .Union(documents.Select(d => d.Original).Where(d => d != null))
+                .Select(GetStackSignatureCacheKey)
+                .Distinct()).AnyContext();
 
-            await base.InvalidateCacheAsync(stacks, originalStacks).AnyContext();
+            await base.InvalidateCacheAsync(documents).AnyContext();
         }
 
         public async Task InvalidateCacheAsync(string projectId, string stackId, string signatureHash) {
-            await InvalidateCacheAsync(stackId).AnyContext();
-            await InvalidateCacheAsync(GetStackSignatureCacheKey(projectId, signatureHash)).AnyContext();
+            if (!IsCacheEnabled)
+                return;
+
+            await Cache.RemoveAsync(stackId).AnyContext();
+            await Cache.RemoveAsync(GetStackSignatureCacheKey(projectId, signatureHash)).AnyContext();
         }
     }
 }

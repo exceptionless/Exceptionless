@@ -21,6 +21,7 @@ using Exceptionless.Core.Models.WorkItems;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
+using Foundatio.Repositories.Models;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Api.Controllers {
@@ -38,9 +39,9 @@ namespace Exceptionless.Api.Controllers {
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
 
-        public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
-            IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, 
-            WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, 
+        public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository,
+            IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository,
+            WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue,
             EventStats eventStats, BillingManager billingManager,
             FormattingPluginManager formattingPluginManager) : base(stackRepository) {
             _stackRepository = stackRepository;
@@ -70,7 +71,7 @@ namespace Exceptionless.Api.Controllers {
             var stack = await GetModelAsync(id);
             if (stack == null)
                 return NotFound();
-            
+
             return Ok(stack.ApplyOffset(GetOffset(offset)));
         }
 
@@ -107,7 +108,7 @@ namespace Exceptionless.Api.Controllers {
                     UpdateIsFixed = true,
                     IsFixed = true
                 }));
-            
+
             return WorkInProgress(workIds);
         }
 
@@ -177,7 +178,7 @@ namespace Exceptionless.Api.Controllers {
             JToken value;
             if (data.TryGetValue("ErrorStack", out value))
                 id = value.Value<string>();
-            
+
             if (data.TryGetValue("Stack", out value))
                 id = value.Value<string>();
 
@@ -343,7 +344,7 @@ namespace Exceptionless.Api.Controllers {
                     UpdateIsFixed = true,
                     IsFixed = false
                 }));
-            
+
             return WorkInProgress(workIds);
         }
 
@@ -376,7 +377,7 @@ namespace Exceptionless.Api.Controllers {
                     UpdateIsHidden = true,
                     IsHidden = true
                 }));
-            
+
             return WorkInProgress(workIds);
         }
 
@@ -511,10 +512,11 @@ namespace Exceptionless.Api.Controllers {
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
-           
-            List<Stack> stacks;
+
+
+            FindResults<Stack> results;
             try {
-                stacks = (await _repository.GetByFilterAsync(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options)).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
+                results = await _repository.GetByFilterAsync(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
                 Logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
@@ -527,10 +529,11 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
 
+            var stacks = results.Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await GetStackSummariesAsync(stacks, timeInfo.Offset, timeInfo.UtcRange.UtcStart, timeInfo.UtcRange.UtcEnd), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+                return OkWithResourceLinks(await GetStackSummariesAsync(stacks, timeInfo.Offset, timeInfo.UtcRange.UtcStart, timeInfo.UtcRange.UtcEnd), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
 
-            return OkWithResourceLinks(stacks, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+            return OkWithResourceLinks(stacks, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
         /// <summary>
@@ -587,11 +590,8 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> NewByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            Project project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("project:", projectId), filter, "-first", String.Concat("first|", time), offset, mode, page, limit);
@@ -628,11 +628,8 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> RecentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            Project project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             return await GetInternalAsync(String.Concat("project:", projectId), filter, "-last", String.Concat("last|", time), offset, mode, page, limit);
@@ -667,7 +664,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (String.IsNullOrEmpty(systemFilter))
                 systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
-            
+
             var timeInfo = GetTimeInfo(time, offset);
 
             ICollection<TermStatsItem> terms;
@@ -715,11 +712,8 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> FrequentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            Project project = await _projectRepository.GetByIdAsync(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             return await FrequentInternalAsync(String.Concat("project:", projectId), filter, time, offset, mode, page, limit);
@@ -751,6 +745,17 @@ namespace Exceptionless.Api.Controllers {
 
                 return summary;
             }).ToList();
+        }
+
+        private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
+            if (String.IsNullOrEmpty(projectId))
+                return null;
+
+            var project = await _projectRepository.GetByIdAsync(projectId, useCache);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return null;
+
+            return project;
         }
     }
 }

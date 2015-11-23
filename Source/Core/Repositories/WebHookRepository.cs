@@ -1,32 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
-using Foundatio.Caching;
-using Foundatio.Messaging;
+using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Repositories.Models;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
-        public WebHookRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<WebHook> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
-            : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
+        public WebHookRepository(ElasticRepositoryContext<WebHook> context, OrganizationIndex index) : base(context, index) { }
 
         public Task RemoveByUrlAsync(string targetUrl) {
             var filter = Filter<WebHook>.Term(e => e.Url, targetUrl);
-            return RemoveAllAsync(new ElasticSearchOptions<WebHook>().WithFilter(filter));
+            return RemoveAllAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
         public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
             var filter = (Filter<WebHook>.Term(e => e.OrganizationId, organizationId) && Filter<WebHook>.Missing(e => e.ProjectId)) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
-            return FindAsync(new ElasticSearchOptions<WebHook>()
-                .WithFilter(filter)
+            return FindAsync(new ExceptionlessQuery()
+                .WithElasticFilter(filter)
                 .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))
                 .WithExpiresIn(TimeSpan.FromMinutes(5)));
         }
-        
+
         public static class EventTypes {
             // TODO: Add support for these new web hook types.
             public const string NewError = "NewError";
@@ -36,15 +37,17 @@ namespace Exceptionless.Core.Repositories {
             public const string StackRegression = "StackRegression";
             public const string StackPromoted = "StackPromoted";
         }
-        
-        protected override async Task InvalidateCacheAsync(ICollection<WebHook> hooks, ICollection<WebHook> originalHooks) {
-            if (!EnableCache)
+
+        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<WebHook>> documents) {
+            if (!IsCacheEnabled)
                 return;
 
-            foreach (var hook in hooks)
-                await InvalidateCacheAsync(String.Concat("org:", hook.OrganizationId, "-project:", hook.ProjectId)).AnyContext();
+            await Cache.RemoveAllAsync(documents.Select(d => d.Value)
+                .Union(documents.Select(d => d.Original).Where(d => d != null))
+                .Select(h => String.Concat("org:", h.OrganizationId, "-project:", h.ProjectId))
+                .Distinct()).AnyContext();
 
-            await base.InvalidateCacheAsync(hooks, originalHooks).AnyContext();
+            await base.InvalidateCacheAsync(documents).AnyContext();
         }
     }
 }

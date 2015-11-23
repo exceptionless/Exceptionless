@@ -1,4 +1,5 @@
 ﻿using System;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
     public class Application : IOwnedByOrganizationWithIdentity, IHaveDates {
@@ -12,5 +13,6 @@ namespace Exceptionless.Core.Models {
         public string ImageUrl { get; set; }
         public DateTime CreatedUtc { get; set; }
         public DateTime ModifiedUtc { get; set; }
+        DateTime IHaveDates.UpdatedUtc { get { return ModifiedUtc; } set { ModifiedUtc = value; } }
     }
 }

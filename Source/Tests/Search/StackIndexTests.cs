@@ -5,15 +5,15 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
+using Foundatio.Repositories.Models;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
-using SortOrder = Exceptionless.Core.Repositories.SortOrder;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public class StackIndexTests {
         private readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
-        private readonly ElasticSearchConfiguration _configuration = IoC.GetInstance<ElasticSearchConfiguration>();
+        private readonly ElasticConfiguration _configuration = IoC.GetInstance<ElasticConfiguration>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         
         [Theory]
@@ -233,7 +233,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private Task<FindResults<Stack>> GetByFilterAsync(string filter) {
-            return _repository.GetByFilterAsync(null, filter, null, SortOrder.Descending, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            return _repository.GetByFilterAsync(null, filter, null, Foundatio.Repositories.Models.SortOrder.Descending, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }
 }

@@ -18,6 +18,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Foundatio.Jobs;
 using Foundatio.Queues;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]
@@ -25,7 +26,7 @@ namespace Exceptionless.Api.Controllers {
     public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
-        private readonly BillingManager _billingManager; 
+        private readonly BillingManager _billingManager;
         private readonly EventStats _stats;
 
         public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, EventStats stats) : base(projectRepository) {
@@ -54,9 +55,9 @@ namespace Exceptionless.Api.Controllers {
             var viewProjects = await MapCollectionAsync<ViewProject>(projects.Documents, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects.ToList()), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
-            
-            return OkWithResourceLinks(viewProjects, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+                return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects.ToList()), projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+
+            return OkWithResourceLinks(viewProjects, projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
         }
 
         /// <summary>
@@ -83,13 +84,13 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = await _repository.GetByOrganizationIdsAsync(organizationIds, options, true);
+            var projects = await _repository.GetByOrganizationIdsAsync(organizationIds, options);
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+                return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
 
-            return OkWithResourceLinks(viewProjects, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+            return OkWithResourceLinks(viewProjects, projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
         }
 
         /// <summary>
@@ -219,7 +220,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             if (project.Configuration.Settings.Remove(key)) {
-                project.Configuration.IncrementVersion(); 
+                project.Configuration.IncrementVersion();
                 await _repository.SaveAsync(project, true);
             }
 
@@ -242,7 +243,7 @@ namespace Exceptionless.Api.Controllers {
                 ProjectId = project.Id,
                 Reset = true
             });
-            
+
             return WorkInProgress(new [] { workItemId });
         }
 
@@ -392,8 +393,12 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(name))
                 return false;
 
-            ICollection<string> organizationIds = !String.IsNullOrEmpty(organizationId) ? new List<string> { organizationId } : GetAssociatedOrganizationIds();
-            return !(await _repository.GetByOrganizationIdsAsync(organizationIds)).Documents.Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
+            var organizationIds = !String.IsNullOrEmpty(organizationId)
+                ? new List<string> { organizationId }
+                : GetAssociatedOrganizationIds();
+
+            var results = await _repository.GetByOrganizationIdsAsync(organizationIds);
+            return !results.Documents.Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -434,13 +439,13 @@ namespace Exceptionless.Api.Controllers {
 
             return Ok();
         }
-        
+
         protected override async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {
             await base.AfterResultMapAsync(models);
-            
+
             // TODO: We can optimize this by normalizing the project model to include the organization name.
             var viewProjects = models.OfType<ViewProject>().ToList();
-            var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), useCache: true)).Documents;
+            var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true)).Documents;
             foreach (var viewProject in viewProjects) {
                 viewProject.OrganizationName = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId)?.Name;
                 if (!viewProject.IsConfigured.HasValue) {
@@ -500,7 +505,7 @@ namespace Exceptionless.Api.Controllers {
             if (projects.Count <= 0)
                 return projects;
 
-            var organizations = await _organizationRepository.GetByIdsAsync(projects.Select(p => p.Id).ToArray(), useCache: true);
+            var organizations = await _organizationRepository.GetByIdsAsync(projects.Select(p => p.Id).ToArray(), true);
             StringBuilder builder = new StringBuilder();
             for (int index = 0; index < projects.Count; index++) {
                 if (index > 0)

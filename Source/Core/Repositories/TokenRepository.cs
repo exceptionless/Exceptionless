@@ -1,25 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Caching;
-using Foundatio.Messaging;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 using Nest;
 using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Core.Repositories {
     public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository {
-        public TokenRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<Token> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
-            : base(elasticClient, index, validator, cacheClient, messagePublisher) {}
+        public TokenRepository(ElasticRepositoryContext<Token> context, OrganizationIndex index) : base(context, index) { }
 
         public Task<FindResults<Token>> GetApiTokensAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             var filter = Filter<Token>.Term(e => e.Type, TokenType.Access) && Filter<Token>.Missing(e => e.UserId);
-            return FindAsync(new ElasticSearchOptions<Token>()
+            return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
-                .WithFilter(filter)
+                .WithElasticFilter(filter)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("api-org:", organizationId) : null)
                 .WithExpiresIn(expiresIn));
@@ -27,13 +30,13 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<FindResults<Token>> GetByUserIdAsync(string userId) {
             var filter = Filter<Token>.Term(e => e.UserId, userId);
-            return FindAsync(new ElasticSearchOptions<Token>().WithFilter(filter));
+            return FindAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
         public Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return FindAsync(new ElasticSearchOptions<Token>()
+            return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
-                .WithFilter(Filter<Token>.Term(t => t.Type, type))
+                .WithElasticFilter(Filter<Token>.Term(t => t.Type, type))
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("type:", type, "-org:", organizationId) : null)
                 .WithExpiresIn(expiresIn));
@@ -44,9 +47,9 @@ namespace Exceptionless.Core.Repositories {
                 return Task.FromResult(new FindResults<Token>());
 
             string cacheKey = String.Concat("type:", type, "-org:", String.Join("", organizationIds).GetHashCode().ToString());
-            return FindAsync(new ElasticSearchOptions<Token>()
+            return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationIds(organizationIds)
-                .WithFilter(Filter<Token>.Term(t => t.Type, type))
+                .WithElasticFilter(Filter<Token>.Term(t => t.Type, type))
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? cacheKey : null)
                 .WithExpiresIn(expiresIn));
@@ -57,8 +60,8 @@ namespace Exceptionless.Core.Repositories {
                     Filter<Token>.Term(t => t.ProjectId, projectId) || Filter<Token>.Term(t => t.DefaultProjectId, projectId)
                 ) && Filter<Token>.Term(t => t.Type, type));
 
-            return FindAsync(new ElasticSearchOptions<Token>()
-                .WithFilter(filter)
+            return FindAsync(new ExceptionlessQuery()
+                .WithElasticFilter(filter)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("type:", type, "-project:", projectId) : null)
                 .WithExpiresIn(expiresIn));
@@ -69,8 +72,8 @@ namespace Exceptionless.Core.Repositories {
                     Filter<Token>.Term(t => t.OrganizationId, organizationId) || Filter<Token>.Term(t => t.ProjectId, projectId) || Filter<Token>.Term(t => t.DefaultProjectId, projectId)
                 ) && Filter<Token>.Term(t => t.Type, type));
 
-            return FindAsync(new ElasticSearchOptions<Token>()
-                .WithFilter(filter)
+            return FindAsync(new ExceptionlessQuery()
+                .WithElasticFilter(filter)
                 .WithPaging(paging)
                 .WithCacheKey(String.Concat("type:", type, "-org:", organizationId, "-project:", projectId))
                 .WithExpiresIn(expiresIn));
@@ -80,30 +83,30 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(refreshToken))
                 throw new ArgumentNullException(nameof(refreshToken));
 
-            return FindOneAsync(new ElasticSearchOptions<Token>().WithFilter(Filter<Token>.Term(t => t.Refresh, refreshToken)));
+            return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(Filter<Token>.Term(t => t.Refresh, refreshToken)));
         }
 
         public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             var filter = Filter<Token>.And(and => (Filter<Token>.Term(t => t.ProjectId, projectId) || Filter<Token>.Term(t => t.DefaultProjectId, projectId)));
 
-            return FindAsync(new ElasticSearchOptions<Token>()
-                .WithFilter(filter)
+            return FindAsync(new ExceptionlessQuery()
+                .WithElasticFilter(filter)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("project:", projectId) : null)
                 .WithExpiresIn(expiresIn));
         }
-        
-        protected override async Task InvalidateCacheAsync(ICollection<Token> tokens, ICollection<Token> originalTokens) {
-            if (!EnableCache)
+
+        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<Token>> documents) {
+            if (!IsCacheEnabled)
                 return;
 
-            foreach (var token in tokens) {
-                await InvalidateCacheAsync(String.Concat("type:", token.Type, "-org:", token.OrganizationId)).AnyContext();
-                await InvalidateCacheAsync(String.Concat("type:", token.Type, "-project:", token.ProjectId ?? token.DefaultProjectId)).AnyContext();
-                await InvalidateCacheAsync(String.Concat("type:", token.Type, "-org:", token.OrganizationId, "-project:", token.ProjectId ?? token.DefaultProjectId)).AnyContext();
+            foreach (var token in documents.Select(d => d.Value)) {
+                await Cache.RemoveAsync(String.Concat("type:", token.Type, "-org:", token.OrganizationId)).AnyContext();
+                await Cache.RemoveAsync(String.Concat("type:", token.Type, "-project:", token.ProjectId ?? token.DefaultProjectId)).AnyContext();
+                await Cache.RemoveAsync(String.Concat("type:", token.Type, "-org:", token.OrganizationId, "-project:", token.ProjectId ?? token.DefaultProjectId)).AnyContext();
             }
 
-            await base.InvalidateCacheAsync(tokens, originalTokens).AnyContext();
+            await base.InvalidateCacheAsync(documents).AnyContext();
         }
     }
 }

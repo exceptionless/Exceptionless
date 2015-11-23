@@ -11,6 +11,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Foundatio.Repositories.Models;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
@@ -26,7 +27,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         #region CRUD
-        
+
         /// <summary>
         /// Get by project
         /// </summary>
@@ -38,18 +39,15 @@ namespace Exceptionless.App.Controllers.API {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
         [ResponseType(typeof(List<WebHook>))]
         public async Task<IHttpActionResult> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            var project = await _projectRepository.GetByIdAsync(projectId);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = (await _repository.GetByProjectIdAsync(projectId, options)).Documents;
-            return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+            var results = await _repository.GetByProjectIdAsync(projectId, options, true);
+            return OkWithResourceLinks(results.Documents, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
         /// <summary>
@@ -176,12 +174,12 @@ namespace Exceptionless.App.Controllers.API {
             if (ids == null || ids.Length == 0)
                 return results;
 
-            var webHooks = (await _repository.GetByIdsAsync(ids, useCache: useCache)).Documents;
+            var webHooks = (await _repository.GetByIdsAsync(ids, useCache)).Documents;
             if (webHooks == null)
                 return results;
 
             foreach (var webHook in webHooks) {
-                if ((!String.IsNullOrEmpty(webHook.OrganizationId) && IsInOrganization(webHook.OrganizationId)) 
+                if ((!String.IsNullOrEmpty(webHook.OrganizationId) && IsInOrganization(webHook.OrganizationId))
                     || (!String.IsNullOrEmpty(webHook.ProjectId) && (await IsInProjectAsync(webHook.ProjectId))))
                     results.Add(webHook);
             }
@@ -201,13 +199,13 @@ namespace Exceptionless.App.Controllers.API {
 
             Project project = null;
             if (!String.IsNullOrEmpty(value.ProjectId)) {
-                project = await _projectRepository.GetByIdAsync(value.ProjectId, true);
-                if (!IsInProject(project))
+                project = await GetProjectAsync(value.ProjectId);
+                if (project == null)
                     return PermissionResult.DenyWithMessage("Invalid project id specified.");
 
                 value.OrganizationId = project.OrganizationId;
             }
-            
+
             if (!await _billingManager.HasPremiumFeaturesAsync(project != null ? project.OrganizationId : value.OrganizationId))
                 return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add integrations.");
 
@@ -231,18 +229,20 @@ namespace Exceptionless.App.Controllers.API {
             return PermissionResult.Allow;
         }
 
-        private async Task<bool> IsInProjectAsync(string projectId) {
+        private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
             if (String.IsNullOrEmpty(projectId))
-                return false;
+                return null;
 
-            return IsInProject(await _projectRepository.GetByIdAsync(projectId, true));
+            var project = await _projectRepository.GetByIdAsync(projectId, useCache);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return null;
+
+            return project;
         }
 
-        private bool IsInProject(Project value) {
-            if (value == null)
-                return false;
-
-            return IsInOrganization(value.OrganizationId);
+        private async Task<bool> IsInProjectAsync(string projectId) {
+            var project = await GetProjectAsync(projectId);
+            return project != null;
         }
 
         private bool IsValidWebHookVersion(Version version) {

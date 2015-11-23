@@ -42,16 +42,16 @@ namespace Exceptionless.Api {
         public static void BuildWithContainer(IAppBuilder app, Container container) {
             if (container == null)
                 throw new ArgumentNullException(nameof(container));
-            
+
             Config = new HttpConfiguration();
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
             Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
-            
+
             SetupRouteConstraints(Config);
             container.RegisterWebApiControllers(Config);
-            
+
             VerifyContainer(container);
-            
+
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
 
             var contractResolver = container.GetInstance<IContractResolver>();
@@ -77,14 +77,14 @@ namespace Exceptionless.Api {
             container.Bootstrap(Config);
             container.Bootstrap(app);
             Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
-            
+
             app.UseWebApi(Config);
             SetupSignalR(app, container);
             SetupSwagger(Config);
-            
+
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
                 Task.Run(async () => await CreateSampleDataAsync(container));
-            
+
             RunJobs(app);
             Logger.Info().Message("Starting api...").Write();
         }
@@ -94,7 +94,7 @@ namespace Exceptionless.Api {
                 Logger.Info().Message("Jobs running out of process.").Write();
                 return;
             }
-            
+
             var context = new OwinContext(app.Properties);
             var token = context.Get<CancellationToken>("host.OnAppDisposing");
             JobRunner.RunContinuousAsync<EventPostsJob>(initialDelay: TimeSpan.FromSeconds(2), cancellationToken: token);
@@ -146,7 +146,7 @@ namespace Exceptionless.Api {
             constraintResolver.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
             config.MapHttpAttributeRoutes(constraintResolver);
         }
-        
+
         private static void SetupSignalR(IAppBuilder app, Container container) {
             if (!Settings.Current.EnableSignalR)
                 return;
@@ -189,7 +189,6 @@ namespace Exceptionless.Api {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
             container.Options.DefaultScopedLifestyle = new WebApiRequestLifestyle();
-            container.Options.ResolveUnregisteredCollections = true;
 
             container.RegisterPackage<Core.Bootstrapper>();
             container.RegisterPackage<Bootstrapper>();

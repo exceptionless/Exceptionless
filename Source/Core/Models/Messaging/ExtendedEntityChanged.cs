@@ -2,9 +2,8 @@
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Messaging.Models {
-    public class UserMembershipChanged {
-        public ChangeType ChangeType { get; set; }
-        public string UserId { get; set; }
+    public class ExtendedEntityChanged : EntityChanged {
         public string OrganizationId { get; set; }
+        public string ProjectId { get; set; }
     }
 }

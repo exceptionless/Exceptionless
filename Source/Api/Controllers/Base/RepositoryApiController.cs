@@ -9,9 +9,10 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories;
 using FluentValidation;
 using Foundatio.Logging;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 
 #pragma warning disable 1998
 
@@ -52,8 +53,8 @@ namespace Exceptionless.Api.Controllers {
 
             if (modelUpdateFunc != null)
                 model = await modelUpdateFunc(model);
-            
-            await _repository.SaveAsync(model);
+
+            await _repository.SaveAsync(model, true);
             await AfterUpdateAsync(model);
 
             if (typeof(TViewModel) == typeof(TModel))
@@ -63,7 +64,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected async Task<IHttpActionResult> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc) {
-            var models = await GetModelsAsync(ids);
+            var models = await GetModelsAsync(ids, false);
             if (models == null || models.Count == 0)
                 return NotFound();
 
@@ -71,7 +72,7 @@ namespace Exceptionless.Api.Controllers {
                 foreach (var model in models)
                     await modelUpdateFunc(model);
 
-            await _repository.SaveAsync(models);
+            await _repository.SaveAsync(models, true);
             foreach (var model in models)
                 await AfterUpdateAsync(model);
 
@@ -117,7 +118,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected virtual Task<TModel> AddModelAsync(TModel value) {
-            return _repository.AddAsync(value);
+            return _repository.AddAsync(value, true);
         }
 
         protected virtual Task<TModel> AfterAddAsync(TModel value) {
@@ -164,7 +165,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected virtual Task<TModel> UpdateModelAsync(TModel original, Delta<TUpdateModel> changes) {
             changes.Patch(original);
-            return _repository.SaveAsync(original);
+            return _repository.SaveAsync(original, true);
         }
 
         protected virtual Task<TModel> AfterPatchAsync(TModel value) {
@@ -198,10 +199,10 @@ namespace Exceptionless.Api.Controllers {
                 Logger.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
-            
+
             if (results.Failure.Count == 0)
                 return WorkInProgress(workIds);
-            
+
             results.Workers.AddRange(workIds);
             results.Success.AddRange(items.Select(i => i.Id));
             return BadRequest(results);

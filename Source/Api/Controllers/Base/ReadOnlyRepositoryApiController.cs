@@ -7,7 +7,8 @@ using AutoMapper;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Controllers {
     public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> : ExceptionlessApiController where TRepository : IReadOnlyRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() {
@@ -46,7 +47,7 @@ namespace Exceptionless.Api.Controllers {
             if (ids == null || ids.Length == 0)
                 return new List<TModel>();
 
-            var models = (await _repository.GetByIdsAsync(ids, useCache: useCache)).Documents;
+            var models = (await _repository.GetByIdsAsync(ids, useCache)).Documents;
             if (!_isOwnedByOrganization)
                 return models;
 
@@ -58,7 +59,7 @@ namespace Exceptionless.Api.Controllers {
 
             return results;
         }
-        
+
         #region Mapping
 
         protected virtual void CreateMaps() {
@@ -101,7 +102,7 @@ namespace Exceptionless.Api.Controllers {
 
             return destination;
         }
-        
+
         protected virtual Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {
             foreach (var model in models.OfType<IData>())
                 model.Data.RemoveSensitiveData();

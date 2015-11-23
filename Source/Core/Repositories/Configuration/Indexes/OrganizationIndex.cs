@@ -2,26 +2,28 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Models;
+using Foundatio.Elasticsearch.Configuration;
+using Foundatio.Elasticsearch.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class OrganizationIndex : IElasticSearchIndex {
+    public class OrganizationIndex : IElasticIndex {
         private const string KEYWORD_LOWERCASE = "keyword_lowercase";
 
-        public string Name => "organizations";
-
         public int Version => 1;
+        public static string Alias => Settings.Current.AppScopePrefix + "organizations";
+        public string AliasName => Alias;
+        public string VersionedName => String.Concat(AliasName, "-v", Version);
 
-        public string VersionedName => String.Concat(Name, "-v", Version);
-
-        public virtual IDictionary<Type, string> GetIndexTypeNames() {
-            return new Dictionary<Type, string> {
-                { typeof(Application), "application" },
-                { typeof(Organization), "organization" },
-                { typeof(Project), "project" },
-                { typeof(Models.Token), "token" },
-                { typeof(User), "user" },
-                { typeof(WebHook), "webhook" },
+        public IDictionary<Type, IndexType> GetIndexTypes() {
+            return new Dictionary<Type, IndexType> {
+                { typeof(Application), new IndexType { Name = "application" } },
+                //{ typeof(MigrationResult), new IndexType { Name = "migrations"} },
+                { typeof(Organization), new IndexType { Name = "organization" } },
+                { typeof(Project), new IndexType { Name = "project" } },
+                { typeof(Models.Token), new IndexType { Name = "token" } },
+                { typeof(User), new IndexType { Name = "user" } },
+                { typeof(WebHook), new IndexType { Name = "webhook" } }
             };
         }
 
@@ -53,20 +55,21 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Dynamic()
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
-                    .Date(f => f.Name(e => e.CreatedUtc).IndexName("created"))
-                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName("modified"))
-                    .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
+                    .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.Organization.CreatedUtc))
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.Organization.ModifiedUtc))
+                    .String(f => f.Name(e => e.Id).IndexName(Fields.Organization.Id).Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(e => e.Name).IndexName(Fields.Organization.Name).Index(FieldIndexOption.Analyzed))
                     .String(f => f.Name(u => u.StripeCustomerId).IndexName("stripe").Index(FieldIndexOption.NotAnalyzed))
                     .Boolean(f => f.Name(u => u.HasPremiumFeatures).IndexName("premium"))
-                    .String(f => f.Name(u => u.PlanId).IndexName("plan").Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(u => u.PlanId).IndexName(Fields.Organization.PlanId).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.PlanName).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.PlanDescription).Index(FieldIndexOption.No))
                     .String(f => f.Name(u => u.CardLast4).Index(FieldIndexOption.NotAnalyzed))
-                    .Date(f => f.Name(u => u.SubscribeDate).IndexName("subscribed"))
-                    .Number(f => f.Name(u => u.BillingStatus).IndexName("status"))
+                    .Date(f => f.Name(u => u.SubscribeDate).IndexName(Fields.Organization.SubscribeDate))
+                    .Number(f => f.Name(u => u.BillingStatus).IndexName(Fields.Organization.BillingStatus))
                     .String(f => f.Name(u => u.BillingChangedByUserId).Index(FieldIndexOption.NotAnalyzed))
-                    .Number(f => f.Name(u => u.BillingPrice).IndexName("price"))
-                    .Boolean(f => f.Name(u => u.IsSuspended).IndexName("suspended"))
+                    .Number(f => f.Name(u => u.BillingPrice).IndexName(Fields.Organization.BillingPrice))
+                    .Boolean(f => f.Name(u => u.IsSuspended).IndexName(Fields.Organization.IsSuspended))
                     .String(f => f.Name(u => u.SuspendedByUserId).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.SuspensionNotes).Index(FieldIndexOption.NotAnalyzed))
                     .Number(f => f.Name(u => u.RetentionDays).IndexName("retention"))
@@ -95,10 +98,11 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Dynamic()
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
-                    .Date(f => f.Name(e => e.CreatedUtc).IndexName("created"))
-                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName("modified"))
-                    .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
+                    .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.Project.CreatedUtc))
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.Project.ModifiedUtc))
+                    .String(f => f.Name(e => e.Id).IndexName(Fields.Project.Id).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(e => e.Name).IndexName(Fields.Project.Name).Index(FieldIndexOption.Analyzed))
                     .String(f => f.Name(u => u.PromotedTabs).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.CustomContent).Index(FieldIndexOption.No))
                     .Object<ClientConfiguration>(f => f.Name(u => u.Configuration).Dynamic(false))
@@ -114,8 +118,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
                     .String(f => f.Name(e => e.CreatedBy).IndexName("createdby").Index(FieldIndexOption.NotAnalyzed))
-                    .Date(f => f.Name(e => e.CreatedUtc).IndexName("created"))
-                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName("modified"))
+                    .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.Token.CreatedUtc))
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.Token.ModifiedUtc))
                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.ApplicationId).IndexName("application").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
@@ -134,12 +138,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Dynamic()
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
-                    .Date(f => f.Name(e => e.CreatedUtc).IndexName("created"))
-                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName("modified"))
+                    .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.User.CreatedUtc))
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.User.ModifiedUtc))
                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationIds).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.FullName).IndexName("name"))
-                    .String(f => f.Name(u => u.EmailAddress).IndexName("email").Analyzer(KEYWORD_LOWERCASE))
+                    .String(f => f.Name(u => u.EmailAddress).IndexName(Fields.User.EmailAddress).Analyzer(KEYWORD_LOWERCASE))
                     .String(f => f.Name(u => u.Password).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.Salt).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.PasswordResetToken).Index(FieldIndexOption.NotAnalyzed))
@@ -157,7 +161,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Index(VersionedName)
                 .Dynamic()
                 .Properties(p => p
-                    .Date(f => f.Name(e => e.CreatedUtc).IndexName("created"))
+                    .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.WebHook.CreatedUtc))
                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
@@ -166,8 +170,19 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 );
         }
 
-        public static class Fields {
+        public class Fields {
             public class Organization {
+                public const string Id = "id";
+                public const string CreatedUtc = "created";
+                public const string ModifiedUtc = "modified";
+                public const string Name = "name";
+                public const string SubscribeDate = "subscribed";
+
+                public const string BillingPrice = "price";
+                public const string BillingStatus = "status";
+                public const string IsSuspended = "suspended";
+                public const string PlanId = "plan";
+
                 public const string InviteToken = "invite.token";
                 public const string InviteEmail = "invite.email";
 
@@ -184,8 +199,27 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 public const string OverageHoursTooBig = "overage.toobig";
             }
 
+            public class Project {
+                public const string Id = "id";
+                public const string Name = "name";
+                public const string CreatedUtc = "created";
+                public const string ModifiedUtc = "modified";
+            }
+
+            public class Token {
+                public const string CreatedUtc = "created";
+                public const string ModifiedUtc = "modified";
+            }
+
             public class User {
+                public const string CreatedUtc = "created";
+                public const string ModifiedUtc = "modified";
                 public const string OAuthAccountProviderUserId = "oauthaccount.provideruserid";
+                public const string EmailAddress = "email";
+            }
+
+            public class WebHook {
+                public const string CreatedUtc = "created";
             }
         }
     }

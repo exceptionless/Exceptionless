@@ -28,13 +28,13 @@ namespace Exceptionless.Core.Utility {
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
         }
-        
+
         public async Task CreateTestDataAsync() {
             if (await _userRepository.GetByEmailAddressAsync(TEST_USER_EMAIL).AnyContext() != null)
                 return;
 
             var user = new User {
-                FullName = "Test User", 
+                FullName = "Test User",
                 EmailAddress = TEST_USER_EMAIL,
                 IsEmailAddressVerified = true
             };

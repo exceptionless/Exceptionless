@@ -41,16 +41,16 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AutoMapper, Version=4.1.0.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\AutoMapper.4.1.0\lib\net45\AutoMapper.dll</HintPath>
+    <Reference Include="AutoMapper, Version=4.1.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\AutoMapper.4.1.1\lib\net45\AutoMapper.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Elasticsearch.Net.1.7.1\lib\net45\Elasticsearch.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.38.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.38\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.1.41.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.1.41\lib\portable-net40+win+wpa81+MonoAndroid10+xamarinios10+MonoTouch10\Exceptionless.DateTimeExtensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.15.0, Culture=neutral, processorArchitecture=MSIL">
@@ -62,7 +62,11 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.3.0.538\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.3.0.600\lib\net45\Foundatio.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Foundatio.Elasticsearch, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Elasticsearch.3.0.600\lib\net45\Foundatio.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -166,7 +170,6 @@
     <Compile Include="Authorization\AuthorizationRoles.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
-    <Compile Include="Extensions\ElasticSearchIndexExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\ParameterExtensions.cs" />
     <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
@@ -174,7 +177,6 @@
     <Compile Include="Jobs\WorkItemHandlers\SetProjectIsConfiguredWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\RemoveProjectWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\RemoveOrganizationWorkItemHandler.cs" />
-    <Compile Include="Jobs\WorkItemHandlers\ReindexWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\StackWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\ThrottleBotsWorkItemHandler.cs" />
     <Compile Include="Mail\Engine\DirectoryTemplateResolver.cs" />
@@ -212,8 +214,6 @@
     <Compile Include="Models\Enums\SuspensionCode.cs" />
     <Compile Include="Models\Event.cs" />
     <Compile Include="Models\Interfaces\IData.cs" />
-    <Compile Include="Models\Interfaces\IHaveDates.cs" />
-    <Compile Include="Models\Interfaces\IIdentity.cs" />
     <Compile Include="Models\Interfaces\IOwnedByOrganization.cs" />
     <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProject.cs" />
     <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProjectAndStack.cs" />
@@ -249,7 +249,6 @@
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WebHook.cs" />
     <Compile Include="Models\WorkItems\RemoveOrganizationWorkItem.cs" />
-    <Compile Include="Models\WorkItems\ReindexWorkItem.cs" />
     <Compile Include="Models\WorkItems\RemoveProjectWorkItem.cs" />
     <Compile Include="Models\WorkItems\SetProjectIsConfiguredWorkItem.cs" />
     <Compile Include="Models\WorkItems\StackWorkItem.cs" />
@@ -257,14 +256,15 @@
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
-    <Compile Include="Repositories\Base\DocumentChangeEventArgs.cs" />
-    <Compile Include="Repositories\Configuration\ElasticSearchConfiguration.cs" />
+    <Compile Include="Repositories\Base\RepositoryBase.cs" />
+    <Compile Include="Repositories\Configuration\ElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
-    <Compile Include="Repositories\Configuration\IElasticSearchIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\StackIndex.cs" />
-    <Compile Include="Repositories\Options\ObjectMappingDescriptorExtensions.cs" />
-    <Compile Include="Repositories\Options\PagingWithSortByOptions.cs" />
+    <Compile Include="Repositories\Queries\ProjectIdQuery.cs" />
+    <Compile Include="Repositories\Queries\ExceptionlessQuery.cs" />
+    <Compile Include="Repositories\Queries\StackIdQuery.cs" />
+    <Compile Include="Repositories\Queries\OrganizationIdQuery.cs" />
     <Compile Include="Utility\SettingsBase.cs" />
     <Compile Include="Utility\SingletonBase.cs" />
     <Compile Include="Utility\LastReferenceIdManager.cs" />
@@ -277,7 +277,6 @@
     <Compile Include="Extensions\UserExtensions.cs" />
     <Compile Include="Extensions\ConcurrentQueueExtensions.cs" />
     <Compile Include="Extensions\DictionaryExtensions.cs" />
-    <Compile Include="Extensions\ElasticSearchExtensions.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\EnumHelper.cs" />
     <Compile Include="Extensions\HashExtensions.cs" />
@@ -295,7 +294,6 @@
     <Compile Include="Jobs\WebHooksJob.cs" />
     <Compile Include="Plugins\EventProcessor\Default\60_GeoPlugin.cs" />
     <Compile Include="Utility\KeepAliveHttpConnection.cs" />
-    <Compile Include="Models\Messaging\ChangeType.cs" />
     <Compile Include="Models\Messaging\UserMembershipChanged.cs" />
     <Compile Include="Pipeline\Base\PipelineActionBase.cs" />
     <Compile Include="Pipeline\Base\PipelineBase.cs" />
@@ -304,7 +302,6 @@
     <Compile Include="Plugins\EventProcessor\Default\50_DefaultSessionIdPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
     <Compile Include="Filter\QueryProcessorVisitor.cs" />
-    <Compile Include="Repositories\Options\SortOrder.cs" />
     <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Mail\IMailSender.cs" />
@@ -317,7 +314,7 @@
     <Compile Include="Extensions\ValidationExtensions.cs" />
     <Compile Include="Jobs\EventUserDescriptionsJob.cs" />
     <Compile Include="Jobs\MailMessageJob.cs" />
-    <Compile Include="Models\Messaging\EntityChanged.cs" />
+    <Compile Include="Models\Messaging\ExtendedEntityChanged.cs" />
     <Compile Include="Models\Messaging\PlanChanged.cs" />
     <Compile Include="Models\Messaging\PlanOverage.cs" />
     <Compile Include="Models\Billing\BillingPlanStats.cs" />
@@ -375,11 +372,6 @@
     <Compile Include="Models\Queues\EventUserDescription.cs" />
     <Compile Include="Models\Queues\MailMessage.cs" />
     <Compile Include="Repositories\Exceptions\DuplicateDocumentException.cs" />
-    <Compile Include="Repositories\Options\ElasticSearchOptions.cs" />
-    <Compile Include="Repositories\Options\ElasticSearchOptionsExtensions.cs" />
-    <Compile Include="Repositories\Options\ElasticSearchPagingOptions.cs" />
-    <Compile Include="Repositories\Base\ReadOnlyRepository.cs" />
-    <Compile Include="Repositories\Base\Repository.cs" />
     <Compile Include="Repositories\Base\RepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Base\RepositoryOwnedByOrganization.cs" />
     <Compile Include="Repositories\Base\RepositoryOwnedByOrganizationAndProjectAndStack.cs" />
@@ -387,7 +379,6 @@
     <Compile Include="Serialization\DataObjectConverter.cs" />
     <Compile Include="Utility\GenericEventArgs.cs" />
     <Compile Include="Utility\LambdaComparer.cs" />
-    <Compile Include="Utility\ObjectId.cs" />
     <Compile Include="Utility\PathHelper.cs" />
     <Compile Include="Utility\Reflection\DelegateFactory.cs" />
     <Compile Include="Utility\Reflection\FieldAccessor.cs" />
@@ -440,16 +431,9 @@
     <Compile Include="Models\Queues\WebHookNotification.cs" />
     <Compile Include="Models\Queues\SummaryNotification.cs" />
     <Compile Include="Repositories\ApplicationRepository.cs" />
-    <Compile Include="Repositories\Options\OneOptions.cs" />
-    <Compile Include="Repositories\Options\MultiOptions.cs" />
     <Compile Include="Repositories\Interfaces\IRepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Interfaces\IRepositoryOwnedByStack.cs" />
     <Compile Include="Repositories\Interfaces\IRepositoryOwnedByProject.cs" />
-    <Compile Include="Repositories\Options\PagingOptions.cs" />
-    <Compile Include="Repositories\Options\PagingOptionsExtensions.cs" />
-    <Compile Include="Repositories\Options\QueryOptionsExtensions.cs" />
-    <Compile Include="Repositories\Options\QueryOptions.cs" />
-    <Compile Include="Repositories\Base\RepositoryConstants.cs" />
     <Compile Include="Repositories\Interfaces\IApplicationRepository.cs" />
     <Compile Include="Repositories\Interfaces\ITokenRepository.cs" />
     <Compile Include="Repositories\Interfaces\IWebHookRepository.cs" />
@@ -463,7 +447,7 @@
     <Compile Include="Plugins\EventProcessor\EventPluginManager.cs" />
     <Compile Include="Plugins\EventProcessor\IEventProcessorPlugin.cs" />
     <Compile Include="Utility\DataHelper.cs" />
-    <Compile Include="Utility\SimpleInjectorCoreDependencyResolver.cs" />
+    <Compile Include="Utility\SimpleInjectorDependencyResolver.cs" />
     <Compile Include="Mail\IMailer.cs" />
     <Compile Include="Mail\Mailer.cs" />
     <Compile Include="Mail\Models\AddedToOrganizationModel.cs" />
@@ -488,8 +472,6 @@
     <Compile Include="Repositories\Interfaces\IUserRepository.cs" />
     <Compile Include="Repositories\Interfaces\IProjectRepository.cs" />
     <Compile Include="Utility\ErrorSignature.cs" />
-    <Compile Include="Repositories\Interfaces\IReadOnlyRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repositories\StackRepository.cs" />
     <Compile Include="Repositories\OrganizationRepository.cs" />

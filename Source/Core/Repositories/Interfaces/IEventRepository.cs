@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Results;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IEventRepository : IRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent> {
@@ -16,9 +17,9 @@ namespace Exceptionless.Core.Repositories {
         Task UpdateHiddenByStackAsync(string organizationId, string stackId, bool value);
         Task RemoveOldestEventsAsync(string stackId, int maxEventsPerStack);
         Task RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate);
-        Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStartDate, DateTime utcEndDate);
+        Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd);
 
-        Task<FindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, string query = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
+        Task<FindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, string filter = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         Task<long> GetCountByOrganizationIdAsync(string organizationId);
         Task<long> GetCountByProjectIdAsync(string projectId);
         Task<long> GetCountByStackIdAsync(string stackId);

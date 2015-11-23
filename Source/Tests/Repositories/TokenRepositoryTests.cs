@@ -38,7 +38,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             await _repository.RemoveAllByProjectIdsAsync(new[] { TestConstants.ProjectIdWithNoRoles });
             await _client.RefreshAsync();
-            
+
             Assert.Equal(3, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);
             Assert.Equal(1, (await _repository.GetByProjectIdAsync(TestConstants.ProjectId)).Total);
             Assert.Equal(2, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles)).Total);
@@ -50,7 +50,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(0, (await _repository.GetByProjectIdAsync(TestConstants.ProjectId)).Total);
             Assert.Equal(1, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles)).Total);
         }
-        
+
         protected Task RemoveDataAsync() {
             return _repository.RemoveAllAsync();
         }

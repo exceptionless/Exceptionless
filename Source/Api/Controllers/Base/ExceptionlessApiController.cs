@@ -14,6 +14,7 @@ using Exceptionless.Api.Utility.Results;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RequireHttpsExceptLocal]
@@ -96,7 +97,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         public User ExceptionlessUser => Request.GetUser();
-        
+
         public AuthType AuthType => User.GetAuthType();
 
         public bool CanAccessOrganization(string organizationId) {
@@ -118,7 +119,7 @@ namespace Exceptionless.Api.Controllers {
             if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
                 return null;
 
-            var associatedOrganizations = await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), useCache: true);
+            var associatedOrganizations = await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true);
             var organizations = associatedOrganizations.Documents.Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
             if (organizations.Count == 0)
                 return "organization:none";
@@ -127,7 +128,7 @@ namespace Exceptionless.Api.Controllers {
             for (int index = 0; index < organizations.Count; index++) {
                 if (index > 0)
                     builder.Append(" OR ");
-                
+
                 var organization = organizations[index];
                 if (organization.RetentionDays > 0)
                     builder.AppendFormat("(organization:{0} AND {1}:[now/d-{2}d TO now/d+1d}})", organization.Id, retentionDateFieldName, organization.RetentionDays);
@@ -144,7 +145,7 @@ namespace Exceptionless.Api.Controllers {
 
             return filter.Contains("organization:") || filter.Contains("project:");
         }
-        
+
         protected StatusCodeActionResult StatusCodeWithMessage(HttpStatusCode statusCode, string message, string reason = null) {
             return new StatusCodeActionResult(statusCode, Request, message, reason);
         }

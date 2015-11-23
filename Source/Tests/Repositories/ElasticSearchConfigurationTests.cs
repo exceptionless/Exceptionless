@@ -6,13 +6,14 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Utility;
 using Nest;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public class ElasticSearchConfigurationTests {
         public readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        public readonly ElasticSearchConfiguration _configuration = IoC.GetInstance<ElasticSearchConfiguration>();
+        public readonly ElasticConfiguration _configuration = IoC.GetInstance<ElasticConfiguration>();
         public readonly EventIndex _eventIndex = new EventIndex();
         public readonly StackIndex _stackIndex = new StackIndex();
         public readonly EventRepository _eventRepository = IoC.GetInstance<EventRepository>();
@@ -25,7 +26,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.True(index.IsValid);
             Assert.Equal(1, index.Indices.Count);
 
-            var alias = _client.GetAlias(descriptor => descriptor.Alias(_stackIndex.Name));
+            var alias = _client.GetAlias(descriptor => descriptor.Alias(_stackIndex.AliasName));
             Assert.True(alias.IsValid);
             Assert.Equal(1, alias.Indices.Count);
         }
@@ -34,27 +35,34 @@ namespace Exceptionless.Api.Tests.Repositories {
         public async Task CanCreateEventAliasAsync() {
             _configuration.DeleteIndexes(_client);
             _configuration.ConfigureIndexes(_client);
-            var indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.Name);
+            await _client.RefreshAsync();
+
+            var indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.AliasName);
             Assert.Equal(0, indexes.Count);
 
-            var alias = await _client.GetAliasAsync(descriptor => descriptor.Alias(_eventIndex.Name));
+            var alias = await _client.GetAliasAsync(descriptor => descriptor.Alias(_eventIndex.AliasName));
             Assert.False(alias.IsValid);
             Assert.Equal(0, alias.Indices.Count);
 
-            await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now, OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
-            await _client.RefreshAsync();
+            var ev = await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now.StartOfMonth().AddDays(1), OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
+            Assert.NotNull(ev?.Id);
+            Assert.True(ObjectId.Parse(ev.Id).CreationTime.IntersectsMinute(DateTime.UtcNow));
 
-            alias = await _client.GetAliasAsync(descriptor => descriptor.Alias(_eventIndex.Name));
+            await _client.RefreshAsync();
+            alias = await _client.GetAliasAsync(descriptor => descriptor.Alias(_eventIndex.AliasName));
             Assert.True(alias.IsValid);
             Assert.Equal(1, alias.Indices.Count);
 
-            indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.Name);
+            indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.AliasName);
             Assert.Equal(1, indexes.Count);
 
-            await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = DateTimeOffset.Now.SubtractMonths(1), OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
-            await _client.RefreshAsync();
+            var date = DateTimeOffset.UtcNow.StartOfMonth().SubtractSeconds(1).ToLocalTime();
+            ev = await _eventRepository.AddAsync(new PersistentEvent { Message = "Test", Type = Event.KnownTypes.Log, Date = date, OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, StackId = TestConstants.StackId });
+            Assert.NotNull(ev?.Id);
+            Assert.Equal(date, ObjectId.Parse(ev.Id).CreationTime);
 
-            indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.Name);
+            await _client.RefreshAsync();
+            indexes = await _client.GetIndicesPointingToAliasAsync(_eventIndex.AliasName);
             Assert.Equal(2, indexes.Count);
         }
     }
