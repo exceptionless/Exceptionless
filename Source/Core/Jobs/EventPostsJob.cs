@@ -83,7 +83,7 @@ namespace Exceptionless.Core.Jobs {
                 if (project == null) {
                     // NOTE: This could archive the data for a project that no longer exists.
                     Logger.Error().Project(eventPostInfo.ProjectId).Message($"Unable to process EventPost \"{queueEntry.Value.FilePath}\": Unable to load project: {eventPostInfo.ProjectId}").Write();
-                    await CompleteEntryAsync(queueEntry, eventPostInfo, DateTime.UtcNow);
+                    await CompleteEntryAsync(queueEntry, eventPostInfo, DateTime.UtcNow).AnyContext();
                     return JobResult.Success;
                 }
 
@@ -142,7 +142,7 @@ namespace Exceptionless.Core.Jobs {
                 await queueEntry.AbandonAsync().AnyContext();
                 await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
             } else {
-                await CompleteEntryAsync(queueEntry, eventPostInfo, created);
+                await CompleteEntryAsync(queueEntry, eventPostInfo, created).AnyContext();
             }
 
             return JobResult.Success;
