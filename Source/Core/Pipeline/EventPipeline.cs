@@ -9,6 +9,7 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Helpers;
+using Exceptionless.Core.Repositories.Base;
 using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Pipeline {
@@ -49,13 +50,13 @@ namespace Exceptionless.Core.Pipeline {
 
                 var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
                 if (project == null)
-                    throw new InvalidOperationException($"Unable to load project \"{projectId}\"");
+                    throw new DocumentNotFoundException(projectId, $"Unable to load project: \"{projectId}\"");
 
                 contexts.ForEach(c => c.Project = project);
 
                 var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
                 if (organization == null)
-                    throw new InvalidOperationException($"Unable to load organization \"{project.OrganizationId}\"");
+                    throw new DocumentNotFoundException(project.OrganizationId, $"Unable to load organization: \"{project.OrganizationId}\"");
 
                 contexts.ForEach(c => {
                     c.Organization = organization;

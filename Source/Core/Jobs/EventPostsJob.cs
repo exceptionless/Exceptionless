@@ -10,6 +10,7 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Base;
 using FluentValidation;
 using Foundatio.Jobs;
 using Foundatio.Logging;
@@ -51,7 +52,7 @@ namespace Exceptionless.Core.Jobs {
 
             bool isInternalProject = eventPostInfo.ProjectId == Settings.Current.InternalProjectId;
             Logger.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPostInfo.ProjectId, eventPostInfo.IpAddress, eventPostInfo.ApiVersion, eventPostInfo.UserAgent).WriteIf(!isInternalProject);
-            
+
             List<PersistentEvent> events = null;
             try {
                 _metricsClient.Time(() => {
@@ -79,6 +80,13 @@ namespace Exceptionless.Core.Jobs {
             bool isSingleEvent = events.Count == 1;
             if (!isSingleEvent) {
                 var project = await _projectRepository.GetByIdAsync(eventPostInfo.ProjectId, true).AnyContext();
+                if (project == null) {
+                    // NOTE: This could archive the data for a project that no longer exists.
+                    Logger.Error().Project(eventPostInfo.ProjectId).Message($"Unable to process EventPost \"{queueEntry.Value.FilePath}\": Unable to load project: {eventPostInfo.ProjectId}").Write();
+                    await CompleteEntryAsync(queueEntry, eventPostInfo, DateTime.UtcNow);
+                    return JobResult.Success;
+                }
+
                 // Don't process all the events if it will put the account over its limits.
                 eventsToProcess = await _organizationRepository.GetRemainingEventLimitAsync(project.OrganizationId).AnyContext();
 
@@ -89,7 +97,7 @@ namespace Exceptionless.Core.Jobs {
                 // Increment by count - 1 since we already incremented it by 1 in the OverageHandler.
                 await _organizationRepository.IncrementUsageAsync(project.OrganizationId, false, events.Count - 1).AnyContext();
             }
-            
+
             var errorCount = 0;
             var created = DateTime.UtcNow;
             try {
@@ -122,30 +130,34 @@ namespace Exceptionless.Core.Jobs {
                         }, _storage, false, context.CancellationToken).AnyContext();
                     }
                 }
-            } catch (ArgumentException ex) {
-                Logger.Error().Exception(ex).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
-                await queueEntry.CompleteAsync().AnyContext();
             } catch (Exception ex) {
                 Logger.Error().Exception(ex).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
-                errorCount++;
+                if (ex is ArgumentException || ex is DocumentNotFoundException)
+                    await queueEntry.CompleteAsync().AnyContext();
+                else
+                    errorCount++;
             }
 
             if (isSingleEvent && errorCount > 0) {
                 await queueEntry.AbandonAsync().AnyContext();
                 await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
             } else {
-                await queueEntry.CompleteAsync().AnyContext();
-                if (queueEntry.Value.ShouldArchive)
-                    await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, queueEntry.Value.ShouldArchive).AnyContext();
-                else {
-                    await _storage.DeleteFileAsync(queueEntry.Value.FilePath).AnyContext();
-                    await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
-                }
+                await CompleteEntryAsync(queueEntry, eventPostInfo, created);
             }
 
             return JobResult.Success;
         }
-        
+
+        private async Task CompleteEntryAsync(QueueEntry<EventPost> queueEntry, EventPostInfo eventPostInfo, DateTime created) {
+            await queueEntry.CompleteAsync().AnyContext();
+            if (queueEntry.Value.ShouldArchive)
+                await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, queueEntry.Value.ShouldArchive).AnyContext();
+            else {
+                await _storage.DeleteFileAsync(queueEntry.Value.FilePath).AnyContext();
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
+            }
+        }
+
         private List<PersistentEvent> ParseEventPost(EventPostInfo ep) {
             byte[] data = ep.Data;
             if (!String.IsNullOrEmpty(ep.ContentEncoding))

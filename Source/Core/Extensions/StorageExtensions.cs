@@ -54,9 +54,9 @@ namespace Exceptionless.Core.Extensions {
                 return true;
 
             string archivePath = $"archive\\{projectId}\\{created.ToString("yy\\\\MM\\\\dd")}\\{Path.GetFileName(path)}";
-            
+
             try {
-                if (shouldArchive) {
+                if (shouldArchive && !await storage.ExistsAsync(archivePath)) {
                     if (!await storage.RenameFileAsync(path, archivePath).AnyContext())
                         return false;
                 } else {
