@@ -30,11 +30,11 @@ namespace Exceptionless.Core.Repositories {
             GetDocumentIdFunc = GetDocumentId;
             GetDocumentIndexFunc = GetDocumentIndex;
         }
-        
+
         protected override object Options { get; } = new QueryOptions(typeof(PersistentEvent)) {
             DefaultExcludes = new[] { "idx" }
         };
-        
+
         private string GetDocumentId(PersistentEvent ev) {
             // if date falls in the current months index then return a new object id.
             var date = ev.Date.ToUniversalTime();
@@ -44,11 +44,11 @@ namespace Exceptionless.Core.Repositories {
             // GenerateNewId will translate it to utc.
             return ObjectId.GenerateNewId(ev.Date.DateTime).ToString();
         }
-        
+
         private string GetDocumentIndex(PersistentEvent ev) {
             return GetIndexById(ev.Id);
         }
-        
+
         protected override string GetIndexById(string id) {
             ObjectId objectId;
             if (ObjectId.TryParse(id, out objectId) && objectId.CreationTime.ToUniversalTime() > _minObjectidDate)
@@ -99,7 +99,6 @@ namespace Exceptionless.Core.Repositories {
                 .WithPaging(paging)
                 .WithSort(sort, sortOrder);
 
-            Context.ElasticClient.EnableTrace();
             return FindAsync(search);
         }
 
