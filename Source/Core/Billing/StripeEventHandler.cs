@@ -122,7 +122,7 @@ namespace Exceptionless.Core.Billing {
         private async Task InvoicePaymentSucceededAsync(StripeInvoice inv) {
             var org = await _organizationRepository.GetByStripeCustomerIdAsync(inv.CustomerId).AnyContext();
             if (org == null) {
-                Logger.Error().Message("Unknown customer id in payment failed notification: {0}", inv.CustomerId).Write();
+                Logger.Error().Message("Unknown customer id in payment succeeded notification: {0}", inv.CustomerId).Write();
                 return;
             }
 
