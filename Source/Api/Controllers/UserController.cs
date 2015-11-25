@@ -69,14 +69,22 @@ namespace Exceptionless.Api.Controllers {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
-            var users = (await MapCollectionAsync<ViewUser>((await _repository.GetByOrganizationIdAsync(organizationId)).Documents, true)).ToList();
             var organization = await _organizationRepository.GetByIdAsync(organizationId, true);
-            if (organization.Invites.Any())
-                users.AddRange(organization.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
+            if (organization == null)
+                return NotFound();
+
+            var users = await _repository.GetByOrganizationIdAsync(organizationId);
+            var viewUsers = (await MapCollectionAsync<ViewUser>(users.Documents, true)).ToList();
+            if (organization.Invites.Any()) {
+                viewUsers.AddRange(organization.Invites.Select(i => new ViewUser {
+                    EmailAddress = i.EmailAddress,
+                    IsInvite = true
+                }));
+            }
 
             page = GetPage(page);
             limit = GetLimit(limit);
-            return OkWithResourceLinks(users.Skip(GetSkip(page, limit)).Take(limit).ToList(), users.Count > limit, page);
+            return OkWithResourceLinks(viewUsers.Skip(GetSkip(page, limit)).Take(limit).ToList(), viewUsers.Count > limit, page);
         }
 
         /// <summary>
