@@ -162,7 +162,7 @@ namespace Exceptionless.Api.Controllers {
             user.Password = model.Password.ToSaltedHash(user.Salt);
 
             try {
-                user = await _userRepository.SaveAsync(user);
+                user = await _userRepository.AddAsync(user, true);
             } catch (ValidationException ex) {
                 var errors = String.Join(", ", ex.Errors);
                 Logger.Error().Critical().Message("Signup failed for \"{0}\": {1}", model.Email, errors).Tag("Signup").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
@@ -230,7 +230,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (ExceptionlessUser.RemoveOAuthAccount(providerName, providerUserId))
-                await _userRepository.SaveAsync(ExceptionlessUser);
+                await _userRepository.SaveAsync(ExceptionlessUser, true);
 
             Logger.Info().Message("\"{0}\" removed an external login: \"{1}\"", ExceptionlessUser.EmailAddress, providerName).Tag("External Login", providerName).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
             return Ok();
@@ -306,7 +306,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             user.CreatePasswordResetToken();
-            await _userRepository.SaveAsync(user);
+            await _userRepository.SaveAsync(user, true);
 
             await _mailer.SendPasswordResetAsync(user);
 
@@ -368,7 +368,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok();
 
             user.ResetPasswordResetToken();
-            await _userRepository.SaveAsync(user);
+            await _userRepository.SaveAsync(user, true);
 
             Logger.Info().Message("\"{0}\" canceled the reset password", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
             return Ok();
@@ -441,7 +441,7 @@ namespace Exceptionless.Api.Controllers {
                         if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id))
                             return null;
 
-                        await _userRepository.SaveAsync(existingUser);
+                        await _userRepository.SaveAsync(existingUser, true);
                     } else {
                         // User is already logged in.
                         return ExceptionlessUser;
@@ -450,7 +450,7 @@ namespace Exceptionless.Api.Controllers {
 
                 // Add it to the current user if it doesn't already exist and save it.
                 ExceptionlessUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
-                await _userRepository.SaveAsync(ExceptionlessUser);
+                await _userRepository.SaveAsync(ExceptionlessUser, true);
                 return ExceptionlessUser;
             }
 
@@ -458,7 +458,7 @@ namespace Exceptionless.Api.Controllers {
             if (existingUser != null) {
                 if (!existingUser.IsEmailAddressVerified) {
                     existingUser.MarkEmailAddressVerified();
-                    await _userRepository.SaveAsync(existingUser);
+                    await _userRepository.SaveAsync(existingUser, true);
                 }
 
                 return existingUser;
@@ -478,7 +478,7 @@ namespace Exceptionless.Api.Controllers {
 
             user.MarkEmailAddressVerified();
             user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
-            await _userRepository.SaveAsync(user);
+            await _userRepository.SaveAsync(user, true);
 
             return user;
         }
@@ -497,17 +497,17 @@ namespace Exceptionless.Api.Controllers {
             if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
                 Logger.Info().Message("Marking the invited users email address \"{0}\" as verified.", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 user.MarkEmailAddressVerified();
-                await _userRepository.SaveAsync(user);
+                await _userRepository.SaveAsync(user, true);
             }
 
             if (!user.OrganizationIds.Contains(organization.Id)) {
                 Logger.Info().Message("\"{0}\" joined from invite.", user.EmailAddress).Tag("Invite").Property("Organization", organization).Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 user.OrganizationIds.Add(organization.Id);
-                await _userRepository.SaveAsync(user);
+                await _userRepository.SaveAsync(user, true);
             }
 
             organization.Invites.Remove(invite);
-            await _organizationRepository.SaveAsync(organization);
+            await _organizationRepository.SaveAsync(organization, true);
         }
 
         private Task ChangePasswordAsync(User user, string password) {
@@ -516,7 +516,7 @@ namespace Exceptionless.Api.Controllers {
 
             user.Password = password.ToSaltedHash(user.Salt);
             user.ResetPasswordResetToken();
-            return _userRepository.SaveAsync(user);
+            return _userRepository.SaveAsync(user, true);
         }
 
         private async Task<string> GetTokenAsync(User user) {

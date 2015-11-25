@@ -28,11 +28,11 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             _userRepository = userRepository;
             _webHookRepository = webHookRepository;
         }
-        
+
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<RemoveOrganizationWorkItem>();
             Logger.Info().Message($"Received remove organization work item for: {workItem.OrganizationId}").Write();
-            
+
             await context.ReportProgressAsync(0, "Starting deletion...").AnyContext();
             var organization = await _organizationRepository.GetByIdAsync(workItem.OrganizationId).AnyContext();
             if (organization == null) {
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 foreach (var subscription in subscriptions)
                     subscriptionService.Cancel(organization.StripeCustomerId, subscription.Id);
             }
-            
+
             await context.ReportProgressAsync(20, "Removing users").AnyContext();
             var users = await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
             foreach (User user in users.Documents) {
@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 } else {
                     Logger.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id).Write();
                     user.OrganizationIds.Remove(organization.Id);
-                    await _userRepository.SaveAsync(user).AnyContext();
+                    await _userRepository.SaveAsync(user, true).AnyContext();
                 }
             }
 
@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
             await context.ReportProgressAsync(40, "Removing web hooks").AnyContext();
             await _webHookRepository.RemoveAllByOrganizationIdsAsync(new[] { organization.Id }).AnyContext();
-            
+
             await context.ReportProgressAsync(50, "Removing projects").AnyContext();
             var projects = await _projectRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
             if (workItem.IsGlobalAdmin && projects.Total > 0) {
@@ -84,7 +84,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 Logger.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
                 await _projectRepository.RemoveAsync(projects.Documents).AnyContext();
             }
-            
+
             Logger.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
             await context.ReportProgressAsync(90, "Removing organization").AnyContext();
             await _organizationRepository.RemoveAsync(organization.Id).AnyContext();

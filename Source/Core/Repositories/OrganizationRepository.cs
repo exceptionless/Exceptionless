@@ -218,7 +218,7 @@ namespace Exceptionless.Core.Repositories {
                 if (hourlyTotal > org.GetHourlyEventLimit())
                     org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
 
-                await SaveAsync(org).AnyContext();
+                await SaveAsync(org, true).AnyContext();
                 await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
             }
 

@@ -448,7 +448,7 @@ namespace Exceptionless.Api.Controllers {
             if (user != null) {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
                     user.OrganizationIds.Add(organization.Id);
-                    await _userRepository.SaveAsync(user);
+                    await _userRepository.SaveAsync(user, true);
                     await _messagePublisher.PublishAsync(new UserMembershipChanged {
                         ChangeType = ChangeType.Added,
                         UserId = user.Id,
@@ -513,7 +513,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 user.OrganizationIds.Remove(organization.Id);
-                await _userRepository.SaveAsync(user);
+                await _userRepository.SaveAsync(user, true);
                 await _messagePublisher.PublishAsync(new UserMembershipChanged {
                     ChangeType = ChangeType.Removed,
                     UserId = user.Id,

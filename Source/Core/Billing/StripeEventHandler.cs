@@ -96,7 +96,7 @@ namespace Exceptionless.Core.Billing {
                 org.RemoveSuspension();
             }
 
-            await _organizationRepository.SaveAsync(org).AnyContext();
+            await _organizationRepository.SaveAsync(org, true).AnyContext();
         }
 
         private async Task SubscriptionDeletedAsync(StripeSubscription sub) {
@@ -116,7 +116,7 @@ namespace Exceptionless.Core.Billing {
             org.SuspendedByUserId = "Stripe";
 
             org.BillingChangeDate = DateTime.Now;
-            await _organizationRepository.SaveAsync(org).AnyContext();
+            await _organizationRepository.SaveAsync(org, true).AnyContext();
         }
 
         private async Task InvoicePaymentSucceededAsync(StripeInvoice inv) {

@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Utility {
             user.Salt = StringExtensions.GetRandomString(16);
             user.Password = TEST_USER_PASSWORD.ToSaltedHash(user.Salt);
 
-            user = await _userRepository.AddAsync(user).AnyContext();
+            user = await _userRepository.AddAsync(user, true).AnyContext();
             await CreateTestOrganizationAndProjectAsync(user.Id).AnyContext();
             await CreateTestInternalOrganizationAndProjectAsync(user.Id).AnyContext();
         }
@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Utility {
             User user = await _userRepository.GetByIdAsync(userId, true).AnyContext();
             var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme" };
             BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
-            organization = await _organizationRepository.AddAsync(organization).AnyContext();
+            organization = await _organizationRepository.AddAsync(organization, true).AnyContext();
 
             var project = new Project { Id = TEST_PROJECT_ID, Name = "Disintegrating Pistol", OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
@@ -93,7 +93,7 @@ namespace Exceptionless.Core.Utility {
             User user = await _userRepository.GetByIdAsync(userId, true).AnyContext();
             var organization = new Organization { Name = "Exceptionless" };
             BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
-            organization = await _organizationRepository.AddAsync(organization).AnyContext();
+            organization = await _organizationRepository.AddAsync(organization, true).AnyContext();
 
             var project = new Project { Id = INTERNAL_PROJECT_ID, Name = "API", OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
