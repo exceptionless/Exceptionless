@@ -23,24 +23,23 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
         }
-        
+
         protected override Task<ILock> GetJobLockAsync() {
             return _lockProvider.AcquireAsync(nameof(RetentionLimitsJob), TimeSpan.FromHours(2), new CancellationToken(true));
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobRunContext context) {
-            var page = 1;
-            var organizations = (await _organizationRepository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithLimit(100)).AnyContext()).Documents;
-            while (organizations.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
-                foreach (var organization in organizations) {
+            var results = await _organizationRepository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithPage(1).WithLimit(100)).AnyContext();
+            while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
+                foreach (var organization in results.Documents) {
                     await EnforceEventCountLimitsAsync(organization).AnyContext();
 
                     // Sleep so we are not hammering the backend.
-                    await Task.Delay(TimeSpan.FromSeconds(5));
+                    await Task.Delay(TimeSpan.FromSeconds(5)).AnyContext();
                 }
 
-                organizations = (await _organizationRepository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithPage(++page).WithLimit(100)).AnyContext()).Documents;
-                if (organizations.Count > 0)
+                await results.NextPageAsync().AnyContext();
+                if (results.Documents.Count > 0)
                     await context.JobLock.RenewAsync().AnyContext();
             }
 
