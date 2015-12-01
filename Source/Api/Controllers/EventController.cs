@@ -233,15 +233,22 @@ namespace Exceptionless.Api.Controllers {
         /// Get by reference id
         /// </summary>
         /// <param name="referenceId">An identifier used that references an event instance.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpGet]
         [Route("by-ref/{referenceId:minlength(8)}")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId) {
+        public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
-
-            return await GetInternalAsync(userFilter: String.Concat("reference:", referenceId));
+            
+            return await GetInternalAsync(null, String.Concat("reference:", referenceId, " ", filter).TrimEnd(), sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
@@ -249,11 +256,18 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="referenceId">An identifier used that references an event instance.</param>
         /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string projectId) {
+        public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
 
@@ -261,7 +275,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync(String.Concat("project:", projectId), String.Concat("reference:", referenceId));
+            return await GetInternalAsync(String.Concat("project:", projectId), String.Concat("reference:", referenceId, " ", filter).TrimEnd(), sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
