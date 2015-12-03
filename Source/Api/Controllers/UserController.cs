@@ -152,13 +152,14 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("verify-email-address/{token:token}")]
         public async Task<IHttpActionResult> VerifyAsync(string token) {
-            if (ControllerContext.Request.GetUser().IsEmailAddressVerified)
-                return Ok();
-
             var user = await _repository.GetByVerifyEmailAddressTokenAsync(token);
+            if (user == null) {
+                // The user may already be logged in and verified.
+                if (ExceptionlessUser != null && ExceptionlessUser.IsEmailAddressVerified)
+                    return Ok();
 
-            if (user == null)
                 return NotFound();
+            }
 
             if (!user.HasValidVerifyEmailAddressTokenExpiration())
                 return BadRequest("Verify Email Address Token has expired.");
