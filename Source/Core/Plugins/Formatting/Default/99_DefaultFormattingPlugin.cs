@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (String.IsNullOrWhiteSpace(ev.Message) && ev.IsError())
                 return "Unknown Error";
 
-            return ev.Message;
+            return ev.Message ?? ev.Source ?? $"{ev.Type} Event".TrimStart();
         }
 
         public SummaryData GetStackSummaryData(Stack stack) {
