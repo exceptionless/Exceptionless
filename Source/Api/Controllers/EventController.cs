@@ -244,7 +244,7 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
-            
+
             return await GetInternalAsync(null, String.Concat("reference:", referenceId), null, null, offset, mode, page, limit);
         }
 
@@ -424,7 +424,8 @@ namespace Exceptionless.Api.Controllers {
                     UserAgent = userAgent,
                     ApiVersion = version,
                     Data = data,
-                    ContentEncoding = contentEncoding
+                    ContentEncoding = contentEncoding,
+                    IpAddress = Request.GetClientIpAddress()
                 }, _storage);
             } catch (Exception ex) {
                 Logger.Error().Exception(ex)
