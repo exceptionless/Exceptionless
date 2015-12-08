@@ -195,7 +195,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var stack = await _stackRepository.GetByIdAsync(ev.StackId);
             stack.DateFixed = DateTime.UtcNow;
             stack.IsRegressed = false;
-            await _stackRepository.SaveAsync(stack, true);
+            await _stackRepository.SaveAsync(stack);
+            await _client.RefreshAsync();
 
             var contexts = new List<EventContext> {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1))),
