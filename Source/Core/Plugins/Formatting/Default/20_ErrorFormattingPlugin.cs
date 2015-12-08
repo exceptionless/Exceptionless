@@ -26,10 +26,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var error = ev.GetError();
-            if (error == null)
-                return null;
-
-            return error.Message;
+            return error?.Message;
         }
 
         public override SummaryData GetStackSummaryData(Stack stack) {
@@ -66,10 +63,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var error = ev.GetError();
-            if (error == null)
-                return null;
-
-            var stackingTarget = error.GetStackingTarget();
+            var stackingTarget = error?.GetStackingTarget();
             if (stackingTarget?.Error == null)
                 return null;
 
@@ -99,10 +93,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var error = model.Event.GetError();
-            if (error == null)
-                return null;
-
-            var stackingTarget = error.GetStackingTarget();
+            var stackingTarget = error?.GetStackingTarget();
             if (stackingTarget?.Error == null)
                 return null;
 

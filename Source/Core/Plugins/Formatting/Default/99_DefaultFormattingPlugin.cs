@@ -17,6 +17,9 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         public string GetStackTitle(PersistentEvent ev) {
+            if (String.IsNullOrWhiteSpace(ev.Message) && ev.IsError())
+                return "Unknown Error";
+
             return ev.Message;
         }
 
@@ -33,7 +36,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         public SummaryData GetEventSummaryData(PersistentEvent ev) {
-            return new SummaryData { TemplateKey = "event-summary", Data = new { Message = ev.Message, Source = ev.Source, Type = ev.Type } };
+            return new SummaryData { TemplateKey = "event-summary", Data = new { Message = GetStackTitle(ev), Source = ev.Source, Type = ev.Type } };
         }
 
         public MailMessage GetEventNotificationMailMessage(EventNotification model) {
@@ -56,7 +59,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 Subject = String.Concat(notificationType, ": ", messageOrSource.Truncate(120)),
                 Message = model.Event.Message,
                 Source = model.Event.Source,
-                Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null
+                Url = requestInfo?.GetFullPath(true, true, true)
             };
 
             return _emailGenerator.GenerateMessage(mailerModel, "Notice").ToMailMessage();

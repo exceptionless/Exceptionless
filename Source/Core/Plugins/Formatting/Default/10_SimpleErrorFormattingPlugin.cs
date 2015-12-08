@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
         }
-        
+
         public override SummaryData GetStackSummaryData(Stack stack) {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("StackTrace"))
                 return null;
@@ -45,10 +45,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var error = ev.GetSimpleError();
-            if (error == null)
-                return null;
-
-            return error.Message;
+            return error?.Message;
         }
 
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {
