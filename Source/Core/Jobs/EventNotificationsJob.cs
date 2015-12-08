@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
             _cacheClient = cacheClient;
         }
-        
+
         protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<EventNotificationWorkItem> context) {
             var eventModel = await _eventRepository.GetByIdAsync(context.QueueEntry.Value.EventId).AnyContext();
             if (eventModel == null)
@@ -149,8 +149,7 @@ namespace Exceptionless.Core.Jobs {
                     try {
                         info = Parser.GetDefault().Parse(requestInfo.UserAgent);
                     } catch (Exception ex) {
-                        Logger.Warn().Project(eventNotification.Event.ProjectId).Message("Unable to parse user agent {0}. Exception: {1}",
-                            requestInfo.UserAgent, ex.Message).Write();
+                        Logger.Warn().Project(eventNotification.Event.ProjectId).Message("Unable to parse user agent {0}. Exception: {1}", requestInfo.UserAgent, ex.Message).Write();
                     }
 
                     var botPatterns = project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns)
@@ -177,7 +176,7 @@ namespace Exceptionless.Core.Jobs {
                         Logger.Info().Message("Skipping because email is not on the outbound list and not in production mode.").WriteIf(shouldLog);
                     continue;
                 }
-                
+
                 Logger.Trace().Message("Sending email to {0}...", user.EmailAddress).Write();
                 await _mailer.SendNoticeAsync(user.EmailAddress, model).AnyContext();
                 emailsSent++;
@@ -189,7 +188,7 @@ namespace Exceptionless.Core.Jobs {
                 await _cacheClient.SetAsync(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), DateTime.UtcNow, DateTime.UtcNow.AddMinutes(15)).AnyContext();
                 Logger.Info().Message("Notifications sent: event={0} stack={1} count={2}", eventNotification.Event.Id, eventNotification.Event.StackId, emailsSent).WriteIf(shouldLog);
             }
-            
+
             return JobResult.Success;
         }
     }
