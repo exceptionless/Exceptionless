@@ -254,8 +254,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private async Task ResetAsync() {
             if (!_isReset) {
                 _isReset = true;
-                await RemoveDataAsync(true);
+                await RemoveDataAsync();
                 await CreateDataAsync();
+            } else {
+                await RemoveEventsAndStacks();
             }
         }
 
@@ -296,18 +298,18 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _client.RefreshAsync();
         }
 
-        private async Task RemoveDataAsync(bool removeUserAndProjectAndOrganizationData = false) {
-            await _eventRepository.RemoveAllAsync();
-            await _stackRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-
-            if (!removeUserAndProjectAndOrganizationData)
-                return;
-
+        private async Task RemoveDataAsync() {
+            await RemoveEventsAndStacks();
             await _tokenRepository.RemoveAllAsync();
             await _userRepository.RemoveAllAsync();
             await _projectRepository.RemoveAllAsync();
             await _organizationRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
+        }
+
+        private async Task RemoveEventsAndStacks() {
+            await _eventRepository.RemoveAllAsync();
+            await _stackRepository.RemoveAllAsync();
             await _client.RefreshAsync();
         }
 
