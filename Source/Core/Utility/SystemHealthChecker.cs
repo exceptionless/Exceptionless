@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Utility {
             _queue = queue;
             _messageBus = messageBus;
         }
-    
+
         public async Task<HealthCheckResult> CheckCacheAsync() {
             try {
                 if ((await _cacheClient.GetAsync<string>("__PING__").AnyContext()).HasValue)
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Utility {
 
         public async Task<HealthCheckResult> CheckStorageAsync() {
             try {
-                await _storage.GetFileListAsync(limit: 1).AnyContext();
+                await _storage.GetFileListAsync(@"q\*", 1).AnyContext();
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Storage Not Working: " + ex.Message);
             }
@@ -65,7 +65,7 @@ namespace Exceptionless.Core.Utility {
                 var queueStats = await _queue.GetQueueStatsAsync().AnyContext();
                 if (queueStats.Enqueued == 0)
                     return HealthCheckResult.NotHealthy("Queue Not Working: No items were enqueued.");
-      
+
                 var workItem = await _queue.DequeueAsync().AnyContext();
                 if (workItem == null)
                     return HealthCheckResult.NotHealthy("Queue Not Working: No items could be dequeued.");
@@ -94,10 +94,10 @@ namespace Exceptionless.Core.Utility {
              //} finally {
              //    _messageBus.Unsubscribe(handler);
              //}
-        
+
              return Task.FromResult(HealthCheckResult.Healthy);
         }
-    
+
         public async Task<HealthCheckResult> CheckAllAsync() {
             var result = await CheckCacheAsync().AnyContext();
             if (!result.IsHealthy)
