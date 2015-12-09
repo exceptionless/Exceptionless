@@ -53,8 +53,8 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(StatusResult))]
         public async Task<IHttpActionResult> IndexAsync() {
             if (_lastHealthCheckResult == null || _nextHealthCheckTimeUtc < DateTime.UtcNow) {
-                _lastHealthCheckResult = await _healthChecker.CheckAllAsync();
                 _nextHealthCheckTimeUtc = DateTime.UtcNow.AddSeconds(30);
+                _lastHealthCheckResult = await _healthChecker.CheckAllAsync();
             }
 
             if (!_lastHealthCheckResult.IsHealthy)

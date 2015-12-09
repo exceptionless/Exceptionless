@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
@@ -26,7 +27,8 @@ namespace Exceptionless.Core.Utility {
 
         public async Task<HealthCheckResult> CheckCacheAsync() {
             try {
-                if ((await _cacheClient.GetAsync<string>("__PING__").AnyContext()).HasValue)
+                var cacheValue = await _cacheClient.GetAsync<string>("__PING__").AnyContext();
+                if (cacheValue.HasValue)
                     return HealthCheckResult.NotHealthy("Cache Not Working");
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Cache Not Working: " + ex.Message);
@@ -37,8 +39,8 @@ namespace Exceptionless.Core.Utility {
 
         public async Task<HealthCheckResult> CheckElasticSearchAsync() {
             try {
-                var res = await _elasticClient.PingAsync().AnyContext();
-                if (!res.IsValid)
+                var response = await _elasticClient.PingAsync().AnyContext();
+                if (!response.IsValid)
                     return HealthCheckResult.NotHealthy("ElasticSearch Ping Failed");
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("ElasticSearch Not Working: " + ex.Message);
@@ -48,8 +50,13 @@ namespace Exceptionless.Core.Utility {
         }
 
         public async Task<HealthCheckResult> CheckStorageAsync() {
+            const string path = "healthcheck.txt";
+
             try {
-                await _storage.GetFileListAsync(@"q\*", 1).AnyContext();
+                if (!await _storage.ExistsAsync(path).AnyContext())
+                    await _storage.SaveFileAsync(path, DateTime.UtcNow.ToString()).AnyContext();
+
+                await _storage.DeleteFileAsync(path).AnyContext();
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Storage Not Working: " + ex.Message);
             }
