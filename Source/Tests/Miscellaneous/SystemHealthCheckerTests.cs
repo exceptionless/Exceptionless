@@ -23,20 +23,6 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
         }
         
         [Fact]
-        public async Task CheckMessageBusAsync() {
-            var health = await _checker.CheckMessageBusAsync();
-            Assert.True(health.IsHealthy, health.Message);
-        }
-
-
-        [Fact]
-        public async Task CheckQueueAsync() {
-           var health = await _checker.CheckQueueAsync();
-           Assert.True(health.IsHealthy, health.Message);
-        }
-
-
-        [Fact]
         public async Task CheckStorageAsync() {
             var health = await _checker.CheckStorageAsync();
             Assert.True(health.IsHealthy, health.Message);

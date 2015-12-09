@@ -100,8 +100,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new InMemoryQueue<EventNotificationWorkItem>(behaviors: container.GetAllInstances<IQueueBehavior<EventNotificationWorkItem>>()));
             container.RegisterSingleton<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(behaviors: container.GetAllInstances<IQueueBehavior<WebHookNotification>>()));
             container.RegisterSingleton<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(behaviors: container.GetAllInstances<IQueueBehavior<MailMessage>>()));
-            container.RegisterSingleton<IQueue<StatusMessage>>(() => new InMemoryQueue<StatusMessage>(retries: 0));
-
+            
             var workItemHandlers = new WorkItemHandlers();
             workItemHandlers.Register<ReindexWorkItem, ReindexWorkItemHandler>();
             workItemHandlers.Register<RemoveOrganizationWorkItem, RemoveOrganizationWorkItemHandler>();

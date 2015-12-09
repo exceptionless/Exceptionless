@@ -19,21 +19,12 @@ namespace Exceptionless.Core.Utility {
         private readonly ICacheClient _cacheClient;
         private readonly IElasticClient _elasticClient;
         private readonly IFileStorage _storage;
-        private readonly ILockProvider _locker;
-        private readonly IQueue<StatusMessage> _queue;
-        private readonly IMessageBus _messageBus;
         private readonly AsyncManualResetEvent _resetEvent = new AsyncManualResetEvent(false);
 
-        public SystemHealthChecker(ICacheClient cacheClient, IElasticClient elasticClient, IFileStorage storage, IQueue<StatusMessage> queue, IMessageBus messageBus) {
+        public SystemHealthChecker(ICacheClient cacheClient, IElasticClient elasticClient, IFileStorage storage) {
             _cacheClient = new ScopedCacheClient(cacheClient, "health");
             _elasticClient = elasticClient;
             _storage = storage;
-            _queue = queue;
-
-            _messageBus = messageBus;
-            _messageBus.Subscribe<StatusMessage>(m => _resetEvent.Set());
-            
-            _locker = new CacheLockProvider(_cacheClient, _messageBus);
         }
 
         public async Task<HealthCheckResult> CheckCacheAsync() {
@@ -46,7 +37,7 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Cache Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                Logger.Info().Message($"Checking cache took {sw.ElapsedMilliseconds}ms").Write();
+                Logger.Trace().Message($"Checking cache took {sw.ElapsedMilliseconds}ms").Write();
             }
 
             return HealthCheckResult.Healthy;
@@ -62,7 +53,7 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Elasticsearch Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                Logger.Info().Message($"Checking Elasticsearch took {sw.ElapsedMilliseconds}ms").Write();
+                Logger.Trace().Message($"Checking Elasticsearch took {sw.ElapsedMilliseconds}ms").Write();
             }
 
             return HealthCheckResult.Healthy;
@@ -81,67 +72,12 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Storage Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                Logger.Info().Message($"Checking storage took {sw.ElapsedMilliseconds}ms").Write();
+                Logger.Trace().Message($"Checking storage took {sw.ElapsedMilliseconds}ms").Write();
             }
 
             return HealthCheckResult.Healthy;
         }
-
-        public async Task<HealthCheckResult> CheckQueueAsync() {
-            using (var l = await _locker.AcquireAsync("health-queue", TimeSpan.FromSeconds(5))) {
-                if (l == null)
-                    return HealthCheckResult.Healthy;
-
-                var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
-
-                var sw = Stopwatch.StartNew();
-                try {
-                    await _queue.EnqueueAsync(message).AnyContext();
-                    var queueStats = await _queue.GetQueueStatsAsync().AnyContext();
-                    if (queueStats.Enqueued < 1)
-                        return HealthCheckResult.NotHealthy("Queue Not Working: No items were enqueued.");
-                    
-                    var workItem = await _queue.DequeueAsync(new CancellationToken(true)).AnyContext();
-                    if (workItem == null)
-                        return HealthCheckResult.NotHealthy("Queue Not Working: No items could be dequeued.");
-                    
-                    await workItem.CompleteAsync().AnyContext();
-                    await _queue.DeleteQueueAsync().AnyContext();
-                } catch (Exception ex) {
-                    return HealthCheckResult.NotHealthy("Queue Not Working: " + ex.Message);
-                } finally {
-                    sw.Stop();
-                    Logger.Info().Message($"Checking queue took {sw.ElapsedMilliseconds}ms").Write();
-                }
-            }
-
-            return HealthCheckResult.Healthy;
-        }
-
-         public async Task<HealthCheckResult> CheckMessageBusAsync() {
-            using (var l = await _locker.AcquireAsync("health-message-bus", TimeSpan.FromSeconds(5))) {
-                if (l == null)
-                    return HealthCheckResult.Healthy;
-
-                var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
-
-                var sw = Stopwatch.StartNew();
-                try {
-                    _resetEvent.Reset();
-                    await _messageBus.PublishAsync(message).AnyContext();
-                    await Task.WhenAny(_resetEvent.WaitAsync(), TimeSpan.FromSeconds(2).ToCancellationToken().AsTask()).AnyContext();
-                } catch (Exception ex) {
-                    return HealthCheckResult.NotHealthy("MessageBus Not Working: " + ex.Message);
-                } finally {
-                    sw.Stop();
-                    Logger.Info().Message($"Checking MessageBus took {sw.ElapsedMilliseconds}ms").Write();
-                    _resetEvent.Reset();
-                }
-            }
-
-            return HealthCheckResult.Healthy;
-        }
-
+        
         public async Task<HealthCheckResult> CheckAllAsync() {
             var result = await CheckCacheAsync().AnyContext();
             if (!result.IsHealthy)
@@ -154,15 +90,7 @@ namespace Exceptionless.Core.Utility {
             result = await CheckStorageAsync().AnyContext();
             if (!result.IsHealthy)
                 return result;
-
-            result = await CheckQueueAsync().AnyContext();
-            if (!result.IsHealthy)
-                return result;
-
-            result = await CheckMessageBusAsync().AnyContext();
-            if (!result.IsHealthy)
-                return result;
-
+            
             return HealthCheckResult.Healthy;
         }
     }
