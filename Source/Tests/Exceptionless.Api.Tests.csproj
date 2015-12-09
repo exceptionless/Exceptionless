@@ -297,6 +297,11 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\..\packages\xunit.runner.visualstudio.2.1.0\build\net20\xunit.runner.visualstudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.runner.visualstudio.2.1.0\build\net20\xunit.runner.visualstudio.props'))" />
   </Target>
+  <PropertyGroup>
+    <PostBuildEvent>robocopy $(ProjectDir)..\Insulation\bin\$(ConfigurationName) $(TargetDir) /S /NFL /NDL /NJH /NJS /nc /ns /np 
+IF %25ERRORLEVEL%25 GEQ 8 exit 1
+exit 0</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

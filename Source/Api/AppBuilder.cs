@@ -185,17 +185,14 @@ namespace Exceptionless.Api {
             await dataHelper.CreateTestDataAsync();
         }
 
-        public static Container CreateContainer(bool includeInsulation = true) {
+        public static Container CreateContainer() {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
             container.Options.DefaultScopedLifestyle = new WebApiRequestLifestyle();
 
             container.RegisterPackage<Core.Bootstrapper>();
             container.RegisterPackage<Bootstrapper>();
-
-            if (!includeInsulation)
-                return container;
-
+            
             Assembly insulationAssembly = null;
             try {
                 insulationAssembly = Assembly.Load("Exceptionless.Insulation");

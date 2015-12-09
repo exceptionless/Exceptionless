@@ -19,7 +19,7 @@ namespace Exceptionless.Api.Tests.Utility {
         }
 
         private static Container CreateContainer() {
-            var container = AppBuilder.CreateContainer(false);
+            var container = AppBuilder.CreateContainer();
             RegisterServices(container);
 
             var client = container.GetInstance<IElasticClient>();
