@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
@@ -87,10 +88,11 @@ namespace Exceptionless.Core.Utility {
         }
 
         public async Task<HealthCheckResult> CheckQueueAsync() {
-            using (await _locker.AcquireAsync("health")) {
-                var message = new StatusMessage {
-                    Id = Guid.NewGuid().ToString()
-                };
+            using (var l = await _locker.AcquireAsync("health-queue", TimeSpan.FromSeconds(5))) {
+                if (l == null)
+                    return HealthCheckResult.Healthy;
+
+                var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
 
                 var sw = Stopwatch.StartNew();
                 var swTotal = Stopwatch.StartNew();
@@ -128,7 +130,10 @@ namespace Exceptionless.Core.Utility {
         }
 
          public async Task<HealthCheckResult> CheckMessageBusAsync() {
-            using (await _locker.AcquireAsync("health")) {
+            using (var l = await _locker.AcquireAsync("health-message-bus", TimeSpan.FromSeconds(5))) {
+                if (l == null)
+                    return HealthCheckResult.Healthy;
+
                 var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
 
                 var sw = Stopwatch.StartNew();
