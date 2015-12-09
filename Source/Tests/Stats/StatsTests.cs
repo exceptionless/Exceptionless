@@ -180,10 +180,12 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         private async Task RemoveDataAsync() {
-            await _organizationRepository.RemoveAllAsync();
-            await _projectRepository.RemoveAllAsync();
             await _eventRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
             await _stackRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
+            await _projectRepository.RemoveAllAsync();
+            await _organizationRepository.RemoveAllAsync();
             await _client.RefreshAsync();
         }
     }

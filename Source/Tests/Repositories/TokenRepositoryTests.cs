@@ -51,8 +51,9 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles)).Total);
         }
 
-        protected Task RemoveDataAsync() {
-            return _repository.RemoveAllAsync();
+        protected async Task RemoveDataAsync() {
+            await _repository.RemoveAllAsync();
+            await _client.RefreshAsync();
         }
 
         public void Dispose() {

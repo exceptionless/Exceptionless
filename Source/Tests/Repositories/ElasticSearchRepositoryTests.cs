@@ -20,6 +20,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await ResetAsync();
 
             await _repository.RemoveAllAsync();
+            await _client.RefreshAsync();
             Assert.Equal(0, await _repository.CountAsync());
 
             var stack = StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
@@ -68,6 +69,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Assert.Equal(0, await _repository.CountAsync());
             await _repository.RemoveAllAsync();
+            await _client.RefreshAsync();
         }
 
         [Fact]
@@ -92,6 +94,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, cache.Count);
 
             await _repository.RemoveAllAsync();
+            await _client.RefreshAsync();
             Assert.Equal(0, cache.Count);
         }
 
@@ -99,8 +102,11 @@ namespace Exceptionless.Api.Tests.Repositories {
         private async Task ResetAsync() {
             if (!_isReset) {
                 _isReset = true;
+                await _client.RefreshAsync();
                 await _eventRepository.RemoveAllAsync();
+                await _client.RefreshAsync();
                 await _repository.RemoveAllAsync();
+                await _client.RefreshAsync();
             }
         }
 

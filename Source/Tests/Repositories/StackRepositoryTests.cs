@@ -97,7 +97,9 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         protected async Task RemoveDataAsync() {
             await _eventRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
             await _repository.RemoveAllAsync();
+            await _client.RefreshAsync();
         }
     }
 }

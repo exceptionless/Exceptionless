@@ -310,6 +310,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         private async Task RemoveEventsAndStacks() {
             await _eventRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
             await _stackRepository.RemoveAllAsync();
             await _client.RefreshAsync();
         }

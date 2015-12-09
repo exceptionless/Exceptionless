@@ -76,6 +76,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Assert.Equal(1, await _repository.CountAsync());
             await _repository.RemoveAllAsync();
+            await _client.RefreshAsync();
         }
 
         [Fact]
@@ -100,6 +101,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, cache.Count);
 
             await _repository.RemoveAllAsync();
+            await _client.RefreshAsync();
             Assert.Equal(0, cache.Count);
         }
 

@@ -40,8 +40,9 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(new Version(2, 2, 2, 2), (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles)).Documents.First().Version);
         }
 
-        protected Task RemoveDataAsync() {
-            return _repository.RemoveAllAsync();
+        protected async Task RemoveDataAsync() {
+            await _repository.RemoveAllAsync();
+            await _client.RefreshAsync();
         }
 
         public void Dispose() {
