@@ -151,6 +151,8 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<EventPluginManager>();
             container.RegisterSingleton<FormattingPluginManager>();
 
+            container.RegisterSingleton<SystemHealthChecker>();
+
             container.RegisterSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
         }
     }

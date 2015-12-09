@@ -208,6 +208,7 @@
     <Compile Include="SerializerTests.cs" />
     <Compile Include="Stats\StatsTests.cs" />
     <Compile Include="Utility\Approvals.cs" />
+    <Compile Include="Utility\CaptureFixture.cs" />
     <Compile Include="Utility\RandomEventGenerator.cs" />
     <Compile Include="Utility\Run.cs" />
     <Compile Include="Utility\StackData.cs" />
@@ -216,6 +217,7 @@
     <Compile Include="Utility\OrganizationData.cs" />
     <Compile Include="Utility\ProjectData.cs" />
     <Compile Include="Utility\TestConstants.cs" />
+    <Compile Include="Utility\TestOutputWriter.cs" />
     <Compile Include="Utility\UserData.cs" />
     <Compile Include="Validation\EventValidatorTests.cs" />
     <Compile Include="Plugins\WebHookDataTests.cs" />
