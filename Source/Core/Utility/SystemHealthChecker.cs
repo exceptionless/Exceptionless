@@ -96,7 +96,7 @@ namespace Exceptionless.Core.Utility {
 
                 var sw = Stopwatch.StartNew();
                 try {
-                    string id = await _queue.EnqueueAsync(message).AnyContext();
+                    await _queue.EnqueueAsync(message).AnyContext();
                     var queueStats = await _queue.GetQueueStatsAsync().AnyContext();
                     if (queueStats.Enqueued < 1)
                         return HealthCheckResult.NotHealthy("Queue Not Working: No items were enqueued.");
@@ -127,6 +127,7 @@ namespace Exceptionless.Core.Utility {
 
                 var sw = Stopwatch.StartNew();
                 try {
+                    _resetEvent.Reset();
                     await _messageBus.PublishAsync(message).AnyContext();
                     await Task.WhenAny(_resetEvent.WaitAsync(), TimeSpan.FromSeconds(2).ToCancellationToken().AsTask()).AnyContext();
                 } catch (Exception ex) {
