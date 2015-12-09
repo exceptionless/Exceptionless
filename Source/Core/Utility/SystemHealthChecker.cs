@@ -86,23 +86,31 @@ namespace Exceptionless.Core.Utility {
             var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
 
             var sw = Stopwatch.StartNew();
+            var swTotal = Stopwatch.StartNew();
             try {
                 await _queue.EnqueueAsync(message).AnyContext();
+                Logger.Info().Message($"Check Queue: EnqueueAsync took {sw.ElapsedMilliseconds}ms").Write();
 
+                sw.Restart();
                 var queueStats = await _queue.GetQueueStatsAsync().AnyContext();
+                Logger.Info().Message($"Check Queue: GetQueueStatsAsync took {sw.ElapsedMilliseconds}ms").Write();
                 if (queueStats.Enqueued == 0)
                     return HealthCheckResult.NotHealthy("Queue Not Working: No items were enqueued.");
 
+                sw.Restart();
                 var workItem = await _queue.DequeueAsync().AnyContext();
+                Logger.Info().Message($"Check Queue: DequeueAsync took {sw.ElapsedMilliseconds}ms").Write();
                 if (workItem == null)
                     return HealthCheckResult.NotHealthy("Queue Not Working: No items could be dequeued.");
 
+                sw.Restart();
                 await workItem.CompleteAsync().AnyContext();
+                Logger.Info().Message($"Check Queue: CompleteAsync took {sw.ElapsedMilliseconds}ms").Write();
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Queue Not Working: " + ex.Message);
             } finally {
-                sw.Stop();
-                Logger.Info().Message($"Checking queue took {sw.ElapsedMilliseconds}ms").Write();
+                swTotal.Stop();
+                Logger.Info().Message($"Checking queue took {swTotal.ElapsedMilliseconds}ms").Write();
             }
 
             return HealthCheckResult.Healthy;
