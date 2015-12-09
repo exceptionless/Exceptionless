@@ -29,6 +29,9 @@ namespace Exceptionless.Api.Controllers {
         private readonly IQueue<EventUserDescription> _userDescriptionQueue;
         private readonly IMetricsClient _metricsClient;
 
+        private static HealthCheckResult _lastHealthCheckResult;
+        private static DateTime _nextHealthCheckTimeUtc = DateTime.MinValue;
+
         public StatusController(ICacheClient cacheClient, IMessagePublisher messagePublisher, SystemHealthChecker healthChecker, IQueue<EventPost> eventQueue, IQueue<MailMessage> mailQueue, IQueue<EventNotificationWorkItem> notificationQueue, IQueue<WebHookNotification> webHooksQueue, IQueue<EventUserDescription> userDescriptionQueue, IMetricsClient metricsClient) {
             _cacheClient = cacheClient;
             _messagePublisher = messagePublisher;
@@ -49,9 +52,13 @@ namespace Exceptionless.Api.Controllers {
         [Route("status")]
         [ResponseType(typeof(StatusResult))]
         public async Task<IHttpActionResult> IndexAsync() {
-            var result = await _healthChecker.CheckAllAsync();
-            if (!result.IsHealthy)
-                return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, result.Message, result.Message);
+            if (_lastHealthCheckResult == null || _nextHealthCheckTimeUtc < DateTime.UtcNow) {
+                _lastHealthCheckResult = await _healthChecker.CheckAllAsync();
+                _nextHealthCheckTimeUtc = DateTime.UtcNow.AddSeconds(30);
+            }
+
+            if (!_lastHealthCheckResult.IsHealthy)
+                return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, _lastHealthCheckResult.Message, _lastHealthCheckResult.Message);
 
             return Ok(new StatusResult { Message = "All Systems Check", Version = Settings.Current.Version });
         }
