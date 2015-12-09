@@ -95,34 +95,23 @@ namespace Exceptionless.Core.Utility {
                 var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
 
                 var sw = Stopwatch.StartNew();
-                var swTotal = Stopwatch.StartNew();
                 try {
                     string id = await _queue.EnqueueAsync(message).AnyContext();
-                    Logger.Info().Message($"Check Queue: EnqueueAsync {id} took {sw.ElapsedMilliseconds}ms").Write();
-
-                    sw.Restart();
                     var queueStats = await _queue.GetQueueStatsAsync().AnyContext();
-                    Logger.Info().Message($"Check Queue: GetQueueStatsAsync {id} took {sw.ElapsedMilliseconds}ms").Write();
-                    if (queueStats.Enqueued == 0)
+                    if (queueStats.Enqueued < 1)
                         return HealthCheckResult.NotHealthy("Queue Not Working: No items were enqueued.");
-
-                    sw.Restart();
-                    var workItem = await _queue.DequeueAsync().AnyContext();
-                    Logger.Info().Message($"Check Queue: DequeueAsync {id} took {sw.ElapsedMilliseconds}ms").Write();
-
+                    
+                    var workItem = await _queue.DequeueAsync(new CancellationToken(true)).AnyContext();
                     if (workItem == null)
                         return HealthCheckResult.NotHealthy("Queue Not Working: No items could be dequeued.");
-
-                    sw.Restart();
+                    
                     await workItem.CompleteAsync().AnyContext();
-                    Logger.Info().Message($"Check Queue: CompleteAsync  {id} took {sw.ElapsedMilliseconds}ms").Write();
-
                     await _queue.DeleteQueueAsync().AnyContext();
                 } catch (Exception ex) {
                     return HealthCheckResult.NotHealthy("Queue Not Working: " + ex.Message);
                 } finally {
-                    swTotal.Stop();
-                    Logger.Info().Message($"Checking queue took {swTotal.ElapsedMilliseconds}ms").Write();
+                    sw.Stop();
+                    Logger.Info().Message($"Checking queue took {sw.ElapsedMilliseconds}ms").Write();
                 }
             }
 
