@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
 
@@ -9,12 +10,11 @@ namespace Exceptionless.Core.Pipeline {
 
         public RunEventProcessingPluginsAction(EventPluginManager pluginManager) {
             _pluginManager = pluginManager;
+            ContinueOnError = true;
         }
 
-        protected override bool ContinueOnError => true;
-
-        public override Task ProcessAsync(EventContext ctx) {
-            return _pluginManager.EventProcessingAsync(ctx);
+        public override Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+            return _pluginManager.EventBatchProcessingAsync(contexts);
         }
     }
 }

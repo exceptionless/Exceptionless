@@ -16,10 +16,9 @@ namespace Exceptionless.Core.Pipeline {
 
         public IncrementCountersAction(IMetricsClient metricsClient) {
             _metricsClient = metricsClient;
+            ContinueOnError = true;
         }
-
-        protected override bool ContinueOnError => true;
-
+        
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {
                 await _metricsClient.CounterAsync(MetricNames.EventsProcessed, contexts.Count).AnyContext();

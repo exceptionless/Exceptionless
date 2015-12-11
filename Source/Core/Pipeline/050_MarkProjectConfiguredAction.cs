@@ -16,10 +16,9 @@ namespace Exceptionless.Core.Pipeline {
 
         public MarkProjectConfiguredAction(IQueue<WorkItemData> workItemQueue) {
             _workItemQueue = workItemQueue;
+            ContinueOnError = true;
         }
-
-        protected override bool ContinueOnError => true;
-
+        
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var projectIds = contexts.Where(c => !c.Project.IsConfigured.HasValue || !c.Project.IsConfigured.Value).Select(c => c.Project.Id).Distinct().ToList();
             if (projectIds.Count == 0)

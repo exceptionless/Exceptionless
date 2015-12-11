@@ -7,7 +7,9 @@ using Foundatio.Logging;
 namespace Exceptionless.Core.Pipeline {
     [Priority(1)]
     public class CheckEventDateAction : EventPipelineActionBase {
-        protected override bool ContinueOnError => true;
+        public CheckEventDateAction() {
+            ContinueOnError = true;
+        }
 
         public override Task ProcessAsync(EventContext ctx) {
             if (ctx.Organization.RetentionDays <= 0)

@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Plugins {
 
         public void AddPlugin(Type pluginType) {
             var attr = pluginType.GetCustomAttributes(typeof(PriorityAttribute), true).FirstOrDefault() as PriorityAttribute;
-            int priority = attr != null ? attr.Priority : 0;
+            int priority = attr?.Priority ?? 0;
 
             var plugin = (TPlugin)_dependencyResolver.GetService(pluginType);
             Plugins.Add(priority, plugin);
