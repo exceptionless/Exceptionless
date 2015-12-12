@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 }
                 
                 await _cacheClient.SetExpirationAsync(cacheKey, _sessionTimeout).AnyContext();
-                sessionStartEvent.Value = newestContext.Event.Date.UtcTicks - sessionStartEvent.Date.UtcTicks;
+                sessionStartEvent.Value = (decimal)(newestContext.Event.Date - sessionStartEvent.Date).TotalSeconds;
 
                 if (newestContext.Event.IsSessionEnd()) {
                     // Store session end time or that it's completed

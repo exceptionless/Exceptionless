@@ -38,10 +38,17 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                     if (String.IsNullOrEmpty(sessionId) && !context.Event.IsSessionStart()) {
                         sessionId = await _cacheClient.GetAsync<string>(cacheKey, null).AnyContext();
-                        await _cacheClient.SetExpirationAsync(cacheKey, _sessionTimeout).AnyContext();
+                        if (!String.IsNullOrEmpty(sessionId))
+                            await _cacheClient.SetExpirationAsync(cacheKey, _sessionTimeout).AnyContext();
                     }
 
                     if (context.Event.IsSessionStart() || String.IsNullOrEmpty(sessionId)) {
+                        if (context.Event.IsSessionStart() && !String.IsNullOrEmpty(sessionId)) {
+                            // Update session start event with updated duration and end time.
+                            await CreateSessionEndEventAsync(context, sessionId).AnyContext();
+                            await _cacheClient.RemoveAsync($"{context.Project.Id}:start:{sessionId}").AnyContext();
+                        }
+
                         sessionId = ObjectId.GenerateNewId(context.Event.Date.DateTime).ToString();
                         await _cacheClient.SetAsync(cacheKey, sessionId, _sessionTimeout).AnyContext();
                         
@@ -85,6 +92,28 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             await _eventRepository.AddAsync(startEvent).AnyContext();
 
             return startEvent.Id;
+        }
+
+        private async Task<string> CreateSessionEndEventAsync(EventContext context, string sessionId) {
+            var endEvent = new PersistentEvent {
+                SessionId = sessionId,
+                Date = context.Event.Date,
+                OrganizationId = context.Event.OrganizationId,
+                ProjectId = context.Event.ProjectId,
+                Type = Event.KnownTypes.SessionEnd
+            };
+
+            endEvent.SetUserIdentity(context.Event.GetUserIdentity());
+
+            var endEventContexts = new List<EventContext> {
+                new EventContext(endEvent) { Project = context.Project, Organization = context.Organization }
+            };
+
+            await _assignToStack.ProcessBatchAsync(endEventContexts).AnyContext();
+            await _updateStats.ProcessBatchAsync(endEventContexts).AnyContext();
+            await _eventRepository.AddAsync(endEvent).AnyContext();
+
+            return endEvent.Id;
         }
     }
 }
