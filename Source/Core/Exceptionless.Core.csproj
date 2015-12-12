@@ -160,6 +160,7 @@
     <Compile Include="Billing\StripeEventHandler.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\ParameterExtensions.cs" />
+    <Compile Include="Extensions\PersistentEventExtensions.cs" />
     <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
     <Compile Include="Jobs\JobBootstrapper.cs" />
     <Compile Include="Jobs\WorkItemHandlers\SetProjectIsConfiguredWorkItemHandler.cs" />
@@ -243,6 +244,7 @@
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\70_UpdateSessionPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
@@ -279,14 +281,14 @@
     <Compile Include="Geo\MindMaxGeoIPResolver.cs" />
     <Compile Include="Jobs\EventNotificationsJob.cs" />
     <Compile Include="Jobs\WebHooksJob.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\60_GeoPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\50_GeoPlugin.cs" />
     <Compile Include="Utility\KeepAliveHttpConnection.cs" />
     <Compile Include="Models\Messaging\UserMembershipChanged.cs" />
     <Compile Include="Pipeline\Base\PipelineActionBase.cs" />
     <Compile Include="Pipeline\Base\PipelineBase.cs" />
     <Compile Include="Pipeline\Base\PipelineContextBase.cs" />
     <Compile Include="Pipeline\Base\PriorityAttribute.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\50_DefaultSessionIdPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\60_AutoSessionPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
     <Compile Include="Filter\QueryProcessorVisitor.cs" />
     <Compile Include="Utility\EventStats.cs" />

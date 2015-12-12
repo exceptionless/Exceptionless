@@ -7,7 +7,7 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
-    [Priority(60)]
+    [Priority(50)]
     public class GeoPlugin : EventProcessorPluginBase {
         private readonly IGeoIPResolver _geoIpResolver;
 
