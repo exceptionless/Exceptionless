@@ -1,16 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.ServiceModel.Security;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Results;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Caching;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Elasticsearch.Repositories.Queries.Options;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
@@ -54,6 +58,25 @@ namespace Exceptionless.Core.Repositories {
                 return String.Concat(_index.VersionedName, "-", objectId.CreationTime.ToString("yyyyMM"));
 
             return null;
+        }
+
+        public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool sendNotifications = true) {
+            var ev = await GetByIdAsync(id).AnyContext();
+            if (ev == null)
+                return false;
+
+            var duration = (decimal)(ev.Date.UtcDateTime - lastActivityUtc).TotalSeconds;
+            if ((duration < 0 || ev.Value.GetValueOrDefault() >= duration) && ev.Value.HasValue && !isSessionEnd)
+                return true;
+
+            ev.Value = duration;
+            if (isSessionEnd) {
+                ev.Data[Event.KnownDataKeys.SessionEnd] = lastActivityUtc;
+                ev.CopyDataToIndex();
+            }
+
+            await SaveAsync(ev, sendNotifications: sendNotifications).AnyContext();
+            return true;
         }
 
         public Task UpdateFixedByStackAsync(string organizationId, string stackId, bool value) {

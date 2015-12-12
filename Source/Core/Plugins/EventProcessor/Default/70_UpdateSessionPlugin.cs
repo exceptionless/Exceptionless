@@ -25,30 +25,20 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 var newestContext = sessionGroup.First();
                 string cacheKey = $"{newestContext.Project.Id}:start:{newestContext.Event.SessionId}";
 
-                var sessionStartId = await _cacheClient.GetAsync<string>(cacheKey, null).AnyContext();
-                if (sessionStartId == null)
+                var sessionStartEventId = await _cacheClient.GetAsync<string>(cacheKey, null).AnyContext();
+                if (sessionStartEventId == null)
                     continue;
                 
-                var sessionStartEvent = await _eventRepository.GetByIdAsync(sessionStartId).AnyContext();
-                if (sessionStartEvent == null) {
-                    await _cacheClient.RemoveAsync(cacheKey).AnyContext();
-                    continue;
-                }
-                
-                await _cacheClient.SetExpirationAsync(cacheKey, _sessionTimeout).AnyContext();
-                sessionStartEvent.Value = (decimal)(newestContext.Event.Date - sessionStartEvent.Date).TotalSeconds;
-
-                if (newestContext.Event.IsSessionEnd()) {
-                    // Store session end time or that it's completed
-                }
-
-                // TODO: Make this an update script instead of getting and setting it.
                 // TODO: Put this in a batch on a timer to save so it's more efficient.
-                await _eventRepository.SaveAsync(sessionStartEvent).AnyContext();
+                var updated = await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, newestContext.Event.Date.UtcDateTime, newestContext.Event.IsSessionEnd()).AnyContext();
+                if (updated)
+                    await _cacheClient.SetExpirationAsync(cacheKey, _sessionTimeout).AnyContext();
+                else
+                    await _cacheClient.RemoveAsync(cacheKey).AnyContext();
             }
 
-            // keep track of last activity and periodically save.
-            // potentially create session ends.
+            // TODO: keep track of last activity and periodically save.
+            // TODO: potentially create session ends.
         }
     }
 }

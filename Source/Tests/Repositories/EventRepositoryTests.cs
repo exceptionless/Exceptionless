@@ -185,6 +185,27 @@ namespace Exceptionless.Api.Tests.Repositories {
                 Assert.False(ev.IsFixed);
         }
 
+
+        [Fact]
+        public async Task UpdateSessionStartLastActivityAsync() {
+            await RemoveDataAsync();
+
+            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            DateTimeOffset lastEventDate = firstEventDate.Add(TimeSpan.FromMinutes(1));
+
+            var events = new List<PersistentEvent> {
+                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: firstEventDate, userIdentity: "blake@exceptionless.io"),
+                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: firstEventDate.AddSeconds(10), userIdentity: "blake@exceptionless.io"),
+                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: lastEventDate, userIdentity: "blake@exceptionless.io"),
+                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: lastEventDate),
+                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: lastEventDate, userIdentity: "eric@exceptionless.io"),
+                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: lastEventDate, userIdentity: "eric@exceptionless.io", type: Event.KnownTypes.SessionStart),
+                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: lastEventDate, userIdentity: "eric@exceptionless.io"),
+            };
+
+
+        }
+
         [Fact(Skip = "TODO")]
         public Task RemoveOldestEventsTestAsync() {
             return Task.CompletedTask;

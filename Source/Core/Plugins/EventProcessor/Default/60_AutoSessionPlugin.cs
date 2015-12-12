@@ -44,9 +44,14 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                     if (context.Event.IsSessionStart() || String.IsNullOrEmpty(sessionId)) {
                         if (context.Event.IsSessionStart() && !String.IsNullOrEmpty(sessionId)) {
-                            // Update session start event with updated duration and end time.
                             await CreateSessionEndEventAsync(context, sessionId).AnyContext();
-                            await _cacheClient.RemoveAsync($"{context.Project.Id}:start:{sessionId}").AnyContext();
+
+                            string sessionStartEventIdCacheKey = $"{context.Project.Id}:start:{sessionId}";
+                            string sessionStartEventId = await _cacheClient.GetAsync<string>(sessionStartEventIdCacheKey, null).AnyContext();
+                            if (sessionStartEventId != null) {
+                                await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, context.Event.Date.UtcDateTime, true).AnyContext();
+                                await _cacheClient.RemoveAsync(sessionStartEventId).AnyContext();
+                            }
                         }
 
                         sessionId = ObjectId.GenerateNewId(context.Event.Date.DateTime).ToString();
