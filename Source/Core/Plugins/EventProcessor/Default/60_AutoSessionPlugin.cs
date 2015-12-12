@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 string sessionId = null;
 
                 foreach (var context in identityGroup.Where(c => String.IsNullOrEmpty(c.Event.SessionId))) {
-                    string cacheKey = $"{context.Project.Id}:identity:{identityGroup.Key}";
+                    string cacheKey = $"{context.Project.Id}:identity:{identityGroup.Key.ToSHA1()}";
 
                     if (String.IsNullOrEmpty(sessionId) && !context.Event.IsSessionStart()) {
                         sessionId = await _cacheClient.GetAsync<string>(cacheKey, null).AnyContext();
@@ -62,6 +62,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         private async Task<string> CreateSessionStartEventAsync(EventContext context, string sessionId) {
+            // TODO: Be selective about what data we copy.
             var startEvent = new PersistentEvent {
                 SessionId = sessionId,
                 Data = context.Event.Data,

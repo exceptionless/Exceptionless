@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
@@ -77,22 +76,22 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public Task GetStackInfoBySignatureHashTestAsync() {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
         
         [Fact]
         public Task GetMostRecentTestAsync() {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
         
         [Fact]
         public Task GetNewTestAsync() {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
         
         [Fact]
         public Task InvalidateCacheTestAsync() {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
 
         protected async Task RemoveDataAsync() {

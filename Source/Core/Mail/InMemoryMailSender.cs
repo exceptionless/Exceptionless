@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Mail {
@@ -27,7 +26,7 @@ namespace Exceptionless.Core.Mail {
             while (_recentMessages.Count > _messagesToStore)
                 _recentMessages.Dequeue();
 
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
     }
 }

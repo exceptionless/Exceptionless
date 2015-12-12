@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
@@ -12,11 +11,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
     public class ErrorPlugin : EventProcessorPluginBase {
         public override Task EventProcessingAsync(EventContext context) {
             if (!context.Event.IsError())
-                return TaskHelper.Completed();
+                return Task.CompletedTask;
 
             Error error = context.Event.GetError();
             if (error == null)
-                return TaskHelper.Completed();
+                return Task.CompletedTask;
 
             if (String.IsNullOrWhiteSpace(context.Event.Message))
                 context.Event.Message = error.Message;
@@ -31,7 +30,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             var signature = new ErrorSignature(error, userCommonMethods: commonUserMethods, userNamespaces: userNamespaces);
             if (signature.SignatureInfo.Count <= 0)
-                return TaskHelper.Completed();
+                return Task.CompletedTask;
 
             var targetInfo = new SettingsDictionary(signature.SignatureInfo);
             var stackingTarget = error.GetStackingTarget();
@@ -43,7 +42,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             foreach (var key in signature.SignatureInfo.Keys)
                 context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
 
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
     }
 }

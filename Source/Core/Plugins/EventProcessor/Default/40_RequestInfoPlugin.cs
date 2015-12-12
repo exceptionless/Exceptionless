@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -28,7 +27,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         public override Task EventProcessingAsync(EventContext context) {
             var request = context.Event.GetRequestInfo();
             if (request == null)
-                return TaskHelper.Completed();
+                return Task.CompletedTask;
 
             var exclusions = context.Project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.DataExclusions)
                     ? DefaultExclusions.Union(context.Project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions)).ToList()
@@ -70,7 +69,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
 
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
     }
 }

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
@@ -35,7 +34,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public override Task ProcessAsync(EventContext ctx) {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
     }
 }

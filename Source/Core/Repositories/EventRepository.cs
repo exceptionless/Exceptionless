@@ -8,7 +8,6 @@ using Exceptionless.Core.Models.Results;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Elasticsearch.Extensions;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Elasticsearch.Repositories.Queries.Options;

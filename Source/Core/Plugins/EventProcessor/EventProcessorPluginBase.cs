@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
@@ -9,7 +8,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         protected bool ContinueOnError { get; set; }
 
         public virtual Task StartupAsync() {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
 
         public virtual async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
@@ -29,7 +28,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         }
 
         public virtual Task EventProcessingAsync(EventContext context) {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
 
         public virtual async Task EventBatchProcessedAsync(ICollection<EventContext> contexts) {
@@ -49,7 +48,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         }
 
         public virtual Task EventProcessedAsync(EventContext context) {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
         
         public virtual bool HandleError(Exception exception, EventContext context) {

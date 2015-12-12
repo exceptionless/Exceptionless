@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
@@ -188,12 +187,12 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact(Skip = "TODO")]
         public Task RemoveOldestEventsTestAsync() {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
 
         [Fact(Skip = "TODO")]
         public Task RemoveAllByDateTestAsync() {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
         
         [Fact]
