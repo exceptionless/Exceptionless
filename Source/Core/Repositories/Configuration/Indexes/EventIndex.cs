@@ -56,6 +56,7 @@ err['all_codes'] = codes.join(' ')";
                     .Transform(t => t.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy))
                     .AllField(i => i.IndexAnalyzer("standardplus").SearchAnalyzer("whitespace_lower"))
                     .Properties(p => p
+                        .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.PersistentEvent.CreatedUtc))
                         .String(f => f.Name(e => e.Id).IndexName(Fields.PersistentEvent.Id).Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
                         .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
@@ -241,6 +242,7 @@ err['all_codes'] = codes.join(' ')";
 
         public class Fields {
             public class PersistentEvent {
+                public const string CreatedUtc = "created";
                 public const string Id = "id";
                 public const string Date = "date";
             }
