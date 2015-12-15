@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.ServiceModel.Security;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Results;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Caching;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Elasticsearch.Repositories.Queries.Options;
-using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
@@ -59,14 +55,17 @@ namespace Exceptionless.Core.Repositories {
 
             return null;
         }
+        
+        // TODO: We need to index and search by the created time.
+        public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null) {
+            var filter = Filter<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.SessionStart) && Filter<PersistentEvent>.Missing(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]);
+            if (createdBeforeUtc.Ticks > 0)
+                filter &= Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(createdBeforeUtc));
 
-        public Task<PersistentEvent> GetBySessionIdAsync(string projectId, string sessionId) {
-            var filter = Filter<PersistentEvent>.Term(e => e.SessionId, sessionId);
-            return FindOneAsync(new ExceptionlessQuery()
-                .WithProjectId(projectId)
+            return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithSort(EventIndex.Fields.PersistentEvent.Date, SortOrder.Descending)
-                .WithLimit(1));
+                .WithPaging(paging));
         }
 
         public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool sendNotifications = true) {

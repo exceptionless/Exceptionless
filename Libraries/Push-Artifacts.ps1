@@ -38,6 +38,8 @@ git rm -r * -q 2>&1 | %{ "$_" }
 Write-Host "Copying build artifacts..."
 ROBOCOPY "$sourceDir\Api" "$artifactsDir" /XD "$sourceDir\Api\obj" "$sourceDir\Api\App_Data" /S /XF "*.nuspec" "*.settings" "*.cs" "packages.config" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" /NFL /NDL /NJH /NJS /nc /ns /np
 
+Write-Host "Copying CloseInactiveSession job..."
+ROBOCOPY "$sourceDir\Jobs\CloseInactiveSession\bin\Release" "$artifactsDir\App_Data\jobs\continuous\CloseInactiveSession" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying DailySummary job..."
 ROBOCOPY "$sourceDir\Jobs\DailySummary\bin\Release" "$artifactsDir\App_Data\jobs\continuous\DailySummary" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying DownloadGeoIPDatabase job..."

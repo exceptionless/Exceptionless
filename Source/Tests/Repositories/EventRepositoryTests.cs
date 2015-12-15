@@ -167,6 +167,34 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
+        public async Task GetOpenSessionsAsync() {
+            await RemoveDataAsync();
+
+            var firstEvent = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(35));
+
+            var sessionLastActive35MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession", generateData: false);
+            var sessionLastActive34MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession2", generateData: false);
+            sessionLastActive34MinAgo.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(1));
+            var sessionLastActive5MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession3", generateData: false);
+            sessionLastActive5MinAgo.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(30));
+            var closedSession = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession", generateData: false);
+            closedSession.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(5), true);
+
+            var events = new List<PersistentEvent> {
+                sessionLastActive35MinAgo,
+                sessionLastActive34MinAgo,
+                sessionLastActive5MinAgo,
+                closedSession
+            };
+
+            await _repository.AddAsync(events);
+
+            await _client.RefreshAsync();
+            var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
+            Assert.Equal(3, results.Total);
+        }
+
+        [Fact]
         public async Task MarkAsFixedByStackTestAsync() {
             await RemoveDataAsync();
 
@@ -183,27 +211,6 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Total);
             foreach (var ev in events.Documents)
                 Assert.False(ev.IsFixed);
-        }
-
-
-        [Fact]
-        public async Task UpdateSessionStartLastActivityAsync() {
-            await RemoveDataAsync();
-
-            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
-            DateTimeOffset lastEventDate = firstEventDate.Add(TimeSpan.FromMinutes(1));
-
-            var events = new List<PersistentEvent> {
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: firstEventDate, userIdentity: "blake@exceptionless.io"),
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: firstEventDate.AddSeconds(10), userIdentity: "blake@exceptionless.io"),
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: lastEventDate, userIdentity: "blake@exceptionless.io"),
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: lastEventDate),
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: lastEventDate, userIdentity: "eric@exceptionless.io"),
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: lastEventDate, userIdentity: "eric@exceptionless.io", type: Event.KnownTypes.SessionStart),
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: lastEventDate, userIdentity: "eric@exceptionless.io"),
-            };
-
-
         }
 
         [Fact(Skip = "TODO")]
