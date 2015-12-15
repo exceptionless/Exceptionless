@@ -14,10 +14,12 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Jobs {
     public class CloseInactiveSessionsJob : JobBase {
+        private readonly ICacheClient _cacheClient;
         private readonly IEventRepository _eventRepository;
         private readonly ILockProvider _lockProvider;
 
         public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient) {
+            _cacheClient = new ScopedCacheClient(cacheClient, "session");
             _eventRepository = eventRepository;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(2));
         }
@@ -40,12 +42,18 @@ namespace Exceptionless.Core.Jobs {
                     sessionStart.UpdateSessionStart(lastActivityUtc, true);
                     sessionsToUpdate.Add(sessionStart);
                     
+                    await _cacheClient.RemoveAsync($"{sessionStart.ProjectId}:start:{sessionStart.SessionId}").AnyContext();
+
+                    var identity = sessionStart.GetUserIdentity()?.Identity;
+                    if (!String.IsNullOrEmpty(identity))
+                        await _cacheClient.RemoveAsync($"{sessionStart.ProjectId}:identity:{identity.ToSHA1()}").AnyContext();
+
                     Debug.Assert(sessionStart.Value != null && sessionStart.Value >= 0, "Session start value cannot be a negative number.");
                 }
 
                 if (sessionsToUpdate.Count > 0)
                     await _eventRepository.SaveAsync(sessionsToUpdate).AnyContext();
-
+                
                 await results.NextPageAsync().AnyContext();
                 if (results.Documents.Count > 0)
                     await context.JobLock.RenewAsync().AnyContext();
