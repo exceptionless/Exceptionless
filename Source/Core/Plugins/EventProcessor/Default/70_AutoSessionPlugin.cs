@@ -106,8 +106,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             if (lastActivityUtc.HasValue)
                 startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
             else
-                startEvent.CopyDataToIndex();
-            
+                startEvent.CopyDataToIndex(!context.Organization.HasPremiumFeatures ? Event.KnownDataKeys.SessionEnd : null);
+
             var startEventContexts = new List<EventContext> {
                 new EventContext(startEvent) { Project = context.Project, Organization = context.Organization }
             };
