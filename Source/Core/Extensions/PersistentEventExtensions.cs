@@ -46,5 +46,22 @@ namespace Exceptionless {
                 }
             }
         }
+
+        public static bool UpdateSessionStart(this PersistentEvent ev, DateTime lastActivityUtc, bool isSessionEnd = false) {
+            if (ev == null || !ev.IsSessionStart())
+                return false;
+
+            var duration = (decimal)(lastActivityUtc - ev.Date.UtcDateTime).TotalSeconds;
+            if ((duration < 0 || ev.Value.GetValueOrDefault() >= duration) && ev.Value.HasValue && !isSessionEnd)
+                return true;
+
+            ev.Value = duration;
+            if (isSessionEnd) {
+                ev.Data[Event.KnownDataKeys.SessionEnd] = lastActivityUtc;
+                ev.CopyDataToIndex();
+            }
+
+            return true;
+        }
     }
 }

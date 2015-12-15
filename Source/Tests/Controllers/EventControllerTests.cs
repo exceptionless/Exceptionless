@@ -139,6 +139,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                     Assert.IsType<StatusCodeResult>(actionResult);
                 });
 
+                await _client.RefreshAsync();
                 Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
                 Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
 
@@ -148,6 +149,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 sw.Stop();
                 Trace.WriteLine(sw.Elapsed);
 
+                await _client.RefreshAsync();
                 Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync()).Completed);
                 Assert.Equal(batchSize * batchCount, await EventCountAsync());
                 //await countdown.WaitAsync();
@@ -212,9 +214,9 @@ namespace Exceptionless.Api.Tests.Controllers {
             await _client.RefreshAsync();
         }
 
-        public Task<long> EventCountAsync() {
-            _client.Refresh();
-            return _eventRepository.CountAsync();
+        public async Task<long> EventCountAsync() {
+            await _client.RefreshAsync();
+            return await _eventRepository.CountAsync();
         }
 
         public async Task AddSampleProjectsAsync() {

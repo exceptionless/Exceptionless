@@ -60,20 +60,19 @@ namespace Exceptionless.Core.Repositories {
             return null;
         }
 
+        public Task<PersistentEvent> GetBySessionIdAsync(string projectId, string sessionId) {
+            var filter = Filter<PersistentEvent>.Term(e => e.SessionId, sessionId);
+            return FindOneAsync(new ExceptionlessQuery()
+                .WithProjectId(projectId)
+                .WithElasticFilter(filter)
+                .WithSort(EventIndex.Fields.PersistentEvent.Date, SortOrder.Descending)
+                .WithLimit(1));
+        }
+
         public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool sendNotifications = true) {
             var ev = await GetByIdAsync(id).AnyContext();
-            if (ev == null)
+            if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd))
                 return false;
-
-            var duration = (decimal)(ev.Date.UtcDateTime - lastActivityUtc).TotalSeconds;
-            if ((duration < 0 || ev.Value.GetValueOrDefault() >= duration) && ev.Value.HasValue && !isSessionEnd)
-                return true;
-
-            ev.Value = duration;
-            if (isSessionEnd) {
-                ev.Data[Event.KnownDataKeys.SessionEnd] = lastActivityUtc;
-                ev.CopyDataToIndex();
-            }
 
             await SaveAsync(ev, sendNotifications: sendNotifications).AnyContext();
             return true;

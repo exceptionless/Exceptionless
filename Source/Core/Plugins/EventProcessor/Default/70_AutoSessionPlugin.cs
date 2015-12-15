@@ -10,7 +10,7 @@ using Foundatio.Caching;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
-    [Priority(60)]
+    [Priority(70)]
     public class AutoSessionPlugin : EventProcessorPluginBase {
         private static readonly TimeSpan _sessionTimeout = TimeSpan.FromDays(1);
         private readonly ICacheClient _cacheClient;
@@ -26,14 +26,14 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-            var identityGroups = contexts.Where(c => c.Event.GetUserIdentity()?.Identity != null)
+            var identityGroups = contexts.Where(c => String.IsNullOrEmpty(c.Event.SessionId) && c.Event.GetUserIdentity()?.Identity != null)
                 .OrderBy(c => c.Event.Date)
                 .GroupBy(c => c.Event.GetUserIdentity().Identity);
             
             foreach (var identityGroup in identityGroups) {
                 string sessionId = null;
-
-                foreach (var context in identityGroup.Where(c => String.IsNullOrEmpty(c.Event.SessionId))) {
+                
+                foreach (var context in identityGroup) {
                     string cacheKey = $"{context.Project.Id}:identity:{identityGroup.Key.ToSHA1()}";
 
                     if (String.IsNullOrEmpty(sessionId) && !context.Event.IsSessionStart()) {
@@ -58,7 +58,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                         await _cacheClient.SetAsync(cacheKey, sessionId, _sessionTimeout).AnyContext();
                         
                         if (!context.Event.IsSessionStart()) {
-                            string sessionStartId = await CreateSessionStartEventAsync(context, sessionId).AnyContext();
+                            var lastContext = GetLastActivity(identityGroup.Where(c => c.Event.Date.Ticks > context.Event.Date.Ticks).ToList());
+                            string sessionStartId = await CreateSessionStartEventAsync(context, sessionId, lastContext?.Event.Date.UtcDateTime, lastContext?.Event.IsSessionEnd()).AnyContext();
                             await _cacheClient.SetAsync($"{context.Project.Id}:start:{sessionId}", sessionStartId).AnyContext();
                         }
                     }
@@ -73,7 +74,22 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             }
         }
 
-        private async Task<string> CreateSessionStartEventAsync(EventContext context, string sessionId) {
+        private EventContext GetLastActivity(IList<EventContext> contexts) {
+            EventContext lastContext = null;
+            foreach (var context in contexts) {
+                if (context.Event.IsSessionEnd())
+                    return context;
+
+                if (context.Event.IsSessionStart())
+                    break;
+
+                lastContext = context;
+            }
+
+            return lastContext;
+        }
+
+        private async Task<string> CreateSessionStartEventAsync(EventContext context, string sessionId, DateTime? lastActivityUtc, bool? isSessionEnd) {
             // TODO: Be selective about what data we copy.
             var startEvent = new PersistentEvent {
                 SessionId = sessionId,
@@ -86,7 +102,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 Type = Event.KnownTypes.SessionStart
             };
 
-            startEvent.CopyDataToIndex();
+            if (lastActivityUtc.HasValue)
+                startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
+            else
+                startEvent.CopyDataToIndex();
             
             var startEventContexts = new List<EventContext> {
                 new EventContext(startEvent) { Project = context.Project, Organization = context.Organization }

@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Exceptionless.Core.Models.Data {
+    [DebuggerDisplay("{Identity}, {Name}")]
     public class UserInfo : IData {
         public UserInfo() {
             Data = new DataDictionary();

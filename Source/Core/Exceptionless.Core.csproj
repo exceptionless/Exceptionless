@@ -244,7 +244,7 @@
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\70_UpdateSessionPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\60_ManualSessionPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
@@ -288,7 +288,7 @@
     <Compile Include="Pipeline\Base\PipelineBase.cs" />
     <Compile Include="Pipeline\Base\PipelineContextBase.cs" />
     <Compile Include="Pipeline\Base\PriorityAttribute.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\60_AutoSessionPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\70_AutoSessionPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
     <Compile Include="Filter\QueryProcessorVisitor.cs" />
     <Compile Include="Utility\EventStats.cs" />
