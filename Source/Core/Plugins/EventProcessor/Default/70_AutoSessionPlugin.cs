@@ -31,11 +31,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 .GroupBy(c => c.Event.GetUserIdentity().Identity);
             
             foreach (var identityGroup in identityGroups) {
+                string cacheKey = $"{identityGroup.First().Project.Id}:identity:{identityGroup.Key.ToSHA1()}";
                 string sessionId = null;
                 
                 foreach (var context in identityGroup) {
-                    string cacheKey = $"{context.Project.Id}:identity:{identityGroup.Key.ToSHA1()}";
-
                     if (String.IsNullOrEmpty(sessionId) && !context.Event.IsSessionStart()) {
                         sessionId = await _cacheClient.GetAsync<string>(cacheKey, null).AnyContext();
                         if (!String.IsNullOrEmpty(sessionId))
@@ -50,7 +49,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                             string sessionStartEventId = await _cacheClient.GetAsync<string>(sessionStartEventIdCacheKey, null).AnyContext();
                             if (sessionStartEventId != null) {
                                 await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, context.Event.Date.UtcDateTime, true).AnyContext();
-                                await _cacheClient.RemoveAsync(sessionStartEventId).AnyContext();
+                                await _cacheClient.RemoveAsync(sessionStartEventIdCacheKey).AnyContext();
                             }
                         }
 
@@ -59,8 +58,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                         
                         if (!context.Event.IsSessionStart()) {
                             var lastContext = GetLastActivity(identityGroup.Where(c => c.Event.Date.Ticks > context.Event.Date.Ticks).ToList());
-                            string sessionStartId = await CreateSessionStartEventAsync(context, sessionId, lastContext?.Event.Date.UtcDateTime, lastContext?.Event.IsSessionEnd()).AnyContext();
-                            await _cacheClient.SetAsync($"{context.Project.Id}:start:{sessionId}", sessionStartId).AnyContext();
+                            string sessionStartId = await CreateSessionStartEventAsync(context, sessionId, (lastContext ?? context).Event.Date.UtcDateTime, lastContext == null || lastContext.Event.IsSessionEnd()).AnyContext();
+
+                            if (lastContext == null || !lastContext.Event.IsSessionEnd())
+                                await _cacheClient.SetAsync($"{context.Project.Id}:start:{sessionId}", sessionStartId).AnyContext();
                         }
                     }
                     
