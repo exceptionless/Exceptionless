@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
@@ -13,12 +15,18 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Queues.Models;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Caching;
+using Foundatio.Storage;
 using Nest;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Pipeline {
-    public class EventPipelineTests : IDisposable {
+    public class EventPipelineTests : CaptureTests, IDisposable {
+        private readonly ICacheClient _cacheClient = IoC.GetInstance<ICacheClient>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
@@ -26,6 +34,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
+
+        public EventPipelineTests(CaptureFixture fixture, ITestOutputHelper output) : base(fixture, output) { }
 
         [Fact]
         public async Task NoFutureEventsAsync() {
@@ -236,9 +246,146 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
                 var context = new EventContext(ev);
                 await  pipeline.RunAsync(context);
-                await _client.RefreshAsync();
                 Assert.True(context.IsProcessed);
             }
+        }
+
+        [Fact]
+        public async Task PipelinePerformance() {
+            await ResetAsync();
+
+            var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
+            var pipeline = IoC.GetInstance<EventPipeline>();
+            var startDate = DateTimeOffset.Now.SubtractHours(1);
+            var totalBatches = 0;
+            var totalEvents = 0;
+
+            var sw = new Stopwatch();
+            foreach (var file in Directory.GetFiles(@"..\..\Pipeline\Data\", "*.json", SearchOption.AllDirectories)) {
+                var events = parserPluginManager.ParseEvents(File.ReadAllText(file), 2, "exceptionless/2.0.0.0");
+                Assert.NotNull(events);
+                Assert.True(events.Count > 0);
+
+                foreach (var ev in events) {
+                    ev.Date = startDate;
+                    ev.ProjectId = TestConstants.ProjectId;
+                    ev.OrganizationId = TestConstants.OrganizationId;
+                }
+                
+                sw.Start();
+                var contexts = await pipeline.RunAsync(events);
+                sw.Stop();
+
+                Assert.True(contexts.All(c => c.IsProcessed));
+                Assert.True(contexts.All(c => !c.IsCancelled));
+                Assert.True(contexts.All(c => !c.HasError));
+
+                startDate = startDate.AddSeconds(5);
+                totalBatches++;
+                totalEvents += events.Count;
+            }
+
+            _writer.WriteLine($"Took {sw.ElapsedMilliseconds}ms to process {totalEvents} with an average post size of {Math.Round(totalEvents * 1.0/totalBatches, 4)}");
+        }
+
+        [Fact(Skip = "Used to create performance data from the queue directory")]
+        public async Task GeneratePerformanceData() {
+            var currentBatchCount = 0;
+            var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
+            var dataDirectory = Path.GetFullPath(@"..\..\Pipeline\Data\");
+            
+            foreach (var file in Directory.GetFiles(dataDirectory))
+                File.Delete(file);
+            
+            Dictionary<string, UserInfo> _mappedUsers = new Dictionary<string, UserInfo>();
+            Dictionary<string, string> _mappedIPs = new Dictionary<string, string>();
+
+            var storage = new FolderFileStorage(Path.GetFullPath(@"..\..\..\"));
+            foreach (var file in await storage.GetFileListAsync(@"Api\App_Data\storage\q\*")) {
+                var eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(file.Path);
+                byte[] data = eventPostInfo.Data;
+                if (!String.IsNullOrEmpty(eventPostInfo.ContentEncoding))
+                    data = data.Decompress(eventPostInfo.ContentEncoding);
+
+                var encoding = Encoding.UTF8;
+                if (!String.IsNullOrEmpty(eventPostInfo.CharSet))
+                    encoding = Encoding.GetEncoding(eventPostInfo.CharSet);
+
+                string input = encoding.GetString(data);
+                var events = parserPluginManager.ParseEvents(input, eventPostInfo.ApiVersion, eventPostInfo.UserAgent);
+                
+                foreach (var ev in events) {
+                    ev.Date = new DateTimeOffset(new DateTime(2020, 1, 1));
+                    ev.ProjectId = null;
+                    ev.OrganizationId = null;
+                    ev.StackId = null;
+
+                    if (ev.Message != null)
+                        ev.Message = RandomData.GetSentence();
+
+                    var keysToRemove = ev.Data.Keys.Where(k => !k.StartsWith("@") && k != "MachineName" && k != "job" && k != "host" && k != "process").ToList();
+                    foreach (var key in keysToRemove)
+                        ev.Data.Remove(key);
+
+                    ev.Data.Remove(Event.KnownDataKeys.UserDescription);
+                    var identity = ev.GetUserIdentity();
+                    if (identity != null) {
+                        if (!_mappedUsers.ContainsKey(identity.Identity))
+                            _mappedUsers.Add(identity.Identity, new UserInfo(Guid.NewGuid().ToString(), currentBatchCount.ToString()));
+
+                        ev.SetUserIdentity(_mappedUsers[identity.Identity]);
+                    }
+                    
+                    var request = ev.GetRequestInfo();
+                    if (request != null) {
+                        request.Cookies?.Clear();
+                        request.PostData = null;
+                        request.QueryString?.Clear();
+                        request.Referrer = null;
+                        request.Host = RandomData.GetIp4Address();
+                        request.Path = $"/{RandomData.GetWord(false)}/{RandomData.GetWord(false)}";
+                        request.Data.Clear();
+
+                        if (request.ClientIpAddress != null) {
+                            if (!_mappedIPs.ContainsKey(request.ClientIpAddress))
+                                _mappedIPs.Add(request.ClientIpAddress, RandomData.GetIp4Address());
+
+                            request.ClientIpAddress = _mappedIPs[request.ClientIpAddress];
+                        }
+                    }
+
+                    InnerError error = ev.GetError();
+                    while (error != null) {
+                        error.Message = RandomData.GetSentence();
+                        error.Data.Clear();
+                        (error as Error)?.Modules.Clear();
+
+                        error = error.Inner;
+                    }
+
+                    var environment = ev.GetEnvironmentInfo();
+                    environment?.Data.Clear();
+                }
+                
+                // inject random session start events.
+                if (currentBatchCount % 10 == 0)
+                    events.Insert(0, CreateSessionStartEvent(events[0]));
+
+                await storage.SaveObjectAsync($"{dataDirectory}\\{currentBatchCount++}.json", events);
+            }
+        }
+
+        private PersistentEvent CreateSessionStartEvent(PersistentEvent ev) {
+            return new PersistentEvent {
+                SessionId = ev.SessionId,
+                Data = ev.Data,
+                Date = ev.Date,
+                Geo = ev.Geo,
+                OrganizationId = ev.OrganizationId,
+                ProjectId = ev.ProjectId,
+                Tags = ev.Tags,
+                Type = Event.KnownTypes.SessionStart
+            };
         }
 
         public static IEnumerable<object[]> Events {
@@ -306,6 +453,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _projectRepository.RemoveAllAsync();
             await _organizationRepository.RemoveAllAsync();
             await _client.RefreshAsync();
+            await _cacheClient.RemoveAllAsync();
         }
 
         private async Task RemoveEventsAndStacks() {
