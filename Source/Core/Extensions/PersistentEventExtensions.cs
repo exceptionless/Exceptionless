@@ -62,6 +62,9 @@ namespace Exceptionless {
             if (isSessionEnd) {
                 ev.Data[Event.KnownDataKeys.SessionEnd] = lastActivityUtc;
                 ev.CopyDataToIndex(Event.KnownDataKeys.SessionEnd);
+            } else if (ev.Data.ContainsKey(Event.KnownDataKeys.SessionEnd)) {
+                ev.Data.Remove(Event.KnownDataKeys.SessionEnd);
+                ev.Idx.Remove(Event.KnownDataKeys.SessionEnd + "-d");
             }
 
             return true;

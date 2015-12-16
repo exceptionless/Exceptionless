@@ -14,18 +14,16 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Jobs {
     public class CloseInactiveSessionsJob : JobBase {
-        private readonly ICacheClient _cacheClient;
         private readonly IEventRepository _eventRepository;
         private readonly ILockProvider _lockProvider;
 
         public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient) {
-            _cacheClient = new ScopedCacheClient(cacheClient, "session");
             _eventRepository = eventRepository;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(2));
         }
 
         protected override Task<ILock> GetJobLockAsync() {
-            return _lockProvider.AcquireAsync(nameof(RetentionLimitsJob), TimeSpan.FromHours(2), new CancellationToken(true));
+            return _lockProvider.AcquireAsync(nameof(CloseInactiveSessionsJob), TimeSpan.FromHours(2), new CancellationToken(true));
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobRunContext context) {
@@ -41,12 +39,6 @@ namespace Exceptionless.Core.Jobs {
 
                     sessionStart.UpdateSessionStart(lastActivityUtc, true);
                     sessionsToUpdate.Add(sessionStart);
-                    
-                    await _cacheClient.RemoveAsync($"{sessionStart.ProjectId}:start:{sessionStart.SessionId}").AnyContext();
-
-                    var identity = sessionStart.GetUserIdentity()?.Identity;
-                    if (!String.IsNullOrEmpty(identity))
-                        await _cacheClient.RemoveAsync($"{sessionStart.ProjectId}:identity:{identity.ToSHA1()}").AnyContext();
 
                     Debug.Assert(sessionStart.Value != null && sessionStart.Value >= 0, "Session start value cannot be a negative number.");
                 }
@@ -62,7 +54,7 @@ namespace Exceptionless.Core.Jobs {
             return JobResult.Success;
         }
 
-        private static DateTime GetStartOfInactivePeriod() {
+        private DateTime GetStartOfInactivePeriod() {
             return DateTime.UtcNow.SubtractMinutes(30);
         }
     }
