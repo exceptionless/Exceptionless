@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Foundatio.Metrics;
@@ -16,10 +15,9 @@ namespace Exceptionless.Core.Pipeline {
 
         public IncrementCountersAction(IMetricsClient metricsClient) {
             _metricsClient = metricsClient;
+            ContinueOnError = true;
         }
-
-        protected override bool ContinueOnError => true;
-
+        
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {
                 await _metricsClient.CounterAsync(MetricNames.EventsProcessed, contexts.Count).AnyContext();
@@ -40,7 +38,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public override Task ProcessAsync(EventContext ctx) {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
     }
 }

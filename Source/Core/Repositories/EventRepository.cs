@@ -8,7 +8,6 @@ using Exceptionless.Core.Models.Results;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Elasticsearch.Extensions;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Elasticsearch.Repositories.Queries.Options;
@@ -55,6 +54,27 @@ namespace Exceptionless.Core.Repositories {
                 return String.Concat(_index.VersionedName, "-", objectId.CreationTime.ToString("yyyyMM"));
 
             return null;
+        }
+        
+        // TODO: We need to index and search by the created time.
+        public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null) {
+            var filter = Filter<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.SessionStart) && Filter<PersistentEvent>.Missing(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]);
+            if (createdBeforeUtc.Ticks > 0)
+                filter &= Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(createdBeforeUtc));
+
+            return FindAsync(new ExceptionlessQuery()
+                .WithElasticFilter(filter)
+                .WithSort(EventIndex.Fields.PersistentEvent.Date, SortOrder.Descending)
+                .WithPaging(paging));
+        }
+
+        public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool sendNotifications = true) {
+            var ev = await GetByIdAsync(id).AnyContext();
+            if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd))
+                return false;
+
+            await SaveAsync(ev, sendNotifications: sendNotifications).AnyContext();
+            return true;
         }
 
         public Task UpdateFixedByStackAsync(string organizationId, string stackId, bool value) {

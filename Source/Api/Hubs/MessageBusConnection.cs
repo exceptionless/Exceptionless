@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Foundatio.Logging;
 using Microsoft.AspNet.SignalR;
@@ -33,7 +32,7 @@ namespace Exceptionless.Api.Hubs {
                 throw;
             }
 
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
 
         protected override async Task OnReconnected(IRequest request, string connectionId) {

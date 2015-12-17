@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Foundatio.Caching;
@@ -27,7 +26,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         
         public override Task EventProcessedAsync(EventContext context) {
             if (String.IsNullOrEmpty(context.Event.ReferenceId))
-                return TaskHelper.Completed();
+                return Task.CompletedTask;
             
             return _cacheClient.SetAsync(GetCacheKey(context), true, TimeSpan.FromDays(1));
         }

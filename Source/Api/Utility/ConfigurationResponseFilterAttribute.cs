@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http.Filters;
 using Exceptionless.Api.Extensions;
-using Exceptionless.Core.Component;
 
 namespace Exceptionless.Api.Utility {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
@@ -14,11 +13,11 @@ namespace Exceptionless.Api.Utility {
                 throw new ArgumentNullException(nameof(context));
 
             if (context.Response == null || context.Response.StatusCode != HttpStatusCode.Accepted)
-                return TaskHelper.Completed();
+                return Task.CompletedTask;
 
             var project = context.Request?.GetProject();
             if (project == null)
-                return TaskHelper.Completed();
+                return Task.CompletedTask;
 
             string headerName = ExceptionlessHeaders.ConfigurationVersion;
             if (context.Request.RequestUri.AbsolutePath.StartsWith("/api/v1"))
@@ -27,7 +26,7 @@ namespace Exceptionless.Api.Utility {
             // add the current configuration version to the response headers so the client will know if it should update its config.
             context.Response.Headers.Add(headerName, project.Configuration.Version.ToString());
 
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
     }
 }

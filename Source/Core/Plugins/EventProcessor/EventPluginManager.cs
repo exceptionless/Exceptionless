@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Dependency;
@@ -25,14 +26,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         /// <summary>
         /// Runs all of the event plugins event processing method.
         /// </summary>
-        public async Task EventProcessingAsync(EventContext context) {
+        public async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
             foreach (var plugin in Plugins.Values) {
                 try {
-                    await plugin.EventProcessingAsync(context).AnyContext();
-                    if (context.IsCancelled) {
-                        Logger.Trace().Message($"Event processing was cancelled by plugin: {plugin.GetType().FullName}").Write();
+                    await plugin.EventBatchProcessingAsync(contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList()).AnyContext();
+                    if (contexts.All(c => c.IsCancelled || c.HasError))
                         break;
-                    }
                 } catch (Exception ex) {
                     Logger.Error().Message("Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }
@@ -42,14 +41,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         /// <summary>
         /// Runs all of the event plugins event processed method.
         /// </summary>
-        public async Task EventProcessedAsync(EventContext context) {
+        public async Task EventBatchProcessedAsync(ICollection<EventContext> contexts) {
             foreach (var plugin in Plugins.Values) {
                 try {
-                    await plugin.EventProcessedAsync(context).AnyContext();
-                    if (context.IsCancelled) {
-                        Logger.Trace().Message($"Event processed was cancelled by plugin: {plugin.GetType().FullName}").Write();
+                    await plugin.EventBatchProcessedAsync(contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList()).AnyContext();
+                    if (contexts.All(c => c.IsCancelled || c.HasError))
                         break;
-                    }
                 } catch (Exception ex) {
                     Logger.Error().Message("Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }

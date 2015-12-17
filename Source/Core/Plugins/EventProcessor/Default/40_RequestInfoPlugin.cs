@@ -2,13 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using Foundatio.Logging;
-using UAParser;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(40)]
@@ -25,19 +23,25 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             "ARRAffinity"
         };
 
-        public override Task EventProcessingAsync(EventContext context) {
-            var request = context.Event.GetRequestInfo();
-            if (request == null)
-                return TaskHelper.Completed();
+        private readonly UserAgentParser _parser;
 
-            var exclusions = context.Project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.DataExclusions)
-                    ? DefaultExclusions.Union(context.Project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions)).ToList()
+        public RequestInfoPlugin(UserAgentParser parser) {
+            _parser = parser;
+        }
+
+        public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
+            var project = contexts.First().Project;
+            var exclusions = project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.DataExclusions)
+                    ? DefaultExclusions.Union(project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions)).ToList()
                     : DefaultExclusions;
+            
+            foreach (var context in contexts) {
+                var request = context.Event.GetRequestInfo();
+                if (request == null)
+                    continue;
 
-            if (!String.IsNullOrEmpty(request.UserAgent)) {
-                try {
-                    var info = Parser.GetDefault().Parse(request.UserAgent);
-
+                var info = await _parser.ParseAsync(request.UserAgent, context.Project.Id).AnyContext();
+                if (info != null) {
                     if (!String.Equals(info.UserAgent.Family, "Other")) {
                         request.Data[RequestInfo.KnownDataKeys.Browser] = info.UserAgent.Family;
                         if (!String.IsNullOrEmpty(info.UserAgent.Major)) {
@@ -58,19 +62,15 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                         }
                     }
 
-                    var botPatterns = context.Project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns)
-                      ? context.Project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList()
-                      : new List<string>();
+                    var botPatterns = context.Project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns) 
+                        ? context.Project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList() 
+                        : new List<string>();
 
                     request.Data[RequestInfo.KnownDataKeys.IsBot] = info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns);
-                } catch (Exception ex) {
-                    Logger.Warn().Project(context.Event.ProjectId).Message("Unable to parse user agent {0}. Exception: {1}", request.UserAgent, ex.Message).Write();
                 }
+
+                context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
             }
-
-            context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
-
-            return TaskHelper.Completed();
         }
     }
 }

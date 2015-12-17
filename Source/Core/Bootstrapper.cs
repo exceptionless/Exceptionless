@@ -8,7 +8,6 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -19,7 +18,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Validation;
 using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.Caching;
@@ -149,6 +147,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<EventPipeline>();
             container.RegisterSingleton<EventPluginManager>();
             container.RegisterSingleton<FormattingPluginManager>();
+            container.RegisterSingleton<UserAgentParser>();
 
             container.RegisterSingleton<SystemHealthChecker>();
 

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -20,9 +19,8 @@ namespace Exceptionless.Core.Pipeline {
         public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue) {
             _stackRepository = stackRepository;
             _workItemQueue = workItemQueue;
+            ContinueOnError = true;
         }
-
-        protected override bool ContinueOnError => true;
 
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var stacks = contexts.Where(c => c.Stack?.DateFixed != null && c.Stack.DateFixed.Value < c.Event.Date.UtcDateTime).GroupBy(c => c.Event.StackId);
@@ -57,7 +55,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public override Task ProcessAsync(EventContext ctx) {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
     }
 }

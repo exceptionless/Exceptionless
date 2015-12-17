@@ -3,7 +3,7 @@ using System.Diagnostics;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
-    [DebuggerDisplay("{Id}, {Date}")]
+    [DebuggerDisplay("{Id}, {Type}, {SessionId}, {Date}")]
     public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveCreatedDate {
         public PersistentEvent() {
             Idx = new DataDictionary();

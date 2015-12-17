@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories;
@@ -107,7 +106,7 @@ namespace Exceptionless.Api.Controllers {
             foreach (var model in models.OfType<IData>())
                 model.Data.RemoveSensitiveData();
 
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
 
         #endregion

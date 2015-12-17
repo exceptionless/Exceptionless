@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
@@ -168,6 +167,34 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
+        public async Task GetOpenSessionsAsync() {
+            await RemoveDataAsync();
+
+            var firstEvent = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(35));
+
+            var sessionLastActive35MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession", generateData: false);
+            var sessionLastActive34MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession2", generateData: false);
+            sessionLastActive34MinAgo.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(1));
+            var sessionLastActive5MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession3", generateData: false);
+            sessionLastActive5MinAgo.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(30));
+            var closedSession = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession", generateData: false);
+            closedSession.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(5), true);
+
+            var events = new List<PersistentEvent> {
+                sessionLastActive35MinAgo,
+                sessionLastActive34MinAgo,
+                sessionLastActive5MinAgo,
+                closedSession
+            };
+
+            await _repository.AddAsync(events);
+
+            await _client.RefreshAsync();
+            var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
+            Assert.Equal(3, results.Total);
+        }
+
+        [Fact]
         public async Task MarkAsFixedByStackTestAsync() {
             await RemoveDataAsync();
 
@@ -188,12 +215,12 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact(Skip = "TODO")]
         public Task RemoveOldestEventsTestAsync() {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
 
         [Fact(Skip = "TODO")]
         public Task RemoveAllByDateTestAsync() {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
         
         [Fact]

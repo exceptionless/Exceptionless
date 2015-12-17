@@ -31,13 +31,15 @@ namespace Exceptionless.Core.Pipeline {
     /// </summary>
     /// <typeparam name="TContext">The type of the pipeline context.</typeparam>
     public abstract class PipelineActionBase<TContext> : IPipelineAction<TContext> where TContext : class, IPipelineContext {
-        protected virtual bool ContinueOnError => false;
+        protected bool ContinueOnError { get; set; }
 
         /// <summary>
         /// Processes this action using the specified pipeline context.
         /// </summary>
         /// <param name="context">The pipeline context.</param>
-        public abstract Task ProcessAsync(TContext context);
+        public virtual Task ProcessAsync(TContext context) {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Processes this action using the specified pipeline context.

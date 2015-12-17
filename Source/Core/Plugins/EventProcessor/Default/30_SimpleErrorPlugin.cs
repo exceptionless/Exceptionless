@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models.Data;
@@ -10,11 +9,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
     public class SimpleErrorPlugin : EventProcessorPluginBase {
         public override Task EventProcessingAsync(EventContext context) {
             if (!context.Event.IsError())
-                return TaskHelper.Completed();
+                return Task.CompletedTask;
 
             SimpleError error = context.Event.GetSimpleError();
             if (error == null)
-                return TaskHelper.Completed();
+                return Task.CompletedTask;
             
             if (String.IsNullOrWhiteSpace(context.Event.Message))
                 context.Event.Message = error.Message;
@@ -26,7 +25,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (!String.IsNullOrEmpty(error.StackTrace))
                 context.StackSignatureData.Add("StackTrace", error.StackTrace.ToSHA1());
 
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
     }
 }

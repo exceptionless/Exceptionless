@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Results;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Utility;
 
 #pragma warning disable 1998
@@ -29,7 +28,7 @@ namespace Exceptionless.Api.Utility {
                 throw new ArgumentException($"{typeof(ExceptionContext).Name}.{"Request"} must not be null", nameof(context));
 
             context.Result = new ResponseMessageResult(CreateErrorResponse(request, exceptionContext.Exception, HttpStatusCode.InternalServerError));
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
 
         private HttpResponseMessage CreateErrorResponse(HttpRequestMessage request, Exception ex, HttpStatusCode statusCode) {

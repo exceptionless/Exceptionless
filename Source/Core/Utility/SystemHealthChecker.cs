@@ -1,15 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Queues.Models;
 using Foundatio.Caching;
-using Foundatio.Extensions;
-using Foundatio.Lock;
 using Foundatio.Logging;
-using Foundatio.Messaging;
-using Foundatio.Queues;
 using Foundatio.Storage;
 using Nest;
 using Nito.AsyncEx;

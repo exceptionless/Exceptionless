@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Foundatio.Messaging;
@@ -64,14 +63,14 @@ namespace Exceptionless.Api.Hubs {
             if (planOverage != null)
                 return Context.Groups.TypedSend(planOverage.OrganizationId, planOverage);
 
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
 
         private Task OnPlanChangedAsync(PlanChanged planChanged, CancellationToken cancellationToken = default(CancellationToken)) {
             if (planChanged != null)
                 return Context.Groups.TypedSend(planChanged.OrganizationId, planChanged);
 
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
 
         private Task OnReleaseNotificationAsync(ReleaseNotification notification, CancellationToken cancellationToken = default(CancellationToken)) {

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
@@ -21,45 +23,47 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             _workItemQueue = workItemQueue;
         }
 
-        public override async Task EventProcessingAsync(EventContext context) {
+        public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
                 return;
-            
-            if (!context.Project.DeleteBotDataEnabled)
+
+            var firstContext = contexts.First();
+            if (!firstContext.Project.DeleteBotDataEnabled)
                 return;
 
             // Throttle errors by client ip address to no more than X every 5 minutes.
-            var ri = context.Event.GetRequestInfo();
-            if (String.IsNullOrEmpty(ri?.ClientIpAddress))
-                return;
+            var clientIpAddressGroups = contexts.Where(c => !String.IsNullOrEmpty(c.Event.GetRequestInfo()?.ClientIpAddress)).GroupBy(c => c.Event.GetRequestInfo().ClientIpAddress);
+            foreach (var clientIpAddressGroup in clientIpAddressGroups) {
+                if (clientIpAddressGroup.Key.IsPrivateNetwork())
+                    return;
 
-            if (ri.ClientIpAddress.IsPrivateNetwork())
-                return;
+                var clientIpContexts = clientIpAddressGroup.ToList();
 
-            string throttleCacheKey = String.Concat("bot:", ri.ClientIpAddress, ":", DateTime.UtcNow.Floor(_throttlingPeriod).Ticks);
-            var requestCount = await _cacheClient.GetAsync<int?>(throttleCacheKey, null).AnyContext();
-            if (requestCount.HasValue) {
-                await _cacheClient.IncrementAsync(throttleCacheKey, 1).AnyContext();
-                requestCount++;
-            } else {
-                await _cacheClient.SetAsync(throttleCacheKey, 1, DateTime.UtcNow.Ceiling(_throttlingPeriod)).AnyContext();
-                requestCount = 1;
+                string throttleCacheKey = String.Concat("bot:", clientIpAddressGroup.Key, ":", DateTime.UtcNow.Floor(_throttlingPeriod).Ticks);
+                var requestCount = await _cacheClient.GetAsync<int?>(throttleCacheKey, null).AnyContext();
+                if (requestCount.HasValue) {
+                    await _cacheClient.IncrementAsync(throttleCacheKey, clientIpContexts.Count).AnyContext();
+                    requestCount += clientIpContexts.Count;
+                } else {
+                    await _cacheClient.SetAsync(throttleCacheKey, clientIpContexts.Count, DateTime.UtcNow.Ceiling(_throttlingPeriod)).AnyContext();
+                    requestCount = clientIpContexts.Count;
+                }
+
+                if (requestCount < Settings.Current.BotThrottleLimit)
+                    return;
+
+                Logger.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", clientIpAddressGroup.Key, DateTime.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId).Project(firstContext.Event.ProjectId).Write();
+
+                // The throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
+                await _workItemQueue.EnqueueAsync(new ThrottleBotsWorkItem {
+                    OrganizationId = firstContext.Event.OrganizationId,
+                    ClientIpAddress = clientIpAddressGroup.Key,
+                    UtcStartDate = DateTime.UtcNow.Floor(_throttlingPeriod),
+                    UtcEndDate = DateTime.UtcNow.Ceiling(_throttlingPeriod)
+                }).AnyContext();
+
+                clientIpContexts.ForEach(c => c.IsCancelled = true);
             }
-
-            if (requestCount < Settings.Current.BotThrottleLimit)
-                return;
-            
-            Logger.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", ri.ClientIpAddress, DateTime.UtcNow.Floor(_throttlingPeriod), context.Event.ProjectId).Project(context.Event.ProjectId).Write();
-            
-            // the throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
-            await _workItemQueue.EnqueueAsync(new ThrottleBotsWorkItem {
-                OrganizationId = context.Event.OrganizationId,
-                ClientIpAddress = ri.ClientIpAddress,
-                UtcStartDate = DateTime.UtcNow.Floor(_throttlingPeriod),
-                UtcEndDate = DateTime.UtcNow.Ceiling(_throttlingPeriod)
-            }).AnyContext();
-
-            context.IsCancelled = true;
         }
     }
 }

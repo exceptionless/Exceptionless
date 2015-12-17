@@ -90,7 +90,7 @@ namespace Exceptionless.Api.Tests.Utility {
             fixture.Capture(_output);
         }
 
-        public void Dispose() {
+        public virtual void Dispose() {
             _fixture?.Dispose();
         }
     }

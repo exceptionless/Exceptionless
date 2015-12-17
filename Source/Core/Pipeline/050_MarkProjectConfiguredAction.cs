@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -16,10 +15,9 @@ namespace Exceptionless.Core.Pipeline {
 
         public MarkProjectConfiguredAction(IQueue<WorkItemData> workItemQueue) {
             _workItemQueue = workItemQueue;
+            ContinueOnError = true;
         }
-
-        protected override bool ContinueOnError => true;
-
+        
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var projectIds = contexts.Where(c => !c.Project.IsConfigured.HasValue || !c.Project.IsConfigured.Value).Select(c => c.Project.Id).Distinct().ToList();
             if (projectIds.Count == 0)
@@ -46,7 +44,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public override Task ProcessAsync(EventContext ctx) {
-            return TaskHelper.Completed();
+            return Task.CompletedTask;
         }
     }
 }

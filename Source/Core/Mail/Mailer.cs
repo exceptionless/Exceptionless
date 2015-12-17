@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Net.Mail;
 using System.Threading.Tasks;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -30,7 +29,7 @@ namespace Exceptionless.Core.Mail {
 
         public Task SendPasswordResetAsync(User user) {
             if (String.IsNullOrEmpty(user?.PasswordResetToken))
-                return TaskHelper.Completed();
+                return Task.CompletedTask;
 
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {
                 User = user,
@@ -90,7 +89,7 @@ namespace Exceptionless.Core.Mail {
             var message = _pluginManager.GetEventNotificationMailMessage(model);
             if (message == null) {
                 Logger.Warn().Message("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, emailAddress).Write();
-                return TaskHelper.Completed();
+                return Task.CompletedTask;
             }
 
             message.To = emailAddress;
