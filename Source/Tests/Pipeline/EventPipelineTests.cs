@@ -460,10 +460,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 ev.ProjectId = TestConstants.ProjectId;
                 ev.OrganizationId = TestConstants.OrganizationId;
             }
-
-            await _client.RefreshAsync();
+            
             var contexts = await pipeline.RunAsync(events);
-
             Assert.True(contexts.All(c => c.IsProcessed));
             Assert.True(contexts.All(c => !c.IsCancelled));
             Assert.True(contexts.All(c => !c.HasError));
