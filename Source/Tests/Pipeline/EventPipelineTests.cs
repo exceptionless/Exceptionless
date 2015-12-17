@@ -456,11 +456,14 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 ev.Date = DateTime.UtcNow;
                 ev.ProjectId = TestConstants.ProjectId;
                 ev.OrganizationId = TestConstants.OrganizationId;
-
-                var context = new EventContext(ev);
-                await pipeline.RunAsync(context);
-                Assert.True(context.IsProcessed);
             }
+
+            await _client.RefreshAsync();
+            var contexts = await pipeline.RunAsync(events);
+
+            Assert.True(contexts.All(c => c.IsProcessed));
+            Assert.True(contexts.All(c => !c.IsCancelled));
+            Assert.True(contexts.All(c => !c.HasError));
         }
 
         [Fact]
