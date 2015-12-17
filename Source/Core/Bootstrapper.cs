@@ -147,6 +147,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<EventPipeline>();
             container.RegisterSingleton<EventPluginManager>();
             container.RegisterSingleton<FormattingPluginManager>();
+            container.RegisterSingleton<UserAgentParser>();
 
             container.RegisterSingleton<SystemHealthChecker>();
 

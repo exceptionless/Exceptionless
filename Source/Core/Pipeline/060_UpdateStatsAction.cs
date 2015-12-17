@@ -24,14 +24,16 @@ namespace Exceptionless.Core.Pipeline {
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var stacks = contexts.Where(c => !c.IsNew).GroupBy(c => c.Event.StackId);
             foreach (var stackGroup in stacks) {
+                var stackContexts = stackGroup.ToList();
+
                 try {
-                    int count = stackGroup.Count();
-                    DateTime minDate = stackGroup.Min(s => s.Event.Date.UtcDateTime);
-                    DateTime maxDate = stackGroup.Max(s => s.Event.Date.UtcDateTime);
-                    await _stackRepository.IncrementEventCounterAsync(stackGroup.First().Event.OrganizationId, stackGroup.First().Event.ProjectId, stackGroup.Key, minDate, maxDate, count).AnyContext();
+                    int count = stackContexts.Count;
+                    DateTime minDate = stackContexts.Min(s => s.Event.Date.UtcDateTime);
+                    DateTime maxDate = stackContexts.Max(s => s.Event.Date.UtcDateTime);
+                    await _stackRepository.IncrementEventCounterAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count).AnyContext();
 
                     // Update stacks in memory since they are used in notifications.
-                    foreach (var ctx in stackGroup) {
+                    foreach (var ctx in stackContexts) {
                         if (ctx.Stack.FirstOccurrence > minDate)
                             ctx.Stack.FirstOccurrence = minDate;
 
@@ -41,7 +43,7 @@ namespace Exceptionless.Core.Pipeline {
                         ctx.Stack.TotalOccurrences += count;
                     }
                 } catch (Exception ex) {
-                    foreach (var context in stackGroup) {
+                    foreach (var context in stackContexts) {
                         bool cont = false;
                         try {
                             cont = HandleError(ex, context);

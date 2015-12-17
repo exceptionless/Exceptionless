@@ -9,11 +9,13 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
 using UAParser;
+
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
@@ -25,10 +27,11 @@ namespace Exceptionless.Core.Jobs {
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly ICacheClient _cacheClient;
+        private readonly UserAgentParser _parser;
 
         public EventNotificationsJob(IQueue<EventNotificationWorkItem> queue, IMailer mailer,
             IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository,
-            IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient) : base(queue) {
+            IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser) : base(queue) {
             _mailer = mailer;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -36,6 +39,7 @@ namespace Exceptionless.Core.Jobs {
             _userRepository = userRepository;
             _eventRepository = eventRepository;
             _cacheClient = cacheClient;
+            _parser = parser;
         }
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<EventNotificationWorkItem> context) {
@@ -142,23 +146,17 @@ namespace Exceptionless.Core.Jobs {
                     shouldReportNewError, shouldReportCriticalError,
                     shouldReportRegression, shouldReportNewEvent, shouldReportCriticalEvent).WriteIf(shouldLog);
 
-                var requestInfo = eventNotification.Event.GetRequestInfo();
+                var request = eventNotification.Event.GetRequestInfo();
                 // check for known bots if the user has elected to not report them
-                if (shouldReport && !String.IsNullOrEmpty(requestInfo?.UserAgent)) {
-                    ClientInfo info = null;
-                    try {
-                        info = Parser.GetDefault().Parse(requestInfo.UserAgent);
-                    } catch (Exception ex) {
-                        Logger.Warn().Project(eventNotification.Event.ProjectId).Message("Unable to parse user agent {0}. Exception: {1}", requestInfo.UserAgent, ex.Message).Write();
-                    }
-
+                if (shouldReport && !String.IsNullOrEmpty(request?.UserAgent)) {
                     var botPatterns = project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns)
                         ? project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList()
                         : new List<string>();
 
-                    if (info != null && info.Device.IsSpider || requestInfo.UserAgent.AnyWildcardMatches(botPatterns)) {
+                    var info = await _parser.ParseAsync(request.UserAgent, eventNotification.Event.ProjectId).AnyContext();
+                    if (info != null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns)) {
                         shouldReport = false;
-                        Logger.Info().Message("Skipping because event is from a bot \"{0}\".", requestInfo.UserAgent).WriteIf(shouldLog);
+                        Logger.Info().Message("Skipping because event is from a bot \"{0}\".", request.UserAgent).WriteIf(shouldLog);
                     }
                 }
 
