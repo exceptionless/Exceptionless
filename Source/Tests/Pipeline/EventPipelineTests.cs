@@ -26,7 +26,7 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Pipeline {
-    public class EventPipelineTests : CaptureTests, IDisposable {
+    public class EventPipelineTests : CaptureTests {
         private readonly ICacheClient _cacheClient = IoC.GetInstance<ICacheClient>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
@@ -70,8 +70,11 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _client.RefreshAsync();
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
-            Assert.Equal(1, events.Documents.Count(e => e.IsSessionStart()));
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+
+            var sessionStart = events.Documents.First(e => e.IsSessionStart());
+            Assert.Null(sessionStart.Value);
+            Assert.False(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
         }
         
         [Fact]
@@ -690,8 +693,9 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _cacheClient.RemoveAllAsync();
         }
 
-        public async void Dispose() {
+        public override async void Dispose() {
             await RemoveDataAsync();
+            base.Dispose();
         }
     }
 }

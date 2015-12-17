@@ -151,8 +151,8 @@ namespace Exceptionless.Api.Tests.Controllers {
 
                 await _client.RefreshAsync();
                 Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync()).Completed);
-                Assert.Equal(batchSize * batchCount, await EventCountAsync());
-                //await countdown.WaitAsync();
+                var minimum = batchSize * batchCount;
+                Assert.InRange(await EventCountAsync(), minimum, minimum * 2);
             } finally {
                 await _eventQueue.DeleteQueueAsync();
             }
@@ -198,18 +198,21 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         public async Task RemoveAllOrganizationsAsync() {
+            await _client.RefreshAsync();
             await _organizationRepository.RemoveAllAsync();
             await _client.RefreshAsync();
             _sampleOrganizationsAdded = false;
         }
 
         public async Task RemoveAllProjectsAsync() {
+            await _client.RefreshAsync();
             await _projectRepository.RemoveAllAsync();
             await _client.RefreshAsync();
             _sampleProjectsAdded = false;
         }
 
         public async Task RemoveAllEventsAsync() {
+            await _client.RefreshAsync();
             await _eventRepository.RemoveAllAsync();
             await _client.RefreshAsync();
         }

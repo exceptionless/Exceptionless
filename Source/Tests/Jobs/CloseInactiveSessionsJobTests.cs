@@ -1,0 +1,152 @@
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
+using Exceptionless.Tests.Utility;
+using Foundatio.Caching;
+using Foundatio.Jobs;
+using Nest;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Exceptionless.Api.Tests.Jobs {
+    public class CloseInactiveSessionsJobTests : CaptureTests {
+        private readonly CloseInactiveSessionsJob _job = IoC.GetInstance<CloseInactiveSessionsJob>();
+        private readonly ICacheClient _cacheClient = IoC.GetInstance<ICacheClient>();
+        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
+        private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
+        private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
+        private readonly ITokenRepository _tokenRepository = IoC.GetInstance<ITokenRepository>();
+        private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
+        private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
+        private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
+        private readonly EventPipeline _pipeline = IoC.GetInstance<EventPipeline>();
+
+        public CloseInactiveSessionsJobTests(CaptureFixture fixture, ITestOutputHelper output) : base(fixture, output) {}
+
+        [Theory]
+        [InlineData(1, true)]
+        [InlineData(60, false)]
+        public async Task CloseInactiveSessions(int defaultInactivePeriodInMinutes, bool willCloseSession) {
+            await ResetAsync();
+
+            var ev = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), "blake@exceptionless.io");
+
+            var context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
+            Assert.False(context.IsCancelled);
+            Assert.True(context.IsProcessed);
+
+            await _client.RefreshAsync();
+            var events = await _eventRepository.GetAllAsync();
+            Assert.Equal(2, events.Total);
+            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+            var sessionStart = events.Documents.First(e => e.IsSessionStart());
+            Assert.Null(sessionStart.Value);
+            Assert.False(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+
+            _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);
+            Assert.Equal(JobResult.Success, await _job.RunAsync());
+            await _client.RefreshAsync();
+            events = await _eventRepository.GetAllAsync();
+            Assert.Equal(2, events.Total);
+
+            sessionStart = events.Documents.First(e => e.IsSessionStart());
+            if (willCloseSession) {
+                Assert.Equal(0, sessionStart.Value);
+                Assert.True(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            } else {
+                Assert.Null(sessionStart.Value);
+                Assert.False(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            }
+        }
+
+        private bool _isReset;
+        private async Task ResetAsync() {
+            if (!_isReset) {
+                _isReset = true;
+                await RemoveDataAsync();
+                await CreateDataAsync();
+            } else {
+                await RemoveEventsAndStacks();
+            }
+
+            await _cacheClient.RemoveAllAsync();
+        }
+
+        private async Task CreateDataAsync() {
+            foreach (Organization organization in OrganizationData.GenerateSampleOrganizations()) {
+                if (organization.Id == TestConstants.OrganizationId3)
+                    BillingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, UserData.GenerateSampleUser());
+                else
+                    BillingManager.ApplyBillingPlan(organization, BillingManager.SmallPlan, UserData.GenerateSampleUser());
+
+                organization.StripeCustomerId = Guid.NewGuid().ToString("N");
+                organization.CardLast4 = "1234";
+                organization.SubscribeDate = DateTime.Now;
+
+                if (organization.IsSuspended) {
+                    organization.SuspendedByUserId = TestConstants.UserId;
+                    organization.SuspensionCode = SuspensionCode.Billing;
+                    organization.SuspensionDate = DateTime.Now;
+                }
+
+                await _organizationRepository.AddAsync(organization, true);
+            }
+
+            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), true);
+
+            foreach (User user in UserData.GenerateSampleUsers()) {
+                if (user.Id == TestConstants.UserId) {
+                    user.OrganizationIds.Add(TestConstants.OrganizationId2);
+                    user.OrganizationIds.Add(TestConstants.OrganizationId3);
+                }
+
+                if (!user.IsEmailAddressVerified)
+                    user.CreateVerifyEmailAddressToken();
+
+                await _userRepository.AddAsync(user, true);
+            }
+
+            await _client.RefreshAsync();
+        }
+
+        private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
+            if (!occurrenceDate.HasValue)
+                occurrenceDate = DateTimeOffset.Now;
+
+            return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
+        }
+
+        private async Task RemoveDataAsync() {
+            await RemoveEventsAndStacks();
+            await _tokenRepository.RemoveAllAsync();
+            await _userRepository.RemoveAllAsync();
+            await _projectRepository.RemoveAllAsync();
+            await _organizationRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
+            await _cacheClient.RemoveAllAsync();
+        }
+
+        private async Task RemoveEventsAndStacks() {
+            await _client.RefreshAsync();
+            await _eventRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
+            await _stackRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
+            await _cacheClient.RemoveAllAsync();
+        }
+
+        public override async void Dispose() {
+            await RemoveDataAsync();
+            base.Dispose();
+        }
+    }
+}

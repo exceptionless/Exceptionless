@@ -55,7 +55,9 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private DateTime GetStartOfInactivePeriod() {
-            return DateTime.UtcNow.SubtractMinutes(30);
+            return DateTime.UtcNow.Subtract(DefaultInactivePeriod);
         }
+        
+        public TimeSpan DefaultInactivePeriod { get; set; } = TimeSpan.FromMinutes(30);
     }
 }
