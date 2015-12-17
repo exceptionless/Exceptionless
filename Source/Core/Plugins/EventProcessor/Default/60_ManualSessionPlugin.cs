@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 // Update or create the session start event.
                 var createSessionStartEvent = String.IsNullOrEmpty(sessionStartEventId) && sessionStartEventContext == null;
                 if (createSessionStartEvent) {
-                    string sessionStartId = await CreateSessionStartEventAsync(oldestContext, validContexts.Count > 1 ? newestContext.Event.Date.UtcDateTime : (DateTime?)null, sessionEndEventContext != null).AnyContext();
+                    string sessionStartId = await CreateSessionStartEventAsync(oldestContext, newestContext.Event.Date.UtcDateTime, sessionEndEventContext != null).AnyContext();
                     if (sessionEndEventContext == null)
                         await _cacheClient.SetAsync(cacheKey, sessionStartId).AnyContext();
                 } else if (sessionStartEventContext != null) {

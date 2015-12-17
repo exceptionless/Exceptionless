@@ -6,12 +6,11 @@ using Exceptionless.Core.Models;
 namespace Exceptionless {
     public static class PersistentEventExtensions {
         public static void CopyDataToIndex(this PersistentEvent ev, params string[] keysToCopy) {
-            keysToCopy = keysToCopy?.Where(k => !String.IsNullOrEmpty(k)).ToArray();
-            keysToCopy = keysToCopy?.Length > 0 ? keysToCopy : ev.Data.Keys.Where(k => !String.IsNullOrEmpty(k) && !k.StartsWith("@")).ToArray();
+            keysToCopy = keysToCopy?.Length > 0 ? keysToCopy : ev.Data.Keys.ToArray();
 
-            foreach (string key in keysToCopy) {
+            foreach (string key in keysToCopy.Where(k => !String.IsNullOrEmpty(k) && ev.Data.ContainsKey(k))) {
                 string field = key.Trim().ToLower().Replace(' ', '-');
-                if (field.StartsWith("@") || ev.Data[key] == null)
+                if (field.StartsWith("@"))
                     continue;
 
                 Type dataType = ev.Data[key].GetType();

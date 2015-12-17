@@ -188,9 +188,12 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _client.RefreshAsync();
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
-            Assert.Equal(1, events.Documents.Count(e => e.IsSessionStart()));
-            Assert.Null(events.Documents.First(e => e.IsSessionStart()).Value);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+
+            var sessionStartEvent = events.Documents.SingleOrDefault(e => e.IsSessionStart());
+            Assert.NotNull(sessionStartEvent);
+            Assert.Equal(0, sessionStartEvent.Value);
+            Assert.False(sessionStartEvent.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
         }
 
         [Fact]
