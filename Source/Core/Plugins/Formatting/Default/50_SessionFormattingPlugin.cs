@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Dynamic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -28,7 +29,20 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            return new SummaryData { TemplateKey = "event-session-summary", Data = new { SessionId = ev.SessionId } };
+
+            dynamic data = new ExpandoObject();
+            data.SessionId = ev.SessionId;
+
+            var identity = ev.GetUserIdentity();
+            if (identity != null) {
+                if (!String.IsNullOrEmpty(identity.Identity))
+                    data.Identity = identity.Identity;
+                
+                if (!String.IsNullOrEmpty(identity.Name))
+                    data.Name = identity.Name;
+            }
+
+            return new SummaryData { TemplateKey = "event-session-summary", Data = data };
         }
 
         public override string GetEventViewName(PersistentEvent ev) {

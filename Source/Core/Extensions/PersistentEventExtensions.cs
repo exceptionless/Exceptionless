@@ -68,5 +68,42 @@ namespace Exceptionless {
 
             return true;
         }
+
+        public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, DateTime? lastActivityUtc, bool? isSessionEnd, bool hasPremiumFeatures = true) {
+            // TODO: Be selective about what data we copy.
+            var startEvent = new PersistentEvent {
+                SessionId = source.SessionId,
+                Data = source.Data,
+                Date = source.Date,
+                Geo = source.Geo,
+                OrganizationId = source.OrganizationId,
+                ProjectId = source.ProjectId,
+                Tags = source.Tags,
+                Type = Event.KnownTypes.SessionStart
+            };
+
+            if (lastActivityUtc.HasValue)
+                startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
+
+            if (hasPremiumFeatures)
+                startEvent.CopyDataToIndex();
+            
+            return startEvent;
+        }
+
+        public static PersistentEvent ToSessionEndEvent(this PersistentEvent source, string sessionId) {
+            var endEvent = new PersistentEvent {
+                SessionId = sessionId,
+                Date = source.Date,
+                OrganizationId = source.OrganizationId,
+                ProjectId = source.ProjectId,
+                Type = Event.KnownTypes.SessionEnd
+            };
+            
+            endEvent.SetUserIdentity(source.GetUserIdentity());
+            endEvent.AddRequestInfo(source.GetRequestInfo());
+
+            return endEvent;
+        }
     }
 }

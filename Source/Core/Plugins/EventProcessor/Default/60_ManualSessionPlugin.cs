@@ -96,22 +96,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         private async Task<string> CreateSessionStartEventAsync(EventContext context, DateTime? lastActivityUtc, bool? isSessionEnd) {
-            // TODO: Be selective about what data we copy.
-            var startEvent = new PersistentEvent {
-                SessionId = context.Event.SessionId,
-                Data = context.Event.Data,
-                Date = context.Event.Date,
-                Geo = context.Event.Geo,
-                OrganizationId = context.Event.OrganizationId,
-                ProjectId = context.Event.ProjectId,
-                Tags = context.Event.Tags,
-                Type = Event.KnownTypes.SessionStart
-            };
-            
-            if (lastActivityUtc.HasValue)
-                startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
-            else
-                startEvent.CopyDataToIndex(!context.Organization.HasPremiumFeatures ? Event.KnownDataKeys.SessionEnd : null);
+            var startEvent = context.Event.ToSessionStartEvent(lastActivityUtc, isSessionEnd, context.Organization.HasPremiumFeatures);
 
             var startEventContexts = new List<EventContext> {
                 new EventContext(startEvent) { Project = context.Project, Organization = context.Organization }

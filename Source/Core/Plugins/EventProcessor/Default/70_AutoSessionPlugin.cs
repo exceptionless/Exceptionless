@@ -53,15 +53,15 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                             }
                         }
 
-                        sessionId = ObjectId.GenerateNewId(context.Event.Date.DateTime).ToString();
+                        sessionId = context.Event.SessionId = ObjectId.GenerateNewId(context.Event.Date.DateTime).ToString();
                         await _cacheClient.SetAsync(cacheKey, sessionId, _sessionTimeout).AnyContext();
                         
                         if (!context.Event.IsSessionStart()) {
                             var lastContext = GetLastActivity(identityGroup.Where(c => c.Event.Date.Ticks > context.Event.Date.Ticks).ToList());
-                            string sessionStartId = await CreateSessionStartEventAsync(context, sessionId, lastContext?.Event.Date.UtcDateTime, lastContext?.Event.IsSessionEnd()).AnyContext();
+                            string sessionStartEventId = await CreateSessionStartEventAsync(context, lastContext?.Event.Date.UtcDateTime, lastContext?.Event.IsSessionEnd()).AnyContext();
 
                             if (lastContext == null || !lastContext.Event.IsSessionEnd())
-                                await _cacheClient.SetAsync($"{context.Project.Id}:start:{sessionId}", sessionStartId).AnyContext();
+                                await _cacheClient.SetAsync($"{context.Project.Id}:start:{sessionId}", sessionStartEventId).AnyContext();
                         }
                     }
                     
@@ -90,24 +90,9 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             return lastContext;
         }
 
-        private async Task<string> CreateSessionStartEventAsync(EventContext context, string sessionId, DateTime? lastActivityUtc, bool? isSessionEnd) {
-            // TODO: Be selective about what data we copy.
-            var startEvent = new PersistentEvent {
-                SessionId = sessionId,
-                Data = context.Event.Data,
-                Date = context.Event.Date,
-                Geo = context.Event.Geo,
-                OrganizationId = context.Event.OrganizationId,
-                ProjectId = context.Event.ProjectId,
-                Tags = context.Event.Tags,
-                Type = Event.KnownTypes.SessionStart
-            };
-
-            if (lastActivityUtc.HasValue)
-                startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
-            else
-                startEvent.CopyDataToIndex(!context.Organization.HasPremiumFeatures ? Event.KnownDataKeys.SessionEnd : null);
-
+        private async Task<string> CreateSessionStartEventAsync(EventContext context, DateTime? lastActivityUtc, bool? isSessionEnd) {
+            var startEvent = context.Event.ToSessionStartEvent(lastActivityUtc, isSessionEnd, context.Organization.HasPremiumFeatures);
+            
             var startEventContexts = new List<EventContext> {
                 new EventContext(startEvent) { Project = context.Project, Organization = context.Organization }
             };
@@ -120,15 +105,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         private async Task<string> CreateSessionEndEventAsync(EventContext context, string sessionId) {
-            var endEvent = new PersistentEvent {
-                SessionId = sessionId,
-                Date = context.Event.Date,
-                OrganizationId = context.Event.OrganizationId,
-                ProjectId = context.Event.ProjectId,
-                Type = Event.KnownTypes.SessionEnd
-            };
-
-            endEvent.SetUserIdentity(context.Event.GetUserIdentity());
+            var endEvent = context.Event.ToSessionEndEvent(sessionId);
 
             var endEventContexts = new List<EventContext> {
                 new EventContext(endEvent) { Project = context.Project, Organization = context.Organization }
