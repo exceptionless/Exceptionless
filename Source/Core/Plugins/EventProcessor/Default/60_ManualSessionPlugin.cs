@@ -68,9 +68,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     
                     if (sessionEndEventContext == null)
                         sessionStartEventContext.SetProperty(CREATE_SESSION_START_CACHE_ENTRY, true);
-                } else if (sessionEndEventContext != null) {
-                    await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, sessionEndEventContext.Event.Date.UtcDateTime, true).AnyContext();
-                    await _cacheClient.RemoveAsync(cacheKey).AnyContext();
+                } else {
+                    bool closeSession = sessionEndEventContext != null;
+
+                    await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, newestContext.Event.Date.UtcDateTime, closeSession).AnyContext();
+                    if (closeSession)
+                        await _cacheClient.RemoveAsync(cacheKey).AnyContext();
                 }
             }
         }

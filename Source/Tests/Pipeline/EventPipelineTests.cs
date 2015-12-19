@@ -58,15 +58,19 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CreateAutoSessionAsync() {
+            await CreateAutoSessionInternalAsync(DateTimeOffset.Now);
+        }
+
+        private async Task CreateAutoSessionInternalAsync(DateTimeOffset date) {
             await ResetAsync();
-            
-            var ev = GenerateEvent(DateTimeOffset.Now, "blake@exceptionless.io");
+
+            var ev = GenerateEvent(date, "blake@exceptionless.io");
 
             var context = await _pipeline.RunAsync(ev);
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
-            
+
             await _client.RefreshAsync();
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
@@ -76,7 +80,29 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Null(sessionStart.Value);
             Assert.False(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
         }
-        
+
+        [Fact]
+        public async Task CanUpdateExistingAutoSessionAsync() {
+            var startDate = DateTimeOffset.Now.SubtractMinutes(5);
+            await CreateAutoSessionInternalAsync(startDate);
+
+            var ev = GenerateEvent(startDate.AddMinutes(4), "blake@exceptionless.io");
+
+            var context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
+            Assert.False(context.IsCancelled);
+            Assert.True(context.IsProcessed);
+
+            await _client.RefreshAsync();
+            var events = await _eventRepository.GetAllAsync();
+            Assert.Equal(3, events.Total);
+            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+
+            var sessionStart = events.Documents.First(e => e.IsSessionStart());
+            Assert.Equal(240, sessionStart.Value);
+            Assert.False(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+        }
+
         [Fact]
         public async Task IgnoreAutoSessionsWithoutIdentityAsync() {
             await ResetAsync();
@@ -176,9 +202,13 @@ namespace Exceptionless.Api.Tests.Pipeline {
        
         [Fact]
         public async Task CreateManualSessionAsync() {
+            await CreateManualSessionInternalAsync(DateTimeOffset.Now);
+        }
+
+        private async Task CreateManualSessionInternalAsync(DateTimeOffset start) {
             await ResetAsync();
 
-            var ev = GenerateEvent(DateTimeOffset.Now, sessionId: "12345678");
+            var ev = GenerateEvent(start, sessionId: "12345678");
 
             var context = await _pipeline.RunAsync(ev);
             Assert.False(context.HasError, context.ErrorMessage);
@@ -194,6 +224,28 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.NotNull(sessionStartEvent);
             Assert.Equal(0, sessionStartEvent.Value);
             Assert.False(sessionStartEvent.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+        }
+
+        [Fact]
+        public async Task CanUpdateExistingManualSessionAsync() {
+            var startDate = DateTimeOffset.Now.SubtractMinutes(5);
+            await CreateManualSessionInternalAsync(startDate);
+
+            var ev = GenerateEvent(startDate.AddMinutes(4), sessionId: "12345678");
+
+            var context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
+            Assert.False(context.IsCancelled);
+            Assert.True(context.IsProcessed);
+
+            await _client.RefreshAsync();
+            var events = await _eventRepository.GetAllAsync();
+            Assert.Equal(3, events.Total);
+            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+
+            var sessionStart = events.Documents.First(e => e.IsSessionStart());
+            Assert.Equal(240, sessionStart.Value);
+            Assert.False(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
         }
 
         [Fact]
