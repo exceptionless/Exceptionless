@@ -15,5 +15,6 @@ namespace Exceptionless.Api.Models {
         public bool? IsConfigured { get; set; }
         public long StackCount { get; set; }
         public long EventCount { get; set; }
+        public bool HasPremiumFeatures { get; set; }
     }
 }

@@ -447,7 +447,12 @@ namespace Exceptionless.Api.Controllers {
             var viewProjects = models.OfType<ViewProject>().ToList();
             var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true)).Documents;
             foreach (var viewProject in viewProjects) {
-                viewProject.OrganizationName = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId)?.Name;
+                var organization = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId);
+                if (organization != null) {
+                    viewProject.OrganizationName = organization.Name;
+                    viewProject.HasPremiumFeatures = organization.HasPremiumFeatures;
+                }
+
                 if (!viewProject.IsConfigured.HasValue) {
                     viewProject.IsConfigured = true;
                     await _workItemQueue.EnqueueAsync(new SetProjectIsConfiguredWorkItem {
