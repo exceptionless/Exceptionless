@@ -27,10 +27,12 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobRunContext context) {
-            var results = await _eventRepository.GetOpenSessionsAsync(GetStartOfInactivePeriod(), new PagingOptions().WithPage(1).WithLimit(50)).AnyContext();
+            const int LIMIT = 50;
+
+            var results = await _eventRepository.GetOpenSessionsAsync(GetStartOfInactivePeriod(), new PagingOptions().WithPage(1).WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 var inactivePeriod = GetStartOfInactivePeriod();
-                var sessionsToUpdate = new List<PersistentEvent>(50);
+                var sessionsToUpdate = new List<PersistentEvent>(LIMIT);
 
                 foreach (var sessionStart in results.Documents) {
                     var lastActivityUtc = sessionStart.Date.UtcDateTime.AddSeconds((double)sessionStart.Value.GetValueOrDefault());
@@ -46,6 +48,9 @@ namespace Exceptionless.Core.Jobs {
                 if (sessionsToUpdate.Count > 0)
                     await _eventRepository.SaveAsync(sessionsToUpdate).AnyContext();
                 
+                // Sleep so we are not hammering the backend.
+                await Task.Delay(TimeSpan.FromSeconds(2.5)).AnyContext();
+
                 await results.NextPageAsync().AnyContext();
                 if (results.Documents.Count > 0)
                     await context.JobLock.RenewAsync().AnyContext();
@@ -58,6 +63,6 @@ namespace Exceptionless.Core.Jobs {
             return DateTime.UtcNow.Subtract(DefaultInactivePeriod);
         }
         
-        public TimeSpan DefaultInactivePeriod { get; set; } = TimeSpan.FromMinutes(30);
+        public TimeSpan DefaultInactivePeriod { get; set; } = TimeSpan.FromMinutes(5);
     }
 }

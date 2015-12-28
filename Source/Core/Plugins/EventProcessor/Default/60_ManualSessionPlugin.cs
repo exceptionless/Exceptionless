@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
@@ -13,7 +12,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     public class ManualSessionPlugin : EventProcessorPluginBase {
         const string CREATE_SESSION_START_CACHE_ENTRY = "CREATE_SESSION_START_CACHE_ENTRY";
 
-        private static readonly TimeSpan _sessionTimeout = TimeSpan.FromDays(1);
+        private static readonly TimeSpan _sessionTimeout = TimeSpan.FromMinutes(15);
         private readonly ICacheClient _cacheClient;
         private readonly IEventRepository _eventRepository;
         private readonly UpdateStatsAction _updateStats;
@@ -61,7 +60,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 if (createSessionStartEvent) {
                     string sessionStartId = await CreateSessionStartEventAsync(oldestContext, newestContext.Event.Date.UtcDateTime, sessionEndEventContext != null).AnyContext();
                     if (sessionEndEventContext == null)
-                        await _cacheClient.SetAsync(cacheKey, sessionStartId).AnyContext();
+                        await _cacheClient.SetAsync(cacheKey, sessionStartId, _sessionTimeout).AnyContext();
                 } else if (sessionStartEventContext != null) {
                     if (validContexts.Count > 1)
                         sessionStartEventContext.Event.UpdateSessionStart(newestContext.Event.Date.UtcDateTime, sessionEndEventContext != null);
