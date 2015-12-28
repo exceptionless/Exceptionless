@@ -664,7 +664,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected override async Task<PermissionResult> CanDeleteAsync(Organization value) {
-            if (!String.IsNullOrEmpty(value.StripeCustomerId) && User.IsInRole(AuthorizationRoles.GlobalAdmin))
+            if (!String.IsNullOrEmpty(value.StripeCustomerId) && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
                 return PermissionResult.DenyWithMessage("An organization cannot be deleted if it has a subscription.", value.Id);
 
             var projects = (await _projectRepository.GetByOrganizationIdAsync(value.Id)).Documents.ToList();
