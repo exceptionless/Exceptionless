@@ -52,16 +52,27 @@ namespace Exceptionless {
         public static bool UpdateSessionStart(this PersistentEvent ev, DateTime lastActivityUtc, bool isSessionEnd = false) {
             if (ev == null || !ev.IsSessionStart())
                 return false;
+            
+            decimal duration = (decimal)(lastActivityUtc - ev.Date.UtcDateTime).TotalSeconds;
+            if (duration < 0) {
+                lastActivityUtc = ev.Date.UtcDateTime;
+                duration = 0;
+            }
 
-            var duration = (decimal)(lastActivityUtc - ev.Date.UtcDateTime).TotalSeconds;
-            if ((duration < 0 || ev.Value.GetValueOrDefault() >= duration) && ev.Value.HasValue && !isSessionEnd)
-                return true;
+            bool hasSessionEnd = ev.Data.ContainsKey(Event.KnownDataKeys.SessionEnd);
+            if (ev.Value.HasValue && ev.Value >= duration) {
+                if (isSessionEnd && hasSessionEnd)
+                    return true;
+
+                if (!isSessionEnd && !hasSessionEnd)
+                    return true;
+            }
 
             ev.Value = duration;
             if (isSessionEnd) {
                 ev.Data[Event.KnownDataKeys.SessionEnd] = lastActivityUtc;
                 ev.CopyDataToIndex(Event.KnownDataKeys.SessionEnd);
-            } else if (ev.Data.ContainsKey(Event.KnownDataKeys.SessionEnd)) {
+            } else if (hasSessionEnd) {
                 ev.Data.Remove(Event.KnownDataKeys.SessionEnd);
                 ev.Idx.Remove(Event.KnownDataKeys.SessionEnd + "-d");
             }
