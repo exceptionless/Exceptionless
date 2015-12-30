@@ -276,6 +276,9 @@ namespace Exceptionless.Api.Controllers {
         /// Get a list of all sessions or events by a session id
         /// </summary>
         /// <param name="sessionId">An identifier that represents a session of events.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
@@ -284,15 +287,18 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("sessions/{sessionId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return await GetInternalAsync(null, $"session:{sessionId}", null, null, offset, mode, page, limit);
+        public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return await GetInternalAsync(null, $"session:{sessionId} {filter}", sort, time, offset, mode, page, limit);
         }
-        
+
         /// <summary>
         /// Get a list of by a session id
         /// </summary>
         /// <param name="sessionId">An identifier that represents a session of events.</param>
         /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
@@ -301,17 +307,20 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string projectId, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync($"project:{projectId}", $"session:{sessionId}", null, null, offset, mode, page, limit);
+            return await GetInternalAsync($"project:{projectId}", $"session:{sessionId} {filter}", sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
         /// Get a list of all sessions
         /// </summary>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
@@ -320,14 +329,17 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("sessions")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetBySessionAsync(string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return await GetInternalAsync(null, $"type:{Event.KnownTypes.SessionStart}", null, null, offset, mode, page, limit);
+        public async Task<IHttpActionResult> GetBySessionAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return await GetInternalAsync(null, $"type:{Event.KnownTypes.SessionStart} {filter}", sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
         /// Get a list of all sessions
         /// </summary>
         /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
@@ -336,12 +348,12 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetBySessionAsync(string projectId, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetBySessionAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
             
-            return await GetInternalAsync($"project:{projectId}", $"type:{Event.KnownTypes.SessionStart}", null, null, offset, mode, page, limit);
+            return await GetInternalAsync($"project:{projectId}", $"type:{Event.KnownTypes.SessionStart} {filter}", sort, time, offset, mode, page, limit);
         }
         
         /// <summary>
