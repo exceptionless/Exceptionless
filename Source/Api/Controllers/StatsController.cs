@@ -147,7 +147,7 @@ namespace Exceptionless.Api.Controllers {
 
             string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
-            SessionTermStatsResult result;
+            SessionStatsResult result;
             try {
                 result = await _stats.GetSessionStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {

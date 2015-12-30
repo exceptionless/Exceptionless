@@ -232,11 +232,13 @@
     <Compile Include="Models\Stats\Results\PagedResult.cs" />
     <Compile Include="Models\Stats\Results\PlanPagedResult.cs" />
     <Compile Include="Models\Stats\EventTermStatsItem.cs" />
+    <Compile Include="Models\Stats\SessionStatsResult.cs" />
     <Compile Include="Models\Stats\SessionTermStatsItem.cs" />
     <Compile Include="Models\Stats\SessionTermTimelineItem.cs" />
     <Compile Include="Models\Stats\SessionTermStatsResult.cs" />
     <Compile Include="Models\Stats\EventTermTimelineItem.cs" />
-    <Compile Include="Models\Stats\TimelineItem.cs" />
+    <Compile Include="Models\Stats\EventTimelineItem.cs" />
+    <Compile Include="Models\Stats\SessionTimelineItem.cs" />
     <Compile Include="Models\Token.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WebHook.cs" />

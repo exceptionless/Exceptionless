@@ -155,7 +155,26 @@ namespace Exceptionless.Api.Tests.Stats {
         }
         
         [Fact]
-        public async Task CanGetSessionStatAsync() {
+        public async Task CanGetSessionTermStatsAsync() {
+            await RemoveDataAsync();
+            await CreateDataAsync();
+
+            var startDate = DateTime.UtcNow.SubtractHours(1);
+            await CreateSessionEventsAsync();
+
+            _metricsClient.DisplayStats();
+            var result = await _stats.GetSessionTermsStatsAsync(startDate, DateTime.UtcNow, null);
+            Assert.Equal(7, result.Sessions);
+            Assert.Equal(7, result.Terms.Sum(t => t.Sessions));
+            Assert.Equal(3, result.Users);
+            Assert.Equal((decimal)(3600.0 / result.Sessions), result.AvgDuration);
+            Assert.Equal(4, result.Terms.Count);
+            foreach (var term in result.Terms)
+                Assert.Equal(term.Sessions, term.Timeline.Sum(t => t.Sessions));
+        }
+
+        [Fact]
+        public async Task CanGetSessionStatsAsync() {
             await RemoveDataAsync();
             await CreateDataAsync();
 
@@ -165,12 +184,11 @@ namespace Exceptionless.Api.Tests.Stats {
             _metricsClient.DisplayStats();
             var result = await _stats.GetSessionStatsAsync(startDate, DateTime.UtcNow, null);
             Assert.Equal(7, result.Sessions);
-            Assert.Equal(7, result.Terms.Sum(t => t.Sessions));
+            Assert.Equal(7, result.Timeline.Sum(t => t.Sessions));
             Assert.Equal(3, result.Users);
+            Assert.Equal(6, result.Timeline.Sum(t => t.Users));
             Assert.Equal((decimal)(3600.0 / result.Sessions), result.AvgDuration);
-            Assert.Equal(4, result.Terms.Count);
-            foreach (var term in result.Terms)
-                Assert.Equal(term.Sessions, term.Timeline.Sum(t => t.Sessions));
+            Assert.Equal(900, result.Timeline.Sum(t => t.AvgDuration));
         }
 
         [Fact]
