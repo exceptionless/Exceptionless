@@ -36,8 +36,9 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (ev.IsSessionStart()) {
                 data.Value = ev.Value.GetValueOrDefault();
 
-                if (ev.Data.ContainsKey(Event.KnownDataKeys.SessionEnd))
-                    data.SessionEnd = ev.Data[Event.KnownDataKeys.SessionEnd];
+                DateTime? endTime = ev.GetSessionEndTime();
+                if (endTime.HasValue)
+                    data.SessionEnd = endTime;
             }
 
             var identity = ev.GetUserIdentity();

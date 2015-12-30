@@ -33,7 +33,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             foreach (var identityGroup in identityGroups) {
                 string cacheKey = $"{identityGroup.First().Project.Id}:identity:{identityGroup.Key.ToSHA1()}";
                 string sessionId = null;
-                
+                EventContext sessionStartContext = null;
+
                 var sessionsToUpdate = new Dictionary<string, EventContext>();
                 foreach (var context in identityGroup) {
                     if (!context.Event.IsSessionStart() && String.IsNullOrEmpty(sessionId)) {
@@ -47,7 +48,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     if (context.Event.IsSessionStart() || String.IsNullOrEmpty(sessionId)) {
                         if (context.Event.IsSessionStart() && !String.IsNullOrEmpty(sessionId)) {
                             await CreateSessionEndEventAsync(context, sessionId).AnyContext();
-                            await UpdateSessionStartEventAsync(context, sessionId, isSessionEnd: true);
+                            if (sessionStartContext != null)
+                                sessionStartContext.Event.UpdateSessionStart(context.Event.Date.UtcDateTime, isSessionEnd: true);
+                            else
+                                await UpdateSessionStartEventAsync(context, sessionId, isSessionEnd: true);
                         }
 
                         sessionId = context.Event.SessionId = ObjectId.GenerateNewId(context.Event.Date.DateTime).ToString();
@@ -55,17 +59,23 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                         if (!context.Event.IsSessionStart()) {
                             var lastContext = GetLastActivity(identityGroup.Where(c => c.Event.Date.Ticks > context.Event.Date.Ticks).ToList());
-                            string sessionStartEventId = await CreateSessionStartEventAsync(context, lastContext?.Event.Date.UtcDateTime, lastContext?.Event.IsSessionEnd()).AnyContext();
+                            bool isSessionEnd = lastContext != null && (lastContext.Event.IsSessionStart() || lastContext.Event.IsSessionEnd());
 
-                            if (lastContext == null || !lastContext.Event.IsSessionEnd())
-                                await _cacheClient.SetAsync(GetSessionStartEventIdCacheKey(context.Project.Id, sessionId), sessionStartEventId, _sessionTimeout).AnyContext();
+                            sessionStartContext = await CreateSessionStartEventAsync(context, lastContext?.Event.Date.UtcDateTime, isSessionEnd).AnyContext();
+
+                            if (lastContext == null || !isSessionEnd)
+                                await _cacheClient.SetAsync(GetSessionStartEventIdCacheKey(context.Project.Id, sessionId), sessionStartContext.Event.Id, _sessionTimeout).AnyContext();
                         }
                     } else {
                         context.Event.SessionId = sessionId;
-                        sessionsToUpdate[sessionId] = context;
+
+                        if (sessionStartContext == null)
+                            sessionsToUpdate[sessionId] = context;
                     }
 
-                    if (context.Event.IsSessionEnd()) {
+                    if (context.Event.IsSessionStart()) {
+                        sessionStartContext = context;
+                    } else if (context.Event.IsSessionEnd()) {
                         await _cacheClient.RemoveAllAsync(new [] {
                             cacheKey,
                             GetSessionStartEventIdCacheKey(context.Project.Id, sessionId)
@@ -88,19 +98,16 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         private EventContext GetLastActivity(IList<EventContext> contexts) {
             EventContext lastContext = null;
             foreach (var context in contexts) {
-                if (context.Event.IsSessionEnd())
-                    return context;
-
-                if (context.Event.IsSessionStart())
-                    break;
-
                 lastContext = context;
+
+                if (context.Event.IsSessionEnd() || context.Event.IsSessionStart())
+                    break;
             }
 
             return lastContext;
         }
 
-        private async Task<string> CreateSessionStartEventAsync(EventContext context, DateTime? lastActivityUtc, bool? isSessionEnd) {
+        private async Task<EventContext> CreateSessionStartEventAsync(EventContext context, DateTime? lastActivityUtc, bool? isSessionEnd) {
             var startEvent = context.Event.ToSessionStartEvent(lastActivityUtc, isSessionEnd, context.Organization.HasPremiumFeatures);
             
             var startEventContexts = new List<EventContext> {
@@ -111,7 +118,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             await _updateStats.ProcessBatchAsync(startEventContexts).AnyContext();
             await _eventRepository.AddAsync(startEvent).AnyContext();
 
-            return startEvent.Id;
+            return startEventContexts.Single();
         }
 
         private async Task<string> CreateSessionEndEventAsync(EventContext context, string sessionId) {

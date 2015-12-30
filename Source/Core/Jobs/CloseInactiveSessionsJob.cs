@@ -19,11 +19,11 @@ namespace Exceptionless.Core.Jobs {
 
         public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient) {
             _eventRepository = eventRepository;
-            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(2));
+            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
         }
 
         protected override Task<ILock> GetJobLockAsync() {
-            return _lockProvider.AcquireAsync(nameof(CloseInactiveSessionsJob), TimeSpan.FromHours(2), new CancellationToken(true));
+            return _lockProvider.AcquireAsync(nameof(CloseInactiveSessionsJob), TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobRunContext context) {

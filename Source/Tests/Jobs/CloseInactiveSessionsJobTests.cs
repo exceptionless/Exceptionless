@@ -50,7 +50,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
             var sessionStart = events.Documents.First(e => e.IsSessionStart());
             Assert.Null(sessionStart.Value);
-            Assert.False(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            Assert.False(sessionStart.HasSessionEndTime());
 
             _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);
             Assert.Equal(JobResult.Success, await _job.RunAsync());
@@ -61,10 +61,10 @@ namespace Exceptionless.Api.Tests.Jobs {
             sessionStart = events.Documents.First(e => e.IsSessionStart());
             if (willCloseSession) {
                 Assert.Equal(0, sessionStart.Value);
-                Assert.True(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+                Assert.True(sessionStart.HasSessionEndTime());
             } else {
                 Assert.Null(sessionStart.Value);
-                Assert.False(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+                Assert.False(sessionStart.HasSessionEndTime());
             }
         }
 

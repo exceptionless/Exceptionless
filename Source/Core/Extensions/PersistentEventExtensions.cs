@@ -49,30 +49,43 @@ namespace Exceptionless {
             }
         }
 
+        public static bool HasSessionEndTime(this PersistentEvent ev) {
+            if (ev == null || !ev.IsSessionStart())
+                return false;
+
+            return ev.Data.ContainsKey(Event.KnownDataKeys.SessionEnd);
+        }
+
+        public static DateTime? GetSessionEndTime(this PersistentEvent ev) {
+            if (ev == null || !ev.IsSessionStart())
+                return null;
+
+            object end;
+            if (ev.Data.TryGetValue(Event.KnownDataKeys.SessionEnd, out end) && end is DateTime)
+                return (DateTime)end;
+
+            return null;
+        }
+        
         public static bool UpdateSessionStart(this PersistentEvent ev, DateTime lastActivityUtc, bool isSessionEnd = false) {
             if (ev == null || !ev.IsSessionStart())
                 return false;
-            
-            decimal duration = (decimal)(lastActivityUtc - ev.Date.UtcDateTime).TotalSeconds;
-            if (duration < 0) {
-                lastActivityUtc = ev.Date.UtcDateTime;
+
+            decimal duration = ev.Value.GetValueOrDefault();
+            if (duration < 0)
                 duration = 0;
-            }
-
-            bool hasSessionEnd = ev.Data.ContainsKey(Event.KnownDataKeys.SessionEnd);
-            if (ev.Value.HasValue && ev.Value >= duration) {
-                if (isSessionEnd && hasSessionEnd)
-                    return true;
-
-                if (!isSessionEnd && !hasSessionEnd)
-                    return true;
-            }
+            
+            decimal newDuration = (decimal)(lastActivityUtc - ev.Date.UtcDateTime).TotalSeconds;
+            if (duration >= newDuration)
+                lastActivityUtc = ev.Date.UtcDateTime.AddSeconds((double)duration);
+            else
+                duration = newDuration;
 
             ev.Value = duration;
             if (isSessionEnd) {
                 ev.Data[Event.KnownDataKeys.SessionEnd] = lastActivityUtc;
                 ev.CopyDataToIndex(Event.KnownDataKeys.SessionEnd);
-            } else if (hasSessionEnd) {
+            } else {
                 ev.Data.Remove(Event.KnownDataKeys.SessionEnd);
                 ev.Idx.Remove(Event.KnownDataKeys.SessionEnd + "-d");
             }
@@ -90,7 +103,8 @@ namespace Exceptionless {
                 OrganizationId = source.OrganizationId,
                 ProjectId = source.ProjectId,
                 Tags = source.Tags,
-                Type = Event.KnownTypes.SessionStart
+                Type = Event.KnownTypes.SessionStart,
+                Value = 0
             };
 
             if (lastActivityUtc.HasValue)

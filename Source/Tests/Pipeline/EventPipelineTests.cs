@@ -77,8 +77,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
 
             var sessionStart = events.Documents.First(e => e.IsSessionStart());
-            Assert.Null(sessionStart.Value);
-            Assert.False(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            Assert.Equal(0, sessionStart.Value);
+            Assert.False(sessionStart.HasSessionEndTime());
         }
 
         [Fact]
@@ -100,7 +100,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var sessionStart = events.Documents.First(e => e.IsSessionStart());
             Assert.Equal(240, sessionStart.Value);
-            Assert.False(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            Assert.False(sessionStart.HasSessionEndTime());
         }
 
         [Fact]
@@ -149,8 +149,39 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(2, sessionStarts.Count);
             foreach (var sessionStart in sessionStarts) {
                 Assert.Equal(10, sessionStart.Value);
-                Assert.True(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+                Assert.True(sessionStart.HasSessionEndTime());
             }
+        }
+
+        [Fact]
+        public async Task UpdateMultipleSessionStartEventDurationsAsync() {
+            await ResetAsync();
+
+            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.SessionStart),
+                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionStart),
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.False(contexts.Any(c => c.IsCancelled));
+            Assert.True(contexts.Any(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync();
+            Assert.Equal(3, results.Total);
+            Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
+
+            var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).OrderBy(e => e.Date).ToList();
+            Assert.Equal(2, sessionStarts.Count);
+
+            Assert.Equal(10, sessionStarts[0].Value);
+            Assert.True(sessionStarts[0].HasSessionEndTime());
+            Assert.Null(sessionStarts[1].Value);
+            Assert.False(sessionStarts[1].HasSessionEndTime());
         }
 
         [Fact]
@@ -190,16 +221,16 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var firstUserSessionStartEvents = sessionStarts.First(e => e.GetUserIdentity().Identity == "blake@exceptionless.io");
             Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, firstUserSessionStartEvents.Value);
-            Assert.NotNull(firstUserSessionStartEvents.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            Assert.NotNull(firstUserSessionStartEvents.HasSessionEndTime());
 
             var secondUserSessionStartEvents = sessionStarts.Where(e => e.GetUserIdentity().Identity == "eric@exceptionless.io").OrderBy(e => e.Date).ToList();
             Assert.Equal(2, secondUserSessionStartEvents.Count);
             Assert.Equal(30, secondUserSessionStartEvents[0].Value);
-            Assert.True(secondUserSessionStartEvents[0].Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            Assert.True(secondUserSessionStartEvents[0].HasSessionEndTime());
             Assert.Null(secondUserSessionStartEvents[1].Value);
-            Assert.False(secondUserSessionStartEvents[1].Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            Assert.False(secondUserSessionStartEvents[1].HasSessionEndTime());
         }
-       
+
         [Fact]
         public async Task CreateManualSessionAsync() {
             await CreateManualSessionInternalAsync(DateTimeOffset.Now);
@@ -223,7 +254,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var sessionStartEvent = events.Documents.SingleOrDefault(e => e.IsSessionStart());
             Assert.NotNull(sessionStartEvent);
             Assert.Equal(0, sessionStartEvent.Value);
-            Assert.False(sessionStartEvent.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            Assert.False(sessionStartEvent.HasSessionEndTime());
         }
 
         [Fact]
@@ -245,7 +276,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var sessionStart = events.Documents.First(e => e.IsSessionStart());
             Assert.Equal(240, sessionStart.Value);
-            Assert.False(sessionStart.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            Assert.False(sessionStart.HasSessionEndTime());
         }
 
         [Fact]
@@ -274,7 +305,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var sessionStartEvent = results.Documents.SingleOrDefault(e => e.IsSessionStart());
             Assert.NotNull(sessionStartEvent);
             Assert.Equal(30, sessionStartEvent.Value);
-            Assert.True(sessionStartEvent.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            Assert.True(sessionStartEvent.HasSessionEndTime());
         }
 
         [Fact]
@@ -305,7 +336,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var sessionStartEvent = results.Documents.First(e => e.IsSessionStart());
             Assert.NotNull(sessionStartEvent);
             Assert.Equal(30, sessionStartEvent.Value);
-            Assert.True(sessionStartEvent.Data.ContainsKey(Event.KnownDataKeys.SessionEnd));
+            Assert.True(sessionStartEvent.HasSessionEndTime());
         }
 
         [Fact]
