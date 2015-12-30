@@ -145,9 +145,9 @@ namespace Exceptionless.Api.Controllers {
             if (!processResult.IsValid)
                 return BadRequest(processResult.Message);
 
-            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
-            EventTermStatsResult result;
+            SessionTermStatsResult result;
             try {
                 result = await _stats.GetSessionStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
