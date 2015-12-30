@@ -411,7 +411,8 @@ namespace Exceptionless.Api.Controllers {
             User user;
             try {
                 user = await FromExternalLoginAsync(userInfo);
-            } catch (ApplicationException) {
+            } catch (ApplicationException ex) {
+                Logger.Error().Exception(ex).Critical().Message("External login failed for \"{0}\": {1}", userInfo.Email, ex.Message).Tag("External Login", client.Name).Property("User Info", userInfo).Property("Auth Info", authInfo).SetActionContext(ActionContext).Write();
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
                 Logger.Error().Exception(ex).Critical().Message("External login failed for \"{0}\": {1}", userInfo.Email, ex.Message).Tag("External Login", client.Name).Property("User Info", userInfo).Property("Auth Info", authInfo).SetActionContext(ActionContext).Write();
