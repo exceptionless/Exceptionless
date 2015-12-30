@@ -180,7 +180,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             Assert.Equal(10, sessionStarts[0].Value);
             Assert.True(sessionStarts[0].HasSessionEndTime());
-            Assert.Null(sessionStarts[1].Value);
+            Assert.Equal(0, sessionStarts[1].Value);
             Assert.False(sessionStarts[1].HasSessionEndTime());
         }
 
@@ -227,7 +227,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(2, secondUserSessionStartEvents.Count);
             Assert.Equal(30, secondUserSessionStartEvents[0].Value);
             Assert.True(secondUserSessionStartEvents[0].HasSessionEndTime());
-            Assert.Null(secondUserSessionStartEvents[1].Value);
+            Assert.Equal(0, secondUserSessionStartEvents[1].Value);
             Assert.False(secondUserSessionStartEvents[1].HasSessionEndTime());
         }
 
@@ -715,6 +715,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         private async Task CreateDataAsync() {
+            await _client.RefreshAsync();
+
             foreach (Organization organization in OrganizationData.GenerateSampleOrganizations()) {
                 if (organization.Id == TestConstants.OrganizationId3)
                     BillingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, UserData.GenerateSampleUser());
@@ -760,9 +762,14 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         private async Task RemoveDataAsync() {
             await RemoveEventsAndStacks();
+
+            await _client.RefreshAsync();
             await _tokenRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
             await _userRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
             await _projectRepository.RemoveAllAsync();
+            await _client.RefreshAsync();
             await _organizationRepository.RemoveAllAsync();
             await _client.RefreshAsync();
             await _cacheClient.RemoveAllAsync();
