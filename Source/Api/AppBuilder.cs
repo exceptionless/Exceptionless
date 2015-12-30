@@ -141,6 +141,8 @@ namespace Exceptionless.Api {
 
         private static void SetupRouteConstraints(HttpConfiguration config) {
             var constraintResolver = new DefaultInlineConstraintResolver();
+            constraintResolver.ConstraintMap.Add("identifier", typeof(IdentifierRouteConstraint));
+            constraintResolver.ConstraintMap.Add("identifiers", typeof(IdentifiersRouteConstraint));
             constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
             constraintResolver.ConstraintMap.Add("objectids", typeof(ObjectIdsRouteConstraint));
             constraintResolver.ConstraintMap.Add("token", typeof(TokenRouteConstraint));

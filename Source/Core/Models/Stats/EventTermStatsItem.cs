@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 
 namespace Exceptionless.Core.Models.Stats {
-    public class TermStatsItem {
-        public TermStatsItem() {
-            Timeline = new List<TermTimelineItem>();
+    public class EventTermStatsItem {
+        public EventTermStatsItem() {
+            Timeline = new List<EventTermTimelineItem>();
         }
 
         public string Term { get; set; }
@@ -13,6 +13,6 @@ namespace Exceptionless.Core.Models.Stats {
         public long New { get; set; }
         public DateTime FirstOccurrence { get; set; }
         public DateTime LastOccurrence { get; set; }
-        public ICollection<TermTimelineItem> Timeline { get; private set; }
+        public ICollection<EventTermTimelineItem> Timeline { get; private set; }
     }
 }

@@ -269,6 +269,8 @@
     <Compile Include="Serialization\ExceptionlessJsonMediaTypeFormatter.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="Utility\ConfigurationResponseFilterAttribute.cs" />
+    <Compile Include="Utility\Constraints\IdentifierRouteConstraint.cs" />
+    <Compile Include="Utility\Constraints\IdentifiersRouteConstraint.cs" />
     <Compile Include="Utility\Delta\Delta.cs" />
     <Compile Include="Utility\Delta\NonValidatingParameterBindingAttribute.cs" />
     <Compile Include="Utility\Delta\PerRequestParameterBinding.cs" />

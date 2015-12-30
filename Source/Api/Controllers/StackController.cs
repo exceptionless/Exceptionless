@@ -667,7 +667,7 @@ namespace Exceptionless.Api.Controllers {
 
             var timeInfo = GetTimeInfo(time, offset);
 
-            ICollection<TermStatsItem> terms;
+            ICollection<EventTermStatsItem> terms;
 
             try {
                 terms = (await _eventStats.GetTermsStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1)).Terms;
@@ -727,7 +727,7 @@ namespace Exceptionless.Api.Controllers {
             return GetStackSummaries(stacks, terms);
         }
 
-        private ICollection<StackSummaryModel> GetStackSummaries(IEnumerable<Stack> stacks, IEnumerable<TermStatsItem> terms) {
+        private ICollection<StackSummaryModel> GetStackSummaries(IEnumerable<Stack> stacks, IEnumerable<EventTermStatsItem> terms) {
             return stacks.Join(terms, s => s.Id, tk => tk.Term, (stack, term) => {
                 var data = _formattingPluginManager.GetStackSummaryData(stack);
                 var summary = new StackSummaryModel {

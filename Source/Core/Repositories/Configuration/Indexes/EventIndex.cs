@@ -63,7 +63,7 @@ err['all_codes'] = codes.join(' ')";
                         .String(f => f.Name(e => e.StackId).IndexName("stack").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.ReferenceId).IndexName("reference").Index(FieldIndexOption.Analyzed))
                         .String(f => f.Name(e => e.SessionId).IndexName("session").Index(FieldIndexOption.Analyzed))
-                        .String(f => f.Name(e => e.Type).IndexName("type").Index(FieldIndexOption.Analyzed))
+                        .String(f => f.Name(e => e.Type).IndexName(Fields.PersistentEvent.Type).Index(FieldIndexOption.Analyzed))
                         .String(f => f.Name(e => e.Source).IndexName("source").Index(FieldIndexOption.Analyzed).IncludeInAll())
                         .Date(f => f.Name(e => e.Date).IndexName(Fields.PersistentEvent.Date))
                         .String(f => f.Name(e => e.Message).IndexName("message").Index(FieldIndexOption.Analyzed).IncludeInAll())
@@ -120,7 +120,7 @@ err['all_codes'] = codes.join(' ')";
                                 .String(f3 => f3.Name(r => r.Description).IndexName("user.description").Index(FieldIndexOption.Analyzed).IncludeInAll())
                                 .String(f3 => f3.Name(r => r.EmailAddress).IndexName("user.email").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("simple").IncludeInAll().Boost(1.1))))
                             .Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Path("just_name").Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.Identity).IndexName("user").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.1))
+                                .String(f3 => f3.Name(r => r.Identity).IndexName(Fields.PersistentEvent.User).Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.1))
                                 .String(f3 => f3.Name(r => r.Name).IndexName("user.name").Index(FieldIndexOption.Analyzed).IncludeInAll())))))
                     ));
         }
@@ -245,6 +245,8 @@ err['all_codes'] = codes.join(' ')";
                 public const string CreatedUtc = "created";
                 public const string Id = "id";
                 public const string Date = "date";
+                public const string Type = "type";
+                public const string User = "user";
             }
         }
     }

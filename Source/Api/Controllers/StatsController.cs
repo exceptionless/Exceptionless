@@ -110,5 +110,59 @@ namespace Exceptionless.Api.Controllers {
 
             return await GetInternalAsync(String.Concat("stack:", stackId), filter, time, offset);
         }
+
+        /// <summary>
+        /// Get by Session
+        /// </summary>
+        /// <param name="sessionId">The identifier of the project.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <response code="404">The project could not be found.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/sessions/{sessionId:identifier}/stats")]
+        [ResponseType(typeof(EventStatsResult))]
+        public async Task<IHttpActionResult> GetBySessionAsync(string sessionId, string filter = null, string time = null, string offset = null) {
+            if (String.IsNullOrEmpty(sessionId))
+                return NotFound();
+            
+            return await GetInternalAsync(null, String.Concat(filter, " session:", sessionId).Trim(), time, offset);
+        }
+        
+        /// <summary>
+        /// Get all session stats
+        /// </summary>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/sessions/stats")]
+        [ResponseType(typeof(EventStatsResult))]
+        public async Task<IHttpActionResult> GetSessionsAsync(string filter = null, string time = null, string offset = null) {
+            var timeInfo = GetTimeInfo(time, offset);
+
+            var processResult = QueryProcessor.Process(filter);
+            if (!processResult.IsValid)
+                return BadRequest(processResult.Message);
+
+            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+
+            EventTermStatsResult result;
+            try {
+                result = await _stats.GetSessionStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
+            } catch (ApplicationException ex) {
+                Logger.Error().Exception(ex)
+                    .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = filter, Time = time, Offset = offset })
+                    .Tag("Search")
+                    .Identity(ExceptionlessUser.EmailAddress)
+                    .Property("User", ExceptionlessUser)
+                    .SetActionContext(ActionContext)
+                    .Write();
+
+                return BadRequest("An error has occurred. Please check your search filter.");
+            }
+
+            return Ok(result);
+        }
     }
 }

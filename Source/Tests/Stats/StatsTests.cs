@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -151,6 +153,25 @@ namespace Exceptionless.Api.Tests.Stats {
                 Assert.Equal(term.Total, term.Timeline.Sum(t => t.Total));
             }
         }
+        
+        [Fact]
+        public async Task CanGetSessionStatAsync() {
+            await RemoveDataAsync();
+            await CreateDataAsync();
+
+            var startDate = DateTime.UtcNow.SubtractHours(1);
+            await CreateSessionEventsAsync();
+
+            _metricsClient.DisplayStats();
+            var result = await _stats.GetSessionStatsAsync(startDate, DateTime.UtcNow, null);
+            Assert.Equal(7, result.Sessions);
+            Assert.Equal(7, result.Terms.Sum(t => t.Sessions));
+            Assert.Equal(3, result.Users);
+            Assert.Equal((decimal)(3600.0 / result.Sessions), result.AvgDuration);
+            Assert.Equal(4, result.Terms.Count);
+            foreach (var term in result.Terms)
+                Assert.Equal(term.Sessions, term.Timeline.Sum(t => t.Sessions));
+        }
 
         [Fact]
         public async Task CanSetGaugesAsync() {
@@ -165,21 +186,52 @@ namespace Exceptionless.Api.Tests.Stats {
             _metricsClient.DisplayStats();
         }
 
-        private async Task CreateDataAsync(int eventCount = 100, bool multipleProjects = true) {
+        private async Task CreateDataAsync(int eventCount = 0, bool multipleProjects = true) {
+            await _client.RefreshAsync();
+
             var orgs = OrganizationData.GenerateSampleOrganizations();
             await _organizationRepository.AddAsync(orgs, true);
 
             var projects = ProjectData.GenerateSampleProjects();
             await _projectRepository.AddAsync(projects, true);
+            await _client.RefreshAsync();
 
-            var events = EventData.GenerateEvents(eventCount, projectIds: multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId }, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow);
+            if (eventCount > 0)
+                await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId });
+        }
+
+        private async Task CreateEventsAsync(int eventCount, string[] projectIds) {
+            await _client.RefreshAsync();
+
+            var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
                 await _eventPipeline.RunAsync(eventGroup);
-            
+
             await _client.RefreshAsync();
         }
 
+        private async Task<List<PersistentEvent>> CreateSessionEventsAsync() {
+            await _client.RefreshAsync();
+
+            var startDate = DateTimeOffset.UtcNow.SubtractHours(1);
+            var events = new List<PersistentEvent> {
+                EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "1"),
+                EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "1"),
+                EventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(10), userIdentity: "1"),
+                EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "2"),
+                EventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(20), userIdentity: "2"),
+                EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "3"),
+                EventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(30), userIdentity: "3"),
+            };
+            
+            await _eventPipeline.RunAsync(events);
+            await _client.RefreshAsync();
+
+            return events;
+        }
+
         private async Task RemoveDataAsync() {
+            await _client.RefreshAsync();
             await _eventRepository.RemoveAllAsync();
             await _client.RefreshAsync();
             await _stackRepository.RemoveAllAsync();

@@ -57,7 +57,7 @@ namespace Exceptionless.Api.Tests.Plugins {
                 New = 1,
                 Total = 1,
                 Unique = 1,
-                Timeline = new List<TermTimelineItem>()
+                Timeline = new List<EventTermTimelineItem>()
             };
 
             ApprovalsUtility.VerifyFile(Path.ChangeExtension(path, "summary.json"), JsonConvert.SerializeObject(summary, settings));

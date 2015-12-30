@@ -23,7 +23,125 @@ namespace Exceptionless.Core.Utility {
             _eventIndex = eventIndex;
             _queryBuilder = queryBuilder;
         }
+        
+        public async Task<SessionTermStatsResult> GetSessionStatsAsync(DateTime utcStart, DateTime utcEnd, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
+            if (!displayTimeOffset.HasValue)
+                displayTimeOffset = TimeSpan.Zero;
+            
+            var filter = new ElasticQuery()
+                .WithSystemFilter(systemFilter)
+                .WithFilter(userFilter)
+                .WithFieldEquals(EventIndex.Fields.PersistentEvent.Type, Event.KnownTypes.SessionStart)
+                .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
+                .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
 
+            // if no start date then figure out first event date
+            if (!filter.DateRanges.First().UseStartDate)
+                await UpdateFilterStartDateRangesAsync(filter, utcEnd).AnyContext();
+
+            utcStart = filter.DateRanges.First().GetStartDate();
+            utcEnd = filter.DateRanges.First().GetEndDate();
+            var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
+
+            var res = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+                .SearchType(SearchType.Count)
+                .IgnoreUnavailable()
+                .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
+                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
+                .Aggregations(agg => agg
+                    .Terms("terms", t => t
+                        .Field(ev => ev.Date)
+                        .Size(max)
+                        .Aggregations(agg2 => agg2
+                            .DateHistogram("timelime", tl => tl
+                                .Field(ev => ev.Date)
+                                .MinimumDocumentCount(0)
+                                .Interval(interval.Item1)
+                                .TimeZone(HoursAndMinutes(displayTimeOffset.Value))
+                            )
+                            .Average("avg_duration", u => u.Field(ev => ev.Value))
+                            .Cardinality("users", u => u
+                                .Field(EventIndex.Fields.PersistentEvent.User)
+                                .PrecisionThreshold(100)
+                            )
+                            .Min("first_occurrence", o => o.Field(ev => ev.Date))
+                            .Max("last_occurrence", o => o.Field(ev => ev.Date))
+                        )
+                    )
+                    .Average("avg_duration", u => u.Field(ev => ev.Value))
+                    .Cardinality("users", u => u
+                        .Field(EventIndex.Fields.PersistentEvent.User)
+                        .PrecisionThreshold(100)
+                    )
+                    .Min("first_occurrence", o => o.Field(ev => ev.Date))
+                    .Max("last_occurrence", o => o.Field(ev => ev.Date))
+                )
+            ).AnyContext();
+
+            if (!res.IsValid) {
+                Logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
+                throw new ApplicationException("Retrieving term stats failed.");
+            }
+            
+            var stats = new SessionTermStatsResult {
+                Sessions = res.Total,
+                Start = utcStart.SafeAdd(displayTimeOffset.Value),
+                End = utcEnd.SafeAdd(displayTimeOffset.Value)
+            };
+
+            var averageDuration = res.Aggs.Average("avg_duration");
+            if (averageDuration?.Value != null)
+                stats.AvgDuration = (decimal)averageDuration.Value;
+
+            var users = res.Aggs.Cardinality("users");
+            if (users?.Value != null)
+                stats.Users = (long)users.Value;
+
+            var firstOccurrence = res.Aggs.Min("first_occurrence");
+            if (firstOccurrence?.Value != null)
+                stats.FirstOccurrence = firstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+
+            var lastOccurrence = res.Aggs.Max("last_occurrence");
+            if (lastOccurrence?.Value != null)
+                stats.LastOccurrence = lastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+
+            var terms = res.Aggs.Terms("terms");
+            if (terms == null)
+                return stats;
+
+            stats.Terms.AddRange(terms.Items.Select(i => {
+                var item = new SessionTermStatsItem { Sessions = i.DocCount, Term = i.Key };
+
+                var termAverageDuration = i.Average("avg_duration");
+                if (termAverageDuration?.Value != null)
+                    item.AvgDuration = (decimal)termAverageDuration.Value;
+
+                var termUsers = i.Cardinality("users");
+                if (termUsers?.Value != null)
+                    item.Users = (long)termUsers.Value;
+
+                var termFirstOccurrence = i.Min("first_occurrence");
+                if (termFirstOccurrence?.Value != null)
+                    item.FirstOccurrence = termFirstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+
+                var termLastOccurrence = i.Max("last_occurrence");
+                if (termLastOccurrence?.Value != null)
+                    item.LastOccurrence = termLastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+
+                var timeLine = i.DateHistogram("timelime");
+                if (timeLine != null) {
+                    item.Timeline.AddRange(timeLine.Items.Select(ti => new SessionTermTimelineItem {
+                        Date = ti.Date,
+                        Sessions = ti.DocCount
+                    }));
+                }
+
+                return item;
+            }));
+
+            return stats;
+        }
+        
         public async Task<EventTermStatsResult> GetTermsStatsAsync(DateTime utcStart, DateTime utcEnd, string term, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
@@ -39,24 +157,8 @@ namespace Exceptionless.Core.Utility {
                 .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
 
             // if no start date then figure out first event date
-            if (!filter.DateRanges.First().UseStartDate) {
-                // TODO: Cache this to save an extra search request when a date range isn't filtered.
-                var result = await _elasticClient.SearchAsync<PersistentEvent>(s => s
-                    .IgnoreUnavailable()
-                    .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                    .Query(d => _queryBuilder.BuildQuery<PersistentEvent>(filter))
-                    .SortAscending(ev => ev.Date)
-                    .Take(1)).AnyContext();
-
-                var firstEvent = result.Hits.FirstOrDefault();
-                if (firstEvent != null) {
-                    utcStart = firstEvent.Source.Date.UtcDateTime;
-                    filter.DateRanges.Clear();
-                    filter.WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date);
-                    filter.Indices.Clear();
-                    filter.WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
-                }
-            }
+            if (!filter.DateRanges.First().UseStartDate)
+                await UpdateFilterStartDateRangesAsync(filter, utcEnd).AnyContext();
 
             utcStart = filter.DateRanges.First().GetStartDate();
             utcEnd = filter.DateRanges.First().GetEndDate();
@@ -133,18 +235,16 @@ namespace Exceptionless.Core.Utility {
                 return stats;
 
             stats.Terms.AddRange(terms.Items.Select(i => {
-                long count = 0;
-                var timelineUnique = i.Cardinality("unique");
-                if (timelineUnique?.Value != null)
-                    count = (long)timelineUnique.Value;
-
                 var termNew = i.Terms("new");
-                var item = new TermStatsItem {
+                var item = new EventTermStatsItem {
                     Total = i.DocCount,
-                    Unique = count,
                     Term = i.Key,
                     New = termNew != null && termNew.Items.Count > 0 ? termNew.Items[0].DocCount : 0
                 };
+                
+                var termUnique = i.Cardinality("unique");
+                if (termUnique?.Value != null)
+                    item.Unique = (long)termUnique.Value;
 
                 var termFirstOccurrence = i.Min("first_occurrence");
                 if (termFirstOccurrence?.Value != null)
@@ -156,7 +256,7 @@ namespace Exceptionless.Core.Utility {
 
                 var timeLine = i.DateHistogram("timelime");
                 if (timeLine != null) {
-                    item.Timeline.AddRange(timeLine.Items.Select(ti => new TermTimelineItem {
+                    item.Timeline.AddRange(timeLine.Items.Select(ti => new EventTermTimelineItem {
                         Date = ti.Date,
                         Total = ti.DocCount
                     }));
@@ -179,23 +279,8 @@ namespace Exceptionless.Core.Utility {
                 .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
 
             // if no start date then figure out first event date
-            if (!filter.DateRanges.First().UseStartDate) {
-                // TODO: Cache this to save an extra search request when a date range isn't filtered.
-                var result = await _elasticClient.SearchAsync<PersistentEvent>(s => s
-                    .IgnoreUnavailable().Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                    .Query(d => _queryBuilder.BuildQuery<PersistentEvent>(filter))
-                    .SortAscending(ev => ev.Date)
-                    .Take(1)).AnyContext();
-
-                var firstEvent = result.Hits.FirstOrDefault();
-                if (firstEvent != null) {
-                    utcStart = firstEvent.Source.Date.UtcDateTime;
-                    filter.DateRanges.Clear();
-                    filter.WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date);
-                    filter.Indices.Clear();
-                    filter.WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
-                }
-            }
+            if (!filter.DateRanges.First().UseStartDate)
+                await UpdateFilterStartDateRangesAsync(filter, utcEnd).AnyContext();
 
             utcStart = filter.DateRanges.First().GetStartDate();
             utcEnd = filter.DateRanges.First().GetEndDate();
@@ -288,6 +373,24 @@ namespace Exceptionless.Core.Utility {
                 stats.LastOccurrence = lastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
             return stats;
+        }
+
+        private async Task UpdateFilterStartDateRangesAsync(ElasticQuery filter, DateTime utcEnd) {
+            // TODO: Cache this to save an extra search request when a date range isn't filtered.
+            var result = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+                   .IgnoreUnavailable()
+                   .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
+                   .Query(d => _queryBuilder.BuildQuery<PersistentEvent>(filter))
+                   .SortAscending(ev => ev.Date)
+                   .Take(1)).AnyContext();
+
+            var firstEvent = result.Hits.FirstOrDefault();
+            if (firstEvent != null) {
+                filter.DateRanges.Clear();
+                filter.WithDateRange(firstEvent.Source.Date.UtcDateTime, utcEnd, EventIndex.Fields.PersistentEvent.Date);
+                filter.Indices.Clear();
+                filter.WithIndices(firstEvent.Source.Date.UtcDateTime, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
+            }
         }
 
         private static string HoursAndMinutes(TimeSpan ts) {

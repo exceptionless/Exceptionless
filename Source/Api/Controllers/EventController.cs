@@ -200,7 +200,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync(String.Concat("project:", projectId), filter, sort, time, offset, mode, page, limit);
+            return await GetInternalAsync($"project:{projectId}", filter, sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
@@ -239,7 +239,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpGet]
-        [Route("by-ref/{referenceId:minlength(8)}")]
+        [Route("by-ref/{referenceId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(referenceId))
@@ -259,7 +259,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string projectId, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(referenceId))
@@ -269,11 +269,11 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync(String.Concat("project:", projectId), String.Concat("reference:", referenceId), null, null, offset, mode, page, limit);
+            return await GetInternalAsync($"project:{projectId}", String.Concat("reference:", referenceId), null, null, offset, mode, page, limit);
         }
 
         /// <summary>
-        /// Get by session id
+        /// Get a list of all sessions or events by a session id
         /// </summary>
         /// <param name="sessionId">An identifier that represents a session of events.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
@@ -282,17 +282,14 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpGet]
-        [Route("by-session/{sessionId:minlength(8)}")]
+        [Route("sessions/{sessionId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(sessionId))
-                return NotFound();
-
-            return await GetInternalAsync(null, String.Concat("session:", sessionId), null, null, offset, mode, page, limit);
+            return await GetInternalAsync(null, $"session:{sessionId}", null, null, offset, mode, page, limit);
         }
-
+        
         /// <summary>
-        /// Get by session id
+        /// Get a list of by a session id
         /// </summary>
         /// <param name="sessionId">An identifier that represents a session of events.</param>
         /// <param name="projectId">The identifier of the project.</param>
@@ -302,19 +299,51 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-session/{sessionId:minlength(8)}")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string projectId, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(sessionId))
-                return NotFound();
-
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync(String.Concat("project:", projectId), String.Concat("session:", sessionId), null, null, offset, mode, page, limit);
+            return await GetInternalAsync($"project:{projectId}", $"session:{sessionId}", null, null, offset, mode, page, limit);
         }
 
+        /// <summary>
+        /// Get a list of all sessions
+        /// </summary>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
+        [HttpGet]
+        [Route("sessions")]
+        [ResponseType(typeof(List<PersistentEvent>))]
+        public async Task<IHttpActionResult> GetBySessionAsync(string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return await GetInternalAsync(null, $"type:{Event.KnownTypes.SessionStart}", null, null, offset, mode, page, limit);
+        }
+
+        /// <summary>
+        /// Get a list of all sessions
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions")]
+        [ResponseType(typeof(List<PersistentEvent>))]
+        public async Task<IHttpActionResult> GetBySessionAsync(string projectId, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
+                return NotFound();
+            
+            return await GetInternalAsync($"project:{projectId}", $"type:{Event.KnownTypes.SessionStart}", null, null, offset, mode, page, limit);
+        }
+        
         /// <summary>
         /// Set user description
         /// </summary>
@@ -325,8 +354,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Description must be specified.</response>
         /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpPost]
-        [Route("by-ref/{referenceId:minlength(8)}/user-description")]
-        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
+        [Route("by-ref/{referenceId:identifier}/user-description")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description")]
         //[OverrideAuthorization]
         //[Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
