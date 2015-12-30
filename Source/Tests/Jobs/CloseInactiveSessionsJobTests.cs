@@ -49,7 +49,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             Assert.Equal(2, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
             var sessionStart = events.Documents.First(e => e.IsSessionStart());
-            Assert.Null(sessionStart.Value);
+            Assert.Equal(0, sessionStart.Value);
             Assert.False(sessionStart.HasSessionEndTime());
 
             _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);
@@ -63,7 +63,7 @@ namespace Exceptionless.Api.Tests.Jobs {
                 Assert.Equal(0, sessionStart.Value);
                 Assert.True(sessionStart.HasSessionEndTime());
             } else {
-                Assert.Null(sessionStart.Value);
+                Assert.Equal(0, sessionStart.Value);
                 Assert.False(sessionStart.HasSessionEndTime());
             }
         }
