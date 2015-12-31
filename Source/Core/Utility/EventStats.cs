@@ -187,7 +187,7 @@ namespace Exceptionless.Core.Utility {
                             )
                             .Average("avg_duration", u => u.Field(ev => ev.Value))
                             .Cardinality("users", u => u
-                                .Field(EventIndex.Fields.PersistentEvent.User)
+                                .Field(EventIndex.Fields.PersistentEvent.UserRaw)
                                 .PrecisionThreshold(100)
                             )
                             .Min("first_occurrence", o => o.Field(ev => ev.Date))
@@ -196,7 +196,7 @@ namespace Exceptionless.Core.Utility {
                     )
                     .Average("avg_duration", u => u.Field(ev => ev.Value))
                     .Cardinality("users", u => u
-                        .Field(EventIndex.Fields.PersistentEvent.User)
+                        .Field(EventIndex.Fields.PersistentEvent.UserRaw)
                         .PrecisionThreshold(100)
                     )
                     .Min("first_occurrence", o => o.Field(ev => ev.Date))
@@ -301,14 +301,14 @@ namespace Exceptionless.Core.Utility {
                         .Aggregations(agg2 => agg2
                             .Average("tl_avg_duration", u => u.Field(ev => ev.Value))
                             .Cardinality("tl_users", u => u
-                                .Field(EventIndex.Fields.PersistentEvent.User)
+                                .Field(EventIndex.Fields.PersistentEvent.UserRaw)
                                 .PrecisionThreshold(100)
                             )
                         )
                     )
                     .Average("avg_duration", u => u.Field(ev => ev.Value))
                     .Cardinality("users", u => u
-                        .Field(EventIndex.Fields.PersistentEvent.User)
+                        .Field(EventIndex.Fields.PersistentEvent.UserRaw)
                         .PrecisionThreshold(100)
                     )
                     .Min("first_occurrence", o => o.Field(ev => ev.Date))
