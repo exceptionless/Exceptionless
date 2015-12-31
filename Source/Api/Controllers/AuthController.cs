@@ -479,7 +479,11 @@ namespace Exceptionless.Api.Controllers {
 
             user.MarkEmailAddressVerified();
             user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
-            await _userRepository.SaveAsync(user, true);
+
+            if (String.IsNullOrEmpty(user.Id))
+                await _userRepository.AddAsync(user, true);
+            else
+                await _userRepository.SaveAsync(user, true);
 
             return user;
         }
