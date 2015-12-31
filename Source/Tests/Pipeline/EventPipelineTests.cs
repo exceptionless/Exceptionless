@@ -530,10 +530,15 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
         }
 
+        private bool _canResetDataForProcessEvents = true;
+
         [Theory]
         [MemberData("Events")]
         public async Task ProcessEventsAsync(string errorFilePath) {
-            await ResetAsync();
+            if (_canResetDataForProcessEvents) {
+                _canResetDataForProcessEvents = false;
+                await ResetAsync();
+            }
 
             var pipeline = IoC.GetInstance<EventPipeline>();
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
@@ -710,8 +715,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
             } else {
                 await RemoveEventsAndStacks();
             }
-
-            await _cacheClient.RemoveAllAsync();
         }
 
         private async Task CreateDataAsync() {
@@ -781,7 +784,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _client.RefreshAsync();
             await _stackRepository.RemoveAllAsync();
             await _client.RefreshAsync();
-            await _cacheClient.RemoveAllAsync();
         }
 
         public override async void Dispose() {

@@ -56,8 +56,8 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _client.RefreshAsync();
         }
 
-        public void Dispose() {
-            //await RemoveDataAsync();
+        public async void Dispose() {
+            await RemoveDataAsync();
         }
     }
 }
