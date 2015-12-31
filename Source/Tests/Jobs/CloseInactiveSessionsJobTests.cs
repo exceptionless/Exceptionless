@@ -77,8 +77,6 @@ namespace Exceptionless.Api.Tests.Jobs {
             } else {
                 await RemoveEventsAndStacks();
             }
-
-            await _cacheClient.RemoveAllAsync();
         }
 
         private async Task CreateDataAsync() {
@@ -141,7 +139,6 @@ namespace Exceptionless.Api.Tests.Jobs {
             await _client.RefreshAsync();
             await _stackRepository.RemoveAllAsync();
             await _client.RefreshAsync();
-            await _cacheClient.RemoveAllAsync();
         }
 
         public override async void Dispose() {
