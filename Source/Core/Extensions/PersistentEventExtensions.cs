@@ -67,7 +67,7 @@ namespace Exceptionless {
             return null;
         }
         
-        public static bool UpdateSessionStart(this PersistentEvent ev, DateTime lastActivityUtc, bool isSessionEnd = false) {
+        public static bool UpdateSessionStart(this PersistentEvent ev, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false) {
             if (ev == null || !ev.IsSessionStart())
                 return false;
 
@@ -103,7 +103,7 @@ namespace Exceptionless {
                 OrganizationId = source.OrganizationId,
                 ProjectId = source.ProjectId,
                 Tags = source.Tags,
-                Type = Event.KnownTypes.SessionStart,
+                Type = Event.KnownTypes.Session,
                 Value = 0
             };
 

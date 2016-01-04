@@ -330,7 +330,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("sessions")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return await GetInternalAsync(null, $"type:{Event.KnownTypes.SessionStart} {filter}", sort, time, offset, mode, page, limit);
+            return await GetInternalAsync(null, $"type:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
@@ -353,7 +353,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
             
-            return await GetInternalAsync($"project:{projectId}", $"type:{Event.KnownTypes.SessionStart} {filter}", sort, time, offset, mode, page, limit);
+            return await GetInternalAsync($"project:{projectId}", $"type:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit);
         }
         
         /// <summary>

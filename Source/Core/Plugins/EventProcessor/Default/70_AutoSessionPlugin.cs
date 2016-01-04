@@ -135,11 +135,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             return endEvent.Id;
         }
         
-        private async Task<string> UpdateSessionStartEventAsync(EventContext context, string sessionId, bool isSessionEnd = false) {
+        private async Task<string> UpdateSessionStartEventAsync(EventContext context, string sessionId, bool isSessionEnd = false, bool hasError = false) {
             string sessionStartEventIdCacheKey = $"{context.Project.Id}:start:{sessionId}";
             string sessionStartEventId = await _cacheClient.GetAsync<string>(sessionStartEventIdCacheKey, null).AnyContext();
             if (sessionStartEventId != null) {
-                await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, context.Event.Date.UtcDateTime, isSessionEnd).AnyContext();
+                await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, context.Event.Date.UtcDateTime, isSessionEnd, hasError).AnyContext();
 
                 if (isSessionEnd)
                     await _cacheClient.RemoveAsync(sessionStartEventIdCacheKey).AnyContext();

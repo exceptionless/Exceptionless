@@ -160,8 +160,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
 
             var events = new List<PersistentEvent> {
-                GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.SessionStart),
-                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionStart),
+                GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.Session),
+                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.Session),
             };
 
             var contexts = await _pipeline.RunAsync(events);
@@ -198,7 +198,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(lastEventDate, "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
                 GenerateEvent(lastEventDate),
                 GenerateEvent(firstEventDate, "eric@exceptionless.io"),
-                GenerateEvent(firstEventDate.AddSeconds(30), "eric@exceptionless.io", Event.KnownTypes.SessionStart),
+                GenerateEvent(firstEventDate.AddSeconds(30), "eric@exceptionless.io", Event.KnownTypes.Session),
                 GenerateEvent(lastEventDate, "eric@exceptionless.io")
             };
 
@@ -287,7 +287,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, sessionId: "12345678"),
-                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionStart, sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.Session, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(20), type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(30), sessionId: "12345678"),
             };
@@ -347,7 +347,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var lastEventDate = firstEventDate.Add(TimeSpan.FromMinutes(1));
 
             var events = new List<PersistentEvent> {
-                GenerateEvent(firstEventDate, type: Event.KnownTypes.SessionStart, sessionId: "12345678"),
+                GenerateEvent(firstEventDate, type: Event.KnownTypes.Session, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(10), sessionId: "12345678"),
                 GenerateEvent(lastEventDate, type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
             };
@@ -692,7 +692,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 OrganizationId = ev.OrganizationId,
                 ProjectId = ev.ProjectId,
                 Tags = ev.Tags,
-                Type = Event.KnownTypes.SessionStart
+                Type = Event.KnownTypes.Session
             };
         }
 

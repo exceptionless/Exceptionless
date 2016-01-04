@@ -157,7 +157,7 @@ namespace Exceptionless.Core.Utility {
             var filter = new ElasticQuery()
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
-                .WithFieldEquals(EventIndex.Fields.PersistentEvent.Type, Event.KnownTypes.SessionStart)
+                .WithFieldEquals(EventIndex.Fields.PersistentEvent.Type, Event.KnownTypes.Session)
                 .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
                 .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
 
@@ -275,7 +275,7 @@ namespace Exceptionless.Core.Utility {
             var filter = new ElasticQuery()
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
-                .WithFieldEquals(EventIndex.Fields.PersistentEvent.Type, Event.KnownTypes.SessionStart)
+                .WithFieldEquals(EventIndex.Fields.PersistentEvent.Type, Event.KnownTypes.Session)
                 .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
                 .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
 

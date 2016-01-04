@@ -172,12 +172,12 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             var firstEvent = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(35));
 
-            var sessionLastActive35MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession", generateData: false);
-            var sessionLastActive34MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession2", generateData: false);
+            var sessionLastActive35MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
+            var sessionLastActive34MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession2", generateData: false);
             sessionLastActive34MinAgo.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(1));
-            var sessionLastActive5MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession3", generateData: false);
+            var sessionLastActive5MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession3", generateData: false);
             sessionLastActive5MinAgo.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(30));
-            var closedSession = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.SessionStart, sessionId: "opensession", generateData: false);
+            var closedSession = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
             closedSession.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(5), true);
 
             var events = new List<PersistentEvent> {

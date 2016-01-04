@@ -234,7 +234,7 @@ namespace Exceptionless.Helpers {
             Event.KnownTypes.FeatureUsage,
             Event.KnownTypes.Log,
             Event.KnownTypes.NotFound,
-            Event.KnownTypes.SessionStart,
+            Event.KnownTypes.Session,
             Event.KnownTypes.SessionEnd
         };
 

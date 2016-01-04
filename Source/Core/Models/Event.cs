@@ -63,8 +63,8 @@ namespace Exceptionless.Core.Models {
             public const string SessionHeartbeat = "heartbeat";
             public const string Log = "log";
             public const string NotFound = "404";
-            public const string SessionStart = "start";
-            public const string SessionEnd = "end";
+            public const string Session = "session";
+            public const string SessionEnd = "sessionend";
         }
 
         public static class KnownTags {
@@ -83,7 +83,8 @@ namespace Exceptionless.Core.Models {
             public const string Version = "@version";
             public const string Level = "@level";
             public const string SubmissionMethod = "@submission_method";
-            public const string SessionEnd = "session_end";
+            public const string SessionEnd = "sessionend";
+            public const string SessionHasError = "haserror";
         }
     }
 }

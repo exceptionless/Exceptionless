@@ -58,7 +58,7 @@ namespace Exceptionless.Core.Repositories {
         
         // TODO: We need to index and search by the created time.
         public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null) {
-            var filter = Filter<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.SessionStart) && Filter<PersistentEvent>.Missing(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]);
+            var filter = Filter<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && Filter<PersistentEvent>.Missing(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]);
             if (createdBeforeUtc.Ticks > 0)
                 filter &= Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(createdBeforeUtc));
 
@@ -68,9 +68,9 @@ namespace Exceptionless.Core.Repositories {
                 .WithPaging(paging));
         }
 
-        public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool sendNotifications = true) {
+        public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true) {
             var ev = await GetByIdAsync(id).AnyContext();
-            if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd))
+            if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd, hasError))
                 return false;
 
             await SaveAsync(ev, sendNotifications: sendNotifications).AnyContext();

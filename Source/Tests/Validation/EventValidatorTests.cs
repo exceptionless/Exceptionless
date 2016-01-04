@@ -55,7 +55,7 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData(Event.KnownTypes.Log, true)]
         [InlineData(Event.KnownTypes.NotFound, true)]
         [InlineData(Event.KnownTypes.SessionEnd, true)]
-        [InlineData(Event.KnownTypes.SessionStart, true)]
+        [InlineData(Event.KnownTypes.Session, true)]
         [InlineData("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901", false)]
         public void ValidateType(string type, bool isValid) {
             var result = _validator.Validate(new PersistentEvent { Type = type, Date = DateTimeOffset.Now, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" });

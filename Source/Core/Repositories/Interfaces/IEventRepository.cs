@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Repositories {
         Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
 
         Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null);
-        Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool sendNotifications = true);
+        Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true);
         
         Task UpdateFixedByStackAsync(string organizationId, string stackId, bool value);
         Task UpdateHiddenByStackAsync(string organizationId, string stackId, bool value);
