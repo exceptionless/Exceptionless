@@ -10,7 +10,7 @@ namespace Exceptionless {
 
             foreach (string key in keysToCopy.Where(k => !String.IsNullOrEmpty(k) && ev.Data.ContainsKey(k))) {
                 string field = key.Trim().ToLower().Replace(' ', '-');
-                if (field.StartsWith("@"))
+                if (field.StartsWith("@") || ev.Data[key] == null)
                     continue;
 
                 Type dataType = ev.Data[key].GetType();
