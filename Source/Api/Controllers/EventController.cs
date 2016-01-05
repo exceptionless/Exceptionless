@@ -111,7 +111,7 @@ namespace Exceptionless.Api.Controllers {
             return GetInternalAsync(null, filter, sort, time, offset, mode, page, limit);
         }
 
-        private async Task<IHttpActionResult> GetInternalAsync(string systemFilter = null, string userFilter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        private async Task<IHttpActionResult> GetInternalAsync(string systemFilter = null, string userFilter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, bool usesPremiumFeatures = false) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page + 1, limit);
@@ -123,7 +123,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(processResult.Message);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+                systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures || usesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
 
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
@@ -288,7 +288,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("sessions/{sessionId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return await GetInternalAsync(null, $"session:{sessionId} {filter}", sort, time, offset, mode, page, limit);
+            return await GetInternalAsync(null, $"session:{sessionId} {filter}", sort, time, offset, mode, page, limit, true);
         }
 
         /// <summary>
@@ -312,7 +312,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync($"project:{projectId}", $"session:{sessionId} {filter}", sort, time, offset, mode, page, limit);
+            return await GetInternalAsync($"project:{projectId}", $"session:{sessionId} {filter}", sort, time, offset, mode, page, limit, true);
         }
 
         /// <summary>
@@ -330,7 +330,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("sessions")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return await GetInternalAsync(null, $"type:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit);
+            return await GetInternalAsync(null, $"type:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit, true);
         }
 
         /// <summary>
@@ -353,7 +353,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
             
-            return await GetInternalAsync($"project:{projectId}", $"type:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit);
+            return await GetInternalAsync($"project:{projectId}", $"type:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit, true);
         }
         
         /// <summary>

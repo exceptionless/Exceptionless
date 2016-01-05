@@ -39,7 +39,7 @@ namespace Exceptionless.Api.Controllers {
             return GetInternalAsync(null, filter, time, offset);
         }
 
-        private async Task<IHttpActionResult> GetInternalAsync(string systemFilter, string userFilter = null, string time = null, string offset = null) {
+        private async Task<IHttpActionResult> GetInternalAsync(string systemFilter, string userFilter = null, string time = null, string offset = null, bool usesPremiumFeatures = false) {
             var timeInfo = GetTimeInfo(time, offset);
 
             var processResult = QueryProcessor.Process(userFilter);
@@ -47,7 +47,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(processResult.Message);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+                systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures || usesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
 
             EventStatsResult result;
             try {
@@ -126,7 +126,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(sessionId))
                 return NotFound();
             
-            return await GetInternalAsync(null, String.Concat(filter, " session:", sessionId).Trim(), time, offset);
+            return await GetInternalAsync(null, String.Concat(filter, " session:", sessionId).Trim(), time, offset, true);
         }
         
         /// <summary>
@@ -145,7 +145,7 @@ namespace Exceptionless.Api.Controllers {
             if (!processResult.IsValid)
                 return BadRequest(processResult.Message);
 
-            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
+            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, true, HasOrganizationOrProjectFilter(filter));
 
             SessionStatsResult result;
             try {
