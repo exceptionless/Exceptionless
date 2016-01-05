@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 try {
                     plugin.Upgrade(context);
                 } catch (Exception ex) {
-                    Logger.Error().Exception(ex).Message("Error calling upgrade in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Logger.Error().Exception(ex).Message("Error calling upgrade in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("Context", context).Write();
                     throw;
                 }
             }
