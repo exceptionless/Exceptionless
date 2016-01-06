@@ -120,7 +120,7 @@ namespace Exceptionless.Api.Controllers {
                 return null;
 
             var associatedOrganizations = await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true);
-            var organizations = associatedOrganizations.Documents.Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
+            var organizations = associatedOrganizations.Documents.Where(o => !o.IsSuspended && (o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures))).ToList();
             if (organizations.Count == 0)
                 return "organization:none";
 
