@@ -65,7 +65,10 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(sort)) {
                 var fields = sort.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (var field in fields) {
-                    string name = field;
+                    string name = field.Trim();
+                    if (String.IsNullOrEmpty(name))
+                        continue;
+
                     var order = SortOrder.Ascending;
                     if (!String.IsNullOrEmpty(sort) && sort.StartsWith("-")) {
                         name = name.Substring(1);
