@@ -512,11 +512,10 @@ namespace Exceptionless.Api.Controllers {
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
-
-
+            
             FindResults<Stack> results;
             try {
-                results = await _repository.GetByFilterAsync(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
+                results = await _repository.GetByFilterAsync(systemFilter, userFilter, sortBy, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
                 Logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })

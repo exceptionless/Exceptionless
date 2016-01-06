@@ -99,18 +99,16 @@ namespace Exceptionless.Core.Repositories {
                 .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash)));
         }
 
-        public Task<FindResults<Stack>> GetByFilterAsync(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
-            if (String.IsNullOrEmpty(sort)) {
-                sort = StackIndex.Fields.Stack.LastOccurrence;
-                sortOrder = SortOrder.Descending;
-            }
+        public Task<FindResults<Stack>> GetByFilterAsync(string systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+            if (sorting.Fields.Count == 0)
+                sorting.Fields.Add(new FieldSort { Field = StackIndex.Fields.Stack.LastOccurrence, Order = SortOrder.Descending });
 
             var search = new ExceptionlessQuery()
                 .WithDateRange(utcStart, utcEnd, field ?? StackIndex.Fields.Stack.LastOccurrence)
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
                 .WithPaging(paging)
-                .WithSort(sort, sortOrder);
+                .WithSort(sorting);
 
             return FindAsync(search);
         }

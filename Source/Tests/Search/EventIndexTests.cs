@@ -530,7 +530,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
-            return _repository.GetByFilterAsync(null, filter, null, SortOrder.Descending, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            return _repository.GetByFilterAsync(null, filter, new SortingOptions(), null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }
 }

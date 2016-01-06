@@ -105,19 +105,17 @@ namespace Exceptionless.Core.Repositories {
             return UpdateAllAsync(organizationId, query, new { is_hidden = true });
         }
 
-        public Task<FindResults<PersistentEvent>> GetByFilterAsync(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
-            if (String.IsNullOrEmpty(sort)) {
-                sort = EventIndex.Fields.PersistentEvent.Date;
-                sortOrder = SortOrder.Descending;
-            }
-
+        public Task<FindResults<PersistentEvent>> GetByFilterAsync(string systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+            if (sorting.Fields.Count == 0)
+                sorting.Fields.Add(new FieldSort { Field = EventIndex.Fields.PersistentEvent.Date, Order = SortOrder.Descending });
+            
             var search = new ExceptionlessQuery()
                 .WithDateRange(utcStart, utcEnd, field ?? EventIndex.Fields.PersistentEvent.Date)
                 .WithIndices(utcStart, utcEnd, $"'{_index.VersionedName}-'yyyyMM")
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
                 .WithPaging(paging)
-                .WithSort(sort, sortOrder);
+                .WithSort(sorting);
 
             return FindAsync(search);
         }

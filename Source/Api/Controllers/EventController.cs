@@ -131,7 +131,7 @@ namespace Exceptionless.Api.Controllers {
 
             FindResults<PersistentEvent> events;
             try {
-                events = await _repository.GetByFilterAsync(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
+                events = await _repository.GetByFilterAsync(systemFilter, processResult.ExpandedQuery, sortBy, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
                 Logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })

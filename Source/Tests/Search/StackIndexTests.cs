@@ -233,7 +233,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private Task<FindResults<Stack>> GetByFilterAsync(string filter) {
-            return _repository.GetByFilterAsync(null, filter, null, Foundatio.Repositories.Models.SortOrder.Descending, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            return _repository.GetByFilterAsync(null, filter, new SortingOptions(), null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }
 }
