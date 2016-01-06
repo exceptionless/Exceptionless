@@ -2,6 +2,7 @@
 using System.Linq;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless {
     public static class PersistentEventExtensions {
@@ -93,19 +94,46 @@ namespace Exceptionless {
             return true;
         }
 
-        public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, DateTime? lastActivityUtc, bool? isSessionEnd, bool hasPremiumFeatures = true) {
-            // TODO: Be selective about what data we copy.
+        public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, DateTime? lastActivityUtc = null, bool? isSessionEnd = null, bool hasPremiumFeatures = true) {
             var startEvent = new PersistentEvent {
                 SessionId = source.SessionId,
-                Data = source.Data,
                 Date = source.Date,
                 Geo = source.Geo,
                 OrganizationId = source.OrganizationId,
                 ProjectId = source.ProjectId,
-                Tags = source.Tags,
                 Type = Event.KnownTypes.Session,
                 Value = 0
             };
+
+            var ei = source.GetEnvironmentInfo();
+            if (ei != null) {
+                startEvent.SetEnvironmentInfo(new EnvironmentInfo {
+                    Architecture = ei.Architecture,
+                    CommandLine = ei.CommandLine,
+                    Data = ei.Data,
+                    InstallId = ei.InstallId,
+                    IpAddress = ei.IpAddress,
+                    MachineName = ei.MachineName,
+                    OSName = ei.OSName,
+                    OSVersion = ei.OSVersion,
+                    ProcessId = ei.ProcessId,
+                    ProcessName = ei.ProcessName,
+                    ProcessorCount = ei.ProcessorCount,
+                    RuntimeVersion = ei.RuntimeVersion,
+                    TotalPhysicalMemory = ei.TotalPhysicalMemory
+                });
+            }
+
+            var ri = source.GetRequestInfo();
+            if (ri != null) {
+                startEvent.AddRequestInfo(new RequestInfo {
+                    ClientIpAddress = ri.ClientIpAddress,
+                    Data = ri.Data
+                });
+            }
+            
+            startEvent.SetVersion(source.GetVersion());
+            startEvent.SetUserIdentity(source.GetUserIdentity());
 
             if (lastActivityUtc.HasValue)
                 startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());

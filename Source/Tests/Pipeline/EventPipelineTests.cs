@@ -677,25 +677,12 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 
                 // inject random session start events.
                 if (currentBatchCount % 10 == 0)
-                    events.Insert(0, CreateSessionStartEvent(events[0]));
+                    events.Insert(0, events[0].ToSessionStartEvent());
 
                 await storage.SaveObjectAsync($"{dataDirectory}\\{currentBatchCount++}.json", events);
             }
         }
-
-        private PersistentEvent CreateSessionStartEvent(PersistentEvent ev) {
-            return new PersistentEvent {
-                SessionId = ev.SessionId,
-                Data = ev.Data,
-                Date = ev.Date,
-                Geo = ev.Geo,
-                OrganizationId = ev.OrganizationId,
-                ProjectId = ev.ProjectId,
-                Tags = ev.Tags,
-                Type = Event.KnownTypes.Session
-            };
-        }
-
+        
         public static IEnumerable<object[]> Events {
             get {
                 var result = new List<object[]>();

@@ -133,6 +133,11 @@ namespace Exceptionless {
             return ev.Data.TryGetValue(Event.KnownDataKeys.UserInfo, out value) ? value as UserInfo : null;
         }
 
+        public static string GetVersion(this Event ev) {
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.Version, out value) ? value as string : null;
+        }
+
         /// <summary>
         /// Sets the version that the event happened on.
         /// </summary>
@@ -143,6 +148,13 @@ namespace Exceptionless {
                 return;
 
             ev.Data[Event.KnownDataKeys.Version] = version.Trim();
+        }
+
+        public static void SetEnvironmentInfo(this Event ev, EnvironmentInfo environmentInfo) {
+            if (environmentInfo == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.EnvironmentInfo] = environmentInfo;
         }
 
         /// <summary>
