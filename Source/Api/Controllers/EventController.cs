@@ -77,6 +77,9 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var organization = await _organizationRepository.GetByIdAsync(model.OrganizationId, true);
+            if (organization == null)
+                return NotFound();
+
             if (organization.RetentionDays > 0 && model.Date.UtcDateTime < DateTime.UtcNow.SubtractDays(organization.RetentionDays))
                 return PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
