@@ -134,7 +134,8 @@ namespace Exceptionless {
                     IsSecure = ri.IsSecure,
                     Port = ri.Port,
                     Path = ri.Path,
-                    Referrer = ri.Referrer
+                    Referrer = ri.Referrer,
+                    UserAgent = ri.UserAgent
                 });
             }
             
