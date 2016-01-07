@@ -128,7 +128,13 @@ namespace Exceptionless {
             if (ri != null) {
                 startEvent.AddRequestInfo(new RequestInfo {
                     ClientIpAddress = ri.ClientIpAddress,
-                    Data = ri.Data
+                    Data = ri.Data,
+                    Host = ri.Host,
+                    HttpMethod = ri.HttpMethod,
+                    IsSecure = ri.IsSecure,
+                    Port = ri.Port,
+                    Path = ri.Path,
+                    Referrer = ri.Referrer
                 });
             }
             
