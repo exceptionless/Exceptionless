@@ -4,6 +4,10 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Plugins.EventProcessor;
+using Exceptionless.Core.Plugins.EventProcessor.Default;
 using Exceptionless.Core.Utility;
 using Foundatio.Caching;
 using Foundatio.Storage;
@@ -11,8 +15,13 @@ using Xunit;
 
 namespace Exceptionless.Api.Tests.Plugins {
     public class GeoTests {
-        private IGeoIPResolver _resolver;
-        private async Task<IGeoIPResolver> GetResolverAsync() {
+        private const string GREEN_BAY_COORDINATES = "44.5241,-87.9056";
+        private const string GREEN_BAY_IP = "143.200.133.1";
+        private const string IRVING_COORDINATES = "32.85,-96.9613";
+        private const string IRVING_IP = "192.91.253.248";
+
+        private static IGeoIPResolver _resolver;
+        private static async Task<IGeoIPResolver> GetResolverAsync() {
             if (_resolver != null)
                 return _resolver;
 
@@ -27,6 +36,152 @@ namespace Exceptionless.Api.Tests.Plugins {
             }
 
             return _resolver = new MindMaxGeoIPResolver(storage);
+        }
+        
+        [Fact]
+        public async Task WillNotSetLocation() {
+            var plugin = new GeoPlugin(await GetResolverAsync());
+            var ev = new PersistentEvent { Geo = GREEN_BAY_COORDINATES };
+            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev) });
+
+            Assert.Equal(GREEN_BAY_COORDINATES, ev.Geo);
+            Assert.Null(ev.GetLocation());
+        }
+       
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        [InlineData("Invalid")]
+        [InlineData("x,y")]
+        [InlineData("190,180")]
+        public async Task WillResetLocation(string geo) {
+            var plugin = new GeoPlugin(await GetResolverAsync());
+            
+            var ev = new PersistentEvent { Geo = geo };
+            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev) });
+
+            Assert.Null(ev.Geo);
+            Assert.Null(ev.GetLocation());
+        }
+        
+        [Fact]
+        public async Task WillSetLocationFromGeo() {
+            var plugin = new GeoPlugin(await GetResolverAsync());
+            var ev = new PersistentEvent { Geo = GREEN_BAY_IP };
+            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev) });
+
+            Assert.NotNull(ev.Geo);
+            Assert.NotEqual(GREEN_BAY_IP, ev.Geo);
+
+            var location = ev.GetLocation();
+            Assert.Equal("United States", location?.Country);
+            Assert.Equal("Wisconsin", location?.Level1);
+            Assert.Equal("Green Bay", location?.Locality);
+        }
+
+        [Fact]
+        public async Task WillSetLocationFromRequestInfo() {
+            var plugin = new GeoPlugin(await GetResolverAsync());
+            var ev = new PersistentEvent();
+            ev.AddRequestInfo(new RequestInfo { ClientIpAddress = GREEN_BAY_IP });
+            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev) });
+
+            Assert.NotNull(ev.Geo);
+
+            var location = ev.GetLocation();
+            Assert.Equal("United States", location?.Country);
+            Assert.Equal("Wisconsin", location?.Level1);
+            Assert.Equal("Green Bay", location?.Locality);
+        }
+
+        [Fact]
+        public async Task WillSetLocationFromEnvironmentInfoInfo() {
+            var plugin = new GeoPlugin(await GetResolverAsync());
+            var ev = new PersistentEvent();
+            ev.SetEnvironmentInfo(new EnvironmentInfo { IpAddress = $"127.0.0.1,{GREEN_BAY_IP}" });
+            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev) });
+
+            Assert.NotNull(ev.Geo);
+
+            var location = ev.GetLocation();
+            Assert.Equal("United States", location?.Country);
+            Assert.Equal("Wisconsin", location?.Level1);
+            Assert.Equal("Green Bay", location?.Locality);
+        }
+
+        [Fact]
+        public async Task WillSetFromSingleGeo() {
+            var plugin = new GeoPlugin(await GetResolverAsync());
+
+            var contexts = new List<EventContext> {
+                new EventContext(new PersistentEvent { Geo = GREEN_BAY_IP }),
+                new EventContext(new PersistentEvent { Geo = GREEN_BAY_IP })
+            };
+
+            await plugin.EventBatchProcessingAsync(contexts);
+
+            foreach (var context in contexts) {
+                Assert.Equal(GREEN_BAY_COORDINATES, context.Event.Geo);
+
+                var location = context.Event.GetLocation();
+                Assert.Equal("United States", location?.Country);
+                Assert.Equal("Wisconsin", location?.Level1);
+                Assert.Equal("Green Bay", location?.Locality);
+            }
+        }
+        
+        [Fact]
+        public async Task WillNotSetFromMultipleGeo() {
+            var plugin = new GeoPlugin(await GetResolverAsync());
+
+            var ev = new PersistentEvent();
+            var greenBayEvent = new PersistentEvent { Geo = GREEN_BAY_IP };
+            var irvingEvent = new PersistentEvent { Geo = IRVING_IP };
+            await plugin.EventBatchProcessingAsync(new List<EventContext> {
+                new EventContext(ev),
+                new EventContext(greenBayEvent),
+                new EventContext(irvingEvent)
+            });
+
+            Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
+            var location = greenBayEvent.GetLocation();
+            Assert.Equal("United States", location?.Country);
+            Assert.Equal("Wisconsin", location?.Level1);
+            Assert.Equal("Green Bay", location?.Locality);
+
+            Assert.Equal(IRVING_COORDINATES, irvingEvent.Geo);
+            location = irvingEvent.GetLocation();
+            Assert.Equal("United States", location?.Country);
+            Assert.Equal("Texas", location?.Level1);
+            Assert.Equal("Irving", location?.Locality);
+        }
+
+        [Fact]
+        public async Task WillSetMultipleFromEmptyGeo() {
+            var plugin = new GeoPlugin(await GetResolverAsync());
+
+            var ev = new PersistentEvent();
+            var greenBayEvent = new PersistentEvent();
+            greenBayEvent.SetEnvironmentInfo(new EnvironmentInfo { IpAddress = GREEN_BAY_IP });
+            var irvingEvent = new PersistentEvent();
+            irvingEvent.SetEnvironmentInfo(new EnvironmentInfo { IpAddress = IRVING_IP });
+            await plugin.EventBatchProcessingAsync(new List<EventContext> {
+                new EventContext(ev),
+                new EventContext(greenBayEvent),
+                new EventContext(irvingEvent)
+            });
+
+            Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
+            var location = greenBayEvent.GetLocation();
+            Assert.Equal("United States", location?.Country);
+            Assert.Equal("Wisconsin", location?.Level1);
+            Assert.Equal("Green Bay", location?.Locality);
+
+            Assert.Equal(IRVING_COORDINATES, irvingEvent.Geo);
+            location = irvingEvent.GetLocation();
+            Assert.Equal("United States", location?.Country);
+            Assert.Equal("Texas", location?.Level1);
+            Assert.Equal("Irving", location?.Locality);
         }
 
         [Theory]

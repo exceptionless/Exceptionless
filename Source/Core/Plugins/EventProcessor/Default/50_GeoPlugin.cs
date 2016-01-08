@@ -6,11 +6,13 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
+using Foundatio.Caching;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(50)]
     public class GeoPlugin : EventProcessorPluginBase {
         private readonly IGeoIPResolver _geoIpResolver;
+        private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 100 };
 
         public GeoPlugin(IGeoIPResolver geoIpResolver) {
             _geoIpResolver = geoIpResolver;
@@ -18,42 +20,60 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
             var geoGroups = contexts.GroupBy(c => c.Event.Geo);
-            foreach (var geoGroup in geoGroups) {
-                Location location;
-                if (Location.TryParse(geoGroup.Key, out location) && location.IsValid()) {
-                    geoGroup.ForEach(c => c.Event.Geo = location.ToString());
+            foreach (var group in geoGroups) {
+                GeoResult result;
+                if (GeoResult.TryParse(group.Key, out result) && result.IsValid()) {
+                    group.ForEach(c => UpdateGeoAndlocation(c.Event, result, false));
                     continue;
                 }
 
-                foreach (var context in geoGroup) {
-                    foreach (var ip in GetIpAddresses(context.Event)) {
-                        location = await _geoIpResolver.ResolveIpAsync(ip).AnyContext();
-                        if (location == null || !location.IsValid())
-                            continue;
-
-                        context.Event.Geo = location.ToString();
-                        return;
-                    }
-
-                    context.Event.Geo = null;
+                // The geo coordinates are all the same, set the location from the result of any of the ip addresses.
+                if (!String.IsNullOrEmpty(group.Key)) {
+                    result = await GetGeoFromIPAddressesAsync(group.SelectMany(c => c.Event.GetIpAddresses()).Distinct()).AnyContext();
+                    group.ForEach(c => UpdateGeoAndlocation(c.Event, result));
+                    continue;
+                }
+                
+                // Each event could be a different user;
+                foreach (var context in group) {
+                    result = await GetGeoFromIPAddressesAsync(context.Event.GetIpAddresses()).AnyContext();
+                    UpdateGeoAndlocation(context.Event, result);
                 }
             }
         }
 
-        private IEnumerable<string> GetIpAddresses(PersistentEvent ev) {
-            if (!String.IsNullOrEmpty(ev.Geo) && (ev.Geo.Contains(".") || ev.Geo.Contains(":")))
-                yield return ev.Geo;
+        private void UpdateGeoAndlocation(PersistentEvent ev, GeoResult result, bool isValidLocation = true) {
+            ev.Geo = result?.ToString();
+            
+            if (result != null && isValidLocation)
+                ev.SetLocation(result.Country, result.Level1, result.Level2, result.Locality);
+            else
+                ev.Data.Remove(Event.KnownDataKeys.Location);
+        }
 
-            var request = ev.GetRequestInfo();
-            if (!String.IsNullOrWhiteSpace(request?.ClientIpAddress))
-                yield return request.ClientIpAddress;
+        private async Task<GeoResult> GetGeoFromIPAddressesAsync(IEnumerable<string> ips) {
+            foreach (var ip in ips) {
+                if (String.IsNullOrEmpty(ip))
+                    continue;
 
-            var environmentInfo = ev.GetEnvironmentInfo();
-            if (String.IsNullOrWhiteSpace(environmentInfo?.IpAddress))
-                yield break;
+                var cacheValue = await _localCache.GetAsync<GeoResult>(ip).AnyContext();
+                if (cacheValue.HasValue && cacheValue.IsNull)
+                    continue;
 
-            foreach (var ip in environmentInfo.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                yield return ip;
+                if (cacheValue.HasValue)
+                    return cacheValue.Value;
+
+                var result = await _geoIpResolver.ResolveIpAsync(ip).AnyContext();
+                if (result == null || !result.IsValid()) {
+                    await _localCache.SetAsync<GeoResult>(ip, null).AnyContext();
+                    continue;
+                }
+                
+                await _localCache.SetAsync(ip, result).AnyContext();
+                return result;
+            }
+
+            return null;
         }
     }
 }

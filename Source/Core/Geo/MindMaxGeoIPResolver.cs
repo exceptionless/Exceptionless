@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Geo {
     public class MindMaxGeoIPResolver : IGeoIPResolver, IDisposable {
         internal const string GEO_IP_DATABASE_PATH = "GeoLite2-City.mmdb";
 
-        private readonly InMemoryCacheClient _cache = new InMemoryCacheClient { MaxItems = 250 };
+        private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 250 };
         private readonly IFileStorage _storage;
         private DatabaseReader _database;
         private DateTime? _databaseLastChecked;
@@ -23,17 +23,17 @@ namespace Exceptionless.Core.Geo {
             _storage = storage;
         }
 
-        public async Task<Location> ResolveIpAsync(string ip, CancellationToken cancellationToken = new CancellationToken()) {
+        public async Task<GeoResult> ResolveIpAsync(string ip, CancellationToken cancellationToken = new CancellationToken()) {
             if (String.IsNullOrWhiteSpace(ip) || (!ip.Contains(".") && !ip.Contains(":")))
                 return null;
 
             ip = ip.Trim();
 
-            var cacheValue = await _cache.GetAsync<Location>(ip).AnyContext();
+            var cacheValue = await _localCache.GetAsync<GeoResult>(ip).AnyContext();
             if (cacheValue.HasValue)
                 return cacheValue.Value;
 
-            Location location = null;
+            GeoResult result = null;
 
             if (ip.IsPrivateNetwork())
                 return null;
@@ -45,14 +45,20 @@ namespace Exceptionless.Core.Geo {
             try {
                 var city = database.City(ip);
                 if (city?.Location != null)
-                    location = new Location { Latitude = city.Location.Latitude, Longitude = city.Location.Longitude };
+                    result = new GeoResult {
+                        Latitude = city.Location.Latitude,
+                        Longitude = city.Location.Longitude,
+                        Country = city.Country.Name,
+                        Level1 = city.MostSpecificSubdivision.Name,
+                        Locality = city.City.Name
+                    };
 
-                await _cache.SetAsync(ip, location).AnyContext();
-                return location;
+                await _localCache.SetAsync(ip, result).AnyContext();
+                return result;
             } catch (Exception ex) {
                 if (ex is AddressNotFoundException || ex is GeoIP2Exception) {
                     Logger.Trace().Message(ex.Message).Write();
-                    await _cache.SetAsync<Location>(ip, null).AnyContext();
+                    await _localCache.SetAsync<GeoResult>(ip, null).AnyContext();
                 } else {
                     Logger.Error().Exception(ex).Message("Unable to resolve geo location for ip: " + ip).Write();
                 }

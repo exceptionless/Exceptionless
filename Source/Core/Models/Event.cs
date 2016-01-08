@@ -82,6 +82,7 @@ namespace Exceptionless.Core.Models {
             public const string UserDescription = "@user_description";
             public const string Version = "@version";
             public const string Level = "@level";
+            public const string Location = "@location";
             public const string SubmissionMethod = "@submission_method";
             public const string SessionEnd = "sessionend";
             public const string SessionHasError = "haserror";

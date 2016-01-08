@@ -150,6 +150,30 @@ namespace Exceptionless {
             ev.Data[Event.KnownDataKeys.Version] = version.Trim();
         }
 
+        public static Location GetLocation(this Event ev) {
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.Location, out value) ? value as Location : null;
+        }
+
+        public static void SetLocation(this Event ev, string country, string level1, string level2, string locality) {
+            if (String.IsNullOrEmpty(country) && String.IsNullOrEmpty(level1) && String.IsNullOrEmpty(level2) && String.IsNullOrEmpty(locality))
+                return;
+
+            ev.Data[Event.KnownDataKeys.Location] = new Location {
+                Country = country?.Trim(),
+                Level1 = level1?.Trim(),
+                Level2 = level2?.Trim(),
+                Locality = locality?.Trim()
+            };
+        }
+
+        public static void SetLocation(this Event ev, Location location) {
+            if (location == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.Location] = location;
+        }
+
         public static void SetEnvironmentInfo(this Event ev, EnvironmentInfo environmentInfo) {
             if (environmentInfo == null)
                 return;

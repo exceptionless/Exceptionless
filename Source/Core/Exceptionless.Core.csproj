@@ -168,6 +168,7 @@
     <Compile Include="Jobs\WorkItemHandlers\RemoveProjectWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\RemoveOrganizationWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\StackWorkItemHandler.cs" />
+    <Compile Include="Jobs\WorkItemHandlers\SetGeoLocationWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\ThrottleBotsWorkItemHandler.cs" />
     <Compile Include="Mail\Engine\DirectoryTemplateResolver.cs" />
     <Compile Include="Mail\Engine\EmailTemplate.cs" />
@@ -191,6 +192,7 @@
     <Compile Include="Models\Data\EnvironmentInfo.cs" />
     <Compile Include="Models\Data\Error.cs" />
     <Compile Include="Models\Data\InnerError.cs" />
+    <Compile Include="Models\Data\Location.cs" />
     <Compile Include="Models\Data\Method.cs" />
     <Compile Include="Models\Data\Module.cs" />
     <Compile Include="Models\Data\Parameter.cs" />
@@ -244,13 +246,15 @@
     <Compile Include="Models\WebHook.cs" />
     <Compile Include="Models\WorkItems\RemoveOrganizationWorkItem.cs" />
     <Compile Include="Models\WorkItems\RemoveProjectWorkItem.cs" />
+    <Compile Include="Models\WorkItems\SetGeoLocationWorkItem.cs" />
     <Compile Include="Models\WorkItems\SetProjectIsConfiguredWorkItem.cs" />
     <Compile Include="Models\WorkItems\StackWorkItem.cs" />
     <Compile Include="Models\WorkItems\ThrottleBotsWorkItem.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\60_ManualSessionPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\70_ManualSessionPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\60_LocationPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
@@ -283,7 +287,7 @@
     <Compile Include="Extensions\StorageExtensions.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="Geo\IGeoIPResolver.cs" />
-    <Compile Include="Geo\Location.cs" />
+    <Compile Include="Geo\GeoResult.cs" />
     <Compile Include="Geo\MindMaxGeoIPResolver.cs" />
     <Compile Include="Jobs\EventNotificationsJob.cs" />
     <Compile Include="Jobs\WebHooksJob.cs" />
@@ -294,7 +298,7 @@
     <Compile Include="Pipeline\Base\PipelineBase.cs" />
     <Compile Include="Pipeline\Base\PipelineContextBase.cs" />
     <Compile Include="Pipeline\Base\PriorityAttribute.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\70_AutoSessionPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\80_AutoSessionPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
     <Compile Include="Filter\QueryProcessorVisitor.cs" />
     <Compile Include="Utility\EventStats.cs" />

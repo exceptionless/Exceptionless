@@ -8,7 +8,7 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
-    [Priority(60)]
+    [Priority(70)]
     public class ManualSessionPlugin : EventProcessorPluginBase {
         const string CREATE_SESSION_START_CACHE_ENTRY = "CREATE_SESSION_START_CACHE_ENTRY";
 
