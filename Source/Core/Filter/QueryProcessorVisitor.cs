@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Filter {
                 return new QueryProcessResult { Message = ex.Message };
             }
 
-            var validator = new QueryProcessorVisitor(new HashSet<string> { "hidden", "fixed", "type" });
+            var validator = new QueryProcessorVisitor(new HashSet<string> { "hidden", "fixed", "type", "organization", "project" });
             result.Accept(validator);
 
             string expandedQuery = validator.UsesDataFields ? GenerateQueryVisitor.Run(result) : query;
