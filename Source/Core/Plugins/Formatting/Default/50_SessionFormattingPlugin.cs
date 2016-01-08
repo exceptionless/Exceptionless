@@ -28,8 +28,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
-
-
+            
             dynamic data = new ExpandoObject();
             data.SessionId = ev.SessionId;
 
