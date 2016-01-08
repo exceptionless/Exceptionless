@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
         public override async Task EventBatchProcessedAsync(ICollection<EventContext> contexts) {
             foreach (var ctx in contexts.Where(c => c.Organization.HasPremiumFeatures && !String.IsNullOrEmpty(c.Event.Geo) && !c.Event.Data.ContainsKey(Event.KnownDataKeys.Location))) {
-                await _workItemQueue.EnqueueAsync(new SetGeoLocationWorkItem {
+                await _workItemQueue.EnqueueAsync(new SetLocationFromGeoWorkItem {
                     EventId = ctx.Event.Id,
                     Geo = ctx.Event.Geo
                 }).AnyContext();
