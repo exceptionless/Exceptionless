@@ -8,11 +8,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(50)]
     public class SessionFormattingPlugin : FormattingPluginBase {
         private bool ShouldHandle(PersistentEvent ev) {
-            return ev.IsSessionStart() || ev.IsSessionEnd();
+            return ev.IsSessionStart() || ev.IsSessionEnd() || ev.IsSessionHeartbeat();
         }
         
         public override SummaryData GetStackSummaryData(Stack stack) {
-            if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Session, Event.KnownTypes.SessionEnd))
+            if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Session, Event.KnownTypes.SessionEnd, Event.KnownTypes.SessionHeartbeat))
                 return null;
 
             return new SummaryData { TemplateKey = "stack-session-summary", Data = new { Title = stack.Title } };
@@ -21,6 +21,9 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override string GetStackTitle(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
+
+            if (ev.IsSessionHeartbeat())
+                return "Session Heartbeat";
 
             return ev.IsSessionStart() ? "Session Start" : "Session End";
         }
