@@ -17,12 +17,14 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         private readonly IEventRepository _eventRepository;
         private readonly UpdateStatsAction _updateStats;
         private readonly AssignToStackAction _assignToStack;
+        private readonly LocationPlugin _locationPlugin;
 
-        public AutoSessionPlugin(ICacheClient cacheClient, IEventRepository eventRepository, AssignToStackAction assignToStack, UpdateStatsAction updateStats) {
+        public AutoSessionPlugin(ICacheClient cacheClient, IEventRepository eventRepository, AssignToStackAction assignToStack, UpdateStatsAction updateStats, LocationPlugin locationPlugin) {
             _cacheClient = new ScopedCacheClient(cacheClient, "session");
             _eventRepository = eventRepository;
             _assignToStack = assignToStack;
             _updateStats = updateStats;
+            _locationPlugin = locationPlugin;
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
@@ -117,6 +119,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             await _assignToStack.ProcessBatchAsync(startEventContexts).AnyContext();
             await _updateStats.ProcessBatchAsync(startEventContexts).AnyContext();
             await _eventRepository.AddAsync(startEvent).AnyContext();
+            await _locationPlugin.EventBatchProcessedAsync(startEventContexts).AnyContext();
 
             return startEventContexts.Single();
         }

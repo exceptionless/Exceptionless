@@ -161,6 +161,8 @@
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\ParameterExtensions.cs" />
     <Compile Include="Extensions\PersistentEventExtensions.cs" />
+    <Compile Include="Geo\IGeocodeService.cs" />
+    <Compile Include="Geo\NullGeocodeService.cs" />
     <Compile Include="Jobs\CloseInactiveSessionsJob.cs" />
     <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
     <Compile Include="Jobs\JobBootstrapper.cs" />
@@ -286,9 +288,9 @@
     <Compile Include="Extensions\QueueExtensions.cs" />
     <Compile Include="Extensions\StorageExtensions.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
-    <Compile Include="Geo\IGeoIPResolver.cs" />
+    <Compile Include="Geo\IGeoIPService.cs" />
     <Compile Include="Geo\GeoResult.cs" />
-    <Compile Include="Geo\MindMaxGeoIPResolver.cs" />
+    <Compile Include="Geo\MindMaxGeoIpService.cs" />
     <Compile Include="Jobs\EventNotificationsJob.cs" />
     <Compile Include="Jobs\WebHooksJob.cs" />
     <Compile Include="Plugins\EventProcessor\Default\50_GeoPlugin.cs" />

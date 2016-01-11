@@ -2,8 +2,10 @@
 using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Geo;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
+using Exceptionless.Insulation.Geo;
 using Exceptionless.Insulation.Logging;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -22,7 +24,10 @@ namespace Exceptionless.Insulation {
     public class Bootstrapper : IPackage {
         public void RegisterServices(Container container) {
             Logger.RegisterWriter(new NLogAdapter());
-
+            
+            if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
+                container.RegisterSingleton<IGeocodeService>(() => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
+            
             if (Settings.Current.EnableMetricsReporting)
                 container.RegisterSingleton<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.MetricsServerName, Settings.Current.MetricsServerPort, "ex"));
             else

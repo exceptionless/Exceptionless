@@ -11,11 +11,11 @@ using Foundatio.Caching;
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(50)]
     public class GeoPlugin : EventProcessorPluginBase {
-        private readonly IGeoIPResolver _geoIpResolver;
+        private readonly IGeoIPService _geoIpService;
         private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 100 };
 
-        public GeoPlugin(IGeoIPResolver geoIpResolver) {
-            _geoIpResolver = geoIpResolver;
+        public GeoPlugin(IGeoIPService geoIpService) {
+            _geoIpService = geoIpService;
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             ev.Geo = result?.ToString();
             
             if (result != null && isValidLocation)
-                ev.SetLocation(result.Country, result.Level1, result.Level2, result.Locality);
+                ev.SetLocation(result.ToLocation());
             else
                 ev.Data.Remove(Event.KnownDataKeys.Location);
         }
@@ -63,7 +63,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 if (cacheValue.HasValue)
                     return cacheValue.Value;
 
-                var result = await _geoIpResolver.ResolveIpAsync(ip).AnyContext();
+                var result = await _geoIpService.ResolveIpAsync(ip).AnyContext();
                 if (result == null || !result.IsValid()) {
                     await _localCache.SetAsync<GeoResult>(ip, null).AnyContext();
                     continue;

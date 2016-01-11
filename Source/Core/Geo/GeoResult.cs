@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Diagnostics;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Geo {
+    [DebuggerDisplay("{Latitude},{Longitude}, {Locality}, {Level2}, {Level1}, {Country}")]
     public class GeoResult {
-        public double? Latitude { get; internal set; }
-        public double? Longitude { get; internal set; }
+        public double? Latitude { get; set; }
+
+        public double? Longitude { get; set; }
         
         public string Country { get; set; }
 
@@ -55,6 +59,23 @@ namespace Exceptionless.Core.Geo {
 
         public override string ToString() {
             return Latitude + "," + Longitude;
+        }
+    }
+
+    public static class GeoResultExtensions {
+        public static Location ToLocation(this GeoResult result) {
+            if (result == null)
+                return null;
+
+            if (String.IsNullOrEmpty(result.Country) && String.IsNullOrEmpty(result.Level1) && String.IsNullOrEmpty(result.Level2) && String.IsNullOrEmpty(result.Locality))
+                return null;
+
+            return new Location {
+                Country = result.Country?.Trim(),
+                Level1 = result.Level1?.Trim(),
+                Level2 = result.Level2?.Trim(),
+                Locality = result.Locality?.Trim()
+            };
         }
     }
 }

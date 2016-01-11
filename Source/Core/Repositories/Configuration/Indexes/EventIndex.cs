@@ -78,6 +78,11 @@ err['all_codes'] = codes.join(' ')";
                             .String(f2 => f2.Name(Event.KnownDataKeys.Version).IndexName("version").Index(FieldIndexOption.Analyzed).IndexAnalyzer("version_index").SearchAnalyzer("version_search"))
                             .String(f2 => f2.Name(Event.KnownDataKeys.Level).IndexName("level").Index(FieldIndexOption.Analyzed))
                             .String(f2 => f2.Name(Event.KnownDataKeys.SubmissionMethod).IndexName("submission").Index(FieldIndexOption.Analyzed))
+                             .Object<Location>(f2 => f2.Name(Event.KnownDataKeys.Location).Path("just_name").Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.Country).IndexName(Fields.PersistentEvent.LocationCountry).Index(FieldIndexOption.NotAnalyzed))
+                                .String(f3 => f3.Name(r => r.Country).IndexName(Fields.PersistentEvent.LocationLevel1).Index(FieldIndexOption.NotAnalyzed))
+                                .String(f3 => f3.Name(r => r.Country).IndexName(Fields.PersistentEvent.LocationLevel2).Index(FieldIndexOption.NotAnalyzed))
+                                .String(f3 => f3.Name(r => r.Country).IndexName(Fields.PersistentEvent.LocationLocality).Index(FieldIndexOption.NotAnalyzed))))
                             .Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Path("just_name").Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName(Fields.PersistentEvent.IpAddress).Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer("comma_whitespace"))
                                 .String(f3 => f3.Name(r => r.UserAgent).IndexName("useragent").Index(FieldIndexOption.Analyzed))
@@ -252,6 +257,10 @@ err['all_codes'] = codes.join(' ')";
                 public const string UserRaw = "user.raw";
                 public const string UserName = "user.name";
                 public const string UserEmail = "user.email";
+                public const string LocationCountry = "country";
+                public const string LocationLevel1 = "level1";
+                public const string LocationLevel2 = "level2";
+                public const string LocationLocality = "locality";
             }
         }
     }

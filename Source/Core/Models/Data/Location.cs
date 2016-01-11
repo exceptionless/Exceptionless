@@ -2,7 +2,7 @@
 using System.Diagnostics;
 
 namespace Exceptionless.Core.Models.Data {
-    [DebuggerDisplay("{Locality}, {Level1}, {Level2}, {Country}")]
+    [DebuggerDisplay("{Locality}, {Level2}, {Level1}, {Country}")]
     public class Location {
         /// <summary>
         /// Country

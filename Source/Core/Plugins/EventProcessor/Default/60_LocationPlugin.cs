@@ -25,10 +25,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
             var geoGroups = contexts.Where(c => c.Organization.HasPremiumFeatures && !String.IsNullOrEmpty(c.Event.Geo)).GroupBy(c => c.Event.Geo);
             foreach (var geoGroup in geoGroups) {
-                var location = _cacheClient.GetAsync<Location>(geoGroup.Key, null);
+                var location = await _cacheClient.GetAsync<Location>(geoGroup.Key, null).AnyContext();
                 if (location == null)
                     continue;
 
+                await _cacheClient.SetExpirationAsync(geoGroup.Key, TimeSpan.FromDays(30)).AnyContext();
                 geoGroup.ForEach(c => c.Event.Data[Event.KnownDataKeys.Location] = location);
             }
         }

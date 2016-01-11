@@ -142,6 +142,7 @@ namespace Exceptionless {
             
             startEvent.SetVersion(source.GetVersion());
             startEvent.SetUserIdentity(source.GetUserIdentity());
+            startEvent.SetLocation(source.GetLocation());
 
             if (lastActivityUtc.HasValue)
                 startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());

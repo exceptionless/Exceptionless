@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
@@ -19,23 +20,24 @@ namespace Exceptionless.Api.Tests.Plugins {
         private const string GREEN_BAY_IP = "143.200.133.1";
         private const string IRVING_COORDINATES = "32.85,-96.9613";
         private const string IRVING_IP = "192.91.253.248";
+        private readonly IGeocodeService _geocodeService = IoC.GetInstance<IGeocodeService>();
 
-        private static IGeoIPResolver _resolver;
-        private static async Task<IGeoIPResolver> GetResolverAsync() {
-            if (_resolver != null)
-                return _resolver;
+        private static IGeoIPService _service;
+        private static async Task<IGeoIPService> GetResolverAsync() {
+            if (_service != null)
+                return _service;
 
             var dataDirectory = PathHelper.ExpandPath(".\\");
             var storage = new FolderFileStorage(dataDirectory);
 
-            if (!await storage.ExistsAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH)) {
+            if (!await storage.ExistsAsync(MindMaxGeoIPService.GEO_IP_DATABASE_PATH)) {
                 var job = new DownloadGeoIPDatabaseJob(new InMemoryCacheClient(), storage);
                 var result = await job.RunAsync();
                 Assert.NotNull(result);
                 Assert.True(result.IsSuccess);
             }
 
-            return _resolver = new MindMaxGeoIPResolver(storage);
+            return _service = new MindMaxGeoIPService(storage);
         }
         
         [Fact]
@@ -74,8 +76,8 @@ namespace Exceptionless.Api.Tests.Plugins {
             Assert.NotEqual(GREEN_BAY_IP, ev.Geo);
 
             var location = ev.GetLocation();
-            Assert.Equal("United States", location?.Country);
-            Assert.Equal("Wisconsin", location?.Level1);
+            Assert.Equal("US", location?.Country);
+            Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
         }
 
@@ -89,8 +91,8 @@ namespace Exceptionless.Api.Tests.Plugins {
             Assert.NotNull(ev.Geo);
 
             var location = ev.GetLocation();
-            Assert.Equal("United States", location?.Country);
-            Assert.Equal("Wisconsin", location?.Level1);
+            Assert.Equal("US", location?.Country);
+            Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
         }
 
@@ -104,8 +106,8 @@ namespace Exceptionless.Api.Tests.Plugins {
             Assert.NotNull(ev.Geo);
 
             var location = ev.GetLocation();
-            Assert.Equal("United States", location?.Country);
-            Assert.Equal("Wisconsin", location?.Level1);
+            Assert.Equal("US", location?.Country);
+            Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
         }
 
@@ -124,8 +126,8 @@ namespace Exceptionless.Api.Tests.Plugins {
                 Assert.Equal(GREEN_BAY_COORDINATES, context.Event.Geo);
 
                 var location = context.Event.GetLocation();
-                Assert.Equal("United States", location?.Country);
-                Assert.Equal("Wisconsin", location?.Level1);
+                Assert.Equal("US", location?.Country);
+                Assert.Equal("WI", location?.Level1);
                 Assert.Equal("Green Bay", location?.Locality);
             }
         }
@@ -145,15 +147,29 @@ namespace Exceptionless.Api.Tests.Plugins {
 
             Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
             var location = greenBayEvent.GetLocation();
-            Assert.Equal("United States", location?.Country);
-            Assert.Equal("Wisconsin", location?.Level1);
+            Assert.Equal("US", location?.Country);
+            Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
 
             Assert.Equal(IRVING_COORDINATES, irvingEvent.Geo);
             location = irvingEvent.GetLocation();
-            Assert.Equal("United States", location?.Country);
-            Assert.Equal("Texas", location?.Level1);
+            Assert.Equal("US", location?.Country);
+            Assert.Equal("TX", location?.Level1);
             Assert.Equal("Irving", location?.Locality);
+        }
+
+        [Fact]
+        public async Task ReverseGeocodeLookup() {
+            if (_geocodeService is NullGeocodeService)
+                return;
+
+            GeoResult coordinates;
+            Assert.True(GeoResult.TryParse(GREEN_BAY_COORDINATES, out coordinates));
+            var location = await _geocodeService.ReverseGeocodeAsync(coordinates.Latitude.GetValueOrDefault(), coordinates.Longitude.GetValueOrDefault());
+            Assert.Equal("US", location?.Country);
+            Assert.Equal("WI", location?.Level1);
+            Assert.Equal("Brown County", location?.Level2);
+            Assert.Equal("Green Bay", location?.Locality);
         }
 
         [Fact]
@@ -173,14 +189,14 @@ namespace Exceptionless.Api.Tests.Plugins {
 
             Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
             var location = greenBayEvent.GetLocation();
-            Assert.Equal("United States", location?.Country);
-            Assert.Equal("Wisconsin", location?.Level1);
+            Assert.Equal("US", location?.Country);
+            Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
 
             Assert.Equal(IRVING_COORDINATES, irvingEvent.Geo);
             location = irvingEvent.GetLocation();
-            Assert.Equal("United States", location?.Country);
-            Assert.Equal("Texas", location?.Level1);
+            Assert.Equal("US", location?.Country);
+            Assert.Equal("TX", location?.Level1);
             Assert.Equal("Irving", location?.Locality);
         }
 

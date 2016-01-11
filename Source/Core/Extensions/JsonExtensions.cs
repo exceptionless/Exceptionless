@@ -308,7 +308,8 @@ namespace Exceptionless.Core.Extensions {
                 { Event.KnownDataKeys.SimpleError, typeof(SimpleError) },
                 { Event.KnownDataKeys.UserDescription, typeof(UserDescription) },
                 { Event.KnownDataKeys.UserInfo, typeof(UserInfo) },
-                { Event.KnownDataKeys.Error, typeof(Error) }
+                { Event.KnownDataKeys.Error, typeof(Error) },
+                { Event.KnownDataKeys.Location, typeof(Location) }
             };
 
             settings.Converters.Add(new DataObjectConverter<PersistentEvent>(knownDataTypes));
