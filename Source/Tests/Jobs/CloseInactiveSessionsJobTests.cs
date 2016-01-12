@@ -142,11 +142,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             await _client.RefreshAsync();
             await _stackRepository.RemoveAllAsync();
             await _client.RefreshAsync();
-        }
-
-        public override async void Dispose() {
-            await RemoveEventsAndStacks();
-            base.Dispose();
+            await _cacheClient.RemoveAllAsync();
         }
     }
 }
