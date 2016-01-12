@@ -693,7 +693,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             }
         }
 
-        private bool _isReset;
+        private static bool _isReset;
         private async Task ResetAsync() {
             if (!_isReset) {
                 _isReset = true;
@@ -752,8 +752,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         private async Task RemoveDataAsync() {
             await RemoveEventsAndStacks();
-
-            await _client.RefreshAsync();
             await _tokenRepository.RemoveAllAsync();
             await _client.RefreshAsync();
             await _userRepository.RemoveAllAsync();
@@ -771,11 +769,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _client.RefreshAsync();
             await _stackRepository.RemoveAllAsync();
             await _client.RefreshAsync();
-        }
-
-        public override async void Dispose() {
-            await RemoveDataAsync();
-            base.Dispose();
+            await _cacheClient.RemoveAllAsync();
         }
     }
 }
