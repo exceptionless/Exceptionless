@@ -32,7 +32,7 @@ before_build:
 
 build:
   parallel: true
-  verbosity: minimal
+  verbosity: quiet
 
 before_test:
   - ps: .\Libraries\Start-ElasticSearch.ps1
