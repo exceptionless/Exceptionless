@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Plugins {
-    [UseReporter(typeof(HappyDiffReporter))]
+    [UseReporter(typeof(DiffReporter))]
     public class SummaryDataTests {
         private readonly FormattingPluginManager _formattingPluginManager = IoC.GetInstance<FormattingPluginManager>();
 
