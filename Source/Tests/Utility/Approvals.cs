@@ -14,15 +14,14 @@ namespace Exceptionless.Api.Tests.Utility {
     public class HappyDiffReporter : FirstWorkingReporter {
         public HappyDiffReporter()
             : base(
-            (IEnvironmentAwareReporter)CodeCompareReporter.INSTANCE,
-            (IEnvironmentAwareReporter)BeyondCompareReporter.INSTANCE,
-            (IEnvironmentAwareReporter)TortoiseDiffReporter.INSTANCE,
-            (IEnvironmentAwareReporter)AraxisMergeReporter.INSTANCE,
-            (IEnvironmentAwareReporter)P4MergeReporter.INSTANCE,
-            (IEnvironmentAwareReporter)WinMergeReporter.INSTANCE,
-            (IEnvironmentAwareReporter)KDiffReporter.INSTANCE,
-            (IEnvironmentAwareReporter)FrameworkAssertReporter.INSTANCE,
-            (IEnvironmentAwareReporter)QuietReporter.INSTANCE) {
+            CodeCompareReporter.INSTANCE,
+            BeyondCompareReporter.INSTANCE,
+            TortoiseDiffReporter.INSTANCE,
+            AraxisMergeReporter.INSTANCE,
+            P4MergeReporter.INSTANCE,
+            WinMergeReporter.INSTANCE,
+            KDiffReporter.INSTANCE,
+            FrameworkAssertReporter.INSTANCE) {
         }
     }
 }
