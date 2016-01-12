@@ -36,7 +36,7 @@ build:
 
 before_test:
   - ps: .\Libraries\Start-ElasticSearch.ps1
-  #- ps: .\Libraries\Enable-Rdp.ps1
+  - ps: .\Libraries\Enable-Rdp.ps1
 
 test:
   assemblies:
