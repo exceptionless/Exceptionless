@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
+    [DebuggerDisplay("{Id}, {Name}, {PlanName}")]
     public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates {
         public Organization() {
             Invites = new Collection<Invite>();

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -141,6 +142,7 @@ namespace Exceptionless {
             
             startEvent.SetVersion(source.GetVersion());
             startEvent.SetUserIdentity(source.GetUserIdentity());
+            startEvent.SetLocation(source.GetLocation());
 
             if (lastActivityUtc.HasValue)
                 startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
@@ -164,6 +166,25 @@ namespace Exceptionless {
             endEvent.AddRequestInfo(source.GetRequestInfo());
 
             return endEvent;
+        }
+
+        public static IEnumerable<string> GetIpAddresses(this PersistentEvent ev) {
+            if (ev == null)
+                yield break;
+
+            if (!String.IsNullOrEmpty(ev.Geo) && (ev.Geo.Contains(".") || ev.Geo.Contains(":")))
+                yield return ev.Geo;
+
+            var request = ev.GetRequestInfo();
+            if (!String.IsNullOrEmpty(request?.ClientIpAddress))
+                yield return request.ClientIpAddress;
+
+            var environmentInfo = ev.GetEnvironmentInfo();
+            if (String.IsNullOrEmpty(environmentInfo?.IpAddress))
+                yield break;
+
+            foreach (var ip in environmentInfo.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                yield return ip;
         }
     }
 }

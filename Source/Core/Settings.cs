@@ -82,6 +82,8 @@ namespace Exceptionless.Core {
 
         public string GoogleAppSecret { get; private set; }
 
+        public string GoogleGeocodingApiKey { get; private set; }
+
         public bool EnableBilling => !String.IsNullOrEmpty(StripeApiKey);
 
         public string StripeApiKey { get; private set; }
@@ -138,8 +140,9 @@ namespace Exceptionless.Core {
             EnableMetricsReporting = GetBool("EnableMetricsReporting");
             IntercomAppSecret = GetString("IntercomAppSecret");
             EnableAccountCreation = GetBool("EnableAccountCreation", true);
-            GoogleAppId = GetString("GoogleAppId");
-            GoogleAppSecret = GetString("GoogleAppSecret");
+            GoogleAppId = GetString(nameof(GoogleAppId));
+            GoogleAppSecret = GetString(nameof(GoogleAppSecret));
+            GoogleGeocodingApiKey = GetString(nameof(GoogleGeocodingApiKey));
             MicrosoftAppId = GetString("MicrosoftAppId");
             MicrosoftAppSecret = GetString("MicrosoftAppSecret");
             FacebookAppId = GetString("FacebookAppId");

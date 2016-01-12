@@ -150,6 +150,18 @@ namespace Exceptionless {
             ev.Data[Event.KnownDataKeys.Version] = version.Trim();
         }
 
+        public static Location GetLocation(this Event ev) {
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.Location, out value) ? value as Location : null;
+        }
+        
+        public static void SetLocation(this Event ev, Location location) {
+            if (location == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.Location] = location;
+        }
+
         public static void SetEnvironmentInfo(this Event ev, EnvironmentInfo environmentInfo) {
             if (environmentInfo == null)
                 return;

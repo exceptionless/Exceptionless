@@ -65,6 +65,10 @@
       <HintPath>..\..\packages\Foundatio.Redis.3.0.624\lib\net45\Foundatio.Redis.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Geocoding, Version=3.3.0.0, Culture=neutral, PublicKeyToken=7c714700b88674c7, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Geocoding.net.3.3.0\lib\net40\Geocoding.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.Azure.KeyVault.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.Azure.KeyVault.Core.1.0.0\lib\net40\Microsoft.Azure.KeyVault.Core.dll</HintPath>
       <Private>True</Private>
@@ -162,6 +166,7 @@
     </Compile>
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="ExceptionlessClientLastReferenceIdManager.cs" />
+    <Compile Include="Geo\GoogleGeocodeService.cs" />
     <Compile Include="Jobs\FoundatioBootstrapper.cs" />
     <Compile Include="Logging\NlogWriter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

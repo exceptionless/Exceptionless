@@ -16,5 +16,7 @@ namespace Exceptionless.Core.AppStats {
         public const string PostsParsingTime = "posts.parsingtime";
         public const string PostsDiscarded = "posts.discarded";
         public const string PostsBlocked = "posts.blocked";
+
+        public const string UsageGeocodingApi = "usage.geocoding";
     }
 }

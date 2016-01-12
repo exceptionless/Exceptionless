@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Models {
             Configuration = new ClientConfiguration();
             NotificationSettings = new Dictionary<string, NotificationSettings>();
             PromotedTabs = new HashSet<string>();
-            DeleteBotDataEnabled = true;
+            DeleteBotDataEnabled = false;
             Data = new DataDictionary();
         }
 
