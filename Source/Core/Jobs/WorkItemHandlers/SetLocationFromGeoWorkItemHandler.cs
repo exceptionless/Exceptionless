@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             if (location == null)
                 return;
             
-            await _cacheClient.SetAsync(workItem.Geo, location, TimeSpan.FromDays(30)).AnyContext();
+            await _cacheClient.SetAsync(workItem.Geo, location, TimeSpan.FromDays(3)).AnyContext();
 
             var ev = await _eventRepository.GetByIdAsync(workItem.EventId).AnyContext();
             if (ev == null)

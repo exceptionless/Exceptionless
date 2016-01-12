@@ -4,9 +4,6 @@ using System.Diagnostics;
 namespace Exceptionless.Core.Models.Data {
     [DebuggerDisplay("{Locality}, {Level2}, {Level1}, {Country}")]
     public class Location {
-        /// <summary>
-        /// Country
-        /// </summary>
         public string Country { get; set; }
 
         /// <summary>
