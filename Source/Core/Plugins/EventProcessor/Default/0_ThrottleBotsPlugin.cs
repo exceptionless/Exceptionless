@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     UtcEndDate = DateTime.UtcNow.Ceiling(_throttlingPeriod)
                 }).AnyContext();
 
-                clientIpContexts.ForEach(c => c.IsCancelled = true);
+                clientIpContexts.ForEach(c => c.Event.IsHidden = true);
             }
         }
     }

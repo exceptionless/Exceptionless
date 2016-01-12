@@ -38,6 +38,10 @@ before_test:
   - ps: .\Libraries\Start-ElasticSearch.ps1
   #- ps: .\Libraries\Enable-Rdp.ps1
 
+test:
+  assemblies:
+    - '**\*.Tests.dll'
+
 after_test:
   - ps: .\Libraries\Push-Artifacts.ps1
 
