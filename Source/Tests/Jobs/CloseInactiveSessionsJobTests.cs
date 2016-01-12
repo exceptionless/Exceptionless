@@ -68,7 +68,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             }
         }
 
-        private bool _isReset;
+        private static bool _isReset;
         private async Task ResetAsync() {
             if (!_isReset) {
                 _isReset = true;
@@ -126,8 +126,11 @@ namespace Exceptionless.Api.Tests.Jobs {
         private async Task RemoveDataAsync() {
             await RemoveEventsAndStacks();
             await _tokenRepository.RemoveAllAsync();
+            await _cacheClient.RemoveAllAsync();
             await _userRepository.RemoveAllAsync();
+            await _cacheClient.RemoveAllAsync();
             await _projectRepository.RemoveAllAsync();
+            await _cacheClient.RemoveAllAsync();
             await _organizationRepository.RemoveAllAsync();
             await _client.RefreshAsync();
             await _cacheClient.RemoveAllAsync();
@@ -142,7 +145,7 @@ namespace Exceptionless.Api.Tests.Jobs {
         }
 
         public override async void Dispose() {
-            await RemoveDataAsync();
+            await RemoveEventsAndStacks();
             base.Dispose();
         }
     }
