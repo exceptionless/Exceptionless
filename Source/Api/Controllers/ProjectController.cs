@@ -378,14 +378,14 @@ namespace Exceptionless.Api.Controllers {
         /// Check for unique name
         /// </summary>
         /// <param name="name">The project name to check.</param>
-        /// <param name="organization">The organizationId of the project.</param>
+        /// <param name="organizationId">If set the check name will be scoped to a specific organization.</param>
         /// <response code="201">The project name is available.</response>
         /// <response code="204">The project name is not available.</response>
         [HttpGet]
         [Route("check-name/{*name:minlength(1)}")]
-        [Route("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects/check-name/{*name:minlength(1)}")]        
-        public async Task<IHttpActionResult> IsNameAvailableAsync(string name, string organization = null) {
-            if (await IsProjectNameAvailableInternalAsync(organization, name))
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects/check-name/{*name:minlength(1)}")]        
+        public async Task<IHttpActionResult> IsNameAvailableAsync(string name, string organizationId = null) {
+            if (await IsProjectNameAvailableInternalAsync(organizationId, name))
                 return StatusCode(HttpStatusCode.NoContent);
 
             return StatusCode(HttpStatusCode.Created);
@@ -395,9 +395,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(name))
                 return false;
 
-            var organizationIds = !String.IsNullOrEmpty(organizationId)
-                ? new List<string> { organizationId }
-                : GetAssociatedOrganizationIds();
+            var organizationIds = IsInOrganization(organizationId) ? new List<string> { organizationId } : GetAssociatedOrganizationIds();
 
             var results = await _repository.GetByOrganizationIdsAsync(organizationIds);
             return !results.Documents.Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
