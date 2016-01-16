@@ -73,18 +73,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-
-        [Theory]
-        [InlineData("00000", 0)]
-        [InlineData("123452366", 1)]
-        public async Task GetBySessionIdAsync(string id, int count) {
-            await ResetAsync();
-
-            var result = await GetByFilterAsync("session:" + id);
-            Assert.NotNull(result);
-            Assert.Equal(count, result.Total);
-        }
-
+        
         [Theory]
         [InlineData("log", 1)]
         [InlineData("error", 2)]

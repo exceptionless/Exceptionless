@@ -51,6 +51,37 @@ namespace Exceptionless {
             }
         }
 
+        public static string GetEventReference(this PersistentEvent ev, string name) {
+            if (ev == null || String.IsNullOrEmpty(name))
+                return null;
+            
+            return ev.Data.GetString($"@ref:{name}");
+        }
+
+        public static void SetEventReference(this PersistentEvent ev, string name, string id) {
+            if (ev == null || String.IsNullOrEmpty(name) || String.IsNullOrEmpty(id))
+                return;
+
+            ev.Data[$"@ref:{name}"] = id;
+        }
+
+        public static string GetSessionId(this PersistentEvent ev) {
+            if (ev == null)
+                return null;
+
+            return ev.IsSessionStart() ? ev.ReferenceId : ev.GetEventReference("session");
+        }
+
+        public static void SetSessionId(this PersistentEvent ev, string sessionId) {
+            if (ev == null || String.IsNullOrEmpty(sessionId))
+                return;
+
+            if (ev.IsSessionStart())
+                ev.ReferenceId = sessionId;
+            else
+                ev.SetEventReference("session", sessionId);
+        }
+
         public static bool HasSessionEndTime(this PersistentEvent ev) {
             if (ev == null || !ev.IsSessionStart())
                 return false;
@@ -97,7 +128,6 @@ namespace Exceptionless {
 
         public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, DateTime? lastActivityUtc = null, bool? isSessionEnd = null, bool hasPremiumFeatures = true) {
             var startEvent = new PersistentEvent {
-                SessionId = source.SessionId,
                 Date = source.Date,
                 Geo = source.Geo,
                 OrganizationId = source.OrganizationId,
@@ -105,6 +135,11 @@ namespace Exceptionless {
                 Type = Event.KnownTypes.Session,
                 Value = 0
             };
+            
+            startEvent.SetSessionId(source.GetSessionId());
+            startEvent.SetUserIdentity(source.GetUserIdentity());
+            startEvent.SetLocation(source.GetLocation());
+            startEvent.SetVersion(source.GetVersion());
 
             var ei = source.GetEnvironmentInfo();
             if (ei != null) {
@@ -140,10 +175,6 @@ namespace Exceptionless {
                 });
             }
             
-            startEvent.SetVersion(source.GetVersion());
-            startEvent.SetUserIdentity(source.GetUserIdentity());
-            startEvent.SetLocation(source.GetLocation());
-
             if (lastActivityUtc.HasValue)
                 startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
 
@@ -155,13 +186,13 @@ namespace Exceptionless {
 
         public static PersistentEvent ToSessionEndEvent(this PersistentEvent source, string sessionId) {
             var endEvent = new PersistentEvent {
-                SessionId = sessionId,
                 Date = source.Date,
                 OrganizationId = source.OrganizationId,
                 ProjectId = source.ProjectId,
                 Type = Event.KnownTypes.SessionEnd
             };
             
+            endEvent.SetSessionId(sessionId);
             endEvent.SetUserIdentity(source.GetUserIdentity());
             endEvent.AddRequestInfo(source.GetRequestInfo());
 

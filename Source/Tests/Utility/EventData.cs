@@ -50,10 +50,10 @@ namespace Exceptionless.Tests.Utility {
                 Date = occurrenceDate ?? RandomData.GetDateTimeOffset(startDate, endDate),
                 IsFixed = isFixed,
                 IsHidden = isHidden,
-                SessionId = sessionId,
                 StackId = stackIds.Random()
             };
 
+            ev.SetSessionId(sessionId);
             if (!String.IsNullOrEmpty(userIdentity))
                 ev.SetUserIdentity(userIdentity);
 

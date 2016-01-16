@@ -58,10 +58,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CreateAutoSessionAsync() {
-            await CreateAutoSessionInternalAsync(DateTimeOffset.Now);
+            await CreateSessionInternalAsync(DateTimeOffset.Now);
         }
 
-        private async Task CreateAutoSessionInternalAsync(DateTimeOffset date) {
+        private async Task CreateSessionInternalAsync(DateTimeOffset date) {
             await ResetAsync();
 
             var ev = GenerateEvent(date, "blake@exceptionless.io");
@@ -74,7 +74,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _client.RefreshAsync();
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
-            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 
             var sessionStart = events.Documents.First(e => e.IsSessionStart());
             Assert.Equal(0, sessionStart.Value);
@@ -82,9 +82,9 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task CanUpdateExistingAutoSessionAsync() {
+        public async Task CanUpdateExistingSessionAsync() {
             var startDate = DateTimeOffset.Now.SubtractMinutes(5);
-            await CreateAutoSessionInternalAsync(startDate);
+            await CreateSessionInternalAsync(startDate);
 
             var ev = GenerateEvent(startDate.AddMinutes(4), "blake@exceptionless.io");
 
@@ -96,7 +96,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _client.RefreshAsync();
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(3, events.Total);
-            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 
             var sessionStart = events.Documents.First(e => e.IsSessionStart());
             Assert.Equal(240, sessionStart.Value);
@@ -104,7 +104,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task IgnoreAutoSessionsWithoutIdentityAsync() {
+        public async Task IgnoreSessionsWithoutIdentityAsync() {
             await ResetAsync();
 
             var ev = GenerateEvent(DateTimeOffset.Now);
@@ -118,11 +118,11 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(1, events.Total);
             Assert.Equal(0, events.Documents.Count(e => e.IsSessionStart()));
-            Assert.Equal(0, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+            Assert.Equal(0, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
         }
         
         [Fact]
-        public async Task CreateAutoSessionStartEventsAsync() {
+        public async Task CreateSessionStartEventsAsync() {
             await ResetAsync();
 
             DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
@@ -142,7 +142,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _client.RefreshAsync();
             var results = await _eventRepository.GetAllAsync();
             Assert.Equal(6, results.Total);
-            Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+            Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             Assert.Equal(2, results.Documents.Count(e => e.IsSessionEnd()));
 
             var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).ToList();
@@ -172,7 +172,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _client.RefreshAsync();
             var results = await _eventRepository.GetAllAsync();
             Assert.Equal(3, results.Total);
-            Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+            Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
 
             var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).OrderBy(e => e.Date).ToList();
@@ -210,10 +210,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _client.RefreshAsync();
             var results = await _eventRepository.GetAllAsync(paging: new PagingOptions().WithLimit(15));
             Assert.Equal(11, results.Total);
-            Assert.Equal(3, results.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+            Assert.Equal(3, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd() && e.GetUserIdentity()?.Identity == "eric@exceptionless.io"));
-            Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId) && e.GetUserIdentity().Identity == "eric@exceptionless.io").Select(e => e.SessionId).Distinct().Count());
-            Assert.Equal(1, results.Documents.Count(e => String.IsNullOrEmpty(e.SessionId)));
+            Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId()) && e.GetUserIdentity().Identity == "eric@exceptionless.io").Select(e => e.GetSessionId()).Distinct().Count());
+            Assert.Equal(1, results.Documents.Count(e => String.IsNullOrEmpty(e.GetSessionId())));
             Assert.Equal(2, results.Documents.Count(e => e.IsSessionEnd()));
 
             var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).ToList();
@@ -230,142 +230,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(0, secondUserSessionStartEvents[1].Value);
             Assert.False(secondUserSessionStartEvents[1].HasSessionEndTime());
         }
-
-        [Fact]
-        public async Task CreateManualSessionAsync() {
-            await CreateManualSessionInternalAsync(DateTimeOffset.Now);
-        }
-
-        private async Task CreateManualSessionInternalAsync(DateTimeOffset start) {
-            await ResetAsync();
-
-            var ev = GenerateEvent(start, sessionId: "12345678");
-
-            var context = await _pipeline.RunAsync(ev);
-            Assert.False(context.HasError, context.ErrorMessage);
-            Assert.False(context.IsCancelled);
-            Assert.True(context.IsProcessed);
-
-            await _client.RefreshAsync();
-            var events = await _eventRepository.GetAllAsync();
-            Assert.Equal(2, events.Total);
-            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
-
-            var sessionStartEvent = events.Documents.SingleOrDefault(e => e.IsSessionStart());
-            Assert.NotNull(sessionStartEvent);
-            Assert.Equal(0, sessionStartEvent.Value);
-            Assert.False(sessionStartEvent.HasSessionEndTime());
-        }
-
-        [Fact]
-        public async Task CanUpdateExistingManualSessionAsync() {
-            var startDate = DateTimeOffset.Now.SubtractMinutes(5);
-            await CreateManualSessionInternalAsync(startDate);
-
-            var ev = GenerateEvent(startDate.AddMinutes(4), sessionId: "12345678");
-
-            var context = await _pipeline.RunAsync(ev);
-            Assert.False(context.HasError, context.ErrorMessage);
-            Assert.False(context.IsCancelled);
-            Assert.True(context.IsProcessed);
-
-            await _client.RefreshAsync();
-            var events = await _eventRepository.GetAllAsync();
-            Assert.Equal(3, events.Total);
-            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
-
-            var sessionStart = events.Documents.First(e => e.IsSessionStart());
-            Assert.Equal(240, sessionStart.Value);
-            Assert.False(sessionStart.HasSessionEndTime());
-        }
-
-        [Fact]
-        public async Task CreateManualSingleSessionStartEventAsync() {
-            await ResetAsync();
-
-            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
-
-            var events = new List<PersistentEvent> {
-                GenerateEvent(firstEventDate, sessionId: "12345678"),
-                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.Session, sessionId: "12345678"),
-                GenerateEvent(firstEventDate.AddSeconds(20), type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
-                GenerateEvent(firstEventDate.AddSeconds(30), sessionId: "12345678"),
-            };
-
-            var contexts = await _pipeline.RunAsync(events);
-            Assert.False(contexts.Any(c => c.HasError));
-            Assert.False(contexts.Any(c => c.IsCancelled));
-            Assert.True(contexts.Any(c => c.IsProcessed));
-
-            await _client.RefreshAsync();
-            var results = await _eventRepository.GetAllAsync();
-            Assert.Equal(4, results.Total);
-            Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
-
-            var sessionStartEvent = results.Documents.SingleOrDefault(e => e.IsSessionStart());
-            Assert.NotNull(sessionStartEvent);
-            Assert.Equal(30, sessionStartEvent.Value);
-            Assert.True(sessionStartEvent.HasSessionEndTime());
-        }
-
-        [Fact]
-        public async Task CreateManualSessionStartEventAsync() {
-            await ResetAsync();
-
-            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
-
-            var events = new List<PersistentEvent> {
-                GenerateEvent(firstEventDate, sessionId: "12345678"),
-                // This event will be deduplicated as part of the manual session plugin.
-                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
-                GenerateEvent(firstEventDate.AddSeconds(20), sessionId: "12345678"),
-                GenerateEvent(firstEventDate.AddSeconds(30), type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
-            };
-
-            var contexts = await _pipeline.RunAsync(events);
-            Assert.False(contexts.Any(c => c.HasError));
-            Assert.Equal(1, contexts.Count(c => c.IsCancelled));
-            Assert.True(contexts.Any(c => c.IsProcessed));
-
-            await _client.RefreshAsync();
-            var results = await _eventRepository.GetAllAsync();
-            Assert.Equal(4, results.Total);
-            Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
-            Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
-
-            var sessionStartEvent = results.Documents.First(e => e.IsSessionStart());
-            Assert.NotNull(sessionStartEvent);
-            Assert.Equal(30, sessionStartEvent.Value);
-            Assert.True(sessionStartEvent.HasSessionEndTime());
-        }
-
-        [Fact]
-        public async Task UpdateManualSessionLastActivityAsync() {
-            await ResetAsync();
-
-            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
-            var lastEventDate = firstEventDate.Add(TimeSpan.FromMinutes(1));
-
-            var events = new List<PersistentEvent> {
-                GenerateEvent(firstEventDate, type: Event.KnownTypes.Session, sessionId: "12345678"),
-                GenerateEvent(firstEventDate.AddSeconds(10), sessionId: "12345678"),
-                GenerateEvent(lastEventDate, type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
-            };
-
-            var contexts = await _pipeline.RunAsync(events);
-            Assert.False(contexts.Any(c => c.HasError));
-            Assert.False(contexts.Any(c => c.IsCancelled));
-            Assert.True(contexts.Any(c => c.IsProcessed));
-
-            await _client.RefreshAsync();
-            var results = await _eventRepository.GetAllAsync();
-            Assert.Equal(3, results.Total);
-            Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
-            Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
-            Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
-            Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, results.Documents.First(e => e.IsSessionStart()).Value);
-        }
-
+        
         [Fact]
         public void CanIndexExtendedData() {
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: DateTime.Now);

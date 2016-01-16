@@ -47,7 +47,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             await _client.RefreshAsync();
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
-            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.SessionId)).Select(e => e.SessionId).Distinct().Count());
+            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             var sessionStart = events.Documents.First(e => e.IsSessionStart());
             Assert.Equal(0, sessionStart.Value);
             Assert.False(sessionStart.HasSessionEndTime());
