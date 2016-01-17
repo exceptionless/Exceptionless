@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reflection.Emit;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
@@ -24,6 +26,7 @@ using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
+using Newtonsoft.Json;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
@@ -37,6 +40,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IValidator<UserDescription> _userDescriptionValidator;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IFileStorage _storage;
+        private readonly JsonSerializerSettings _jsonSerializerSettings;
 
         public EventController(IEventRepository repository,
             IOrganizationRepository organizationRepository,
@@ -46,7 +50,8 @@ namespace Exceptionless.Api.Controllers {
             IQueue<EventUserDescription> eventUserDescriptionQueue,
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
-            IFileStorage storage) : base(repository) {
+            IFileStorage storage,
+            JsonSerializerSettings jsonSerializerSettings) : base(repository) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
@@ -55,6 +60,7 @@ namespace Exceptionless.Api.Controllers {
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
             _storage = storage;
+            _jsonSerializerSettings = jsonSerializerSettings;
 
             AllowedFields.Add("date");
         }
@@ -428,6 +434,96 @@ namespace Exceptionless.Api.Controllers {
             changes.Patch(userDescription);
 
             return await SetUserDescriptionAsync(id, userDescription);
+        }
+
+        [HttpGet]
+        [Route("~/api/v{version:int=1}/events")]
+        [Route("~/api/v{version:int=1}/events/{authToken:token}")]
+        [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events")]
+        [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/{authToken:token}")]
+        [OverrideAuthorization]
+        [ConfigurationResponseFilter]
+        [Authorize(Roles = AuthorizationRoles.Client)]
+        public async Task<IHttpActionResult> GetSubmitEvent(string projectId = null, string authToken = null, int version = 1, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string> parameters = null) {
+            if (parameters == null || parameters.Count == 0)
+                return StatusCode(HttpStatusCode.OK);
+
+            if (projectId == null)
+                projectId = Request.GetDefaultProjectId();
+
+            // must have a project id
+            if (String.IsNullOrEmpty(projectId))
+                return BadRequest("No project id specified and no default project was found.");
+
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
+                return NotFound();
+
+            // TODO: We could save some overhead if we set the project in the overage handler...
+            // Set the project for the configuration response filter.
+            Request.SetProject(project);
+
+            string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
+            var ev = new Event {
+                Type = Event.KnownTypes.Log
+            };
+
+            foreach (var kvp in parameters) {
+                switch (kvp.Key.ToLower()) {
+                    case "type":
+                        ev.Type = kvp.Value;
+                        break;
+                    case "message":
+                        ev.Message = kvp.Value;
+                        break;
+                    case "reference":
+                        ev.ReferenceId = kvp.Value;
+                        break;
+                    case "date":
+                        DateTime dtValue;
+                        if (DateTime.TryParse(kvp.Value, out dtValue))
+                            ev.Date = dtValue;
+                        break;
+                    case "value":
+                        decimal decValue;
+                        if (Decimal.TryParse(kvp.Value, out decValue))
+                            ev.Value = decValue;
+                        break;
+                    case "tags":
+                        string[] tags = kvp.Value.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var tag in tags)
+                            ev.Tags.Add(tag);
+                        break;
+                    default:
+                        ev.Data[kvp.Key] = kvp.Value;
+                        break;
+                }
+            }
+
+            try {
+                await _eventPostQueue.EnqueueAsync(new EventPostInfo {
+                    MediaType = Request.Content.Headers.ContentType?.MediaType,
+                    CharSet = Request.Content.Headers.ContentType?.CharSet,
+                    ProjectId = projectId,
+                    UserAgent = userAgent,
+                    ApiVersion = version,
+                    Data = Encoding.UTF8.GetBytes(ev.ToJson(Formatting.None, _jsonSerializerSettings)),
+                    ContentEncoding = contentEncoding,
+                    IpAddress = Request.GetClientIpAddress()
+                }, _storage);
+            } catch (Exception ex) {
+                Logger.Error().Exception(ex)
+                    .Message("Error enqueuing event post.")
+                    .Project(projectId)
+                    .Identity(ExceptionlessUser?.EmailAddress)
+                    .Property("User", ExceptionlessUser)
+                    .SetActionContext(ActionContext)
+                    .WriteIf(projectId != Settings.Current.InternalProjectId);
+
+                return StatusCode(HttpStatusCode.InternalServerError);
+            }
+
+            return StatusCode(HttpStatusCode.OK);
         }
 
         /// <summary>
