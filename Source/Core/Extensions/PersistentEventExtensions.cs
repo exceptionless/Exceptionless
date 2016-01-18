@@ -58,13 +58,21 @@ namespace Exceptionless {
             return ev.Data.GetString($"@ref:{name}");
         }
 
+        /// <summary>
+        /// Allows you to reference a parent event by it's <seealso cref="Event.ReferenceId" /> property. This allows you to have parent and child relationships.
+        /// </summary>
+        /// <param name="name">Reference name</param>
+        /// <param name="id">The reference id that points to a specific event</param>
         public static void SetEventReference(this PersistentEvent ev, string name, string id) {
-            if (ev == null || String.IsNullOrEmpty(name) || String.IsNullOrEmpty(id))
-                return;
+            if (String.IsNullOrEmpty(name))
+                throw new ArgumentNullException(nameof(name));
+
+            if (!IsValidIdentifier(id))
+                throw new ArgumentException("Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(id));
 
             ev.Data[$"@ref:{name}"] = id;
         }
-
+        
         public static string GetSessionId(this PersistentEvent ev) {
             if (ev == null)
                 return null;
@@ -73,8 +81,11 @@ namespace Exceptionless {
         }
 
         public static void SetSessionId(this PersistentEvent ev, string sessionId) {
-            if (ev == null || String.IsNullOrEmpty(sessionId))
+            if (ev == null)
                 return;
+            
+            if (!IsValidIdentifier(sessionId))
+                throw new ArgumentException("Session Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(sessionId));
 
             if (ev.IsSessionStart())
                 ev.ReferenceId = sessionId;
@@ -216,6 +227,16 @@ namespace Exceptionless {
 
             foreach (var ip in environmentInfo.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 yield return ip;
+        }
+        
+        private static bool IsValidIdentifier(string value) {
+            if (value == null)
+                return true;
+
+            if (value.Length < 8 || value.Length > 100)
+                return false;
+
+            return value.IsValidIdentifier();
         }
     }
 }
