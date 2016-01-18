@@ -283,6 +283,7 @@
     <Compile Include="Utility\Constraints\ObjectIdRouteConstraint.cs" />
     <Compile Include="Utility\Constraints\ObjectIdsRouteConstraint.cs" />
     <Compile Include="Utility\Handlers\OverageHandler.cs" />
+    <Compile Include="Utility\QueryStringParametersParameterBinding.cs" />
     <Compile Include="Utility\Results\MessageContent.cs" />
     <Compile Include="Utility\Results\NotImplementedActionResult.cs" />
     <Compile Include="Utility\Results\OkWithHeadersContentResult.cs" />

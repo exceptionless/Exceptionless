@@ -23,29 +23,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         public PutTemplateDescriptor CreateTemplate(PutTemplateDescriptor template) {
-            const string FLATTEN_ERRORS_SCRIPT = @"
-if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))
-    return
-
-def types = []
-def messages = []
-def codes = []
-def err = ctx._source.data.containsKey('@error') ? ctx._source.data['@error'] : ctx._source.data['@simple_error']
-def curr = err
-while (curr != null) {
-    if (curr.containsKey('type'))
-        types.add(curr.type)
-    if (curr.containsKey('message'))
-        messages.add(curr.message)
-    if (curr.containsKey('code'))
-        codes.add(curr.code)
-    curr = curr.inner
-}
-
-err['all_types'] = types.join(' ')
-err['all_messages'] = messages.join(' ')
-err['all_codes'] = codes.join(' ')";
-
             return template
                 .Template(VersionedName + "-*")
                 .Settings(s => s.Add("analysis", BuildAnalysisSettings()))
@@ -244,6 +221,29 @@ err['all_codes'] = codes.join(' ')";
                 }
             };
         }
+
+        const string FLATTEN_ERRORS_SCRIPT = @"
+if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))
+    return
+
+def types = []
+def messages = []
+def codes = []
+def err = ctx._source.data.containsKey('@error') ? ctx._source.data['@error'] : ctx._source.data['@simple_error']
+def curr = err
+while (curr != null) {
+    if (curr.containsKey('type'))
+        types.add(curr.type)
+    if (curr.containsKey('message'))
+        messages.add(curr.message)
+    if (curr.containsKey('code'))
+        codes.add(curr.code)
+    curr = curr.inner
+}
+
+err['all_types'] = types.join(' ')
+err['all_messages'] = messages.join(' ')
+err['all_codes'] = codes.join(' ')";
 
         public class Fields {
             public class PersistentEvent {

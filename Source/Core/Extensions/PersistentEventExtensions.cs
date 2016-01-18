@@ -12,6 +12,12 @@ namespace Exceptionless {
 
             foreach (string key in keysToCopy.Where(k => !String.IsNullOrEmpty(k) && ev.Data.ContainsKey(k))) {
                 string field = key.Trim().ToLower().Replace(' ', '-');
+
+                if (field.StartsWith("@ref:")) {
+                    ev.Idx[field.Substring(5) + "-r"] = (string)ev.Data[key];
+                    continue;
+                }
+
                 if (field.StartsWith("@") || ev.Data[key] == null)
                     continue;
 
