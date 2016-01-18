@@ -52,8 +52,10 @@ namespace Exceptionless.Tests.Utility {
                 IsHidden = isHidden,
                 StackId = stackIds.Random()
             };
+            
+            if(!String.IsNullOrEmpty(sessionId))
+                ev.SetSessionId(sessionId);
 
-            ev.SetSessionId(sessionId);
             if (!String.IsNullOrEmpty(userIdentity))
                 ev.SetUserIdentity(userIdentity);
 
