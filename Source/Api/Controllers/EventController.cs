@@ -437,14 +437,12 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/api/v{version:int=1}/events")]
-        [Route("~/api/v{version:int=1}/events/{authToken:token}")]
+        [Route("~/api/v{version:int=2}/events")]
         [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events")]
-        [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/{authToken:token}")]
         [OverrideAuthorization]
         [ConfigurationResponseFilter]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public async Task<IHttpActionResult> GetSubmitEvent(string projectId = null, string authToken = null, int version = 1, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string> parameters = null) {
+        public async Task<IHttpActionResult> GetSubmitEvent(string projectId = null, int version = 1, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string> parameters = null) {
             if (parameters == null || parameters.Count == 0)
                 return StatusCode(HttpStatusCode.OK);
 
@@ -467,7 +465,12 @@ namespace Exceptionless.Api.Controllers {
             var ev = new Event {
                 Type = Event.KnownTypes.Log
             };
-
+            
+            var ignoredQueryStringKeys = new List<string> { "access_token", "api_key", "apikey" };
+            var exclusions = project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.DataExclusions)
+                    ? ignoredQueryStringKeys.Union(project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions)).ToList()
+                    : ignoredQueryStringKeys;
+            
             foreach (var kvp in parameters) {
                 switch (kvp.Key.ToLower()) {
                     case "type":
@@ -495,6 +498,9 @@ namespace Exceptionless.Api.Controllers {
                             ev.Tags.Add(tag);
                         break;
                     default:
+                        if (kvp.Key.AnyWildcardMatches(exclusions, true))
+                            continue;
+
                         ev.Data[kvp.Key] = kvp.Value;
                         break;
                 }
