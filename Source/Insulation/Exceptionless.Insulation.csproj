@@ -33,24 +33,24 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Exceptionless, Version=3.2.1424.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.3.2.1424\lib\net45\Exceptionless.dll</HintPath>
+    <Reference Include="Exceptionless, Version=3.3.1470.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.3.3.1470\lib\net45\Exceptionless.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.Extras, Version=3.2.1424.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.3.2.1424\lib\net45\Exceptionless.Extras.dll</HintPath>
+    <Reference Include="Exceptionless.Extras, Version=3.3.1470.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.3.3.1470\lib\net45\Exceptionless.Extras.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.NLog, Version=3.2.1424.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.NLog.3.2.1424\lib\net45\Exceptionless.NLog.dll</HintPath>
+    <Reference Include="Exceptionless.NLog, Version=3.3.1470.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.NLog.3.3.1470\lib\net45\Exceptionless.NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.Portable, Version=3.2.1424.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.Portable.3.2.1424\lib\net45\Exceptionless.Portable.dll</HintPath>
+    <Reference Include="Exceptionless.Portable, Version=3.3.1470.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.Portable.3.3.1470\lib\net45\Exceptionless.Portable.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.WebApi, Version=3.2.1424.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.3.2.1424\lib\net45\Exceptionless.WebApi.dll</HintPath>
+    <Reference Include="Exceptionless.WebApi, Version=3.3.1470.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.3.3.1470\lib\net45\Exceptionless.WebApi.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -110,7 +110,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NLog.4.2.2\lib\net45\NLog.dll</HintPath>
+      <HintPath>..\..\packages\NLog.4.2.3\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
