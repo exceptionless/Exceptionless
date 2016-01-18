@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
-    [Priority(80)]
+    [Priority(70)]
     public class AutoSessionPlugin : EventProcessorPluginBase {
         private static readonly TimeSpan _sessionTimeout = TimeSpan.FromMinutes(15);
         private readonly ICacheClient _cacheClient;
@@ -28,9 +27,9 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-            var identityGroups = contexts.Where(c => String.IsNullOrEmpty(c.Event.SessionId) && c.Event.GetUserIdentity()?.Identity != null)
+            var identityGroups = contexts.Where(c => c.Event.GetUserIdentity()?.Identity != null)
                 .OrderBy(c => c.Event.Date)
-                .GroupBy(c => c.Event.GetUserIdentity().Identity);
+                .GroupBy(c => c.Event.GetUserIdentity()?.Identity);
             
             foreach (var identityGroup in identityGroups) {
                 string cacheKey = $"{identityGroup.First().Project.Id}:identity:{identityGroup.Key.ToSHA1()}";
@@ -56,7 +55,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                                 await UpdateSessionStartEventAsync(context, sessionId, isSessionEnd: true);
                         }
 
-                        sessionId = context.Event.SessionId = ObjectId.GenerateNewId(context.Event.Date.DateTime).ToString();
+                        sessionId = ObjectId.GenerateNewId(context.Event.Date.DateTime).ToString();
+                        context.Event.SetSessionId(sessionId);
                         await _cacheClient.SetAsync(cacheKey, sessionId, _sessionTimeout).AnyContext();
 
                         if (!context.Event.IsSessionStart()) {
@@ -69,8 +69,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                                 await _cacheClient.SetAsync(GetSessionStartEventIdCacheKey(context.Project.Id, sessionId), sessionStartContext.Event.Id, _sessionTimeout).AnyContext();
                         }
                     } else {
-                        context.Event.SessionId = sessionId;
-
+                        context.Event.SetSessionId(sessionId);
                         if (sessionStartContext == null)
                             sessionsToUpdate[sessionId] = context;
                     }

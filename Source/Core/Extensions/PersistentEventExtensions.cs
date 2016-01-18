@@ -12,6 +12,12 @@ namespace Exceptionless {
 
             foreach (string key in keysToCopy.Where(k => !String.IsNullOrEmpty(k) && ev.Data.ContainsKey(k))) {
                 string field = key.Trim().ToLower().Replace(' ', '-');
+
+                if (field.StartsWith("@ref:")) {
+                    ev.Idx[field.Substring(5) + "-r"] = (string)ev.Data[key];
+                    continue;
+                }
+
                 if (field.StartsWith("@") || ev.Data[key] == null)
                     continue;
 
@@ -49,6 +55,48 @@ namespace Exceptionless {
                         ev.Idx[field + "-s"] = input;
                 }
             }
+        }
+
+        public static string GetEventReference(this PersistentEvent ev, string name) {
+            if (ev == null || String.IsNullOrEmpty(name))
+                return null;
+            
+            return ev.Data.GetString($"@ref:{name}");
+        }
+
+        /// <summary>
+        /// Allows you to reference a parent event by it's <seealso cref="Event.ReferenceId" /> property. This allows you to have parent and child relationships.
+        /// </summary>
+        /// <param name="name">Reference name</param>
+        /// <param name="id">The reference id that points to a specific event</param>
+        public static void SetEventReference(this PersistentEvent ev, string name, string id) {
+            if (String.IsNullOrEmpty(name))
+                throw new ArgumentNullException(nameof(name));
+
+            if (!IsValidIdentifier(id) || String.IsNullOrEmpty(id))
+                throw new ArgumentException("Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(id));
+
+            ev.Data[$"@ref:{name}"] = id;
+        }
+        
+        public static string GetSessionId(this PersistentEvent ev) {
+            if (ev == null)
+                return null;
+
+            return ev.IsSessionStart() ? ev.ReferenceId : ev.GetEventReference("session");
+        }
+
+        public static void SetSessionId(this PersistentEvent ev, string sessionId) {
+            if (ev == null)
+                return;
+            
+            if (!IsValidIdentifier(sessionId) || String.IsNullOrEmpty(sessionId))
+                throw new ArgumentException("Session Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(sessionId));
+
+            if (ev.IsSessionStart())
+                ev.ReferenceId = sessionId;
+            else
+                ev.SetEventReference("session", sessionId);
         }
 
         public static bool HasSessionEndTime(this PersistentEvent ev) {
@@ -97,7 +145,6 @@ namespace Exceptionless {
 
         public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, DateTime? lastActivityUtc = null, bool? isSessionEnd = null, bool hasPremiumFeatures = true) {
             var startEvent = new PersistentEvent {
-                SessionId = source.SessionId,
                 Date = source.Date,
                 Geo = source.Geo,
                 OrganizationId = source.OrganizationId,
@@ -105,6 +152,11 @@ namespace Exceptionless {
                 Type = Event.KnownTypes.Session,
                 Value = 0
             };
+            
+            startEvent.SetSessionId(source.GetSessionId());
+            startEvent.SetUserIdentity(source.GetUserIdentity());
+            startEvent.SetLocation(source.GetLocation());
+            startEvent.SetVersion(source.GetVersion());
 
             var ei = source.GetEnvironmentInfo();
             if (ei != null) {
@@ -140,10 +192,6 @@ namespace Exceptionless {
                 });
             }
             
-            startEvent.SetVersion(source.GetVersion());
-            startEvent.SetUserIdentity(source.GetUserIdentity());
-            startEvent.SetLocation(source.GetLocation());
-
             if (lastActivityUtc.HasValue)
                 startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
 
@@ -155,13 +203,13 @@ namespace Exceptionless {
 
         public static PersistentEvent ToSessionEndEvent(this PersistentEvent source, string sessionId) {
             var endEvent = new PersistentEvent {
-                SessionId = sessionId,
                 Date = source.Date,
                 OrganizationId = source.OrganizationId,
                 ProjectId = source.ProjectId,
                 Type = Event.KnownTypes.SessionEnd
             };
             
+            endEvent.SetSessionId(sessionId);
             endEvent.SetUserIdentity(source.GetUserIdentity());
             endEvent.AddRequestInfo(source.GetRequestInfo());
 
@@ -185,6 +233,16 @@ namespace Exceptionless {
 
             foreach (var ip in environmentInfo.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 yield return ip;
+        }
+        
+        private static bool IsValidIdentifier(string value) {
+            if (value == null)
+                return true;
+
+            if (value.Length < 8 || value.Length > 100)
+                return false;
+
+            return value.IsValidIdentifier();
         }
     }
 }

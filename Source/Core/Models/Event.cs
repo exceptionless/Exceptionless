@@ -52,11 +52,6 @@ namespace Exceptionless.Core.Models {
         /// </summary>
         public string ReferenceId { get; set; }
 
-        /// <summary>
-        /// A unique id that identifies a usage session that this event belongs to.
-        /// </summary>
-        public string SessionId { get; set; }
-
         public static class KnownTypes {
             public const string Error = "error";
             public const string FeatureUsage = "usage";

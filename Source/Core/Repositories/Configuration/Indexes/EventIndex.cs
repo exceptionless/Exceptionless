@@ -23,34 +23,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         public PutTemplateDescriptor CreateTemplate(PutTemplateDescriptor template) {
-            const string FLATTEN_ERRORS_SCRIPT = @"
-if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))
-    return
-
-def types = []
-def messages = []
-def codes = []
-def err = ctx._source.data.containsKey('@error') ? ctx._source.data['@error'] : ctx._source.data['@simple_error']
-def curr = err
-while (curr != null) {
-    if (curr.containsKey('type'))
-        types.add(curr.type)
-    if (curr.containsKey('message'))
-        messages.add(curr.message)
-    if (curr.containsKey('code'))
-        codes.add(curr.code)
-    curr = curr.inner
-}
-
-err['all_types'] = types.join(' ')
-err['all_messages'] = messages.join(' ')
-err['all_codes'] = codes.join(' ')";
-
             return template
                 .Template(VersionedName + "-*")
                 .Settings(s => s.Add("analysis", BuildAnalysisSettings()))
                 .AddMapping<PersistentEvent>(map => map
                     .Dynamic(DynamicMappingOption.Ignore)
+                    .DynamicTemplates(dt => dt.Add(t => t.Name("idx_reference").Match("*-r").Mapping(m => m.Generic(f => f.Type("string").Index("not_analyzed")))))
                     .IncludeInAll(false)
                     .DisableSizeField(false)
                     .Transform(t => t.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy))
@@ -61,9 +39,8 @@ err['all_codes'] = codes.join(' ')";
                         .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.StackId).IndexName("stack").Index(FieldIndexOption.NotAnalyzed))
-                        .String(f => f.Name(e => e.ReferenceId).IndexName("reference").Index(FieldIndexOption.Analyzed))
-                        .String(f => f.Name(e => e.SessionId).IndexName("session").Index(FieldIndexOption.Analyzed))
-                        .String(f => f.Name(e => e.Type).IndexName(Fields.PersistentEvent.Type).Index(FieldIndexOption.Analyzed))
+                        .String(f => f.Name(e => e.ReferenceId).IndexName("reference").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.Type).IndexName(Fields.PersistentEvent.Type).Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.Source).IndexName("source").Index(FieldIndexOption.Analyzed).IncludeInAll())
                         .Date(f => f.Name(e => e.Date).IndexName(Fields.PersistentEvent.Date))
                         .String(f => f.Name(e => e.Message).IndexName("message").Index(FieldIndexOption.Analyzed).IncludeInAll())
@@ -245,6 +222,29 @@ err['all_codes'] = codes.join(' ')";
                 }
             };
         }
+
+        const string FLATTEN_ERRORS_SCRIPT = @"
+if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))
+    return
+
+def types = []
+def messages = []
+def codes = []
+def err = ctx._source.data.containsKey('@error') ? ctx._source.data['@error'] : ctx._source.data['@simple_error']
+def curr = err
+while (curr != null) {
+    if (curr.containsKey('type'))
+        types.add(curr.type)
+    if (curr.containsKey('message'))
+        messages.add(curr.message)
+    if (curr.containsKey('code'))
+        codes.add(curr.code)
+    curr = curr.inner
+}
+
+err['all_types'] = types.join(' ')
+err['all_messages'] = messages.join(' ')
+err['all_codes'] = codes.join(' ')";
 
         public class Fields {
             public class PersistentEvent {

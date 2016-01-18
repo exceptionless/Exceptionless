@@ -126,7 +126,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(sessionId))
                 return NotFound();
             
-            return await GetInternalAsync(null, String.Concat(filter, " session:", sessionId).Trim(), time, offset, true);
+            return await GetInternalAsync(null, $"ref.session:{sessionId} {filter}".TrimEnd(), time, offset, true);
         }
         
         /// <summary>
