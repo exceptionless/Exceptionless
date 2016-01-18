@@ -116,7 +116,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("signup")]
         [ResponseType(typeof(TokenResult))]
         public async Task<IHttpActionResult> SignupAsync(SignupModel model) {
-            var valid = await IsAccountCreationEnabledAsync(model.InviteToken);
+            var valid = await IsAccountCreationEnabledAsync(model?.InviteToken);
             if (!valid)
                 return BadRequest("Account Creation is currently disabled.");
 
@@ -490,22 +490,14 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private async Task<bool> IsAccountCreationEnabledAsync(string token) {
-            // If Account Creation is enabled, always return true.
             if (Settings.Current.EnableAccountCreation)
                 return true;
-            // At this point, Account Creation is disabled.
-            // If no token is provided, return false.
+
             if (string.IsNullOrEmpty(token))
                 return false;
-            // Check Valid token.
-            var valid = await IsValidInviteTokenAsync(token);
-            return valid;
-        }
-
-        private async Task<bool> IsValidInviteTokenAsync(string token) {
+            
             var organization = await _organizationRepository.GetByInviteTokenAsync(token);
-            var invite = organization.GetInvite(token);
-            return invite != null;
+            return organization != null;
         }
 
         private async Task AddInvitedUserToOrganizationAsync(string token, User user) {

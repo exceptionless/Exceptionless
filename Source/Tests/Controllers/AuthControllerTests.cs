@@ -3,38 +3,24 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http;
-using System.Web.Http.Results;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core;
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
-using Foundatio.Messaging;
-using Foundatio.Metrics;
-using Foundatio.Queues;
 using Microsoft.Owin;
 using Nest;
-using Newtonsoft.Json;
-using Nito.AsyncEx;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Exceptionless.Api.Tests.Controllers
-{
-    public class AuthControllerTests
-    {
+namespace Exceptionless.Api.Tests.Controllers {
+    public class AuthControllerTests {
         private static bool _databaseReset;
         private static bool _sampleOrganizationsAdded;
         private static bool _sampleProjectsAdded;
@@ -49,18 +35,16 @@ namespace Exceptionless.Api.Tests.Controllers
         public AuthControllerTests(ITestOutputHelper output) {
             _output = output;
         }
-        
+
         [Fact]
         public async Task CannotSignupWhenAccountCreationDisabledWithNoTokenAsync() {
             await ResetAsync();
 
             try {
                 _authController.Request = CreateRequestMessage(null, false, false);
-
                 Settings.Current.EnableAccountCreation = false;
 
-                var signupModel = new SignupModel()
-                {
+                var signupModel = new SignupModel {
                     Email = "test1@exceptionless.io",
                     InviteToken = "",
                     Name = "Test",
@@ -75,8 +59,7 @@ namespace Exceptionless.Api.Tests.Controllers
                 Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.StatusCode);
                 var error = GetErrorMessage(result);
                 Assert.Equal("Account Creation is currently disabled.", error);
-            }
-            finally {
+            } finally {
                 await ResetAsync();
             }
         }
@@ -87,11 +70,9 @@ namespace Exceptionless.Api.Tests.Controllers
 
             try {
                 _authController.Request = CreateRequestMessage(null, false, false);
-
                 Settings.Current.EnableAccountCreation = false;
 
-                var signupModel = new SignupModel()
-                {
+                var signupModel = new SignupModel {
                     Email = "test2@exceptionless.io",
                     InviteToken = StringExtensions.GetNewToken(),
                     Name = "Test",
@@ -106,8 +87,7 @@ namespace Exceptionless.Api.Tests.Controllers
                 Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.StatusCode);
                 var error = GetErrorMessage(result);
                 Assert.Equal("Account Creation is currently disabled.", error);
-            }
-            finally {
+            } finally {
                 await ResetAsync();
             }
         }
@@ -118,14 +98,12 @@ namespace Exceptionless.Api.Tests.Controllers
 
             try {
                 _authController.Request = CreateRequestMessage(null, false, false);
-
                 Settings.Current.EnableAccountCreation = false;
 
                 var orgs = await _organizationRepository.GetAllAsync();
                 var organization = orgs.Documents.First();
                 var email = "test3@exceptionless.io";
-                var invite = new Invite
-                {
+                var invite = new Invite {
                     Token = StringExtensions.GetNewToken(),
                     EmailAddress = email.ToLowerInvariant(),
                     DateAdded = DateTime.UtcNow
@@ -136,8 +114,7 @@ namespace Exceptionless.Api.Tests.Controllers
 
                 Assert.NotNull(organization.GetInvite(invite.Token));
 
-                var signupModel = new SignupModel()
-                {
+                var signupModel = new SignupModel {
                     Email = email,
                     InviteToken = invite.Token,
                     Name = "Test",
@@ -147,8 +124,7 @@ namespace Exceptionless.Api.Tests.Controllers
                 var cancellation = new CancellationToken();
                 var result = await actionResult.ExecuteAsync(cancellation);
                 var error = GetResult<HttpError>(result);
-                if (error != null)
-                {
+                if (error != null) {
                     _output.WriteLine("Error: {0}", error.Message);
                 }
                 Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
@@ -156,8 +132,7 @@ namespace Exceptionless.Api.Tests.Controllers
                 var tokenResult = GetResult<TokenResult>(result);
                 Assert.NotNull(tokenResult);
                 Assert.False(string.IsNullOrEmpty(tokenResult.Token));
-            }
-            finally {
+            } finally {
                 await ResetAsync();
             }
         }
@@ -168,11 +143,9 @@ namespace Exceptionless.Api.Tests.Controllers
 
             try {
                 _authController.Request = CreateRequestMessage(null, false, false);
-
                 Settings.Current.EnableAccountCreation = true;
 
-                var signupModel = new SignupModel()
-                {
+                var signupModel = new SignupModel {
                     Email = "test4@exceptionless.io",
                     InviteToken = "",
                     Name = "Test",
@@ -190,8 +163,7 @@ namespace Exceptionless.Api.Tests.Controllers
                 var tokenResult = GetResult<TokenResult>(result);
                 Assert.NotNull(tokenResult);
                 Assert.False(string.IsNullOrEmpty(tokenResult.Token));
-            }
-            finally {
+            } finally {
                 await ResetAsync();
             }
         }
@@ -202,14 +174,12 @@ namespace Exceptionless.Api.Tests.Controllers
 
             try {
                 _authController.Request = CreateRequestMessage(null, false, false);
-
                 Settings.Current.EnableAccountCreation = true;
 
                 var orgs = await _organizationRepository.GetAllAsync();
                 var organization = orgs.Documents.First();
                 var email = "test5@exceptionless.io";
-                var invite = new Invite
-                {
+                var invite = new Invite {
                     Token = StringExtensions.GetNewToken(),
                     EmailAddress = email.ToLowerInvariant(),
                     DateAdded = DateTime.UtcNow
@@ -220,8 +190,7 @@ namespace Exceptionless.Api.Tests.Controllers
 
                 Assert.NotNull(organization.GetInvite(invite.Token));
 
-                var signupModel = new SignupModel
-                {
+                var signupModel = new SignupModel {
                     Email = email,
                     InviteToken = invite.Token,
                     Name = "Test",
@@ -239,8 +208,7 @@ namespace Exceptionless.Api.Tests.Controllers
                 var tokenResult = GetResult<TokenResult>(result);
                 Assert.NotNull(tokenResult);
                 Assert.False(string.IsNullOrEmpty(tokenResult.Token));
-            }
-            finally {
+            } finally {
                 await ResetAsync();
             }
         }
@@ -277,6 +245,7 @@ namespace Exceptionless.Api.Tests.Controllers
         }
 
         private bool _isReset;
+
         private async Task ResetAsync() {
             if (!_isReset) {
                 _isReset = true;

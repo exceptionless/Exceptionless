@@ -9,7 +9,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories.Models;
 using Nest;
 using Xunit;
-using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public class EventIndexTests {
