@@ -28,6 +28,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Settings(s => s.Add("analysis", BuildAnalysisSettings()))
                 .AddMapping<PersistentEvent>(map => map
                     .Dynamic(DynamicMappingOption.Ignore)
+                    .DynamicTemplates(dt => dt.Add(t => t.Name("idx_reference").Match("*-r").Mapping(m => m.Generic(f => f.Type("string").Index("not_analyzed")))))
                     .IncludeInAll(false)
                     .DisableSizeField(false)
                     .Transform(t => t.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy))
