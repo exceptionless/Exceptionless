@@ -64,7 +64,7 @@ namespace Exceptionless.Core {
 
         public string IntercomAppSecret { get; private set; }
 
-        public bool EnableAccountCreation { get; private set; }
+        public bool EnableAccountCreation { get; internal set; }
 
         public string MicrosoftAppId { get; private set; }
 
