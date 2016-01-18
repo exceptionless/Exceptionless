@@ -87,10 +87,10 @@ namespace Exceptionless {
         }
 
         public static void SetSessionId(this PersistentEvent ev, string sessionId) {
-            if (ev == null))
+            if (ev == null)
                 return;
             
-            if (!IsValidIdentifier(sessionId))
+            if (!IsValidIdentifier(sessionId) || String.IsNullOrEmpty(sessionId))
                 throw new ArgumentException("Session Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(sessionId));
 
             if (ev.IsSessionStart())
