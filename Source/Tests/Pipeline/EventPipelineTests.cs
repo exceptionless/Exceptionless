@@ -247,10 +247,11 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Data.Add("BirthdayWithOffset", DateTimeOffset.MinValue);
             ev.Data.Add("@excluded", DateTime.MinValue);
             ev.Data.Add("Address", new { State = "Texas" });
+            ev.SetSessionId("123456789");
             
             ev.CopyDataToIndex();
 
-            Assert.Equal(11, ev.Idx.Count);
+            Assert.Equal(12, ev.Idx.Count);
             Assert.True(ev.Idx.ContainsKey("first-name-s"));
             Assert.True(ev.Idx.ContainsKey("isverified-b"));
             Assert.True(ev.Idx.ContainsKey("isverified1-b"));
@@ -262,6 +263,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(ev.Idx.ContainsKey("agedbl1-n"));
             Assert.True(ev.Idx.ContainsKey("birthday-d"));
             Assert.True(ev.Idx.ContainsKey("birthdaywithoffset-d"));
+            Assert.True(ev.Idx.ContainsKey("session-r"));
         }
 
         [Fact]

@@ -53,6 +53,7 @@ namespace Exceptionless.Api.Tests.Search {
         [InlineData("hidden:true", null, true, false)]
         [InlineData("fixed:true", null, true, false)]
         [InlineData("type:404", null, true, false)]
+        [InlineData("ref.session:12345678", "idx.session-r:12345678", true, true)]
         public void CanProcessQuery(string query, string expected, bool isValid, bool usesPremiumFeatures) {
             var result = QueryProcessor.Process(query);
             Assert.Equal(expected ?? query, result.ExpandedQuery);

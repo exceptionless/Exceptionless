@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Filter {
                     node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(5)}-{termType}";
                 } else if (node.Field.Field.StartsWith("ref.")) {
                     UsesDataFields = true;
-                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(5)}-r";
+                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(4)}-r";
                 }
             }
 
@@ -92,7 +92,7 @@ namespace Exceptionless.Core.Filter {
                     node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(5)}-{termType}";
                 } else if (node.Field.Field.StartsWith("ref.")) {
                     UsesDataFields = true;
-                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(5)}-r";
+                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(4)}-r";
                 }
             }
 
