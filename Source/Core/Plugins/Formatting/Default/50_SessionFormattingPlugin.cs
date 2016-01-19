@@ -34,6 +34,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             
             dynamic data = new ExpandoObject();
             data.SessionId = ev.GetSessionId();
+            data.Type = ev.Type;
 
             if (ev.IsSessionStart()) {
                 data.Value = ev.Value.GetValueOrDefault();
