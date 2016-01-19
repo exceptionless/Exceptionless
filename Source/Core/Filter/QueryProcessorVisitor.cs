@@ -8,6 +8,15 @@ using Exceptionless.LuceneQueryParser.Visitor;
 
 namespace Exceptionless.Core.Filter {
     public class QueryProcessor {
+        private static readonly HashSet<string> _freeFields = new HashSet<string> {
+            "hidden",
+            "fixed",
+            "type",
+            "organization",
+            "project",
+            "stack"
+        };
+
         public static QueryProcessResult Process(string query) {
             if (String.IsNullOrEmpty(query))
                 return new QueryProcessResult { IsValid = true };
@@ -20,7 +29,7 @@ namespace Exceptionless.Core.Filter {
                 return new QueryProcessResult { Message = ex.Message };
             }
 
-            var validator = new QueryProcessorVisitor(new HashSet<string> { "hidden", "fixed", "type", "organization", "project" });
+            var validator = new QueryProcessorVisitor(_freeFields);
             result.Accept(validator);
 
             string expandedQuery = validator.UsesDataFields ? GenerateQueryVisitor.Run(result) : query;
@@ -40,7 +49,7 @@ namespace Exceptionless.Core.Filter {
                 return new QueryProcessResult { Message = ex.Message };
             }
 
-            var validator = new QueryProcessorVisitor(new HashSet<string> { "hidden", "fixed", "type" });
+            var validator = new QueryProcessorVisitor(_freeFields);
             result.Accept(validator);
 
             return new QueryProcessResult { IsValid = true, UsesPremiumFeatures = validator.UsesPremiumFeatures };
