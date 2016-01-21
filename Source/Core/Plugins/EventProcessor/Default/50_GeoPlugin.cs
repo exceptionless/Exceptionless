@@ -29,14 +29,16 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                 // The geo coordinates are all the same, set the location from the result of any of the ip addresses.
                 if (!String.IsNullOrEmpty(group.Key)) {
-                    result = await GetGeoFromIPAddressesAsync(group.SelectMany(c => c.Event.GetIpAddresses()).Distinct()).AnyContext();
+                    var ips = group.SelectMany(c => c.Event.GetIpAddresses()).Union(new[] { group.First().EventPostInfo?.IpAddress }).Distinct();
+                    result = await GetGeoFromIPAddressesAsync(ips).AnyContext();
                     group.ForEach(c => UpdateGeoAndlocation(c.Event, result));
                     continue;
                 }
                 
                 // Each event could be a different user;
                 foreach (var context in group) {
-                    result = await GetGeoFromIPAddressesAsync(context.Event.GetIpAddresses()).AnyContext();
+                    var ips = context.Event.GetIpAddresses().Union(new[] { context.EventPostInfo?.IpAddress });
+                    result = await GetGeoFromIPAddressesAsync(ips).AnyContext();
                     UpdateGeoAndlocation(context.Event, result);
                 }
             }

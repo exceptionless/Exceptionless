@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 return;
 
             if (clientIPAddress.IsLocalHost())
-                return;
+                clientIPAddress = "127.0.0.1";
 
             if (String.IsNullOrWhiteSpace(request.ClientIpAddress))
                 request.ClientIpAddress = clientIPAddress;
