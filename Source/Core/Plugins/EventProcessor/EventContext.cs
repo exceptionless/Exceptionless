@@ -3,15 +3,18 @@ using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     public class EventContext : ExtensibleObject, IPipelineContext {
-        public EventContext(PersistentEvent ev) {
+        public EventContext(PersistentEvent ev, EventPostInfo epi = null) {
             Event = ev;
+            EventPostInfo = epi;
             StackSignatureData = new Dictionary<string, string>();
         }
 
         public PersistentEvent Event { get; set; }
+        public EventPostInfo EventPostInfo { get; set; }
         public Stack Stack { get; set; }
         public Project Project { get; set; }
         public Organization Organization { get; set; }

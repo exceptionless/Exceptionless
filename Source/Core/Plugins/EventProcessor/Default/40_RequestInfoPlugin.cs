@@ -40,36 +40,51 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 if (request == null)
                     continue;
 
-                var info = await _parser.ParseAsync(request.UserAgent, context.Project.Id).AnyContext();
-                if (info != null) {
-                    if (!String.Equals(info.UserAgent.Family, "Other")) {
-                        request.Data[RequestInfo.KnownDataKeys.Browser] = info.UserAgent.Family;
-                        if (!String.IsNullOrEmpty(info.UserAgent.Major)) {
-                            request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = String.Join(".", new[] { info.UserAgent.Major, info.UserAgent.Minor, info.UserAgent.Patch }.Where(v => !String.IsNullOrEmpty(v)));
-                            request.Data[RequestInfo.KnownDataKeys.BrowserMajorVersion] = info.UserAgent.Major;
-                        }
+                SetClientIPAddress(request, context.EventPostInfo?.IpAddress);
+                await SetBrowserOsAndDeviceFromUserAgent(request, context);
+                
+                context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
+            }
+        }
+
+        private void SetClientIPAddress(RequestInfo request, string clientIPAddress) {
+            if (String.IsNullOrEmpty(clientIPAddress))
+                return;
+
+            if (clientIPAddress.IsLocalHost())
+                return;
+
+            if (String.IsNullOrWhiteSpace(request.ClientIpAddress))
+                request.ClientIpAddress = clientIPAddress;
+            else if (!request.ClientIpAddress.Contains(clientIPAddress))
+                request.ClientIpAddress += String.Concat(",", clientIPAddress);
+        }
+
+        private async Task SetBrowserOsAndDeviceFromUserAgent(RequestInfo request, EventContext context) {
+            var info = await _parser.ParseAsync(request.UserAgent, context.Project.Id).AnyContext();
+            if (info != null) {
+                if (!String.Equals(info.UserAgent.Family, "Other")) {
+                    request.Data[RequestInfo.KnownDataKeys.Browser] = info.UserAgent.Family;
+                    if (!String.IsNullOrEmpty(info.UserAgent.Major)) {
+                        request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = String.Join(".", new[] { info.UserAgent.Major, info.UserAgent.Minor, info.UserAgent.Patch }.Where(v => !String.IsNullOrEmpty(v)));
+                        request.Data[RequestInfo.KnownDataKeys.BrowserMajorVersion] = info.UserAgent.Major;
                     }
-
-                    if (!String.Equals(info.Device.Family, "Other"))
-                        request.Data[RequestInfo.KnownDataKeys.Device] = info.Device.Family;
-
-
-                    if (!String.Equals(info.OS.Family, "Other")) {
-                        request.Data[RequestInfo.KnownDataKeys.OS] = info.OS.Family;
-                        if (!String.IsNullOrEmpty(info.OS.Major)) {
-                            request.Data[RequestInfo.KnownDataKeys.OSVersion] = String.Join(".", new[] { info.OS.Major, info.OS.Minor, info.OS.Patch }.Where(v => !String.IsNullOrEmpty(v)));
-                            request.Data[RequestInfo.KnownDataKeys.OSMajorVersion] = info.OS.Major;
-                        }
-                    }
-
-                    var botPatterns = context.Project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns) 
-                        ? context.Project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList() 
-                        : new List<string>();
-
-                    request.Data[RequestInfo.KnownDataKeys.IsBot] = info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns);
                 }
 
-                context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
+                if (!String.Equals(info.Device.Family, "Other"))
+                    request.Data[RequestInfo.KnownDataKeys.Device] = info.Device.Family;
+
+                if (!String.Equals(info.OS.Family, "Other")) {
+                    request.Data[RequestInfo.KnownDataKeys.OS] = info.OS.Family;
+                    if (!String.IsNullOrEmpty(info.OS.Major)) {
+                        request.Data[RequestInfo.KnownDataKeys.OSVersion] = String.Join(".", new[] { info.OS.Major, info.OS.Minor, info.OS.Patch }.Where(v => !String.IsNullOrEmpty(v)));
+                        request.Data[RequestInfo.KnownDataKeys.OSMajorVersion] = info.OS.Major;
+                    }
+                }
+
+                var botPatterns = context.Project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns) ? context.Project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList() : new List<string>();
+
+                request.Data[RequestInfo.KnownDataKeys.IsBot] = info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns);
             }
         }
     }

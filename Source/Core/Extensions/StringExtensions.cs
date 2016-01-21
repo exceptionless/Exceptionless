@@ -8,11 +8,18 @@ using System.Security.Cryptography;
 
 namespace Exceptionless.Core.Extensions {
     public static class StringExtensions {
+        public static bool IsLocalHost(this string ip) {
+            if (String.IsNullOrEmpty(ip))
+                return false;
+
+            return String.Equals(ip, "::1") || String.Equals(ip, "127.0.0.1");
+        }
+
         public static bool IsPrivateNetwork(this string ip) {
             if (String.IsNullOrEmpty(ip))
                 return false;
 
-            if (String.Equals(ip, "::1") || String.Equals(ip, "127.0.0.1"))
+            if (ip.IsLocalHost())
                 return true;
 
             // 10.0.0.0 – 10.255.255.255 (Class A)
