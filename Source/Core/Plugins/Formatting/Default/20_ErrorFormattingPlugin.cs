@@ -61,9 +61,8 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
-
-            var error = ev.GetError();
-            var stackingTarget = error?.GetStackingTarget();
+            
+            var stackingTarget = ev.GetStackingTarget();
             if (stackingTarget?.Error == null)
                 return null;
 
