@@ -159,7 +159,6 @@
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
-    <Compile Include="Extensions\ParameterExtensions.cs" />
     <Compile Include="Extensions\PersistentEventExtensions.cs" />
     <Compile Include="Geo\IGeocodeService.cs" />
     <Compile Include="Geo\NullGeocodeService.cs" />
@@ -275,7 +274,6 @@
     <Compile Include="Dependency\IDependencyResolver.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\UserExtensions.cs" />
-    <Compile Include="Extensions\ConcurrentQueueExtensions.cs" />
     <Compile Include="Extensions\DictionaryExtensions.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\EnumHelper.cs" />
@@ -363,8 +361,6 @@
     <Compile Include="Extensions\StackExtensions.cs" />
     <Compile Include="Extensions\JsonExtensions.cs" />
     <Compile Include="Extensions\ProjectExtensions.cs" />
-    <Compile Include="Extensions\StackFrameCollectionExtensions.cs" />
-    <Compile Include="Extensions\StackFrameExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Jobs\DailySummaryJob.cs" />
     <Compile Include="Jobs\EventPostsJob.cs" />
