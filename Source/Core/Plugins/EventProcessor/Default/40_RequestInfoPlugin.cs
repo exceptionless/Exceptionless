@@ -40,24 +40,30 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 if (request == null)
                     continue;
 
-                SetClientIPAddress(request, context.EventPostInfo?.IpAddress);
+                AddClientIPAddress(request, context.EventPostInfo?.IpAddress);
                 await SetBrowserOsAndDeviceFromUserAgent(request, context);
                 
                 context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
             }
         }
 
-        private void SetClientIPAddress(RequestInfo request, string clientIPAddress) {
+        private void AddClientIPAddress(RequestInfo request, string clientIPAddress) {
             if (String.IsNullOrEmpty(clientIPAddress))
                 return;
 
             if (clientIPAddress.IsLocalHost())
                 clientIPAddress = "127.0.0.1";
 
-            if (String.IsNullOrWhiteSpace(request.ClientIpAddress))
-                request.ClientIpAddress = clientIPAddress;
-            else if (!request.ClientIpAddress.Contains(clientIPAddress))
-                request.ClientIpAddress += String.Concat(",", clientIPAddress);
+            var ips = (request.ClientIpAddress ?? String.Empty)
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(ip => ip.Trim())
+                .Where(ip => !ip.IsLocalHost())
+                .ToList();
+
+            if (ips.Count == 0 || !clientIPAddress.IsLocalHost())
+                ips.Add(clientIPAddress);
+
+            request.ClientIpAddress = ips.Distinct().ToDelimitedString();
         }
 
         private async Task SetBrowserOsAndDeviceFromUserAgent(RequestInfo request, EventContext context) {

@@ -221,18 +221,18 @@ namespace Exceptionless {
                 yield break;
 
             if (!String.IsNullOrEmpty(ev.Geo) && (ev.Geo.Contains(".") || ev.Geo.Contains(":")))
-                yield return ev.Geo;
+                yield return ev.Geo.Trim();
 
             var ri = ev.GetRequestInfo();
             if (!String.IsNullOrEmpty(ri?.ClientIpAddress)) {
                 foreach (var ip in ri.ClientIpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                    yield return ip;
+                    yield return ip.Trim();
             }
 
             var ei = ev.GetEnvironmentInfo();
             if (!String.IsNullOrEmpty(ei?.IpAddress)) {
                 foreach (var ip in ei.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                    yield return ip;
+                    yield return ip.Trim();
             }
         }
         
