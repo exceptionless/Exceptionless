@@ -610,7 +610,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="201">The organization name is available.</response>
         /// <response code="204">The organization name is not available.</response>
         [HttpGet]
-        [Route("check-name")]
+        [Route("check-name/{*name:minlength(1)}")]
         public async Task<IHttpActionResult> IsNameAvailableAsync(string name) {
             if (await IsOrganizationNameAvailableInternalAsync(name))
                 return StatusCode(HttpStatusCode.NoContent);
