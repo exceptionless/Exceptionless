@@ -9,6 +9,7 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Helpers;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories.Base;
 using Foundatio.Metrics;
 
@@ -24,12 +25,12 @@ namespace Exceptionless.Core.Pipeline {
             _metricsClient = metricsClient;
         }
 
-        public Task<EventContext> RunAsync(PersistentEvent ev) {
-            return RunAsync(new EventContext(ev));
+        public Task<EventContext> RunAsync(PersistentEvent ev, EventPostInfo epi = null) {
+            return RunAsync(new EventContext(ev, epi));
         }
 
-        public Task<ICollection<EventContext>> RunAsync(IEnumerable<PersistentEvent> events) {
-            return RunAsync(events.Select(ev => new EventContext(ev)).ToList());
+        public Task<ICollection<EventContext>> RunAsync(IEnumerable<PersistentEvent> events, EventPostInfo epi = null) {
+            return RunAsync(events.Select(ev => new EventContext(ev, epi)).ToList());
         }
 
         public override async Task<ICollection<EventContext>> RunAsync(ICollection<EventContext> contexts) {

@@ -221,18 +221,19 @@ namespace Exceptionless {
                 yield break;
 
             if (!String.IsNullOrEmpty(ev.Geo) && (ev.Geo.Contains(".") || ev.Geo.Contains(":")))
-                yield return ev.Geo;
+                yield return ev.Geo.Trim();
 
-            var request = ev.GetRequestInfo();
-            if (!String.IsNullOrEmpty(request?.ClientIpAddress))
-                yield return request.ClientIpAddress;
+            var ri = ev.GetRequestInfo();
+            if (!String.IsNullOrEmpty(ri?.ClientIpAddress)) {
+                foreach (var ip in ri.ClientIpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    yield return ip.Trim();
+            }
 
-            var environmentInfo = ev.GetEnvironmentInfo();
-            if (String.IsNullOrEmpty(environmentInfo?.IpAddress))
-                yield break;
-
-            foreach (var ip in environmentInfo.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                yield return ip;
+            var ei = ev.GetEnvironmentInfo();
+            if (!String.IsNullOrEmpty(ei?.IpAddress)) {
+                foreach (var ip in ei.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    yield return ip.Trim();
+            }
         }
         
         private static bool IsValidIdentifier(string value) {
