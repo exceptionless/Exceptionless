@@ -398,7 +398,7 @@ namespace Exceptionless.Api.Controllers {
             var organizationIds = IsInOrganization(organizationId) ? new List<string> { organizationId } : GetAssociatedOrganizationIds();
 
             var results = await _repository.GetByOrganizationIdsAsync(organizationIds);
-            return !results.Documents.Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
+            return !results.Documents.Any(p => String.Equals(p.Name.Trim().ToLower(), name.Trim().ToLower(), StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
