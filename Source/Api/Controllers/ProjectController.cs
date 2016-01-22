@@ -382,8 +382,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="201">The project name is available.</response>
         /// <response code="204">The project name is not available.</response>
         [HttpGet]
-        [Route("check-name/{*name:minlength(1)}")]
-        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects/check-name/{*name:minlength(1)}")]        
+        [Route("check-name")]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects/check-name")]        
         public async Task<IHttpActionResult> IsNameAvailableAsync(string name, string organizationId = null) {
             if (await IsProjectNameAvailableInternalAsync(organizationId, name))
                 return StatusCode(HttpStatusCode.NoContent);
