@@ -622,8 +622,9 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(name))
                 return false;
 
+            string decodedName = Uri.UnescapeDataString(name).Trim().ToLower();
             var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true);
-            return !results.Documents.Any(o => String.Equals(o.Name.Trim().ToLower(), name.Trim().ToLower(), StringComparison.OrdinalIgnoreCase));
+            return !results.Documents.Any(o => String.Equals(o.Name.Trim().ToLower(), decodedName, StringComparison.OrdinalIgnoreCase));
         }
 
         protected override async Task<PermissionResult> CanAddAsync(Organization value) {
