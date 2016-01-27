@@ -253,6 +253,7 @@
     <Compile Include="Models\WorkItems\ThrottleBotsWorkItem.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\JsonEventParserPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\60_LocationPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
@@ -551,6 +552,9 @@
     <None Include="Mail\Templates\_Layout.html.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Plugins\EventParser\Raygun\Models\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\Pegasus.3.1.2\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.3.1.2\build\Pegasus.targets')" />

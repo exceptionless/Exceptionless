@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
         }
 
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
-            if (apiVersion != 1)
+            if (!userAgent.StartsWith("exceptionless") && apiVersion != 1)
                 return null;
 
             try {
