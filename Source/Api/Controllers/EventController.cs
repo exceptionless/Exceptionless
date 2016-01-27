@@ -436,6 +436,46 @@ namespace Exceptionless.Api.Controllers {
             return await SetUserDescriptionAsync(id, userDescription);
         }
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <remarks>
+        /// You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it
+        /// we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON
+        /// object into the events data collection.
+        ///
+        /// You can also post a multiline string. We automatically split strings by the \n character and create a new log event for every line.
+        ///
+        /// Simple event:
+        /// <code>
+        ///     { "message": "Exceptionless is amazing!" }
+        /// </code>
+        ///
+        /// Multiple events from string content:
+        /// <code>
+        ///     Exceptionless is amazing!
+        ///     Exceptionless is really amazing!
+        /// </code>
+        ///
+        /// Simple error:
+        /// <code>
+        ///     {
+        ///         "type": "error",
+        ///         "@simple_error": {
+        ///             "message": "Simple Exception",
+        ///             "type": "System.Exception",
+        ///             "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77"
+        ///         }
+        ///     }
+        /// </code>
+        /// </remarks>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="version">The api version that should be used</param>
+        /// <param name="userAgent">The user agent that submitted the event.</param>
+        /// <param name="parameters"></param>
+        /// <response code="202">Accepted</response>
+        /// <response code="400">No project id specified and no default project was found.</response>
+        /// <response code="404">No project was found.</response>
         [HttpGet]
         [Route("~/api/v{version:int=2}/events")]
         [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events")]
