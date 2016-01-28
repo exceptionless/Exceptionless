@@ -531,6 +531,15 @@ namespace Exceptionless.Api.Controllers {
 
             return StatusCode(HttpStatusCode.OK);
         }
+        
+        [HttpPost]
+        [Route("~/entries")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.Client)]
+        [ApiExplorerSettings(IgnoreApi = true)]
+        public Task<IHttpActionResult> PostRaygunAsync([NakedBody] byte[] data) {
+            return PostAsync(data, null, 1, "raygun");
+        }
 
         /// <summary>
         /// Create
