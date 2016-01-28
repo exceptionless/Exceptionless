@@ -109,116 +109,24 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         private IAnalysis BuildAnalysisSettings() {
-            return new {
-                filter = new {
-                    email = new {
-                        type = "pattern_capture",
-                        patterns = new[] {
-                            @"(\w+)",
-                            @"(\p{L}+)",
-                            @"(\d+)",
-                            @"(.+)@",
-                            @"@(.+)"
-                        }
-                    },
-                    version = new {
-                        type = "pattern_capture",
-                        patterns = new[] {
-                            @"^(\d+)\.",
-                            @"^(\d+\.\d+)",
-                            @"^(\d+\.\d+\.\d+)"
-                        }
-                    },
-                    version_pad1 = new {
-                        type = "pattern_replace",
-                        pattern = @"(\.|^)(\d{1})(?=\.|$)",
-                        replacement = @"$10000$2"
-                    },
-                    version_pad2 = new {
-                        type = "pattern_replace",
-                        pattern = @"(\.|^)(\d{2})(?=\.|$)",
-                        replacement = @"$1000$2"
-                    },
-                    version_pad3 = new {
-                        type = "pattern_replace",
-                        pattern = @"(\.|^)(\d{3})(?=\.|$)",
-                        replacement = @"$100$2"
-                    },
-                    version_pad4 = new {
-                        type = "pattern_replace",
-                        pattern = @"(\.|^)(\d{4})(?=\.|$)",
-                        replacement = @"$10$2"
-                    },
-                    typename = new {
-                        type = "pattern_capture",
-                        patterns = new[] {
-                            @"\.(\w+)"
-                        }
-                    }
+            return new Analysis {
+                Analyzers = new Analyzers {
+                    { "comma_whitespace", new PatternAnalyzer { Pattern = @"[,\s]+" } },
+                    { "email", new CustomAnalyzer { Tokenizer = "keyword", Filter = new [] { "email", "lowercase", "unique" } } },
+                    { "version_index", new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "version_pad1", "version_pad2", "version_pad3", "version_pad4", "version", "lowercase", "unique" } } },
+                    { "version_search", new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "version_pad1", "version_pad2", "version_pad3", "version_pad4", "lowercase" } } },
+                    { "whitespace_lower", new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "lowercase" } } },
+                    { "typename", new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "typename", "lowercase", "unique" } } },
+                    { "standardplus", new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "standard", "typename", "lowercase", "stop", "unique" } } }
                 },
-                analyzer = new {
-                    comma_whitespace = new {
-                        type = "pattern",
-                        pattern = @"[,\s]+"
-                    },
-                    email = new {
-                        type = "custom",
-                        tokenizer = "keyword",
-                        filter = new[] {
-                            "email",
-                            "lowercase",
-                            "unique"
-                        }
-                    },
-                    version_index = new {
-                        type = "custom",
-                        tokenizer = "whitespace",
-                        filter = new[] {
-                            "version_pad1",
-                            "version_pad2",
-                            "version_pad3",
-                            "version_pad4",
-                            "version",
-                            "lowercase",
-                            "unique"
-                        }
-                    },
-                    version_search = new {
-                        type = "custom",
-                        tokenizer = "whitespace",
-                        filter = new[] {
-                            "version_pad1",
-                            "version_pad2",
-                            "version_pad3",
-                            "version_pad4",
-                            "lowercase"
-                        }
-                    },
-                    whitespace_lower = new {
-                        type = "custom",
-                        tokenizer = "whitespace",
-                        filter = new[] { "lowercase" }
-                    },
-                    typename = new {
-                        type = "custom",
-                        tokenizer = "whitespace",
-                        filter = new[] {
-                            "typename",
-                            "lowercase",
-                            "unique"
-                        }
-                    },
-                    standardplus = new {
-                        type = "custom",
-                        tokenizer = "whitespace",
-                        filter = new[] {
-                            "standard",
-                            "typename",
-                            "lowercase",
-                            "stop",
-                            "unique"
-                        }
-                    }
+                TokenFilters = new TokenFilters {
+                    { "email", new PatternCaptureTokenFilter { Patterns = new[] { @"(\w+)", @"(\p{L}+)", @"(\d+)", @"(.+)@", @"@(.+)" } } },
+                    { "typename", new PatternCaptureTokenFilter { Patterns = new[] { @"\.(\w+)" } } },
+                    { "version", new PatternCaptureTokenFilter { Patterns = new[] { @"^(\d+)\.", @"^(\d+\.\d+)", @"^(\d+\.\d+\.\d+)" } } },
+                    { "version_pad1", new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{1})(?=\.|$)", Replacement = @"$10000$2" } },
+                    { "version_pad2", new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{2})(?=\.|$)", Replacement = @"$1000$2" } },
+                    { "version_pad3", new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{3})(?=\.|$)", Replacement = @"$100$2" } },
+                    { "version_pad4", new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{4})(?=\.|$)", Replacement = @"$10$2" } }
                 }
             };
         }
