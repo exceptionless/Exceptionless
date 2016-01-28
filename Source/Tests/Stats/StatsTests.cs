@@ -205,31 +205,31 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         private async Task CreateDataAsync(int eventCount = 0, bool multipleProjects = true) {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             var orgs = OrganizationData.GenerateSampleOrganizations();
             await _organizationRepository.AddAsync(orgs, true);
 
             var projects = ProjectData.GenerateSampleProjects();
             await _projectRepository.AddAsync(projects, true);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             if (eventCount > 0)
                 await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId });
         }
 
         private async Task CreateEventsAsync(int eventCount, string[] projectIds) {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
                 await _eventPipeline.RunAsync(eventGroup);
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
         }
 
         private async Task<List<PersistentEvent>> CreateSessionEventsAsync() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             var startDate = DateTimeOffset.UtcNow.SubtractHours(1);
             var events = new List<PersistentEvent> {
@@ -243,20 +243,20 @@ namespace Exceptionless.Api.Tests.Stats {
             };
             
             await _eventPipeline.RunAsync(events);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             return events;
         }
 
         private async Task RemoveDataAsync() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _eventRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _stackRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _projectRepository.RemoveAllAsync();
             await _organizationRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
         }
     }
 }

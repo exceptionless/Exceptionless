@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             emailAddress = emailAddress.ToLowerInvariant().Trim();
-            var filter = Filter<User>.Term(u => u.EmailAddress, emailAddress);
+            var filter = Query<User>.Term(u => u.EmailAddress, emailAddress);
             return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithCacheKey(emailAddress));
         }
 
@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            var filter = Filter<User>.Term(u => u.PasswordResetToken, token);
+            var filter = Query<User>.Term(u => u.PasswordResetToken, token);
             return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Repositories {
 
             provider = provider.ToLowerInvariant();
 
-            var filter = Filter<User>.Term(OrganizationIndex.Fields.User.OAuthAccountProviderUserId, new List<string>() { providerUserId });
+            var filter = Query<User>.Term(OrganizationIndex.Fields.User.OAuthAccountProviderUserId, new List<string>() { providerUserId });
             var results = (await FindAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext()).Documents;
 
             return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
@@ -51,7 +51,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            var filter = Filter<User>.Term(u => u.VerifyEmailAddressToken, token);
+            var filter = Query<User>.Term(u => u.VerifyEmailAddressToken, token);
             return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
@@ -64,7 +64,7 @@ namespace Exceptionless.Core.Repositories {
                 return Task.FromResult(new FindResults<User> { Documents = new List<User>(), Total = 0 });
 
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
-            var filter = Filter<User>.Term(u => u.OrganizationIds, organizationIds);
+            var filter = Query<User>.Term(u => u.OrganizationIds, organizationIds);
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithPaging(paging)
@@ -74,7 +74,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<long> CountByOrganizationIdAsync(string organizationId) {
-            var filter = Filter<User>.Term(u => u.OrganizationIds, new[] { organizationId });
+            var filter = Query<User>.Term(u => u.OrganizationIds, new[] { organizationId });
             var options = new ExceptionlessQuery().WithElasticFilter(filter);
             return CountAsync(options);
         }

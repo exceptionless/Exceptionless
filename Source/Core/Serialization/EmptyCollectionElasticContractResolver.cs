@@ -1,15 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Nest;
-using Nest.Resolvers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace Exceptionless.Core.Serialization {
     public class EmptyCollectionElasticContractResolver : ElasticContractResolver {
-        public EmptyCollectionElasticContractResolver(IConnectionSettingsValues connectionSettings) : base(connectionSettings) {}
+        public EmptyCollectionElasticContractResolver(IConnectionSettingsValues connectionSettings, IList<Func<Type, JsonConverter>> contractConverters) : base(connectionSettings, contractConverters) {}
 
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
             JsonProperty property = base.CreateProperty(member, memberSerialization);

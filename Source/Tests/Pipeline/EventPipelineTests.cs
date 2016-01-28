@@ -48,7 +48,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var ev = GenerateEvent(localTime.AddMinutes(10));
 
             await _pipeline.RunAsync(ev);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
@@ -71,7 +71,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -93,7 +93,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(3, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -114,7 +114,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(1, events.Total);
             Assert.Equal(0, events.Documents.Count(e => e.IsSessionStart()));
@@ -139,7 +139,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(contexts.Any(c => c.IsCancelled));
             Assert.True(contexts.Any(c => c.IsProcessed));
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             var results = await _eventRepository.GetAllAsync();
             Assert.Equal(6, results.Total);
             Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -169,7 +169,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(contexts.Any(c => c.IsCancelled));
             Assert.True(contexts.Any(c => c.IsProcessed));
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             var results = await _eventRepository.GetAllAsync();
             Assert.Equal(3, results.Total);
             Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -207,7 +207,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(contexts.Any(c => c.IsCancelled));
             Assert.True(contexts.Any(c => c.IsProcessed));
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             var results = await _eventRepository.GetAllAsync(paging: new PagingOptions().WithLimit(15));
             Assert.Equal(11, results.Total);
             Assert.Equal(3, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -278,7 +278,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag1);
             
             await _pipeline.RunAsync(ev);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
@@ -291,7 +291,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag2);
 
             await _pipeline.RunAsync(ev);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
@@ -300,7 +300,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag2_Lowercase);
 
             await _pipeline.RunAsync(ev);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
@@ -317,7 +317,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
             
             await _pipeline.RunAsync(contexts);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
             Assert.Equal(1, contexts.Count(c => c.IsNew));
             Assert.Equal(1, contexts.Count(c => !c.IsNew));
@@ -348,7 +348,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _pipeline.RunAsync(contexts);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
             Assert.Equal(1, contexts.Count(c => c.IsNew));
@@ -363,7 +363,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow);
             var context = new EventContext(ev);
             await _pipeline.RunAsync(context);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
@@ -375,7 +375,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             stack.DateFixed = DateTime.UtcNow;
             stack.IsRegressed = false;
             await _stackRepository.SaveAsync(stack, true);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             var contexts = new List<EventContext> {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1))),
@@ -383,7 +383,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _pipeline.RunAsync(contexts);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.Equal(1, contexts.Count(c => c.IsRegression));
             Assert.Equal(1, contexts.Count(c => !c.IsRegression));
 
@@ -393,7 +393,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _pipeline.RunAsync(contexts);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
         }
 
@@ -572,7 +572,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         private async Task CreateDataAsync() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             foreach (Organization organization in OrganizationData.GenerateSampleOrganizations()) {
                 if (organization.Id == TestConstants.OrganizationId3)
@@ -607,7 +607,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 await _userRepository.AddAsync(user, true);
             }
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
         }
 
         private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
@@ -620,22 +620,22 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private async Task RemoveDataAsync() {
             await RemoveEventsAndStacks();
             await _tokenRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _userRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _projectRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _organizationRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _cacheClient.RemoveAllAsync();
         }
 
         private async Task RemoveEventsAndStacks() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _eventRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _stackRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _cacheClient.RemoveAllAsync();
         }
     }

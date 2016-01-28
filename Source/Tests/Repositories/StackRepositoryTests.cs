@@ -19,7 +19,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await RemoveDataAsync();
 
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: DateTime.Now.SubtractMonths(1)));
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             var stack = await _repository.GetByIdAsync(TestConstants.StackId);
             Assert.NotNull(stack);
@@ -28,7 +28,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             await _repository.MarkAsRegressedAsync(TestConstants.StackId);
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             stack = await _repository.GetByIdAsync(TestConstants.StackId);
             Assert.NotNull(stack);
             Assert.True(stack.IsRegressed);
@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await RemoveDataAsync();
 
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             var stack = await _repository.GetByIdAsync(TestConstants.StackId);
             Assert.NotNull(stack);
@@ -50,7 +50,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             var utcNow = DateTime.UtcNow;
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId, utcNow, utcNow, 1);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             stack = await _repository.GetByIdAsync(TestConstants.StackId);
             Assert.Equal(1, stack.TotalOccurrences);
@@ -58,7 +58,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(utcNow, stack.LastOccurrence);
 
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId, utcNow.SubtractDays(1), utcNow.SubtractDays(1), 1);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             stack = await _repository.GetByIdAsync(TestConstants.StackId);
             Assert.Equal(2, stack.TotalOccurrences);
@@ -66,7 +66,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(utcNow, stack.LastOccurrence);
 
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId, utcNow.AddDays(1), utcNow.AddDays(1), 1);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             stack = await _repository.GetByIdAsync(TestConstants.StackId);
             Assert.Equal(3, stack.TotalOccurrences);
@@ -96,9 +96,9 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         protected async Task RemoveDataAsync() {
             await _eventRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
         }
     }
 }

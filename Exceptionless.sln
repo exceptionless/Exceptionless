@@ -77,6 +77,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloseInactiveSessionsJob", 
 		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundatio.Repositories", "..\Foundatio.Repositories\src\Core\Foundatio.Repositories.csproj", "{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundatio.Repositories.Elasticsearch", "..\Foundatio.Repositories\src\Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj", "{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -247,6 +251,30 @@ Global
 		{FA2A4275-9180-43A4-AAE6-12BF83DC1252}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{FA2A4275-9180-43A4-AAE6-12BF83DC1252}.Release|x86.ActiveCfg = Release|Any CPU
 		{FA2A4275-9180-43A4-AAE6-12BF83DC1252}.Release|x86.Build.0 = Release|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Debug|x86.Build.0 = Debug|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Release|x86.ActiveCfg = Release|Any CPU
+		{F5B6C2B5-485F-4A4B-8E00-D5F77676CD6E}.Release|x86.Build.0 = Release|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Debug|x86.Build.0 = Debug|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Release|x86.ActiveCfg = Release|Any CPU
+		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

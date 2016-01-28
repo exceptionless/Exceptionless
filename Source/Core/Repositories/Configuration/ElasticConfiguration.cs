@@ -14,8 +14,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         protected override ConnectionSettings GetConnectionSettings(IEnumerable<Uri> serverUris, IEnumerable<IElasticIndex> indexes) {
             var settings = base.GetConnectionSettings(serverUris, indexes)
-                .SetDefaultTypeNameInferrer(p => p.Name.ToLowerUnderscoredWords())
-                .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords())
+                .DefaultTypeNameInferrer(p => p.Name.ToLowerUnderscoredWords())
+                .DefaultFieldNameInferrer(p => p.ToLowerUnderscoredWords())
                 .MaximumRetries(5);
 
             settings.SetJsonSerializerSettingsModifier(s => {

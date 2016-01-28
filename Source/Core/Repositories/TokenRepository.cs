@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Repositories {
         public TokenRepository(ElasticRepositoryContext<Token> context, OrganizationIndex index) : base(context, index) { }
 
         public Task<FindResults<Token>> GetApiTokensAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var filter = Filter<Token>.Term(e => e.Type, TokenType.Access) && Filter<Token>.Missing(e => e.UserId);
+            var filter = Query<Token>.Term(e => e.Type, TokenType.Access) && Query<Token>.Missing(e => e.UserId);
             return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
                 .WithElasticFilter(filter)
@@ -29,14 +29,14 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<Token>> GetByUserIdAsync(string userId) {
-            var filter = Filter<Token>.Term(e => e.UserId, userId);
+            var filter = Query<Token>.Term(e => e.UserId, userId);
             return FindAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
         public Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
-                .WithElasticFilter(Filter<Token>.Term(t => t.Type, type))
+                .WithElasticFilter(Query<Token>.Term(t => t.Type, type))
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("type:", type, "-org:", organizationId) : null)
                 .WithExpiresIn(expiresIn));
@@ -49,16 +49,14 @@ namespace Exceptionless.Core.Repositories {
             string cacheKey = String.Concat("type:", type, "-org:", String.Join("", organizationIds).GetHashCode().ToString());
             return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationIds(organizationIds)
-                .WithElasticFilter(Filter<Token>.Term(t => t.Type, type))
+                .WithElasticFilter(Query<Token>.Term(t => t.Type, type))
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? cacheKey : null)
                 .WithExpiresIn(expiresIn));
         }
 
         public Task<FindResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var filter = Filter<Token>.And(and => (
-                    Filter<Token>.Term(t => t.ProjectId, projectId) || Filter<Token>.Term(t => t.DefaultProjectId, projectId)
-                ) && Filter<Token>.Term(t => t.Type, type));
+            var filter = (Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId)) && Query<Token>.Term(t => t.Type, type);
 
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
@@ -68,9 +66,9 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<Token>> GetByTypeAndOrganizationIdOrProjectIdAsync(TokenType type, string organizationId, string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var filter = Filter<Token>.And(and => (
-                    Filter<Token>.Term(t => t.OrganizationId, organizationId) || Filter<Token>.Term(t => t.ProjectId, projectId) || Filter<Token>.Term(t => t.DefaultProjectId, projectId)
-                ) && Filter<Token>.Term(t => t.Type, type));
+            var filter = Query<Token>.And(and => (
+                    Query<Token>.Term(t => t.OrganizationId, organizationId) || Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId)
+                ) && Query<Token>.Term(t => t.Type, type));
 
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
@@ -83,11 +81,11 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(refreshToken))
                 throw new ArgumentNullException(nameof(refreshToken));
 
-            return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(Filter<Token>.Term(t => t.Refresh, refreshToken)));
+            return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(Query<Token>.Term(t => t.Refresh, refreshToken)));
         }
 
         public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var filter = Filter<Token>.And(and => (Filter<Token>.Term(t => t.ProjectId, projectId) || Filter<Token>.Term(t => t.DefaultProjectId, projectId)));
+            var filter = Query<Token>.And(and => (Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId)));
 
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)

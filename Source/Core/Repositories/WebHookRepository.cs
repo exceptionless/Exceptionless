@@ -16,12 +16,12 @@ namespace Exceptionless.Core.Repositories {
         public WebHookRepository(ElasticRepositoryContext<WebHook> context, OrganizationIndex index) : base(context, index) { }
 
         public Task RemoveByUrlAsync(string targetUrl) {
-            var filter = Filter<WebHook>.Term(e => e.Url, targetUrl);
+            var filter = Query<WebHook>.Term(e => e.Url, targetUrl);
             return RemoveAllAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
         public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
-            var filter = (Filter<WebHook>.Term(e => e.OrganizationId, organizationId) && Filter<WebHook>.Missing(e => e.ProjectId)) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
+            var filter = (Query<WebHook>.Term(e => e.OrganizationId, organizationId) && Query<WebHook>.Missing(e => e.ProjectId)) || Query<WebHook>.Term(e => e.ProjectId, projectId);
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))

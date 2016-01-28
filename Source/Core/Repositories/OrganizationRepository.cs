@@ -33,12 +33,12 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(customerId))
                 throw new ArgumentNullException(nameof(customerId));
 
-            var filter = Filter<Organization>.Term(o => o.StripeCustomerId, customerId);
+            var filter = Query<Organization>.Term(o => o.StripeCustomerId, customerId);
             return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
         public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
-            var filter = Filter<Organization>.Range(r => r.OnField(o => o.RetentionDays).Greater(0));
+            var filter = Query<Organization>.Range(r => r.OnField(o => o.RetentionDays).Greater(0));
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithSelectedFields("id", "name", "retention_days")
@@ -46,30 +46,30 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
-            var filter = Filter<Organization>.MatchAll();
+            var filter = Query<Organization>.MatchAll();
             if (!String.IsNullOrWhiteSpace(criteria))
-                filter &= Filter<Organization>.Term(o => o.Name, criteria);
+                filter &= Query<Organization>.Term(o => o.Name, criteria);
 
             if (paid.HasValue) {
                 if (paid.Value)
-                    filter &= !Filter<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
+                    filter &= !Query<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
                 else
-                    filter &= Filter<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
+                    filter &= Query<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
             }
 
             if (suspended.HasValue) {
                 if (suspended.Value)
-                    filter &= Filter<Organization>.And(and => ((
-                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
-                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
-                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
-                        ) || Filter<Organization>.Term(o => o.IsSuspended, true)));
+                    filter &= Query<Organization>.And(and => ((
+                            !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
+                            !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
+                            !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
+                        ) || Query<Organization>.Term(o => o.IsSuspended, true)));
                 else
-                    filter &= Filter<Organization>.And(and => ((
-                            Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
-                            Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
-                            Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
-                        ) || Filter<Organization>.Term(o => o.IsSuspended, false)));
+                    filter &= Query<Organization>.And(and => ((
+                            Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
+                            Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
+                            Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
+                        ) || Query<Organization>.Term(o => o.IsSuspended, false)));
             }
 
             var query = new ExceptionlessQuery().WithPaging(paging).WithElasticFilter(filter);

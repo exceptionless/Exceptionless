@@ -45,8 +45,8 @@
       <HintPath>..\..\packages\AutoMapper.4.1.1\lib\net45\AutoMapper.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Elasticsearch.Net.1.7.1\lib\net45\Elasticsearch.Net.dll</HintPath>
+    <Reference Include="Elasticsearch.Net, Version=2.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Elasticsearch.Net.2.0.0-alpha2\lib\net45\Elasticsearch.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.1.42.0, Culture=neutral, processorArchitecture=MSIL">
@@ -65,14 +65,6 @@
       <HintPath>..\..\packages\Foundatio.3.0.633\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.1.0.10\lib\net45\Foundatio.Repositories.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.10\lib\net45\Foundatio.Repositories.Elasticsearch.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
       <HintPath>..\..\packages\MaxMind.Db.1.2.0\lib\net40\MaxMind.Db.dll</HintPath>
       <Private>True</Private>
@@ -81,12 +73,12 @@
       <HintPath>..\..\packages\MaxMind.GeoIP2.2.5.0\lib\net452\MaxMind.GeoIP2.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NEST.1.7.1\lib\net45\Nest.dll</HintPath>
+    <Reference Include="Nest, Version=2.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NEST.2.0.0-alpha2\lib\net45\Nest.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Newtonsoft.Json.8.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Nito.AsyncEx, Version=3.0.1.0, Culture=neutral, processorArchitecture=MSIL">
@@ -295,7 +287,6 @@
     <Compile Include="Jobs\EventNotificationsJob.cs" />
     <Compile Include="Jobs\WebHooksJob.cs" />
     <Compile Include="Plugins\EventProcessor\Default\50_GeoPlugin.cs" />
-    <Compile Include="Utility\KeepAliveHttpConnection.cs" />
     <Compile Include="Models\Messaging\UserMembershipChanged.cs" />
     <Compile Include="Pipeline\Base\PipelineActionBase.cs" />
     <Compile Include="Pipeline\Base\PipelineBase.cs" />
@@ -400,6 +391,7 @@
     <Compile Include="Validation\UserDescriptionValidator.cs" />
     <Compile Include="Validation\UserValidator.cs" />
     <Compile Include="Validation\WebHookValidator.cs" />
+    <None Include="app.config" />
     <None Include="Mail\Templates\AddedToOrganization\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -555,6 +547,16 @@
     <None Include="Mail\Templates\_Layout.html.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Foundatio.Repositories\src\Core\Foundatio.Repositories.csproj">
+      <Project>{f5b6c2b5-485f-4a4b-8e00-d5f77676cd6e}</Project>
+      <Name>Foundatio.Repositories</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Foundatio.Repositories\src\Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj">
+      <Project>{3bfbd4c1-3f2c-46a4-9400-2cb9803644be}</Project>
+      <Name>Foundatio.Repositories.Elasticsearch</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\Pegasus.3.1.2\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.3.1.2\build\Pegasus.targets')" />

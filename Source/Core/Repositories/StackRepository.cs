@@ -57,8 +57,7 @@ namespace Exceptionless.Core.Repositories {
         public async Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
-            var result = await Context.ElasticClient.UpdateAsync<Stack>(s => s
-                .Id(stackId)
+            var result = await Context.ElasticClient.UpdateAsync<Stack>(stackId, s => s
                 .RetryOnConflict(3)
                 .Lang("groovy")
                 .Script(@"if (ctx._source.total_occurrences == 0 || ctx._source.first_occurrence > minOccurrenceDateUtc) {
@@ -95,7 +94,7 @@ namespace Exceptionless.Core.Repositories {
         public Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
             return FindOneAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
-                .WithElasticFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))
+                .WithElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash))
                 .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash)));
         }
 
@@ -114,10 +113,10 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<Stack>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
-            var filterContainer = Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).GreaterOrEquals(utcStart)) && Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).LowerOrEquals(utcEnd));
+            var QueryContainer = Query<Stack>.DateRange(r => r.Field(s => s.LastOccurrence).GreaterThanOrEquals(utcStart).LessThanOrEquals(utcEnd));
             var query = new ExceptionlessQuery()
                 .WithProjectId(projectId)
-                .WithElasticFilter(filterContainer)
+                .WithElasticFilter(QueryContainer)
                 .WithFilter(filter)
                 .WithSort(StackIndex.Fields.Stack.LastOccurrence, SortOrder.Descending)
                 .WithPaging(paging);
@@ -126,10 +125,10 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<Stack>> GetNewAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
-            var filterContainer = Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart)) && Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
+            var QueryContainer = Query<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart)) && Query<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
             var query = new ExceptionlessQuery()
                 .WithProjectId(projectId)
-                .WithElasticFilter(filterContainer)
+                .WithElasticFilter(QueryContainer)
                 .WithFilter(filter)
                 .WithSort(StackIndex.Fields.Stack.FirstOccurrence, SortOrder.Descending)
                 .WithPaging(paging);

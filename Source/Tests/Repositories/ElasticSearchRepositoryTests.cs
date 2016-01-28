@@ -20,7 +20,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await ResetAsync();
 
             await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.Equal(0, await _repository.CountAsync());
 
             var stack = StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
@@ -28,7 +28,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             await _repository.AddAsync(stack);
             Assert.NotNull(stack.Id);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             stack = await _repository.GetByIdAsync(stack.Id);
             Assert.NotNull(stack);
@@ -43,11 +43,11 @@ namespace Exceptionless.Api.Tests.Repositories {
             await ResetAsync();
 
             await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.Equal(0, await _repository.CountAsync());
 
             await _repository.AddAsync(StackData.GenerateSampleStacks());
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(1).WithLimit(1));
             Assert.NotNull(stacks);
@@ -65,11 +65,11 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(3, stacks.Documents.Count);
 
             await _repository.RemoveAsync(stacks.Documents);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             Assert.Equal(0, await _repository.CountAsync());
             await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
         }
 
         [Fact]
@@ -86,7 +86,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.AddAsync(stack, true);
             Assert.NotNull(stack.Id);
             Assert.Equal(2, cache.Count);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             await cache.RemoveAllAsync();
             Assert.Equal(0, cache.Count);
@@ -94,7 +94,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, cache.Count);
 
             await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.Equal(0, cache.Count);
         }
 
@@ -102,11 +102,11 @@ namespace Exceptionless.Api.Tests.Repositories {
         private async Task ResetAsync() {
             if (!_isReset) {
                 _isReset = true;
-                await _client.RefreshAsync();
+                await _client.RefreshAsync(Indices.All);
                 await _eventRepository.RemoveAllAsync();
-                await _client.RefreshAsync();
+                await _client.RefreshAsync(Indices.All);
                 await _repository.RemoveAllAsync();
-                await _client.RefreshAsync();
+                await _client.RefreshAsync(Indices.All);
             }
         }
 

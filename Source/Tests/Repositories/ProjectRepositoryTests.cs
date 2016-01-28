@@ -14,15 +14,15 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Fact]
         public async Task IncrementNextSummaryEndOfDayTicksAsync() {
             await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.Equal(0, await _repository.CountAsync());
 
             var project = await _repository.AddAsync(ProjectData.GenerateSampleProject());
             Assert.NotNull(project.Id);
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.Equal(1, await _repository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project.Id }));
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             var updatedProject = await _repository.GetByIdAsync(project.Id, false);
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, updatedProject.NextSummaryEndOfDayTicks);
