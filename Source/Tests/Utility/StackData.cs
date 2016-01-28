@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Extensions;
-using Foundatio.Utility;
+using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Tests.Utility {
     internal static class StackData {

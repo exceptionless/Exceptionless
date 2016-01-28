@@ -6,7 +6,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
-using Foundatio.Utility;
+using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(70)]

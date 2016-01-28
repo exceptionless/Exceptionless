@@ -444,22 +444,14 @@ namespace Exceptionless.Api.Controllers {
         /// You can create an event using query string parameters.
         /// 
         /// Feature usage named build with a duration of 10:
-        /// <code>
-        ///     /events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10
-        /// 
-        ///     OR
-        /// 
-        ///     /events/submit/usage?access_token=YOUR_API_KEY&source=build&value=10
-        /// </code>a
+        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10]]></code>
+        /// OR
+        /// <code><![CDATA[/events/submit/usage?access_token=YOUR_API_KEY&source=build&value=10]]></code>
         /// 
         /// Log with message, geo and extended data
-        /// <code>
-        ///     /events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true
-        /// 
-        ///     OR
-        /// 
-        ///     /events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true
-        /// </code>
+        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
+        /// OR
+        /// <code><![CDATA[/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
         /// </remarks>
         /// <param name="projectId">The identifier of the project.</param>
         /// <param name="version">The api version that should be used</param>

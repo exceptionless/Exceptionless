@@ -6,7 +6,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
-using Foundatio.Utility;
+using Foundatio.Repositories.Utility;
 using Nest;
 using Xunit;
 
