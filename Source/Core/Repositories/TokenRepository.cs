@@ -66,9 +66,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<Token>> GetByTypeAndOrganizationIdOrProjectIdAsync(TokenType type, string organizationId, string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var filter = Query<Token>.And(and => (
-                    Query<Token>.Term(t => t.OrganizationId, organizationId) || Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId)
-                ) && Query<Token>.Term(t => t.Type, type));
+            var filter = (Query<Token>.Term(t => t.OrganizationId, organizationId) || Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId)) && Query<Token>.Term(t => t.Type, type);
 
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
@@ -85,7 +83,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var filter = Query<Token>.And(and => (Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId)));
+            var filter = Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId);
 
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)

@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Utility {
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
+                .Query(q => _queryBuilder.BuildQuery<PersistentEvent>(filter))
                 .Aggregations(agg => agg
                     .Terms("terms", t => t
                         .Field(term)
@@ -173,7 +173,7 @@ namespace Exceptionless.Core.Utility {
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
+                .Query(q => _queryBuilder.BuildQuery<PersistentEvent>(filter))
                 .Aggregations(agg => agg
                     .Terms("terms", t => t
                         .Field(ev => ev.Date)
@@ -291,7 +291,7 @@ namespace Exceptionless.Core.Utility {
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
+                .Query(q => _queryBuilder.BuildQuery<PersistentEvent>(filter))
                 .Aggregations(agg => agg
                     .DateHistogram("timelime", tl => tl
                         .Field(ev => ev.Date)
@@ -394,7 +394,7 @@ namespace Exceptionless.Core.Utility {
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
+                .Query(q => _queryBuilder.BuildQuery<PersistentEvent>(filter))
                 .Aggregations(agg => agg
                     .DateHistogram("timelime", t => t
                         .Field(ev => ev.Date)

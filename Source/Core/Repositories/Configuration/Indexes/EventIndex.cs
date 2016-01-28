@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Map<PersistentEvent>(map => map
                         .Dynamic(DynamicMapping.Ignore)
                         .DynamicTemplates(dt => dt.DynamicTemplate("idx_reference", t => t.Match("*-r").Mapping(m => m.String(s => s.Index(FieldIndexOption.NotAnalyzed)))))
-                        .AllField(a => a.Enabled(false).Analyzer("standardplus").SearchAnalyzer("whitespace_lower"))
+                        .AllField(a => a.Enabled(false).Analyzer(STANDARDPLUS_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER))
                         .DisableSizeField(false) // Change to Size Field
                         .Transform(t => t.Add(a => a.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy)))
                         .Properties(p => p
@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                             .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
                             .Object<object>(f => f.Name("idx").Dynamic())
                             .Object<DataDictionary>(f => f.Name(e => e.Data).Path("just_name").Properties(p2 => p2
-                                .String(f2 => f2.Name(Event.KnownDataKeys.Version).IndexName("version").Index(FieldIndexOption.Analyzed).Analyzer("version_index").SearchAnalyzer("version_search"))
+                                .String(f2 => f2.Name(Event.KnownDataKeys.Version).IndexName("version").Index(FieldIndexOption.Analyzed).Analyzer(VERSION_INDEX_ANALYZER).SearchAnalyzer(VERSION_SEARCH_ANALYZER))
                                 .String(f2 => f2.Name(Event.KnownDataKeys.Level).IndexName("level").Index(FieldIndexOption.Analyzed))
                                 .String(f2 => f2.Name(Event.KnownDataKeys.SubmissionMethod).IndexName("submission").Index(FieldIndexOption.Analyzed))
                                  .Object<Location>(f2 => f2.Name(Event.KnownDataKeys.Location).Path("just_name").Properties(p3 => p3
@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                                     .String(f3 => f3.Name(r => r.Country).IndexName(Fields.PersistentEvent.LocationLevel2).Index(FieldIndexOption.NotAnalyzed))
                                     .String(f3 => f3.Name(r => r.Country).IndexName(Fields.PersistentEvent.LocationLocality).Index(FieldIndexOption.NotAnalyzed))))
                                 .Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Path("just_name").Properties(p3 => p3
-                                    .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName(Fields.PersistentEvent.IpAddress).Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer("comma_whitespace"))
+                                    .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName(Fields.PersistentEvent.IpAddress).Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer(COMMA_WHITESPACE_ANALYZER))
                                     .String(f3 => f3.Name(r => r.UserAgent).IndexName("useragent").Index(FieldIndexOption.Analyzed))
                                     .String(f3 => f3.Name(r => r.Path).IndexName("path").Index(FieldIndexOption.Analyzed).IncludeInAll())
                                     .Object<DataDictionary>(f3 => f3.Name(e => e.Data).Path("just_name").Properties(p4 => p4
@@ -83,50 +83,66 @@ namespace Exceptionless.Core.Repositories.Configuration {
                                     .String(f3 => f3.Name("all_messages").IndexName("error.message").Index(FieldIndexOption.Analyzed).IncludeInAll())
                                     .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Path("just_name").Properties(p4 => p4
                                         .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Path("just_name").Properties(p5 => p5
-                                            .String(f6 => f6.Name("ExceptionType").IndexName("error.targettype").Index(FieldIndexOption.Analyzed).Analyzer("typename").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.2)
+                                            .String(f6 => f6.Name("ExceptionType").IndexName("error.targettype").Index(FieldIndexOption.Analyzed).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2)
                                                 .Fields(fields => fields.String(ss => ss.Name("error.targettype.raw").Index(FieldIndexOption.NotAnalyzed))))
-                                            .String(f6 => f6.Name("Method").IndexName("error.targetmethod").Index(FieldIndexOption.Analyzed).Analyzer("typename").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.2))))))
-                                    .String(f3 => f3.Name("all_types").IndexName("error.type").Index(FieldIndexOption.Analyzed).Analyzer("typename").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.1))))
+                                            .String(f6 => f6.Name("Method").IndexName("error.targetmethod").Index(FieldIndexOption.Analyzed).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2))))))
+                                    .String(f3 => f3.Name("all_types").IndexName("error.type").Index(FieldIndexOption.Analyzed).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1))))
                                 .Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Path("just_name").Properties(p3 => p3
                                     .String(f3 => f3.Name("all_messages").IndexName("error.message").Index(FieldIndexOption.Analyzed).IncludeInAll())
                                     .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Path("just_name").Properties(p4 => p4
                                         .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Path("just_name").Properties(p5 => p5
-                                            .String(f6 => f6.Name("ExceptionType").IndexName("error.targettype").Index(FieldIndexOption.Analyzed).Analyzer("typename").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.2))))))
-                                    .String(f3 => f3.Name("all_types").IndexName("error.type").Index(FieldIndexOption.Analyzed).Analyzer("typename").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.1))))
+                                            .String(f6 => f6.Name("ExceptionType").IndexName("error.targettype").Index(FieldIndexOption.Analyzed).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2))))))
+                                    .String(f3 => f3.Name("all_types").IndexName("error.type").Index(FieldIndexOption.Analyzed).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1))))
                                 .Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Path("just_name").Properties(p3 => p3
-                                    .String(f3 => f3.Name(r => r.IpAddress).IndexName(Fields.PersistentEvent.IpAddress).Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer("comma_whitespace"))
+                                    .String(f3 => f3.Name(r => r.IpAddress).IndexName(Fields.PersistentEvent.IpAddress).Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer(COMMA_WHITESPACE_ANALYZER))
                                     .String(f3 => f3.Name(r => r.MachineName).IndexName("machine").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))
                                     .String(f3 => f3.Name(r => r.OSName).IndexName("os").Index(FieldIndexOption.Analyzed))
                                     .String(f3 => f3.Name(r => r.Architecture).IndexName("architecture").Index(FieldIndexOption.NotAnalyzed))))
                                 .Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Path("just_name").Properties(p3 => p3
                                     .String(f3 => f3.Name(r => r.Description).IndexName("user.description").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                                    .String(f3 => f3.Name(r => r.EmailAddress).IndexName(Fields.PersistentEvent.UserEmail).Index(FieldIndexOption.Analyzed).Analyzer("email").SearchAnalyzer("simple").IncludeInAll().Boost(1.1))))
+                                    .String(f3 => f3.Name(r => r.EmailAddress).IndexName(Fields.PersistentEvent.UserEmail).Index(FieldIndexOption.Analyzed).Analyzer(EMAIL_ANALYZER).SearchAnalyzer("simple").IncludeInAll().Boost(1.1))))
                                 .Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Path("just_name").Properties(p3 => p3
-                                    .String(f3 => f3.Name(r => r.Identity).IndexName(Fields.PersistentEvent.User).Index(FieldIndexOption.Analyzed).Analyzer("email").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.1)
+                                    .String(f3 => f3.Name(r => r.Identity).IndexName(Fields.PersistentEvent.User).Index(FieldIndexOption.Analyzed).Analyzer(EMAIL_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1)
                                         .Fields(fields => fields.String(ss => ss.Name(Fields.PersistentEvent.UserRaw).Index(FieldIndexOption.NotAnalyzed))))
                                     .String(f3 => f3.Name(r => r.Name).IndexName(Fields.PersistentEvent.UserName).Index(FieldIndexOption.Analyzed).IncludeInAll())))))
                         )));
         }
+        
+        private const string COMMA_WHITESPACE_ANALYZER = "comma_whitespace";
+        private const string EMAIL_ANALYZER = "email";
+        private const string VERSION_INDEX_ANALYZER = "version_index";
+        private const string VERSION_SEARCH_ANALYZER = "version_search";
+        private const string WHITESPACE_LOWERCASE_ANALYZER = "whitespace_lower";
+        private const string TYPENAME_ANALYZER = "typename";
+        private const string STANDARDPLUS_ANALYZER = "standardplus";
+        
+        private const string EMAIL_TOKEN_FILTER = "email";
+        private const string TYPENAME_TOKEN_FILTER = "typename";
+        private const string VERSION_TOKEN_FILTER = "version";
+        private const string VERSION_PAD1_TOKEN_FILTER = "version_pad1";
+        private const string VERSION_PAD2_TOKEN_FILTER = "version_pad2";
+        private const string VERSION_PAD3_TOKEN_FILTER = "version_pad3";
+        private const string VERSION_PAD4_TOKEN_FILTER = "version_pad4";
 
         private IAnalysis BuildAnalysisSettings() {
             return new Analysis {
                 Analyzers = new Analyzers {
-                    { "comma_whitespace", new PatternAnalyzer { Pattern = @"[,\s]+" } },
-                    { "email", new CustomAnalyzer { Tokenizer = "keyword", Filter = new [] { "email", "lowercase", "unique" } } },
-                    { "version_index", new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "version_pad1", "version_pad2", "version_pad3", "version_pad4", "version", "lowercase", "unique" } } },
-                    { "version_search", new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "version_pad1", "version_pad2", "version_pad3", "version_pad4", "lowercase" } } },
-                    { "whitespace_lower", new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "lowercase" } } },
-                    { "typename", new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "typename", "lowercase", "unique" } } },
-                    { "standardplus", new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "standard", "typename", "lowercase", "stop", "unique" } } }
+                    { COMMA_WHITESPACE_ANALYZER, new PatternAnalyzer { Pattern = @"[,\s]+" } },
+                    { EMAIL_ANALYZER, new CustomAnalyzer { Tokenizer = "keyword", Filter = new [] { EMAIL_TOKEN_FILTER, "lowercase", "unique" } } },
+                    { VERSION_INDEX_ANALYZER, new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { VERSION_PAD1_TOKEN_FILTER, VERSION_PAD2_TOKEN_FILTER, VERSION_PAD3_TOKEN_FILTER, VERSION_PAD4_TOKEN_FILTER, VERSION_TOKEN_FILTER, "lowercase", "unique" } } },
+                    { VERSION_SEARCH_ANALYZER, new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { VERSION_PAD1_TOKEN_FILTER, VERSION_PAD2_TOKEN_FILTER, VERSION_PAD3_TOKEN_FILTER, VERSION_PAD4_TOKEN_FILTER, "lowercase" } } },
+                    { WHITESPACE_LOWERCASE_ANALYZER, new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "lowercase" } } },
+                    { TYPENAME_ANALYZER, new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { TYPENAME_TOKEN_FILTER, "lowercase", "unique" } } },
+                    { STANDARDPLUS_ANALYZER, new CustomAnalyzer { Tokenizer = "whitespace", Filter = new [] { "standard", TYPENAME_TOKEN_FILTER, "lowercase", "stop", "unique" } } }
                 },
                 TokenFilters = new TokenFilters {
-                    { "email", new PatternCaptureTokenFilter { Patterns = new[] { @"(\w+)", @"(\p{L}+)", @"(\d+)", @"(.+)@", @"@(.+)" } } },
-                    { "typename", new PatternCaptureTokenFilter { Patterns = new[] { @"\.(\w+)" } } },
-                    { "version", new PatternCaptureTokenFilter { Patterns = new[] { @"^(\d+)\.", @"^(\d+\.\d+)", @"^(\d+\.\d+\.\d+)" } } },
-                    { "version_pad1", new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{1})(?=\.|$)", Replacement = @"$10000$2" } },
-                    { "version_pad2", new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{2})(?=\.|$)", Replacement = @"$1000$2" } },
-                    { "version_pad3", new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{3})(?=\.|$)", Replacement = @"$100$2" } },
-                    { "version_pad4", new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{4})(?=\.|$)", Replacement = @"$10$2" } }
+                    { EMAIL_TOKEN_FILTER, new PatternCaptureTokenFilter { Patterns = new[] { @"(\w+)", @"(\p{L}+)", @"(\d+)", @"(.+)@", @"@(.+)" } } },
+                    { TYPENAME_TOKEN_FILTER, new PatternCaptureTokenFilter { Patterns = new[] { @"\.(\w+)" } } },
+                    { VERSION_TOKEN_FILTER, new PatternCaptureTokenFilter { Patterns = new[] { @"^(\d+)\.", @"^(\d+\.\d+)", @"^(\d+\.\d+\.\d+)" } } },
+                    { VERSION_PAD1_TOKEN_FILTER, new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{1})(?=\.|$)", Replacement = @"$10000$2" } },
+                    { VERSION_PAD2_TOKEN_FILTER, new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{2})(?=\.|$)", Replacement = @"$1000$2" } },
+                    { VERSION_PAD3_TOKEN_FILTER, new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{3})(?=\.|$)", Replacement = @"$100$2" } },
+                    { VERSION_PAD4_TOKEN_FILTER, new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{4})(?=\.|$)", Replacement = @"$10$2" } }
                 }
             };
         }

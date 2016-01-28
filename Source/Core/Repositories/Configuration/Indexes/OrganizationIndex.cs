@@ -8,8 +8,6 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public class OrganizationIndex : IElasticIndex {
-        private const string KEYWORD_LOWERCASE = "keyword_lowercase";
-
         public int Version => 1;
         public static string Alias => Settings.Current.AppScopePrefix + "organizations";
         public string AliasName => Alias;
@@ -28,14 +26,23 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         public CreateIndexDescriptor CreateIndex(CreateIndexDescriptor idx) {
-            var keywordLowercaseAnalyzer = new CustomAnalyzer { Filter = new List<string> { "lowercase" }, Tokenizer = "keyword" };
-            return idx.Analysis(descriptor => descriptor.Analyzers(bases => bases.Add(KEYWORD_LOWERCASE, keywordLowercaseAnalyzer)))
-                      .AddMapping<Application>(GetApplicationMap)
-                      .AddMapping<Organization>(GetOrganizationMap)
-                      .AddMapping<Project>(GetProjectMap)
-                      .AddMapping<Models.Token>(GetTokenMap)
-                      .AddMapping<User>(GetUserMap)
-                      .AddMapping<WebHook>(GetWebHookMap);
+            return idx.Settings(s => s.Analysis(a => BuildAnalysisSettings()))
+                .Mappings(maps => maps
+                    .Map<Application>(GetApplicationMap)
+                    .Map<Organization>(GetOrganizationMap)
+                    .Map<Project>(GetProjectMap)
+                    .Map<Models.Token>(GetTokenMap)
+                    .Map<User>(GetUserMap)
+                    .Map<WebHook>(GetWebHookMap));
+        }
+
+        private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
+        private IAnalysis BuildAnalysisSettings() {
+            return new Analysis {
+                Analyzers = new Analyzers {
+                    { KEYWORD_LOWERCASE_ANALYZER, new CustomAnalyzer { Tokenizer = "keyword", Filter = new [] { "lowercase" } } },
+                }
+            };
         }
 
         private PutMappingDescriptor<Application> GetApplicationMap(PutMappingDescriptor<Application> map){
@@ -143,7 +150,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationIds).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.FullName).IndexName("name"))
-                    .String(f => f.Name(u => u.EmailAddress).IndexName(Fields.User.EmailAddress).Analyzer(KEYWORD_LOWERCASE))
+                    .String(f => f.Name(u => u.EmailAddress).IndexName(Fields.User.EmailAddress).Analyzer(KEYWORD_LOWERCASE_ANALYZER))
                     .String(f => f.Name(u => u.Password).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.Salt).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.PasswordResetToken).Index(FieldIndexOption.NotAnalyzed))

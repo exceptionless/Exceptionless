@@ -113,10 +113,10 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<Stack>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
-            var QueryContainer = Query<Stack>.DateRange(r => r.Field(s => s.LastOccurrence).GreaterThanOrEquals(utcStart).LessThanOrEquals(utcEnd));
+            var dateFilter = Query<Stack>.DateRange(r => r.Field(s => s.LastOccurrence).GreaterThanOrEquals(utcStart).LessThanOrEquals(utcEnd));
             var query = new ExceptionlessQuery()
                 .WithProjectId(projectId)
-                .WithElasticFilter(QueryContainer)
+                .WithElasticFilter(dateFilter)
                 .WithFilter(filter)
                 .WithSort(StackIndex.Fields.Stack.LastOccurrence, SortOrder.Descending)
                 .WithPaging(paging);
@@ -125,10 +125,10 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<Stack>> GetNewAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
-            var QueryContainer = Query<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart)) && Query<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
+            var dateFilter = Query<Stack>.DateRange(r => r.Field(s => s.FirstOccurrence).GreaterThanOrEquals(utcStart).LessThanOrEquals(utcEnd));
             var query = new ExceptionlessQuery()
                 .WithProjectId(projectId)
-                .WithElasticFilter(QueryContainer)
+                .WithElasticFilter(dateFilter)
                 .WithFilter(filter)
                 .WithSort(StackIndex.Fields.Stack.FirstOccurrence, SortOrder.Descending)
                 .WithPaging(paging);

@@ -92,7 +92,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
-            var filter = Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).Lower(utcCutoffDate));
+            var filter = Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcCutoffDate));
             return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithElasticFilter(filter), false);
         }
 
