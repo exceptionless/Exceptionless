@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Repositories {
         public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null) {
             var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && Query<PersistentEvent>.Missing(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]);
             if (createdBeforeUtc.Ticks > 0)
-                filter &= Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(createdBeforeUtc));
+                filter &= Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThanOrEquals(createdBeforeUtc));
 
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
