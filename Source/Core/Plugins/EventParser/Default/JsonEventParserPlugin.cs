@@ -6,7 +6,7 @@ using Exceptionless.Core.Models;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser {
-    [Priority(0)]
+    [Priority(10)]
     public class JsonEventParserPlugin : IEventParserPlugin {
         private readonly JsonSerializerSettings _settings;
 
@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
         }
 
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
-            if (!userAgent.StartsWith("exceptionless") && apiVersion < 2)
+            if (apiVersion < 2)
                 return null;
 
             var events = new List<PersistentEvent>();

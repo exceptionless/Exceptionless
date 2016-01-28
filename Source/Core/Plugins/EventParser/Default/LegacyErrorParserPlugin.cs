@@ -8,7 +8,7 @@ using Foundatio.Logging;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser {
-    [Priority(10)]
+    [Priority(20)]
     public class LegacyErrorParserPlugin : IEventParserPlugin {
         private readonly EventUpgraderPluginManager _manager;
         private readonly JsonSerializerSettings _settings;
@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
         }
 
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
-            if (!userAgent.StartsWith("exceptionless") && apiVersion != 1)
+            if (apiVersion != 1)
                 return null;
 
             try {

@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Plugins.EventParser.Raygun {
-    [Priority(20)]
+    [Priority(0)]
     public class JsonEventParserPlugin : IEventParserPlugin {
         private readonly JsonSerializerSettings _settings;
 
