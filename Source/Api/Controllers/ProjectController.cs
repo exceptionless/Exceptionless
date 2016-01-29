@@ -411,7 +411,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpPost]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
-        public async Task<IHttpActionResult> PostDataAsync(string id, string key, string value) {
+        public async Task<IHttpActionResult> PostDataAsync(string id, string key, [NakedBody]string value) {
             var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
