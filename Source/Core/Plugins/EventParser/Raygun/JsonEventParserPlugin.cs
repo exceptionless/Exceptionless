@@ -1,6 +1,7 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Plugins.EventParser.Raygun.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,20 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
         }
 
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
-            return null;
+            if (!(userAgent == "raygun" && apiVersion == 1))
+                return null;
+
+            var events = new List<PersistentEvent>();
+            RaygunModel raygunModel;
+
+            if (input.TryFromJson(out raygunModel, _settings)) {
+                // convert model to exceptionless
+
+                PersistentEvent ev = null;
+                events.Add(ev);
+            }
+
+            return events.Count > 0 ? events : null;
         }
     }
 }

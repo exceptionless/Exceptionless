@@ -254,6 +254,15 @@
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
     <Compile Include="Plugins\EventParser\Raygun\JsonEventParserPlugin.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Models\Details.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Models\Environment.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Models\Client.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Models\Error.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Models\RaygunModel.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Models\Request.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Models\Response.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Models\StackTrace.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Models\User.cs" />
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\60_LocationPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
@@ -553,9 +562,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Plugins\EventParser\Raygun\Models\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\Pegasus.3.1.2\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.3.1.2\build\Pegasus.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
