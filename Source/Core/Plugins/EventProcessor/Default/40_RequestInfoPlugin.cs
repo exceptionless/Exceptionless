@@ -88,8 +88,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     }
                 }
 
-                var botPatterns = context.Project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns) ? context.Project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList() : new List<string>();
-
+                var botPatterns = context.Project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList();
                 request.Data[RequestInfo.KnownDataKeys.IsBot] = info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns);
             }
         }
