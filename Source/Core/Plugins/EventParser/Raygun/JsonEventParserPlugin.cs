@@ -5,6 +5,7 @@ using Exceptionless.Core.Plugins.EventParser.Raygun.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,7 +26,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
             var events = new List<PersistentEvent>();
             RaygunModel raygunModel;
 
-            if (input.TryFromJson(out raygunModel, _settings)) {
+            if (input.TryFromJson(out raygunModel, null)) {
                 // convert model to exceptionless
 
                 PersistentEvent ev = null;
