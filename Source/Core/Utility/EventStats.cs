@@ -485,7 +485,7 @@ namespace Exceptionless.Core.Utility {
                    .IgnoreUnavailable()
                    .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
                    .Query(d => _queryBuilder.BuildQuery<PersistentEvent>(filter))
-                   .SortAscending(ev => ev.Date)
+                   .Sort(sort => sort.Ascending(ev => ev.Date))
                    .Take(1)).AnyContext();
 
             var firstEvent = result.Hits.FirstOrDefault();

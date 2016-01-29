@@ -64,7 +64,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IContractResolver>(() => contractResolver);
             container.RegisterSingleton<JsonSerializerSettings>(settings);
             container.RegisterSingleton<JsonSerializer>(JsonSerializer.Create(settings));
-            container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
+            container.RegisterSingleton<ISerializer>(() => new Foundatio.Serializer.JsonNetSerializer(settings));
 
             container.RegisterSingleton<IMetricsClient, InMemoryMetricsClient>();
 

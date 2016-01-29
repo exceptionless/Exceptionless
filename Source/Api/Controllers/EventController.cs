@@ -28,6 +28,7 @@ using Foundatio.Queues;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 using Newtonsoft.Json;
+using Fields = Exceptionless.Core.Repositories.Configuration.EventIndex.Fields.PersistentEvent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
@@ -210,7 +211,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync($"project:{projectId}", filter, sort, time, offset, mode, page, limit);
+            return await GetInternalAsync($"{Fields.ProjectId}:{projectId}", filter, sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
@@ -279,7 +280,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync($"project:{projectId}", String.Concat("reference:", referenceId), null, null, offset, mode, page, limit);
+            return await GetInternalAsync($"{Fields.ProjectId}:{projectId}", $"{Fields.ReferenceId}:{referenceId}", null, null, offset, mode, page, limit);
         }
 
         /// <summary>
@@ -322,7 +323,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync($"project:{projectId}", $"ref.session:{sessionId} {filter}", sort, time, offset, mode, page, limit, true);
+            return await GetInternalAsync($"{Fields.ProjectId}:{projectId}", $"ref.session:{sessionId} {filter}", sort, time, offset, mode, page, limit, true);
         }
 
         /// <summary>
@@ -363,7 +364,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
             
-            return await GetInternalAsync($"project:{projectId}", $"type:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit, true);
+            return await GetInternalAsync($"{Fields.ProjectId}:{projectId}", $"{Fields.Type}:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit, true);
         }
         
         /// <summary>

@@ -23,6 +23,7 @@ using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
 using Newtonsoft.Json.Linq;
+using Fields = Exceptionless.Core.Repositories.Configuration.StackIndex.Fields.Stack;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stacks")]
@@ -593,7 +594,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync(String.Concat("project:", projectId), filter, "-first", String.Concat("first|", time), offset, mode, page, limit);
+            return await GetInternalAsync($"{Fields.ProjectId}:{projectId}", filter, "-first", String.Concat("first|", time), offset, mode, page, limit);
         }
 
         /// <summary>
@@ -631,7 +632,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync(String.Concat("project:", projectId), filter, "-last", String.Concat("last|", time), offset, mode, page, limit);
+            return await GetInternalAsync($"{Fields.ProjectId}:{projectId}", filter, "-last", String.Concat("last|", time), offset, mode, page, limit);
         }
 
         /// <summary>
@@ -715,7 +716,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await FrequentInternalAsync(String.Concat("project:", projectId), filter, time, offset, mode, page, limit);
+            return await FrequentInternalAsync($"{Fields.ProjectId}:{projectId}", filter, time, offset, mode, page, limit);
         }
 
         private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, TimeSpan offset, DateTime utcStart, DateTime utcEnd) {

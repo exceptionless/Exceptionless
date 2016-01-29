@@ -92,7 +92,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Newtonsoft.Json.8.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\packages\Newtonsoft.Json.8.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Nito.AsyncEx, Version=3.0.1.0, Culture=neutral, processorArchitecture=MSIL">
@@ -296,10 +296,6 @@
     <ProjectReference Include="..\..\..\Foundatio.Repositories\src\Core\Foundatio.Repositories.csproj">
       <Project>{f5b6c2b5-485f-4a4b-8e00-d5f77676cd6e}</Project>
       <Name>Foundatio.Repositories</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Foundatio.Repositories\src\Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj">
-      <Project>{3bfbd4c1-3f2c-46a4-9400-2cb9803644be}</Project>
-      <Name>Foundatio.Repositories.Elasticsearch</Name>
     </ProjectReference>
     <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
