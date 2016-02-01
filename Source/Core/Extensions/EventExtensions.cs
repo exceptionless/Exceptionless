@@ -169,6 +169,13 @@ namespace Exceptionless {
             ev.Data[Event.KnownDataKeys.EnvironmentInfo] = environmentInfo;
         }
 
+        public static void SetError(this Event ev, Error error) {
+            if (error == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.Error] = error;
+        }
+
         /// <summary>
         /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
         /// </summary>

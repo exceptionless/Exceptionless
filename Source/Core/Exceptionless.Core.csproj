@@ -254,6 +254,11 @@
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
     <Compile Include="Plugins\EventParser\Raygun\JsonEventParserPlugin.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Mappers\EnvironmentInfoMapping.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Mappers\ErrorMapping.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Mappers\PersistentEventMapping.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Mappers\RequestInfoMapping.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Models\Cookie.cs" />
     <Compile Include="Plugins\EventParser\Raygun\Models\Details.cs" />
     <Compile Include="Plugins\EventParser\Raygun\Models\Environment.cs" />
     <Compile Include="Plugins\EventParser\Raygun\Models\Client.cs" />

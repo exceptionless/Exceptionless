@@ -27,9 +27,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
             RaygunModel raygunModel;
 
             if (input.TryFromJson(out raygunModel, null)) {
-                // convert model to exceptionless
-
-                PersistentEvent ev = null;
+                PersistentEvent ev = Mappers.PersistentEventMapping.Map(raygunModel);
                 events.Add(ev);
             }
 
