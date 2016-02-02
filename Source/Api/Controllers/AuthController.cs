@@ -124,7 +124,7 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(model.InviteToken))
                 await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
             
-            await _cacheClient.RemoveAllAsync(new [] { userLoginAttemptsCacheKey, ipLoginAttemptsCacheKey});
+            await _cacheClient.RemoveAsync(userLoginAttemptsCacheKey);
 
             Logger.Info().Message("\"{0}\" logged in.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
             return Ok(new TokenResult { Token = await GetTokenAsync(user) });
@@ -167,10 +167,8 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
             }
 
-            if (user != null) {
-                Logger.Error().Message("Signup failed for \"{0}\": A user already exists.", user.EmailAddress).Tag("Signup").Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
-                return BadRequest("A user already exists with this email address.");
-            }
+            if (user != null)
+                return await LoginAsync(model);
 
             user = new User {
                 IsActive = true,
