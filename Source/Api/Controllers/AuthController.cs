@@ -325,7 +325,7 @@ namespace Exceptionless.Api.Controllers {
             var user = await _userRepository.GetByEmailAddressAsync(email);
             if (user == null) {
                 Logger.Error().Message("Forgot password failed for \"{0}\": No user was found.", email).Tag("Forgot Password").Identity(email).Property("Email Address", email).SetActionContext(ActionContext).Write();
-                return BadRequest("No user was found with this Email Address.");
+                return Ok();
             }
 
             user.CreatePasswordResetToken();

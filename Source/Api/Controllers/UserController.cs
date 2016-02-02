@@ -123,10 +123,13 @@ namespace Exceptionless.Api.Controllers {
             if (String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
 
+            user.ResetPasswordResetToken();
             user.EmailAddress = email;
             user.IsEmailAddressVerified = user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.OrdinalIgnoreCase)) > 0;
             if (!user.IsEmailAddressVerified)
                 user.CreateVerifyEmailAddressToken();
+            else
+                user.ResetVerifyEmailAddressToken();
 
             try {
                 await _repository.SaveAsync(user, true);
