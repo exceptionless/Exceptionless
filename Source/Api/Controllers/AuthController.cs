@@ -170,6 +170,17 @@ namespace Exceptionless.Api.Controllers {
             if (user != null)
                 return await LoginAsync(model);
 
+            string ipSignupAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:signup:attempts";
+            bool hasValidInviteToken = !String.IsNullOrWhiteSpace(model.InviteToken) && await _organizationRepository.GetByInviteTokenAsync(model.InviteToken) != null;
+            if (!hasValidInviteToken) {
+                // Only allow 10 signups per hour period by a single ip.
+                long ipSignupAttempts = await _cacheClient.IncrementAsync(ipSignupAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+                if (ipSignupAttempts > 10) {
+                    Logger.Error().Message($"Signup denied for \"{model.Email}\" for the {ipSignupAttempts} time.").Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
+                    return BadRequest();
+                }
+            }
+
             user = new User {
                 IsActive = true,
                 FullName = model.Name,
@@ -194,8 +205,8 @@ namespace Exceptionless.Api.Controllers {
                 Logger.Error().Exception(ex).Critical().Message("Signup failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Signup").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 return BadRequest("An error occurred.");
             }
-
-            if (!String.IsNullOrEmpty(model.InviteToken))
+            
+            if (hasValidInviteToken)
                 await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
 
             if (!user.IsEmailAddressVerified)
@@ -302,8 +313,12 @@ namespace Exceptionless.Api.Controllers {
 
             if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return StatusCode(HttpStatusCode.Created);
+            
+            // Only allow 3 checks attempts per hour period by a single ip.
+            string ipEmailAddressAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:email:attempts";
+            long attempts = await _cacheClient.IncrementAsync(ipEmailAddressAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromHours(1)));
 
-            if (await _userRepository.GetByEmailAddressAsync(email) == null)
+            if (attempts > 3 || await _userRepository.GetByEmailAddressAsync(email) == null)
                 return StatusCode(HttpStatusCode.NoContent);
 
             return StatusCode(HttpStatusCode.Created);
@@ -527,7 +542,7 @@ namespace Exceptionless.Api.Controllers {
                 return;
 
             var organization = await _organizationRepository.GetByInviteTokenAsync(token);
-            var invite = organization.GetInvite(token);
+            var invite = organization?.GetInvite(token);
             if (organization == null || invite == null) {
                 Logger.Info().Message("Unable to add the invited user \"{0}\". Invalid invite token: {1}", user.EmailAddress, token).Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 return;
