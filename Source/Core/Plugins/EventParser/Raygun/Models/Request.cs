@@ -1,5 +1,4 @@
-﻿using AutoMapper.Internal;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,16 +16,36 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Models {
 
         public string IPAddress { get; set; }
 
-        public IDictionary QueryString { get; set; }
+        public IDictionary<string, string> QueryString { get; set; }
 
         public IList Cookies { get; set; }
 
-        public IDictionary Form { get; set; }
+        public IDictionary<string, string> Form { get; set; }
 
-        public IDictionary Data { get; set; }
+        public IDictionary<string, string> Data { get; set; }
 
-        public IDictionary Headers { get; set; }
+        public IDictionary<string, string> Headers { get; set; }
 
         public string RawData { get; set; }
+
+        public string GetDataValue(string key) {
+            var isValueExists = this.Data.Any(x => x.Key.ToUpperInvariant() == key);
+
+            if (isValueExists) {
+                return this.Data.Single(x => x.Key.ToUpperInvariant() == key).Value;
+            }
+
+            return null;
+        }
+
+        public string GetHeaderValue(string key) {
+            var isValueExists = this.Headers.Any(x => x.Key.ToUpperInvariant() == key);
+
+            if (isValueExists) {
+                return this.Headers.Single(x => x.Key.ToUpperInvariant() == key).Value;
+            }
+
+            return null;
+        }
     }
 }

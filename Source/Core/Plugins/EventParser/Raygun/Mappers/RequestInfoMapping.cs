@@ -23,6 +23,25 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
             requestInfo.Host = raygunRequest.HostName;
             requestInfo.HttpMethod = raygunRequest.HttpMethod;
             requestInfo.Cookies = MapCookies(raygunRequest.Cookies);
+            requestInfo.Referrer = raygunRequest.GetDataValue("HTTP_REFERER");
+            requestInfo.UserAgent = raygunRequest.GetDataValue("HTTP_USER_AGENT") ?? raygunRequest.GetHeaderValue("USER-AGENT");
+            requestInfo.Path = raygunRequest.GetDataValue("PATH_INFO");
+            requestInfo.QueryString = raygunRequest.QueryString as Dictionary<string, string>;
+
+            var serverPort = raygunRequest.GetDataValue("SERVER_PORT");
+
+            if (serverPort != null) {
+                requestInfo.Port = int.Parse(serverPort);
+            }
+
+            var https = raygunRequest.GetDataValue("HTTPS");
+
+            if (https != null && https.ToUpperInvariant() == "ON") {
+                requestInfo.IsSecure = true;
+            }
+            
+            requestInfo.Data = null;
+            requestInfo.PostData = raygunRequest.Form;  
 
             return requestInfo;
         }
