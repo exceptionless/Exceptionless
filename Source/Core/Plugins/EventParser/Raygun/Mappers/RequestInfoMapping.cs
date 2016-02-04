@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
                 requestInfo.IsSecure = true;
             }
             
-            requestInfo.Data = null;
+            //requestInfo.Data;
             requestInfo.PostData = raygunRequest.Form;  
 
             return requestInfo;
