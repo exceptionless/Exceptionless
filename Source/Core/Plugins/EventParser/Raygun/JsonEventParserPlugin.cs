@@ -12,10 +12,10 @@ using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Plugins.EventParser.Raygun {
     [Priority(0)]
-    public class JsonEventParserPlugin : IEventParserPlugin {
+    public class RaygunEventParserPlugin : IEventParserPlugin {
         private readonly JsonSerializerSettings _settings;
 
-        public JsonEventParserPlugin(JsonSerializerSettings settings) {
+        public RaygunEventParserPlugin(JsonSerializerSettings settings) {
             _settings = settings;
         }
 
