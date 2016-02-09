@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Geo {
             if (!Latitude.HasValue || !Longitude.HasValue)
                 return null;
 
-            return Latitude.GetValueOrDefault().ToString("#0.0#####") + "," + Longitude.GetValueOrDefault().ToString("#0.0#####");
+            return Latitude.GetValueOrDefault().ToString("#0.0#######") + "," + Longitude.GetValueOrDefault().ToString("#0.0#######");
         }
     }
 
