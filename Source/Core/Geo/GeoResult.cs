@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Geo {
 
         public static bool TryParse(string input, out GeoResult result) {
             result = null;
-            if (String.IsNullOrEmpty(input) || !input.Contains(","))
+            if (String.IsNullOrEmpty(input))
                 return false;
 
             string[] parts = input.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
@@ -58,7 +58,10 @@ namespace Exceptionless.Core.Geo {
         }
 
         public override string ToString() {
-            return Latitude + "," + Longitude;
+            if (!Latitude.HasValue || !Longitude.HasValue)
+                return null;
+
+            return Latitude.GetValueOrDefault().ToString("#0.0#####") + "," + Longitude.GetValueOrDefault().ToString("#0.0#####");
         }
     }
 
