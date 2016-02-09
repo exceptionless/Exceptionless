@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             var data = context.Event.Data;
             if (!data.ContainsKey(Event.KnownDataKeys.ManualStackingKey)
                 || data[Event.KnownDataKeys.ManualStackingKey] == null)
-                return Task.CompletedTask; ;
+                return Task.CompletedTask;
 
             context.StackSignatureData.AddItemIfNotEmpty(nameof(Event.KnownDataKeys.ManualStackingKey), data[Event.KnownDataKeys.ManualStackingKey].ToString());
 

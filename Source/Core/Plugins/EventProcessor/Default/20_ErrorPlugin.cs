@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 return Task.CompletedTask;
 
             if (String.IsNullOrWhiteSpace(context.Event.Message))
-                context.Event.Message = error.Message;            
+                context.Event.Message = error.Message;
 
             string[] commonUserMethods = { "DataContext.SubmitChanges", "Entities.SaveChanges" };
             if (context.HasProperty("CommonMethods"))
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
 
-            if (context.StackSignatureData.Count > 0)
+            if (context.StackSignatureData.ContainsKey(nameof(Event.KnownDataKeys.ManualStackingKey)))
                 return Task.CompletedTask;
 
             foreach (var key in signature.SignatureInfo.Keys)
