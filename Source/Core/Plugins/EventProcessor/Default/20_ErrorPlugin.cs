@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
 
-            if (context.StackSignatureData.ContainsKey(nameof(Event.KnownDataKeys.ManualStackingKey)))
+            if (context.StackSignatureData.Count > 0)
                 return Task.CompletedTask;
 
             foreach (var key in signature.SignatureInfo.Keys)
