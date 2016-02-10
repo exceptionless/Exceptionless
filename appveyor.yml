@@ -5,7 +5,7 @@ clone_depth: 2
 
 environment:
   JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
-  ES_VERSION: 1.7.3
+  ES_VERSION: 1.7.5
   API_URL: https://#{api.hostheader}
   BUILD_REPO_URL:
     secure: vuYBT6D5arel88+Py/H3nnMPd4hInIXvr2cwhJaZSSSvJnmg+9sX1P5+bTWaJskYpGztHVMg0Iq7hgUCMKjh23w8WBrutLiUsixRE0LBjroIVJaRsYG1okSko0fNKVOCUMQAue0lh2sYqQ/TQlDbwg==
@@ -36,7 +36,7 @@ build:
 
 before_test:
   - ps: .\Libraries\Start-ElasticSearch.ps1
-  #- ps: .\Libraries\Enable-Rdp.ps1
+  #- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 test:
   assemblies:
