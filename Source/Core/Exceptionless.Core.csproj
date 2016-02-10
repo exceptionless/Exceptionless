@@ -289,9 +289,9 @@
     <Compile Include="Extensions\QueueExtensions.cs" />
     <Compile Include="Extensions\StorageExtensions.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
-    <Compile Include="Geo\IGeoIPService.cs" />
+    <Compile Include="Geo\IGeoIpService.cs" />
     <Compile Include="Geo\GeoResult.cs" />
-    <Compile Include="Geo\MaxMindGeoIPService.cs" />
+    <Compile Include="Geo\MaxMindGeoIpService.cs" />
     <Compile Include="Jobs\EventNotificationsJob.cs" />
     <Compile Include="Jobs\WebHooksJob.cs" />
     <Compile Include="Plugins\EventProcessor\Default\50_GeoPlugin.cs" />
