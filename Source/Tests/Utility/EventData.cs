@@ -6,21 +6,21 @@ using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Tests.Utility {
     internal static class EventData {
-        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null) {
+        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null, decimal? value = null) {
             for (int i = 0; i < count; i++)
-                yield return GenerateEvent(organizationIds, projectIds, stackIds, startDate, endDate, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden, maxErrorNestingLevel: maxErrorNestingLevel, referenceIds: referenceIds);
+                yield return GenerateEvent(organizationIds, projectIds, stackIds, startDate, endDate, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden, maxErrorNestingLevel: maxErrorNestingLevel, referenceIds: referenceIds, value: value);
         }
 
-        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null) {
+        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null, decimal? value = null) {
             for (int i = 0; i < count; i++)
-                yield return GenerateEvent(organizationId, projectId, stackId, startDate, endDate, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden, maxErrorNestingLevel: maxErrorNestingLevel, referenceId: referenceId);
+                yield return GenerateEvent(organizationId, projectId, stackId, startDate, endDate, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden, maxErrorNestingLevel: maxErrorNestingLevel, referenceId: referenceId, value: value);
         }
 
         public static PersistentEvent GenerateSampleEvent() {
             return GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, maxErrorNestingLevel: 4);
         }
 
-        public static PersistentEvent GenerateEvent(string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null, string type = null, string sessionId = null, string userIdentity = null) {
+        public static PersistentEvent GenerateEvent(string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null, string type = null, string sessionId = null, string userIdentity = null, decimal? value = null) {
             return GenerateEvent(
                     organizationId != null ? new[] { organizationId } : null,
                     projectId != null ? new[] { projectId } : null,
@@ -29,15 +29,16 @@ namespace Exceptionless.Tests.Utility {
                     referenceId != null ? new[] { referenceId } : null,
                     type,
                     sessionId,
-                    userIdentity
+                    userIdentity,
+                    value
                 );
         }
         
-        public static PersistentEvent GenerateSessionStartEvent(DateTimeOffset occurrenceDate, string sessionId = null, string userIdentity = null) {
-            return GenerateEvent(projectIds: new string[0], type: Event.KnownTypes.Session, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false);
+        public static PersistentEvent GenerateSessionStartEvent(DateTimeOffset occurrenceDate, string sessionId = null, string userIdentity = null, decimal? value = null) {
+            return GenerateEvent(projectIds: new string[0], type: Event.KnownTypes.Session, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false, value: value);
         }
 
-        public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null, string type = null, string sessionId = null,  string userIdentity = null) {
+        public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null, string type = null, string sessionId = null,  string userIdentity = null, decimal? value = null) {
             if (!startDate.HasValue || startDate > DateTimeOffset.Now.AddHours(1))
                 startDate = DateTimeOffset.Now.AddDays(-30);
             if (!endDate.HasValue || endDate > DateTimeOffset.Now.AddHours(1))
@@ -48,6 +49,7 @@ namespace Exceptionless.Tests.Utility {
                 ProjectId = projectIds.Random(TestConstants.ProjectId),
                 ReferenceId = referenceIds.Random(),
                 Date = occurrenceDate ?? RandomData.GetDateTimeOffset(startDate, endDate),
+                Value = value ?? RandomData.GetDecimal(),
                 IsFixed = isFixed,
                 IsHidden = isHidden,
                 StackId = stackIds.Random()
@@ -90,7 +92,7 @@ namespace Exceptionless.Tests.Utility {
             }
 
             if (ev.IsSessionStart())
-                ev.Value = 0;
+                ev.value = null;
 
             return ev;
         }
