@@ -40,19 +40,19 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 if (request == null)
                     continue;
 
-                AddClientIPAddress(request, context.EventPostInfo?.IpAddress);
+                AddClientIpAddress(request, context.EventPostInfo?.IpAddress);
                 await SetBrowserOsAndDeviceFromUserAgent(request, context);
                 
                 context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
             }
         }
 
-        private void AddClientIPAddress(RequestInfo request, string clientIPAddress) {
-            if (String.IsNullOrEmpty(clientIPAddress))
+        private void AddClientIpAddress(RequestInfo request, string clientIpAddress) {
+            if (String.IsNullOrEmpty(clientIpAddress))
                 return;
 
-            if (clientIPAddress.IsLocalHost())
-                clientIPAddress = "127.0.0.1";
+            if (clientIpAddress.IsLocalHost())
+                clientIpAddress = "127.0.0.1";
 
             var ips = (request.ClientIpAddress ?? String.Empty)
                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -60,8 +60,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 .Where(ip => !ip.IsLocalHost())
                 .ToList();
 
-            if (ips.Count == 0 || !clientIPAddress.IsLocalHost())
-                ips.Add(clientIPAddress);
+            if (ips.Count == 0 || !clientIpAddress.IsLocalHost())
+                ips.Add(clientIpAddress);
 
             request.ClientIpAddress = ips.Distinct().ToDelimitedString();
         }
