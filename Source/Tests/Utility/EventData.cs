@@ -92,7 +92,7 @@ namespace Exceptionless.Tests.Utility {
             }
 
             if (ev.IsSessionStart())
-                ev.value = null;
+                ev.Value = null;
 
             return ev;
         }

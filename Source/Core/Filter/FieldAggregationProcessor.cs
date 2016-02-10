@@ -1,11 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exceptionless.Core.Extensions;
-using Exceptionless.LuceneQueryParser;
-using Exceptionless.LuceneQueryParser.Nodes;
-using Exceptionless.LuceneQueryParser.Visitor;
-using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Filter {
     public class FieldAggregationProcessor {
@@ -57,11 +52,15 @@ namespace Exceptionless.Core.Filter {
 
             // Rules
             if (result.Aggregations.Count > 10)
-                return new FieldAggregationsResult { Message = "Too many aggregations." };
+                return new FieldAggregationsResult { Message = "Aggregation count exceeded" };
 
             // Duplicate aggregations
             if (result.Aggregations.Count != aggregations.Length)
                 return new FieldAggregationsResult { Message = "Duplicate aggregation detected." };
+
+            // Distinct queries are expensive.
+            if (result.Aggregations.Count(a => a.Type == FieldAggregationType.Distinct) > 1)
+                return new FieldAggregationsResult { Message = "Distinct aggregation count exceeded" };
 
             // Only allow fields that are numeric or have high commonality.
             if (result.Aggregations.Any(a => !_allowedNumericFields.Contains(a.Field)))
