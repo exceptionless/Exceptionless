@@ -9,7 +9,10 @@ index.translog.flush_threshold_size: 1gb
 #path.work: /path/to/work
 #path.logs: /mnt/data/log
 bootstrap.mlockall: true
-script.disable_dynamic: false
+#script.disable_dynamic: false
+#ElasticSearch 2.2 settings:
+script.inline: on
+script.indexed: on
 #gateway.expected_nodes: 3
 discovery.zen.ping.multicast.enabled: false
 #discovery.zen.minimum_master_nodes: 2
