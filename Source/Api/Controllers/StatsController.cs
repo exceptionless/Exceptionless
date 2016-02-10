@@ -170,21 +170,21 @@ namespace Exceptionless.Api.Controllers {
 
         // stats/numbers?filter=type:session&fields=avg:value,distinct:value,sum:users,max:value,min:value,last:value   // session stats
         // stats/timeline?filter=type:session&fields=avg:value,sum:value,distinct:data.blah  // session term stats
-       
+
         // fields:geo:geo,avg:value [value] // if query or field is bad we tell them to go away.
         // fields:avg:value,avg:value,sum:value // this is an error.
-           
-            //only allow numeric fields for avg, sum, max, min..
 
-            // only allow value field 
+        //only allow numeric fields for avg, sum, max, min..
 
-            // only allow 10 things total and only allow one of those to have distinct...
-            // only allow distinct on specific fields that have a high commonality.
+        // only allow value field 
+
+        // only allow 10 things total and only allow one of those to have distinct...
+        // only allow distinct on specific fields that have a high commonality.
 
         /// <summary>
-        /// Get all
+        /// Gets a list of numbers based on the passed in fields.
         /// </summary>
-        /// <param name="fields">Example: avg:value count:value sum:value</param>
+        /// <param name="fields">A comma delimited list of values you want returned. Example: avg:value,distinct:value,sum:users,max:value,min:value,last:value</param>
         /// <param name="filter">A filter that controls what data is returned from the server.</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
@@ -196,9 +196,9 @@ namespace Exceptionless.Api.Controllers {
         }
 
         /// <summary>
-        /// 
+        /// Gets a timeline of data with buckets that contain list of numbers based on the passed in fields.
         /// </summary>
-        /// <param name="fields">Example: avg:value count:value sum:value</param>
+        /// <param name="fields">A comma delimited list of values you want returned. Example: avg:value,distinct:value,sum:users,max:value,min:value,last:value</param>
         /// <param name="filter">A filter that controls what data is returned from the server.</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
