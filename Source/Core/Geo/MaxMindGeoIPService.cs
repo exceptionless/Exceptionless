@@ -10,7 +10,7 @@ using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
 
 namespace Exceptionless.Core.Geo {
-    public class MindMaxGeoIPService : IGeoIPService, IDisposable {
+    public class MaxMindGeoIPService : IGeoIPService, IDisposable {
         internal const string GEO_IP_DATABASE_PATH = "GeoLite2-City.mmdb";
 
         private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 250 };
@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Geo {
         private DateTime? _databaseLastChecked;
         
 
-        public MindMaxGeoIPService(IFileStorage storage) {
+        public MaxMindGeoIPService(IFileStorage storage) {
             _storage = storage;
         }
 

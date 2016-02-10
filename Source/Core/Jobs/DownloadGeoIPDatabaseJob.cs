@@ -27,9 +27,9 @@ namespace Exceptionless.Core.Jobs {
         
         protected override async Task<JobResult> RunInternalAsync(JobRunContext context) {
             try {
-                if (await _storage.ExistsAsync(MindMaxGeoIPService.GEO_IP_DATABASE_PATH).AnyContext()) {
+                if (await _storage.ExistsAsync(MaxMindGeoIPService.GEO_IP_DATABASE_PATH).AnyContext()) {
                     Logger.Info().Message("Deleting existing GeoIP database.").Write();
-                    await _storage.DeleteFileAsync(MindMaxGeoIPService.GEO_IP_DATABASE_PATH, context.CancellationToken).AnyContext();
+                    await _storage.DeleteFileAsync(MaxMindGeoIPService.GEO_IP_DATABASE_PATH, context.CancellationToken).AnyContext();
                 }
 
                 Logger.Info().Message("Downloading GeoIP database.").Write();
@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Jobs {
 
                 Logger.Info().Message("Extracting GeoIP database").Write();
                 using (GZipStream decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync().AnyContext(), CompressionMode.Decompress))
-                    await _storage.SaveFileAsync(MindMaxGeoIPService.GEO_IP_DATABASE_PATH, decompressionStream, context.CancellationToken).AnyContext();
+                    await _storage.SaveFileAsync(MaxMindGeoIPService.GEO_IP_DATABASE_PATH, decompressionStream, context.CancellationToken).AnyContext();
             } catch (Exception ex) {
                 Logger.Error().Exception(ex).Message("An error occurred while downloading the GeoIP database.").Write();
                 return JobResult.FromException(ex);

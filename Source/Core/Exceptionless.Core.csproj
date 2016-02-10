@@ -291,7 +291,7 @@
     <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="Geo\IGeoIPService.cs" />
     <Compile Include="Geo\GeoResult.cs" />
-    <Compile Include="Geo\MindMaxGeoIpService.cs" />
+    <Compile Include="Geo\MaxMindGeoIPService.cs" />
     <Compile Include="Jobs\EventNotificationsJob.cs" />
     <Compile Include="Jobs\WebHooksJob.cs" />
     <Compile Include="Plugins\EventProcessor\Default\50_GeoPlugin.cs" />

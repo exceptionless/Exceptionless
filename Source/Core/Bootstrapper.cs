@@ -128,7 +128,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<ITokenRepository, TokenRepository>();
             container.RegisterSingleton<IApplicationRepository, ApplicationRepository>();
 
-            container.RegisterSingleton<IGeoIPService, MindMaxGeoIPService>();
+            container.RegisterSingleton<IGeoIPService, MaxMindGeoIPService>();
             container.RegisterSingleton<IGeocodeService, NullGeocodeService>();
 
             container.Register(typeof(IValidator<>), new[] { typeof(Bootstrapper).Assembly }, Lifestyle.Singleton);

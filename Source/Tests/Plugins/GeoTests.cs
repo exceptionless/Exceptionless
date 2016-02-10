@@ -30,14 +30,14 @@ namespace Exceptionless.Api.Tests.Plugins {
             var dataDirectory = PathHelper.ExpandPath(".\\");
             var storage = new FolderFileStorage(dataDirectory);
 
-            if (!await storage.ExistsAsync(MindMaxGeoIPService.GEO_IP_DATABASE_PATH)) {
+            if (!await storage.ExistsAsync(MaxMindGeoIPService.GEO_IP_DATABASE_PATH)) {
                 var job = new DownloadGeoIPDatabaseJob(new InMemoryCacheClient(), storage);
                 var result = await job.RunAsync();
                 Assert.NotNull(result);
                 Assert.True(result.IsSuccess);
             }
 
-            return _service = new MindMaxGeoIPService(storage);
+            return _service = new MaxMindGeoIPService(storage);
         }
         
         [Fact]
