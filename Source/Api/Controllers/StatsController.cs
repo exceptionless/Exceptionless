@@ -164,23 +164,7 @@ namespace Exceptionless.Api.Controllers {
 
             return Ok(result);
         }
-
-        // timeline end point.. (1) can do average, count, sum.
-        // average, count (aka cardinality), sum end point.. (3)
-
-        // stats/numbers?filter=type:session&fields=avg:value,distinct:value,sum:users,max:value,min:value,last:value   // session stats
-        // stats/timeline?filter=type:session&fields=avg:value,sum:value,distinct:data.blah  // session term stats
-
-        // fields:geo:geo,avg:value [value] // if query or field is bad we tell them to go away.
-        // fields:avg:value,avg:value,sum:value // this is an error.
-
-        //only allow numeric fields for avg, sum, max, min..
-
-        // only allow value field 
-
-        // only allow 10 things total and only allow one of those to have distinct...
-        // only allow distinct on specific fields that have a high commonality.
-
+        
         /// <summary>
         /// Gets a list of numbers based on the passed in fields.
         /// </summary>
@@ -190,9 +174,35 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         [HttpGet]
         [Route]
-        [ResponseType(typeof(EventStatsResult))]
+        [ResponseType(typeof(NumbersStatsResult))]
         public async Task<IHttpActionResult> GetNumbersAsync(string fields, string filter = null, string time = null, string offset = null) {
-            return Ok();
+            var fieldAggregationsResult = FieldAggregationProcessor.Process(fields);
+            if (!fieldAggregationsResult.IsValid)
+                return BadRequest(fieldAggregationsResult.Message);
+
+            var processResult = QueryProcessor.Process(filter);
+            if (!processResult.IsValid)
+                return BadRequest(processResult.Message);
+            
+            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
+
+            NumbersStatsResult result;
+            try {
+                var timeInfo = GetTimeInfo(time, offset);
+                result = await _stats.GetNumbersStatsAsync(fieldAggregationsResult.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
+            } catch (ApplicationException ex) {
+                Logger.Error().Exception(ex)
+                    .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = filter, Time = time, Offset = offset })
+                    .Tag("Search")
+                    .Identity(ExceptionlessUser.EmailAddress)
+                    .Property("User", ExceptionlessUser)
+                    .SetActionContext(ActionContext)
+                    .Write();
+
+                return BadRequest("An error has occurred. Please check your search filter.");
+            }
+
+            return Ok(result);
         }
 
         /// <summary>
@@ -204,9 +214,35 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         [HttpGet]
         [Route("timeline")]
-        [ResponseType(typeof(EventStatsResult))]
+        [ResponseType(typeof(NumbersTimelineStatsResult))]
         public async Task<IHttpActionResult> GetTimelineAsync(string fields, string filter = null, string time = null, string offset = null) {
-            return Ok();
+            var fieldAggregationsResult = FieldAggregationProcessor.Process(fields);
+            if (!fieldAggregationsResult.IsValid)
+                return BadRequest(fieldAggregationsResult.Message);
+
+            var processResult = QueryProcessor.Process(filter);
+            if (!processResult.IsValid)
+                return BadRequest(processResult.Message);
+
+            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
+
+            NumbersTimelineStatsResult result;
+            try {
+                var timeInfo = GetTimeInfo(time, offset);
+                result = await _stats.GetNumbersTimelineStatsAsync(fieldAggregationsResult.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
+            } catch (ApplicationException ex) {
+                Logger.Error().Exception(ex)
+                    .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = filter, Time = time, Offset = offset })
+                    .Tag("Search")
+                    .Identity(ExceptionlessUser.EmailAddress)
+                    .Property("User", ExceptionlessUser)
+                    .SetActionContext(ActionContext)
+                    .Write();
+
+                return BadRequest("An error has occurred. Please check your search filter.");
+            }
+
+            return Ok(result);
         }
     }
 }

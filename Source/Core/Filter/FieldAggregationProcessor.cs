@@ -25,7 +25,13 @@ namespace Exceptionless.Core.Filter {
                     return new FieldAggregationsResult { Message = $"Invalid type: {type} or field: {field}" };
 
                 // expand field here..
+                //var processResult = QueryProcessor.Process(type);
+                //if (!processResult.IsValid)
+                //    return new FieldAggregationsResult { Message = $"Invalid field: {field}" };
 
+                //field = processResult.ExpandedQuery;
+                //result.UsesPremiumFeatures &= processResult.UsesPremiumFeatures;
+                
                 switch (type) {
                     case "avg":
                         result.Aggregations.Add(new FieldAggregation { Type = FieldAggregationType.Average, Field = field });
@@ -75,6 +81,7 @@ namespace Exceptionless.Core.Filter {
             Aggregations = new HashSet<FieldAggregation>();
         }
 
+        public bool UsesPremiumFeatures { get; set; }
         public bool IsValid { get; set; }
         public string Message { get; set; }
         public HashSet<FieldAggregation> Aggregations { get; set; }

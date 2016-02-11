@@ -237,6 +237,9 @@
     <Compile Include="Models\Stack.cs" />
     <Compile Include="Models\Stats\EventStatsResult.cs" />
     <Compile Include="Models\Stats\EventTermStatsResult.cs" />
+    <Compile Include="Models\Stats\NumbersStatsResult.cs" />
+    <Compile Include="Models\Stats\NumbersTimelineItem.cs" />
+    <Compile Include="Models\Stats\NumbersTimelineStatsResult.cs" />
     <Compile Include="Models\Stats\Results\PagedResult.cs" />
     <Compile Include="Models\Stats\Results\PlanPagedResult.cs" />
     <Compile Include="Models\Stats\EventTermStatsItem.cs" />
