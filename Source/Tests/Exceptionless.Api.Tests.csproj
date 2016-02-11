@@ -196,6 +196,7 @@
     <Compile Include="Miscellaneous\SystemHealthCheckerTests.cs" />
     <Compile Include="Pipeline\EventPipelineTests.cs" />
     <Compile Include="Plugins\EventUpgraderTests.cs" />
+    <Compile Include="Plugins\ManualStackingTests.cs" />
     <Compile Include="Plugins\GeoTests.cs" />
     <Compile Include="Plugins\EventParserTests.cs" />
     <Compile Include="Plugins\SummaryDataTests.cs" />
