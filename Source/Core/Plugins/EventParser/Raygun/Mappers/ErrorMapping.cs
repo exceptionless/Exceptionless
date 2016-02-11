@@ -51,6 +51,12 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
         private static Core.Models.StackFrameCollection MapStackFrames(IList<StackTrace> stackTraces) {
             var stackFrameCollection = new Core.Models.StackFrameCollection();
 
+            // raygun seems to put one fake element when there's no stacktrace at all. Try to detect this fake element
+            // and return an empty collection instead.
+            if (stackFrameCollection.Count == 1 && stackFrameCollection.First().FileName == "none") {
+                return stackFrameCollection;
+            }
+
             foreach (var stackTrace in stackTraces) {
                 var stackFrame = new Core.Models.Data.StackFrame();
 
