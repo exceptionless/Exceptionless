@@ -17,6 +17,9 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             
             if (String.IsNullOrWhiteSpace(context.Event.Message))
                 context.Event.Message = error.Message;
+            
+            if (context.StackSignatureData.Count > 0)
+                return Task.CompletedTask;
 
             // TODO: Parse the stack trace and upgrade this to a full error.
             if (!String.IsNullOrEmpty(error.Type))
