@@ -15,6 +15,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Filter;
+using Exceptionless.Core.Geo;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
@@ -436,13 +437,39 @@ namespace Exceptionless.Api.Controllers {
             return await SetUserDescriptionAsync(id, userDescription);
         }
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <remarks>
+        /// You can create an event using query string parameters.
+        /// 
+        /// Feature usage named build with a duration of 10:
+        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10]]></code>
+        /// OR
+        /// <code><![CDATA[/events/submit/usage?access_token=YOUR_API_KEY&source=build&value=10]]></code>
+        /// 
+        /// Log with message, geo and extended data
+        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
+        /// OR
+        /// <code><![CDATA[/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
+        /// </remarks>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="version">The api version that should be used</param>
+        /// <param name="type">The event type</param>
+        /// <param name="userAgent">The user agent that submitted the event.</param>
+        /// <param name="parameters">Parameters that control what properties are set on the event</param>
+        /// <response code="202">Accepted</response>
+        /// <response code="400">No project id specified and no default project was found.</response>
+        /// <response code="404">No project was found.</response>
         [HttpGet]
-        [Route("~/api/v{version:int=2}/events")]
-        [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events")]
+        [Route("~/api/v{version:int=2}/events/submit")]
+        [Route("~/api/v{version:int=2}/events/submit/{type:minlength(1)}")]
+        [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/submit")]
+        [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
         [OverrideAuthorization]
         [ConfigurationResponseFilter]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public async Task<IHttpActionResult> GetSubmitEvent(string projectId = null, int version = 1, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string> parameters = null) {
+        public async Task<IHttpActionResult> GetSubmitEvent(string projectId = null, int version = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
             if (parameters == null || parameters.Count == 0)
                 return StatusCode(HttpStatusCode.OK);
 
@@ -462,46 +489,50 @@ namespace Exceptionless.Api.Controllers {
             Request.SetProject(project);
 
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
-            var ev = new Event {
-                Type = Event.KnownTypes.Log
-            };
-            
-            var ignoredQueryStringKeys = new List<string> { "access_token", "api_key", "apikey" };
-            var exclusions = project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.DataExclusions)
-                    ? ignoredQueryStringKeys.Union(project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions)).ToList()
-                    : ignoredQueryStringKeys;
-            
-            foreach (var kvp in parameters) {
+            var ev = new Event { Type = !String.IsNullOrEmpty(type) ? type : Event.KnownTypes.Log };
+
+            var exclusions = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions).ToList();
+            foreach (var kvp in parameters.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty))) {
                 switch (kvp.Key.ToLower()) {
                     case "type":
-                        ev.Type = kvp.Value;
+                        ev.Type = kvp.Value.FirstOrDefault();
+                        break;
+                    case "source":
+                        ev.Source = kvp.Value.FirstOrDefault();
                         break;
                     case "message":
-                        ev.Message = kvp.Value;
+                        ev.Message = kvp.Value.FirstOrDefault();
                         break;
                     case "reference":
-                        ev.ReferenceId = kvp.Value;
+                        ev.ReferenceId = kvp.Value.FirstOrDefault();
                         break;
                     case "date":
-                        DateTime dtValue;
-                        if (DateTime.TryParse(kvp.Value, out dtValue))
+                        DateTimeOffset dtValue;
+                        if (DateTimeOffset.TryParse(kvp.Value.FirstOrDefault(), out dtValue))
                             ev.Date = dtValue;
                         break;
                     case "value":
                         decimal decValue;
-                        if (Decimal.TryParse(kvp.Value, out decValue))
+                        if (Decimal.TryParse(kvp.Value.FirstOrDefault(), out decValue))
                             ev.Value = decValue;
                         break;
+                    case "geo":
+                        GeoResult geo;
+                        if (GeoResult.TryParse(kvp.Value.FirstOrDefault(), out geo))
+                            ev.Geo = geo.ToString();
+                        break;
                     case "tags":
-                        string[] tags = kvp.Value.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var tag in tags)
-                            ev.Tags.Add(tag);
+                        ev.Tags.AddRange(kvp.Value.SelectMany(t => t.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)).Distinct());
                         break;
                     default:
                         if (kvp.Key.AnyWildcardMatches(exclusions, true))
                             continue;
 
-                        ev.Data[kvp.Key] = kvp.Value;
+                        if (kvp.Value.Length > 1)
+                            ev.Data[kvp.Key] = kvp.Value;
+                        else
+                            ev.Data[kvp.Key] = kvp.Value.FirstOrDefault();
+
                         break;
                 }
             }

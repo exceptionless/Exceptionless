@@ -4,6 +4,14 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Extensions {
     public static class UserExtensions {
+        public static void ResetVerifyEmailAddressToken(this User user) {
+            if (user == null)
+                return;
+
+            user.VerifyEmailAddressToken = null;
+            user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
+        }
+
         public static void CreateVerifyEmailAddressToken(this User user) {
             if (user == null)
                 return;

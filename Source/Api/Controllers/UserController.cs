@@ -13,7 +13,9 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.DateTimeExtensions;
 using FluentValidation;
+using Foundatio.Caching;
 using Foundatio.Logging;
 
 namespace Exceptionless.Api.Controllers {
@@ -21,10 +23,12 @@ namespace Exceptionless.Api.Controllers {
     [Authorize(Roles = AuthorizationRoles.User)]
     public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, UpdateUser> {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly ICacheClient _cacheClient;
         private readonly IMailer _mailer;
 
-        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, IMailer mailer) : base(userRepository) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer) : base(userRepository) {
             _organizationRepository = organizationRepository;
+            _cacheClient = new ScopedCacheClient(cacheClient, "user");
             _mailer = mailer;
         }
 
@@ -117,16 +121,25 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             email = email.ToLower();
-            if (!await IsEmailAddressAvailableInternalAsync(email))
-                return BadRequest("A user with this email address already exists.");
-
             if (String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
 
+            // Only allow 3 email address updates per hour period by a single user.
+            string updateEmailAddressAttemptsCacheKey = $"{ExceptionlessUser.Id}:attempts";
+            long attempts = await _cacheClient.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+            if (attempts > 3)
+                return BadRequest("Update email address rate limit reached. Please try updating later.");
+
+            if (!await IsEmailAddressAvailableInternalAsync(email))
+                return BadRequest("A user with this email address already exists.");
+            
+            user.ResetPasswordResetToken();
             user.EmailAddress = email;
             user.IsEmailAddressVerified = user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.OrdinalIgnoreCase)) > 0;
             if (!user.IsEmailAddressVerified)
                 user.CreateVerifyEmailAddressToken();
+            else
+                user.ResetVerifyEmailAddressToken();
 
             try {
                 await _repository.SaveAsync(user, true);

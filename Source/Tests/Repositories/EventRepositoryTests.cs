@@ -11,7 +11,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
+using Foundatio.Repositories.Utility;
 using Nest;
 using Xunit;
 

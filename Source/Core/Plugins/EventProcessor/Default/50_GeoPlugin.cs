@@ -11,10 +11,10 @@ using Foundatio.Caching;
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(50)]
     public class GeoPlugin : EventProcessorPluginBase {
-        private readonly IGeoIPService _geoIpService;
+        private readonly IGeoIpService _geoIpService;
         private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 100 };
 
-        public GeoPlugin(IGeoIPService geoIpService) {
+        public GeoPlugin(IGeoIpService geoIpService) {
             _geoIpService = geoIpService;
         }
 
@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 // The geo coordinates are all the same, set the location from the result of any of the ip addresses.
                 if (!String.IsNullOrEmpty(group.Key)) {
                     var ips = group.SelectMany(c => c.Event.GetIpAddresses()).Union(new[] { group.First().EventPostInfo?.IpAddress }).Distinct();
-                    result = await GetGeoFromIPAddressesAsync(ips).AnyContext();
+                    result = await GetGeoFromIpAddressesAsync(ips).AnyContext();
                     group.ForEach(c => UpdateGeoAndlocation(c.Event, result));
                     continue;
                 }
@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 // Each event could be a different user;
                 foreach (var context in group) {
                     var ips = context.Event.GetIpAddresses().Union(new[] { context.EventPostInfo?.IpAddress });
-                    result = await GetGeoFromIPAddressesAsync(ips).AnyContext();
+                    result = await GetGeoFromIpAddressesAsync(ips).AnyContext();
                     UpdateGeoAndlocation(context.Event, result);
                 }
             }
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 ev.Data.Remove(Event.KnownDataKeys.Location);
         }
 
-        private async Task<GeoResult> GetGeoFromIPAddressesAsync(IEnumerable<string> ips) {
+        private async Task<GeoResult> GetGeoFromIpAddressesAsync(IEnumerable<string> ips) {
             foreach (var ip in ips) {
                 if (String.IsNullOrEmpty(ip))
                     continue;
