@@ -262,6 +262,7 @@
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\03_ManualStackingPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\60_LocationPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ElasticConfiguration.cs" />
