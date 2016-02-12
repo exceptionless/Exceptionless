@@ -195,9 +195,10 @@
     <Compile Include="Jobs\JobTests.cs" />
     <Compile Include="Miscellaneous\SystemHealthCheckerTests.cs" />
     <Compile Include="Pipeline\EventPipelineTests.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\RaygunEventParserTests.cs" />
     <Compile Include="Plugins\EventUpgraderTests.cs" />
     <Compile Include="Plugins\GeoTests.cs" />
-    <Compile Include="Plugins\EventParserTests.cs" />
+    <Compile Include="Plugins\EventParser\EventParserTests.cs" />
     <Compile Include="Plugins\SummaryDataTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repositories\ElasticSearchConfigurationTests.cs" />
@@ -276,6 +277,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
+    <None Include="Plugins\EventParser\Raygun\Data\event1.expected.json" />
+    <None Include="Plugins\EventParser\Raygun\Data\event1.json" />
     <None Include="Plugins\WebHookData\v1.0.event.expected.json" />
     <None Include="Plugins\WebHookData\v1.0.stack.expected.json" />
     <None Include="Plugins\WebHookData\v2.0.event.expected.json" />
@@ -296,6 +299,7 @@
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

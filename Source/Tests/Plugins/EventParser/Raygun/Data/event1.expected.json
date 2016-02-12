@@ -1,0 +1,130 @@
+﻿{
+  "is_first_occurrence": false,
+  "is_fixed": false,
+  "is_hidden": false,
+  "created_utc": "0001-01-01T00:00:00",
+  "type": "error",
+  "date": "2015-09-08T01:55:28+00:00",
+  "tags": [
+    "tag1",
+    "tag 2",
+    "tag-3"
+  ],
+  "message": "An error occurred",
+  "data": {
+    "@version": "1.0.0.1",
+    "domain": "WORKPLACE",
+    "area": "51",
+    "Client": {
+      "name": "Example Raygun Client",
+      "version": "0.0.0.1",
+      "client_url": "https://raygun.io/docs/integrations/api"
+    },
+    "Response": {
+      "status_code": 500
+    },
+    "@request": {
+      "user_agent": "5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.65 Safari/537.36",
+      "http_method": "POST",
+      "is_secure": true,
+      "host": "https://raygun.io",
+      "port": 443,
+      "path": "/docs/integrations/api",
+      "referrer": "www.google.com",
+      "client_ip_address": "127.0.0.1",
+      "post_data": {
+        "first_name": "Example",
+        "last_name": "Person",
+        "newsletter": true
+      },
+      "query_string": {
+        "q": "searchParams"
+      },
+      "data": {
+        "Headers": {
+          "referer": "www.google.com",
+          "host": "raygun.io"
+        },
+        "RawData": "{\"Test\": 5}",
+        "@browser": "Mozilla",
+        "@browser_version": "5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.65 Safari/537.36",
+        "BrowserHeight": 1440,
+        "BrowserWidth": 2560,
+        "@device": "Nokia Nexus 7"
+      }
+    },
+    "@environment": {
+      "processor_count": 4,
+      "total_physical_memory": 1073741824,
+      "available_physical_memory": 1073741824,
+      "process_memory_size": 0,
+      "architecture": "ARMv7-A",
+      "o_s_name": "Win32",
+      "o_s_version": "Windows 10",
+      "machine_name": "ServerMachine1",
+      "install_id": "783491e1-d4a9-46bc-9fde-9b1dd9ef6c6e",
+      "data": {
+        "AvailableVirtualMemory": 1073741824,
+        "Browser": "Mozilla",
+        "BrowserName": "Netscape",
+        "BrowserVersion": "5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.65 Safari/537.36",
+        "BrowserHeight": 1440,
+        "BrowserWidth": 2560,
+        "ColorDepth": 24,
+        "Cpu": "Intel(R) Core(TM) i5-2500 CPU @ 3.30GHz",
+        "CurrentOrientation": "Landscape",
+        "DeviceManufacturer": "Nokia",
+        "DeviceName": "Nexus 7",
+        "DiskSpaceFree": [
+          50000.52,
+          2000.104
+        ],
+        "Locale": "en-nz",
+        "Model": "Lumia 920",
+        "PackageVersion": "package version",
+        "ResolutionScale": 1.0,
+        "ScreenHeight": 1440,
+        "ScreenWidth": 2560,
+        "TotalVirtualMemory": 1073741824,
+        "WindowBoundsHeight": 1440.0,
+        "WindowBoundsWidth": 2560.0
+      }
+    },
+    "@user": {
+      "identity": "test@example.com",
+      "name": "Test User",
+      "data": {
+        "Email": "test@example.com",
+        "FirstName": "Test",
+        "FullName": "Test User",
+        "Identifier": "123456789",
+        "IsAnonymous": false,
+        "Uuid": "783491e1-d4a9-46bc-9fde-9b1dd9ef6c6e"
+      }
+    },
+    "@error": {
+      "message": "An error occurred",
+      "type": "ErrorClass",
+      "data": {
+        "example": 5
+      },
+      "stack_trace": [
+        {
+          "file_name": "BrokenService.cs",
+          "line_number": 55,
+          "column": 23,
+          "is_signature_target": false,
+          "declaring_type": "BrokenService",
+          "name": "BreakEverything",
+          "module_id": -1
+        }
+      ],
+      "target_method": {
+        "is_signature_target": false,
+        "declaring_type": "BrokenService",
+        "name": "BreakEverything",
+        "module_id": -1
+      }
+    }
+  }
+}

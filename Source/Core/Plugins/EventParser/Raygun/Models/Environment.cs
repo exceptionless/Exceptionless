@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser.Raygun.Models {
     public class Environment {
@@ -11,16 +12,21 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Models {
 
         public double WindowBoundsHeight { get; set; }
 
+        [JsonProperty("browser-Width")]
         public int BrowserWidth { get; set; }
 
+        [JsonProperty("browser-Height")]
         public int BrowserHeight { get; set; }
 
+        [JsonProperty("screen-Width")]
         public int ScreenWidth { get; set; }
 
+        [JsonProperty("screen-Height")]
         public int ScreenHeight { get; set; }
 
         public double ResolutionScale { get; set; }
 
+        [JsonProperty("color-Depth")]
         public int ColorDepth { get; set; }
 
         public string CurrentOrientation { get; set; }
@@ -55,6 +61,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Models {
 
         public string BrowserName { get; set; }
 
+        [JsonProperty("browser-Version")]
         public string BrowserVersion { get; set; }
 
         public string Platform { get; set; }

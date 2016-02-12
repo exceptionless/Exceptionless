@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
         }
 
         private static Core.Models.Data.InnerError MapInnerError(Error error) {
-            if (error == null)
+            if (error?.StackTrace == null)
                 return null;
 
             var innerError = new Core.Models.Data.InnerError {
@@ -48,32 +48,30 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
         }
 
         private static Core.Models.StackFrameCollection MapStackFrames(IList<StackTrace> stackTraces) {
-            var stackFrameCollection = new Core.Models.StackFrameCollection();
+            var frames = new Core.Models.StackFrameCollection();
 
             // raygun seems to put one fake element when there's no stacktrace at all. Try to detect this fake element
             // and return an empty collection instead.
-            if (stackFrameCollection.Count == 1 && stackFrameCollection.First().FileName == "none") {
-                return stackFrameCollection;
-            }
+            if (stackTraces.Count == 1 && stackTraces.First().FileName == "none")
+                return frames;
 
             foreach (var stackTrace in stackTraces) {
-                var stackFrame = new Core.Models.Data.StackFrame();
-
-                stackFrame.Name = stackTrace.MethodName;
-                stackFrame.Name = GetMethodNameWithoutParameter(stackTrace.MethodName);
-                stackFrame.LineNumber = stackTrace.LineNumber;
-                stackFrame.Column = stackTrace.ColumnNumber;
-                stackFrame.FileName = stackTrace.FileName;
-                stackFrame.ModuleId = -1;
-
-                var declaringInfo = GetDeclaringInfo(stackTrace.ClassName);
-                stackFrame.DeclaringType = declaringInfo.Item1;
-                stackFrame.DeclaringNamespace = declaringInfo.Item2;
-
-                stackFrameCollection.Add(stackFrame);
+                var di = GetDeclaringInfo(stackTrace.ClassName);
+                var frame = new Core.Models.Data.StackFrame {
+                    DeclaringType = di.Item1,
+                    DeclaringNamespace = di.Item2,
+                    Name = GetMethodNameWithoutParameter(stackTrace.MethodName),
+                    LineNumber = stackTrace.LineNumber,
+                    Column = stackTrace.ColumnNumber,
+                    FileName = stackTrace.FileName,
+                    ModuleId = -1
+                };
+                
+                // TODO Fill in generics and parameter info.
+                frames.Add(frame);
             }
 
-            return stackFrameCollection;
+            return frames;
         }
 
         private static Core.Models.Data.Method MapTargetMethod(Error error) {
@@ -81,6 +79,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
             if (firstFrame == null)
                 return null;
 
+            // TODO Fill in generics and parameter info.
             var di = GetDeclaringInfo(firstFrame.ClassName);
             return new Core.Models.Data.Method {
                 DeclaringType = di.Item1,

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 
 namespace Exceptionless.Core.Plugins.EventParser.Raygun.Models {
     public class Details {
-
         public string MachineName { get; set; }
 
         public string GroupingKey { get; set; }
