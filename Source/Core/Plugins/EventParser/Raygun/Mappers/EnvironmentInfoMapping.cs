@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
                 return ei;
 
             ei.Architecture = environment.Architecture;
-            ei.AvailablePhysicalMemory = (long)(environment.AvailablePhysicalMemory * 1048576); // Convert MB to bytes
+            ei.AvailablePhysicalMemory = NormalizeMemory(environment.AvailablePhysicalMemory, details.Client);
             //ei.CommandLine;
             ei.InstallId = details.User?.Uuid;
             //ei.IpAddress;
@@ -29,11 +29,11 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
             //ei.RuntimeVersion;
             //ei.ThreadId;
             //ei.ThreadName;
-            ei.TotalPhysicalMemory = (long)(environment.TotalPhysicalMemory * 1048576); // Convert MB to bytes
+            ei.TotalPhysicalMemory = NormalizeMemory(environment.TotalPhysicalMemory, details.Client);
 
             // Additional Fields
             if (environment.AvailableVirtualMemory > 0)
-                ei.Data[nameof(environment.AvailableVirtualMemory)] = environment.AvailableVirtualMemory * 1048576; // Convert MB to bytes
+                ei.Data[nameof(environment.AvailableVirtualMemory)] = NormalizeMemory(environment.AvailableVirtualMemory, details.Client);
             if (!String.IsNullOrEmpty(environment.Browser))
                 ei.Data[nameof(environment.Browser)] = environment.Browser;
             if (!String.IsNullOrEmpty(environment.BrowserName))
@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
             if (environment.ScreenWidth > 0)
                 ei.Data[nameof(environment.ScreenWidth)] = environment.ScreenWidth;
             if (environment.TotalVirtualMemory > 0)
-                ei.Data[nameof(environment.TotalVirtualMemory)] = environment.TotalVirtualMemory * 1048576; // Convert MB to bytes
+                ei.Data[nameof(environment.TotalVirtualMemory)] = NormalizeMemory(environment.TotalVirtualMemory, details.Client);
             if (environment.UtcOffset > 0)
                 ei.Data[nameof(environment.UtcOffset)] = environment.UtcOffset;
             if (environment.WindowBoundsHeight > 0)
@@ -78,6 +78,17 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
                 ei.Data[nameof(environment.WindowBoundsWidth)] = environment.WindowBoundsWidth;
             
             return ei;
+        }
+        
+        /// <summary>
+        /// Someone never normalized the memory to one specific size (bytes, MB, etc..).
+        /// </summary>
+        private static long NormalizeMemory(ulong total, Client client) {
+            if (String.Equals(client.Name, "raygun-node"))
+                return (long)total;
+
+            // Normalize MB to bytes.
+            return (long)(total * 1048576);
         }
     }
 }
