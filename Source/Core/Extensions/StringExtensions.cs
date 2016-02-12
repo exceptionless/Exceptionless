@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Extensions {
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), "length cannot be less than zero.");
 
-            if (string.IsNullOrEmpty(allowedChars))
+            if (String.IsNullOrEmpty(allowedChars))
                 throw new ArgumentException("allowedChars may not be empty.");
 
             const int byteSize = 0x100;
@@ -339,7 +339,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string HexEscape(this string value, params char[] anyCharOf) {
-            if (string.IsNullOrEmpty(value)) return value;
+            if (String.IsNullOrEmpty(value)) return value;
             if (anyCharOf == null || anyCharOf.Length == 0) return value;
 
             var encodeCharMap = new HashSet<char>(anyCharOf);
@@ -364,7 +364,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string HtmlEntityEncode(this string value, bool encodeTagsToo) {
-            string str = string.Empty;
+            string str = String.Empty;
             foreach (char ch in value) {
                 int num = (int)ch;
                 switch (num) {

@@ -1,10 +1,5 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Plugins.EventParser.Raygun.Models {
     public class Details {
@@ -23,7 +18,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Models {
 
         public IList<string> Tags { get; set; }
 
-        public IDictionary UserCustomData { get; set; }
+        public IDictionary<string, object> UserCustomData { get; set; }
 
         public Request Request { get; set; }
 

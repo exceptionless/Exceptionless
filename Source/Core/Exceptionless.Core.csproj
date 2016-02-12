@@ -257,6 +257,7 @@
     <Compile Include="Models\WorkItems\ThrottleBotsWorkItem.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
+    <Compile Include="Plugins\EventParser\Raygun\Mappers\UserInfoMapping.cs" />
     <Compile Include="Plugins\EventParser\Raygun\RaygunEventParserPlugin.cs" />
     <Compile Include="Plugins\EventParser\Raygun\Mappers\EnvironmentInfoMapping.cs" />
     <Compile Include="Plugins\EventParser\Raygun\Mappers\ErrorMapping.cs" />

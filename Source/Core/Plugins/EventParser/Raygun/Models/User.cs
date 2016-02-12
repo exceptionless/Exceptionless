@@ -1,13 +1,7 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
 namespace Exceptionless.Core.Plugins.EventParser.Raygun.Models {
     public class User {
-
         public string Identifier { get; set; }
 
         public bool IsAnonymous { get; set; }

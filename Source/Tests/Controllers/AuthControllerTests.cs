@@ -131,7 +131,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
                 var tokenResult = GetResult<TokenResult>(result);
                 Assert.NotNull(tokenResult);
-                Assert.False(string.IsNullOrEmpty(tokenResult.Token));
+                Assert.False(String.IsNullOrEmpty(tokenResult.Token));
             } finally {
                 await ResetAsync();
             }
@@ -162,7 +162,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
                 var tokenResult = GetResult<TokenResult>(result);
                 Assert.NotNull(tokenResult);
-                Assert.False(string.IsNullOrEmpty(tokenResult.Token));
+                Assert.False(String.IsNullOrEmpty(tokenResult.Token));
             } finally {
                 await ResetAsync();
             }
@@ -207,7 +207,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
                 var tokenResult = GetResult<TokenResult>(result);
                 Assert.NotNull(tokenResult);
-                Assert.False(string.IsNullOrEmpty(tokenResult.Token));
+                Assert.False(String.IsNullOrEmpty(tokenResult.Token));
             } finally {
                 await ResetAsync();
             }
