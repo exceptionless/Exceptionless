@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             if (String.IsNullOrWhiteSpace(context.Event.Message))
                 context.Event.Message = error.Message;
-            
+
             if (context.StackSignatureData.Count > 0)
                 return Task.CompletedTask;
 
@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 targetInfo["Message"] = stackingTarget.Error.Message;
 
             error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
-            
+
             foreach (var key in signature.SignatureInfo.Keys)
                 context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
 
