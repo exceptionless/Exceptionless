@@ -4,7 +4,6 @@ using Exceptionless.Core.Plugins.EventParser.Raygun.Models;
 
 namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
     public static class EnvironmentInfoMapping {
-        // TODO: Node memory sizes are in bytes while .NET's are in MB.. We need to normalize this..
         public static EnvironmentInfo Map(RaygunModel model) {
             var details = model?.Details;
             if (details == null)
