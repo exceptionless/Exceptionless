@@ -277,8 +277,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
-    <None Include="Plugins\EventParser\Raygun\Data\event1.expected.json" />
-    <None Include="Plugins\EventParser\Raygun\Data\event1.json" />
+    <None Include="Plugins\EventParser\Raygun\Data\rest-api-spec.expected.json" />
+    <None Include="Plugins\EventParser\Raygun\Data\rest-api-spec.json" />
     <None Include="Plugins\WebHookData\v1.0.event.expected.json" />
     <None Include="Plugins\WebHookData\v1.0.stack.expected.json" />
     <None Include="Plugins\WebHookData\v2.0.event.expected.json" />

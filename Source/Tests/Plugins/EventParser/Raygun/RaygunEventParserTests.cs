@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public static IEnumerable<object[]> Events {
             get {
                 var result = new List<object[]>();
-                foreach (var file in Directory.GetFiles(@"..\..\Plugins\EventParser\Raygun\Data\", "event*.json", SearchOption.AllDirectories))
+                foreach (var file in Directory.GetFiles(@"..\..\Plugins\EventParser\Raygun\Data\", "*.json", SearchOption.AllDirectories))
                     if (!file.EndsWith("expected.json"))
                         result.Add(new object[] { Path.GetFullPath(file) });
 

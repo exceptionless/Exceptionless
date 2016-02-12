@@ -12,6 +12,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
             if (userAgent != "raygun" && apiVersion != 1)
                 return null;
             
+            // TODO: We need to support batch here.
             var events = new List<PersistentEvent>();
             RaygunModel model;
             if (input.TryFromJson(out model))
