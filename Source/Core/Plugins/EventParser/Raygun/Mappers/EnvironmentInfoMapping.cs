@@ -9,19 +9,25 @@ using System.Threading.Tasks;
 namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
     public static class EnvironmentInfoMapping {
         public static EnvironmentInfo Map(RaygunModel raygunModel) {
-            var raygunEnvironment = raygunModel?.Details?.Environment;
+            var raygunDetails = raygunModel?.Details;
 
-            if (raygunEnvironment == null) {
+            if (raygunDetails == null) {
                 return null;
             }
 
             var environmentInfo = new EnvironmentInfo();
 
-            environmentInfo.Architecture = raygunEnvironment.Architecture;
-            environmentInfo.AvailablePhysicalMemory = Convert.ToInt64(raygunEnvironment.AvailablePhysicalMemory);
-            environmentInfo.TotalPhysicalMemory = Convert.ToInt64(raygunEnvironment.TotalPhysicalMemory);
-            environmentInfo.MachineName = raygunEnvironment.DeviceName;
-            environmentInfo.OSVersion = raygunEnvironment.OsVersion;
+            environmentInfo.MachineName = raygunDetails.MachineName;
+
+            var raygunEnvironment = raygunModel?.Details?.Environment;
+
+            if (raygunEnvironment != null) {
+                environmentInfo.Architecture = raygunEnvironment.Architecture;
+                environmentInfo.AvailablePhysicalMemory = Convert.ToInt64(raygunEnvironment.AvailablePhysicalMemory);
+                environmentInfo.TotalPhysicalMemory = Convert.ToInt64(raygunEnvironment.TotalPhysicalMemory);
+                environmentInfo.OSVersion = raygunEnvironment.OsVersion;
+                environmentInfo.ProcessorCount = raygunEnvironment.ProcessorCount;
+            }
 
             return environmentInfo;
         }

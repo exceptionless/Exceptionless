@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun.Mappers {
             }
             
             //requestInfo.Data;
-            requestInfo.PostData = raygunRequest.Form;  
+            requestInfo.PostData = raygunRequest.Form.Any() ? raygunRequest.Form : null;  
 
             return requestInfo;
         }
