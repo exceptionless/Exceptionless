@@ -22,22 +22,22 @@ namespace Exceptionless.Api.Tests.Plugins {
         private const string IRVING_IP = "192.91.253.248";
         private readonly IGeocodeService _geocodeService = IoC.GetInstance<IGeocodeService>();
 
-        private static IGeoIPService _service;
-        private static async Task<IGeoIPService> GetResolverAsync() {
+        private static IGeoIpService _service;
+        private static async Task<IGeoIpService> GetResolverAsync() {
             if (_service != null)
                 return _service;
 
             var dataDirectory = PathHelper.ExpandPath(".\\");
             var storage = new FolderFileStorage(dataDirectory);
 
-            if (!await storage.ExistsAsync(MindMaxGeoIPService.GEO_IP_DATABASE_PATH)) {
+            if (!await storage.ExistsAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH)) {
                 var job = new DownloadGeoIPDatabaseJob(new InMemoryCacheClient(), storage);
                 var result = await job.RunAsync();
                 Assert.NotNull(result);
                 Assert.True(result.IsSuccess);
             }
 
-            return _service = new MindMaxGeoIPService(storage);
+            return _service = new MaxMindGeoIpService(storage);
         }
         
         [Fact]

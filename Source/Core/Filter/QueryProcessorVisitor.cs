@@ -12,6 +12,7 @@ namespace Exceptionless.Core.Filter {
             "hidden",
             "fixed",
             "type",
+            "reference",
             "organization",
             "project",
             "stack"

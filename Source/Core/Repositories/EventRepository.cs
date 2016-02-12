@@ -13,7 +13,7 @@ using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Elasticsearch.Repositories.Queries.Options;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
-using Foundatio.Utility;
+using Foundatio.Repositories.Utility;
 using Nest;
 using SortOrder = Foundatio.Repositories.Models.SortOrder;
 

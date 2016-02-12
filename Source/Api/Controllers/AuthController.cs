@@ -13,7 +13,9 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using FluentValidation;
+using Foundatio.Caching;
 using Foundatio.Logging;
 using Newtonsoft.Json.Linq;
 using OAuth2.Client;
@@ -28,14 +30,16 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
+        private readonly ICacheClient _cacheClient;
         private readonly IMailer _mailer;
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, IMailer mailer) {
+        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer) {
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
+            _cacheClient = new ScopedCacheClient(cacheClient, "auth");
             _mailer = mailer;
         }
 
@@ -64,10 +68,28 @@ namespace Exceptionless.Api.Controllers {
                 Logger.Error().Message("Login failed: Email Address is required.").Tag("Login").SetActionContext(ActionContext).Write();
                 return BadRequest("Email Address is required.");
             }
-
+            
             if (String.IsNullOrWhiteSpace(model.Password)) {
                 Logger.Error().Message("Login failed for \"{0}\": Password is required.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
                 return BadRequest("Password is required.");
+            }
+            
+            // Only allow 5 password attempts per 15 minute period.
+            string userLoginAttemptsCacheKey = $"user:{model.Email}:attempts";
+            long userLoginAttempts = await _cacheClient.IncrementAsync(userLoginAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+
+            // Only allow 15 login attempts per 15 minute period by a single ip.
+            string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
+            long ipLoginAttempts = await _cacheClient.IncrementAsync(ipLoginAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+
+            if (userLoginAttempts > 5) {
+                Logger.Error().Message($"Login denied for \"{model.Email}\" for the {userLoginAttempts} time.").Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+                return Unauthorized();
+            }
+
+            if (ipLoginAttempts > 15) {
+                Logger.Error().Message($"Login denied for \"{Request.GetClientIpAddress()}\" for the {ipLoginAttempts} time.").Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+                return Unauthorized();
             }
 
             User user;
@@ -101,6 +123,8 @@ namespace Exceptionless.Api.Controllers {
 
             if (!String.IsNullOrEmpty(model.InviteToken))
                 await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
+            
+            await _cacheClient.RemoveAsync(userLoginAttemptsCacheKey);
 
             Logger.Info().Message("\"{0}\" logged in.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
             return Ok(new TokenResult { Token = await GetTokenAsync(user) });
@@ -143,9 +167,18 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
             }
 
-            if (user != null) {
-                Logger.Error().Message("Signup failed for \"{0}\": A user already exists.", user.EmailAddress).Tag("Signup").Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
-                return BadRequest("A user already exists with this email address.");
+            if (user != null)
+                return await LoginAsync(model);
+
+            string ipSignupAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:signup:attempts";
+            bool hasValidInviteToken = !String.IsNullOrWhiteSpace(model.InviteToken) && await _organizationRepository.GetByInviteTokenAsync(model.InviteToken) != null;
+            if (!hasValidInviteToken) {
+                // Only allow 10 signups per hour period by a single ip.
+                long ipSignupAttempts = await _cacheClient.IncrementAsync(ipSignupAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+                if (ipSignupAttempts > 10) {
+                    Logger.Error().Message($"Signup denied for \"{model.Email}\" for the {ipSignupAttempts} time.").Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
+                    return BadRequest();
+                }
             }
 
             user = new User {
@@ -172,8 +205,8 @@ namespace Exceptionless.Api.Controllers {
                 Logger.Error().Exception(ex).Critical().Message("Signup failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Signup").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 return BadRequest("An error occurred.");
             }
-
-            if (!String.IsNullOrEmpty(model.InviteToken))
+            
+            if (hasValidInviteToken)
                 await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
 
             if (!user.IsEmailAddressVerified)
@@ -280,8 +313,12 @@ namespace Exceptionless.Api.Controllers {
 
             if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return StatusCode(HttpStatusCode.Created);
+            
+            // Only allow 3 checks attempts per hour period by a single ip.
+            string ipEmailAddressAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:email:attempts";
+            long attempts = await _cacheClient.IncrementAsync(ipEmailAddressAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromHours(1)));
 
-            if (await _userRepository.GetByEmailAddressAsync(email) == null)
+            if (attempts > 3 || await _userRepository.GetByEmailAddressAsync(email) == null)
                 return StatusCode(HttpStatusCode.NoContent);
 
             return StatusCode(HttpStatusCode.Created);
@@ -303,7 +340,7 @@ namespace Exceptionless.Api.Controllers {
             var user = await _userRepository.GetByEmailAddressAsync(email);
             if (user == null) {
                 Logger.Error().Message("Forgot password failed for \"{0}\": No user was found.", email).Tag("Forgot Password").Identity(email).Property("Email Address", email).SetActionContext(ActionContext).Write();
-                return BadRequest("No user was found with this Email Address.");
+                return Ok();
             }
 
             user.CreatePasswordResetToken();
@@ -505,7 +542,7 @@ namespace Exceptionless.Api.Controllers {
                 return;
 
             var organization = await _organizationRepository.GetByInviteTokenAsync(token);
-            var invite = organization.GetInvite(token);
+            var invite = organization?.GetInvite(token);
             if (organization == null || invite == null) {
                 Logger.Info().Message("Unable to add the invited user \"{0}\". Invalid invite token: {1}", user.EmailAddress, token).Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 return;
