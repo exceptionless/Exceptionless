@@ -75,6 +75,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     }
 
                     if (context.Event.IsSessionStart()) {
+                        context.Event.Value = context.Event.Value.GetValueOrDefault();
                         sessionStartContext = context;
                     } else if (context.Event.IsSessionEnd()) {
                         await _cacheClient.RemoveAllAsync(new [] {
