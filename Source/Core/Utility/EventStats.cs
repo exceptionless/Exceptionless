@@ -595,19 +595,19 @@ namespace Exceptionless.Core.Utility {
             foreach (var field in fields) {
                 switch (field.Type) {
                     case FieldAggregationType.Average:
-                        aggregation.Average(field.Field, a => a.Field(field.Field));
+                        aggregation.Average($"avg_{field.Field}", a => a.Field(field.Field));
                         break;
                     case FieldAggregationType.Distinct:
-                        aggregation.Cardinality(field.Field, a => a.Field(field.Field));
+                        aggregation.Cardinality($"distinct_{field.Field}", a => a.Field(field.Field));
                         break;
                     case FieldAggregationType.Sum:
-                        aggregation.Sum(field.Field, a => a.Field(field.Field));
+                        aggregation.Sum($"sum_{field.Field}", a => a.Field(field.Field));
                         break;
                     case FieldAggregationType.Min:
-                        aggregation.Min(field.Field, a => a.Field(field.Field));
+                        aggregation.Min($"min_{field.Field}", a => a.Field(field.Field));
                         break;
                     case FieldAggregationType.Max:
-                        aggregation.Max(field.Field, a => a.Field(field.Field));
+                        aggregation.Max($"max_{field.Field}", a => a.Field(field.Field));
                         break;
                     case FieldAggregationType.Last:
                         // TODO: Populate with the last value.
@@ -625,19 +625,19 @@ namespace Exceptionless.Core.Utility {
             foreach (var field in fields) {
                 switch (field.Type) {
                     case FieldAggregationType.Average:
-                        results.Add(aggregations.Average(field.Field).Value.GetValueOrDefault());
+                        results.Add(aggregations.Average($"avg_{field.Field}").Value.GetValueOrDefault());
                         break;
                     case FieldAggregationType.Distinct:
-                        results.Add(aggregations.Cardinality(field.Field).Value.GetValueOrDefault());
+                        results.Add(aggregations.Cardinality($"distinct_{field.Field}").Value.GetValueOrDefault());
                         break;
                     case FieldAggregationType.Sum:
-                        results.Add(aggregations.Sum(field.Field).Value.GetValueOrDefault());
+                        results.Add(aggregations.Sum($"sum_{field.Field}").Value.GetValueOrDefault());
                         break;
                     case FieldAggregationType.Min:
-                        results.Add(aggregations.Min(field.Field).Value.GetValueOrDefault());
+                        results.Add(aggregations.Min($"min_{field.Field}").Value.GetValueOrDefault());
                         break;
                     case FieldAggregationType.Max:
-                        results.Add(aggregations.Max(field.Field).Value.GetValueOrDefault());
+                        results.Add(aggregations.Max($"max_{field.Field}").Value.GetValueOrDefault());
                         break;
                     case FieldAggregationType.Last:
                         // TODO: Populate with the last value.

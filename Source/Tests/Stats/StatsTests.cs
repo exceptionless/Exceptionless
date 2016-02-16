@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
@@ -26,13 +27,13 @@ namespace Exceptionless.Api.Tests.Stats {
         private readonly EventPipeline _eventPipeline = IoC.GetInstance<EventPipeline>();
 
         [Fact]
-        public async Task CanGetEventStatsAsync() {
+        public async Task CanGetNumbersAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
-            
+
             _metricsClient.DisplayStats();
             var result = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
@@ -43,12 +44,66 @@ namespace Exceptionless.Api.Tests.Stats {
             var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
             foreach (var stack in stacks.Documents) {
                 result = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
-                Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, result.Total);
-                //Assert.Equal(stack.TotalOccurrences, result.Total);
-                //Assert.Equal(stack.TotalOccurrences, result.Timeline.Sum(t => t.Total));
+                Assert.Equal(stack.TotalOccurrences, result.Total);
+                Assert.Equal(stack.TotalOccurrences, result.Timeline.Sum(t => t.Total));
+            }
+
+            // TODO: We can't check for new items until we implement terms support.
+            var fields = FieldAggregationProcessor.Process("distinct:stack_id", false);
+            Assert.True(fields.IsValid);
+            Assert.Equal(1, fields.Aggregations.Count);
+            Assert.Equal(FieldAggregationType.Distinct, fields.Aggregations.First().Type);
+            Assert.Equal("stack_id", fields.Aggregations.First().Field);
+
+            var ntsr = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
+            Assert.Equal(eventCount, ntsr.Total);
+            Assert.Equal(eventCount, ntsr.Timeline.Sum(t => t.Total));
+            Assert.Equal(1, ntsr.Numbers.Length);
+            Assert.Equal(await _stackRepository.CountAsync(), ntsr.Numbers[0]);
+            //Assert.Equal(await _stackRepository.CountAsync(), ntsr.Timeline.Sum(t => t.Numbers[1]));
+
+            foreach (var stack in stacks.Documents) {
+                var nsr = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
+                Assert.Equal(stack.TotalOccurrences, nsr.Total);
             }
         }
 
+        [Fact]
+        public async Task CanGetEventStatsAsync() {
+            // capture start date before generating data to make sure that our time range for stats includes all items
+            var startDate = DateTime.UtcNow.SubtractDays(60);
+            var  values = new decimal[] { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+            await RemoveDataAsync();
+            await CreateDataAsync(0, false);
+
+            foreach (var value in values)
+                await CreateEventsAsync(1, null, value);
+
+            _metricsClient.DisplayStats();
+            var fields = FieldAggregationProcessor.Process("avg:value,distinct:value,sum:value,min:value,max:value", false);
+            Assert.True(fields.IsValid);
+            Assert.Equal(5, fields.Aggregations.Count);
+
+            var ntsr = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
+            Assert.Equal(values.Length, ntsr.Total);
+            Assert.Equal(values.Length, ntsr.Timeline.Sum(t => t.Total));
+            Assert.Equal(5, ntsr.Numbers.Length);
+            Assert.Equal(50, ntsr.Numbers[0]); // average
+            Assert.Equal(11, ntsr.Numbers[1]); // distinct
+            Assert.Equal(550, ntsr.Numbers[2]); // sum
+            Assert.Equal(0, ntsr.Numbers[3]); // min
+            Assert.Equal(100, ntsr.Numbers[4]); // max
+
+            var nsr = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
+            Assert.Equal(values.Length, nsr.Total);
+            Assert.Equal(5, nsr.Numbers.Length);
+            Assert.Equal(50, nsr.Numbers[0]); // average
+            Assert.Equal(11, nsr.Numbers[1]); // distinct
+            Assert.Equal(550, nsr.Numbers[2]); // sum
+            Assert.Equal(0, nsr.Numbers[3]); // min
+            Assert.Equal(100, nsr.Numbers[4]); // max
+        }
+        
         [Fact]
         public async Task CanGetEventStatsWithoutDateRangeAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
@@ -218,10 +273,10 @@ namespace Exceptionless.Api.Tests.Stats {
                 await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId });
         }
 
-        private async Task CreateEventsAsync(int eventCount, string[] projectIds) {
+        private async Task CreateEventsAsync(int eventCount, string[] projectIds, decimal? value = null) {
             await _client.RefreshAsync();
 
-            var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow);
+            var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow, value: value);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
                 await _eventPipeline.RunAsync(eventGroup);
 

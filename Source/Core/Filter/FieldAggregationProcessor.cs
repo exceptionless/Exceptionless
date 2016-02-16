@@ -7,8 +7,12 @@ namespace Exceptionless.Core.Filter {
         private static readonly HashSet<string> _allowedNumericFields = new HashSet<string> {
             "value"
         };
+        
+        private static readonly HashSet<string> _freeFields = new HashSet<string> {
+            "value"
+        };
 
-        public static FieldAggregationsResult Process(string query) {
+        public static FieldAggregationsResult Process(string query, bool applyRules = true) {
             if (String.IsNullOrEmpty(query))
                 return new FieldAggregationsResult();
 
@@ -23,15 +27,12 @@ namespace Exceptionless.Core.Filter {
                 string field = parts[1]?.ToLower().Trim();
                 if (String.IsNullOrEmpty(type) || String.IsNullOrEmpty(field))
                     return new FieldAggregationsResult { Message = $"Invalid type: {type} or field: {field}" };
-
-                // expand field here..
-                //var processResult = QueryProcessor.Process(type);
-                //if (!processResult.IsValid)
-                //    return new FieldAggregationsResult { Message = $"Invalid field: {field}" };
-
-                //field = processResult.ExpandedQuery;
-                //result.UsesPremiumFeatures &= processResult.UsesPremiumFeatures;
                 
+                if (field.StartsWith("data."))
+                    field = $"idx.{field.Substring(5)}-n";
+                else if (field.StartsWith("ref."))
+                    field = $"idx.{field.Substring(4)}-r";
+
                 switch (type) {
                     case "avg":
                         result.Aggregations.Add(new FieldAggregation { Type = FieldAggregationType.Average, Field = field });
@@ -55,22 +56,26 @@ namespace Exceptionless.Core.Filter {
                         return new FieldAggregationsResult { Message = $"Invalid type: {type} for aggregation: {aggregation}" };
                 }
             }
+            
+            if (result.Aggregations.Any(a => !_freeFields.Contains(a.Field)))
+                result.UsesPremiumFeatures = true;
+            
+            if (applyRules) {
+                if (result.Aggregations.Count > 10)
+                    return new FieldAggregationsResult { Message = "Aggregation count exceeded" };
 
-            // Rules
-            if (result.Aggregations.Count > 10)
-                return new FieldAggregationsResult { Message = "Aggregation count exceeded" };
+                // Duplicate aggregations
+                if (result.Aggregations.Count != aggregations.Length)
+                    return new FieldAggregationsResult { Message = "Duplicate aggregation detected" };
 
-            // Duplicate aggregations
-            if (result.Aggregations.Count != aggregations.Length)
-                return new FieldAggregationsResult { Message = "Duplicate aggregation detected." };
+                // Distinct queries are expensive.
+                if (result.Aggregations.Count(a => a.Type == FieldAggregationType.Distinct) > 1)
+                    return new FieldAggregationsResult { Message = "Distinct aggregation count exceeded" };
 
-            // Distinct queries are expensive.
-            if (result.Aggregations.Count(a => a.Type == FieldAggregationType.Distinct) > 1)
-                return new FieldAggregationsResult { Message = "Distinct aggregation count exceeded" };
-
-            // Only allow fields that are numeric or have high commonality.
-            if (result.Aggregations.Any(a => !_allowedNumericFields.Contains(a.Field)))
-                return new FieldAggregationsResult { Message = "Dissallowed field detected." };
+                // Only allow fields that are numeric or have high commonality.
+                if (result.Aggregations.Any(a => !_allowedNumericFields.Contains(a.Field)))
+                    return new FieldAggregationsResult { Message = "Dissallowed field detected" };
+            }
             
             return result;
         }
