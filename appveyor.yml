@@ -64,6 +64,6 @@ deploy:
 
 notifications:
   - provider: Slack
+    channel: '#notifications'
     auth_token:
       secure: PigIGGo7UUDwdb0KGM/s7OfpAng/OMJx7q33jKfzudFBiXi1EBEd0DRmkbCc7CiX
-    channel: notifications
