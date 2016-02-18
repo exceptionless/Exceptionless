@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-            var identityGroups = contexts.Where(c => c.Event.GetUserIdentity()?.Identity != null)
+            var identityGroups = contexts.Where(c => c.Event.GetUserIdentity()?.Identity != null && String.IsNullOrEmpty(c.Event.GetSessionId()))
                 .OrderBy(c => c.Event.Date)
                 .GroupBy(c => c.Event.GetUserIdentity()?.Identity);
             
