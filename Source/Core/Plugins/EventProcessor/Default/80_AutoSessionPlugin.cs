@@ -9,7 +9,7 @@ using Foundatio.Caching;
 using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
-    [Priority(70)]
+    [Priority(80)]
     public class AutoSessionPlugin : EventProcessorPluginBase {
         private static readonly TimeSpan _sessionTimeout = TimeSpan.FromMinutes(15);
         private readonly ICacheClient _cacheClient;
