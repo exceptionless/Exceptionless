@@ -138,6 +138,13 @@ namespace Exceptionless {
             return ev.Data.TryGetValue(Event.KnownDataKeys.Version, out value) ? value as string : null;
         }
 
+        public static void SetSubmissionMethod(this Event ev, string submissionMethod) {
+            if (String.IsNullOrWhiteSpace(submissionMethod))
+                return;
+
+            ev.Data[Event.KnownDataKeys.SubmissionMethod] = submissionMethod.Trim();
+        }
+
         /// <summary>
         /// Sets the version that the event happened on.
         /// </summary>
@@ -174,6 +181,13 @@ namespace Exceptionless {
                 return;
 
             ev.Data[Event.KnownDataKeys.Error] = error;
+        }
+
+        public static void SetError(this Event ev, SimpleError error) {
+            if (error == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.SimpleError] = error;
         }
 
         /// <summary>
