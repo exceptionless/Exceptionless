@@ -17,7 +17,7 @@ namespace CloseInactiveSessionsJob {
                 JobType = typeof(Exceptionless.Core.Jobs.CloseInactiveSessionsJob),
                 ServiceProviderTypeName = "Exceptionless.Insulation.Jobs.FoundatioBootstrapper,Exceptionless.Insulation",
                 InstanceCount = 1,
-                Interval = TimeSpan.FromMinutes(5),
+                Interval = TimeSpan.FromMinutes(1),
                 InitialDelay = TimeSpan.FromSeconds(30),
                 RunContinuous = true
             });
