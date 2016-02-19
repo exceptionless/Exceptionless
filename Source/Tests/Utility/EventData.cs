@@ -53,9 +53,6 @@ namespace Exceptionless.Tests.Utility {
                 StackId = stackIds.Random()
             };
             
-            if(!String.IsNullOrEmpty(sessionId))
-                ev.SetSessionId(sessionId);
-
             if (!String.IsNullOrEmpty(userIdentity))
                 ev.SetUserIdentity(userIdentity);
 
@@ -88,6 +85,9 @@ namespace Exceptionless.Tests.Utility {
             } else {
                 ev.Type = type.ToLower();
             }
+
+            if (!String.IsNullOrEmpty(sessionId))
+                ev.SetSessionId(sessionId);
 
             if (ev.IsSessionStart())
                 ev.Value = 0;

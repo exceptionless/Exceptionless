@@ -2,7 +2,7 @@
 
 ## Before You Start
 
-Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://github.com/exceptionless/exceptionless)** project **MUST read &amp; sign the [Exceptionless Contribution License Agreement](http://www.clahub.com/agreements/exceptionless/Exceptionless)**. The Exceptionless team is legally prevented from accepting any pull requests from users who have not signed the CLA first.
+Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://github.com/exceptionless/exceptionless)** project **MUST read &amp; sign the [Exceptionless Contribution License Agreement](http://cla-assistant.io/exceptionless/Exceptionless)**. The Exceptionless team is legally prevented from accepting any pull requests from users who have not signed the CLA first.
 
 ## Reporting Bugs
 

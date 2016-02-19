@@ -102,7 +102,7 @@ namespace Exceptionless.Api {
             JobRunner.RunContinuousAsync<MailMessageJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
             JobRunner.RunContinuousAsync<EventNotificationsJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
             JobRunner.RunContinuousAsync<WebHooksJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token);
-            JobRunner.RunContinuousAsync<CloseInactiveSessionsJob>(initialDelay: TimeSpan.FromSeconds(30), cancellationToken: token, interval: TimeSpan.FromMinutes(5));
+            JobRunner.RunContinuousAsync<CloseInactiveSessionsJob>(initialDelay: TimeSpan.FromSeconds(30), cancellationToken: token, interval: TimeSpan.FromMinutes(1));
             JobRunner.RunContinuousAsync<DailySummaryJob>(initialDelay: TimeSpan.FromMinutes(1), cancellationToken: token, interval: TimeSpan.FromHours(1));
             JobRunner.RunContinuousAsync<DownloadGeoIPDatabaseJob>(initialDelay: TimeSpan.FromSeconds(5), cancellationToken: token, interval: TimeSpan.FromDays(1));
             JobRunner.RunContinuousAsync<RetentionLimitsJob>(initialDelay: TimeSpan.FromMinutes(15), cancellationToken: token, interval: TimeSpan.FromDays(1));

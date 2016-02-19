@@ -9,7 +9,7 @@ using Foundatio.Caching;
 using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
-    [Priority(70)]
+    [Priority(80)]
     public class AutoSessionPlugin : EventProcessorPluginBase {
         private static readonly TimeSpan _sessionTimeout = TimeSpan.FromMinutes(15);
         private readonly ICacheClient _cacheClient;
@@ -27,25 +27,18 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-            var identityGroups = contexts.Where(c => c.Event.GetUserIdentity()?.Identity != null)
+            var identityGroups = contexts.Where(c => c.Event.GetUserIdentity()?.Identity != null && String.IsNullOrEmpty(c.Event.GetSessionId()))
                 .OrderBy(c => c.Event.Date)
                 .GroupBy(c => c.Event.GetUserIdentity()?.Identity);
             
             foreach (var identityGroup in identityGroups) {
-                string cacheKey = $"{identityGroup.First().Project.Id}:identity:{identityGroup.Key.ToSHA1()}";
-                string sessionId = null;
+                string projectId = identityGroup.First().Project.Id;
+                string cacheKey = $"{projectId}:identity:{identityGroup.Key.ToSHA1()}";
+                string sessionId = await GetSessionIdAsync(cacheKey, projectId).AnyContext();
                 EventContext sessionStartContext = null;
 
                 var sessionsToUpdate = new Dictionary<string, EventContext>();
                 foreach (var context in identityGroup) {
-                    if (!context.Event.IsSessionStart() && String.IsNullOrEmpty(sessionId)) {
-                        sessionId = await _cacheClient.GetAsync<string>(cacheKey, null).AnyContext();
-                        if (!String.IsNullOrEmpty(sessionId)) {
-                            await _cacheClient.SetExpirationAsync(cacheKey, _sessionTimeout).AnyContext();
-                            await _cacheClient.SetExpirationAsync(GetSessionStartEventIdCacheKey(context.Project.Id, sessionId), _sessionTimeout).AnyContext();
-                        }
-                    }
-
                     if (context.Event.IsSessionStart() || String.IsNullOrEmpty(sessionId)) {
                         if (context.Event.IsSessionStart() && !String.IsNullOrEmpty(sessionId)) {
                             await CreateSessionEndEventAsync(context, sessionId).AnyContext();
@@ -68,15 +61,20 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                             if (lastContext == null || !isSessionEnd)
                                 await _cacheClient.SetAsync(GetSessionStartEventIdCacheKey(context.Project.Id, sessionId), sessionStartContext.Event.Id, _sessionTimeout).AnyContext();
                         }
-                    } else {
-                        context.Event.SetSessionId(sessionId);
-                        if (sessionStartContext == null)
-                            sessionsToUpdate[sessionId] = context;
                     }
 
                     if (context.Event.IsSessionStart()) {
                         sessionStartContext = context;
-                    } else if (context.Event.IsSessionEnd()) {
+                        continue;
+                    }
+
+                    context.Event.SetSessionId(sessionId);
+                    if (sessionStartContext == null)
+                        sessionsToUpdate[sessionId] = context;
+                    else
+                        sessionStartContext.Event.UpdateSessionStart(context.Event.Date.UtcDateTime, context.Event.IsSessionEnd());
+
+                    if (context.Event.IsSessionEnd()) {
                         await _cacheClient.RemoveAllAsync(new [] {
                             cacheKey,
                             GetSessionStartEventIdCacheKey(context.Project.Id, sessionId)
@@ -86,10 +84,19 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     }
                 }
 
-                foreach (var pair in sessionsToUpdate) {
+                foreach (var pair in sessionsToUpdate)
                     await UpdateSessionStartEventAsync(pair.Value, pair.Key, pair.Value.Event.IsSessionEnd());
-                }
             }
+        }
+
+        private async Task<string> GetSessionIdAsync(string cacheKey, string projectId) {
+            string sessionId = await _cacheClient.GetAsync<string>(cacheKey, null).AnyContext();
+            if (!String.IsNullOrEmpty(sessionId)) {
+                await _cacheClient.SetExpirationAsync(cacheKey, _sessionTimeout).AnyContext();
+                await _cacheClient.SetExpirationAsync(GetSessionStartEventIdCacheKey(projectId, sessionId), _sessionTimeout).AnyContext();
+            }
+
+            return sessionId;
         }
 
         private string GetSessionStartEventIdCacheKey(string projectId, string sessionId) {

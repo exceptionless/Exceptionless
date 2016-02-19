@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobRunContext context) {
-            const int LIMIT = 50;
+            const int LIMIT = 100;
 
             var results = await _eventRepository.GetOpenSessionsAsync(GetStartOfInactivePeriod(), new PagingOptions().WithPage(1).WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
