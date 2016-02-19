@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
             var events = new List<PersistentEvent>();
             RaygunModel model;
             if (input.TryFromJson(out model))
-                events.Add((PersistentEvent)_mapper.Map(model));
+                events.Add(_mapper.Map(model));
             
             return events.Count > 0 ? events : null;
         }

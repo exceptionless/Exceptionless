@@ -18,8 +18,8 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
                 if (details.Tags != null)
                     ev.Tags.AddRange(details.Tags);
 
-                //if (!String.IsNullOrEmpty(details.GroupingKey))
-                //    ev.SetManualStackingKey(details.GroupingKey);
+                if (!String.IsNullOrEmpty(details.GroupingKey))
+                    ev.SetManualStackingKey(details.GroupingKey);
 
                 if (details.UserCustomData != null)
                     foreach (var kvp in details.UserCustomData)
