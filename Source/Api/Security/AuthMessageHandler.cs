@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
@@ -62,10 +63,12 @@ namespace Exceptionless.Api.Security {
                         return await BaseSendAsync(request, cancellationToken);
                     }
                 }
+            } else if (request.Headers.Contains("X-ApiKey")) {
+                token = request.Headers.First(h => h.Key == "X-ApiKey").Value.FirstOrDefault();
             } else {
                 token = request.GetQueryString("access_token");
                 if (String.IsNullOrEmpty(token))
-                    token  = request.GetQueryString("api_key");
+                    token = request.GetQueryString("api_key");
 
                 if (String.IsNullOrEmpty(token))
                     token = request.GetQueryString("apikey");
