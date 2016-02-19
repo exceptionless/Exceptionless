@@ -22,7 +22,7 @@
                     "className": "BrokenService",
                     "columnNumber": 23,
                     "fileName": "BrokenService.cs",
-                    "methodName": "BreakEverything()"
+                    "methodName": "BreakEverything<string, int>(Dictionary<string, int> source)"
                 }]
 		},
         "environment": {

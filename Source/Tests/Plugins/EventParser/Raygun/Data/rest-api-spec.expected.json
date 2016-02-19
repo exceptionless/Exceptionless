@@ -12,7 +12,7 @@
   ],
   "message": "An error occurred",
   "data": {
-    "@version": "1.0.0.1",
+    "@stack": "ErrorGroup",
     "domain": "WORKPLACE",
     "area": "51",
     "Client": {
@@ -23,34 +23,28 @@
     "Response": {
       "status_code": 500
     },
-    "@request": {
-      "user_agent": "5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.65 Safari/537.36",
-      "http_method": "POST",
-      "is_secure": true,
-      "host": "https://raygun.io",
-      "port": 443,
-      "path": "/docs/integrations/api",
-      "referrer": "www.google.com",
-      "client_ip_address": "127.0.0.1",
-      "post_data": {
-        "first_name": "Example",
-        "last_name": "Person",
-        "newsletter": true
-      },
-      "query_string": {
-        "q": "searchParams"
-      },
+    "@error": {
+      "message": "An error occurred",
+      "type": "ErrorClass",
       "data": {
-        "Headers": {
-          "referer": "www.google.com",
-          "host": "raygun.io"
-        },
-        "RawData": "{\"Test\": 5}",
-        "@browser": "Mozilla",
-        "@browser_version": "5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.65 Safari/537.36",
-        "BrowserHeight": 1440,
-        "BrowserWidth": 2560,
-        "@device": "Nokia Nexus 7"
+        "example": 5
+      },
+      "stack_trace": [
+        {
+          "file_name": "BrokenService.cs",
+          "line_number": 55,
+          "column": 23,
+          "is_signature_target": false,
+          "declaring_type": "BrokenService",
+          "name": "BreakEverything",
+          "module_id": -1
+        }
+      ],
+      "target_method": {
+        "is_signature_target": false,
+        "declaring_type": "BrokenService",
+        "name": "BreakEverything",
+        "module_id": -1
       }
     },
     "@environment": {
@@ -90,6 +84,36 @@
         "WindowBoundsWidth": 2560.0
       }
     },
+    "@request": {
+      "user_agent": "5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.65 Safari/537.36",
+      "http_method": "POST",
+      "is_secure": true,
+      "host": "https://raygun.io",
+      "port": 443,
+      "path": "/docs/integrations/api",
+      "referrer": "www.google.com",
+      "client_ip_address": "127.0.0.1",
+      "post_data": {
+        "first_name": "Example",
+        "last_name": "Person",
+        "newsletter": true
+      },
+      "query_string": {
+        "q": "searchParams"
+      },
+      "data": {
+        "Headers": {
+          "referer": "www.google.com",
+          "host": "raygun.io"
+        },
+        "RawData": "{\"Test\": 5}",
+        "@browser": "Mozilla",
+        "@browser_version": "5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.65 Safari/537.36",
+        "BrowserHeight": 1440,
+        "BrowserWidth": 2560,
+        "@device": "Nokia Nexus 7"
+      }
+    },
     "@user": {
       "identity": "test@example.com",
       "name": "Test User",
@@ -102,29 +126,6 @@
         "Uuid": "783491e1-d4a9-46bc-9fde-9b1dd9ef6c6e"
       }
     },
-    "@error": {
-      "message": "An error occurred",
-      "type": "ErrorClass",
-      "data": {
-        "example": 5
-      },
-      "stack_trace": [
-        {
-          "file_name": "BrokenService.cs",
-          "line_number": 55,
-          "column": 23,
-          "is_signature_target": false,
-          "declaring_type": "BrokenService",
-          "name": "BreakEverything",
-          "module_id": -1
-        }
-      ],
-      "target_method": {
-        "is_signature_target": false,
-        "declaring_type": "BrokenService",
-        "name": "BreakEverything",
-        "module_id": -1
-      }
-    }
+    "@version": "1.0.0.1"
   }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using Exceptionless.Core.Geo;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 
