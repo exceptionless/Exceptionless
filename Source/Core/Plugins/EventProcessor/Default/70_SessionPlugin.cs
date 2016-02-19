@@ -28,12 +28,15 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-            await ProcessAutoSessionsAsync(contexts
+            var autoSessionEvents = contexts
                 .Where(c => c.Event.GetUserIdentity()?.Identity != null
-                    && String.IsNullOrEmpty(c.Event.GetSessionId())).ToList()).AnyContext();
+                    && String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
 
-            await ProcessManualSessionsAsync(contexts
-                .Where(c => !String.IsNullOrEmpty(c.Event.GetSessionId())).ToList()).AnyContext();
+            var manualSessionsEvents = contexts
+                .Where(c => !String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
+            
+            await ProcessAutoSessionsAsync(autoSessionEvents).AnyContext();
+            await ProcessManualSessionsAsync(manualSessionsEvents).AnyContext();
         }
 
         private async Task ProcessManualSessionsAsync(ICollection<EventContext> contexts) {
@@ -49,6 +52,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                 // cancel duplicate start events (1 per session id)
                 session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => ev.IsCancelled = true);
+                var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
 
                 // cancel duplicate end events (1 per session id)
                 session.Where(ev => ev.Event.IsSessionEnd()).Skip(1).ForEach(ev => ev.IsCancelled = true);
@@ -56,14 +60,26 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 // cancel heart beat events (we don't save them)
                 session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ev => ev.IsCancelled = true);
 
-                var sessionStart = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.DateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
-                if (String.IsNullOrEmpty(sessionStart)) {
+                // try to update an existing session
+                var sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.DateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
+
+                // do we already have a session start for this session id?
+                if (!String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent != null) {
+                    sessionStartEvent.IsCancelled = true;
+                } else if (String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent != null) {
+                    // no existing session, session start is in the batch
+                    sessionStartEvent.Event.UpdateSessionStart(lastSessionEvent.Event.Date.DateTime, lastSessionEvent.Event.IsSessionEnd());
+                    sessionStartEvent.SetProperty("SetSessionStartEventId", true);
+                } else if (String.IsNullOrEmpty(sessionStartEventId)) {
+                    // no session start event found and none in the batch
+
                     // if session end, without any session events, cancel
                     if (session.Count() == 1 && firstSessionEvent.Event.IsSessionEnd()) {
                         firstSessionEvent.IsCancelled = true;
                         continue;
                     }
 
+                    // create a new session start event
                     await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.DateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
                 }
             }
@@ -77,6 +93,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             foreach (var identityGroup in identityGroups) {
                 string projectId = identityGroup.First().Project.Id;
 
+                // group events into sessions (split by session ends)
                 foreach (var session in CreateSessionGroups(identityGroup)) {
                     bool isNewSession = false;
                     var firstSessionEvent = session.First();
@@ -84,11 +101,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                     // cancel duplicate start events
                     session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => ev.IsCancelled = true);
+                    var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
 
                     // cancel heart beat events (we don't save them)
                     session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ev => ev.IsCancelled = true);
 
-                    string sessionId = await GetIdentitySessionIdAsync(identityGroup.Key, projectId).AnyContext();
+                    string sessionId = await GetIdentitySessionIdAsync(projectId, identityGroup.Key).AnyContext();
 
                     // if session end, without any session events, cancel
                     if (String.IsNullOrEmpty(sessionId) && session.Count == 1 && firstSessionEvent.Event.IsSessionEnd()) {
@@ -96,6 +114,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                         continue;
                     }
 
+                    // no existing session, create a new one
                     if (String.IsNullOrEmpty(sessionId)) {
                         sessionId = ObjectId.GenerateNewId(firstSessionEvent.Event.Date.DateTime).ToString();
                         isNewSession = true;
@@ -104,16 +123,33 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     session.ForEach(s => s.Event.SetSessionId(sessionId));
 
                     if (isNewSession) {
-                        await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
+                        if (sessionStartEvent != null) {
+                            sessionStartEvent.Event.UpdateSessionStart(lastSessionEvent.Event.Date.DateTime, lastSessionEvent.Event.IsSessionEnd());
+                            sessionStartEvent.SetProperty("SetSessionStartEventId", true);
+                        } else {
+                            await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
+                        }
+
                         await SetIdentitySessionIdAsync(projectId, identityGroup.Key, sessionId).AnyContext();
-                    } else
+                    } else {
+                        // we already have a session start, cancel this one
+                        if (sessionStartEvent != null)
+                            sessionStartEvent.IsCancelled = true;
+
                         await UpdateSessionStartEventAsync(projectId, sessionId, lastSessionEvent.Event.Date.DateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
+                    }
                 }
             }
         }
 
+        public override async Task EventProcessedAsync(EventContext context) {
+            if (context.GetProperty("SetSessionStartEventId") != null)
+                await SetSessionStartEventIdAsync(context.Project.Id, context.Event.GetSessionId(), context.Event.Id).AnyContext();
+
+            await base.EventProcessedAsync(context);
+        }
+
         private static List<List<EventContext>> CreateSessionGroups(IGrouping<String, EventContext> identityGroup) {
-            // group events into sessions (split by session ends)
             var sessions = new List<List<EventContext>>();
             var currentSession = new List<EventContext>();
             sessions.Add(currentSession);
