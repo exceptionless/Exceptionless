@@ -98,7 +98,8 @@ namespace Exceptionless.Core.Filter {
         Sum,
         Min,
         Max,
-        Last
+        Last,
+        Term
     }
 
     public class FieldAggregation {
@@ -128,6 +129,45 @@ namespace Exceptionless.Core.Filter {
         }
 
         public static bool operator !=(FieldAggregation left, FieldAggregation right) {
+            return !Equals(left, right);
+        }
+    }
+
+    public class TermFieldAggregation: FieldAggregation {
+        public TermFieldAggregation() {
+            Type = FieldAggregationType.Term;
+        }
+
+        public string ExcludePattern { get; set; }
+        public string IncludePattern { get; set; }
+
+        protected bool Equals(TermFieldAggregation other) {
+            return base.Equals(other) && String.Equals(ExcludePattern, other.ExcludePattern) && String.Equals(IncludePattern, other.IncludePattern);
+        }
+        
+        public override bool Equals(object obj) {
+            if (ReferenceEquals(null, obj))
+                return false;
+            if (ReferenceEquals(this, obj))
+                return true;
+            if (obj.GetType() != this.GetType())
+                return false;
+            return Equals((TermFieldAggregation)obj);
+        }
+        public override int GetHashCode() {
+            unchecked {
+                int hashCode = base.GetHashCode();
+                hashCode = (hashCode * 397) ^ (ExcludePattern?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (IncludePattern?.GetHashCode() ?? 0);
+                return hashCode;
+            }
+        }
+
+        public static bool operator ==(TermFieldAggregation left, TermFieldAggregation right) {
+            return Equals(left, right);
+        }
+
+        public static bool operator !=(TermFieldAggregation left, TermFieldAggregation right) {
             return !Equals(left, right);
         }
     }

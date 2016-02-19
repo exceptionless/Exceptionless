@@ -173,31 +173,34 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         [HttpGet]
-        [Route]
+        [Route("numbers")]
         [ResponseType(typeof(NumbersStatsResult))]
         public async Task<IHttpActionResult> GetNumbersAsync(string fields, string filter = null, string time = null, string offset = null) {
-            var fieldAggregationsResult = FieldAggregationProcessor.Process(fields);
-            if (!fieldAggregationsResult.IsValid)
-                return BadRequest(fieldAggregationsResult.Message);
+            var far = FieldAggregationProcessor.Process(fields);
+            if (!far.IsValid)
+                return BadRequest(far.Message);
 
+            return await GetNumbersInternalAsync(far, filter, time, offset);
+        }
+
+        private async Task<IHttpActionResult> GetNumbersInternalAsync(FieldAggregationsResult far, string filter, string time, string offset) {
             var processResult = QueryProcessor.Process(filter);
             if (!processResult.IsValid)
                 return BadRequest(processResult.Message);
-            
-            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
+
+            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, far.UsesPremiumFeatures || processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
             NumbersStatsResult result;
             try {
                 var timeInfo = GetTimeInfo(time, offset);
-                result = await _stats.GetNumbersStatsAsync(fieldAggregationsResult.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
+                result = await _stats.GetNumbersStatsAsync(far.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex)
-                    .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = filter, Time = time, Offset = offset })
-                    .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
-                    .SetActionContext(ActionContext)
-                    .Write();
+                Logger.Error().Exception(ex).Property("Search Filter", new {
+                    SystemFilter = systemFilter,
+                    UserFilter = filter,
+                    Time = time,
+                    Offset = offset
+                }).Tag("Search").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
@@ -216,28 +219,31 @@ namespace Exceptionless.Api.Controllers {
         [Route("timeline")]
         [ResponseType(typeof(NumbersTimelineStatsResult))]
         public async Task<IHttpActionResult> GetTimelineAsync(string fields, string filter = null, string time = null, string offset = null) {
-            var fieldAggregationsResult = FieldAggregationProcessor.Process(fields);
-            if (!fieldAggregationsResult.IsValid)
-                return BadRequest(fieldAggregationsResult.Message);
+            var far = FieldAggregationProcessor.Process(fields);
+            if (!far.IsValid)
+                return BadRequest(far.Message);
 
+            return await GetTimelineInternalAsync(far, filter, time, offset);
+        }
+
+        private async Task<IHttpActionResult> GetTimelineInternalAsync(FieldAggregationsResult far, string filter, string time, string offset) {
             var processResult = QueryProcessor.Process(filter);
             if (!processResult.IsValid)
                 return BadRequest(processResult.Message);
 
-            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
+            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, far.UsesPremiumFeatures || processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
             NumbersTimelineStatsResult result;
             try {
                 var timeInfo = GetTimeInfo(time, offset);
-                result = await _stats.GetNumbersTimelineStatsAsync(fieldAggregationsResult.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
+                result = await _stats.GetNumbersTimelineStatsAsync(far.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex)
-                    .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = filter, Time = time, Offset = offset })
-                    .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
-                    .SetActionContext(ActionContext)
-                    .Write();
+                Logger.Error().Exception(ex).Property("Search Filter", new {
+                    SystemFilter = systemFilter,
+                    UserFilter = filter,
+                    Time = time,
+                    Offset = offset
+                }).Tag("Search").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }

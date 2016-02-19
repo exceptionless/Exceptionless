@@ -598,7 +598,7 @@ namespace Exceptionless.Core.Utility {
                         aggregation.Average($"avg_{field.Field}", a => a.Field(field.Field));
                         break;
                     case FieldAggregationType.Distinct:
-                        aggregation.Cardinality($"distinct_{field.Field}", a => a.Field(field.Field));
+                        aggregation.Cardinality($"distinct_{field.Field}", a => a.Field(field.Field).PrecisionThreshold(100));
                         break;
                     case FieldAggregationType.Sum:
                         aggregation.Sum($"sum_{field.Field}", a => a.Field(field.Field));
@@ -611,6 +611,22 @@ namespace Exceptionless.Core.Utility {
                         break;
                     case FieldAggregationType.Last:
                         // TODO: Populate with the last value.
+                        break;
+                    case FieldAggregationType.Term:
+                        var termField = field as TermFieldAggregation;
+                        if (termField == null)
+                            throw new InvalidOperationException("term aggregation must be of type TermFieldAggregation");
+
+                        aggregation.Terms($"term_{field.Field}", t => {
+                            var tad = t.Field(field.Field);
+                            if (!String.IsNullOrEmpty(termField.ExcludePattern))
+                                tad.Exclude(termField.ExcludePattern);
+
+                            if (!String.IsNullOrEmpty(termField.IncludePattern))
+                                tad.Include(termField.IncludePattern);
+
+                            return tad;
+                        });
                         break;
                     default:
                         throw new InvalidOperationException($"Unknown FieldAggregation type: {field.Type}");
@@ -641,6 +657,10 @@ namespace Exceptionless.Core.Utility {
                         break;
                     case FieldAggregationType.Last:
                         // TODO: Populate with the last value.
+                        break;
+                    case FieldAggregationType.Term:
+                        var termResult = aggregations.Terms($"term_{field.Field}");
+                        results.Add(termResult?.Items.Count > 0 ? termResult.Items[0].DocCount : 0);
                         break;
                     default:
                         throw new InvalidOperationException($"Unknown FieldAggregation type: {field.Type}");
