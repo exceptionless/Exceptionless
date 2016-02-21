@@ -242,14 +242,13 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
                 var frame = new StackFrame {
                     DeclaringType = di.Item1,
                     DeclaringNamespace = di.Item2,
-                    Name = GetMethodNameWithoutParameter(stackTrace.MethodName),
+                    Name = stackTrace.MethodName,
                     LineNumber = stackTrace.LineNumber,
                     Column = stackTrace.ColumnNumber,
                     FileName = stackTrace.FileName,
                     ModuleId = -1
                 };
-
-                // TODO Fill in generics and parameter info.
+                
                 frames.Add(frame);
             }
 
@@ -266,7 +265,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
             return new Method {
                 DeclaringType = di.Item1,
                 DeclaringNamespace = di.Item2,
-                Name = GetMethodNameWithoutParameter(firstFrame.MethodName),
+                Name = firstFrame.MethodName,
                 ModuleId = -1
             };
         }
@@ -293,21 +292,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
 
             return new Tuple<string, string>(declaringType, declaringNamespace);
         }
-
-        private string GetMethodNameWithoutParameter(string methodName) {
-            if (String.IsNullOrEmpty(methodName))
-                return null;
-
-            string methodNameWithoutParameter;
-            int firstBracketIndex = methodName.IndexOf('(');
-            if (firstBracketIndex == -1)
-                methodNameWithoutParameter = methodName;
-            else
-                methodNameWithoutParameter = methodName.Substring(0, firstBracketIndex);
-
-            return methodNameWithoutParameter;
-        }
-
+        
         /// <summary>
         /// Someone never normalized the memory to one specific size (bytes, MB, etc..).
         /// </summary>
