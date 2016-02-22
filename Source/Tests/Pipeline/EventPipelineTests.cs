@@ -264,6 +264,39 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
+        public async Task WillMarkAutoSessionHeartbeatStackHidden() {
+            await ResetAsync();
+
+            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(0, contexts.Count(c => c.IsCancelled));
+            Assert.Equal(1, contexts.Count(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(2, results.Total);
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
+
+            var sessionHeartbeat = results.Documents.Single(e => e.IsSessionHeartbeat());
+            Assert.NotNull(sessionHeartbeat);
+            Assert.True(sessionHeartbeat.IsHidden);
+
+            var stack = await _stackRepository.GetByIdAsync(sessionHeartbeat.StackId);
+            Assert.NotNull(stack);
+            Assert.True(stack.IsHidden);
+
+            stack = await _stackRepository.GetByIdAsync(results.Documents.First(e => !e.IsSessionHeartbeat()).StackId);
+            Assert.NotNull(stack);
+            Assert.False(stack.IsHidden);
+        }
+
+        [Fact]
         public async Task CreateManualSessionAsync() {
             await CreateManualSessionInternalAsync(DateTimeOffset.Now);
         }
@@ -339,7 +372,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(30, sessionStartEvent.Value);
             Assert.True(sessionStartEvent.HasSessionEndTime());
         }
-
+        
         [Fact]
         public async Task CreateManualSessionStartEventAsync() {
             await ResetAsync();
@@ -437,7 +470,40 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 Assert.True(sessionStart.HasSessionEndTime());
             }
         }
+        
+        [Fact]
+        public async Task WillMarkManualSessionHeartbeatStackHidden() {
+            await ResetAsync();
 
+            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(0, contexts.Count(c => c.IsCancelled));
+            Assert.Equal(1, contexts.Count(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(2, results.Total);
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
+
+            var sessionHeartbeat = results.Documents.Single(e => e.IsSessionHeartbeat());
+            Assert.NotNull(sessionHeartbeat);
+            Assert.True(sessionHeartbeat.IsHidden);
+
+            var stack = await _stackRepository.GetByIdAsync(sessionHeartbeat.StackId);
+            Assert.NotNull(stack);
+            Assert.True(stack.IsHidden);
+            
+            stack = await _stackRepository.GetByIdAsync(results.Documents.First(e => !e.IsSessionHeartbeat()).StackId);
+            Assert.NotNull(stack);
+            Assert.False(stack.IsHidden);
+        }
+        
         [Fact]
         public void CanIndexExtendedData() {
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: DateTime.Now);
