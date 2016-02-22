@@ -53,34 +53,40 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 // cancel duplicate start events (1 per session id)
                 session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => ev.IsCancelled = true);
                 var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
+                
+                // sync the session start event with the first session event.
+                if (sessionStartEvent != null)
+                    sessionStartEvent.Event.Date = firstSessionEvent.Event.Date;
 
                 // cancel duplicate end events (1 per session id)
                 session.Where(ev => ev.Event.IsSessionEnd()).Skip(1).ForEach(ev => ev.IsCancelled = true);
+                var sessionEndEvent = session.FirstOrDefault(ev => ev.Event.IsSessionEnd());
 
-                // cancel heart beat events (we don't save them)
-                session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ev => ev.IsCancelled = true);
-
+                // sync the session start event with the first session event.
+                if (sessionEndEvent != null)
+                    sessionEndEvent.Event.Date = lastSessionEvent.Event.Date;
+                
                 // try to update an existing session
-                var sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.DateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
+                var sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent != null).AnyContext();
 
                 // do we already have a session start for this session id?
                 if (!String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent != null) {
                     sessionStartEvent.IsCancelled = true;
                 } else if (String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent != null) {
                     // no existing session, session start is in the batch
-                    sessionStartEvent.Event.UpdateSessionStart(lastSessionEvent.Event.Date.DateTime, lastSessionEvent.Event.IsSessionEnd());
+                    sessionStartEvent.Event.UpdateSessionStart(lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent != null);
                     sessionStartEvent.SetProperty("SetSessionStartEventId", true);
                 } else if (String.IsNullOrEmpty(sessionStartEventId)) {
                     // no session start event found and none in the batch
 
                     // if session end, without any session events, cancel
-                    if (session.Count() == 1 && firstSessionEvent.Event.IsSessionEnd()) {
+                    if (session.Count(s => !s.IsCancelled) == 1 && firstSessionEvent.Event.IsSessionEnd()) {
                         firstSessionEvent.IsCancelled = true;
                         continue;
                     }
 
                     // create a new session start event
-                    await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.DateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
+                    await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent != null).AnyContext();
                 }
             }
         }
@@ -102,10 +108,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     // cancel duplicate start events
                     session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => ev.IsCancelled = true);
                     var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
-
-                    // cancel heart beat events (we don't save them)
-                    session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ev => ev.IsCancelled = true);
-
+                    
+                    // sync the session start event with the first session event.
+                    if (sessionStartEvent != null)
+                        sessionStartEvent.Event.Date = firstSessionEvent.Event.Date;
+                    
                     string sessionId = await GetIdentitySessionIdAsync(projectId, identityGroup.Key).AnyContext();
 
                     // if session end, without any session events, cancel
@@ -124,19 +131,20 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                     if (isNewSession) {
                         if (sessionStartEvent != null) {
-                            sessionStartEvent.Event.UpdateSessionStart(lastSessionEvent.Event.Date.DateTime, lastSessionEvent.Event.IsSessionEnd());
+                            sessionStartEvent.Event.UpdateSessionStart(lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd());
                             sessionStartEvent.SetProperty("SetSessionStartEventId", true);
                         } else {
                             await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
                         }
 
-                        await SetIdentitySessionIdAsync(projectId, identityGroup.Key, sessionId).AnyContext();
+                        if (!lastSessionEvent.IsCancelled && !lastSessionEvent.Event.IsSessionEnd())
+                            await SetIdentitySessionIdAsync(projectId, identityGroup.Key, sessionId).AnyContext();
                     } else {
                         // we already have a session start, cancel this one
                         if (sessionStartEvent != null)
                             sessionStartEvent.IsCancelled = true;
 
-                        await UpdateSessionStartEventAsync(projectId, sessionId, lastSessionEvent.Event.Date.DateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
+                        await UpdateSessionStartEventAsync(projectId, sessionId, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
                     }
                 }
             }
