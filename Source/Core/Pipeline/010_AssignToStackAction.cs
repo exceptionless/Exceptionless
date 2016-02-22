@@ -70,7 +70,7 @@ namespace Exceptionless.Core.Pipeline {
                             TotalOccurrences = 1,
                             FirstOccurrence = ctx.Event.Date.UtcDateTime,
                             LastOccurrence = ctx.Event.Date.UtcDateTime,
-                            IsHidden = ctx.Event.IsSessionHeartbeat()
+                            IsHidden = ctx.Event.IsHidden
                         };
 
                         ctx.Stack = stack;

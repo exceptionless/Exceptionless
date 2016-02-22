@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                 var firstSessionEvent = session.First();
                 var lastSessionEvent = session.Last();
-
+                
                 // cancel duplicate start events (1 per session id)
                 session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => ev.IsCancelled = true);
                 var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
@@ -62,10 +62,13 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 session.Where(ev => ev.Event.IsSessionEnd()).Skip(1).ForEach(ev => ev.IsCancelled = true);
                 var sessionEndEvent = session.FirstOrDefault(ev => ev.Event.IsSessionEnd());
 
-                // sync the session start event with the first session event.
+                // sync the session end event with the last session event.
                 if (sessionEndEvent != null)
                     sessionEndEvent.Event.Date = lastSessionEvent.Event.Date;
-                
+
+                // mark the heart beat events as hidden. This will cause new stacks to be marked as hidden, otherwise this value will be reset by the stack.
+                session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ctx => ctx.Event.IsHidden = true);
+
                 // try to update an existing session
                 var sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent != null).AnyContext();
 
@@ -113,6 +116,9 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     if (sessionStartEvent != null)
                         sessionStartEvent.Event.Date = firstSessionEvent.Event.Date;
                     
+                    // mark the heart beat events as hidden. This will cause new stacks to be marked as hidden, otherwise this value will be reset by the stack.
+                    session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ctx => ctx.Event.IsHidden = true);
+
                     string sessionId = await GetIdentitySessionIdAsync(projectId, identityGroup.Key).AnyContext();
 
                     // if session end, without any session events, cancel
