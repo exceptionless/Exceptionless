@@ -12,24 +12,20 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
-using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
-using Foundatio.Repositories.Models;
 using Microsoft.Owin;
 using Nest;
 using Newtonsoft.Json;
-using Nito.AsyncEx;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Controllers {
-    public class EventControllerTests {
+    public class EventControllerTests : CaptureFixture {
         private static bool _databaseReset;
         private static bool _sampleOrganizationsAdded;
         private static bool _sampleProjectsAdded;
@@ -119,18 +115,6 @@ namespace Exceptionless.Api.Tests.Controllers {
             const int batchCount = 10;
 
             try {
-                var countdown = new AsyncCountdownEvent(batchCount);
-                var messageSubscriber = IoC.GetInstance<IMessageSubscriber>();
-                messageSubscriber.Subscribe<ExtendedEntityChanged>(ch => {
-                    if (ch.ChangeType != ChangeType.Added || ch.Type != typeof(PersistentEvent).Name)
-                        return;
-
-                    if (countdown.CurrentCount >= batchCount)
-                        throw new ApplicationException("Too many change notifications.");
-
-                    countdown.Signal();
-                });
-
                 await Run.InParallelAsync(batchCount, async i => {
                     _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(new User { EmailAddress = TestConstants.UserEmail, Id = TestConstants.UserId, OrganizationIds = new[] { TestConstants.OrganizationId }, Roles = new[] { AuthorizationRoles.Client } }.ToIdentity(TestConstants.ProjectId)), true, false);
                     var events = new RandomEventGenerator().Generate(batchSize);
@@ -150,7 +134,8 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Trace.WriteLine(sw.Elapsed);
 
                 await _client.RefreshAsync();
-                Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync()).Completed);
+                var stats = await _eventQueue.GetQueueStatsAsync();
+                Assert.Equal(batchCount, stats.Completed);
                 var minimum = batchSize * batchCount;
                 Assert.InRange(await EventCountAsync(), minimum, minimum * 2);
             } finally {
