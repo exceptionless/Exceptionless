@@ -100,7 +100,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(3, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 
-            var sessionStart = events.Documents.First(e => e.IsSessionStart());
+            var sessionStart = events.Documents.Single(e => e.IsSessionStart());
             Assert.Equal(240, sessionStart.Value);
             Assert.False(sessionStart.HasSessionEndTime());
         }
@@ -397,8 +397,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
             Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, results.Documents.First(e => e.IsSessionStart()).Value);
         }
-
-
+        
         [Fact]
         public async Task CloseExistingManualSessionAsync() {
             await ResetAsync();
@@ -414,8 +413,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(contexts.Any(c => c.IsCancelled));
             Assert.True(contexts.Any(c => c.IsProcessed));
             await _client.RefreshAsync();
-
-
+            
             events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.Session, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(20), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
