@@ -57,9 +57,8 @@ namespace Exceptionless.Core.Pipeline {
                     if (ctx.Stack == null) {
                         Logger.Trace().Message("Creating new event stack.").Write();
                         ctx.IsNew = true;
-
-                        var msi = ctx.Event.GetManualStackingInfo();
-                        string title = !String.IsNullOrWhiteSpace(msi?.Title) ? msi.Title : _formattingPluginManager.GetStackTitle(ctx.Event);
+                        
+                        string title = _formattingPluginManager.GetStackTitle(ctx.Event);
                         var stack = new Stack {
                             OrganizationId = ctx.Event.OrganizationId,
                             ProjectId = ctx.Event.ProjectId,

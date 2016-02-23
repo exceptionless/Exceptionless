@@ -261,6 +261,7 @@
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\03_ManualStackingPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\60_LocationPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\05_ManualStackingFormattingPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
