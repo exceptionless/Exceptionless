@@ -67,6 +67,8 @@ namespace Exceptionless.Insulation {
             container.RegisterSingleton<ExceptionlessClient>(() => client);
 
             client.Configuration.SetVersion(Settings.Current.Version);
+            if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
+                client.Configuration.Enabled = false;
             client.Register();
             container.AddBootstrapper<HttpConfiguration>(config => client.RegisterWebApi(config));
             client.Configuration.UseInMemoryStorage();
