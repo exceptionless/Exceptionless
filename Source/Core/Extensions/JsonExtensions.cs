@@ -303,13 +303,14 @@ namespace Exceptionless.Core.Extensions {
 
         public static void AddModelConverters(this JsonSerializerSettings settings) {
             var knownDataTypes = new Dictionary<string, Type> {
+                { Event.KnownDataKeys.Error, typeof(Error) },
                 { Event.KnownDataKeys.EnvironmentInfo, typeof(EnvironmentInfo) },
+                { Event.KnownDataKeys.Location, typeof(Location) },
                 { Event.KnownDataKeys.RequestInfo, typeof(RequestInfo) },
                 { Event.KnownDataKeys.SimpleError, typeof(SimpleError) },
+                { Event.KnownDataKeys.StackingInfo, typeof(StackingInfo) },
                 { Event.KnownDataKeys.UserDescription, typeof(UserDescription) },
-                { Event.KnownDataKeys.UserInfo, typeof(UserInfo) },
-                { Event.KnownDataKeys.Error, typeof(Error) },
-                { Event.KnownDataKeys.Location, typeof(Location) }
+                { Event.KnownDataKeys.UserInfo, typeof(UserInfo) }
             };
 
             settings.Converters.Add(new DataObjectConverter<PersistentEvent>(knownDataTypes));

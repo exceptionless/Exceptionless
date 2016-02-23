@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -167,6 +168,64 @@ namespace Exceptionless {
                 return;
 
             ev.Data[Event.KnownDataKeys.EnvironmentInfo] = environmentInfo;
+        }
+        
+        /// <summary>
+        /// Gets the stacking info from extended data.
+        /// </summary>
+        public static StackingInfo GetManualStackingInfo(this Event ev) {
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.StackingInfo, out value) ? value as StackingInfo : null;
+        }
+        
+        /// <summary>
+        /// Changes default stacking behavior
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="signatureData">Key value pair that determines how the event is stacked.</param>
+        public static void SetManualStackingInfo(this Event ev, IDictionary<string, string> signatureData) {
+            if (signatureData == null || signatureData.Count == 0)
+                return;
+
+            ev.Data[Event.KnownDataKeys.StackingInfo] = new StackingInfo(signatureData);
+        }
+
+        /// <summary>
+        /// Changes default stacking behavior
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="title">The stack title.</param>
+        /// <param name="signatureData">Key value pair that determines how the event is stacked.</param>
+        public static void SetManualStackingInfo(this Event ev, string title, IDictionary<string, string> signatureData) {
+            if (String.IsNullOrWhiteSpace(title) || signatureData == null || signatureData.Count == 0)
+                return;
+
+            ev.Data[Event.KnownDataKeys.StackingInfo] = new StackingInfo(title, signatureData);
+        }
+
+        /// <summary>
+        /// Changes default stacking behavior by setting the stacking info.
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="manualStackingKey">The manual stacking key.</param>
+        public static void SetManualStackingKey(this Event ev, string manualStackingKey) {
+            if (String.IsNullOrWhiteSpace(manualStackingKey))
+                return;
+
+            ev.Data[Event.KnownDataKeys.StackingInfo] = new StackingInfo(null, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
+        }
+
+        /// <summary>
+        /// Changes default stacking behavior by setting the stacking info.
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="title">The stack title.</param>
+        /// <param name="manualStackingKey">The manual stacking key.</param>
+        public static void SetManualStackingKey(this Event ev, string title, string manualStackingKey) {
+            if (String.IsNullOrWhiteSpace(title) || String.IsNullOrWhiteSpace(manualStackingKey))
+                return;
+
+            ev.Data[Event.KnownDataKeys.StackingInfo] = new StackingInfo(title, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
         }
 
         /// <summary>
