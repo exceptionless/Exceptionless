@@ -36,14 +36,14 @@
           "column": 23,
           "is_signature_target": false,
           "declaring_type": "BrokenService",
-          "name": "BreakEverything",
+          "name": "BreakEverything<string, int>(Dictionary<string, int> source)",
           "module_id": -1
         }
       ],
       "target_method": {
         "is_signature_target": false,
         "declaring_type": "BrokenService",
-        "name": "BreakEverything",
+        "name": "BreakEverything<string, int>(Dictionary<string, int> source)",
         "module_id": -1
       }
     },
