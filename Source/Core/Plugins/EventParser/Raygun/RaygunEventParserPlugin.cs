@@ -7,7 +7,7 @@ using Exceptionless.Core.Pipeline;
 namespace Exceptionless.Core.Plugins.EventParser.Raygun {
     [Priority(0)]
     public class RaygunEventParserPlugin : IEventParserPlugin {
-        private RaygunEventMapper _mapper = new RaygunEventMapper();
+        private readonly RaygunEventMapper _mapper = new RaygunEventMapper();
 
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
             if (userAgent != "raygun" && apiVersion != 1)

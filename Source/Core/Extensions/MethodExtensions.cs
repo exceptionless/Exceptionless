@@ -8,6 +8,7 @@ namespace Exceptionless.Core.Extensions {
             if (method == null)
                 return null;
 
+            // TODO: We need to see if name property is already populated with parameters.
             var sb = new StringBuilder();
             AppendMethod(method, sb, includeParameters: false);
             return sb.ToString();

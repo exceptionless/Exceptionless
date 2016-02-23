@@ -163,6 +163,7 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
             if (request.Headers != null)
                 ri.Data[nameof(request.Headers)] = request.Headers;
 
+            // TODO: See of this is always json content, if so try parsing it..
             if (!String.IsNullOrEmpty(request.RawData))
                 ri.Data[nameof(request.RawData)] = request.RawData;
 
@@ -191,20 +192,20 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
             if (user == null)
                 return null;
 
-            var ui = new UserInfo {
+
+            // TODO: We try and set the users id to email in our system (and index it as an email address). Should we set it to the user id? 
+            return new UserInfo {
                 Identity = user.Email,
-                Name = user.FullName
+                Name = user.FullName,
+                Data = {
+                    [nameof(user.Email)] = user.Email,
+                    [nameof(user.FirstName)] = user.FirstName,
+                    [nameof(user.FullName)] = user.FullName,
+                    [nameof(user.Identifier)] = user.Identifier,
+                    [nameof(user.IsAnonymous)] = user.IsAnonymous,
+                    [nameof(user.Uuid)] = user.Uuid
+                }
             };
-
-            // NOTE: We try and set the users id to email in our system (and index it as an email address). Should we set it to the user id? 
-            ui.Data[nameof(user.Email)] = user.Email;
-            ui.Data[nameof(user.FirstName)] = user.FirstName;
-            ui.Data[nameof(user.FullName)] = user.FullName;
-            ui.Data[nameof(user.Identifier)] = user.Identifier;
-            ui.Data[nameof(user.IsAnonymous)] = user.IsAnonymous;
-            ui.Data[nameof(user.Uuid)] = user.Uuid;
-
-            return ui;
         }
 
         protected override string MapVersion(RaygunModel source) {
