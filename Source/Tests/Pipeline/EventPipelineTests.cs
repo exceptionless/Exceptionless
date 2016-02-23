@@ -264,6 +264,26 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
+        public async Task IgnoreDuplicateAutoEndSessionsAsync() {
+            await ResetAsync();
+
+            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
+                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionEnd)
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(2, contexts.Count(c => c.IsCancelled));
+            Assert.False(contexts.All(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(0, results.Total);
+        }
+
+        [Fact]
         public async Task WillMarkAutoSessionHeartbeatStackHidden() {
             await ResetAsync();
 
@@ -470,7 +490,27 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 Assert.True(sessionStart.HasSessionEndTime());
             }
         }
-        
+
+        [Fact]
+        public async Task IgnoreDuplicateManualEndSessionsAsync() {
+            await ResetAsync();
+
+            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(2, contexts.Count(c => c.IsCancelled));
+            Assert.False(contexts.All(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(0, results.Total);
+        }
+
         [Fact]
         public async Task WillMarkManualSessionHeartbeatStackHidden() {
             await ResetAsync();
