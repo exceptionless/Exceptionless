@@ -21,6 +21,7 @@ using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
@@ -706,8 +707,12 @@ namespace Exceptionless.Api.Controllers {
             await base.AfterResultMapAsync(models);
 
             var viewOrganizations = models.OfType<ViewOrganization>().ToList();
-            foreach (var viewOrganization in viewOrganizations)
+            foreach (var viewOrganization in viewOrganizations) {
+                DateTime usageRetention = DateTime.UtcNow.SubtractYears(1).StartOfMonth();
+                viewOrganization.Usage = viewOrganization.Usage.Where(u => u.Date > usageRetention).ToList();
+                viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > usageRetention).ToList();
                 viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, Settings.Current.ApiThrottleLimit);
+            }
         }
 
         private async Task<ViewOrganization> PopulateOrganizationStatsAsync(ViewOrganization organization) {
