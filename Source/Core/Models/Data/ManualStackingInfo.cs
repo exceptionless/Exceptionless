@@ -3,22 +3,22 @@ using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data {
-    public class StackingInfo {
-        public StackingInfo() {
+    public class ManualStackingInfo {
+        public ManualStackingInfo() {
             SignatureData = new Dictionary<string, string>();
         }
 
-        public StackingInfo(string title) : this() {
+        public ManualStackingInfo(string title) : this() {
             if (!String.IsNullOrWhiteSpace(title))
                 Title = title.Trim();
         }
 
-        public StackingInfo(string title, IDictionary<string, string> signatureData) : this(title) {
+        public ManualStackingInfo(string title, IDictionary<string, string> signatureData) : this(title) {
             if (signatureData != null && signatureData.Count > 0)
                 SignatureData.AddRange(signatureData);
         }
 
-        public StackingInfo(IDictionary<string, string> signatureData) : this(null, signatureData) { }
+        public ManualStackingInfo(IDictionary<string, string> signatureData) : this(null, signatureData) { }
 
         /// <summary>
         /// Stack Title (defaults to the event message)

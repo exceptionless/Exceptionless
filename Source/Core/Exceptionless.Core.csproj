@@ -204,7 +204,7 @@
     <Compile Include="Models\Data\RequestInfo.cs" />
     <Compile Include="Models\Data\SimpleError.cs" />
     <Compile Include="Models\Data\StackFrame.cs" />
-    <Compile Include="Models\Data\StackingInfo.cs" />
+    <Compile Include="Models\Data\ManualStackingInfo.cs" />
     <Compile Include="Models\Data\UserDescription.cs" />
     <Compile Include="Models\Data\UserInfo.cs" />
     <Compile Include="Models\Enums\NotificationMode.cs" />

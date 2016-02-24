@@ -173,9 +173,9 @@ namespace Exceptionless {
         /// <summary>
         /// Gets the stacking info from extended data.
         /// </summary>
-        public static StackingInfo GetManualStackingInfo(this Event ev) {
+        public static ManualStackingInfo GetManualStackingInfo(this Event ev) {
             object value;
-            return ev.Data.TryGetValue(Event.KnownDataKeys.StackingInfo, out value) ? value as StackingInfo : null;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.ManualStackingInfo, out value) ? value as ManualStackingInfo : null;
         }
         
         /// <summary>
@@ -187,7 +187,7 @@ namespace Exceptionless {
             if (signatureData == null || signatureData.Count == 0)
                 return;
 
-            ev.Data[Event.KnownDataKeys.StackingInfo] = new StackingInfo(signatureData);
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(signatureData);
         }
 
         /// <summary>
@@ -200,7 +200,7 @@ namespace Exceptionless {
             if (String.IsNullOrWhiteSpace(title) || signatureData == null || signatureData.Count == 0)
                 return;
 
-            ev.Data[Event.KnownDataKeys.StackingInfo] = new StackingInfo(title, signatureData);
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(title, signatureData);
         }
 
         /// <summary>
@@ -212,7 +212,7 @@ namespace Exceptionless {
             if (String.IsNullOrWhiteSpace(manualStackingKey))
                 return;
 
-            ev.Data[Event.KnownDataKeys.StackingInfo] = new StackingInfo(null, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(null, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
         }
 
         /// <summary>
@@ -225,7 +225,7 @@ namespace Exceptionless {
             if (String.IsNullOrWhiteSpace(title) || String.IsNullOrWhiteSpace(manualStackingKey))
                 return;
 
-            ev.Data[Event.KnownDataKeys.StackingInfo] = new StackingInfo(title, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(title, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
         }
 
         /// <summary>
