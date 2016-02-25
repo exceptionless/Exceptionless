@@ -6,12 +6,6 @@ using Newtonsoft.Json.Serialization;
 
 namespace Exceptionless.Core.Serialization {
     public class LowerCaseUnderscorePropertyNamesContractResolver : DefaultContractResolver {
-        private readonly Func<Type, bool> _useDefaultContract;
-
-        public LowerCaseUnderscorePropertyNamesContractResolver(Func<Type, bool> useDefaultContract = null) {
-            _useDefaultContract = useDefaultContract;
-        }
-
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
             JsonProperty property = base.CreateProperty(member, memberSerialization);
 
@@ -22,9 +16,7 @@ namespace Exceptionless.Core.Serialization {
 
         protected override JsonDictionaryContract CreateDictionaryContract(Type objectType) {
             var contract = base.CreateDictionaryContract(objectType);
-            if (_useDefaultContract != null && _useDefaultContract(objectType))
-                contract.DictionaryKeyResolver = propertyName => propertyName;
-
+            contract.DictionaryKeyResolver = propertyName => propertyName;
             return contract;
         }
 

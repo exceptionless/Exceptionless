@@ -14,7 +14,7 @@ namespace Exceptionless.Serializer {
         private readonly IContractResolver _camelCaseContractResolver;
 
         public ExceptionlessContractResolver() {
-            _camelCaseContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver(t => _types.Contains(t) || _assemblies.Contains(t.Assembly));
+            _camelCaseContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver();
         }
 
         public void UseDefaultResolverFor(params Assembly[] assemblies) {

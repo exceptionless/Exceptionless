@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Dynamic;
+using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
@@ -24,19 +24,23 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         public SummaryData GetStackSummaryData(Stack stack) {
-            dynamic data = new ExpandoObject();
-            data.Type = stack.Type;
+            var data = new Dictionary<string, object> { { "Type", stack.Type } };
 
             string value;
-            if (stack.SignatureInfo.TryGetValue("Source", out value)) {
-                data.Source = value;
-            }
+            if (stack.SignatureInfo.TryGetValue("Source", out value))
+                data.Add("Source", value);
 
             return new SummaryData { TemplateKey = "stack-summary", Data = data };
         }
 
         public SummaryData GetEventSummaryData(PersistentEvent ev) {
-            return new SummaryData { TemplateKey = "event-summary", Data = new { Message = GetStackTitle(ev), Source = ev.Source, Type = ev.Type } };
+            var data = new Dictionary<string, object> {
+                { "Message", GetStackTitle(ev) },
+                { "Source", ev.Source },
+                { "Type", ev.Type }
+            };
+
+            return new SummaryData { TemplateKey = "event-summary", Data = data };
         }
 
         public MailMessage GetEventNotificationMailMessage(EventNotification model) {
