@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
@@ -23,10 +24,9 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override SummaryData GetStackSummaryData(Stack stack) {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.NotFound))
                 return null;
-
-            return new SummaryData { TemplateKey = "stack-notfound-summary", Data = new { Title = stack.Title } };
+            
+            return new SummaryData { TemplateKey = "stack-notfound-summary", Data = new Dictionary<string, object> { { "Title", stack.Title } } };
         }
-
 
         public override string GetStackTitle(PersistentEvent ev) {
             if (!ShouldHandle(ev))
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            return new SummaryData { TemplateKey = "event-notfound-summary", Data = new { Source = ev.Source } };
+            return new SummaryData { TemplateKey = "event-notfound-summary", Data = new Dictionary<string, object> { { "Source", ev.Source } } };
         }
 
         public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
