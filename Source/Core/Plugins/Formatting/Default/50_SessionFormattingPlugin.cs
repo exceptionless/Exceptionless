@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Dynamic;
+using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Session, Event.KnownTypes.SessionEnd, Event.KnownTypes.SessionHeartbeat))
                 return null;
 
-            return new SummaryData { TemplateKey = "stack-session-summary", Data = new { Title = stack.Title } };
+            return new SummaryData { TemplateKey = "stack-session-summary", Data = new Dictionary<string, object> { { "Title", stack.Title } } };
         }
 
         public override string GetStackTitle(PersistentEvent ev) {
@@ -32,25 +32,22 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
             
-            dynamic data = new ExpandoObject();
-            data.SessionId = ev.GetSessionId();
-            data.Type = ev.Type;
-
+            var data = new Dictionary<string, object> { { "SessionId", ev.GetSessionId() }, { "Type", ev.Type } };
             if (ev.IsSessionStart()) {
-                data.Value = ev.Value.GetValueOrDefault();
+                data.Add("Value", ev.Value.GetValueOrDefault());
 
                 DateTime? endTime = ev.GetSessionEndTime();
                 if (endTime.HasValue)
-                    data.SessionEnd = endTime;
+                    data.Add("SessionEnd", endTime);
             }
 
             var identity = ev.GetUserIdentity();
             if (identity != null) {
                 if (!String.IsNullOrEmpty(identity.Identity))
-                    data.Identity = identity.Identity;
+                    data.Add("Identity", identity.Identity);
                 
                 if (!String.IsNullOrEmpty(identity.Name))
-                    data.Name = identity.Name;
+                    data.Add("Name", identity.Name);
             }
 
             return new SummaryData { TemplateKey = "event-session-summary", Data = data };
