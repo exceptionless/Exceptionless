@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Dynamic;
+using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
@@ -32,28 +32,26 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override SummaryData GetStackSummaryData(Stack stack) {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("ExceptionType"))
                 return null;
-
-            dynamic data = new ExpandoObject();
-            data.Title = stack.Title;
-
+            
+            var data = new Dictionary<string, object> { { "Title", stack.Title } };
             string value;
             if (stack.SignatureInfo.TryGetValue("ExceptionType", out value) && !String.IsNullOrEmpty(value)) {
-                data.Type = value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
-                data.TypeFullName = value;
+                data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
+                data.Add("TypeFullName", value);
             }
 
             if (stack.SignatureInfo.TryGetValue("Method", out value) && !String.IsNullOrEmpty(value)) {
                 string method = value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
                 int index = method.IndexOf('(');
-                data.Method = index > 0 ? method.Substring(0, index) : method;
-                data.MethodFullName = value;
+                data.Add("Method", index > 0 ? method.Substring(0, index) : method);
+                data.Add("MethodFullName", value);
             }
 
             if (stack.SignatureInfo.TryGetValue("Message", out value) && !String.IsNullOrEmpty(value))
-                data.Message = value;
+                data.Add("Message", value);
 
             if (stack.SignatureInfo.TryGetValue("Path", out value) && !String.IsNullOrEmpty(value))
-                data.Path = value;
+                data.Add("Path", value);
 
             return new SummaryData { TemplateKey = "stack-error-summary", Data = data };
         }
@@ -66,23 +64,20 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (stackingTarget?.Error == null)
                 return null;
 
-            dynamic data = new ExpandoObject();
-            data.Id = ev.Id;
-            data.Message = ev.Message;
-
+            var data = new Dictionary<string, object> { { "Id", ev.Id }, { "Message", ev.Message } };
             if (!String.IsNullOrEmpty(stackingTarget.Error.Type)) {
-                data.Type = stackingTarget.Error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
-                data.TypeFullName = stackingTarget.Error.Type;
+                data.Add("Type", stackingTarget.Error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
+                data.Add("TypeFullName", stackingTarget.Error.Type);
             }
 
             if (stackingTarget.Method != null) {
-                data.Method = stackingTarget.Method.Name;
-                data.MethodFullName = stackingTarget.Method.GetFullName();
+                data.Add("Method", stackingTarget.Method.Name);
+                data.Add("MethodFullName", stackingTarget.Method.GetFullName());
             }
 
             var requestInfo = ev.GetRequestInfo();
             if (!String.IsNullOrEmpty(requestInfo?.Path))
-                data.Path = requestInfo.Path;
+                data.Add("Path", requestInfo.Path);
 
             return new SummaryData { TemplateKey = "event-error-summary", Data = data };
         }

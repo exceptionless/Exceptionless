@@ -57,8 +57,8 @@
       <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.18\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FluentValidation, Version=6.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\FluentValidation.6.1.0.0\lib\Net45\FluentValidation.dll</HintPath>
+    <Reference Include="FluentValidation, Version=6.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\FluentValidation.6.2.0.0\lib\Net45\FluentValidation.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -71,6 +71,11 @@
     </Reference>
     <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.32\lib\net45\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.1.0.33\lib\net45\Foundatio.Repositories.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.33\lib\net45\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -205,6 +210,7 @@
     <Compile Include="Models\Data\RequestInfo.cs" />
     <Compile Include="Models\Data\SimpleError.cs" />
     <Compile Include="Models\Data\StackFrame.cs" />
+    <Compile Include="Models\Data\ManualStackingInfo.cs" />
     <Compile Include="Models\Data\UserDescription.cs" />
     <Compile Include="Models\Data\UserInfo.cs" />
     <Compile Include="Models\Enums\NotificationMode.cs" />
@@ -264,7 +270,7 @@
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\03_ManualStackingPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\60_LocationPlugin.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\70_ManualSessionPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\05_ManualStackingFormattingPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
@@ -307,7 +313,7 @@
     <Compile Include="Pipeline\Base\PipelineBase.cs" />
     <Compile Include="Pipeline\Base\PipelineContextBase.cs" />
     <Compile Include="Pipeline\Base\PriorityAttribute.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\80_AutoSessionPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\70_SessionPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
     <Compile Include="Filter\QueryProcessorVisitor.cs" />
     <Compile Include="Utility\EventStats.cs" />

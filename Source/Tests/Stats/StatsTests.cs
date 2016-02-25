@@ -7,6 +7,7 @@ using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
@@ -219,11 +220,11 @@ namespace Exceptionless.Api.Tests.Stats {
 
             _metricsClient.DisplayStats();
             var result = await _stats.GetSessionTermsStatsAsync(startDate, DateTime.UtcNow, null);
-            Assert.Equal(7, result.Sessions);
-            Assert.Equal(7, result.Terms.Sum(t => t.Sessions));
+            Assert.Equal(3, result.Sessions);
+            Assert.Equal(3, result.Terms.Sum(t => t.Sessions));
             Assert.Equal(3, result.Users);
             Assert.Equal((decimal)(3600.0 / result.Sessions), result.AvgDuration);
-            Assert.Equal(4, result.Terms.Count);
+            Assert.Equal(3, result.Terms.Count);
             foreach (var term in result.Terms)
                 Assert.Equal(term.Sessions, term.Timeline.Sum(t => t.Sessions));
         }
@@ -238,12 +239,12 @@ namespace Exceptionless.Api.Tests.Stats {
 
             _metricsClient.DisplayStats();
             var result = await _stats.GetSessionStatsAsync(startDate, DateTime.UtcNow, null);
-            Assert.Equal(7, result.Sessions);
-            Assert.Equal(7, result.Timeline.Sum(t => t.Sessions));
+            Assert.Equal(3, result.Sessions);
+            Assert.Equal(3, result.Timeline.Sum(t => t.Sessions));
             Assert.Equal(3, result.Users);
-            Assert.Equal(6, result.Timeline.Sum(t => t.Users));
+            Assert.Equal(3, result.Timeline.Sum(t => t.Users));
             Assert.Equal((decimal)(3600.0 / result.Sessions), result.AvgDuration);
-            Assert.Equal(900, result.Timeline.Sum(t => t.AvgDuration));
+            Assert.Equal(3600, result.Timeline.Sum(t => t.AvgDuration));
         }
 
         [Fact]
@@ -289,16 +290,22 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = DateTimeOffset.UtcNow.SubtractHours(1);
             var events = new List<PersistentEvent> {
                 EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "1"),
-                EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "1"),
-                EventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(10), userIdentity: "1"),
-                EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "2"),
-                EventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(20), userIdentity: "2"),
-                EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "3"),
-                EventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(30), userIdentity: "3"),
+                EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(10), userIdentity: "1"),
+                EventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(10), userIdentity: "2"),
+                EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(30), userIdentity: "2"),
+                EventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(20), userIdentity: "3"),
+                EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(50), userIdentity: "3")
             };
             
             await _eventPipeline.RunAsync(events);
             await _client.RefreshAsync();
+            
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndex.Fields.PersistentEvent.Date));
+            Assert.Equal(6, results.Total);
+            Assert.Equal(3, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+
+            var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).ToList();
+            Assert.Equal(TimeSpan.FromMinutes(20).TotalSeconds, (int)(sessionStarts.Sum(e => e.Value.GetValueOrDefault()) / sessionStarts.Count));
 
             return events;
         }

@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Dynamic;
+using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
@@ -24,18 +24,16 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override SummaryData GetStackSummaryData(Stack stack) {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("StackTrace"))
                 return null;
-
-            dynamic data = new ExpandoObject();
-            data.Title = stack.Title;
-
+            
+            var data = new Dictionary<string, object> { { "Title", stack.Title } };
             string value;
             if (stack.SignatureInfo.TryGetValue("ExceptionType", out value)) {
-                data.Type = value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
-                data.TypeFullName = value;
+                data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
+                data.Add("TypeFullName", value);
             }
 
             if (stack.SignatureInfo.TryGetValue("Path", out value))
-                data.Path = value;
+                data.Add("Path", value);
 
             return new SummaryData { TemplateKey = "stack-simple-summary",  Data = data };
         }
@@ -55,18 +53,16 @@ namespace Exceptionless.Core.Plugins.Formatting {
             var error = ev.GetSimpleError();
             if (error == null)
                 return null;
-
-            dynamic data = new ExpandoObject();
-            data.Message = ev.Message;
-
+            
+            var data = new Dictionary<string, object> { { "Message", ev.Message } };
             if (!String.IsNullOrEmpty(error.Type)) {
-                data.Type = error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
-                data.TypeFullName = error.Type;
+                data.Add("Type", error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
+                data.Add("TypeFullName", error.Type);
             }
 
             var requestInfo = ev.GetRequestInfo();
             if (!String.IsNullOrEmpty(requestInfo?.Path))
-                data.Path = requestInfo.Path;
+                data.Add("Path", requestInfo.Path);
 
             return new SummaryData { TemplateKey = "event-simple-summary", Data = data };
         }

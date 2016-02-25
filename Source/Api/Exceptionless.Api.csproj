@@ -58,8 +58,8 @@
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.1.44\lib\portable-net40+win+wpa81+MonoAndroid10+xamarinios10+MonoTouch10\Exceptionless.DateTimeExtensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FluentValidation, Version=6.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\FluentValidation.6.1.0.0\lib\Net45\FluentValidation.dll</HintPath>
+    <Reference Include="FluentValidation, Version=6.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\FluentValidation.6.2.0.0\lib\Net45\FluentValidation.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -72,6 +72,11 @@
     </Reference>
     <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.32\lib\net45\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.1.0.33\lib\net45\Foundatio.Repositories.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.33\lib\net45\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Core, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">

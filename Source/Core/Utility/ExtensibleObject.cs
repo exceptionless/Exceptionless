@@ -38,8 +38,7 @@ namespace Exceptionless.Core.Utility {
         }
 
         public T GetProperty<T>(string name) {
-            object value = _extendedData[name];
-
+            object value = GetProperty(name);
             if (value == null)
                 throw new InvalidOperationException($"Property value \"{name}\" is null.  Can't use generic method on null values.");
 
@@ -53,7 +52,8 @@ namespace Exceptionless.Core.Utility {
         }
 
         public object GetProperty(string name) {
-            return _extendedData[name];
+            object value;
+            return _extendedData.TryGetValue(name, out value) ? value : null;
         }
 
         public IEnumerable<KeyValuePair<string, object>> GetProperties() {

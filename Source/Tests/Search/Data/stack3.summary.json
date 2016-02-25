@@ -8,6 +8,6 @@
   "unique": 1,
   "template_key": "stack-log-summary",
   "data": {
-    "title": "Row not found or changed."
+    "Title": "Row not found or changed."
   }
 }
