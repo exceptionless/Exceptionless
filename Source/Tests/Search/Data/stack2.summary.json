@@ -8,10 +8,10 @@
   "unique": 1,
   "template_key": "stack-error-summary",
   "data": {
-    "title": "The provided anti-forgery token was meant for user \"\", but the current user is \"test@exceptionless.com\".",
-    "type": "HttpAntiForgeryException",
-    "type_full_name": "System.Web.Mvc.HttpAntiForgeryException",
-    "method": "ValidateTokens",
-    "method_full_name": "System.Web.Helpers.AntiXsrf.TokenValidator.ValidateTokens(HttpContextBase httpContext, IIdentity identity, AntiForgeryToken sessionToken, AntiForgeryToken fieldToken)"
+    "Title": "The provided anti-forgery token was meant for user \"\", but the current user is \"test@exceptionless.com\".",
+    "Type": "HttpAntiForgeryException",
+    "TypeFullName": "System.Web.Mvc.HttpAntiForgeryException",
+    "Method": "ValidateTokens",
+    "MethodFullName": "System.Web.Helpers.AntiXsrf.TokenValidator.ValidateTokens(HttpContextBase httpContext, IIdentity identity, AntiForgeryToken sessionToken, AntiForgeryToken fieldToken)"
   }
 }
