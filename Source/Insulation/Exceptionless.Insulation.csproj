@@ -11,9 +11,6 @@
     <AssemblyName>Exceptionless.Insulation</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -49,8 +46,6 @@
       <HintPath>..\..\packages\Exceptionless.Portable.3.3.1560\lib\net45\Exceptionless.Portable.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.WebApi, Version=3.3.1560.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.3.3.1560\lib\net45\Exceptionless.WebApi.dll</HintPath>
     <Reference Include="Exceptionless, Version=3.3.1575.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Exceptionless.3.3.1575\lib\net45\Exceptionless.dll</HintPath>
       <Private>True</Private>
