@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Utility {
             _eventIndex = eventIndex;
             _queryBuilder = queryBuilder;
         }
-        
+
         public async Task<EventTermStatsResult> GetTermsStatsAsync(DateTime utcStart, DateTime utcEnd, string term, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
@@ -125,7 +125,7 @@ namespace Exceptionless.Core.Utility {
                     Term = i.Key,
                     New = termNew != null && termNew.Items.Count > 0 ? termNew.Items[0].DocCount : 0
                 };
-                
+
                 var termUnique = i.Cardinality("unique");
                 if (termUnique?.Value != null)
                     item.Unique = (long)termUnique.Value;
@@ -148,335 +148,6 @@ namespace Exceptionless.Core.Utility {
 
                 return item;
             }));
-
-            return stats;
-        }
-
-        public async Task<SessionTermStatsResult> GetSessionTermsStatsAsync(DateTime utcStart, DateTime utcEnd, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
-            if (!displayTimeOffset.HasValue)
-                displayTimeOffset = TimeSpan.Zero;
-
-            var filter = new ElasticQuery()
-                .WithSystemFilter(systemFilter)
-                .WithFilter(userFilter)
-                .WithFieldEquals(EventIndex.Fields.PersistentEvent.Type, Event.KnownTypes.Session)
-                .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
-
-            // if no start date then figure out first event date
-            if (!filter.DateRanges.First().UseStartDate)
-                await UpdateFilterStartDateRangesAsync(filter, utcEnd).AnyContext();
-
-            utcStart = filter.DateRanges.First().GetStartDate();
-            utcEnd = filter.DateRanges.First().GetEndDate();
-            var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
-
-            var res = await _elasticClient.SearchAsync<PersistentEvent>(s => s
-                .SearchType(SearchType.Count)
-                .IgnoreUnavailable()
-                .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
-                .Aggregations(agg => agg
-                    .Terms("terms", t => t
-                        .Field(ev => ev.Date)
-                        .Size(max)
-                        .Aggregations(agg2 => agg2
-                            .DateHistogram("timelime", tl => tl
-                                .Field(ev => ev.Date)
-                                .MinimumDocumentCount(0)
-                                .Interval(interval.Item1)
-                                .TimeZone(HoursAndMinutes(displayTimeOffset.Value))
-                            )
-                            .Average("avg_duration", u => u.Field(ev => ev.Value))
-                            .Cardinality("users", u => u
-                                .Field(EventIndex.Fields.PersistentEvent.UserRaw)
-                                .PrecisionThreshold(100)
-                            )
-                            .Min("first_occurrence", o => o.Field(ev => ev.Date))
-                            .Max("last_occurrence", o => o.Field(ev => ev.Date))
-                        )
-                    )
-                    .Average("avg_duration", u => u.Field(ev => ev.Value))
-                    .Cardinality("users", u => u
-                        .Field(EventIndex.Fields.PersistentEvent.UserRaw)
-                        .PrecisionThreshold(100)
-                    )
-                    .Min("first_occurrence", o => o.Field(ev => ev.Date))
-                    .Max("last_occurrence", o => o.Field(ev => ev.Date))
-                )
-            ).AnyContext();
-
-            if (!res.IsValid) {
-                Logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
-                throw new ApplicationException("Retrieving term stats failed.");
-            }
-
-            var stats = new SessionTermStatsResult {
-                Sessions = res.Total,
-                Start = utcStart.SafeAdd(displayTimeOffset.Value),
-                End = utcEnd.SafeAdd(displayTimeOffset.Value)
-            };
-
-            var averageDuration = res.Aggs.Average("avg_duration");
-            if (averageDuration?.Value != null)
-                stats.AvgDuration = (decimal)averageDuration.Value;
-
-            var users = res.Aggs.Cardinality("users");
-            if (users?.Value != null)
-                stats.Users = (long)users.Value;
-
-            var firstOccurrence = res.Aggs.Min("first_occurrence");
-            if (firstOccurrence?.Value != null)
-                stats.FirstOccurrence = firstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
-
-            var lastOccurrence = res.Aggs.Max("last_occurrence");
-            if (lastOccurrence?.Value != null)
-                stats.LastOccurrence = lastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
-
-            var terms = res.Aggs.Terms("terms");
-            if (terms == null)
-                return stats;
-
-            stats.Terms.AddRange(terms.Items.Select(i => {
-                var item = new SessionTermStatsItem { Sessions = i.DocCount, Term = i.Key };
-
-                var termAverageDuration = i.Average("avg_duration");
-                if (termAverageDuration?.Value != null)
-                    item.AvgDuration = (decimal)termAverageDuration.Value;
-
-                var termUsers = i.Cardinality("users");
-                if (termUsers?.Value != null)
-                    item.Users = (long)termUsers.Value;
-
-                var termFirstOccurrence = i.Min("first_occurrence");
-                if (termFirstOccurrence?.Value != null)
-                    item.FirstOccurrence = termFirstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
-
-                var termLastOccurrence = i.Max("last_occurrence");
-                if (termLastOccurrence?.Value != null)
-                    item.LastOccurrence = termLastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
-
-                var timeLine = i.DateHistogram("timelime");
-                if (timeLine != null) {
-                    item.Timeline.AddRange(timeLine.Items.Select(ti => new SessionTermTimelineItem {
-                        Date = ti.Date,
-                        Sessions = ti.DocCount
-                    }));
-                }
-
-                return item;
-            }));
-
-            return stats;
-        }
-        
-        public async Task<SessionStatsResult> GetSessionStatsAsync(DateTime utcStart, DateTime utcEnd, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
-            if (!displayTimeOffset.HasValue)
-                displayTimeOffset = TimeSpan.Zero;
-
-            var filter = new ElasticQuery()
-                .WithSystemFilter(systemFilter)
-                .WithFilter(userFilter)
-                .WithFieldEquals(EventIndex.Fields.PersistentEvent.Type, Event.KnownTypes.Session)
-                .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
-
-            // if no start date then figure out first event date
-            if (!filter.DateRanges.First().UseStartDate)
-                await UpdateFilterStartDateRangesAsync(filter, utcEnd).AnyContext();
-
-            utcStart = filter.DateRanges.First().GetStartDate();
-            utcEnd = filter.DateRanges.First().GetEndDate();
-            var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
-
-            var res = await _elasticClient.SearchAsync<PersistentEvent>(s => s
-                .SearchType(SearchType.Count)
-                .IgnoreUnavailable()
-                .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
-                .Aggregations(agg => agg
-                    .DateHistogram("timelime", tl => tl
-                        .Field(ev => ev.Date)
-                        .MinimumDocumentCount(0)
-                        .Interval(interval.Item1)
-                        .TimeZone(HoursAndMinutes(displayTimeOffset.Value))
-                        .Aggregations(agg2 => agg2
-                            .Average("tl_avg_duration", u => u.Field(ev => ev.Value))
-                            .Cardinality("tl_users", u => u
-                                .Field(EventIndex.Fields.PersistentEvent.UserRaw)
-                                .PrecisionThreshold(100)
-                            )
-                        )
-                    )
-                    .Average("avg_duration", u => u.Field(ev => ev.Value))
-                    .Cardinality("users", u => u
-                        .Field(EventIndex.Fields.PersistentEvent.UserRaw)
-                        .PrecisionThreshold(100)
-                    )
-                    .Min("first_occurrence", o => o.Field(ev => ev.Date))
-                    .Max("last_occurrence", o => o.Field(ev => ev.Date))
-                )
-            ).AnyContext();
-
-            if (!res.IsValid) {
-                Logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
-                throw new ApplicationException("Retrieving term stats failed.");
-            }
-
-            var stats = new SessionStatsResult { Sessions = res.Total };
-
-            var averageDuration = res.Aggs.Average("avg_duration");
-            if (averageDuration?.Value != null)
-                stats.AvgDuration = (decimal)averageDuration.Value;
-
-            var users = res.Aggs.Cardinality("users");
-            if (users?.Value != null)
-                stats.Users = (long)users.Value;
-
-            var timeline = res.Aggs.DateHistogram("timelime");
-            if (timeline != null) {
-                stats.Timeline.AddRange(timeline.Items.Select(i => {
-                    var item = new SessionTimelineItem {
-                        Date = i.Date,
-                        Sessions = i.DocCount
-                    };
-                    
-                    var timelineAverageDuration = i.Average("tl_avg_duration");
-                    if (timelineAverageDuration?.Value != null)
-                        item.AvgDuration = (decimal)timelineAverageDuration.Value;
-
-                    var timelineUsers = i.Cardinality("tl_users");
-                    if (timelineUsers?.Value != null)
-                        item.Users = (long)timelineUsers.Value;
-
-                    return item;
-                }));
-            }
-
-            stats.Start = stats.Timeline.Count > 0 ? stats.Timeline.Min(tl => tl.Date).SafeAdd(displayTimeOffset.Value) : utcStart.SafeAdd(displayTimeOffset.Value);
-            stats.End = utcEnd.SafeAdd(displayTimeOffset.Value);
-
-            var totalHours = stats.End.Subtract(stats.Start).TotalHours;
-            if (totalHours > 0.0)
-                stats.AvgPerHour = stats.Sessions / totalHours;
-
-            if (stats.Timeline.Count <= 0)
-                return stats;
-
-            var firstOccurrence = res.Aggs.Min("first_occurrence");
-            if (firstOccurrence?.Value != null)
-                stats.FirstOccurrence = firstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
-
-            var lastOccurrence = res.Aggs.Max("last_occurrence");
-            if (lastOccurrence?.Value != null)
-                stats.LastOccurrence = lastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
-
-            return stats;
-        }
-
-        public async Task<EventStatsResult> GetOccurrenceStatsAsync(DateTime utcStart, DateTime utcEnd, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
-            if (!displayTimeOffset.HasValue)
-                displayTimeOffset = TimeSpan.Zero;
-
-            var filter = new ElasticQuery()
-                .WithSystemFilter(systemFilter)
-                .WithFilter(userFilter)
-                .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
-
-            // if no start date then figure out first event date
-            if (!filter.DateRanges.First().UseStartDate)
-                await UpdateFilterStartDateRangesAsync(filter, utcEnd).AnyContext();
-
-            utcStart = filter.DateRanges.First().GetStartDate();
-            utcEnd = filter.DateRanges.First().GetEndDate();
-            var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
-
-            var res = await _elasticClient.SearchAsync<PersistentEvent>(s => s
-                .SearchType(SearchType.Count)
-                .IgnoreUnavailable()
-                .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
-                .Aggregations(agg => agg
-                    .DateHistogram("timelime", t => t
-                        .Field(ev => ev.Date)
-                        .MinimumDocumentCount(0)
-                        .Interval(interval.Item1)
-                        .TimeZone(HoursAndMinutes(displayTimeOffset.Value))
-                        .Aggregations(agg2 => agg2
-                            .Cardinality("tl_unique", u => u
-                                .Field(ev => ev.StackId)
-                                .PrecisionThreshold(100)
-                            )
-                            .Terms("tl_new", u => u
-                                .Field(ev => ev.IsFirstOccurrence)
-                                .Exclude("F")
-                            )
-                        )
-                    )
-                    .Cardinality("unique", u => u
-                        .Field(ev => ev.StackId)
-                        .PrecisionThreshold(100)
-                    )
-                    .Terms("new", u => u
-                        .Field(ev => ev.IsFirstOccurrence)
-                        .Exclude("F")
-                    )
-                    .Min("first_occurrence", t => t.Field(ev => ev.Date))
-                    .Max("last_occurrence", t => t.Field(ev => ev.Date))
-                )
-            ).AnyContext();
-
-            if (!res.IsValid) {
-                Logger.Error().Message("Retrieving stats failed: {0}", res.ServerError.Error).Write();
-                throw new ApplicationException("Retrieving stats failed.");
-            }
-
-            var newTerms = res.Aggs.Terms("new");
-            var stats = new EventStatsResult {
-                Total = res.Total,
-                New = newTerms != null && newTerms.Items.Count > 0 ? newTerms.Items[0].DocCount : 0
-            };
-
-            var unique = res.Aggs.Cardinality("unique");
-            if (unique?.Value != null)
-                stats.Unique = (long)unique.Value;
-
-            var timeline = res.Aggs.DateHistogram("timelime");
-            if (timeline != null) {
-                stats.Timeline.AddRange(timeline.Items.Select(i => {
-                    long count = 0;
-                    var timelineUnique = i.Cardinality("tl_unique");
-                    if (timelineUnique?.Value != null)
-                        count = (long)timelineUnique.Value;
-
-                    var timelineNew = i.Terms("tl_new");
-                    return new EventTimelineItem {
-                        Date = i.Date,
-                        Total = i.DocCount,
-                        Unique = count,
-                        New = timelineNew != null && timelineNew.Items.Count > 0 ? timelineNew.Items[0].DocCount : 0
-                    };
-                }));
-            }
-
-            stats.Start = stats.Timeline.Count > 0 ? stats.Timeline.Min(tl => tl.Date).SafeAdd(displayTimeOffset.Value) : utcStart.SafeAdd(displayTimeOffset.Value);
-            stats.End = utcEnd.SafeAdd(displayTimeOffset.Value);
-
-            var totalHours = stats.End.Subtract(stats.Start).TotalHours;
-            if (totalHours > 0.0)
-                stats.AvgPerHour = stats.Total / totalHours;
-
-            if (stats.Timeline.Count <= 0)
-                return stats;
-
-            var firstOccurrence = res.Aggs.Min("first_occurrence");
-            if (firstOccurrence?.Value != null)
-                stats.FirstOccurrence = firstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
-
-            var lastOccurrence = res.Aggs.Max("last_occurrence");
-            if (lastOccurrence?.Value != null)
-                stats.LastOccurrence = lastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
             return stats;
         }
@@ -595,19 +266,19 @@ namespace Exceptionless.Core.Utility {
             foreach (var field in fields) {
                 switch (field.Type) {
                     case FieldAggregationType.Average:
-                        aggregation.Average($"avg_{field.Field}", a => a.Field(field.Field));
+                        aggregation.Average(field.Key, a => a.Field(field.Field));
                         break;
                     case FieldAggregationType.Distinct:
-                        aggregation.Cardinality($"distinct_{field.Field}", a => a.Field(field.Field).PrecisionThreshold(100));
+                        aggregation.Cardinality(field.Key, a => a.Field(field.Field).PrecisionThreshold(100));
                         break;
                     case FieldAggregationType.Sum:
-                        aggregation.Sum($"sum_{field.Field}", a => a.Field(field.Field));
+                        aggregation.Sum(field.Key, a => a.Field(field.Field));
                         break;
                     case FieldAggregationType.Min:
-                        aggregation.Min($"min_{field.Field}", a => a.Field(field.Field));
+                        aggregation.Min(field.Key, a => a.Field(field.Field));
                         break;
                     case FieldAggregationType.Max:
-                        aggregation.Max($"max_{field.Field}", a => a.Field(field.Field));
+                        aggregation.Max(field.Key, a => a.Field(field.Field));
                         break;
                     case FieldAggregationType.Last:
                         // TODO: Populate with the last value.
@@ -617,7 +288,7 @@ namespace Exceptionless.Core.Utility {
                         if (termField == null)
                             throw new InvalidOperationException("term aggregation must be of type TermFieldAggregation");
 
-                        aggregation.Terms($"term_{field.Field}", t => {
+                        aggregation.Terms(field.Key, t => {
                             var tad = t.Field(field.Field);
                             if (!String.IsNullOrEmpty(termField.ExcludePattern))
                                 tad.Exclude(termField.ExcludePattern);
@@ -641,25 +312,25 @@ namespace Exceptionless.Core.Utility {
             foreach (var field in fields) {
                 switch (field.Type) {
                     case FieldAggregationType.Average:
-                        results.Add(aggregations.Average($"avg_{field.Field}").Value.GetValueOrDefault());
+                        results.Add(aggregations.Average(field.Key).Value.GetValueOrDefault());
                         break;
                     case FieldAggregationType.Distinct:
-                        results.Add(aggregations.Cardinality($"distinct_{field.Field}").Value.GetValueOrDefault());
+                        results.Add(aggregations.Cardinality(field.Key).Value.GetValueOrDefault());
                         break;
                     case FieldAggregationType.Sum:
-                        results.Add(aggregations.Sum($"sum_{field.Field}").Value.GetValueOrDefault());
+                        results.Add(aggregations.Sum(field.Key).Value.GetValueOrDefault());
                         break;
                     case FieldAggregationType.Min:
-                        results.Add(aggregations.Min($"min_{field.Field}").Value.GetValueOrDefault());
+                        results.Add(aggregations.Min(field.Key).Value.GetValueOrDefault());
                         break;
                     case FieldAggregationType.Max:
-                        results.Add(aggregations.Max($"max_{field.Field}").Value.GetValueOrDefault());
+                        results.Add(aggregations.Max(field.Key).Value.GetValueOrDefault());
                         break;
                     case FieldAggregationType.Last:
                         // TODO: Populate with the last value.
                         break;
                     case FieldAggregationType.Term:
-                        var termResult = aggregations.Terms($"term_{field.Field}");
+                        var termResult = aggregations.Terms(field.Key);
                         results.Add(termResult?.Items.Count > 0 ? termResult.Items[0].DocCount : 0);
                         break;
                     default:

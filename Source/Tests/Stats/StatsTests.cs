@@ -36,33 +36,19 @@ namespace Exceptionless.Api.Tests.Stats {
             await CreateDataAsync(eventCount, false);
 
             _metricsClient.DisplayStats();
-            var result = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
+
+            var fields = FieldAggregationProcessor.Process("distinct:stack_id,term:is_first_occurrence:-F", false);
+            Assert.True(fields.IsValid);
+            Assert.Equal(2, fields.Aggregations.Count);
+
+            var result = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
-            Assert.Equal(await _stackRepository.CountAsync(), result.Unique);
-            Assert.Equal(await _stackRepository.CountAsync(), result.Timeline.Sum(t => t.New));
-
+            Assert.Equal(2, result.Numbers.Length);
+            Assert.Equal(await _stackRepository.CountAsync(), result.Numbers[0]);
+            Assert.Equal(await _stackRepository.CountAsync(), result.Timeline.Sum(t => t.Numbers[1]));
+            
             var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
-            foreach (var stack in stacks.Documents) {
-                result = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
-                Assert.Equal(stack.TotalOccurrences, result.Total);
-                Assert.Equal(stack.TotalOccurrences, result.Timeline.Sum(t => t.Total));
-            }
-
-            // TODO: We can't check for new items until we implement terms support.
-            var fields = FieldAggregationProcessor.Process("distinct:stack_id", false);
-            Assert.True(fields.IsValid);
-            Assert.Equal(1, fields.Aggregations.Count);
-            Assert.Equal(FieldAggregationType.Distinct, fields.Aggregations.First().Type);
-            Assert.Equal("stack_id", fields.Aggregations.First().Field);
-
-            var ntsr = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
-            Assert.Equal(eventCount, ntsr.Total);
-            Assert.Equal(eventCount, ntsr.Timeline.Sum(t => t.Total));
-            Assert.Equal(1, ntsr.Numbers.Length);
-            Assert.Equal(await _stackRepository.CountAsync(), ntsr.Numbers[0]);
-            //Assert.Equal(await _stackRepository.CountAsync(), ntsr.Timeline.Sum(t => t.Numbers[1]));
-
             foreach (var stack in stacks.Documents) {
                 var nsr = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
                 Assert.Equal(stack.TotalOccurrences, nsr.Total);
@@ -81,6 +67,7 @@ namespace Exceptionless.Api.Tests.Stats {
                 await CreateEventsAsync(1, null, value);
 
             _metricsClient.DisplayStats();
+
             var fields = FieldAggregationProcessor.Process("avg:value,distinct:value,sum:value,min:value,max:value", false);
             Assert.True(fields.IsValid);
             Assert.Equal(5, fields.Aggregations.Count);
@@ -114,16 +101,21 @@ namespace Exceptionless.Api.Tests.Stats {
             await CreateDataAsync(eventCount, false);
             
             _metricsClient.DisplayStats();
-            var result = await _stats.GetOccurrenceStatsAsync(DateTime.MinValue, DateTime.MaxValue, null, userFilter: "project:" + TestConstants.ProjectId);
+
+            var fields = FieldAggregationProcessor.Process("distinct:stack_id,term:is_first_occurrence:-F", false);
+            Assert.True(fields.IsValid);
+            Assert.Equal(2, fields.Aggregations.Count);
+
+            var result = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, DateTime.MinValue, DateTime.MaxValue, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
-            Assert.Equal(await _stackRepository.CountAsync(), result.Unique);
-            Assert.Equal(await _stackRepository.CountAsync(), result.Timeline.Sum(t => t.New));
+            Assert.Equal(await _stackRepository.CountAsync(), result.Numbers[0]);
+            Assert.Equal(await _stackRepository.CountAsync(), result.Timeline.Sum(t => t.Numbers[1]));
 
             var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
             foreach (var stack in stacks.Documents) {
-                result = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
-                Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, result.Total);
+                var ns = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
+                Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, ns.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Timeline.Sum(t => t.Total));
             }
@@ -138,11 +130,16 @@ namespace Exceptionless.Api.Tests.Stats {
             await CreateDataAsync(eventCount);
             
             _metricsClient.DisplayStats();
-            var resultUtc = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null);
+
+            var fields = FieldAggregationProcessor.Process("distinct:stack_id", false);
+            Assert.True(fields.IsValid);
+            Assert.Equal(1, fields.Aggregations.Count);
+
+            var resultUtc = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null);
             Assert.Equal(eventCount, resultUtc.Total);
             Assert.Equal(eventCount, resultUtc.Timeline.Sum(t => t.Total));
 
-            var resultLocal = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, displayTimeOffset: TimeSpan.FromHours(-4));
+            var resultLocal = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, displayTimeOffset: TimeSpan.FromHours(-4));
             Assert.Equal(eventCount, resultLocal.Total);
             Assert.Equal(eventCount, resultLocal.Timeline.Sum(t => t.Total));
         }
@@ -211,25 +208,6 @@ namespace Exceptionless.Api.Tests.Stats {
         }
         
         [Fact]
-        public async Task CanGetSessionTermStatsAsync() {
-            await RemoveDataAsync();
-            await CreateDataAsync();
-
-            var startDate = DateTime.UtcNow.SubtractHours(1);
-            await CreateSessionEventsAsync();
-
-            _metricsClient.DisplayStats();
-            var result = await _stats.GetSessionTermsStatsAsync(startDate, DateTime.UtcNow, null);
-            Assert.Equal(3, result.Sessions);
-            Assert.Equal(3, result.Terms.Sum(t => t.Sessions));
-            Assert.Equal(3, result.Users);
-            Assert.Equal((decimal)(3600.0 / result.Sessions), result.AvgDuration);
-            Assert.Equal(3, result.Terms.Count);
-            foreach (var term in result.Terms)
-                Assert.Equal(term.Sessions, term.Timeline.Sum(t => t.Sessions));
-        }
-
-        [Fact]
         public async Task CanGetSessionStatsAsync() {
             await RemoveDataAsync();
             await CreateDataAsync();
@@ -238,13 +216,18 @@ namespace Exceptionless.Api.Tests.Stats {
             await CreateSessionEventsAsync();
 
             _metricsClient.DisplayStats();
-            var result = await _stats.GetSessionStatsAsync(startDate, DateTime.UtcNow, null);
-            Assert.Equal(3, result.Sessions);
-            Assert.Equal(3, result.Timeline.Sum(t => t.Sessions));
-            Assert.Equal(3, result.Users);
-            Assert.Equal(3, result.Timeline.Sum(t => t.Users));
-            Assert.Equal((decimal)(3600.0 / result.Sessions), result.AvgDuration);
-            Assert.Equal(3600, result.Timeline.Sum(t => t.AvgDuration));
+
+            var fields = FieldAggregationProcessor.Process("avg:value,distinct:user.raw", false);
+            Assert.True(fields.IsValid);
+            Assert.Equal(2, fields.Aggregations.Count);
+
+            var result = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, "type:session");
+            Assert.Equal(3, result.Total);
+            Assert.Equal(3, result.Timeline.Sum(t => t.Total));
+            Assert.Equal(3, result.Numbers[1]);
+            Assert.Equal(3, result.Timeline.Sum(t => t.Numbers[1]));
+            Assert.Equal(3600.0 / result.Total, result.Numbers[0]);
+            Assert.Equal(3600, result.Timeline.Sum(t => t.Numbers[0]));
         }
 
         [Fact]

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -12,7 +11,6 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
-using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
@@ -23,7 +21,6 @@ namespace Exceptionless.Core.Jobs {
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
-        private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
         private readonly EventStats _stats;
         private readonly IMailer _mailer;
@@ -33,7 +30,6 @@ namespace Exceptionless.Core.Jobs {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
-            _stackRepository = stackRepository;
             _eventRepository = eventRepository;
             _stats = stats;
             _mailer = mailer;
@@ -102,36 +98,12 @@ namespace Exceptionless.Core.Jobs {
             }
 
             Logger.Info().Message("Sending daily summary: users={0} project={1}", users.Count, project.Id).Write();
-            //var paging = new PagingOptions { Limit = 5 };
-            //List<Stack> newest = (await _stackRepository.GetNewAsync(project.Id, data.UtcStartTime, data.UtcEndTime, paging).AnyContext()).Documents.ToList();
-            var newest = new List<Stack>();
 
             var result = await _stats.GetTermsStatsAsync(data.UtcStartTime, data.UtcEndTime, "stack_id", "type:error project:" + data.Id, max: 5).AnyContext();
-            //var termStatsList = result.Terms.Take(5).ToList();
-            //var stacks = _stackRepository.GetByIds(termStatsList.Select(s => s.Term).ToList());
             bool hasSubmittedErrors = result.Total > 0;
             if (!hasSubmittedErrors)
                 hasSubmittedErrors = await _eventRepository.GetCountByProjectIdAsync(project.Id).AnyContext() > 0;
-
-            var mostFrequent = new List<EventStackResult>();
-            //foreach (var termStats in termStatsList) {
-            //    var stack = stacks.SingleOrDefault(s => s.Id == termStats.Term);
-            //    if (stack == null)
-            //        continue;
-
-            //    mostFrequent.Add(new EventStackResult {
-            //        First =  termStats.FirstOccurrence,
-            //        Last = termStats.LastOccurrence,
-            //        Id = stack.Id,
-            //        Title = stack.Title,
-            //        Total = termStats.Total,
-            //        Type = stack.SignatureInfo.ContainsKey("ExceptionType") ? stack.SignatureInfo["ExceptionType"] : null,
-            //        Method = stack.SignatureInfo.ContainsKey("Method") ? stack.SignatureInfo["Method"] : null,
-            //        Path = stack.SignatureInfo.ContainsKey("Source") ? stack.SignatureInfo["Source"] : null,
-            //        Is404 = stack.SignatureInfo.ContainsKey("Type") && stack.SignatureInfo["Type"] == "404"
-            //    });
-            //}
-
+            
             var notification = new DailySummaryModel {
                 ProjectId = project.Id,
                 ProjectName = project.Name,
@@ -140,9 +112,7 @@ namespace Exceptionless.Core.Jobs {
                 Total = result.Total,
                 PerHourAverage = result.Total / data.UtcEndTime.Subtract(data.UtcStartTime).TotalHours,
                 NewTotal = result.New,
-                New = newest,
                 UniqueTotal = result.Unique,
-                MostFrequent = mostFrequent,
                 HasSubmittedEvents = hasSubmittedErrors,
                 IsFreePlan = organization.PlanId == BillingManager.FreePlan.Id
             };

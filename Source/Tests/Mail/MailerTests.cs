@@ -167,29 +167,6 @@ namespace Exceptionless.Api.Tests.Mail {
             return mailer.SendDailySummaryAsync(Settings.Current.TestEmailAddress, new DailySummaryModel {
                 ProjectId = "1",
                 BaseUrl = "http://be.exceptionless.io",
-                MostFrequent = new List<EventStackResult> {
-                    new EventStackResult {
-                        First = DateTime.Now,
-                        Id = "1",
-                        Last = DateTime.Now,
-                        Is404 = false,
-                        Method = "Blah()",
-                        Path = "/blah",
-                        Title = "Some Error",
-                        Total = 12,
-                        Type = "SomeError"
-                    }
-                },
-                New = new List<Stack> {
-                    new Stack {
-                        DateFixed = DateTime.Now,
-                        Description = "Error 1",
-                        FirstOccurrence = DateTime.Now,
-                        IsRegressed = true,
-                        LastOccurrence = DateTime.Now,
-                        TotalOccurrences = 12
-                    }
-                },
                 StartDate = DateTime.Now.Date,
                 EndDate = DateTime.Now.EndOfDay(),
                 NewTotal = 1,

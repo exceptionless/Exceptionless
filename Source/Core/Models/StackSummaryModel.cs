@@ -12,6 +12,5 @@ namespace Exceptionless.Core.Models {
         public long New { get; set; }
         public long Total { get; set; }
         public long Unique { get; set; }
-        public ICollection<EventTermTimelineItem> Timeline { get; set; }
     }
 }
