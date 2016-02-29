@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
@@ -8,6 +9,7 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Metrics;
 
@@ -17,12 +19,18 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IEventRepository _eventRepository;
         private readonly IGeocodeService _geocodeService;
         private readonly IMetricsClient _metricsClient;
+        private readonly ILockProvider _lockProvider;
 
         public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMetricsClient metricsClient) {
             _cacheClient = new ScopedCacheClient(cacheClient, "geo");
             _eventRepository = eventRepository;
             _geocodeService = geocodeService;
             _metricsClient = metricsClient;
+            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
+        }
+
+        public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
+            return _lockProvider.AcquireAsync(nameof(SetLocationFromGeoWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         public override async Task HandleItemAsync(WorkItemContext context) {

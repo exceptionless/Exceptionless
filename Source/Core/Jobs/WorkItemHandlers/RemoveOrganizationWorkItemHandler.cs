@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Lock;
 using Foundatio.Logging;
 using Stripe;
 
@@ -18,8 +21,9 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly IWebHookRepository _webHookRepository;
+        private readonly ILockProvider _lockProvider;
 
-        public RemoveOrganizationWorkItemHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository) {
+        public RemoveOrganizationWorkItemHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, ICacheClient cacheClient) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;
@@ -27,6 +31,11 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             _tokenRepository = tokenRepository;
             _userRepository = userRepository;
             _webHookRepository = webHookRepository;
+            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
+        }
+
+        public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
+            return _lockProvider.AcquireAsync(nameof(RemoveOrganizationWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         public override async Task HandleItemAsync(WorkItemContext context) {
