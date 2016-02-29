@@ -107,6 +107,8 @@ namespace Exceptionless.Core {
             workItemHandlers.Register<SetProjectIsConfiguredWorkItem, SetProjectIsConfiguredWorkItemHandler>();
             workItemHandlers.Register<StackWorkItem, StackWorkItemHandler>();
             workItemHandlers.Register<ThrottleBotsWorkItem, ThrottleBotsWorkItemHandler>();
+            workItemHandlers.Register<OrganizationMaintenanceWorkItem, OrganizationMaintenanceWorkItemHandler>();
+            workItemHandlers.Register<ProjectMaintenanceWorkItem, ProjectMaintenanceWorkItemHandler>();
             container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);
             container.RegisterSingleton<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(behaviors: container.GetAllInstances<IQueueBehavior<WorkItemData>>(), workItemTimeout: TimeSpan.FromHours(1)));
 

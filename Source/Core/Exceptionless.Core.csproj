@@ -175,6 +175,8 @@
     <Compile Include="Jobs\WorkItemHandlers\StackWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\SetLocationFromGeoWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\ThrottleBotsWorkItemHandler.cs" />
+    <Compile Include="Jobs\WorkItemHandlers\OrganizationMaintenanceWorkItemHandler.cs" />
+    <Compile Include="Jobs\WorkItemHandlers\ProjectMaintenanceWorkItemHandler.cs" />
     <Compile Include="Mail\Engine\DirectoryTemplateResolver.cs" />
     <Compile Include="Mail\Engine\EmailTemplate.cs" />
     <Compile Include="Mail\Engine\EmbeddedTemplateResolver.cs" />
@@ -256,6 +258,8 @@
     <Compile Include="Models\WorkItems\SetProjectIsConfiguredWorkItem.cs" />
     <Compile Include="Models\WorkItems\StackWorkItem.cs" />
     <Compile Include="Models\WorkItems\ThrottleBotsWorkItem.cs" />
+    <Compile Include="Models\WorkItems\OrganizationMaintenanceWorkItem.cs" />
+    <Compile Include="Models\WorkItems\ProjectMaintenanceWorkItem.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />

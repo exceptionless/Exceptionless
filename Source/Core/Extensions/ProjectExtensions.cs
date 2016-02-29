@@ -14,5 +14,12 @@ namespace Exceptionless.Core.Extensions {
                 ReportEventRegressions = true
             });
         }
+
+        public static void SetDefaultUserAgentBotPatterns(this Project project) {
+            if (project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns))
+                return;
+            
+            project.Configuration.Settings[SettingsDictionary.KnownKeys.UserAgentBotPatterns] = "*bot*,*crawler*,*spider*, *aolbuild*, *teoma*,*yahoo*";
+        }
     }
 }
