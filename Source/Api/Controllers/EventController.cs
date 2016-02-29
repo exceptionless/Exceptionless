@@ -491,6 +491,9 @@ namespace Exceptionless.Api.Controllers {
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
             var ev = new Event { Type = !String.IsNullOrEmpty(type) ? type : Event.KnownTypes.Log };
 
+            string identity = null;
+            string identityName = null;
+
             var exclusions = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions).ToList();
             foreach (var kvp in parameters.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty))) {
                 switch (kvp.Key.ToLower()) {
@@ -524,6 +527,12 @@ namespace Exceptionless.Api.Controllers {
                     case "tags":
                         ev.Tags.AddRange(kvp.Value.SelectMany(t => t.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)).Distinct());
                         break;
+                    case "identity":
+                        identity = kvp.Value.FirstOrDefault();
+                        break;
+                    case "identity.name":
+                        identityName = kvp.Value.FirstOrDefault();
+                        break;
                     default:
                         if (kvp.Key.AnyWildcardMatches(exclusions, true))
                             continue;
@@ -536,6 +545,8 @@ namespace Exceptionless.Api.Controllers {
                         break;
                 }
             }
+
+            ev.SetUserIdentity(identity, identityName);
 
             try {
                 await _eventPostQueue.EnqueueAsync(new EventPostInfo {
