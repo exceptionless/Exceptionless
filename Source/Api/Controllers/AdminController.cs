@@ -91,7 +91,7 @@ namespace Exceptionless.Api.Controllers {
         
         [HttpGet]
         [Route("maintenance/{name:minlength(1)}")]
-        public async Task<IHttpActionResult>RunJobAsync(string name) {
+        public async Task<IHttpActionResult> RunJobAsync(string name) {
             switch (name.ToLower()) {
                 case "update-organization-plans":
                     await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { UpgradePlans = true });

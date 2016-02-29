@@ -43,14 +43,14 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
                 if (workItem.UpdateDefaultBotList)
                     await _projectRepository.SaveAsync(results.Documents).AnyContext();
+
+                // Sleep so we are not hammering the backend.
+                await Task.Delay(TimeSpan.FromSeconds(2.5)).AnyContext();
+
+                await results.NextPageAsync().AnyContext();
+                if (results.Documents.Count > 0)
+                    await context.WorkItemLock.RenewAsync().AnyContext();
             }
-
-            // Sleep so we are not hammering the backend.
-            await Task.Delay(TimeSpan.FromSeconds(2.5)).AnyContext();
-
-            await results.NextPageAsync().AnyContext();
-            if (results.Documents.Count > 0)
-                await context.WorkItemLock.RenewAsync().AnyContext();
         }
 
         private void UpgradePlan(Organization organization) {
