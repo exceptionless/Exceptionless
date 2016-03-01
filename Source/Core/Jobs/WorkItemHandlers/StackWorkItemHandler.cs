@@ -7,6 +7,7 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
+using Foundatio.Messaging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class StackWorkItemHandler : WorkItemHandlerBase {
@@ -14,16 +15,17 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IEventRepository _eventRepository;
         private readonly ILockProvider _lockProvider;
 
-        public StackWorkItemHandler(IStackRepository stackRepository, IEventRepository eventRepository, ICacheClient cacheClient) {
+        public StackWorkItemHandler(IStackRepository stackRepository, IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus) {
             _stackRepository = stackRepository;
             _eventRepository = eventRepository;
-            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
+            _lockProvider = new CacheLockProvider(cacheClient, messageBus);
         }
 
         public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
-            return _lockProvider.AcquireAsync(nameof(StackWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
+            var cacheKey = $"{nameof(StackWorkItemHandler)}:{((StackWorkItem)workItem).StackId}";
+            return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
-
+        
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<StackWorkItem>();
             if (workItem.Delete) {

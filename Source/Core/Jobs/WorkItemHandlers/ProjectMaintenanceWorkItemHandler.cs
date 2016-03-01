@@ -12,6 +12,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
+using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
@@ -19,9 +20,9 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IProjectRepository _projectRepository;
         private readonly ILockProvider _lockProvider;
 
-        public ProjectMaintenanceWorkItemHandler(IProjectRepository projectRepository, ICacheClient cacheClient) {
+        public ProjectMaintenanceWorkItemHandler(IProjectRepository projectRepository, ICacheClient cacheClient, IMessageBus messageBus) {
             _projectRepository = projectRepository;
-            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
+            _lockProvider = new CacheLockProvider(cacheClient, messageBus);
         }
 
         public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {

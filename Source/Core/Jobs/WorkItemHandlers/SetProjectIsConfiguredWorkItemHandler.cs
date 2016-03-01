@@ -8,6 +8,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
+using Foundatio.Messaging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class SetProjectIsConfiguredWorkItemHandler : WorkItemHandlerBase {
@@ -15,14 +16,15 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IEventRepository _eventRepository;
         private readonly ILockProvider _lockProvider;
 
-        public SetProjectIsConfiguredWorkItemHandler(IProjectRepository projectRepository, IEventRepository eventRepository, ICacheClient cacheClient) {
+        public SetProjectIsConfiguredWorkItemHandler(IProjectRepository projectRepository, IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus) {
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;
-            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
+            _lockProvider = new CacheLockProvider(cacheClient, messageBus);
         }
 
         public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
-            return _lockProvider.AcquireAsync(nameof(SetProjectIsConfiguredWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
+            var cacheKey = $"{nameof(SetProjectIsConfiguredWorkItemHandler)}:{((SetProjectIsConfiguredWorkItem)workItem).ProjectId}";
+            return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         public override async Task HandleItemAsync(WorkItemContext context) {

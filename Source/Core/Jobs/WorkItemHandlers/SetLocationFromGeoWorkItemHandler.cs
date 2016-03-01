@@ -11,6 +11,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
+using Foundatio.Messaging;
 using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
@@ -21,16 +22,17 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IMetricsClient _metricsClient;
         private readonly ILockProvider _lockProvider;
 
-        public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMetricsClient metricsClient) {
+        public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMetricsClient metricsClient, IMessageBus messageBus) {
             _cacheClient = new ScopedCacheClient(cacheClient, "geo");
             _eventRepository = eventRepository;
             _geocodeService = geocodeService;
             _metricsClient = metricsClient;
-            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
+            _lockProvider = new CacheLockProvider(cacheClient, messageBus);
         }
 
         public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
-            return _lockProvider.AcquireAsync(nameof(SetLocationFromGeoWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
+            var cacheKey = $"{nameof(SetLocationFromGeoWorkItemHandler)}:{((SetLocationFromGeoWorkItem)workItem).EventId}";
+            return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         public override async Task HandleItemAsync(WorkItemContext context) {
