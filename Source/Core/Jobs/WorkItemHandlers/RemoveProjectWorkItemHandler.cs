@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Lock;
 using Foundatio.Logging;
+using Foundatio.Messaging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class RemoveProjectWorkItemHandler : WorkItemHandlerBase {
@@ -13,15 +17,22 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IStackRepository _stackRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly IWebHookRepository _webHookRepository;
+        private readonly ILockProvider _lockProvider;
 
-        public RemoveProjectWorkItemHandler(IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IWebHookRepository webHookRepository) {
+        public RemoveProjectWorkItemHandler(IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IWebHookRepository webHookRepository, ICacheClient cacheClient, IMessageBus messageBus) {
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;
             _stackRepository = stackRepository;
             _tokenRepository = tokenRepository;
             _webHookRepository = webHookRepository;
+            _lockProvider = new CacheLockProvider(cacheClient, messageBus);
         }
-        
+
+        public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
+            var cacheKey = $"{nameof(RemoveProjectWorkItemHandler)}:{((RemoveProjectWorkItem)workItem).ProjectId}";
+            return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
+        }
+
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<RemoveProjectWorkItem>();
             Logger.Info().Message($"Received remove project work item for: {workItem.ProjectId} Reset Data: {workItem.Reset}").Write();

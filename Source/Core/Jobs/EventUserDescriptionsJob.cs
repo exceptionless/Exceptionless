@@ -16,11 +16,9 @@ using Foundatio.Queues;
 namespace Exceptionless.Core.Jobs {
     public class EventUserDescriptionsJob : QueueProcessorJobBase<EventUserDescription> {
         private readonly IEventRepository _eventRepository;
-        private readonly IMetricsClient _metricsClient;
 
-        public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, IMetricsClient metricsClient) : base(queue) {
+        public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository) : base(queue) {
             _eventRepository = eventRepository;
-            _metricsClient = metricsClient;
         }
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<EventUserDescription> context) {

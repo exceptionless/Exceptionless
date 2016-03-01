@@ -92,7 +92,9 @@ namespace Exceptionless.Core.Billing {
             if (updateBillingPrice)
                 organization.BillingPrice = plan.Price;
 
-            organization.BillingChangedByUserId = user?.Id;
+            if (user != null)
+                organization.BillingChangedByUserId = user.Id;
+
             organization.MaxUsers = plan.MaxUsers;
             organization.MaxProjects = plan.MaxProjects;
             organization.RetentionDays = plan.RetentionDays;

@@ -1,15 +1,27 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Lock;
+using Foundatio.Messaging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class ThrottleBotsWorkItemHandler : WorkItemHandlerBase {
         private readonly IEventRepository _eventRepository;
+        private readonly ILockProvider _lockProvider;
 
-        public ThrottleBotsWorkItemHandler(IEventRepository eventRepository) {
+        public ThrottleBotsWorkItemHandler(IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus) {
             _eventRepository = eventRepository;
+            _lockProvider = new CacheLockProvider(cacheClient, messageBus);
+        }
+
+        public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
+            var wi = (ThrottleBotsWorkItem)workItem;
+            var cacheKey = $"{nameof(ThrottleBotsWorkItemHandler)}:{wi.OrganizationId}:{wi.ClientIpAddress}";
+            return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         public override Task HandleItemAsync(WorkItemContext context) {

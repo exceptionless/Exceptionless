@@ -7,8 +7,10 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Storage;
@@ -22,12 +24,14 @@ namespace Exceptionless.Api.Controllers {
         private readonly IMessagePublisher _messagePublisher;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
+        private readonly IQueue<WorkItemData> _workItemQueue;
 
-        public AdminController(IFileStorage fileStorage, IMessagePublisher messagePublisher, IOrganizationRepository organizationRepository, IQueue<EventPost> eventPostQueue) {
+        public AdminController(IFileStorage fileStorage, IMessagePublisher messagePublisher, IOrganizationRepository organizationRepository, IQueue<EventPost> eventPostQueue, IQueue<WorkItemData> workItemQueue) {
             _fileStorage = fileStorage;
             _messagePublisher = messagePublisher;
             _organizationRepository = organizationRepository;
             _eventPostQueue = eventPostQueue;
+            _workItemQueue = workItemQueue;
         }
 
         [HttpPost]
@@ -82,6 +86,23 @@ namespace Exceptionless.Api.Controllers {
             foreach (var file in await _fileStorage.GetFileListAsync(path))
                 await _eventPostQueue.EnqueueAsync(new EventPost { FilePath = file.Path, ShouldArchive = archive });
 
+            return Ok();
+        }
+        
+        [HttpGet]
+        [Route("maintenance/{name:minlength(1)}")]
+        public async Task<IHttpActionResult> RunJobAsync(string name) {
+            switch (name.ToLower()) {
+                case "update-organization-plans":
+                    await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { UpgradePlans = true });
+                    break;
+                case "update-project-default-bot-lists":
+                    await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { UpdateDefaultBotList = true });
+                    break;
+                default:
+                    return NotFound();
+            }
+            
             return Ok();
         }
     }
