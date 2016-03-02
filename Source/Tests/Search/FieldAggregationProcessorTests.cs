@@ -6,7 +6,7 @@ using Xunit;
 namespace Exceptionless.Api.Tests.Search {
     public class FieldAggregationProcessorTests {
         [Theory]
-        [InlineData(null, false)]
+        [InlineData(null, true)]
         [InlineData("avg", false)]
         [InlineData("avg:", false)]
         [InlineData("avg:val", false)]
