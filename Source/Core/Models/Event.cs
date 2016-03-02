@@ -81,6 +81,7 @@ namespace Exceptionless.Core.Models {
             public const string SubmissionMethod = "@submission_method";
             public const string SessionEnd = "sessionend";
             public const string SessionHasError = "haserror";
+            public const string ManualStackingInfo = "@stack";
         }
     }
 }

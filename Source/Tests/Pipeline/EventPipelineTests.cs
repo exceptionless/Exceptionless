@@ -25,6 +25,8 @@ using Nest;
 using Xunit;
 using Xunit.Abstractions;
 
+using Fields = Exceptionless.Core.Repositories.Configuration.EventIndex.Fields.PersistentEvent;
+
 namespace Exceptionless.Api.Tests.Pipeline {
     public class EventPipelineTests : CaptureTests {
         private readonly ICacheClient _cacheClient = IoC.GetInstance<ICacheClient>();
@@ -48,7 +50,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var ev = GenerateEvent(localTime.AddMinutes(10));
 
             await _pipeline.RunAsync(ev);
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
@@ -58,10 +60,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CreateAutoSessionAsync() {
-            await CreateSessionInternalAsync(DateTimeOffset.Now);
+            await CreateAutoSessionInternalAsync(DateTimeOffset.Now);
         }
 
-        private async Task CreateSessionInternalAsync(DateTimeOffset date) {
+        private async Task CreateAutoSessionInternalAsync(DateTimeOffset date) {
             await ResetAsync();
 
             var ev = GenerateEvent(date, "blake@exceptionless.io");
@@ -71,8 +73,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
 
-            await _client.RefreshAsync(Indices.All);
-            var events = await _eventRepository.GetAllAsync();
+            await _client.RefreshAsync();
+            var events = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
             Assert.Equal(2, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 
@@ -82,9 +84,9 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task CanUpdateExistingSessionAsync() {
+        public async Task CanUpdateExistingAutoSessionAsync() {
             var startDate = DateTimeOffset.Now.SubtractMinutes(5);
-            await CreateSessionInternalAsync(startDate);
+            await CreateAutoSessionInternalAsync(startDate);
 
             var ev = GenerateEvent(startDate.AddMinutes(4), "blake@exceptionless.io");
 
@@ -93,18 +95,18 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
 
-            await _client.RefreshAsync(Indices.All);
-            var events = await _eventRepository.GetAllAsync();
+            await _client.RefreshAsync();
+            var events = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
             Assert.Equal(3, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 
-            var sessionStart = events.Documents.First(e => e.IsSessionStart());
+            var sessionStart = events.Documents.Single(e => e.IsSessionStart());
             Assert.Equal(240, sessionStart.Value);
             Assert.False(sessionStart.HasSessionEndTime());
         }
 
         [Fact]
-        public async Task IgnoreSessionsWithoutIdentityAsync() {
+        public async Task IgnoreAutoSessionsWithoutIdentityAsync() {
             await ResetAsync();
 
             var ev = GenerateEvent(DateTimeOffset.Now);
@@ -114,15 +116,15 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
 
-            await _client.RefreshAsync(Indices.All);
-            var events = await _eventRepository.GetAllAsync();
+            await _client.RefreshAsync();
+            var events = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
             Assert.Equal(1, events.Total);
             Assert.Equal(0, events.Documents.Count(e => e.IsSessionStart()));
             Assert.Equal(0, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
         }
         
         [Fact]
-        public async Task CreateSessionStartEventsAsync() {
+        public async Task CreateAutoSessionStartEventsAsync() {
             await ResetAsync();
 
             DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
@@ -139,8 +141,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(contexts.Any(c => c.IsCancelled));
             Assert.True(contexts.Any(c => c.IsProcessed));
 
-            await _client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync();
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
             Assert.Equal(6, results.Total);
             Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             Assert.Equal(2, results.Documents.Count(e => e.IsSessionEnd()));
@@ -154,7 +156,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task UpdateMultipleSessionStartEventDurationsAsync() {
+        public async Task UpdateAutoMultipleSessionStartEventDurationsAsync() {
             await ResetAsync();
 
             DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
@@ -166,26 +168,22 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var contexts = await _pipeline.RunAsync(events);
             Assert.False(contexts.Any(c => c.HasError));
-            Assert.False(contexts.Any(c => c.IsCancelled));
+            Assert.Equal(1, contexts.Count(c => c.IsCancelled));
             Assert.True(contexts.Any(c => c.IsProcessed));
 
-            await _client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync();
-            Assert.Equal(3, results.Total);
-            Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
-            Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(1, results.Total);
+            Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+            Assert.Equal(0, results.Documents.Count(e => e.IsSessionEnd()));
 
-            var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).OrderBy(e => e.Date).ToList();
-            Assert.Equal(2, sessionStarts.Count);
-
-            Assert.Equal(10, sessionStarts[0].Value);
-            Assert.True(sessionStarts[0].HasSessionEndTime());
-            Assert.Equal(0, sessionStarts[1].Value);
-            Assert.False(sessionStarts[1].HasSessionEndTime());
+            var sessionStart = results.Documents.Single(e => e.IsSessionStart());
+            Assert.Equal(10, sessionStart.Value);
+            Assert.False(sessionStart.HasSessionEndTime());
         }
 
         [Fact]
-        public async Task UpdateSessionLastActivityAsync() {
+        public async Task UpdateAutoSessionLastActivityAsync() {
             await ResetAsync();
 
             var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
@@ -207,28 +205,343 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(contexts.Any(c => c.IsCancelled));
             Assert.True(contexts.Any(c => c.IsProcessed));
 
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             var results = await _eventRepository.GetAllAsync(paging: new PagingOptions().WithLimit(15));
-            Assert.Equal(11, results.Total);
-            Assert.Equal(3, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
-            Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd() && e.GetUserIdentity()?.Identity == "eric@exceptionless.io"));
-            Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId()) && e.GetUserIdentity().Identity == "eric@exceptionless.io").Select(e => e.GetSessionId()).Distinct().Count());
+            Assert.Equal(9, results.Total);
+            Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd() && e.GetUserIdentity()?.Identity == "blake@exceptionless.io"));
+            Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId()) && e.GetUserIdentity().Identity == "eric@exceptionless.io").Select(e => e.GetSessionId()).Distinct().Count());
             Assert.Equal(1, results.Documents.Count(e => String.IsNullOrEmpty(e.GetSessionId())));
-            Assert.Equal(2, results.Documents.Count(e => e.IsSessionEnd()));
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
 
             var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).ToList();
-            Assert.Equal(3, sessionStarts.Count);
+            Assert.Equal(2, sessionStarts.Count);
 
-            var firstUserSessionStartEvents = sessionStarts.First(e => e.GetUserIdentity().Identity == "blake@exceptionless.io");
+            var firstUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity().Identity == "blake@exceptionless.io");
             Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, firstUserSessionStartEvents.Value);
-            Assert.NotNull(firstUserSessionStartEvents.HasSessionEndTime());
+            Assert.True(firstUserSessionStartEvents.HasSessionEndTime());
+            
+            var secondUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity().Identity == "eric@exceptionless.io");
+            Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, secondUserSessionStartEvents.Value);
+            Assert.False(secondUserSessionStartEvents.HasSessionEndTime());
+        }
 
-            var secondUserSessionStartEvents = sessionStarts.Where(e => e.GetUserIdentity().Identity == "eric@exceptionless.io").OrderBy(e => e.Date).ToList();
-            Assert.Equal(2, secondUserSessionStartEvents.Count);
-            Assert.Equal(30, secondUserSessionStartEvents[0].Value);
-            Assert.True(secondUserSessionStartEvents[0].HasSessionEndTime());
-            Assert.Equal(0, secondUserSessionStartEvents[1].Value);
-            Assert.False(secondUserSessionStartEvents[1].HasSessionEndTime());
+        [Fact]
+        public async Task CloseExistingAutoSessionAsync() {
+            await ResetAsync();
+
+            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, "blake@exceptionless.io"),
+                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.False(contexts.Any(c => c.IsCancelled));
+            Assert.True(contexts.Any(c => c.IsProcessed));
+            await _client.RefreshAsync();
+            
+            events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.Session),
+                GenerateEvent(firstEventDate.AddSeconds(20), "blake@exceptionless.io", Event.KnownTypes.SessionEnd)
+            };
+
+            contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(1, contexts.Count(c => c.IsCancelled));
+            Assert.Equal(1, contexts.Count(c => c.IsProcessed));
+            await _client.RefreshAsync();
+
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(4, results.Total);
+            Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
+
+            var sessionStart = results.Documents.Single(e => e.IsSessionStart());
+            Assert.Equal(20, sessionStart.Value);
+            Assert.True(sessionStart.HasSessionEndTime());
+        }
+
+        [Fact]
+        public async Task IgnoreDuplicateAutoEndSessionsAsync() {
+            await ResetAsync();
+
+            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
+                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionEnd)
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(2, contexts.Count(c => c.IsCancelled));
+            Assert.False(contexts.All(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(0, results.Total);
+        }
+
+        [Fact]
+        public async Task WillMarkAutoSessionHeartbeatStackHidden() {
+            await ResetAsync();
+
+            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(0, contexts.Count(c => c.IsCancelled));
+            Assert.Equal(1, contexts.Count(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(2, results.Total);
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
+
+            var sessionHeartbeat = results.Documents.Single(e => e.IsSessionHeartbeat());
+            Assert.NotNull(sessionHeartbeat);
+            Assert.True(sessionHeartbeat.IsHidden);
+
+            var stack = await _stackRepository.GetByIdAsync(sessionHeartbeat.StackId);
+            Assert.NotNull(stack);
+            Assert.True(stack.IsHidden);
+
+            stack = await _stackRepository.GetByIdAsync(results.Documents.First(e => !e.IsSessionHeartbeat()).StackId);
+            Assert.NotNull(stack);
+            Assert.False(stack.IsHidden);
+        }
+
+        [Fact]
+        public async Task CreateManualSessionAsync() {
+            await CreateManualSessionInternalAsync(DateTimeOffset.Now);
+        }
+
+        private async Task CreateManualSessionInternalAsync(DateTimeOffset start) {
+            await ResetAsync();
+
+            var ev = GenerateEvent(start, sessionId: "12345678");
+
+            var context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
+            Assert.False(context.IsCancelled);
+            Assert.True(context.IsProcessed);
+
+            await _client.RefreshAsync();
+            var events = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(2, events.Total);
+            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+
+            var sessionStartEvent = events.Documents.SingleOrDefault(e => e.IsSessionStart());
+            Assert.NotNull(sessionStartEvent);
+            Assert.Equal(0, sessionStartEvent.Value);
+            Assert.False(sessionStartEvent.HasSessionEndTime());
+        }
+
+        [Fact]
+        public async Task CanUpdateExistingManualSessionAsync() {
+            var startDate = DateTimeOffset.Now.SubtractMinutes(5);
+            await CreateManualSessionInternalAsync(startDate);
+
+            var ev = GenerateEvent(startDate.AddMinutes(4), sessionId: "12345678");
+
+            var context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
+            Assert.False(context.IsCancelled);
+            Assert.True(context.IsProcessed);
+
+            await _client.RefreshAsync();
+            var events = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(3, events.Total);
+            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+
+            var sessionStart = events.Documents.First(e => e.IsSessionStart());
+            Assert.Equal(240, sessionStart.Value);
+            Assert.False(sessionStart.HasSessionEndTime());
+        }
+
+        [Fact]
+        public async Task CreateManualSingleSessionStartEventAsync() {
+            await ResetAsync();
+
+            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.Session, sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(20), type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(30), sessionId: "12345678"),
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.False(contexts.Any(c => c.IsCancelled));
+            Assert.True(contexts.Any(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(4, results.Total);
+            Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+
+            var sessionStartEvent = results.Documents.SingleOrDefault(e => e.IsSessionStart());
+            Assert.NotNull(sessionStartEvent);
+            Assert.Equal(30, sessionStartEvent.Value);
+            Assert.True(sessionStartEvent.HasSessionEndTime());
+        }
+        
+        [Fact]
+        public async Task CreateManualSessionStartEventAsync() {
+            await ResetAsync();
+
+            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, sessionId: "12345678"),
+                // This event will be deduplicated as part of the manual session plugin.
+                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(20), sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(30), type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(1, contexts.Count(c => c.IsCancelled));
+            Assert.Equal(3, contexts.Count(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(4, results.Total);
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
+
+            var sessionStartEvent = results.Documents.First(e => e.IsSessionStart());
+            Assert.NotNull(sessionStartEvent);
+            Assert.Equal(30, sessionStartEvent.Value);
+            Assert.True(sessionStartEvent.HasSessionEndTime());
+        }
+
+        [Fact]
+        public async Task UpdateManualSessionLastActivityAsync() {
+            await ResetAsync();
+
+            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var lastEventDate = firstEventDate.Add(TimeSpan.FromMinutes(1));
+
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, type: Event.KnownTypes.Session, sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(10), sessionId: "12345678"),
+                GenerateEvent(lastEventDate, type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.False(contexts.Any(c => c.IsCancelled));
+            Assert.True(contexts.Any(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(3, results.Total);
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
+            Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
+            Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, results.Documents.First(e => e.IsSessionStart()).Value);
+        }
+        
+        [Fact]
+        public async Task CloseExistingManualSessionAsync() {
+            await ResetAsync();
+
+            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.False(contexts.Any(c => c.IsCancelled));
+            Assert.True(contexts.Any(c => c.IsProcessed));
+            await _client.RefreshAsync();
+            
+            events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.Session, sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(20), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
+            };
+
+            contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(1, contexts.Count(c => c.IsCancelled));
+            Assert.True(contexts.Any(c => c.IsProcessed));
+            await _client.RefreshAsync();
+
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(4, results.Total);
+            Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
+
+            var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).ToList();
+            Assert.Equal(1, sessionStarts.Count);
+            foreach (var sessionStart in sessionStarts) {
+                Assert.Equal(20, sessionStart.Value);
+                Assert.True(sessionStart.HasSessionEndTime());
+            }
+        }
+
+        [Fact]
+        public async Task IgnoreDuplicateManualEndSessionsAsync() {
+            await ResetAsync();
+
+            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(2, contexts.Count(c => c.IsCancelled));
+            Assert.False(contexts.All(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(0, results.Total);
+        }
+
+        [Fact]
+        public async Task WillMarkManualSessionHeartbeatStackHidden() {
+            await ResetAsync();
+
+            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(0, contexts.Count(c => c.IsCancelled));
+            Assert.Equal(1, contexts.Count(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(2, results.Total);
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
+
+            var sessionHeartbeat = results.Documents.Single(e => e.IsSessionHeartbeat());
+            Assert.NotNull(sessionHeartbeat);
+            Assert.True(sessionHeartbeat.IsHidden);
+
+            var stack = await _stackRepository.GetByIdAsync(sessionHeartbeat.StackId);
+            Assert.NotNull(stack);
+            Assert.True(stack.IsHidden);
+            
+            stack = await _stackRepository.GetByIdAsync(results.Documents.First(e => !e.IsSessionHeartbeat()).StackId);
+            Assert.NotNull(stack);
+            Assert.False(stack.IsHidden);
         }
         
         [Fact]
@@ -278,7 +591,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag1);
             
             await _pipeline.RunAsync(ev);
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
@@ -291,7 +604,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag2);
 
             await _pipeline.RunAsync(ev);
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
 
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
@@ -300,7 +613,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag2_Lowercase);
 
             await _pipeline.RunAsync(ev);
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
 
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
@@ -317,7 +630,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
             
             await _pipeline.RunAsync(contexts);
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
             Assert.Equal(1, contexts.Count(c => c.IsNew));
             Assert.Equal(1, contexts.Count(c => !c.IsNew));
@@ -348,7 +661,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _pipeline.RunAsync(contexts);
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
 
             Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
             Assert.Equal(1, contexts.Count(c => c.IsNew));
@@ -363,7 +676,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow);
             var context = new EventContext(ev);
             await _pipeline.RunAsync(context);
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
 
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
@@ -375,7 +688,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             stack.DateFixed = DateTime.UtcNow;
             stack.IsRegressed = false;
             await _stackRepository.SaveAsync(stack, true);
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
 
             var contexts = new List<EventContext> {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1))),
@@ -383,7 +696,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _pipeline.RunAsync(contexts);
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             Assert.Equal(1, contexts.Count(c => c.IsRegression));
             Assert.Equal(1, contexts.Count(c => !c.IsRegression));
 
@@ -393,7 +706,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _pipeline.RunAsync(contexts);
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
         }
 
@@ -572,7 +885,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         private async Task CreateDataAsync() {
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
 
             foreach (Organization organization in OrganizationData.GenerateSampleOrganizations()) {
                 if (organization.Id == TestConstants.OrganizationId3)
@@ -607,7 +920,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 await _userRepository.AddAsync(user, true);
             }
 
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
         }
 
         private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
@@ -620,22 +933,22 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private async Task RemoveDataAsync() {
             await RemoveEventsAndStacks();
             await _tokenRepository.RemoveAllAsync();
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             await _userRepository.RemoveAllAsync();
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             await _projectRepository.RemoveAllAsync();
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             await _organizationRepository.RemoveAllAsync();
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             await _cacheClient.RemoveAllAsync();
         }
 
         private async Task RemoveEventsAndStacks() {
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             await _eventRepository.RemoveAllAsync();
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             await _stackRepository.RemoveAllAsync();
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             await _cacheClient.RemoveAllAsync();
         }
     }

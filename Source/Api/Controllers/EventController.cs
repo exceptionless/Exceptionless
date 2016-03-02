@@ -28,7 +28,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 using Newtonsoft.Json;
-using Fields = Exceptionless.Core.Repositories.Configuration.EventIndex.Fields.PersistentEvent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
@@ -211,7 +210,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync($"{Fields.ProjectId}:{projectId}", filter, sort, time, offset, mode, page, limit);
+            return await GetInternalAsync($"project:{projectId}", filter, sort, time, offset, mode, page, limit);
         }
 
         /// <summary>
@@ -280,7 +279,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync($"{Fields.ProjectId}:{projectId}", $"{Fields.ReferenceId}:{referenceId}", null, null, offset, mode, page, limit);
+            return await GetInternalAsync($"project:{projectId}", String.Concat("reference:", referenceId), null, null, offset, mode, page, limit);
         }
 
         /// <summary>
@@ -299,7 +298,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("sessions/{sessionId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return await GetInternalAsync(null, $"ref.session:{sessionId} {filter}", sort, time, offset, mode, page, limit, true);
+            return await GetInternalAsync(null, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, time, offset, mode, page, limit, true);
         }
 
         /// <summary>
@@ -323,7 +322,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync($"{Fields.ProjectId}:{projectId}", $"ref.session:{sessionId} {filter}", sort, time, offset, mode, page, limit, true);
+            return await GetInternalAsync($"project:{projectId}", $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, time, offset, mode, page, limit, true);
         }
 
         /// <summary>
@@ -364,7 +363,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
             
-            return await GetInternalAsync($"{Fields.ProjectId}:{projectId}", $"{Fields.Type}:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit, true);
+            return await GetInternalAsync($"project:{projectId}", $"type:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit, true);
         }
         
         /// <summary>
@@ -492,6 +491,9 @@ namespace Exceptionless.Api.Controllers {
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
             var ev = new Event { Type = !String.IsNullOrEmpty(type) ? type : Event.KnownTypes.Log };
 
+            string identity = null;
+            string identityName = null;
+
             var exclusions = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions).ToList();
             foreach (var kvp in parameters.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty))) {
                 switch (kvp.Key.ToLower()) {
@@ -525,6 +527,12 @@ namespace Exceptionless.Api.Controllers {
                     case "tags":
                         ev.Tags.AddRange(kvp.Value.SelectMany(t => t.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)).Distinct());
                         break;
+                    case "identity":
+                        identity = kvp.Value.FirstOrDefault();
+                        break;
+                    case "identity.name":
+                        identityName = kvp.Value.FirstOrDefault();
+                        break;
                     default:
                         if (kvp.Key.AnyWildcardMatches(exclusions, true))
                             continue;
@@ -537,6 +545,8 @@ namespace Exceptionless.Api.Controllers {
                         break;
                 }
             }
+
+            ev.SetUserIdentity(identity, identityName);
 
             try {
                 await _eventPostQueue.EnqueueAsync(new EventPostInfo {

@@ -480,6 +480,7 @@ namespace Exceptionless.Api.Controllers {
             value.IsConfigured = false;
             value.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             value.AddDefaultOwnerNotificationSettings(ExceptionlessUser.Id);
+            value.SetDefaultUserAgentBotPatterns();
             return base.AddModelAsync(value);
         }
 

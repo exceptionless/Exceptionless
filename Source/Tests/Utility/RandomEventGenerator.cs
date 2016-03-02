@@ -39,7 +39,7 @@ namespace Exceptionless.Helpers {
             if (MinDate.HasValue || MaxDate.HasValue)
                 ev.Date = RandomData.GetDateTime(MinDate ?? DateTime.MinValue, MaxDate ?? DateTime.MaxValue);
 
-            ev.Type = EventTypes.Random();
+            ev.Type = new [] { Event.KnownTypes.Error, Event.KnownTypes.FeatureUsage, Event.KnownTypes.Log, Event.KnownTypes.NotFound }.Random();
             if (ev.Type == Event.KnownTypes.FeatureUsage)
                 ev.Source = FeatureNames.Random();
             else if (ev.Type == Event.KnownTypes.NotFound)
@@ -57,7 +57,7 @@ namespace Exceptionless.Helpers {
                 ev.Geo = RandomData.GetCoordinate();
 
             if (RandomData.GetBool(20))
-                ev.Value = RandomData.GetDecimal();
+                ev.Value = RandomData.GetInt(0, 10000);
 
             ev.SetUserIdentity(Identities.Random());
             ev.SetVersion(RandomData.GetVersion("2.0", "4.0"));

@@ -148,7 +148,7 @@ namespace Exceptionless.Core.Jobs {
             return JobResult.Success;
         }
 
-        private async Task CompleteEntryAsync(QueueEntry<EventPost> queueEntry, EventPostInfo eventPostInfo, DateTime created) {
+        private async Task CompleteEntryAsync(IQueueEntry<EventPost> queueEntry, EventPostInfo eventPostInfo, DateTime created) {
             await queueEntry.CompleteAsync().AnyContext();
             if (queueEntry.Value.ShouldArchive)
                 await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, queueEntry.Value.ShouldArchive).AnyContext();

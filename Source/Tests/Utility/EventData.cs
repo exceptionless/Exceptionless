@@ -37,6 +37,10 @@ namespace Exceptionless.Tests.Utility {
             return GenerateEvent(projectIds: new string[0], type: Event.KnownTypes.Session, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false);
         }
 
+        public static PersistentEvent GenerateSessionEndEvent(DateTimeOffset occurrenceDate, string sessionId = null, string userIdentity = null) {
+            return GenerateEvent(projectIds: new string[0], type: Event.KnownTypes.SessionEnd, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false);
+        }
+
         public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null, string type = null, string sessionId = null,  string userIdentity = null) {
             if (!startDate.HasValue || startDate > DateTimeOffset.Now.AddHours(1))
                 startDate = DateTimeOffset.Now.AddDays(-30);
@@ -53,9 +57,6 @@ namespace Exceptionless.Tests.Utility {
                 StackId = stackIds.Random()
             };
             
-            if(!String.IsNullOrEmpty(sessionId))
-                ev.SetSessionId(sessionId);
-
             if (!String.IsNullOrEmpty(userIdentity))
                 ev.SetUserIdentity(userIdentity);
 
@@ -88,6 +89,9 @@ namespace Exceptionless.Tests.Utility {
             } else {
                 ev.Type = type.ToLower();
             }
+
+            if (!String.IsNullOrEmpty(sessionId))
+                ev.SetSessionId(sessionId);
 
             if (ev.IsSessionStart())
                 ev.Value = 0;
