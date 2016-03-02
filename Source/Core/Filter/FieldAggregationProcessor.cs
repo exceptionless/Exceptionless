@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Filter {
 
         public static FieldAggregationsResult Process(string query, bool applyRules = true) {
             if (String.IsNullOrEmpty(query))
-                return new FieldAggregationsResult();
+                return new FieldAggregationsResult { IsValid = true };
 
             var result = new FieldAggregationsResult { IsValid = true };
             string[] aggregations = query.Split(new [] { ',' }, StringSplitOptions.RemoveEmptyEntries);

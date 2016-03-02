@@ -6,7 +6,6 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Stats;
 using Foundatio.Logging;
 
@@ -32,7 +31,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route]
         [ResponseType(typeof(NumbersStatsResult))]
-        public async Task<IHttpActionResult> GetAsync(string fields, string filter = null, string time = null, string offset = null) {
+        public async Task<IHttpActionResult> GetAsync(string fields = null, string filter = null, string time = null, string offset = null) {
             var far = FieldAggregationProcessor.Process(fields);
             if (!far.IsValid)
                 return BadRequest(far.Message);
@@ -71,7 +70,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("timeline")]
         [ResponseType(typeof(NumbersTimelineStatsResult))]
-        public async Task<IHttpActionResult> GetTimelineAsync(string fields, string filter = null, string time = null, string offset = null) {
+        public async Task<IHttpActionResult> GetTimelineAsync(string fields = null, string filter = null, string time = null, string offset = null) {
             var far = FieldAggregationProcessor.Process(fields);
             if (!far.IsValid)
                 return BadRequest(far.Message);
