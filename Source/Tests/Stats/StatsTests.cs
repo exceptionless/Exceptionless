@@ -59,7 +59,7 @@ namespace Exceptionless.Api.Tests.Stats {
         public async Task CanGetEventStatsAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
-            var  values = new decimal[] { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+            var  values = new decimal?[] { null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
             await RemoveDataAsync();
             await CreateDataAsync(0, false);
 
@@ -257,7 +257,7 @@ namespace Exceptionless.Api.Tests.Stats {
                 await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId });
         }
 
-        private async Task CreateEventsAsync(int eventCount, string[] projectIds, decimal? value = null) {
+        private async Task CreateEventsAsync(int eventCount, string[] projectIds, decimal? value = -1) {
             await _client.RefreshAsync();
 
             var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow, value: value);

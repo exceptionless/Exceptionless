@@ -264,21 +264,23 @@ namespace Exceptionless.Core.Utility {
         
         private AggregationDescriptor<PersistentEvent> BuildAggregations(AggregationDescriptor<PersistentEvent> aggregation, IEnumerable<FieldAggregation> fields) {
             foreach (var field in fields) {
+                string defaultValueScript = $"doc['{field.Field}'].empty ? 0 : doc['{field.Field}'].value";
+
                 switch (field.Type) {
                     case FieldAggregationType.Average:
-                        aggregation.Average(field.Key, a => a.Field(field.Field));
+                        aggregation.Average(field.Key, a => a.Script(defaultValueScript));
                         break;
                     case FieldAggregationType.Distinct:
-                        aggregation.Cardinality(field.Key, a => a.Field(field.Field).PrecisionThreshold(100));
+                        aggregation.Cardinality(field.Key, a => a.Script(defaultValueScript).PrecisionThreshold(100));
                         break;
                     case FieldAggregationType.Sum:
-                        aggregation.Sum(field.Key, a => a.Field(field.Field));
+                        aggregation.Sum(field.Key, a => a.Script(defaultValueScript));
                         break;
                     case FieldAggregationType.Min:
-                        aggregation.Min(field.Key, a => a.Field(field.Field));
+                        aggregation.Min(field.Key, a => a.Script(defaultValueScript));
                         break;
                     case FieldAggregationType.Max:
-                        aggregation.Max(field.Key, a => a.Field(field.Field));
+                        aggregation.Max(field.Key, a => a.Script(defaultValueScript));
                         break;
                     case FieldAggregationType.Last:
                         // TODO: Populate with the last value.
