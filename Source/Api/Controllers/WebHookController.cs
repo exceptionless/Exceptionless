@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
+using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
@@ -22,7 +23,7 @@ namespace Exceptionless.App.Controllers.API {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
 
-        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, ILoggerFactory loggerFactory = null) : base(repository, loggerFactory) {
+        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
             _projectRepository = projectRepository;
             _billingManager = billingManager;
         }

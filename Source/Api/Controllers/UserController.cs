@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
+using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
@@ -26,7 +27,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly ICacheClient _cacheClient;
         private readonly IMailer _mailer;
 
-        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer) : base(userRepository) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, ILoggerFactory loggerFactory, IMapper mapper) : base(userRepository, loggerFactory, mapper) {
             _organizationRepository = organizationRepository;
             _cacheClient = new ScopedCacheClient(cacheClient, "user");
             _mailer = mailer;

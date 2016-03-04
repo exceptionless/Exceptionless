@@ -9,7 +9,6 @@ using System.Web.Http;
 using System.Web.Http.Cors;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Routing;
-using AutoMapper;
 using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
@@ -75,7 +74,6 @@ namespace Exceptionless.Api {
 
             container.Bootstrap(config);
             container.Bootstrap(app);
-            Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
 
             app.UseWebApi(config);
             SetupSignalR(app, container, loggerFactory);

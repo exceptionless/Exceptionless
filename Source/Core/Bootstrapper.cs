@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AutoMapper;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
@@ -39,6 +40,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
 using SimpleInjector;
+using SimpleInjector.Advanced;
 
 namespace Exceptionless.Core {
     public class Bootstrapper {
@@ -159,6 +161,18 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<SystemHealthChecker>();
 
             container.RegisterSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
+            
+            container.RegisterSingleton<IMapper>(() => {
+                var profiles = container.GetAllInstances<Profile>();
+                var config = new MapperConfiguration(cfg => {
+                    cfg.ConstructServicesUsing(container.GetInstance);
+
+                    foreach (var profile in profiles)
+                        cfg.AddProfile(profile);
+                });
+
+                return config.CreateMapper();
+            });
         }
     }
 }

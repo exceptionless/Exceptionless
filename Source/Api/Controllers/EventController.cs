@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -52,7 +51,8 @@ namespace Exceptionless.Api.Controllers {
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
             IFileStorage storage,
-            JsonSerializerSettings jsonSerializerSettings) : base(repository) {
+            JsonSerializerSettings jsonSerializerSettings,
+            ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
@@ -696,13 +696,6 @@ namespace Exceptionless.Api.Controllers {
                 return null;
 
             return project;
-        }
-
-        protected override void CreateMaps() {
-            if (Mapper.FindTypeMapFor<UserDescription, EventUserDescription>() == null)
-                Mapper.CreateMap<UserDescription, EventUserDescription>();
-
-            base.CreateMaps();
         }
     }
 }

@@ -36,13 +36,13 @@ namespace Exceptionless.Api.Controllers {
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILoggerFactory loggerFactory = null) {
+        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger) {
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
             _cacheClient = new ScopedCacheClient(cacheClient, "auth");
             _mailer = mailer;
-            _logger = loggerFactory?.CreateLogger<AuthController>() ?? NullLogger.Instance;
+            _logger = logger;
         }
 
         /// <summary>

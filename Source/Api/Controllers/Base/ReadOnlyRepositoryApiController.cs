@@ -14,9 +14,11 @@ namespace Exceptionless.Api.Controllers {
         protected readonly TRepository _repository;
         protected static readonly bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
         protected static readonly bool _isOrganization = typeof(TModel) == typeof(Organization);
+        protected readonly IMapper _mapper;
 
-        public ReadOnlyRepositoryApiController(TRepository repository) {
+        public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper) {
             _repository = repository;
+            _mapper = mapper;
         }
 
         public virtual async Task<IHttpActionResult> GetByIdAsync(string id) {
@@ -61,31 +63,8 @@ namespace Exceptionless.Api.Controllers {
 
         #region Mapping
 
-        protected virtual void CreateMaps() {
-            if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
-                Mapper.CreateMap<TModel, TViewModel>();
-        }
-
-        private static bool _mapsCreated;
-        private static readonly object _lock = new object();
-        private void EnsureMaps() {
-            if (_mapsCreated)
-                return;
-
-            lock (_lock) {
-                if (_mapsCreated)
-                    return;
-
-                CreateMaps();
-
-                _mapsCreated = true;
-            }
-        }
-
         protected async Task<TDestination> MapAsync<TDestination>(object source, bool isResult = false) {
-            EnsureMaps();
-
-            var destination = Mapper.Map<TDestination>(source);
+            var destination = _mapper.Map<TDestination>(source);
             if (isResult)
                 await AfterResultMapAsync(new List<TDestination>(new[] { destination }));
 
@@ -93,9 +72,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected async Task<ICollection<TDestination>> MapCollectionAsync<TDestination>(object source, bool isResult = false) {
-            EnsureMaps();
-
-            var destination = Mapper.Map<ICollection<TDestination>>(source);
+            var destination = _mapper.Map<ICollection<TDestination>>(source);
             if (isResult)
                 await AfterResultMapAsync<TDestination>(destination);
 

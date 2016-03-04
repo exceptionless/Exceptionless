@@ -15,9 +15,9 @@ namespace Exceptionless.Api.Controllers {
         private readonly StripeEventHandler _stripeEventHandler;
         private readonly ILogger _logger;
 
-        public StripeController(StripeEventHandler stripeEventHandler, ILoggerFactory loggerFactory = null) {
+        public StripeController(StripeEventHandler stripeEventHandler, ILogger<StripeController> logger) {
             _stripeEventHandler = stripeEventHandler;
-            _logger = loggerFactory?.CreateLogger<StripeController>() ?? NullLogger.Instance;
+            _logger = logger;
         }
 
         [Route]

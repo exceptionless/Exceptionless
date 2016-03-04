@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AutoMapper;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Jobs;
@@ -15,10 +14,6 @@ using Xunit;
 
 namespace Exceptionless.Api.Tests.Mail {
     public class MailerTests {
-        public MailerTests() {
-            Mapper.CreateMap<Event, PersistentEvent>();
-        }
-
         [Fact(Skip = "Used for testing html formatting.")]
         public Task SendLogNotificationAsync() {
             var mailer = IoC.GetInstance<Mailer>();

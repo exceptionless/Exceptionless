@@ -22,7 +22,7 @@ namespace Exceptionless.App.Controllers.API {
         private readonly IApplicationRepository _applicationRepository;
         private readonly IProjectRepository _projectRepository;
 
-        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository, ILoggerFactory loggerFactory = null) : base(repository, loggerFactory) {
+        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
             _applicationRepository = applicationRepository;
             _projectRepository = projectRepository;
         }
@@ -304,13 +304,6 @@ namespace Exceptionless.App.Controllers.API {
         private async Task<bool> IsInProjectAsync(string projectId) {
             var project = await GetProjectAsync(projectId);
             return project != null;
-        }
-
-        protected override void CreateMaps() {
-            if (Mapper.FindTypeMapFor<NewToken, Token>() == null)
-                Mapper.CreateMap<NewToken, Token>().ForMember(m => m.Type, m => m.Ignore());
-
-            base.CreateMaps();
         }
     }
 }

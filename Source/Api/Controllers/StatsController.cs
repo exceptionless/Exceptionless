@@ -20,12 +20,12 @@ namespace Exceptionless.Api.Controllers {
         private readonly EventStats _stats;
         private readonly ILogger _logger;
 
-        public StatsController(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, EventStats stats, ILoggerFactory loggerFactory = null) {
+        public StatsController(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, EventStats stats, ILogger<StatsController> logger) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _stats = stats;
-            _logger = loggerFactory?.CreateLogger<AuthController>() ?? NullLogger.Instance;
+            _logger = logger;
         }
 
         /// <summary>

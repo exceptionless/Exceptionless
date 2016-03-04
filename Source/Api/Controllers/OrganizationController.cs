@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IMessagePublisher _messagePublisher;
         private readonly EventStats _stats;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats) : base(organizationRepository) {
+        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats, ILoggerFactory loggerFactory, IMapper mapper) : base(organizationRepository, loggerFactory, mapper) {
             _cacheClient = cacheClient;
             _userRepository = userRepository;
             _projectRepository = projectRepository;
@@ -688,19 +688,6 @@ namespace Exceptionless.Api.Controllers {
             }
 
             return workItems;
-        }
-
-        protected override void CreateMaps() {
-            if (Mapper.FindTypeMapFor<Organization, ViewOrganization>() == null)
-                Mapper.CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
-                    vo.IsOverHourlyLimit = o.IsOverHourlyLimit();
-                    vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
-                });
-
-            if (Mapper.FindTypeMapFor<StripeInvoice, InvoiceGridModel>() == null)
-                Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
-
-            base.CreateMaps();
         }
 
         protected override async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {

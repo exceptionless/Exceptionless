@@ -20,7 +20,7 @@ namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : IRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
         protected readonly ILogger _logger;
 
-        public RepositoryApiController(TRepository repository, ILoggerFactory loggerFactory = null) : base(repository) {
+        public RepositoryApiController(TRepository repository, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, mapper) {
             _logger = loggerFactory?.CreateLogger(GetType()) ?? NullLogger.Instance;
         }
 
@@ -223,13 +223,6 @@ namespace Exceptionless.Api.Controllers {
         protected virtual async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<TModel> values) {
             await _repository.RemoveAsync(values);
             return new List<string>();
-        }
-
-        protected override void CreateMaps() {
-            if (Mapper.FindTypeMapFor<TNewModel, TModel>() == null)
-                Mapper.CreateMap<TNewModel, TModel>();
-
-            base.CreateMaps();
         }
     }
 }
