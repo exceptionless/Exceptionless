@@ -19,6 +19,8 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
+using Foundatio.Logging;
+using Foundatio.Logging.Xunit;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 using Nest;
@@ -28,7 +30,7 @@ using Xunit.Abstractions;
 using Fields = Exceptionless.Core.Repositories.Configuration.EventIndex.Fields.PersistentEvent;
 
 namespace Exceptionless.Api.Tests.Pipeline {
-    public class EventPipelineTests : CaptureTests {
+    public class EventPipelineTests : TestWithLoggingBase {
         private readonly ICacheClient _cacheClient = IoC.GetInstance<ICacheClient>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
@@ -40,7 +42,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         private readonly EventPipeline _pipeline = IoC.GetInstance<EventPipeline>();
 
-        public EventPipelineTests(CaptureFixture fixture, ITestOutputHelper output) : base(fixture, output) { }
+        public EventPipelineTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task NoFutureEventsAsync() {
@@ -773,7 +775,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 totalEvents += events.Count;
             }
 
-            _writer.WriteLine($"Took {sw.ElapsedMilliseconds}ms to process {totalEvents} with an average post size of {Math.Round(totalEvents * 1.0/totalBatches, 4)}");
+            _logger.Trace().Message($"Took {sw.ElapsedMilliseconds}ms to process {totalEvents} with an average post size of {Math.Round(totalEvents * 1.0/totalBatches, 4)}");
         }
 
         [Fact(Skip = "Used to create performance data from the queue directory")]

@@ -14,11 +14,13 @@ namespace Exceptionless.Core.Utility {
         private readonly IElasticClient _elasticClient;
         private readonly IFileStorage _storage;
         private readonly AsyncManualResetEvent _resetEvent = new AsyncManualResetEvent(false);
+        private readonly ILogger _logger;
 
-        public SystemHealthChecker(ICacheClient cacheClient, IElasticClient elasticClient, IFileStorage storage) {
+        public SystemHealthChecker(ICacheClient cacheClient, IElasticClient elasticClient, IFileStorage storage, ILogger<SystemHealthChecker> logger) {
             _cacheClient = new ScopedCacheClient(cacheClient, "health");
             _elasticClient = elasticClient;
             _storage = storage;
+            _logger = logger;
         }
 
         public async Task<HealthCheckResult> CheckCacheAsync() {
@@ -31,7 +33,7 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Cache Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                Logger.Trace().Message($"Checking cache took {sw.ElapsedMilliseconds}ms").Write();
+                _logger.Trace().Message("Checking cache took {0}ms", sw.ElapsedMilliseconds).Write();
             }
 
             return HealthCheckResult.Healthy;
@@ -47,7 +49,7 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Elasticsearch Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                Logger.Trace().Message($"Checking Elasticsearch took {sw.ElapsedMilliseconds}ms").Write();
+                _logger.Trace().Message("Checking Elasticsearch took {0}ms", sw.ElapsedMilliseconds).Write();
             }
 
             return HealthCheckResult.Healthy;
@@ -66,7 +68,7 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Storage Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                Logger.Trace().Message($"Checking storage took {sw.ElapsedMilliseconds}ms").Write();
+                _logger.Trace().Message("Checking storage took {0}ms", sw.ElapsedMilliseconds).Write();
             }
 
             return HealthCheckResult.Healthy;

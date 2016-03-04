@@ -3,15 +3,15 @@ using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Foundatio.Caching;
+using Foundatio.Logging;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using SimpleInjector;
-using SimpleInjector.Packaging;
 using PrincipalUserIdProvider = Exceptionless.Api.Hubs.PrincipalUserIdProvider;
 
 namespace Exceptionless.Api {
-    public class Bootstrapper : IPackage {
-        public void RegisterServices(Container container) {
+    public class Bootstrapper {
+        public static void RegisterServices(Container container, ILoggerFactory loggerFactory) {
             container.Register<IUserIdProvider, PrincipalUserIdProvider>();
             container.Register<MessageBusConnection>();
             container.RegisterSingleton<ConnectionMapping>();

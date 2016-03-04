@@ -7,6 +7,7 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
 using Foundatio.Caching;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(50)]
@@ -14,7 +15,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         private readonly IGeoIpService _geoIpService;
         private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 100 };
 
-        public GeoPlugin(IGeoIpService geoIpService) {
+        public GeoPlugin(IGeoIpService geoIpService, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _geoIpService = geoIpService;
         }
 

@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
@@ -20,7 +18,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IProjectRepository _projectRepository;
         private readonly ILockProvider _lockProvider;
 
-        public ProjectMaintenanceWorkItemHandler(IProjectRepository projectRepository, ICacheClient cacheClient, IMessageBus messageBus) {
+        public ProjectMaintenanceWorkItemHandler(IProjectRepository projectRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _projectRepository = projectRepository;
             _lockProvider = new CacheLockProvider(cacheClient, messageBus);
         }
@@ -33,7 +31,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             const int LIMIT = 100;
 
             var workItem = context.GetData<ProjectMaintenanceWorkItem>();
-            Logger.Info().Message($"Received upgrade projects work item. Update Default Bot List: {workItem.UpdateDefaultBotList}").Write();
+            _logger.Info().Message("Received upgrade projects work item. Update Default Bot List: {0}", workItem.UpdateDefaultBotList).Write();
 
             var results = await _projectRepository.GetAllAsync(paging: new PagingOptions().WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
@@ -57,7 +55,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private void UpgradePlan(Organization organization) {
             var plan = BillingManager.GetBillingPlan(organization.PlanId);
             if (plan == null) {
-                Logger.Error().Message($"Unable to find a valid plan for organization: {organization.Id}").Write();
+                _logger.Error().Message("Unable to find a valid plan for organization: {0}", organization.Id).Write();
                 return;
             }
 

@@ -5,13 +5,14 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(60)]
     public class UpdateStatsAction : EventPipelineActionBase {
         private readonly IStackRepository _stackRepository;
 
-        public UpdateStatsAction(IStackRepository stackRepository) {
+        public UpdateStatsAction(IStackRepository stackRepository, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _stackRepository = stackRepository;
         }
 

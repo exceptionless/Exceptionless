@@ -27,6 +27,7 @@ using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries.Builders;
 using Foundatio.Jobs;
 using Foundatio.Lock;
+using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
@@ -38,13 +39,14 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
 using SimpleInjector;
-using SimpleInjector.Packaging;
 
 namespace Exceptionless.Core {
-    public class Bootstrapper : IPackage {
-        public void RegisterServices(Container container) {
+    public class Bootstrapper {
+        public static void RegisterServices(Container container, ILoggerFactory loggerFactory) {
             // Foundation service provider
             ServiceProvider.Current = container;
+            
+            container.RegisterLogger(loggerFactory);
             container.RegisterSingleton<IDependencyResolver>(() => new SimpleInjectorDependencyResolver(container));
 
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
@@ -59,14 +61,15 @@ namespace Exceptionless.Core {
                 DateParseHandling = DateParseHandling.DateTimeOffset,
                 ContractResolver = contractResolver
             };
-            settings.AddModelConverters();
+
+            settings.AddModelConverters(loggerFactory.CreateLogger(nameof(Bootstrapper)));
 
             container.RegisterSingleton<IContractResolver>(() => contractResolver);
             container.RegisterSingleton<JsonSerializerSettings>(settings);
             container.RegisterSingleton<JsonSerializer>(JsonSerializer.Create(settings));
             container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
 
-            container.RegisterSingleton<IMetricsClient, InMemoryMetricsClient>();
+            container.RegisterSingleton<IMetricsClient>(() => new InMemoryMetricsClient(loggerFactory: loggerFactory));
 
             container.RegisterSingleton<QueryBuilderRegistry>(() => {
                 var builder = new QueryBuilderRegistry();
@@ -146,7 +149,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<ILockProvider, CacheLockProvider>();
             container.Register<StripeEventHandler>();
             container.RegisterSingleton<BillingManager>();
-            container.RegisterSingleton<DataHelper>();
+            container.RegisterSingleton<SampleDataService>();
             container.RegisterSingleton<EventStats>();
             container.RegisterSingleton<EventPipeline>();
             container.RegisterSingleton<EventPluginManager>();

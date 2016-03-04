@@ -11,6 +11,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Newtonsoft.Json.Linq;
 
@@ -21,7 +22,7 @@ namespace Exceptionless.App.Controllers.API {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
 
-        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager) : base(repository) {
+        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, ILoggerFactory loggerFactory = null) : base(repository, loggerFactory) {
             _projectRepository = projectRepository;
             _billingManager = billingManager;
         }

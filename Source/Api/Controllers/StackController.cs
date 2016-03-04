@@ -517,7 +517,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 results = await _repository.GetByFilterAsync(systemFilter, userFilter, sortBy, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
@@ -671,7 +671,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 terms = (await _eventStats.GetTermsStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1)).Terms;
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)

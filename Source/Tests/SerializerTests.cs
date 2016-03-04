@@ -4,12 +4,16 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Serializer;
+using Foundatio.Logging.Xunit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests {
-    public class SerializerTests {
+    public class SerializerTests : TestWithLoggingBase {
+        public SerializerTests(ITestOutputHelper output) : base(output) {}
+
         [Fact]
         public void CanDeserializeEventWithUnknownNamesAndProperties() {
             const string json = @"{""tags"":[""One"",""Two""],""reference_id"":""12"",""Message"":""Hello"",""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""@error"":{""Message"":""SomeVal"",""SomeProp"":""SomeVal""},""Some2"":""{\""Blah\"":\""SomeVal\""}"",""UnknownSerializedProp"":""{\""Blah\"":\""SomeVal\""}""}";
@@ -19,8 +23,8 @@ namespace Exceptionless.Api.Tests {
                 { "Some2", typeof(SomeModel) },
                 { Event.KnownDataKeys.Error, typeof(Error) }
             };
-            settings.Converters.Add(new DataObjectConverter<Event>(knownDataTypes));
-            settings.Converters.Add(new DataObjectConverter<Error>());
+            settings.Converters.Add(new DataObjectConverter<Event>(_logger, knownDataTypes));
+            settings.Converters.Add(new DataObjectConverter<Error>(_logger));
 
             var ev = json.FromJson<Event>(settings);
             Assert.Equal(8, ev.Data.Count);
@@ -60,7 +64,7 @@ namespace Exceptionless.Api.Tests {
                 { "_@Some", typeof(SomeModel) },
                 { "@string", typeof(String) }
             };
-            settings.Converters.Add(new DataObjectConverter<Event>(knownDataTypes));
+            settings.Converters.Add(new DataObjectConverter<Event>(_logger, knownDataTypes));
 
             var ev = json.FromJson<Event>(settings);
             Assert.Equal(2, ev.Data.Count);
@@ -81,7 +85,7 @@ namespace Exceptionless.Api.Tests {
         public void CanDeserializeEventWithData() {
             const string json = @"{""Message"":""Hello"",""Data"":{""Blah"":""SomeVal""}}";
             var settings = new JsonSerializerSettings();
-            settings.Converters.Add(new DataObjectConverter<Event>());
+            settings.Converters.Add(new DataObjectConverter<Event>(_logger));
 
             var ev = json.FromJson<Event>(settings);
             Assert.Equal(1, ev.Data.Count);

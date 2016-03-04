@@ -17,6 +17,7 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
 
@@ -29,7 +30,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly BillingManager _billingManager;
         private readonly EventStats _stats;
 
-        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, EventStats stats) : base(projectRepository) {
+        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, EventStats stats, ILoggerFactory loggerFactory = null) : base(projectRepository, loggerFactory) {
             _organizationRepository = organizationRepository;
             _workItemQueue = workItemQueue;
             _billingManager = billingManager;

@@ -1,5 +1,6 @@
 ﻿using System;
 using Exceptionless.Api.Tests.Mail;
+using Exceptionless.Core;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories.Configuration;
 using Nest;
@@ -19,7 +20,9 @@ namespace Exceptionless.Api.Tests.Utility {
         }
 
         private static Container CreateContainer() {
-            var container = AppBuilder.CreateContainer();
+            var loggerFactory = Settings.Current.GetLoggerFactory();
+            var logger = loggerFactory.CreateLogger(nameof(IoC));
+            var container = AppBuilder.CreateContainer(loggerFactory, logger);
             RegisterServices(container);
 
             var client = container.GetInstance<IElasticClient>();

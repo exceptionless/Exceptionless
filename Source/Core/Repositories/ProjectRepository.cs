@@ -7,13 +7,14 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
-        public ProjectRepository(ElasticRepositoryContext<Project> context, OrganizationIndex index) : base(context, index) { }
+        public ProjectRepository(ElasticRepositoryContext<Project> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) { }
 
         public Task<long> GetCountByOrganizationIdAsync(string organizationId) {
             return CountAsync(new ExceptionlessQuery().WithOrganizationId(organizationId));

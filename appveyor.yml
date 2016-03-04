@@ -29,13 +29,14 @@ assembly_info:
 
 before_build:
   - nuget restore -verbosity quiet
+  - ps: .\Libraries\Start-ElasticSearch.ps1
+  - SET PATH="C:\Program Files (x86)\MSBuild\14.0\Bin";%PATH%"
 
 build:
   parallel: true
   verbosity: quiet
 
 before_test:
-  - ps: .\Libraries\Start-ElasticSearch.ps1
   #- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 test:

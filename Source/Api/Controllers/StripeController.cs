@@ -13,9 +13,11 @@ namespace Exceptionless.Api.Controllers {
     [ApiExplorerSettings(IgnoreApi = true)]
     public class StripeController : ExceptionlessApiController {
         private readonly StripeEventHandler _stripeEventHandler;
+        private readonly ILogger _logger;
 
-        public StripeController(StripeEventHandler stripeEventHandler) {
+        public StripeController(StripeEventHandler stripeEventHandler, ILoggerFactory loggerFactory = null) {
             _stripeEventHandler = stripeEventHandler;
+            _logger = loggerFactory?.CreateLogger<StripeController>() ?? NullLogger.Instance;
         }
 
         [Route]
@@ -25,12 +27,12 @@ namespace Exceptionless.Api.Controllers {
             try {
                 stripeEvent = StripeEventUtility.ParseEvent(json);
             } catch (Exception ex) {
-                Logger.Error().Exception(ex).Message("Unable to parse incoming event.").Property("event", json).SetActionContext(ActionContext).Write();
+                _logger.Error().Exception(ex).Message("Unable to parse incoming event.").Property("event", json).SetActionContext(ActionContext).Write();
                 return BadRequest("Unable to parse incoming event");
             }
 
             if (stripeEvent == null) {
-                Logger.Warn().Message("Null stripe event.").SetActionContext(ActionContext).Write();
+                _logger.Warn().Message("Null stripe event.").SetActionContext(ActionContext).Write();
                 return BadRequest("Incoming event empty");
             }
 

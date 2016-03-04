@@ -22,6 +22,7 @@ namespace Exceptionless.Api.Utility {
         // cache property accessors for this type and all its derived types.
         private static ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>> _propertyCache = new ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>>();
 
+        private readonly ILogger _logger;
         private Dictionary<string, IMemberAccessor> _propertiesThatExist;
         private readonly Dictionary<string, object> _unknownProperties = new Dictionary<string, object>();
         private HashSet<string> _changedProperties;
@@ -31,16 +32,18 @@ namespace Exceptionless.Api.Utility {
         /// <summary>
         /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
         /// </summary>
-        public Delta() : this(typeof(TEntityType)) {}
+        public Delta(ILogger<Delta<TEntityType>> logger) : this(typeof(TEntityType), logger) {}
 
         /// <summary>
         /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
         /// </summary>
         /// <param name="entityType">
-        /// The derived entity type for which the changes would be tracked.
-        /// <paramref name="entityType" /> should be assignable to instances of <typeparamref name="TEntityType" />.
+        ///     The derived entity type for which the changes would be tracked.
+        ///     <paramref name="entityType" /> should be assignable to instances of <typeparamref name="TEntityType" />.
         /// </param>
-        public Delta(Type entityType) {
+        /// <param name="logger"></param>
+        public Delta(Type entityType, ILogger<Delta<TEntityType>> logger) {
+            _logger = logger;
             Initialize(entityType);
         }
 
@@ -84,7 +87,7 @@ namespace Exceptionless.Api.Utility {
                     try {
                         value = JsonConvert.DeserializeObject(value.ToString(), cacheHit.MemberType);
                     } catch (Exception ex) {
-                        Logger.Error().Exception(ex).Message("Error deserializing value: {0}", value.ToString()).Write();
+                        _logger.Error().Exception(ex).Message("Error deserializing value: {0}", value.ToString()).Write();
                         return false;
                     }
                 } else {

@@ -171,7 +171,15 @@ namespace Exceptionless.Core {
             EnableSignalR = GetBool(nameof(EnableSignalR), true);
 
             Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
-            MinimumLogLevel = GetEnum<LogLevel>("MinimumLogLevel", LogLevel.Info);
+            MinimumLogLevel = GetEnum<LogLevel>("MinimumLogLevel", LogLevel.Information);
+        }
+
+        public const string FoundatioBootstrapper = "Exceptionless.Insulation.Jobs.FoundatioBootstrapper,Exceptionless.Insulation";
+
+        public LoggerFactory GetLoggerFactory() {
+            return new LoggerFactory {
+                DefaultLogLevel = MinimumLogLevel
+            };
         }
     }
 

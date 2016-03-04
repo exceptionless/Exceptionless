@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Jobs {
@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IEventRepository _eventRepository;
         private readonly ILockProvider _lockProvider;
 
-        public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient) {
+        public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _eventRepository = eventRepository;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
         }

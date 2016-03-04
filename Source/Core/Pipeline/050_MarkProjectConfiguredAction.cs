@@ -6,6 +6,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Foundatio.Queues;
 
 namespace Exceptionless.Core.Pipeline {
@@ -13,7 +14,7 @@ namespace Exceptionless.Core.Pipeline {
     public class MarkProjectConfiguredAction : EventPipelineActionBase {
         private readonly IQueue<WorkItemData> _workItemQueue;
 
-        public MarkProjectConfiguredAction(IQueue<WorkItemData> workItemQueue) {
+        public MarkProjectConfiguredAction(IQueue<WorkItemData> workItemQueue, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _workItemQueue = workItemQueue;
             ContinueOnError = true;
         }

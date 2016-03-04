@@ -12,6 +12,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.App.Controllers.API {
@@ -21,7 +22,7 @@ namespace Exceptionless.App.Controllers.API {
         private readonly IApplicationRepository _applicationRepository;
         private readonly IProjectRepository _projectRepository;
 
-        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository) : base(repository) {
+        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository, ILoggerFactory loggerFactory = null) : base(repository, loggerFactory) {
             _applicationRepository = applicationRepository;
             _projectRepository = projectRepository;
         }

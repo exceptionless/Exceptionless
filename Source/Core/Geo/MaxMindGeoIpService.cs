@@ -15,12 +15,14 @@ namespace Exceptionless.Core.Geo {
 
         private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 250 };
         private readonly IFileStorage _storage;
+        private readonly ILogger _logger;
         private DatabaseReader _database;
         private DateTime? _databaseLastChecked;
         
 
-        public MaxMindGeoIpService(IFileStorage storage) {
+        public MaxMindGeoIpService(IFileStorage storage, ILogger<MaxMindGeoIpService> logger) {
             _storage = storage;
+            _logger = logger;
         }
 
         public async Task<GeoResult> ResolveIpAsync(string ip, CancellationToken cancellationToken = new CancellationToken()) {
@@ -58,10 +60,10 @@ namespace Exceptionless.Core.Geo {
                 return result;
             } catch (Exception ex) {
                 if (ex is AddressNotFoundException || ex is GeoIP2Exception) {
-                    Logger.Trace().Message(ex.Message).Write();
+                    _logger.Trace().Message(ex.Message).Write();
                     await _localCache.SetAsync<GeoResult>(ip, null).AnyContext();
                 } else {
-                    Logger.Error().Exception(ex).Message("Unable to resolve geo location for ip: " + ip).Write();
+                    _logger.Error().Exception(ex).Message("Unable to resolve geo location for ip: " + ip).Write();
                 }
 
                 return null;
@@ -84,16 +86,16 @@ namespace Exceptionless.Core.Geo {
             _databaseLastChecked = DateTime.UtcNow;
 
             if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH).AnyContext()) {
-                Logger.Warn().Message("No GeoIP database was found.").Write();
+                _logger.Warn().Message("No GeoIP database was found.").Write();
                 return null;
             }
 
-            Logger.Info().Message("Loading GeoIP database.").Write();
+            _logger.Info().Message("Loading GeoIP database.").Write();
             try {
                 using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
                     _database = new DatabaseReader(stream);
             } catch (Exception ex) {
-                Logger.Error().Exception(ex).Message("Unable to open GeoIP database.").Write();
+                _logger.Error().Exception(ex).Message("Unable to open GeoIP database.").Write();
             }
 
             return _database;

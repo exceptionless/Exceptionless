@@ -17,15 +17,17 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
+using Foundatio.Logging.Xunit;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Microsoft.Owin;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Controllers {
-    public class EventControllerTests : CaptureFixture {
+    public class EventControllerTests : TestWithLoggingBase {
         private static bool _databaseReset;
         private static bool _sampleOrganizationsAdded;
         private static bool _sampleProjectsAdded;
@@ -36,6 +38,8 @@ namespace Exceptionless.Api.Tests.Controllers {
         private readonly IQueue<EventPost> _eventQueue = IoC.GetInstance<IQueue<EventPost>>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
+
+        public EventControllerTests(ITestOutputHelper output) : base(output) {}
 
         [Fact]
         public async Task CanPostStringAsync() {

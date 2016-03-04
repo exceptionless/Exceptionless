@@ -2,13 +2,14 @@
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Utility;
+using Foundatio.Logging.Xunit;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Miscellaneous {
-    public class SystemHealthCheckerTests : CaptureTests {
+    public class SystemHealthCheckerTests : TestWithLoggingBase {
         private readonly SystemHealthChecker _checker = IoC.GetInstance<SystemHealthChecker>();
-        public SystemHealthCheckerTests(CaptureFixture fixture, ITestOutputHelper output) : base(fixture, output) { }
+        public SystemHealthCheckerTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task CheckCacheAsync() {

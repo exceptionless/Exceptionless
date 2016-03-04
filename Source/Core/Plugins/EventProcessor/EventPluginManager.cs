@@ -8,7 +8,7 @@ using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
-        public EventPluginManager(IDependencyResolver dependencyResolver = null) : base(dependencyResolver) { }
+        public EventPluginManager(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) : base(dependencyResolver, loggerFactory) { }
 
         /// <summary>
         /// Runs all of the event plugins startup method.
@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 try {
                     await plugin.StartupAsync().AnyContext();
                 } catch (Exception ex) {
-                    Logger.Error().Exception(ex).Message("Error calling startup in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    _logger.Error().Exception(ex).Message("Error calling startup in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
                 }
             }
         }
@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     if (contexts.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
-                    Logger.Error().Message("Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
+                    _logger.Error().Message("Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }
             }
         }
@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     if (contexts.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
-                    Logger.Error().Message("Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
+                    _logger.Error().Message("Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }
             }
         }
