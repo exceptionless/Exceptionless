@@ -24,7 +24,6 @@ namespace Exceptionless.Api.Tests.Stats {
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         private readonly EventStats _stats = IoC.GetInstance<EventStats>();
-        private readonly InMemoryMetricsClient _metricsClient = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
         private readonly EventPipeline _eventPipeline = IoC.GetInstance<EventPipeline>();
 
         [Fact]
