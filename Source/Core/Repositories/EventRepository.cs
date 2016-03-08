@@ -10,6 +10,7 @@ using Exceptionless.DateTimeExtensions;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Elasticsearch.Repositories.Queries.Options;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Foundatio.Repositories.Utility;
@@ -21,7 +22,7 @@ namespace Exceptionless.Core.Repositories {
         // NOTE: v1 event submission allowed users to specify there own id which may have been created with invalid date times.
         private static readonly DateTime _minObjectidDate = new DateTime(2000, 1, 1);
 
-        public EventRepository(ElasticRepositoryContext<PersistentEvent> context, EventIndex index) : base(context, index) {
+        public EventRepository(ElasticRepositoryContext<PersistentEvent> context, EventIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) {
             DisableCache();
             BatchNotifications = true;
 

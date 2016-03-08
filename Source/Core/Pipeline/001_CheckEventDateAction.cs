@@ -6,7 +6,7 @@ using Foundatio.Logging;
 namespace Exceptionless.Core.Pipeline {
     [Priority(1)]
     public class CheckEventDateAction : EventPipelineActionBase {
-        public CheckEventDateAction() {
+        public CheckEventDateAction(ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             ContinueOnError = true;
         }
 
@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Pipeline {
             if (DateTimeOffset.Now.UtcDateTime.Subtract(ctx.Event.Date.UtcDateTime).Days <= ctx.Organization.RetentionDays)
                 return Task.CompletedTask;
 
-            Logger.Info().Project(ctx.Event.ProjectId).Message("Discarding event that occurred outside of your retention limit.").Write();
+            _logger.Info().Project(ctx.Event.ProjectId).Message("Discarding event that occurred outside of your retention limit.").Write();
             ctx.IsCancelled = true;
 
             return Task.CompletedTask;

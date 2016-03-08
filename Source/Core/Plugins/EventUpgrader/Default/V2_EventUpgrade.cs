@@ -9,6 +9,11 @@ using Newtonsoft.Json.Linq;
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(2000)]
     public class V2EventUpgrade : IEventUpgraderPlugin {
+        private readonly ILogger _logger;
+        public V2EventUpgrade(ILogger<V2EventUpgrade> logger) {
+            _logger = logger;
+        }
+
         public void Upgrade(EventUpgraderContext ctx) {
             if (ctx.Version > new Version(2, 0))
                 return;
@@ -118,7 +123,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             if (json.Length > 200000) {
-                Logger.Error().Project(projectId).Message("Event: {0} __ExceptionInfo is Too Big: {1}", id, json.Length).Write();
+                _logger.Error().Project(projectId).Message("Event: {0} __ExceptionInfo is Too Big: {1}", id, json.Length).Write();
                 return;
             }
 

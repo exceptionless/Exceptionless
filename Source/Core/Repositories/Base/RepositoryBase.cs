@@ -5,6 +5,7 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Foundatio.Elasticsearch.Configuration;
 using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using DataDictionary = Foundatio.Utility.DataDictionary;
 
@@ -12,7 +13,7 @@ namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : class, IIdentity, new() {
         protected readonly IElasticIndex _index;
 
-        public RepositoryBase(ElasticRepositoryContext<T> context, IElasticIndex index) : base(context) {
+        public RepositoryBase(ElasticRepositoryContext<T> context, IElasticIndex index, ILoggerFactory loggerFactory = null) : base(context, loggerFactory) {
             _index = index;
         }
 

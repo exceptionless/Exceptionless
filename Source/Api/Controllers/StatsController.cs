@@ -15,10 +15,12 @@ namespace Exceptionless.Api.Controllers {
     public class StatsController : ExceptionlessApiController {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly EventStats _stats;
+        private readonly ILogger _logger;
 
-        public StatsController(IOrganizationRepository organizationRepository, EventStats stats) {
+        public StatsController(IOrganizationRepository organizationRepository, EventStats stats, ILogger<StatsController> logger) {
             _organizationRepository = organizationRepository;
             _stats = stats;
+            _logger = logger;
         }
         
         /// <summary>
@@ -47,7 +49,7 @@ namespace Exceptionless.Api.Controllers {
                 var timeInfo = GetTimeInfo(time, offset);
                 result = await _stats.GetNumbersStatsAsync(far.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex).Property("Search Filter", new {
+                _logger.Error().Exception(ex).Property("Search Filter", new {
                     SystemFilter = systemFilter,
                     UserFilter = filter,
                     Time = time,
@@ -86,7 +88,7 @@ namespace Exceptionless.Api.Controllers {
                 var timeInfo = GetTimeInfo(time, offset);
                 result = await _stats.GetNumbersTimelineStatsAsync(far.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex).Property("Search Filter", new {
+                _logger.Error().Exception(ex).Property("Search Filter", new {
                     SystemFilter = systemFilter,
                     UserFilter = filter,
                     Time = time,

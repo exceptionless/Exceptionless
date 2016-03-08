@@ -51,7 +51,8 @@ namespace Exceptionless.Api.Controllers {
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
             IFileStorage storage,
-            JsonSerializerSettings jsonSerializerSettings) : base(repository) {
+            JsonSerializerSettings jsonSerializerSettings,
+            ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
@@ -142,7 +143,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 events = await _repository.GetByFilterAsync(systemFilter, processResult.ExpandedQuery, sortBy, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
@@ -559,7 +560,7 @@ namespace Exceptionless.Api.Controllers {
                     IpAddress = Request.GetClientIpAddress()
                 }, _storage);
             } catch (Exception ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
                     .Project(projectId)
                     .Identity(ExceptionlessUser?.EmailAddress)
@@ -658,7 +659,7 @@ namespace Exceptionless.Api.Controllers {
                     IpAddress = Request.GetClientIpAddress()
                 }, _storage);
             } catch (Exception ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
                     .Project(projectId)
                     .Identity(ExceptionlessUser?.EmailAddress)
@@ -695,13 +696,6 @@ namespace Exceptionless.Api.Controllers {
                 return null;
 
             return project;
-        }
-
-        protected override void CreateMaps() {
-            if (Mapper.FindTypeMapFor<UserDescription, EventUserDescription>() == null)
-                Mapper.CreateMap<UserDescription, EventUserDescription>();
-
-            base.CreateMaps();
         }
     }
 }

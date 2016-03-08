@@ -7,7 +7,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Utility {
-    public class DataHelper {
+    public class SampleDataService {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly ITokenRepository _tokenRepository;
@@ -22,14 +22,14 @@ namespace Exceptionless.Core.Utility {
         public const string INTERNAL_API_KEY = "Bx7JgglstPG544R34Tw9T7RlCed3OIwtYXVeyhT2";
         public const string INTERNAL_PROJECT_ID = "54b56e480ef9605a88a13153";
 
-        public DataHelper(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, ITokenRepository tokenRepository) {
+        public SampleDataService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, ITokenRepository tokenRepository) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
         }
 
-        public async Task CreateTestDataAsync() {
+        public async Task CreateDataAsync() {
             if (await _userRepository.GetByEmailAddressAsync(TEST_USER_EMAIL).AnyContext() != null)
                 return;
 
@@ -46,11 +46,11 @@ namespace Exceptionless.Core.Utility {
             user.Password = TEST_USER_PASSWORD.ToSaltedHash(user.Salt);
 
             user = await _userRepository.AddAsync(user, true).AnyContext();
-            await CreateTestOrganizationAndProjectAsync(user.Id).AnyContext();
-            await CreateTestInternalOrganizationAndProjectAsync(user.Id).AnyContext();
+            await CreateOrganizationAndProjectAsync(user.Id).AnyContext();
+            await CreateInternalOrganizationAndProjectAsync(user.Id).AnyContext();
         }
 
-        public async Task CreateTestOrganizationAndProjectAsync(string userId) {
+        public async Task CreateOrganizationAndProjectAsync(string userId) {
             if (await _tokenRepository.GetByIdAsync(TEST_API_KEY).AnyContext() != null)
                 return;
 
@@ -86,7 +86,7 @@ namespace Exceptionless.Core.Utility {
             await _userRepository.SaveAsync(user, true).AnyContext();
         }
 
-        public async Task CreateTestInternalOrganizationAndProjectAsync(string userId) {
+        public async Task CreateInternalOrganizationAndProjectAsync(string userId) {
             if (await _tokenRepository.GetByIdAsync(INTERNAL_API_KEY).AnyContext() != null)
                 return;
 

@@ -13,6 +13,7 @@ using Exceptionless.Extensions;
 using Foundatio.Caching;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
@@ -20,7 +21,7 @@ using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository {
-        public OrganizationRepository(ElasticRepositoryContext<Organization> context, OrganizationIndex index) : base(context, index) {}
+        public OrganizationRepository(ElasticRepositoryContext<Organization> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) {}
 
         public Task<Organization> GetByInviteTokenAsync(string token) {
             if (String.IsNullOrEmpty(token))
@@ -168,15 +169,15 @@ namespace Exceptionless.Core.Repositories {
             if (org == null || org.MaxEventsPerMonth < 0)
                 return false;
 
-            long hourlyTotal = await Cache.IncrementAsync(GetHourlyTotalCacheKey(organizationId), count, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal()).AnyContext();
-            long monthlyTotal = await Cache.IncrementAsync(GetMonthlyTotalCacheKey(organizationId), count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal()).AnyContext();
-            long monthlyBlocked = await Cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organizationId), org.GetCurrentMonthlyBlocked()).AnyContext();
+            double hourlyTotal = await Cache.IncrementAsync(GetHourlyTotalCacheKey(organizationId), count, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal()).AnyContext();
+            double monthlyTotal = await Cache.IncrementAsync(GetMonthlyTotalCacheKey(organizationId), count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal()).AnyContext();
+            double monthlyBlocked = await Cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organizationId), org.GetCurrentMonthlyBlocked()).AnyContext();
             bool overLimit = hourlyTotal > org.GetHourlyEventLimit() || (monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus();
 
-            long monthlyTooBig = await Cache.IncrementIfAsync(GetHourlyTooBigCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig()).AnyContext();
-            long hourlyTooBig = await Cache.IncrementIfAsync(GetMonthlyTooBigCacheKey(organizationId), 1, TimeSpan.FromDays(32), tooBig, (uint)org.GetCurrentMonthlyTooBig()).AnyContext();
+            double monthlyTooBig = await Cache.IncrementIfAsync(GetHourlyTooBigCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig()).AnyContext();
+            double hourlyTooBig = await Cache.IncrementIfAsync(GetMonthlyTooBigCacheKey(organizationId), 1, TimeSpan.FromDays(32), tooBig, (uint)org.GetCurrentMonthlyTooBig()).AnyContext();
 
-            long totalBlocked = count;
+            double totalBlocked = count;
 
             // If the original count is less than the max events per month and original count + hourly limit is greater than the max events per month then use the monthly limit.
             if ((monthlyTotal - monthlyBlocked - count) < org.GetMaxEventsPerMonthWithBonus() && (monthlyTotal - monthlyBlocked - count + org.GetHourlyEventLimit()) >= org.GetMaxEventsPerMonthWithBonus())
@@ -186,7 +187,7 @@ namespace Exceptionless.Core.Repositories {
             else if ((monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus())
                 totalBlocked = (monthlyTotal - monthlyBlocked - count) < org.GetMaxEventsPerMonthWithBonus() ? monthlyTotal - monthlyBlocked - org.GetMaxEventsPerMonthWithBonus() : count;
 
-            long hourlyBlocked = await Cache.IncrementIfAsync(GetHourlyBlockedCacheKey(organizationId), (int)totalBlocked, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked()).AnyContext();
+            double hourlyBlocked = await Cache.IncrementIfAsync(GetHourlyBlockedCacheKey(organizationId), (int)totalBlocked, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked()).AnyContext();
             monthlyBlocked = await Cache.IncrementIfAsync(GetMonthlyBlockedCacheKey(organizationId), (int)totalBlocked, TimeSpan.FromDays(32), overLimit, (uint)monthlyBlocked).AnyContext();
 
             bool justWentOverHourly = hourlyTotal > org.GetHourlyEventLimit() && hourlyTotal <= org.GetHourlyEventLimit() + count;

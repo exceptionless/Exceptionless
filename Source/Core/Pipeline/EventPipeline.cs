@@ -11,6 +11,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Helpers;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories.Base;
+using Foundatio.Logging;
 using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Pipeline {
@@ -19,7 +20,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IProjectRepository _projectRepository;
         private readonly IMetricsClient _metricsClient;
 
-        public EventPipeline(IDependencyResolver dependencyResolver, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IMetricsClient metricsClient) : base(dependencyResolver) {
+        public EventPipeline(IDependencyResolver dependencyResolver, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(dependencyResolver, loggerFactory) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _metricsClient = metricsClient;

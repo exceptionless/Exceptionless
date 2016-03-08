@@ -5,10 +5,13 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(20)]
     public class ErrorPlugin : EventProcessorPluginBase {
+        public ErrorPlugin(ILoggerFactory loggerFactory = null) : base(loggerFactory) {}
+        
         public override Task EventProcessingAsync(EventContext context) {
             if (!context.Event.IsError())
                 return Task.CompletedTask;

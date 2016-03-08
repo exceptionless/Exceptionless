@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
-        public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue) {
+        public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _cacheClient = cacheClient;
             _workItemQueue = workItemQueue;
         }
@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 if (requestCount < Settings.Current.BotThrottleLimit)
                     return;
 
-                Logger.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", clientIpAddressGroup.Key, DateTime.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId).Project(firstContext.Event.ProjectId).Write();
+                _logger.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", clientIpAddressGroup.Key, DateTime.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId).Project(firstContext.Event.ProjectId).Write();
 
                 // The throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
                 await _workItemQueue.EnqueueAsync(new ThrottleBotsWorkItem {

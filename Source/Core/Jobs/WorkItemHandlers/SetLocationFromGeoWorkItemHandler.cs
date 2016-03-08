@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IMetricsClient _metricsClient;
         private readonly ILockProvider _lockProvider;
 
-        public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMetricsClient metricsClient, IMessageBus messageBus) {
+        public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMetricsClient metricsClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _cacheClient = new ScopedCacheClient(cacheClient, "geo");
             _eventRepository = eventRepository;
             _geocodeService = geocodeService;
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                     location = result.ToLocation();
                     await _metricsClient.CounterAsync(MetricNames.UsageGeocodingApi).AnyContext();
                 } catch (Exception ex) {
-                    Logger.Error().Exception(ex).Message($"Error occurred looking up reverse geocode: {workItem.Geo}").Write();
+                    _logger.Error(ex, "Error occurred looking up reverse geocode: {0}", workItem.Geo);
                 }
             }
             
