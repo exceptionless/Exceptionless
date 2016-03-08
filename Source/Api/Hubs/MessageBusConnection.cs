@@ -21,7 +21,7 @@ namespace Exceptionless.Api.Hubs {
 
                 _userIdConnections.Add(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Message("OnConnected Error: {0}", ex.Message).Tag("SignalR").Write();
+                _logger.Error(ex, "OnConnected Error: {0}", ex.Message);
                 throw;
             }
         }
@@ -30,7 +30,7 @@ namespace Exceptionless.Api.Hubs {
             try {
                 _userIdConnections.Remove(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Message("OnDisconnected Error: {0}", ex.Message).Tag("SignalR").Write();
+                _logger.Error(ex, "OnDisconnected Error: {0}", ex.Message);
                 throw;
             }
 
@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Hubs {
                 if (!_userIdConnections.GetConnections(request.User.GetUserId()).Contains(connectionId))
                     _userIdConnections.Add(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Message("OnReconnected Error: {0}", ex.Message).Tag("SignalR").Write();
+                _logger.Error(ex, "OnReconnected Error: {0}", ex.Message);
                 throw;
             }
         }

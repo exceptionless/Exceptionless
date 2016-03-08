@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Jobs {
                 using (GZipStream decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync().AnyContext(), CompressionMode.Decompress))
                     await _storage.SaveFileAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH, decompressionStream, context.CancellationToken).AnyContext();
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Message("An error occurred while downloading the GeoIP database.").Write();
+                _logger.Error(ex, "An error occurred while downloading the GeoIP database.");
                 return JobResult.FromException(ex);
             }
 

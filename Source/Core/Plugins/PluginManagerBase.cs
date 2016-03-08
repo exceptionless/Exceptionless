@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Plugins {
                 try {
                     AddPlugin(type);
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Unable to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message).Write();
+                    _logger.Error(ex, "Unable to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message);
                 }
             }
         }

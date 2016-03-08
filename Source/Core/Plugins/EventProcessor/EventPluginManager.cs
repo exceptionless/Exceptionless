@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 try {
                     await plugin.StartupAsync().AnyContext();
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling startup in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    _logger.Error(ex, "Error calling startup in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message);
                 }
             }
         }

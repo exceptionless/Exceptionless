@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                     location = result.ToLocation();
                     await _metricsClient.CounterAsync(MetricNames.UsageGeocodingApi).AnyContext();
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error occurred looking up reverse geocode: {0}", workItem.Geo).Write();
+                    _logger.Error(ex, "Error occurred looking up reverse geocode: {0}", workItem.Geo);
                 }
             }
             

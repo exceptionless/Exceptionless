@@ -63,7 +63,7 @@ namespace Exceptionless.Core.Geo {
                     _logger.Trace().Message(ex.Message).Write();
                     await _localCache.SetAsync<GeoResult>(ip, null).AnyContext();
                 } else {
-                    _logger.Error().Exception(ex).Message("Unable to resolve geo location for ip: " + ip).Write();
+                    _logger.Error(ex, "Unable to resolve geo location for ip: " + ip);
                 }
 
                 return null;
@@ -95,7 +95,7 @@ namespace Exceptionless.Core.Geo {
                 using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
                     _database = new DatabaseReader(stream);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Message("Unable to open GeoIP database.").Write();
+                _logger.Error(ex, "Unable to open GeoIP database.");
             }
 
             return _database;

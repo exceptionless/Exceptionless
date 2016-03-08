@@ -66,7 +66,7 @@ namespace Exceptionless.Core.Jobs {
                 await _metricsClient.CounterAsync(MetricNames.PostsParseErrors).AnyContext();
                 await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, _logger).AnyContext();
 
-                _logger.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).Write();
+                _logger.Error(ex, "An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message);
                 return JobResult.FromException(ex, $"An error occurred while processing the EventPost '{queueEntry.Id}': {ex.Message}");
             }
 
@@ -131,7 +131,7 @@ namespace Exceptionless.Core.Jobs {
                     }
                 }
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
+                _logger.Error().Exception(ex).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Project(eventPostInfo.ProjectId).Write();
                 if (ex is ArgumentException || ex is DocumentNotFoundException)
                     await queueEntry.CompleteAsync().AnyContext();
                 else

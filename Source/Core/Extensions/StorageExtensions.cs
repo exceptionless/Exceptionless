@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Extensions {
                 if (!await storage.ExistsAsync(path + ".x").AnyContext() && !await storage.SaveFileAsync(path + ".x", new MemoryStream(Encoding.UTF8.GetBytes(String.Empty))).AnyContext())
                     return null;
             } catch (Exception ex) {
-                logger.Error().Exception(ex).Message("Error retrieving event post data \"{0}\".", path).Write();
+                logger.Error(ex, "Error retrieving event post data \"{0}\".", path);
                 return null;
             }
 
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Extensions {
             try {
                 return await storage.DeleteFileAsync(path + ".x").AnyContext();
             } catch (Exception ex) {
-                logger.Error().Exception(ex).Message("Error deleting work marker \"{0}\".", path + ".x").Write();
+                logger.Error(ex, "Error deleting work marker \"{0}\".", path + ".x");
             }
 
             return false;
@@ -64,7 +64,7 @@ namespace Exceptionless.Core.Extensions {
                         return false;
                 }
             } catch (Exception ex) {
-                logger.Error().Exception(ex).Message("Error archiving event post data \"{0}\".", path).Write();
+                logger.Error(ex, "Error archiving event post data \"{0}\".", path);
                 return false;
             }
 
