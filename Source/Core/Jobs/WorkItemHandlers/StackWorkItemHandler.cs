@@ -7,6 +7,7 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
+using Foundatio.Logging;
 using Foundatio.Messaging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
@@ -15,7 +16,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IEventRepository _eventRepository;
         private readonly ILockProvider _lockProvider;
 
-        public StackWorkItemHandler(IStackRepository stackRepository, IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus) {
+        public StackWorkItemHandler(IStackRepository stackRepository, IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _stackRepository = stackRepository;
             _eventRepository = eventRepository;
             _lockProvider = new CacheLockProvider(cacheClient, messageBus);

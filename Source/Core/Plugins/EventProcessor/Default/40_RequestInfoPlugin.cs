@@ -7,6 +7,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Utility;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(40)]
@@ -25,7 +26,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
         private readonly UserAgentParser _parser;
 
-        public RequestInfoPlugin(UserAgentParser parser) {
+        public RequestInfoPlugin(UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _parser = parser;
         }
 

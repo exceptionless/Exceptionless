@@ -18,10 +18,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
 
-        public QueueNotificationAction(IQueue<EventNotificationWorkItem> notificationQueue, 
-            IQueue<WebHookNotification> webHookNotificationQueue, 
-            IWebHookRepository webHookRepository,
-            WebHookDataPluginManager webHookDataPluginManager) {
+        public QueueNotificationAction(IQueue<EventNotificationWorkItem> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _notificationQueue = notificationQueue;
             _webHookNotificationQueue = webHookNotificationQueue;
             _webHookRepository = webHookRepository;
@@ -57,7 +54,7 @@ namespace Exceptionless.Core.Pipeline {
                 };
 
                 await _webHookNotificationQueue.EnqueueAsync(notification).AnyContext();
-                Logger.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Property("Web Hook Notification", notification).Write();
+                _logger.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Property("Web Hook Notification", notification).Write();
             }
         }
 

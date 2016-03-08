@@ -5,13 +5,14 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
     public class SaveEventAction : EventPipelineActionBase {
         private readonly IEventRepository _eventRepository;
 
-        public SaveEventAction(IEventRepository eventRepository) {
+        public SaveEventAction(IEventRepository eventRepository, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _eventRepository = eventRepository;
         }
 

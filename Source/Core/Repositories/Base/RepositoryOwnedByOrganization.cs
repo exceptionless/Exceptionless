@@ -9,12 +9,13 @@ using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Elasticsearch.Configuration;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
-        public RepositoryOwnedByOrganization(ElasticRepositoryContext<T> context, IElasticIndex index) : base(context, index) { }
+        public RepositoryOwnedByOrganization(ElasticRepositoryContext<T> context, IElasticIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) { }
 
         public Task<long> CountByOrganizationIdAsync(string organizationId) {
             var options = new ExceptionlessQuery().WithOrganizationId(organizationId);

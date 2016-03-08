@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
+using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Core.Authorization;
@@ -17,6 +18,7 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
 
@@ -29,7 +31,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly BillingManager _billingManager;
         private readonly EventStats _stats;
 
-        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, EventStats stats) : base(projectRepository) {
+        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, EventStats stats, ILoggerFactory loggerFactory, IMapper mapper) : base(projectRepository, loggerFactory, mapper) {
             _organizationRepository = organizationRepository;
             _workItemQueue = workItemQueue;
             _billingManager = billingManager;

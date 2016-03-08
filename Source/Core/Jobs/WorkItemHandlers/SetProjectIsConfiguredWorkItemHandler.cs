@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IEventRepository _eventRepository;
         private readonly ILockProvider _lockProvider;
 
-        public SetProjectIsConfiguredWorkItemHandler(IProjectRepository projectRepository, IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus) {
+        public SetProjectIsConfiguredWorkItemHandler(IProjectRepository projectRepository, IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;
             _lockProvider = new CacheLockProvider(cacheClient, messageBus);
@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<SetProjectIsConfiguredWorkItem>();
-            Logger.Info().Message($"Setting Is Configured for project: {workItem.ProjectId}").Write();
+            _logger.Info().Message("Setting Is Configured for project: {0}", workItem.ProjectId).Write();
             
             var project = await _projectRepository.GetByIdAsync(workItem.ProjectId).AnyContext();
             if (project == null || project.IsConfigured.GetValueOrDefault())

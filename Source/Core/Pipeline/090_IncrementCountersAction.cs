@@ -6,6 +6,7 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
+using Foundatio.Logging;
 using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Pipeline {
@@ -13,7 +14,7 @@ namespace Exceptionless.Core.Pipeline {
     public class IncrementCountersAction : EventPipelineActionBase {
         private readonly IMetricsClient _metricsClient;
 
-        public IncrementCountersAction(IMetricsClient metricsClient) {
+        public IncrementCountersAction(IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _metricsClient = metricsClient;
             ContinueOnError = true;
         }

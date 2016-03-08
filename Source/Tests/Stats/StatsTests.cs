@@ -34,7 +34,6 @@ namespace Exceptionless.Api.Tests.Stats {
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
             
-            _metricsClient.DisplayStats();
             var result = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
@@ -58,7 +57,6 @@ namespace Exceptionless.Api.Tests.Stats {
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
             
-            _metricsClient.DisplayStats();
             var result = await _stats.GetOccurrenceStatsAsync(DateTime.MinValue, DateTime.MaxValue, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
@@ -82,7 +80,6 @@ namespace Exceptionless.Api.Tests.Stats {
             await RemoveDataAsync();
             await CreateDataAsync(eventCount);
             
-            _metricsClient.DisplayStats();
             var resultUtc = await _stats.GetOccurrenceStatsAsync(startDate, DateTime.UtcNow, null);
             Assert.Equal(eventCount, resultUtc.Total);
             Assert.Equal(eventCount, resultUtc.Timeline.Sum(t => t.Total));
@@ -100,7 +97,6 @@ namespace Exceptionless.Api.Tests.Stats {
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
             
-            _metricsClient.DisplayStats();
             var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "tags", null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             // each event can be in multiple tag buckets since an event can have up to 3 sample tags
@@ -122,7 +118,6 @@ namespace Exceptionless.Api.Tests.Stats {
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
             
-            _metricsClient.DisplayStats();
             var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "stack_id", null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 25);
@@ -144,7 +139,6 @@ namespace Exceptionless.Api.Tests.Stats {
             await RemoveDataAsync();
             await CreateDataAsync(eventCount);
             
-            _metricsClient.DisplayStats();
             var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "project_id", null);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 3); // 3 sample projects
@@ -162,8 +156,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var startDate = DateTime.UtcNow.SubtractHours(1);
             await CreateSessionEventsAsync();
-
-            _metricsClient.DisplayStats();
+            
             var result = await _stats.GetSessionTermsStatsAsync(startDate, DateTime.UtcNow, null);
             Assert.Equal(3, result.Sessions);
             Assert.Equal(3, result.Terms.Sum(t => t.Sessions));
@@ -181,8 +174,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var startDate = DateTime.UtcNow.SubtractHours(1);
             await CreateSessionEventsAsync();
-
-            _metricsClient.DisplayStats();
+            
             var result = await _stats.GetSessionStatsAsync(startDate, DateTime.UtcNow, null);
             Assert.Equal(3, result.Sessions);
             Assert.Equal(3, result.Timeline.Sum(t => t.Sessions));
@@ -190,19 +182,6 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(3, result.Timeline.Sum(t => t.Users));
             Assert.Equal((decimal)(3600.0 / result.Sessions), result.AvgDuration);
             Assert.Equal(3600, result.Timeline.Sum(t => t.AvgDuration));
-        }
-
-        [Fact]
-        public async Task CanSetGaugesAsync() {
-            await _metricsClient.GaugeAsync("mygauge", 12d);
-            Assert.Equal(12d, _metricsClient.GetGaugeValue("mygauge"));
-            await _metricsClient.GaugeAsync("mygauge", 10d);
-            await _metricsClient.GaugeAsync("mygauge", 5d);
-            await _metricsClient.GaugeAsync("mygauge", 4d);
-            await _metricsClient.GaugeAsync("mygauge", 12d);
-            await _metricsClient.GaugeAsync("mygauge", 20d);
-            Assert.Equal(20d, _metricsClient.GetGaugeValue("mygauge"));
-            _metricsClient.DisplayStats();
         }
 
         private async Task CreateDataAsync(int eventCount = 0, bool multipleProjects = true) {
