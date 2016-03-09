@@ -15,7 +15,6 @@ using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Foundatio.Storage;
-using NLog.Fluent;
 using SimpleInjector;
 using StackExchange.Redis;
 
@@ -23,6 +22,7 @@ namespace Exceptionless.Insulation {
     public class Bootstrapper {
         public static void RegisterServices(Container container, ILoggerFactory loggerFactory) {
             loggerFactory.AddNLog();
+            var logger = loggerFactory.CreateLogger<Bootstrapper>();
 
             if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
                 container.RegisterSingleton<IGeocodeService>(() => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
@@ -30,7 +30,7 @@ namespace Exceptionless.Insulation {
             if (Settings.Current.EnableMetricsReporting)
                 container.RegisterSingleton<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.MetricsServerName, Settings.Current.MetricsServerPort, "ex"));
             else
-                Log.Warn().Message("StatsD Metrics is NOT enabled.").Write();
+                logger.Warn("StatsD Metrics is NOT enabled.");
 
             if (Settings.Current.EnableRedis) {
                 container.RegisterSingleton<ConnectionMultiplexer>(() => {
@@ -53,13 +53,13 @@ namespace Exceptionless.Insulation {
 
                 container.RegisterSingleton<IMessageBus>(() => new RedisMessageBus(container.GetInstance<ConnectionMultiplexer>().GetSubscriber(), $"{Settings.Current.AppScopePrefix}messages", container.GetInstance<ISerializer>()));
             } else {
-                Log.Warn().Message("Redis is NOT enabled.").Write();
+                logger.Warn("Redis is NOT enabled.");
             }
 
             if (Settings.Current.EnableAzureStorage)
                 container.RegisterSingleton<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events"));
             else
-                Log.Warn().Message("Azure Storage is NOT enabled.").Write();
+                logger.Warn("Azure Storage is NOT enabled.");
 
             var client = ExceptionlessClient.Default;
             container.RegisterSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
