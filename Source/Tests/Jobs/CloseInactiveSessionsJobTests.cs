@@ -12,12 +12,13 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Logging.Xunit;
 using Nest;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Jobs {
-    public class CloseInactiveSessionsJobTests : CaptureTests {
+    public class CloseInactiveSessionsJobTests : TestWithLoggingBase {
         private readonly CloseInactiveSessionsJob _job = IoC.GetInstance<CloseInactiveSessionsJob>();
         private readonly ICacheClient _cacheClient = IoC.GetInstance<ICacheClient>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
@@ -29,7 +30,7 @@ namespace Exceptionless.Api.Tests.Jobs {
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
         private readonly EventPipeline _pipeline = IoC.GetInstance<EventPipeline>();
 
-        public CloseInactiveSessionsJobTests(CaptureFixture fixture, ITestOutputHelper output) : base(fixture, output) {}
+        public CloseInactiveSessionsJobTests(ITestOutputHelper output) : base(output) {}
 
         [Theory]
         [InlineData(1, true)]

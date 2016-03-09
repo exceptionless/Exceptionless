@@ -8,7 +8,6 @@ using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Models;
 using Foundatio.Logging;
-using Foundatio.Metrics;
 using Foundatio.Queues;
 using RazorSharpEmail;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
@@ -18,13 +17,13 @@ namespace Exceptionless.Core.Mail {
         private readonly IEmailGenerator _emailGenerator;
         private readonly IQueue<MailMessage> _queue;
         private readonly FormattingPluginManager _pluginManager;
-        private readonly IMetricsClient _metricsClient;
+        private readonly ILogger _logger;
 
-        public Mailer(IEmailGenerator emailGenerator, IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IMetricsClient metricsClient) {
+        public Mailer(IEmailGenerator emailGenerator, IQueue<MailMessage> queue, FormattingPluginManager pluginManager, ILogger<Mailer> logger) {
             _emailGenerator = emailGenerator;
             _queue = queue;
             _pluginManager = pluginManager;
-            _metricsClient = metricsClient;
+            _logger = logger;
         }
 
         public Task SendPasswordResetAsync(User user) {
@@ -88,7 +87,7 @@ namespace Exceptionless.Core.Mail {
         public Task SendNoticeAsync(string emailAddress, EventNotification model) {
             var message = _pluginManager.GetEventNotificationMailMessage(model);
             if (message == null) {
-                Logger.Warn().Message("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, emailAddress).Write();
+                _logger.Warn().Message("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, emailAddress).Write();
                 return Task.CompletedTask;
             }
 

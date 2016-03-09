@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Repositories {
         private const string STACKING_VERSION = "v2";
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(ElasticRepositoryContext<Stack> context, StackIndex index, IEventRepository eventRepository) : base(context, index) {
+        public StackRepository(ElasticRepositoryContext<Stack> context, StackIndex index, IEventRepository eventRepository, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) {
             _eventRepository = eventRepository;
             DocumentsChanging.AddHandler(OnDocumentChangingAsync);
         }
@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Repositories {
                     .Add("count", count))).AnyContext();
 
             if (!result.IsValid) {
-                Logger.Error().Message("Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError.Error).Write();
+                _logger.Error().Message("Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError.Error).Write();
                 return;
             }
 

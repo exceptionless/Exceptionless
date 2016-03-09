@@ -18,12 +18,14 @@ namespace Exceptionless.Api.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly EventStats _stats;
+        private readonly ILogger _logger;
 
-        public StatsController(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, EventStats stats) {
+        public StatsController(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, EventStats stats, ILogger<StatsController> logger) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _stats = stats;
+            _logger = logger;
         }
 
         /// <summary>
@@ -53,7 +55,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 result = await _stats.GetOccurrenceStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
@@ -151,7 +153,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 result = await _stats.GetSessionStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = filter, Time = time, Offset = offset })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)

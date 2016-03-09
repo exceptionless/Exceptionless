@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IWebHookRepository _webHookRepository;
         private readonly ILockProvider _lockProvider;
 
-        public RemoveProjectWorkItemHandler(IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IWebHookRepository webHookRepository, ICacheClient cacheClient, IMessageBus messageBus) {
+        public RemoveProjectWorkItemHandler(IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IWebHookRepository webHookRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;
             _stackRepository = stackRepository;
@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<RemoveProjectWorkItem>();
-            Logger.Info().Message($"Received remove project work item for: {workItem.ProjectId} Reset Data: {workItem.Reset}").Write();
+            _logger.Info().Message("Received remove project work item for: {0} Reset Data: {1}", workItem.ProjectId, workItem.Reset).Write();
 
             await context.ReportProgressAsync(0, "Starting deletion...").AnyContext();
             var project = await _projectRepository.GetByIdAsync(workItem.ProjectId).AnyContext();

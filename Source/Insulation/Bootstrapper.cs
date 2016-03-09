@@ -6,10 +6,10 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
-using Exceptionless.Insulation.Logging;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
+using Foundatio.Logging.NLog;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
@@ -17,14 +17,13 @@ using Foundatio.Serializer;
 using Foundatio.Storage;
 using NLog.Fluent;
 using SimpleInjector;
-using SimpleInjector.Packaging;
 using StackExchange.Redis;
 
 namespace Exceptionless.Insulation {
-    public class Bootstrapper : IPackage {
-        public void RegisterServices(Container container) {
-            Logger.RegisterWriter(new NLogAdapter());
-            
+    public class Bootstrapper {
+        public static void RegisterServices(Container container, ILoggerFactory loggerFactory) {
+            loggerFactory.AddNLog();
+
             if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
                 container.RegisterSingleton<IGeocodeService>(() => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
             
@@ -75,7 +74,7 @@ namespace Exceptionless.Insulation {
             client.Configuration.UseReferenceIds();
         }
 
-        private string GetQueueName<T>() {
+        private static string GetQueueName<T>() {
             return String.Concat(Settings.Current.AppScopePrefix, typeof(T).Name);
         }
     }

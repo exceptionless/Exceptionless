@@ -9,6 +9,7 @@ using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Caching;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
@@ -16,7 +17,7 @@ using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Core.Repositories {
     public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository {
-        public TokenRepository(ElasticRepositoryContext<Token> context, OrganizationIndex index) : base(context, index) { }
+        public TokenRepository(ElasticRepositoryContext<Token> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) { }
 
         public Task<FindResults<Token>> GetApiTokensAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             var filter = Query<Token>.Term(e => e.Type, TokenType.Access) && Query<Token>.Missing(e => e.UserId);

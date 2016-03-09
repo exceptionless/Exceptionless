@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
 using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;

@@ -37,7 +37,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Foundatio, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.4.0.672\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\..\packages\Foundatio.4.0.791\lib\net451\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -90,6 +90,10 @@
       <Link>NLog.config</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="..\run.bat">
+      <Link>run.bat</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -105,7 +109,7 @@
 robocopy $(SolutionDir)Source\Insulation\bin\$(ConfigurationName) $(TargetDir)bin\ /S /NFL /NDL /NJH /NJS /nc /ns /np
 IF %25ERRORLEVEL%25 GEQ 8 exit 1
 
-robocopy $(TargetDir) $(TargetDir)bin\ /MOV /XD bin /XF MailMessageJob.* NLog.config /S /is /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy $(TargetDir) $(TargetDir)bin\ /MOV /XD bin /XF MailMessageJob.* run.bat NLog.config /S /is /NFL /NDL /NJH /NJS /nc /ns /np
 IF %25ERRORLEVEL%25 GEQ 8 exit 1
 
 exit 0</PostBuildEvent>

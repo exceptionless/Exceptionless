@@ -18,7 +18,7 @@ namespace Exceptionless.Api.Hubs {
 
         public ICollection<string> GetConnections(string key) {
             if (key == null)
-                return new List<String>();
+                return new List<string>();
 
             return _connections.GetOrAdd(key, new HashSet<string>());
         }

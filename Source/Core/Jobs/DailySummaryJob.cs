@@ -23,17 +23,15 @@ namespace Exceptionless.Core.Jobs {
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
-        private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
         private readonly EventStats _stats;
         private readonly IMailer _mailer;
         private readonly ILockProvider _lockProvider;
 
-        public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, EventStats stats, IMailer mailer, ICacheClient cacheClient) {
+        public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IEventRepository eventRepository, EventStats stats, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
-            _stackRepository = stackRepository;
             _eventRepository = eventRepository;
             _stats = stats;
             _mailer = mailer;
@@ -56,13 +54,13 @@ namespace Exceptionless.Core.Jobs {
             var projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
             while (projects.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 var documentsUpdated = await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projects.Select(p => p.Id).ToList()).AnyContext();
-                Logger.Info().Message("Got {0} projects to process. ", projects.Count).Write();
+                _logger.Info().Message("Got {0} projects to process. ", projects.Count).Write();
                 Debug.Assert(projects.Count == documentsUpdated);
 
                 foreach (var project in projects) {
                     var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
                     if (utcStartTime < DateTime.UtcNow.Date.SubtractDays(2)) {
-                        Logger.Info().Message("Skipping daily summary older than two days for project \"{0}\" with a start time of \"{1}\".", project.Id, utcStartTime).Write();
+                        _logger.Info().Message("Skipping daily summary older than two days for project \"{0}\" with a start time of \"{1}\".", project.Id, utcStartTime).Write();
                         continue;
                     }
 
@@ -91,17 +89,17 @@ namespace Exceptionless.Core.Jobs {
             var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
             var userIds = project.NotificationSettings.Where(n => n.Value.SendDailySummary).Select(n => n.Key).ToList();
             if (userIds.Count == 0) {
-                Logger.Info().Message("Project \"{0}\" has no users to send summary to.", project.Id).Write();
+                _logger.Info().Message("Project \"{0}\" has no users to send summary to.", project.Id).Write();
                 return;
             }
 
             var users = (await _userRepository.GetByIdsAsync(userIds).AnyContext()).Documents.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(organization.Id)).ToList();
             if (users.Count == 0) {
-                Logger.Info().Message("Project \"{0}\" has no users to send summary to.", project.Id).Write();
+                _logger.Info().Message("Project \"{0}\" has no users to send summary to.", project.Id).Write();
                 return;
             }
 
-            Logger.Info().Message("Sending daily summary: users={0} project={1}", users.Count, project.Id).Write();
+            _logger.Info().Message("Sending daily summary: users={0} project={1}", users.Count, project.Id).Write();
             //var paging = new PagingOptions { Limit = 5 };
             //List<Stack> newest = (await _stackRepository.GetNewAsync(project.Id, data.UtcStartTime, data.UtcEndTime, paging).AnyContext()).Documents.ToList();
             var newest = new List<Stack>();
@@ -150,7 +148,7 @@ namespace Exceptionless.Core.Jobs {
             foreach (var user in users)
                 await _mailer.SendDailySummaryAsync(user.EmailAddress, notification).AnyContext();
 
-            Logger.Info().Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Id, notification.Total).Write();
+            _logger.Info().Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Id, notification.Total).Write();
         }
     }
 }

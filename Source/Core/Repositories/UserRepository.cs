@@ -9,6 +9,7 @@ using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Caching;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
@@ -16,7 +17,7 @@ using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class UserRepository : RepositoryBase<User>, IUserRepository {
-        public UserRepository(ElasticRepositoryContext<User> context, OrganizationIndex index) : base(context, index) { }
+        public UserRepository(ElasticRepositoryContext<User> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) { }
 
         public Task<User> GetByEmailAddressAsync(string emailAddress) {
             if (String.IsNullOrWhiteSpace(emailAddress))

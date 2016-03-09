@@ -12,10 +12,12 @@ namespace Exceptionless.Core.Plugins.EventParser {
     public class LegacyErrorParserPlugin : IEventParserPlugin {
         private readonly EventUpgraderPluginManager _manager;
         private readonly JsonSerializerSettings _settings;
+        private readonly ILogger _logger;
 
-        public LegacyErrorParserPlugin(EventUpgraderPluginManager manager, JsonSerializerSettings settings) {
+        public LegacyErrorParserPlugin(EventUpgraderPluginManager manager, JsonSerializerSettings settings, ILogger<LegacyErrorParserPlugin> logger) {
             _manager = manager;
             _settings = settings;
+            _logger = logger;
         }
 
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
@@ -28,7 +30,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
 
                 return ctx.Documents.FromJson<PersistentEvent>(_settings);
             } catch (Exception ex) {
-                Logger.Error().Message("Error parsing event: {0}", ex.Message).Exception(ex).Write();
+                _logger.Error().Message("Error parsing event: {0}", ex.Message).Exception(ex).Write();
                 return null;
             }
         }

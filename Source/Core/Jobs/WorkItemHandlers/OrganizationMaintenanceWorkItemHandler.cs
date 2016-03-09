@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly ILockProvider _lockProvider;
 
-        public OrganizationMaintenanceWorkItemHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMessageBus messageBus) {
+        public OrganizationMaintenanceWorkItemHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _organizationRepository = organizationRepository;
             _lockProvider = new CacheLockProvider(cacheClient, messageBus);
         }
@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             const int LIMIT = 100;
 
             var workItem = context.GetData<OrganizationMaintenanceWorkItem>();
-            Logger.Info().Message($"Received upgrade organizations work item. Upgrade Plans: {workItem.UpgradePlans}").Write();
+            _logger.Info().Message("Received upgrade organizations work item. Upgrade Plans: {0}", workItem.UpgradePlans).Write();
 
             var results = await _organizationRepository.GetAllAsync(paging: new PagingOptions().WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private void UpgradePlan(Organization organization) {
             var plan = BillingManager.GetBillingPlan(organization.PlanId);
             if (plan == null) {
-                Logger.Error().Message($"Unable to find a valid plan for organization: {organization.Id}").Write();
+                _logger.Error().Message("Unable to find a valid plan for organization: {0}", organization.Id).Write();
                 return;
             }
 

@@ -52,30 +52,36 @@
     </Reference>
     <Reference Include="Elasticsearch.Net, Version=2.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Elasticsearch.Net.2.1.0-ci20160204133557\lib\net46\Elasticsearch.Net.dll</HintPath>
+    <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Elasticsearch.Net.1.8.0\lib\net45\Elasticsearch.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.1.44.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.1.44\lib\portable-net40+win+wpa81+MonoAndroid10+xamarinios10+MonoTouch10\Exceptionless.DateTimeExtensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.RandomData, Version=1.0.20.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.RandomData.1.0.20.0\lib\net40\Exceptionless.RandomData.dll</HintPath>
+    <Reference Include="Exceptionless.RandomData, Version=1.0.21.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.RandomData.1.0.21.0\lib\net40\Exceptionless.RandomData.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FluentValidation, Version=6.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\FluentValidation.6.2.0.0\lib\Net45\FluentValidation.dll</HintPath>
+    <Reference Include="FluentValidation, Version=6.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\FluentValidation.6.2.1.0\lib\Net45\FluentValidation.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.4.0.672\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.4.0.791\lib\net451\Foundatio.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Foundatio.Logging.Xunit, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Logging.Xunit.4.0.791\lib\net451\Foundatio.Logging.Xunit.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.1.0.33\lib\net45\Foundatio.Repositories.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.1.0.36\lib\net451\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.33\lib\net45\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.36\lib\net451\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -92,6 +98,8 @@
     </Reference>
     <Reference Include="Nest, Version=2.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
       <HintPath>..\..\packages\NEST.2.1.0-ci20160204133557\lib\net46\Nest.dll</HintPath>
+    <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NEST.1.8.0\lib\net45\Nest.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -130,11 +138,11 @@
       <HintPath>..\..\packages\SimpleInjector.Integration.WebApi.3.1.2\lib\net45\SimpleInjector.Integration.WebApi.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SimpleInjector.Packaging, Version=3.1.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.Packaging.3.1.2\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
+    <Reference Include="System" />
+    <Reference Include="System.Collections.Immutable, Version=1.1.37.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Collections.Immutable.1.1.37\lib\dotnet\System.Collections.Immutable.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
@@ -187,6 +195,7 @@
     <Compile Include="Controllers\EventControllerTests.cs" />
     <Compile Include="Extensions\StringExtensionsTests.cs" />
     <Compile Include="Jobs\CloseInactiveSessionsJobTests.cs" />
+    <Compile Include="Jobs\JobBootstrapper.cs" />
     <Compile Include="Jobs\TestJob.cs" />
     <Compile Include="Mail\MailerTests.cs" />
     <Compile Include="Mail\NullMailer.cs" />
@@ -215,7 +224,6 @@
     <Compile Include="SerializerTests.cs" />
     <Compile Include="Stats\StatsTests.cs" />
     <Compile Include="Utility\Approvals.cs" />
-    <Compile Include="Utility\CaptureFixture.cs" />
     <Compile Include="Utility\RandomEventGenerator.cs" />
     <Compile Include="Utility\Run.cs" />
     <Compile Include="Utility\StackData.cs" />
@@ -224,7 +232,6 @@
     <Compile Include="Utility\OrganizationData.cs" />
     <Compile Include="Utility\ProjectData.cs" />
     <Compile Include="Utility\TestConstants.cs" />
-    <Compile Include="Utility\TestOutputWriter.cs" />
     <Compile Include="Utility\UserData.cs" />
     <Compile Include="Validation\EventValidatorTests.cs" />
     <Compile Include="Plugins\WebHookDataTests.cs" />

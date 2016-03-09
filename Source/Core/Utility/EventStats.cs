@@ -17,11 +17,13 @@ namespace Exceptionless.Core.Utility {
         private readonly IElasticClient _elasticClient;
         private readonly EventIndex _eventIndex;
         private readonly QueryBuilderRegistry _queryBuilder;
+        private readonly ILogger _logger;
 
-        public EventStats(IElasticClient elasticClient, EventIndex eventIndex, QueryBuilderRegistry queryBuilder) {
+        public EventStats(IElasticClient elasticClient, EventIndex eventIndex, QueryBuilderRegistry queryBuilder, ILogger<EventStats> logger) {
             _elasticClient = elasticClient;
             _eventIndex = eventIndex;
             _queryBuilder = queryBuilder;
+            _logger = logger;
         }
         
         public async Task<EventTermStatsResult> GetTermsStatsAsync(DateTime utcStart, DateTime utcEnd, string term, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
@@ -88,7 +90,7 @@ namespace Exceptionless.Core.Utility {
             ).AnyContext();
 
             if (!res.IsValid) {
-                Logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
+                _logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving term stats failed.");
             }
 
@@ -205,7 +207,7 @@ namespace Exceptionless.Core.Utility {
             ).AnyContext();
 
             if (!res.IsValid) {
-                Logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
+                _logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving term stats failed.");
             }
 
@@ -317,7 +319,7 @@ namespace Exceptionless.Core.Utility {
             ).AnyContext();
 
             if (!res.IsValid) {
-                Logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
+                _logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving term stats failed.");
             }
 
@@ -426,7 +428,7 @@ namespace Exceptionless.Core.Utility {
             ).AnyContext();
 
             if (!res.IsValid) {
-                Logger.Error().Message("Retrieving stats failed: {0}", res.ServerError.Error).Write();
+                _logger.Error().Message("Retrieving stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving stats failed.");
             }
 

@@ -11,11 +11,14 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.EventProcessor.Default;
 using Exceptionless.Core.Utility;
 using Foundatio.Caching;
+using Foundatio.Logging;
+using Foundatio.Logging.Xunit;
 using Foundatio.Storage;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Plugins {
-    public class GeoTests {
+    public class GeoTests : TestWithLoggingBase {
         private const string GREEN_BAY_COORDINATES = "44.5241,-87.9056";
         private const string GREEN_BAY_IP = "143.200.133.1";
         private const string IRVING_COORDINATES = "32.85,-96.9613";
@@ -23,7 +26,10 @@ namespace Exceptionless.Api.Tests.Plugins {
         private readonly IGeocodeService _geocodeService = IoC.GetInstance<IGeocodeService>();
 
         private static IGeoIpService _service;
-        private static async Task<IGeoIpService> GetResolverAsync() {
+
+        public GeoTests(ITestOutputHelper output) : base(output) {}
+
+        private static async Task<IGeoIpService> GetResolverAsync(ILoggerFactory loggerFactory) {
             if (_service != null)
                 return _service;
 
@@ -31,18 +37,18 @@ namespace Exceptionless.Api.Tests.Plugins {
             var storage = new FolderFileStorage(dataDirectory);
 
             if (!await storage.ExistsAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH)) {
-                var job = new DownloadGeoIPDatabaseJob(new InMemoryCacheClient(), storage);
+                var job = new DownloadGeoIPDatabaseJob(new InMemoryCacheClient(), storage, loggerFactory);
                 var result = await job.RunAsync();
                 Assert.NotNull(result);
                 Assert.True(result.IsSuccess);
             }
 
-            return _service = new MaxMindGeoIpService(storage);
+            return _service = new MaxMindGeoIpService(storage, loggerFactory.CreateLogger<MaxMindGeoIpService>());
         }
         
         [Fact]
         public async Task WillNotSetLocation() {
-            var plugin = new GeoPlugin(await GetResolverAsync());
+            var plugin = new GeoPlugin(await GetResolverAsync(Log));
             var ev = new PersistentEvent { Geo = GREEN_BAY_COORDINATES };
             await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev) });
 
@@ -57,7 +63,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         [InlineData("x,y")]
         [InlineData("190,180")]
         public async Task WillResetLocation(string geo) {
-            var plugin = new GeoPlugin(await GetResolverAsync());
+            var plugin = new GeoPlugin(await GetResolverAsync(Log));
             
             var ev = new PersistentEvent { Geo = geo };
             await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev) });
@@ -68,7 +74,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         
         [Fact]
         public async Task WillSetLocationFromGeo() {
-            var plugin = new GeoPlugin(await GetResolverAsync());
+            var plugin = new GeoPlugin(await GetResolverAsync(Log));
             var ev = new PersistentEvent { Geo = GREEN_BAY_IP };
             await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev) });
 
@@ -83,7 +89,7 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Fact]
         public async Task WillSetLocationFromRequestInfo() {
-            var plugin = new GeoPlugin(await GetResolverAsync());
+            var plugin = new GeoPlugin(await GetResolverAsync(Log));
             var ev = new PersistentEvent();
             ev.AddRequestInfo(new RequestInfo { ClientIpAddress = GREEN_BAY_IP });
             await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev) });
@@ -98,7 +104,7 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Fact]
         public async Task WillSetLocationFromEnvironmentInfoInfo() {
-            var plugin = new GeoPlugin(await GetResolverAsync());
+            var plugin = new GeoPlugin(await GetResolverAsync(Log));
             var ev = new PersistentEvent();
             ev.SetEnvironmentInfo(new EnvironmentInfo { IpAddress = $"127.0.0.1,{GREEN_BAY_IP}" });
             await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev) });
@@ -113,7 +119,7 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Fact]
         public async Task WillSetFromSingleGeo() {
-            var plugin = new GeoPlugin(await GetResolverAsync());
+            var plugin = new GeoPlugin(await GetResolverAsync(Log));
 
             var contexts = new List<EventContext> {
                 new EventContext(new PersistentEvent { Geo = GREEN_BAY_IP }),
@@ -134,7 +140,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         
         [Fact]
         public async Task WillNotSetFromMultipleGeo() {
-            var plugin = new GeoPlugin(await GetResolverAsync());
+            var plugin = new GeoPlugin(await GetResolverAsync(Log));
 
             var ev = new PersistentEvent();
             var greenBayEvent = new PersistentEvent { Geo = GREEN_BAY_IP };
@@ -174,7 +180,7 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Fact]
         public async Task WillSetMultipleFromEmptyGeo() {
-            var plugin = new GeoPlugin(await GetResolverAsync());
+            var plugin = new GeoPlugin(await GetResolverAsync(Log));
 
             var ev = new PersistentEvent();
             var greenBayEvent = new PersistentEvent();
@@ -203,7 +209,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         [Theory]
         [MemberData("IPData")]
         public async Task CanResolveIpAsync(string ip, bool canResolve) {
-            var resolver = await GetResolverAsync();
+            var resolver = await GetResolverAsync(Log);
             var result = await resolver.ResolveIpAsync(ip);
             if (canResolve)
                 Assert.NotNull(result);
@@ -213,7 +219,7 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Fact]
         public async Task CanResolveIpFromCacheAsync() {
-            var resolver = await GetResolverAsync();
+            var resolver = await GetResolverAsync(Log);
 
             // Load the database
             await resolver.ResolveIpAsync("0.0.0.0");
