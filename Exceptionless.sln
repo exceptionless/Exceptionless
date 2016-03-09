@@ -81,6 +81,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundatio.Repositories", ".
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundatio.Repositories.Elasticsearch", "..\Foundatio.Repositories\src\Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj", "{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundatio.Repositories.Elasticsearch.Tests", "..\Foundatio.Repositories\src\Elasticsearch\Tests\Foundatio.Repositories.Elasticsearch.Tests.csproj", "{93E138E9-D06C-4B78-B62D-317786025013}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -275,6 +277,18 @@ Global
 		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Release|x86.ActiveCfg = Release|Any CPU
 		{3BFBD4C1-3F2C-46A4-9400-2CB9803644BE}.Release|x86.Build.0 = Release|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Debug|x86.Build.0 = Debug|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Release|x86.ActiveCfg = Release|Any CPU
+		{93E138E9-D06C-4B78-B62D-317786025013}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

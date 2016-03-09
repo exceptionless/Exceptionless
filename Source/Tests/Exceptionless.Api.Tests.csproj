@@ -46,14 +46,8 @@
       <HintPath>..\..\packages\ApprovalUtilities.3.0.10\lib\net45\ApprovalUtilities.Net45.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="AutoMapper, Version=4.1.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\AutoMapper.4.1.1\lib\net45\AutoMapper.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Elasticsearch.Net, Version=2.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Elasticsearch.Net.2.1.0-ci20160204133557\lib\net46\Elasticsearch.Net.dll</HintPath>
-    <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Elasticsearch.Net.1.8.0\lib\net45\Elasticsearch.Net.dll</HintPath>
+      <HintPath>..\..\packages\Elasticsearch.Net.2.0.4\lib\net46\Elasticsearch.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.1.44.0, Culture=neutral, processorArchitecture=MSIL">
@@ -64,24 +58,12 @@
       <HintPath>..\..\packages\Exceptionless.RandomData.1.0.21.0\lib\net40\Exceptionless.RandomData.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FluentValidation, Version=6.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\FluentValidation.6.2.1.0\lib\Net45\FluentValidation.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Foundatio, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Foundatio.4.0.791\lib\net451\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Logging.Xunit, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Foundatio.Logging.Xunit.4.0.791\lib\net451\Foundatio.Logging.Xunit.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Foundatio.Repositories, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.1.0.36\lib\net451\Foundatio.Repositories.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.36\lib\net451\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -97,9 +79,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Nest, Version=2.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NEST.2.1.0-ci20160204133557\lib\net46\Nest.dll</HintPath>
-    <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NEST.1.8.0\lib\net45\Nest.dll</HintPath>
+      <HintPath>..\..\packages\NEST.2.0.4\lib\net46\Nest.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -237,6 +217,10 @@
     <Compile Include="Plugins\WebHookDataTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Foundatio.Repositories\src\Core\Foundatio.Repositories.csproj">
+      <Project>{f5b6c2b5-485f-4a4b-8e00-d5f77676cd6e}</Project>
+      <Name>Foundatio.Repositories</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Foundatio.Repositories\src\Core\Foundatio.Repositories.csproj">
       <Project>{f5b6c2b5-485f-4a4b-8e00-d5f77676cd6e}</Project>
       <Name>Foundatio.Repositories</Name>
