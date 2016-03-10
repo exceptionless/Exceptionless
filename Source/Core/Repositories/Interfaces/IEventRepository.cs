@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Results;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories {

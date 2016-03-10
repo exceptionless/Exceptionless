@@ -735,8 +735,7 @@ namespace Exceptionless.Api.Controllers {
                     LastOccurrence = term.LastOccurrence,
                     New = term.New,
                     Total = term.Total,
-                    Unique = term.Unique,
-                    Timeline = term.Timeline
+                    Unique = term.Unique
                 };
 
                 return summary;

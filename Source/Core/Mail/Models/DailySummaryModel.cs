@@ -15,10 +15,8 @@ namespace Exceptionless.Core.Mail.Models {
         public DateTime EndDate { get; set; }
 
         public long Total { get; set; }
-        public long UniqueTotal { get; set; }
-        public long NewTotal { get; set; }
+        public double UniqueTotal { get; set; }
+        public double NewTotal { get; set; }
         public double PerHourAverage { get; set; }
-        public List<Stack> New { get; set; }
-        public List<EventStackResult> MostFrequent { get; set; }
     }
 }
