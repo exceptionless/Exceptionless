@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Plugins {
         protected readonly IDependencyResolver _dependencyResolver;
 
         public PluginManagerBase(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) {
-            _logger = loggerFactory?.CreateLogger(GetType()) ?? NullLogger.Instance;
+            _logger = loggerFactory.CreateLogger(GetType());
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
             Plugins = new SortedList<int, TPlugin>();
             LoadDefaultPlugins();

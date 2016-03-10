@@ -1,21 +1,25 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Logging.Xunit;
 using Nest;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public class StackRepositoryTests {
-        private const int NUMBER_OF_STACKS_TO_CREATE = 50;
+    public class StackRepositoryTests : TestWithLoggingBase {
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         private readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
+
+        public StackRepositoryTests(ITestOutputHelper output) : base(output) {}
         
         [Fact]
-        public async Task MarkAsRegressedTestAsync() {
+        public async Task CanMarkAsRegressedAsync() {
             await RemoveDataAsync();
 
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: DateTime.Now.SubtractMonths(1)));
@@ -36,7 +40,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task IncrementEventCounterTestAsync() {
+        public async Task CanIncrementEventCounterAsync() {
             await RemoveDataAsync();
 
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
@@ -73,27 +77,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
             Assert.Equal(utcNow.AddDays(1), stack.LastOccurrence);
         }
-
-        [Fact]
-        public Task GetStackInfoBySignatureHashTestAsync() {
-            return Task.CompletedTask;
-        }
         
-        [Fact]
-        public Task GetMostRecentTestAsync() {
-            return Task.CompletedTask;
-        }
-        
-        [Fact]
-        public Task GetNewTestAsync() {
-            return Task.CompletedTask;
-        }
-        
-        [Fact]
-        public Task InvalidateCacheTestAsync() {
-            return Task.CompletedTask;
-        }
-
         protected async Task RemoveDataAsync() {
             await _eventRepository.RemoveAllAsync();
             await _client.RefreshAsync();

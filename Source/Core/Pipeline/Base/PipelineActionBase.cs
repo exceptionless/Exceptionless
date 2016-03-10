@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Pipeline {
         protected readonly ILogger _logger;
 
         public PipelineActionBase(ILoggerFactory loggerFactory = null) {
-            _logger = loggerFactory?.CreateLogger(GetType()) ?? NullLogger.Instance;
+            _logger = loggerFactory.CreateLogger(GetType());
         }
 
         protected bool ContinueOnError { get; set; }
