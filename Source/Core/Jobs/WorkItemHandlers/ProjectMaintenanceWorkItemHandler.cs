@@ -36,8 +36,10 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             var results = await _projectRepository.GetAllAsync(paging: new PagingOptions().WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var project in results.Documents) {
-                    if (workItem.UpdateDefaultBotList)
+                    if (workItem.UpdateDefaultBotList) {
                         project.SetDefaultUserAgentBotPatterns();
+                        project.Configuration.IncrementVersion();
+                    }
                 }
 
                 if (workItem.UpdateDefaultBotList)
