@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
                 await results.NextPageAsync().AnyContext();
                 if (results.Documents.Count > 0)
-                    await context.WorkItemLock.RenewAsync().AnyContext();
+                    await context.RenewLocksAsync().AnyContext();
             }
         }
 
