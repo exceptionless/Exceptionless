@@ -88,18 +88,17 @@ namespace Exceptionless.Api.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            stacks = stacks.Where(s => !s.DateFixed.HasValue).ToList();
-            if (stacks.Count <= 0)
-                return Ok();
+            var stacksToUpdate = stacks.Where(s => !s.DateFixed.HasValue).ToList();
+            if (stacksToUpdate.Count > 0) {
+                foreach (var stack in stacksToUpdate) {
+                    // TODO: Implement Fixed in version.
+                    stack.DateFixed = DateTime.UtcNow;
+                    //stack.FixedInVersion = "GET CURRENT VERSION FROM ELASTIC SEARCH";
+                    stack.IsRegressed = false;
+                }
 
-            foreach (var stack in stacks) {
-                // TODO: Implement Fixed in version.
-                stack.DateFixed = DateTime.UtcNow;
-                //stack.FixedInVersion = "GET CURRENT VERSION FROM ELASTIC SEARCH";
-                stack.IsRegressed = false;
+                await _stackRepository.SaveAsync(stacksToUpdate);
             }
-
-            await _stackRepository.SaveAsync(stacks);
 
             var workIds = new List<string>();
             foreach (var stack in stacks)
@@ -326,16 +325,15 @@ namespace Exceptionless.Api.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            stacks = stacks.Where(s => s.DateFixed.HasValue).ToList();
-            if (stacks.Count <= 0)
-                return StatusCode(HttpStatusCode.NoContent);
+            var stacksToUpdate = stacks.Where(s => s.DateFixed.HasValue).ToList();
+            if (stacksToUpdate.Count > 0) {
+                foreach (var stack in stacksToUpdate) {
+                    stack.DateFixed = null;
+                    stack.IsRegressed = false;
+                }
 
-            foreach (var stack in stacks) {
-                stack.DateFixed = null;
-                stack.IsRegressed = false;
+                await _stackRepository.SaveAsync(stacksToUpdate);
             }
-
-            await _stackRepository.SaveAsync(stacks);
 
             var workIds = new List<string>();
             foreach (var stack in stacks)
@@ -361,14 +359,13 @@ namespace Exceptionless.Api.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            stacks = stacks.Where(s => !s.IsHidden).ToList();
-            if (stacks.Count <= 0)
-                return Ok();
+            var stacksToUpdate = stacks.Where(s => !s.IsHidden).ToList();
+            if (stacksToUpdate.Count > 0) {
+                foreach (var stack in stacksToUpdate)
+                    stack.IsHidden = true;
 
-            foreach (var stack in stacks)
-                stack.IsHidden = true;
-
-            await _stackRepository.SaveAsync(stacks);
+                await _stackRepository.SaveAsync(stacksToUpdate);
+            }
 
             var workIds = new List<string>();
             foreach (var stack in stacks)
@@ -395,14 +392,13 @@ namespace Exceptionless.Api.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            stacks = stacks.Where(s => s.IsHidden).ToList();
-            if (stacks.Count <= 0)
-                return StatusCode(HttpStatusCode.NoContent);
+            var stacksToUpdate = stacks.Where(s => s.IsHidden).ToList();
+            if (stacksToUpdate.Count > 0) {
+                foreach (var stack in stacksToUpdate)
+                    stack.IsHidden = false;
 
-            foreach (var stack in stacks)
-                stack.IsHidden = false;
-
-            await _stackRepository.SaveAsync(stacks);
+                await _stackRepository.SaveAsync(stacksToUpdate);
+            }
 
             var workIds = new List<string>();
             foreach (var stack in stacks)

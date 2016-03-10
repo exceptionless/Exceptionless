@@ -16,6 +16,7 @@ using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Foundatio.Repositories.Utility;
 using Nest;
+using Fields = Exceptionless.Core.Repositories.Configuration.EventIndex.Fields.PersistentEvent;
 using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
@@ -77,19 +78,31 @@ namespace Exceptionless.Core.Repositories {
             await SaveAsync(ev, sendNotifications: sendNotifications).AnyContext();
             return true;
         }
-
-        public Task UpdateFixedByStackAsync(string organizationId, string stackId, bool value) {
+        
+        public Task UpdateFixedByStackAsync(string organizationId, string stackId, bool isFixed, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
 
-            return UpdateAllAsync(organizationId, new ExceptionlessQuery().WithStackId(stackId), new { is_fixed = value });
+            var query = new ExceptionlessQuery()
+                .WithOrganizationId(organizationId)
+                .WithStackId(stackId)
+                .WithFieldEquals(Fields.IsFixed, !isFixed);
+
+            // TODO: Update this to use the update by query syntax that's coming in 2.3.
+            return UpdateAllAsync(organizationId, query, new { is_fixed = isFixed }, sendNotifications);
         }
 
-        public Task UpdateHiddenByStackAsync(string organizationId, string stackId, bool value) {
+        public Task UpdateHiddenByStackAsync(string organizationId, string stackId, bool isHidden, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
+            
+            var query = new ExceptionlessQuery()
+                .WithOrganizationId(organizationId)
+                .WithStackId(stackId)
+                .WithFieldEquals(Fields.IsHidden, !isHidden);
 
-            return UpdateAllAsync(organizationId, new ExceptionlessQuery().WithStackId(stackId), new { is_hidden = value });
+            // TODO: Update this to use the update by query syntax that's coming in 2.3.
+            return UpdateAllAsync(organizationId, query, new { is_hidden = isHidden }, sendNotifications);
         }
 
         public Task RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
