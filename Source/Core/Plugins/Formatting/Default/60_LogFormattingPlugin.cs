@@ -42,7 +42,10 @@ namespace Exceptionless.Core.Plugins.Formatting {
             var data = new Dictionary<string, object> { { "Message", ev.Message } };
             if (!String.IsNullOrWhiteSpace(ev.Source)) {
                 data.Add("Source", ev.Source);
-                data.Add("SourceShortName", ev.Source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
+
+                string truncatedSource = ev.Source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+                if (!String.Equals(ev.Source, truncatedSource))
+                    data.Add("SourceShortName", truncatedSource);
             }
 
             object temp;

@@ -5,7 +5,6 @@ using ApprovalTests.Reporters;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Stats;
 using Exceptionless.Core.Plugins.Formatting;
 using Newtonsoft.Json;
 using Xunit;
