@@ -45,7 +45,7 @@ namespace Exceptionless.Tests.Utility {
                 organization.IsSuspended = true;
                 organization.SuspensionCode = SuspensionCode.Abuse;
                 organization.SuspendedByUserId = TestConstants.UserId;
-                organization.SuspensionDate = DateTime.Now;
+                organization.SuspensionDate = DateTime.UtcNow;
             }
 
             return organization;

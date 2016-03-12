@@ -40,7 +40,6 @@ namespace Exceptionless.Core.Extensions {
                 return -1;
 
             int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > DateTime.UtcNow ? organization.BonusEventsPerMonth : 0;
-
             return organization.MaxEventsPerMonth + bonusEvents;
         } 
 
