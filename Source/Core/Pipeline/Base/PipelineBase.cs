@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Pipeline {
         public PipelineBase(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) {
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
             _actions = GetActionTypes().Select(t => _dependencyResolver.GetService(t) as IPipelineAction<TContext>).ToList();
-            _logger = loggerFactory?.CreateLogger(GetType()) ?? NullLogger.Instance;
+            _logger = loggerFactory.CreateLogger(GetType());
         }
 
         /// <summary>

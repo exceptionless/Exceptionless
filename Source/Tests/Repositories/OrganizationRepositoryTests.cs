@@ -7,16 +7,22 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
+using Foundatio.Logging;
+using Foundatio.Logging.Xunit;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
 using Nest;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public class OrganizationRepositoryTests {
-        public readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        public readonly IOrganizationRepository _repository = IoC.GetInstance<IOrganizationRepository>();
+    public class OrganizationRepositoryTests : TestWithLoggingBase {
+        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
+        private readonly IOrganizationRepository _repository = IoC.GetInstance<IOrganizationRepository>();
+
+        public OrganizationRepositoryTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task CanCreateUpdateRemoveAsync() {
@@ -114,7 +120,10 @@ namespace Exceptionless.Api.Tests.Repositories {
             var messages = new List<PlanOverage>();
             var messagePublisher = IoC.GetInstance<IMessagePublisher>() as InMemoryMessageBus;
             Assert.NotNull(messagePublisher);
-            messagePublisher.Subscribe<PlanOverage>(message => messages.Add(message));
+            messagePublisher.Subscribe<PlanOverage>(po => {
+                _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly}");
+                messages.Add(po);
+            });
 
             var o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
             await _client.RefreshAsync(Indices.All);
@@ -144,6 +153,43 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(740, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
         }
 
+        [Fact]
+        public async Task CanIncrementSuspendedOrganizationUsageAsync() {
+            var cache = IoC.GetInstance<ICacheClient>() as InMemoryCacheClient;
+            Assert.NotNull(cache);
+            await cache.RemoveAllAsync();
+
+            var messages = new List<PlanOverage>();
+            var messagePublisher = IoC.GetInstance<IMessagePublisher>() as InMemoryMessageBus;
+            Assert.NotNull(messagePublisher);
+            messagePublisher.Subscribe<PlanOverage>(po => {
+                _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly}");
+                messages.Add(po);
+            });
+
+            var o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id }, true);
+
+            Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 5));
+            Assert.Equal(0, messages.Count);
+            Assert.Equal(5, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(5, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(0, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
+            Assert.Equal(0, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
+
+            o.IsSuspended = true;
+            o.SuspendedByUserId = TestConstants.UserId;
+            o.SuspensionDate = DateTime.UtcNow;
+            o.SuspensionCode = SuspensionCode.Billing;
+            o = await _repository.SaveAsync(o, true);
+            
+            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 5));
+            Assert.Equal(0, messages.Count);
+            Assert.Equal(10, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(10, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(5, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
+            Assert.Equal(5, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
+        }
+
         private string GetHourlyBlockedCacheKey(string organizationId) {
             return String.Concat("organization:usage-blocked", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
@@ -158,10 +204,6 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         private string GetMonthlyTotalCacheKey(string organizationId) {
             return String.Concat("organization:usage-total", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
-        }
-
-        private string GetUsageSavedCacheKey(string organizationId) {
-            return String.Concat("organization:usage-saved", ":", organizationId);
         }
     }
 }

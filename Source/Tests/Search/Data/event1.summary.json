@@ -5,7 +5,6 @@
   "data": {
     "Message": null,
     "Source": "GET /Print",
-    "Type": "log",
     "Level": "Error"
   }
 }

@@ -902,7 +902,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 if (organization.IsSuspended) {
                     organization.SuspendedByUserId = TestConstants.UserId;
                     organization.SuspensionCode = SuspensionCode.Billing;
-                    organization.SuspensionDate = DateTime.Now;
+                    organization.SuspensionDate = DateTime.UtcNow;
                 }
 
                 await _organizationRepository.AddAsync(organization, true);

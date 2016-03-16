@@ -21,7 +21,7 @@ namespace Exceptionless.Api.Controllers {
         protected readonly ILogger _logger;
 
         public RepositoryApiController(TRepository repository, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, mapper) {
-            _logger = loggerFactory?.CreateLogger(GetType()) ?? NullLogger.Instance;
+            _logger = loggerFactory.CreateLogger(GetType());
         }
 
         public virtual async Task<IHttpActionResult> PostAsync(TNewModel value) {

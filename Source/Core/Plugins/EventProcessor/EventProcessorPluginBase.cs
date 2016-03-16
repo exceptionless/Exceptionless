@@ -9,7 +9,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         protected readonly ILogger _logger;
 
         public EventProcessorPluginBase(ILoggerFactory loggerFactory = null) {
-            _logger = loggerFactory?.CreateLogger(GetType()) ?? NullLogger.Instance;
+            _logger = loggerFactory.CreateLogger(GetType());
         }
 
         protected bool ContinueOnError { get; set; }

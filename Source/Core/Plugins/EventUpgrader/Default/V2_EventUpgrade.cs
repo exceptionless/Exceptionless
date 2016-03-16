@@ -123,7 +123,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             if (json.Length > 200000) {
-                _logger.Error().Project(projectId).Message("Event: {0} __ExceptionInfo is Too Big: {1}", id, json.Length).Write();
+                _logger.Error().Project(projectId).Property("EventId", id).Message("__ExceptionInfo is Too Big: {0}", json.Length).Write();
                 return;
             }
 

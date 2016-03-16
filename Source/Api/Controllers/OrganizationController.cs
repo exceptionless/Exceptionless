@@ -536,7 +536,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             organization.IsSuspended = true;
-            organization.SuspensionDate = DateTime.Now;
+            organization.SuspensionDate = DateTime.UtcNow;
             organization.SuspendedByUserId = ExceptionlessUser.Id;
             organization.SuspensionCode = code;
             organization.SuspensionNotes = notes;

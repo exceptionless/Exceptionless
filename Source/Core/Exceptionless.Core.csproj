@@ -57,6 +57,22 @@
       <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.18\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="FluentValidation, Version=6.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\FluentValidation.6.2.1.0\lib\Net45\FluentValidation.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Foundatio, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.4.0.812\lib\net451\Foundatio.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Foundatio.Repositories, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.1.0.36\lib\net451\Foundatio.Repositories.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.36\lib\net451\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
       <HintPath>..\..\packages\MaxMind.Db.1.2.0\lib\net40\MaxMind.Db.dll</HintPath>
       <Private>True</Private>
@@ -133,6 +149,7 @@
     <Compile Include="Extensions\AppDomainExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\PersistentEventExtensions.cs" />
+    <Compile Include="Filter\FieldAggregationProcessor.cs" />
     <Compile Include="Geo\IGeocodeService.cs" />
     <Compile Include="Geo\NullGeocodeService.cs" />
     <Compile Include="Jobs\CloseInactiveSessionsJob.cs" />
@@ -199,24 +216,16 @@
     <Compile Include="Models\Organization.cs" />
     <Compile Include="Models\PersistentEvent.cs" />
     <Compile Include="Models\Project.cs" />
-    <Compile Include="Models\Results\EventPreviousAndNextIdResult.cs" />
-    <Compile Include="Models\Results\EventResult.cs" />
-    <Compile Include="Models\Results\EventResultBase.cs" />
-    <Compile Include="Models\Results\EventStackResult.cs" />
+    <Compile Include="Models\EventPreviousAndNextIdResult.cs" />
     <Compile Include="Models\SessionInfo.cs" />
     <Compile Include="Models\Stack.cs" />
-    <Compile Include="Models\Stats\EventStatsResult.cs" />
-    <Compile Include="Models\Stats\EventTermStatsResult.cs" />
-    <Compile Include="Models\Stats\Results\PagedResult.cs" />
-    <Compile Include="Models\Stats\Results\PlanPagedResult.cs" />
+    <Compile Include="Models\StackSummaryModel.cs" />
     <Compile Include="Models\Stats\EventTermStatsItem.cs" />
-    <Compile Include="Models\Stats\SessionStatsResult.cs" />
-    <Compile Include="Models\Stats\SessionTermStatsItem.cs" />
-    <Compile Include="Models\Stats\SessionTermTimelineItem.cs" />
-    <Compile Include="Models\Stats\SessionTermStatsResult.cs" />
+    <Compile Include="Models\Stats\EventTermStatsResult.cs" />
     <Compile Include="Models\Stats\EventTermTimelineItem.cs" />
-    <Compile Include="Models\Stats\EventTimelineItem.cs" />
-    <Compile Include="Models\Stats\SessionTimelineItem.cs" />
+    <Compile Include="Models\Stats\NumbersStatsResult.cs" />
+    <Compile Include="Models\Stats\NumbersTimelineItem.cs" />
+    <Compile Include="Models\Stats\NumbersTimelineStatsResult.cs" />
     <Compile Include="Models\Token.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WebHook.cs" />
@@ -295,7 +304,6 @@
     <Compile Include="Models\Messaging\PlanOverage.cs" />
     <Compile Include="Models\Billing\BillingPlanStats.cs" />
     <Compile Include="Models\EventSummaryModel.cs" />
-    <Compile Include="Models\StackSummaryModel.cs" />
     <Compile Include="Models\SummaryData.cs" />
     <Compile Include="Pipeline\001_CheckEventDateAction.cs" />
     <Compile Include="Pipeline\006_TruncateFieldsAction.cs" />

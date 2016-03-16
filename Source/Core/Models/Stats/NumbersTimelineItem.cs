@@ -1,10 +1,9 @@
 using System;
 
 namespace Exceptionless.Core.Models.Stats {
-    public class EventTimelineItem {
+    public class NumbersTimelineItem {
         public DateTime Date { get; set; }
         public long Total { get; set; }
-        public long Unique { get; set; }
-        public long New { get; set; }
+        public double[] Numbers { get; set; }
     }
 }

@@ -10,17 +10,21 @@ using Exceptionless.Helpers;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Tests.Utility;
+using Foundatio.Logging;
+using Foundatio.Logging.Xunit;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Nest;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public class EventRepositoryTests {
+    public class EventRepositoryTests : TestWithLoggingBase {
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
 
+        public EventRepositoryTests(ITestOutputHelper output) : base(output) {}
 
         [Fact]
         public async Task GetAsync() {
@@ -36,7 +40,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await RemoveDataAsync();
             
             var ev = await _repository.AddAsync(new RandomEventGenerator().GeneratePersistent());
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             Assert.Equal(1, await _repository.CountAsync());
 
             var sw = Stopwatch.StartNew();
@@ -58,7 +62,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 events.Add(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now.Subtract(TimeSpan.FromMinutes(i))));
 
             await _repository.AddAsync(events);
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             Assert.Equal(events.Count, await _repository.CountAsync());
 
             var results = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(2));
@@ -84,7 +88,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             
             Debug.WriteLine("");
             Debug.WriteLine("Before {0}: {1}", sortedIds[2].Item1, sortedIds[2].Item2.ToLongTimeString());
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             string query = $"stack:{TestConstants.StackId} project:{TestConstants.ProjectId} date:[now-1h TO now+1h]";
             var results = (await _repository.GetByOrganizationIdsAsync(new[] { TestConstants.OrganizationId }, query, new PagingOptions().WithLimit(20))).Documents.ToArray();
             Assert.Equal(sortedIds.Count, results.Length);
@@ -112,7 +116,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Debug.WriteLine("");
             Debug.WriteLine("Tests:");
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             Assert.Equal(_ids.Count, await _repository.CountAsync());
             for (int i = 0; i < sortedIds.Count; i++) {
                 Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
@@ -140,7 +144,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Debug.WriteLine("");
             Debug.WriteLine("Tests:");
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             Assert.Equal(_ids.Count, await _repository.CountAsync());
             for (int i = 0; i < sortedIds.Count; i++) {
                 Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
@@ -157,9 +161,9 @@ namespace Exceptionless.Api.Tests.Repositories {
             await RemoveDataAsync();
 
             string referenceId = ObjectId.GenerateNewId().ToString();
-            await _repository.AddAsync(EventData.GenerateEvents(count: 3, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, referenceId: referenceId).ToList());
+            await _repository.AddAsync(EventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, referenceId: referenceId).ToList());
 
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             var results = await _repository.GetByReferenceIdAsync(TestConstants.ProjectId, referenceId);
             Assert.True(results.Total > 0);
             Assert.NotNull(results.Documents.First());
@@ -172,12 +176,12 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             var firstEvent = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(35));
 
-            var sessionLastActive35MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
-            var sessionLastActive34MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession2", generateData: false);
+            var sessionLastActive35MinAgo = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
+            var sessionLastActive34MinAgo = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession2", generateData: false);
             sessionLastActive34MinAgo.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(1));
-            var sessionLastActive5MinAgo = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession3", generateData: false);
+            var sessionLastActive5MinAgo = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession3", generateData: false);
             sessionLastActive5MinAgo.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(30));
-            var closedSession = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
+            var closedSession = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
             closedSession.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(5), true);
 
             var events = new List<PersistentEvent> {
@@ -189,38 +193,34 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             await _repository.AddAsync(events);
 
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
             Assert.Equal(3, results.Total);
         }
 
         [Fact]
-        public async Task MarkAsFixedByStackTestAsync() {
+        public async Task CanMarkAsFixedAsync() {
+            const int NUMBER_OF_EVENTS_TO_CREATE = 10000;
+
             await RemoveDataAsync();
+            await _repository.AddAsync(EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2).ToList(), sendNotification: false);
+            await _client.RefreshAsync();
 
-            const int NUMBER_OF_EVENTS_TO_CREATE = 50;
-            await _repository.AddAsync(EventData.GenerateEvents(count: NUMBER_OF_EVENTS_TO_CREATE, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, isFixed: true).ToList());
-
-            await _client.RefreshAsync(Indices.All);
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, await _repository.CountAsync());
+
+            var sw = Stopwatch.StartNew();
+            await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.StackId2, false, sendNotifications: false);
+            _logger.Info(() => $"Time to mark not fixed events as not fixed: {sw.ElapsedMilliseconds}ms");
+            await _client.RefreshAsync();
+            sw.Restart();
+
+            await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.StackId2, true, sendNotifications: false);
+            _logger.Info(() => $"Time to mark not fixed events as fixed: {sw.ElapsedMilliseconds}ms");
+            await _client.RefreshAsync();
+            sw.Stop();
             
-            await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.StackId2, false);
-
-            await _client.RefreshAsync(Indices.All);
-            var events = await _repository.GetByStackIdAsync(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE));
-            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Total);
-            foreach (var ev in events.Documents)
-                Assert.False(ev.IsFixed);
-        }
-
-        [Fact(Skip = "TODO")]
-        public Task RemoveOldestEventsTestAsync() {
-            return Task.CompletedTask;
-        }
-
-        [Fact(Skip = "TODO")]
-        public Task RemoveAllByDateTestAsync() {
-            return Task.CompletedTask;
+            var results = await GetByFilterAsync($"stack:{TestConstants.StackId2} fixed:true");
+            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, results.Total);
         }
         
         [Fact]
@@ -229,11 +229,11 @@ namespace Exceptionless.Api.Tests.Repositories {
             const string _clientIpAddress = "123.123.12.256";
 
             const int NUMBER_OF_EVENTS_TO_CREATE = 50;
-            var events = EventData.GenerateEvents(count: NUMBER_OF_EVENTS_TO_CREATE, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, isFixed: true, startDate: DateTime.Now.SubtractDays(2), endDate: DateTime.Now).ToList();
+            var events = EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, isFixed: true, startDate: DateTime.Now.SubtractDays(2), endDate: DateTime.Now).ToList();
             events.ForEach(e => e.AddRequestInfo(new RequestInfo { ClientIpAddress = _clientIpAddress }));
             await _repository.AddAsync(events);
 
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             events = (await _repository.GetByStackIdAsync(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
             events.ForEach(e => {
@@ -245,7 +245,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             await _repository.HideAllByClientIpAndDateAsync(TestConstants.OrganizationId, _clientIpAddress, DateTime.UtcNow.SubtractDays(3), DateTime.UtcNow.AddDays(2));
 
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             events = (await _repository.GetByStackIdAsync(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
             events.ForEach(e => Assert.True(e.IsHidden));
@@ -284,9 +284,13 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         protected async Task RemoveDataAsync() {
             await _repository.RemoveAllAsync();
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
             await _stackRepository.RemoveAllAsync();
-            await _client.RefreshAsync(Indices.All);
+            await _client.RefreshAsync();
+        }
+
+        private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
+            return _repository.GetByFilterAsync(null, filter, new SortingOptions(), null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }
 }
