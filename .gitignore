@@ -9,6 +9,8 @@
 *.user
 *.sln.docstates
 *.ide
+*.lock.json
+
 
 # Build results
 
