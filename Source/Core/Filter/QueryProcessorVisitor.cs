@@ -56,7 +56,10 @@ namespace Exceptionless.Core.Filter {
             var validator = new QueryProcessorVisitor(_freeFields);
             result.Accept(validator);
 
-            return new QueryProcessResult { IsValid = true, UsesPremiumFeatures = validator.UsesPremiumFeatures };
+            return new QueryProcessResult {
+                IsValid = true,
+                UsesPremiumFeatures = validator.UsesPremiumFeatures
+            };
         }
     }
 
