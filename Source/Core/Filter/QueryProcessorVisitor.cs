@@ -18,9 +18,9 @@ namespace Exceptionless.Core.Filter {
             "stack"
         };
 
-        public static QueryProcessResult Process(string query) {
-            if (String.IsNullOrEmpty(query))
-                return new QueryProcessResult { IsValid = true };
+        public static QueryProcessResult Process(string query, bool generateHiddenAndFixedFilters = true) {
+            if (String.IsNullOrWhiteSpace(query))
+                return new QueryProcessResult { IsValid = true, ExpandedQuery = generateHiddenAndFixedFilters ? "fixed:false hidden:false" : null };
 
             GroupNode result;
             try {
@@ -33,9 +33,20 @@ namespace Exceptionless.Core.Filter {
             var validator = new QueryProcessorVisitor(_freeFields);
             result.Accept(validator);
 
-            string expandedQuery = validator.UsesDataFields ? GenerateQueryVisitor.Run(result) : query;
+            var expandedQuery = validator.UsesDataFields ? GenerateQueryVisitor.Run(result) : query;
+            if (generateHiddenAndFixedFilters) {
+                if (!validator.HasFixedField)
+                    expandedQuery += " fixed:false";
 
-            return new QueryProcessResult { IsValid = true, UsesPremiumFeatures = validator.UsesPremiumFeatures, ExpandedQuery = expandedQuery };
+                if (!validator.HasHiddenField)
+                    expandedQuery += " hidden:false";
+            }
+
+            return new QueryProcessResult {
+                IsValid = true,
+                UsesPremiumFeatures = validator.UsesPremiumFeatures,
+                ExpandedQuery = expandedQuery
+            };
         }
 
         public static QueryProcessResult Validate(string query) {
@@ -70,16 +81,22 @@ namespace Exceptionless.Core.Filter {
                 if (!_freeFields.Contains(node.Field.Field))
                     UsesPremiumFeatures = true;
 
+                if (String.Equals(node.Field.Field, "fixed", StringComparison.OrdinalIgnoreCase))
+                    HasFixedField = true;
+
+                if (String.Equals(node.Field.Field, "hidden", StringComparison.OrdinalIgnoreCase))
+                    HasHiddenField = true;
+
                 if (node.Field.Field.StartsWith("data.")) {
                     UsesDataFields = true;
 
                     var lt = node.Left as TermNode;
                     var rt = node.Right as TermNode;
                     string termType = GetTermType(lt?.TermMin, lt?.TermMax, lt?.Term, rt?.TermMin, rt?.TermMax, rt?.Term);
-                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(5)}-{termType}";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(5)}-{termType}";
                 } else if (node.Field.Field.StartsWith("ref.")) {
                     UsesDataFields = true;
-                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(4)}-r";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(4)}-r";
                 }
             }
 
@@ -95,14 +112,20 @@ namespace Exceptionless.Core.Filter {
                 // using a field not in the free list
                 if (!_freeFields.Contains(node.Field.Field))
                     UsesPremiumFeatures = true;
+                
+                if (String.Equals(node.Field.Field, "fixed", StringComparison.OrdinalIgnoreCase))
+                    HasFixedField = true;
+
+                if (String.Equals(node.Field.Field, "hidden", StringComparison.OrdinalIgnoreCase))
+                    HasHiddenField = true;
 
                 if (node.Field.Field.StartsWith("data.")) {
                     UsesDataFields = true;
                     string termType = GetTermType(node.TermMin, node.TermMax, node.Term);
-                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(5)}-{termType}";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(5)}-{termType}";
                 } else if (node.Field.Field.StartsWith("ref.")) {
                     UsesDataFields = true;
-                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(4)}-r";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(4)}-r";
                 }
             }
 
@@ -138,6 +161,8 @@ namespace Exceptionless.Core.Filter {
 
         public bool UsesPremiumFeatures { get; set; }
         public bool UsesDataFields { get; set; }
+        public bool HasHiddenField { get; set; }
+        public bool HasFixedField { get; set; }
     }
 
     public class QueryProcessResult {
