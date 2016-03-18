@@ -18,9 +18,9 @@ namespace Exceptionless.Core.Filter {
             "stack"
         };
 
-        public static QueryProcessResult Process(string query, bool generateHiddenAndFixedFilters = true) {
+        public static QueryProcessResult Process(string query) {
             if (String.IsNullOrWhiteSpace(query))
-                return new QueryProcessResult { IsValid = true, ExpandedQuery = generateHiddenAndFixedFilters ? "fixed:false hidden:false" : null };
+                return new QueryProcessResult { IsValid = true };
 
             GroupNode result;
             try {
@@ -34,14 +34,6 @@ namespace Exceptionless.Core.Filter {
             result.Accept(validator);
 
             var expandedQuery = validator.UsesDataFields ? GenerateQueryVisitor.Run(result) : query;
-            if (generateHiddenAndFixedFilters) {
-                if (!validator.HasFixedField)
-                    expandedQuery += " fixed:false";
-
-                if (!validator.HasHiddenField)
-                    expandedQuery += " hidden:false";
-            }
-
             return new QueryProcessResult {
                 IsValid = true,
                 UsesPremiumFeatures = validator.UsesPremiumFeatures,
@@ -80,13 +72,7 @@ namespace Exceptionless.Core.Filter {
                 // using a field not in the free list
                 if (!_freeFields.Contains(node.Field.Field))
                     UsesPremiumFeatures = true;
-
-                if (String.Equals(node.Field.Field, "fixed", StringComparison.OrdinalIgnoreCase))
-                    HasFixedField = true;
-
-                if (String.Equals(node.Field.Field, "hidden", StringComparison.OrdinalIgnoreCase))
-                    HasHiddenField = true;
-
+                
                 if (node.Field.Field.StartsWith("data.")) {
                     UsesDataFields = true;
 
@@ -113,12 +99,6 @@ namespace Exceptionless.Core.Filter {
                 if (!_freeFields.Contains(node.Field.Field))
                     UsesPremiumFeatures = true;
                 
-                if (String.Equals(node.Field.Field, "fixed", StringComparison.OrdinalIgnoreCase))
-                    HasFixedField = true;
-
-                if (String.Equals(node.Field.Field, "hidden", StringComparison.OrdinalIgnoreCase))
-                    HasHiddenField = true;
-
                 if (node.Field.Field.StartsWith("data.")) {
                     UsesDataFields = true;
                     string termType = GetTermType(node.TermMin, node.TermMax, node.Term);
@@ -161,8 +141,6 @@ namespace Exceptionless.Core.Filter {
 
         public bool UsesPremiumFeatures { get; set; }
         public bool UsesDataFields { get; set; }
-        public bool HasHiddenField { get; set; }
-        public bool HasFixedField { get; set; }
     }
 
     public class QueryProcessResult {
