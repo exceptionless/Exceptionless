@@ -45,9 +45,6 @@ using SimpleInjector.Advanced;
 namespace Exceptionless.Core {
     public class Bootstrapper {
         public static void RegisterServices(Container container, ILoggerFactory loggerFactory) {
-            // Foundation service provider
-            ServiceProvider.Current = container;
-            
             container.RegisterLogger(loggerFactory);
             container.RegisterSingleton<IDependencyResolver>(() => new SimpleInjectorDependencyResolver(container));
 
@@ -105,15 +102,15 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(behaviors: container.GetAllInstances<IQueueBehavior<MailMessage>>()));
             
             var workItemHandlers = new WorkItemHandlers();
-            workItemHandlers.Register<ReindexWorkItem, ReindexWorkItemHandler>();
-            workItemHandlers.Register<RemoveOrganizationWorkItem, RemoveOrganizationWorkItemHandler>();
-            workItemHandlers.Register<RemoveProjectWorkItem, RemoveProjectWorkItemHandler>();
-            workItemHandlers.Register<SetLocationFromGeoWorkItem, SetLocationFromGeoWorkItemHandler>();
-            workItemHandlers.Register<SetProjectIsConfiguredWorkItem, SetProjectIsConfiguredWorkItemHandler>();
-            workItemHandlers.Register<StackWorkItem, StackWorkItemHandler>();
-            workItemHandlers.Register<ThrottleBotsWorkItem, ThrottleBotsWorkItemHandler>();
-            workItemHandlers.Register<OrganizationMaintenanceWorkItem, OrganizationMaintenanceWorkItemHandler>();
-            workItemHandlers.Register<ProjectMaintenanceWorkItem, ProjectMaintenanceWorkItemHandler>();
+            workItemHandlers.Register<ReindexWorkItem>(container.GetInstance<ReindexWorkItemHandler>);
+            workItemHandlers.Register<RemoveOrganizationWorkItem>(container.GetInstance<RemoveOrganizationWorkItemHandler>);
+            workItemHandlers.Register<RemoveProjectWorkItem>(container.GetInstance<RemoveProjectWorkItemHandler>);
+            workItemHandlers.Register<SetLocationFromGeoWorkItem>(container.GetInstance<SetLocationFromGeoWorkItemHandler>);
+            workItemHandlers.Register<SetProjectIsConfiguredWorkItem>(container.GetInstance<SetProjectIsConfiguredWorkItemHandler>);
+            workItemHandlers.Register<StackWorkItem>(container.GetInstance<StackWorkItemHandler>);
+            workItemHandlers.Register<ThrottleBotsWorkItem>(container.GetInstance<ThrottleBotsWorkItemHandler>);
+            workItemHandlers.Register<OrganizationMaintenanceWorkItem>(container.GetInstance<OrganizationMaintenanceWorkItemHandler>);
+            workItemHandlers.Register<ProjectMaintenanceWorkItem>(container.GetInstance<ProjectMaintenanceWorkItemHandler>);
             container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);
             container.RegisterSingleton<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(behaviors: container.GetAllInstances<IQueueBehavior<WorkItemData>>(), workItemTimeout: TimeSpan.FromHours(1)));
 

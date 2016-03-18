@@ -7,7 +7,7 @@ using SimpleInjector;
 using SimpleInjector.Extensions.ExecutionContextScoping;
 
 namespace Exceptionless.Insulation.Jobs {
-    public class FoundatioBootstrapper : BootstrappedServiceProviderBase {
+    public class JobBootstrappedServiceProvider : BootstrappedServiceProviderBase {
         protected override IServiceProvider BootstrapInternal(ILoggerFactory loggerFactory) {
             ExceptionlessClient.Default.Configuration.SetVersion(Settings.Current.Version);
             ExceptionlessClient.Default.Configuration.UseLogger(new NLogExceptionlessLog(Exceptionless.Logging.LogLevel.Warn));

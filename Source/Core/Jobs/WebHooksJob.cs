@@ -11,7 +11,7 @@ using Foundatio.Queues;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Jobs {
-    public class WebHooksJob : QueueProcessorJobBase<WebHookNotification> {
+    public class WebHooksJob : QueueJobBase<WebHookNotification> {
         private readonly IWebHookRepository _webHookRepository;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         
@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Jobs {
             _jsonSerializerSettings = settings;
         }
         
-        protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<WebHookNotification> context) {
+        protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<WebHookNotification> context) {
             WebHookNotification body = context.QueueEntry.Value;
             bool shouldLog = body.ProjectId != Settings.Current.InternalProjectId;
             _logger.Trace().Project(body.ProjectId).Message("Process web hook call: id={0} project={1} url={2}", context.QueueEntry.Id, body.ProjectId, body.Url).WriteIf(shouldLog);

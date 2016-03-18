@@ -13,14 +13,14 @@ using Foundatio.Queues;
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
-    public class EventUserDescriptionsJob : QueueProcessorJobBase<EventUserDescription> {
+    public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription> {
         private readonly IEventRepository _eventRepository;
 
         public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventRepository = eventRepository;
         }
 
-        protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<EventUserDescription> context) {
+        protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventUserDescription> context) {
             _logger.Trace().Message("Processing user description: id={0}", context.QueueEntry.Id).Write();
 
             try {

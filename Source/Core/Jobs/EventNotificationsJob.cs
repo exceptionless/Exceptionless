@@ -18,7 +18,7 @@ using Foundatio.Queues;
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
-    public class EventNotificationsJob : QueueProcessorJobBase<EventNotificationWorkItem> {
+    public class EventNotificationsJob : QueueJobBase<EventNotificationWorkItem> {
         private readonly IMailer _mailer;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Jobs {
             _parser = parser;
         }
 
-        protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<EventNotificationWorkItem> context) {
+        protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventNotificationWorkItem> context) {
             var eventModel = await _eventRepository.GetByIdAsync(context.QueueEntry.Value.EventId).AnyContext();
             if (eventModel == null)
                 return JobResult.FailedWithMessage($"Could not load event: {context.QueueEntry.Value.EventId}");

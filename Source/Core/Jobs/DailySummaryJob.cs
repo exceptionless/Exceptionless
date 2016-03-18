@@ -17,7 +17,7 @@ using Foundatio.Lock;
 using Foundatio.Logging;
 
 namespace Exceptionless.Core.Jobs {
-    public class DailySummaryJob : JobBase {
+    public class DailySummaryJob : JobWithLockBase {
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
@@ -36,11 +36,11 @@ namespace Exceptionless.Core.Jobs {
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
         }
 
-        protected override Task<ILock> GetJobLockAsync() {
+        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
             return _lockProvider.AcquireAsync(nameof(DailySummaryJob), TimeSpan.FromHours(1), new CancellationToken(true));
         }
 
-        protected override async Task<JobResult> RunInternalAsync(JobRunContext context) {
+        protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             if (!Settings.Current.EnableDailySummary)
                 return JobResult.SuccessWithMessage("Summary notifications are disabled.");
 
@@ -76,7 +76,7 @@ namespace Exceptionless.Core.Jobs {
 
                 projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
                 if (projects.Count > 0)
-                    await context.JobLock.RenewAsync().AnyContext();
+                    await context.RenewLockAsync().AnyContext();
             }
 
             return JobResult.SuccessWithMessage("Successfully sent summary notifications.");

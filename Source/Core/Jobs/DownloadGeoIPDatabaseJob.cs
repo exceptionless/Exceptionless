@@ -12,7 +12,7 @@ using Foundatio.Logging;
 using Foundatio.Storage;
 
 namespace Exceptionless.Core.Jobs {
-    public class DownloadGeoIPDatabaseJob : JobBase {
+    public class DownloadGeoIPDatabaseJob : JobWithLockBase {
         private readonly IFileStorage _storage;
         private readonly ILockProvider _lockProvider;
 
@@ -21,11 +21,11 @@ namespace Exceptionless.Core.Jobs {
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
         }
 
-        protected override Task<ILock> GetJobLockAsync() {
+        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
             return _lockProvider.AcquireAsync(nameof(DownloadGeoIPDatabaseJob), TimeSpan.FromHours(2), new CancellationToken(true));
         }
         
-        protected override async Task<JobResult> RunInternalAsync(JobRunContext context) {
+        protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             try {
                 if (await _storage.ExistsAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH).AnyContext()) {
                     _logger.Info().Message("Deleting existing GeoIP database.").Write();

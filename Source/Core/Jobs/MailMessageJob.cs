@@ -8,14 +8,14 @@ using Foundatio.Logging;
 using Foundatio.Queues;
 
 namespace Exceptionless.Core.Jobs {
-    public class MailMessageJob : QueueProcessorJobBase<MailMessage> {
+    public class MailMessageJob : QueueJobBase<MailMessage> {
         private readonly IMailSender _mailSender;
 
         public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _mailSender = mailSender;
         }
 
-        protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<MailMessage> context) {
+        protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<MailMessage> context) {
             _logger.Trace().Message("Processing message '{0}'.", context.QueueEntry.Id).Write();
 
             try {

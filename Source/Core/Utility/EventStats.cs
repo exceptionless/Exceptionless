@@ -316,19 +316,19 @@ namespace Exceptionless.Core.Utility {
             foreach (var field in fields) {
                 switch (field.Type) {
                     case FieldAggregationType.Average:
-                        results.Add(aggregations.Average(field.Key).Value.GetValueOrDefault());
+                        results.Add(aggregations.Average(field.Key)?.Value.GetValueOrDefault() ?? 0);
                         break;
                     case FieldAggregationType.Distinct:
-                        results.Add(aggregations.Cardinality(field.Key).Value.GetValueOrDefault());
+                        results.Add(aggregations.Cardinality(field.Key)?.Value.GetValueOrDefault() ?? 0);
                         break;
                     case FieldAggregationType.Sum:
-                        results.Add(aggregations.Sum(field.Key).Value.GetValueOrDefault());
+                        results.Add(aggregations.Sum(field.Key)?.Value.GetValueOrDefault() ?? 0);
                         break;
                     case FieldAggregationType.Min:
-                        results.Add(aggregations.Min(field.Key).Value.GetValueOrDefault());
+                        results.Add(aggregations.Min(field.Key)?.Value.GetValueOrDefault() ?? 0);
                         break;
                     case FieldAggregationType.Max:
-                        results.Add(aggregations.Max(field.Key).Value.GetValueOrDefault());
+                        results.Add(aggregations.Max(field.Key)?.Value.GetValueOrDefault() ?? 0);
                         break;
                     case FieldAggregationType.Last:
                         // TODO: Populate with the last value.

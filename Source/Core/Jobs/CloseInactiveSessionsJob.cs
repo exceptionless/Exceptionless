@@ -13,7 +13,7 @@ using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Jobs {
-    public class CloseInactiveSessionsJob : JobBase {
+    public class CloseInactiveSessionsJob : JobWithLockBase {
         private readonly IEventRepository _eventRepository;
         private readonly ILockProvider _lockProvider;
 
@@ -22,11 +22,11 @@ namespace Exceptionless.Core.Jobs {
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
         }
 
-        protected override Task<ILock> GetJobLockAsync() {
+        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
             return _lockProvider.AcquireAsync(nameof(CloseInactiveSessionsJob), TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
-        protected override async Task<JobResult> RunInternalAsync(JobRunContext context) {
+        protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             const int LIMIT = 100;
 
             var results = await _eventRepository.GetOpenSessionsAsync(GetStartOfInactivePeriod(), new PagingOptions().WithPage(1).WithLimit(LIMIT)).AnyContext();
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Jobs {
 
                 await results.NextPageAsync().AnyContext();
                 if (results.Documents.Count > 0)
-                    await context.JobLock.RenewAsync().AnyContext();
+                    await context.RenewLockAsync().AnyContext();
             }
 
             return JobResult.Success;

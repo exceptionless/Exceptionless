@@ -1,21 +1,19 @@
 ﻿using System;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Foundatio.Extensions;
 using Foundatio.Jobs;
+using Foundatio.ServiceProviders;
 
 namespace DownloadGeoIPDatabaseJob {
     public class Program {
-        public static int Main(string[] args) {
+        public static int Main() {
             AppDomain.CurrentDomain.SetDataDirectory();
-
-            return new JobRunner(Settings.Current.GetLoggerFactory()).RunInConsole(new JobRunOptions {
-                JobType = typeof(Exceptionless.Core.Jobs.DownloadGeoIPDatabaseJob),
-                ServiceProviderTypeName = Settings.FoundatioBootstrapper,
-                InstanceCount = 1,
-                Interval = TimeSpan.FromDays(1),
-                InitialDelay = TimeSpan.FromSeconds(5),
-                RunContinuous = true
-            });
+            
+            var loggerFactory = Settings.Current.GetLoggerFactory();
+            var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
+            var job = serviceProvider.GetService<Exceptionless.Core.Jobs.DownloadGeoIPDatabaseJob>();
+            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.FromDays(1)).RunInConsole();
         }
     }
 }

@@ -22,7 +22,7 @@ using Newtonsoft.Json;
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
-    public class EventPostsJob : QueueProcessorJobBase<EventPost> {
+    public class EventPostsJob : QueueJobBase<EventPost> {
         private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;
         private readonly IMetricsClient _metricsClient;
@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Jobs {
             AutoComplete = false;
         }
 
-        protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<EventPost> context) {
+        protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventPost> context) {
             var queueEntry = context.QueueEntry;
             EventPostInfo eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, _logger, context.CancellationToken).AnyContext();
             if (eventPostInfo == null) {
@@ -55,10 +55,10 @@ namespace Exceptionless.Core.Jobs {
 
             List<PersistentEvent> events = null;
             try {
-                _metricsClient.Time(() => {
+                await _metricsClient.TimeAsync(async () => {
                     events = ParseEventPost(eventPostInfo);
                     _logger.Info().Message("Parsed {0} events for post: id={1}", events.Count, queueEntry.Id).WriteIf(!isInternalProject);
-                }, MetricNames.PostsParsingTime);
+                }, MetricNames.PostsParsingTime).AnyContext();
                 await _metricsClient.CounterAsync(MetricNames.PostsParsed).AnyContext();
                 await _metricsClient.GaugeAsync(MetricNames.PostsEventCount, events.Count).AnyContext();
             } catch (Exception ex) {
