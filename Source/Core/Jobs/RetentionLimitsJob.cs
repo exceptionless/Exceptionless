@@ -13,7 +13,7 @@ using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Jobs {
-    public class RetentionLimitsJob : JobBase {
+    public class RetentionLimitsJob : JobWithLockBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IEventRepository _eventRepository;
         private readonly ILockProvider _lockProvider;
@@ -24,11 +24,11 @@ namespace Exceptionless.Core.Jobs {
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
         }
 
-        protected override Task<ILock> GetJobLockAsync() {
+        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
             return _lockProvider.AcquireAsync(nameof(RetentionLimitsJob), TimeSpan.FromHours(2), new CancellationToken(true));
         }
 
-        protected override async Task<JobResult> RunInternalAsync(JobRunContext context) {
+        protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             var results = await _organizationRepository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithPage(1).WithLimit(100)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in results.Documents) {
@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Jobs {
 
                 await results.NextPageAsync().AnyContext();
                 if (results.Documents.Count > 0)
-                    await context.JobLock.RenewAsync().AnyContext();
+                    await context.RenewLockAsync().AnyContext();
             }
 
             return JobResult.Success;

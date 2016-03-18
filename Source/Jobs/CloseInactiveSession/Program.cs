@@ -1,21 +1,19 @@
 ﻿using System;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Foundatio.Extensions;
 using Foundatio.Jobs;
+using Foundatio.ServiceProviders;
 
 namespace CloseInactiveSessionsJob {
     public class Program {
-        public static int Main(string[] args) {
+        public static int Main() {
             AppDomain.CurrentDomain.SetDataDirectory();
-
-            return new JobRunner(Settings.Current.GetLoggerFactory()).RunInConsole(new JobRunOptions {
-                JobType = typeof(Exceptionless.Core.Jobs.CloseInactiveSessionsJob),
-                ServiceProviderTypeName = Settings.FoundatioBootstrapper,
-                InstanceCount = 1,
-                Interval = TimeSpan.FromMinutes(1),
-                InitialDelay = TimeSpan.FromSeconds(30),
-                RunContinuous = true
-            });
+            
+            var loggerFactory = Settings.Current.GetLoggerFactory();
+            var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
+            var job = serviceProvider.GetService<Exceptionless.Core.Jobs.CloseInactiveSessionsJob>();
+            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(30), interval: TimeSpan.FromMinutes(1)).RunInConsole();
         }
     }
 }

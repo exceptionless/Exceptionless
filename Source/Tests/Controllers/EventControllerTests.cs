@@ -17,6 +17,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
+using Foundatio.Jobs;
 using Foundatio.Logging.Xunit;
 using Foundatio.Metrics;
 using Foundatio.Queues;

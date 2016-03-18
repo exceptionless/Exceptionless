@@ -1,21 +1,19 @@
 ﻿using System;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Foundatio.Extensions;
 using Foundatio.Jobs;
+using Foundatio.ServiceProviders;
 
 namespace WorkItemJob {
     public class Program {
-        public static int Main(string[] args) {
+        public static int Main() {
             AppDomain.CurrentDomain.SetDataDirectory();
 
-            return new JobRunner(Settings.Current.GetLoggerFactory()).RunInConsole(new JobRunOptions {
-                JobType = typeof(Foundatio.Jobs.WorkItemJob),
-                ServiceProviderTypeName = Settings.FoundatioBootstrapper,
-                InstanceCount = 2,
-                Interval = TimeSpan.Zero,
-                InitialDelay = TimeSpan.FromSeconds(2),
-                RunContinuous = true
-            });
+            var loggerFactory = Settings.Current.GetLoggerFactory();
+            var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
+            var job = serviceProvider.GetService<Foundatio.Jobs.WorkItemJob>();
+            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(2), interval: TimeSpan.Zero, instanceCount: 2).RunInConsole();
         }
     }
 }

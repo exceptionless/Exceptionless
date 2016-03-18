@@ -174,7 +174,7 @@ namespace Exceptionless.Core {
             MinimumLogLevel = GetEnum<LogLevel>("MinimumLogLevel", LogLevel.Information);
         }
 
-        public const string FoundatioBootstrapper = "Exceptionless.Insulation.Jobs.FoundatioBootstrapper,Exceptionless.Insulation";
+        public const string JobBootstrappedServiceProvider = "Exceptionless.Insulation.Jobs.JobBootstrappedServiceProvider,Exceptionless.Insulation";
 
         public LoggerFactory GetLoggerFactory() {
             return new LoggerFactory {
