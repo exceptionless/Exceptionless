@@ -99,6 +99,7 @@ namespace Exceptionless.Api {
             new JobRunner(container.GetInstance<EventUserDescriptionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(3)).RunInBackground(token);
             new JobRunner(container.GetInstance<EventNotificationsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
             new JobRunner(container.GetInstance<MailMessageJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
+            new JobRunner(container.GetInstance<MessageBusBrokerJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2)).RunInBackground(token);
             new JobRunner(container.GetInstance<WebHooksJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
             new JobRunner(container.GetInstance<CloseInactiveSessionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(30), interval: TimeSpan.FromMinutes(1)).RunInBackground(token);
             new JobRunner(container.GetInstance<DailySummaryJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(1), interval: TimeSpan.FromHours(1)).RunInBackground(token);

@@ -166,6 +166,7 @@
     <Compile Include="Geo\NullGeocodeService.cs" />
     <Compile Include="Jobs\CloseInactiveSessionsJob.cs" />
     <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
+    <Compile Include="Jobs\MessageBusBrokerJob.cs" />
     <Compile Include="Jobs\WorkItemHandlers\SetProjectIsConfiguredWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\RemoveProjectWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\RemoveOrganizationWorkItemHandler.cs" />
@@ -241,6 +242,7 @@
     <Compile Include="Models\Token.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WebHook.cs" />
+    <Compile Include="Models\WorkItems\OrganizationNotificationWorkItem.cs" />
     <Compile Include="Models\WorkItems\RemoveOrganizationWorkItem.cs" />
     <Compile Include="Models\WorkItems\RemoveProjectWorkItem.cs" />
     <Compile Include="Models\WorkItems\SetLocationFromGeoWorkItem.cs" />
