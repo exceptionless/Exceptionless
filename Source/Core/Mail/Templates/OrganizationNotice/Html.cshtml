@@ -13,13 +13,13 @@
                     <tr style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
                         <td style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
                             <p class="lead" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 10px; font-weight: normal; font-size: 17px; line-height: 1.6;">
-                                @if (Model.IsOverHourlyLimit) {
-                                    <text>
-                                        Events are currently being throttled for @Model.Organization.Name to prevent using up your plan limit in a small window of time. Upgrade now to increase your limits.
-                                    </text>
-                                } else if (Model.IsOverMonthlyLimit) {
+                                @if (Model.IsOverMonthlyLimit) {
                                     <text>
                                         @Model.Organization.Name has reached its monthly plan limit. Upgrade now to continue receiving events.
+                                    </text>
+                                } else if (Model.IsOverHourlyLimit) {
+                                    <text>
+                                        Events are currently being throttled for @Model.Organization.Name to prevent using up your plan limit in a small window of time. Upgrade now to increase your limits.
                                     </text>
                                 }
                             </p>
