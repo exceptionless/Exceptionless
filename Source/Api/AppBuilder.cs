@@ -83,12 +83,12 @@ namespace Exceptionless.Api {
                 Task.Run(async () => await CreateSampleDataAsync(container));
 
             RunJobs(container, app, loggerFactory, logger);
-            logger.Info().Message("Starting api...").Write();
+            logger.Info("Starting api...");
         }
         
         private static void RunJobs(Container container, IAppBuilder app, ILoggerFactory loggerFactory, ILogger logger) {
             if (!Settings.Current.RunJobsInProcess) {
-                logger.Info().Message("Jobs running out of process.").Write();
+                logger.Info("Jobs running out of process.");
                 return;
             }
 
@@ -107,7 +107,7 @@ namespace Exceptionless.Api {
             new JobRunner(container.GetInstance<RetentionLimitsJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromDays(1)).RunInBackground(token);
             new JobRunner(container.GetInstance<WorkItemJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2).RunInBackground(token);
 
-            logger.Warn().Message("Jobs running in process.").Write();
+            logger.Warn("Jobs running in process.");
         }
 
         private static void EnableCors(HttpConfiguration config, IAppBuilder app) {
@@ -202,7 +202,7 @@ namespace Exceptionless.Api {
             try {
                 insulationAssembly = Assembly.Load("Exceptionless.Insulation");
             } catch (Exception ex) {
-                logger.Error().Message("Unable to load the insulation assembly.").Exception(ex).Write();
+                logger.Error(ex, "Unable to load the insulation assembly.");
             }
 
             if (insulationAssembly != null) {

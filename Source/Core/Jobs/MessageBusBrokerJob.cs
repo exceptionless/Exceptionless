@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Jobs {
             if (overage == null)
                 return;
 
-            _logger.Trace("Enqueueing plan overage work item for organization: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
+            _logger.Info("Enqueueing plan overage work item for organization: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
             await _workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
                 OrganizationId = overage.OrganizationId,
                 IsOverHourlyLimit = overage.IsHourly,
