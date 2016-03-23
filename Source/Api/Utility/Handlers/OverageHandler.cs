@@ -23,6 +23,9 @@ namespace Exceptionless.Api.Utility {
         }
 
         private bool IsEventPost(HttpRequestMessage request) {
+            if (request.Method == HttpMethod.Get)
+                return request.RequestUri.AbsolutePath.Contains("/events/submit");
+
             if (request.Method != HttpMethod.Post)
                 return false;
 
