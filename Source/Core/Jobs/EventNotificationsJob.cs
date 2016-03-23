@@ -173,7 +173,7 @@ namespace Exceptionless.Core.Jobs {
                 }
 
                 _logger.Trace("Sending email to {0}...", user.EmailAddress);
-                await _mailer.SendNoticeAsync(user.EmailAddress, model).AnyContext();
+                await _mailer.SendEventNoticeAsync(user.EmailAddress, model).AnyContext();
                 emailsSent++;
                 _logger.Trace().Message("Done sending email.").WriteIf(shouldLog);
             }

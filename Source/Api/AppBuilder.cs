@@ -15,11 +15,15 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using Foundatio.Jobs;
 using Foundatio.Logging;
+using Foundatio.Messaging;
+using Foundatio.Queues;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
@@ -81,19 +85,34 @@ namespace Exceptionless.Api {
 
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
                 Task.Run(async () => await CreateSampleDataAsync(container));
-
-            RunJobs(container, app, loggerFactory, logger);
-            logger.Info().Message("Starting api...").Write();
-        }
-        
-        private static void RunJobs(Container container, IAppBuilder app, ILoggerFactory loggerFactory, ILogger logger) {
-            if (!Settings.Current.RunJobsInProcess) {
-                logger.Info().Message("Jobs running out of process.").Write();
-                return;
-            }
-
+            
             var context = new OwinContext(app.Properties);
             var token = context.Get<CancellationToken>("host.OnAppDisposing");
+            RunMessageBusBroker(container, logger, token);
+            RunJobs(container, loggerFactory, logger, token);
+
+            logger.Info("Starting api...");
+        }
+
+        private static void RunMessageBusBroker(Container container, ILogger logger, CancellationToken token = default(CancellationToken)) {
+            var workItemQueue = container.GetInstance<IQueue<WorkItemData>>();
+            var subscriber = container.GetInstance<IMessageSubscriber>();
+            
+            subscriber.Subscribe<PlanOverage>(async overage => {
+                logger.Info("Enqueueing plan overage work item for organization: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
+                await workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
+                    OrganizationId = overage.OrganizationId,
+                    IsOverHourlyLimit = overage.IsHourly,
+                    IsOverMonthlyLimit = !overage.IsHourly
+                });
+            }, token);
+        }
+
+        private static void RunJobs(Container container, LoggerFactory loggerFactory, ILogger logger, CancellationToken token = default(CancellationToken)) {
+            if (!Settings.Current.RunJobsInProcess) {
+                logger.Info("Jobs running out of process.");
+                return;
+            }
             
             new JobRunner(container.GetInstance<EventPostsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2)).RunInBackground(token);
             new JobRunner(container.GetInstance<EventUserDescriptionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(3)).RunInBackground(token);
@@ -106,7 +125,7 @@ namespace Exceptionless.Api {
             new JobRunner(container.GetInstance<RetentionLimitsJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromDays(1)).RunInBackground(token);
             new JobRunner(container.GetInstance<WorkItemJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2).RunInBackground(token);
 
-            logger.Warn().Message("Jobs running in process.").Write();
+            logger.Warn("Jobs running in process.");
         }
 
         private static void EnableCors(HttpConfiguration config, IAppBuilder app) {
@@ -201,7 +220,7 @@ namespace Exceptionless.Api {
             try {
                 insulationAssembly = Assembly.Load("Exceptionless.Insulation");
             } catch (Exception ex) {
-                logger.Error().Message("Unable to load the insulation assembly.").Exception(ex).Write();
+                logger.Error(ex, "Unable to load the insulation assembly.");
             }
 
             if (insulationAssembly != null) {
