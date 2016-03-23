@@ -17,7 +17,7 @@ namespace Exceptionless.Api.Tests.Mail {
         [Fact(Skip = "Used for testing html formatting.")]
         public Task SendLogNotificationAsync() {
             var mailer = IoC.GetInstance<Mailer>();
-            return mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
+            return mailer.SendEventNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
                 Event = new PersistentEvent {
                     Id = "1",
                     OrganizationId = "1",
@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Tests.Mail {
         [Fact(Skip = "Used for testing html formatting.")]
         public Task SendNotFoundNotificationAsync() {
             var mailer = IoC.GetInstance<Mailer>();
-            return mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
+            return mailer.SendEventNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
                 Event = new PersistentEvent {
                     Id = "1",
                     OrganizationId = "1",
@@ -72,7 +72,7 @@ namespace Exceptionless.Api.Tests.Mail {
             ev.StackId = "1";
 
             var mailer = IoC.GetInstance<Mailer>();
-            return mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
+            return mailer.SendEventNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
                 Event = ev,
                 IsNew = true,
                 IsCritical = true,
@@ -103,7 +103,7 @@ namespace Exceptionless.Api.Tests.Mail {
             ev.StackId = "1";
 
             var mailer = IoC.GetInstance<Mailer>();
-            return mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
+            return mailer.SendEventNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
                 Event = ev,
                 IsNew = true,
                 IsCritical = true,

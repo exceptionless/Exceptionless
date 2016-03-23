@@ -29,9 +29,9 @@ namespace Exceptionless.Core.Mail {
             _logger = logger;
         }
 
-        public async Task SendPasswordResetAsync(User user) {
+        public Task SendPasswordResetAsync(User user) {
             if (String.IsNullOrEmpty(user?.PasswordResetToken))
-                return;
+                return Task.CompletedTask;
 
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {
                 User = user,
@@ -39,22 +39,20 @@ namespace Exceptionless.Core.Mail {
             }, "PasswordReset");
             msg.To.Add(user.EmailAddress);
 
-            await _metrics.CounterAsync("mailer.passwordreset").AnyContext();
-            await QueueMessageAsync(msg).AnyContext();
+            return QueueMessageAsync(msg, "passwordreset");
         }
 
-        public async Task SendVerifyEmailAsync(User user) {
+        public Task SendVerifyEmailAsync(User user) {
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {
                 User = user,
                 BaseUrl = Settings.Current.BaseURL
             }, "VerifyEmail");
             msg.To.Add(user.EmailAddress);
 
-            await _metrics.CounterAsync("mailer.verifyemail").AnyContext();
-            await QueueMessageAsync(msg).AnyContext();
+            return QueueMessageAsync(msg, "verifyemail");
         }
 
-        public async Task SendInviteAsync(User sender, Organization organization, Invite invite) {
+        public Task SendInviteAsync(User sender, Organization organization, Invite invite) {
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new InviteModel {
                 Sender = sender,
                 Organization = organization,
@@ -62,24 +60,22 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "Invite");
             msg.To.Add(invite.EmailAddress);
-
-            await _metrics.CounterAsync("mailer.invite").AnyContext();
-            await QueueMessageAsync(msg).AnyContext();
+            
+            return QueueMessageAsync(msg, "invite");
         }
 
-        public async Task SendPaymentFailedAsync(User owner, Organization organization) {
+        public Task SendPaymentFailedAsync(User owner, Organization organization) {
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new PaymentModel {
                 Owner = owner,
                 Organization = organization,
                 BaseUrl = Settings.Current.BaseURL
             }, "PaymentFailed");
             msg.To.Add(owner.EmailAddress);
-
-            await _metrics.CounterAsync("mailer.paymentfailed").AnyContext();
-            await QueueMessageAsync(msg).AnyContext();
+            
+            return QueueMessageAsync(msg, "paymentfailed");
         }
 
-        public async Task SendAddedToOrganizationAsync(User sender, Organization organization, User user) {
+        public Task SendAddedToOrganizationAsync(User sender, Organization organization, User user) {
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new AddedToOrganizationModel {
                 Sender = sender,
                 Organization = organization,
@@ -87,22 +83,19 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "AddedToOrganization");
             msg.To.Add(user.EmailAddress);
-
-            await _metrics.CounterAsync("mailer.addedtoorganization").AnyContext();
-            await QueueMessageAsync(msg).AnyContext();
+            
+            return QueueMessageAsync(msg, "addedtoorganization");
         }
 
-        public async Task SendNoticeAsync(string emailAddress, EventNotification model) {
+        public Task SendEventNoticeAsync(string emailAddress, EventNotification model) {
             var msg = _pluginManager.GetEventNotificationMailMessage(model);
             if (msg == null) {
                 _logger.Warn("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, emailAddress);
-                return;
+                return Task.CompletedTask;
             }
 
             msg.To = emailAddress;
-
-            await _metrics.CounterAsync("mailer.eventnotification").AnyContext();
-            return QueueMessageAsync(message.ToMailMessage());
+            return QueueMessageAsync(msg.ToMailMessage(), "eventnotice");
         }
         
         public Task SendOrganizationNoticeAsync(string emailAddress, OrganizationNotificationModel model) {
@@ -111,21 +104,22 @@ namespace Exceptionless.Core.Mail {
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(model, "OrganizationNotice");
             msg.To.Add(emailAddress);
             
-            return QueueMessageAsync(msg);
+            return QueueMessageAsync(msg, "organizationnotice");
         }
 
-        public async Task SendDailySummaryAsync(string emailAddress, DailySummaryModel notification) {
+        public Task SendDailySummaryAsync(string emailAddress, DailySummaryModel notification) {
             notification.BaseUrl = Settings.Current.BaseURL;
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(notification, "DailySummary");
             msg.To.Add(emailAddress);
-
-            await _metrics.CounterAsync("mailer.dailysummary").AnyContext();
-            await QueueMessageAsync(msg).AnyContext();
+            
+            return QueueMessageAsync(msg, "dailysummary");
         }
 
-        private Task QueueMessageAsync(System.Net.Mail.MailMessage message) {
+        private async Task QueueMessageAsync(System.Net.Mail.MailMessage message, string metricsName) {
+            await _metrics.CounterAsync($"mailer.{metricsName}").AnyContext();
+
             CleanAddresses(message);
-            return _queue.EnqueueAsync(message.ToMailMessage());
+            await _queue.EnqueueAsync(message.ToMailMessage()).AnyContext();
         }
 
         private static void CleanAddresses(System.Net.Mail.MailMessage message) {

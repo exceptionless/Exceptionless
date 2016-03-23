@@ -27,7 +27,7 @@ namespace Exceptionless.Api.Tests.Mail {
             return Task.CompletedTask;
         }
 
-        public Task SendNoticeAsync(string emailAddress, EventNotification model) {
+        public Task SendEventNoticeAsync(string emailAddress, EventNotification model) {
             return Task.CompletedTask;
         }
 
