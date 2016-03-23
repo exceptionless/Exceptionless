@@ -12,6 +12,7 @@ namespace Exceptionless.Core.Mail {
         Task SendPaymentFailedAsync(User owner, Organization organization);
         Task SendAddedToOrganizationAsync(User sender, Organization organization, User user);
         Task SendNoticeAsync(string emailAddress, EventNotification model);
+        Task SendOrganizationNoticeAsync(string emailAddress, OrganizationNotificationModel organizationNotificationModel);
         Task SendDailySummaryAsync(string emailAddress, DailySummaryModel notification);
     }
 }

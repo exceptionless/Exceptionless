@@ -1,0 +1,10 @@
+﻿@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.OrganizationNotificationModel>
+@if (Model.IsOverHourlyLimit) {
+<text>
+[@Model.Organization.Name] Events are currently being throttled.
+</text>
+} else if (Model.aIsOverMonthlyLimit) {
+<text>
+[@Model.Organization.Name] The monthly plan limit exceeded.
+</text>
+}

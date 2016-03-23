@@ -31,6 +31,10 @@ namespace Exceptionless.Api.Tests.Mail {
             return Task.CompletedTask;
         }
 
+        public Task SendOrganizationNoticeAsync(string emailAddress, OrganizationNotificationModel organizationNotificationModel) {
+            return Task.CompletedTask;
+        }
+
         public Task SendDailySummaryAsync(string emailAddress, DailySummaryModel notification) {
             return Task.CompletedTask;
         }

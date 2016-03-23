@@ -192,12 +192,7 @@ namespace Exceptionless.Core.Repositories {
 
             bool justWentOverHourly = hourlyTotal > org.GetHourlyEventLimit() && hourlyTotal <= org.GetHourlyEventLimit() + count;
             bool justWentOverMonthly = monthlyTotal > org.GetMaxEventsPerMonthWithBonus() && monthlyTotal <= org.GetMaxEventsPerMonthWithBonus() + count;
-
-            if (justWentOverMonthly)
-                await PublishMessageAsync(new PlanOverage { OrganizationId = org.Id }).AnyContext();
-            else if (justWentOverHourly)
-                await PublishMessageAsync(new PlanOverage { OrganizationId = org.Id, IsHourly = true }).AnyContext();
-
+            
             bool shouldSaveUsage = false;
             var lastCounterSavedDate = await Cache.GetAsync<DateTime>(GetUsageSavedCacheKey(organizationId)).AnyContext();
 
@@ -222,6 +217,11 @@ namespace Exceptionless.Core.Repositories {
                 await SaveAsync(org, true).AnyContext();
                 await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
             }
+
+            if (justWentOverMonthly)
+                await PublishMessageAsync(new PlanOverage { OrganizationId = org.Id }).AnyContext();
+            else if (justWentOverHourly)
+                await PublishMessageAsync(new PlanOverage { OrganizationId = org.Id, IsHourly = true }).AnyContext();
 
             return overLimit;
         }

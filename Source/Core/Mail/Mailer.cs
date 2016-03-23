@@ -85,14 +85,23 @@ namespace Exceptionless.Core.Mail {
         }
 
         public Task SendNoticeAsync(string emailAddress, EventNotification model) {
-            var message = _pluginManager.GetEventNotificationMailMessage(model);
-            if (message == null) {
-                _logger.Warn().Message("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, emailAddress).Write();
+            var msg = _pluginManager.GetEventNotificationMailMessage(model);
+            if (msg == null) {
+                _logger.Warn("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, emailAddress);
                 return Task.CompletedTask;
             }
 
-            message.To = emailAddress;
-            return QueueMessageAsync(message.ToMailMessage());
+            msg.To = emailAddress;
+            return QueueMessageAsync(msg.ToMailMessage());
+        }
+        
+        public Task SendOrganizationNoticeAsync(string emailAddress, OrganizationNotificationModel model) {
+            model.BaseUrl = Settings.Current.BaseURL;
+
+            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(model, "OrganizationNotice");
+            msg.To.Add(emailAddress);
+            
+            return QueueMessageAsync(msg);
         }
 
         public Task SendDailySummaryAsync(string emailAddress, DailySummaryModel notification) {
@@ -108,22 +117,22 @@ namespace Exceptionless.Core.Mail {
             return _queue.EnqueueAsync(message.ToMailMessage());
         }
 
-        private static void CleanAddresses(System.Net.Mail.MailMessage msg) {
+        private static void CleanAddresses(System.Net.Mail.MailMessage message) {
             if (Settings.Current.WebsiteMode == WebsiteMode.Production)
                 return;
 
             var invalid = new List<string>();
-            invalid.AddRange(CleanAddresses(msg.To));
-            invalid.AddRange(CleanAddresses(msg.CC));
-            invalid.AddRange(CleanAddresses(msg.Bcc));
+            invalid.AddRange(CleanAddresses(message.To));
+            invalid.AddRange(CleanAddresses(message.CC));
+            invalid.AddRange(CleanAddresses(message.Bcc));
 
             if (invalid.Count == 0)
                 return;
 
             if (invalid.Count <= 3)
-                msg.Subject = String.Concat("[", invalid.ToDelimitedString(), "] ", msg.Subject).StripInvisible();
+                message.Subject = String.Concat("[", invalid.ToDelimitedString(), "] ", message.Subject).StripInvisible();
 
-            msg.To.Add(Settings.Current.TestEmailAddress);
+            message.To.Add(Settings.Current.TestEmailAddress);
         }
 
         private static IEnumerable<string> CleanAddresses(MailAddressCollection mac) {
