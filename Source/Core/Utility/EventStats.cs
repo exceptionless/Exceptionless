@@ -92,7 +92,7 @@ namespace Exceptionless.Core.Utility {
             ).AnyContext();
 
             if (!res.IsValid) {
-                _logger.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
+                _logger.Error("Retrieving term stats failed: {0}", res.ServerError.Error);
                 throw new ApplicationException("Retrieving term stats failed.");
             }
 
@@ -180,7 +180,7 @@ namespace Exceptionless.Core.Utility {
             ).AnyContext();
 
             if (!response.IsValid) {
-                _logger.Error().Message("Retrieving stats failed: {0}", response.ServerError.Error).Write();
+                _logger.Error("Retrieving stats failed: {0}", response.ServerError.Error);
                 throw new ApplicationException("Retrieving stats failed.");
             }
 
@@ -229,7 +229,7 @@ namespace Exceptionless.Core.Utility {
             ).AnyContext();
 
             if (!response.IsValid) {
-                _logger.Error().Message("Retrieving stats failed: {0}", response.ServerError.Error).Write();
+                _logger.Error("Retrieving stats failed: {0}", response.ServerError.Error);
                 throw new ApplicationException("Retrieving stats failed.");
             }
             

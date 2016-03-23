@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Cache Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                _logger.Trace().Message("Checking cache took {0}ms", sw.ElapsedMilliseconds).Write();
+                _logger.Trace("Checking cache took {0}ms", sw.ElapsedMilliseconds);
             }
 
             return HealthCheckResult.Healthy;
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Elasticsearch Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                _logger.Trace().Message("Checking Elasticsearch took {0}ms", sw.ElapsedMilliseconds).Write();
+                _logger.Trace("Checking Elasticsearch took {0}ms", sw.ElapsedMilliseconds);
             }
 
             return HealthCheckResult.Healthy;
@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Storage Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                _logger.Trace().Message("Checking storage took {0}ms", sw.ElapsedMilliseconds).Write();
+                _logger.Trace("Checking storage took {0}ms", sw.ElapsedMilliseconds);
             }
 
             return HealthCheckResult.Healthy;

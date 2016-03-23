@@ -28,17 +28,17 @@ namespace Exceptionless.Core.Jobs {
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             try {
                 if (await _storage.ExistsAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH).AnyContext()) {
-                    _logger.Info().Message("Deleting existing GeoIP database.").Write();
+                    _logger.Info("Deleting existing GeoIP database.");
                     await _storage.DeleteFileAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH, context.CancellationToken).AnyContext();
                 }
 
-                _logger.Info().Message("Downloading GeoIP database.").Write();
+                _logger.Info("Downloading GeoIP database.");
                 var client = new HttpClient();
                 var file = await client.GetAsync("http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz", context.CancellationToken).AnyContext();
                 if (!file.IsSuccessStatusCode)
                     return JobResult.FailedWithMessage("Unable to download GeoIP database.");
 
-                _logger.Info().Message("Extracting GeoIP database").Write();
+                _logger.Info("Extracting GeoIP database");
                 using (GZipStream decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync().AnyContext(), CompressionMode.Decompress))
                     await _storage.SaveFileAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH, decompressionStream, context.CancellationToken).AnyContext();
             } catch (Exception ex) {
@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.FromException(ex);
             }
 
-            _logger.Info().Message("Finished downloading GeoIP database.").Write();
+            _logger.Info("Finished downloading GeoIP database.");
             return JobResult.Success;
         }
     }

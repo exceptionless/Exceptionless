@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<SetProjectIsConfiguredWorkItem>();
-            _logger.Info().Message("Setting Is Configured for project: {0}", workItem.ProjectId).Write();
+            _logger.Info("Setting Is Configured for project: {0}", workItem.ProjectId);
             
             var project = await _projectRepository.GetByIdAsync(workItem.ProjectId).AnyContext();
             if (project == null || project.IsConfigured.GetValueOrDefault())

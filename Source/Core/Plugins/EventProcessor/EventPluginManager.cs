@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     if (contexts.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
-                    _logger.Error().Message("Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
+                    _logger.Error(ex, "Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message);
                 }
             }
         }
@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     if (contexts.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
-                    _logger.Error().Message("Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
+                    _logger.Error(ex, "Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message);
                 }
             }
         }

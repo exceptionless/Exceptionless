@@ -5,7 +5,6 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using Exceptionless.Core.Extensions;
-using Foundatio.Logging;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core {

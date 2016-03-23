@@ -86,11 +86,11 @@ namespace Exceptionless.Core.Geo {
             _databaseLastChecked = DateTime.UtcNow;
 
             if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH).AnyContext()) {
-                _logger.Warn().Message("No GeoIP database was found.").Write();
+                _logger.Warn("No GeoIP database was found.");
                 return null;
             }
 
-            _logger.Info().Message("Loading GeoIP database.").Write();
+            _logger.Info("Loading GeoIP database.");
             try {
                 using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
                     _database = new DatabaseReader(stream);

@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Pipeline {
             if (ctx.Stack == null || !ctx.Stack.OccurrencesAreCritical)
                 return Task.CompletedTask;
 
-            _logger.Trace().Message("Marking error as critical.").Write();
+            _logger.Trace("Marking error as critical.");
             ctx.Event.MarkAsCritical();
 
             return Task.CompletedTask;

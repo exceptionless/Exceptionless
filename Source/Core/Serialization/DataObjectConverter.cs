@@ -104,7 +104,7 @@ namespace Exceptionless.Serializer {
 
                     return;
                 } catch (Exception) {
-                    _logger.Info().Message("Error deserializing known data type \"{0}\": {1}", p.Name, p.Value.ToString()).Write();
+                    _logger.Info("Error deserializing known data type \"{0}\": {1}", p.Name, p.Value.ToString());
                 }
             }
 

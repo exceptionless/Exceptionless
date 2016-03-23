@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Pipeline {
             foreach (var stackGroup in stacks) {
                 try {
                     var context = stackGroup.First();
-                    _logger.Trace().Message("Marking stack and events as regression.").Write();
+                    _logger.Trace("Marking stack and events as regression.");
                     await _stackRepository.MarkAsRegressedAsync(context.Stack.Id).AnyContext();
                     await _workItemQueue.EnqueueAsync(new StackWorkItem { OrganizationId = context.Event.OrganizationId, StackId = context.Stack.Id, UpdateIsFixed = true, IsFixed = false }).AnyContext();
                     await _stackRepository.InvalidateCacheAsync(context.Event.ProjectId, context.Event.StackId, context.SignatureHash).AnyContext();

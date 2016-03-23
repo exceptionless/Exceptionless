@@ -21,11 +21,11 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventUserDescription> context) {
-            _logger.Trace().Message("Processing user description: id={0}", context.QueueEntry.Id).Write();
+            _logger.Trace("Processing user description: id={0}", context.QueueEntry.Id);
 
             try {
                 await ProcessUserDescriptionAsync(context.QueueEntry.Value).AnyContext();
-                _logger.Info().Message("Processed user description: id={0}", context.QueueEntry.Id).Write();
+                _logger.Info("Processed user description: id={0}", context.QueueEntry.Id);
             } catch (DocumentNotFoundException ex){
                 _logger.Error(ex, "An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, context.QueueEntry.Id);
                 return JobResult.FromException(ex);
