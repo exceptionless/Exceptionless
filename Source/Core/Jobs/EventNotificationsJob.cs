@@ -108,17 +108,17 @@ namespace Exceptionless.Core.Jobs {
 
                 var user = await _userRepository.GetByIdAsync(kv.Key).AnyContext();
                 if (String.IsNullOrEmpty(user?.EmailAddress)) {
-                    _logger.Error().Message("Could not load user {0} or blank email address {1}.", kv.Key, user != null ? user.EmailAddress : "").Write();
+                    _logger.Error("Could not load user {0} or blank email address {1}.", kv.Key, user?.EmailAddress ?? "");
                     continue;
                 }
 
                 if (!user.IsEmailAddressVerified) {
-                    _logger.Info().Message("User {0} with email address {1} has not been verified.", kv.Key, user != null ? user.EmailAddress : "").WriteIf(shouldLog);
+                    _logger.Info().Message("User {0} with email address {1} has not been verified.", user.Id, user.EmailAddress).WriteIf(shouldLog);
                     continue;
                 }
 
                 if (!user.EmailNotificationsEnabled) {
-                    _logger.Info().Message("User {0} with email address {1} has email notifications disabled.", kv.Key, user != null ? user.EmailAddress : "").WriteIf(shouldLog);
+                    _logger.Info().Message("User {0} with email address {1} has email notifications disabled.", user.Id, user.EmailAddress).WriteIf(shouldLog);
                     continue;
                 }
 
@@ -172,7 +172,7 @@ namespace Exceptionless.Core.Jobs {
                     continue;
                 }
 
-                _logger.Trace().Message("Sending email to {0}...", user.EmailAddress).Write();
+                _logger.Trace("Sending email to {0}...", user.EmailAddress);
                 await _mailer.SendNoticeAsync(user.EmailAddress, model).AnyContext();
                 emailsSent++;
                 _logger.Trace().Message("Done sending email.").WriteIf(shouldLog);

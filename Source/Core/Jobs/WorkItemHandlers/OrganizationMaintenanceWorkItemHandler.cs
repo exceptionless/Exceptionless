@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             const int LIMIT = 100;
 
             var workItem = context.GetData<OrganizationMaintenanceWorkItem>();
-            _logger.Info().Message("Received upgrade organizations work item. Upgrade Plans: {0}", workItem.UpgradePlans).Write();
+            _logger.Info("Received upgrade organizations work item. Upgrade Plans: {0}", workItem.UpgradePlans);
 
             var results = await _organizationRepository.GetAllAsync(paging: new PagingOptions().WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {

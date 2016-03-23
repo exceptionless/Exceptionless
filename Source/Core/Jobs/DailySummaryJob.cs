@@ -52,13 +52,13 @@ namespace Exceptionless.Core.Jobs {
             var projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
             while (projects.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 var documentsUpdated = await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projects.Select(p => p.Id).ToList()).AnyContext();
-                _logger.Info().Message("Got {0} projects to process. ", projects.Count).Write();
+                _logger.Info("Got {0} projects to process. ", projects.Count);
                 Debug.Assert(projects.Count == documentsUpdated);
 
                 foreach (var project in projects) {
                     var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
                     if (utcStartTime < DateTime.UtcNow.Date.SubtractDays(2)) {
-                        _logger.Info().Message("Skipping daily summary older than two days for project \"{0}\" with a start time of \"{1}\".", project.Id, utcStartTime).Write();
+                        _logger.Info("Skipping daily summary older than two days for project \"{0}\" with a start time of \"{1}\".", project.Id, utcStartTime);
                         continue;
                     }
 
@@ -87,17 +87,17 @@ namespace Exceptionless.Core.Jobs {
             var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
             var userIds = project.NotificationSettings.Where(n => n.Value.SendDailySummary).Select(n => n.Key).ToList();
             if (userIds.Count == 0) {
-                _logger.Info().Message("Project \"{0}\" has no users to send summary to.", project.Id).Write();
+                _logger.Info("Project \"{0}\" has no users to send summary to.", project.Id);
                 return;
             }
 
             var users = (await _userRepository.GetByIdsAsync(userIds).AnyContext()).Documents.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(organization.Id)).ToList();
             if (users.Count == 0) {
-                _logger.Info().Message("Project \"{0}\" has no users to send summary to.", project.Id).Write();
+                _logger.Info("Project \"{0}\" has no users to send summary to.", project.Id);
                 return;
             }
 
-            _logger.Info().Message("Sending daily summary: users={0} project={1}", users.Count, project.Id).Write();
+            _logger.Info("Sending daily summary: users={0} project={1}", users.Count, project.Id);
 
             var result = await _stats.GetTermsStatsAsync(data.UtcStartTime, data.UtcEndTime, "stack_id", "type:error project:" + data.Id, max: 5).AnyContext();
             bool hasSubmittedErrors = result.Total > 0;
@@ -120,7 +120,7 @@ namespace Exceptionless.Core.Jobs {
             foreach (var user in users)
                 await _mailer.SendDailySummaryAsync(user.EmailAddress, notification).AnyContext();
 
-            _logger.Info().Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Id, notification.Total).Write();
+            _logger.Info("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Id, notification.Total);
         }
     }
 }

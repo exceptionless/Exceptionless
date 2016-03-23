@@ -74,7 +74,7 @@ namespace Exceptionless.Core.Repositories {
                     .Add("count", count))).AnyContext();
 
             if (!result.IsValid) {
-                _logger.Error().Message("Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError.Error).Write();
+                _logger.Error("Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError.Error);
                 return;
             }
 
