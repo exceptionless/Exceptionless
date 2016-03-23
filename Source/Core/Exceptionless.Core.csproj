@@ -166,7 +166,6 @@
     <Compile Include="Geo\NullGeocodeService.cs" />
     <Compile Include="Jobs\CloseInactiveSessionsJob.cs" />
     <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
-    <Compile Include="Jobs\MessageBusBrokerJob.cs" />
     <Compile Include="Jobs\WorkItemHandlers\OrganizationNotificationWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\SetProjectIsConfiguredWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\RemoveProjectWorkItemHandler.cs" />
