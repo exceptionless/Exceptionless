@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Jobs {
 
             var projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
             while (projects.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
-                var documentsUpdated = await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projects.Select(p => p.Id).ToList()).AnyContext();
+                var documentsUpdated = await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projects).AnyContext();
                 _logger.Info("Got {0} projects to process. ", projects.Count);
                 Debug.Assert(projects.Count == documentsUpdated);
 
