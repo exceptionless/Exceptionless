@@ -2,9 +2,16 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     public abstract class EventProcessorPluginBase : IEventProcessorPlugin {
+        protected readonly ILogger _logger;
+
+        public EventProcessorPluginBase(ILoggerFactory loggerFactory = null) {
+            _logger = loggerFactory.CreateLogger(GetType());
+        }
+
         protected bool ContinueOnError { get; set; }
 
         public virtual Task StartupAsync() {

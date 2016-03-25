@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     public interface IPipelineAction<TContext> where TContext : IPipelineContext {
@@ -31,6 +32,12 @@ namespace Exceptionless.Core.Pipeline {
     /// </summary>
     /// <typeparam name="TContext">The type of the pipeline context.</typeparam>
     public abstract class PipelineActionBase<TContext> : IPipelineAction<TContext> where TContext : class, IPipelineContext {
+        protected readonly ILogger _logger;
+
+        public PipelineActionBase(ILoggerFactory loggerFactory = null) {
+            _logger = loggerFactory.CreateLogger(GetType());
+        }
+
         protected bool ContinueOnError { get; set; }
 
         /// <summary>

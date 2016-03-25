@@ -40,7 +40,6 @@ namespace Exceptionless.Core.Extensions {
                 return -1;
 
             int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > DateTime.UtcNow ? organization.BonusEventsPerMonth : 0;
-
             return organization.MaxEventsPerMonth + bonusEvents;
         } 
 
@@ -105,12 +104,12 @@ namespace Exceptionless.Core.Extensions {
             return usageInfo?.TooBig ?? 0;
         }
 
-        public static void SetHourlyOverage(this Organization organization, long total, long blocked, long tooBig) {
+        public static void SetHourlyOverage(this Organization organization, double total, double blocked, double tooBig) {
             var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
             organization.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetHourlyEventLimit(), TimeSpan.FromDays(32));
         }
 
-        public static void SetMonthlyUsage(this Organization organization, long total, long blocked, long tooBig) {
+        public static void SetMonthlyUsage(this Organization organization, double total, double blocked, double tooBig) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             organization.Usage.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetMaxEventsPerMonthWithBonus(), TimeSpan.FromDays(366));
         }

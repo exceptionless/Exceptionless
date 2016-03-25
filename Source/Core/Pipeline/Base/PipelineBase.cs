@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Helpers;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     /// <summary>
@@ -19,16 +20,16 @@ namespace Exceptionless.Core.Pipeline {
     /// You also have to have a common base class that inherits <see cref="IPipelineContext"/> for all your actions.
     /// The pipeline looks for all types that inherit that action base class to run.
     /// </remarks>
-    public abstract class PipelineBase<TContext, TAction>
-        where TAction : class, IPipelineAction<TContext>
-        where TContext : IPipelineContext {
+    public abstract class PipelineBase<TContext, TAction> where TAction : class, IPipelineAction<TContext> where TContext : IPipelineContext {
         protected static readonly ConcurrentDictionary<Type, IList<Type>> _actionTypeCache = new ConcurrentDictionary<Type, IList<Type>>();
         private readonly IDependencyResolver _dependencyResolver;
-        private readonly IList<IPipelineAction<TContext>> _actions; 
+        private readonly IList<IPipelineAction<TContext>> _actions;
+        protected readonly ILogger _logger;
 
-        public PipelineBase(IDependencyResolver dependencyResolver = null) {
+        public PipelineBase(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) {
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
             _actions = GetActionTypes().Select(t => _dependencyResolver.GetService(t) as IPipelineAction<TContext>).ToList();
+            _logger = loggerFactory.CreateLogger(GetType());
         }
 
         /// <summary>

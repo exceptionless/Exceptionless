@@ -5,7 +5,7 @@ using Foundatio.Caching;
 
 namespace Exceptionless.Extensions {
     public static class CacheClientExtensions {
-        public static async Task<long> IncrementIfAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, bool shouldIncrement, long? startingValue = null) {
+        public static async Task<double> IncrementIfAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, bool shouldIncrement, long? startingValue = null) {
             if (!startingValue.HasValue)
                 startingValue = 0;
 
@@ -21,7 +21,7 @@ namespace Exceptionless.Extensions {
             return newValue;
         }
 
-        public static async Task<long> IncrementAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, long? startingValue = null) {
+        public static async Task<double> IncrementAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, long? startingValue = null) {
             if (!startingValue.HasValue)
                 startingValue = 0;
 

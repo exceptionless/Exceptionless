@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -52,7 +51,8 @@ namespace Exceptionless.Api.Controllers {
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
             IFileStorage storage,
-            JsonSerializerSettings jsonSerializerSettings) : base(repository) {
+            JsonSerializerSettings jsonSerializerSettings,
+            ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
@@ -143,7 +143,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 events = await _repository.GetByFilterAsync(systemFilter, processResult.ExpandedQuery, sortBy, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
@@ -491,6 +491,9 @@ namespace Exceptionless.Api.Controllers {
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
             var ev = new Event { Type = !String.IsNullOrEmpty(type) ? type : Event.KnownTypes.Log };
 
+            string identity = null;
+            string identityName = null;
+
             var exclusions = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions).ToList();
             foreach (var kvp in parameters.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty))) {
                 switch (kvp.Key.ToLower()) {
@@ -524,6 +527,12 @@ namespace Exceptionless.Api.Controllers {
                     case "tags":
                         ev.Tags.AddRange(kvp.Value.SelectMany(t => t.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)).Distinct());
                         break;
+                    case "identity":
+                        identity = kvp.Value.FirstOrDefault();
+                        break;
+                    case "identity.name":
+                        identityName = kvp.Value.FirstOrDefault();
+                        break;
                     default:
                         if (kvp.Key.AnyWildcardMatches(exclusions, true))
                             continue;
@@ -537,6 +546,8 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
+            ev.SetUserIdentity(identity, identityName);
+
             try {
                 await _eventPostQueue.EnqueueAsync(new EventPostInfo {
                     MediaType = Request.Content.Headers.ContentType?.MediaType,
@@ -549,7 +560,7 @@ namespace Exceptionless.Api.Controllers {
                     IpAddress = Request.GetClientIpAddress()
                 }, _storage);
             } catch (Exception ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
                     .Project(projectId)
                     .Identity(ExceptionlessUser?.EmailAddress)
@@ -657,7 +668,7 @@ namespace Exceptionless.Api.Controllers {
                     IpAddress = Request.GetClientIpAddress()
                 }, _storage);
             } catch (Exception ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
                     .Project(projectId)
                     .Identity(ExceptionlessUser?.EmailAddress)
@@ -694,13 +705,6 @@ namespace Exceptionless.Api.Controllers {
                 return null;
 
             return project;
-        }
-
-        protected override void CreateMaps() {
-            if (Mapper.FindTypeMapFor<UserDescription, EventUserDescription>() == null)
-                Mapper.CreateMap<UserDescription, EventUserDescription>();
-
-            base.CreateMaps();
         }
     }
 }

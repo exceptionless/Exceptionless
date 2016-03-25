@@ -8,9 +8,11 @@ using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins {
     public abstract class PluginManagerBase<TPlugin> {
+        protected readonly ILogger _logger;
         protected readonly IDependencyResolver _dependencyResolver;
 
-        public PluginManagerBase(IDependencyResolver dependencyResolver = null) {
+        public PluginManagerBase(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) {
+            _logger = loggerFactory.CreateLogger(GetType());
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
             Plugins = new SortedList<int, TPlugin>();
             LoadDefaultPlugins();
@@ -33,7 +35,7 @@ namespace Exceptionless.Core.Plugins {
                 try {
                     AddPlugin(type);
                 } catch (Exception ex) {
-                    Logger.Error().Exception(ex).Message("Unable to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message).Write();
+                    _logger.Error(ex, "Unable to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message);
                 }
             }
         }

@@ -3,10 +3,13 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(10)]
     public class NotFoundPlugin : EventProcessorPluginBase {
+        public NotFoundPlugin(ILoggerFactory loggerFactory = null) : base(loggerFactory) {}
+
         public override Task EventProcessingAsync(EventContext context) {
             if (context.Event.Type != Event.KnownTypes.NotFound)
                 return Task.CompletedTask;

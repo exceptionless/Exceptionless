@@ -7,9 +7,11 @@ using Microsoft.AspNet.SignalR;
 namespace Exceptionless.Api.Hubs {
     public class MessageBusConnection : PersistentConnection {
         private readonly ConnectionMapping _userIdConnections;
+        private readonly ILogger _logger;
 
-        public MessageBusConnection(ConnectionMapping userIdConnections) {
+        public MessageBusConnection(ConnectionMapping userIdConnections, ILogger<MessageBusConnection> logger) {
             _userIdConnections = userIdConnections;
+            _logger = logger;
         }
         
         protected override async Task OnConnected(IRequest request, string connectionId) {
@@ -19,7 +21,7 @@ namespace Exceptionless.Api.Hubs {
 
                 _userIdConnections.Add(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
-                Logger.Error().Exception(ex).Message($"OnConnected Error: {ex.Message}").Tag("SignalR").Write();
+                _logger.Error(ex, "OnConnected Error: {0}", ex.Message);
                 throw;
             }
         }
@@ -28,7 +30,7 @@ namespace Exceptionless.Api.Hubs {
             try {
                 _userIdConnections.Remove(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
-                Logger.Error().Exception(ex).Message($"OnDisconnected Error: {ex.Message}").Tag("SignalR").Write();
+                _logger.Error(ex, "OnDisconnected Error: {0}", ex.Message);
                 throw;
             }
 
@@ -43,7 +45,7 @@ namespace Exceptionless.Api.Hubs {
                 if (!_userIdConnections.GetConnections(request.User.GetUserId()).Contains(connectionId))
                     _userIdConnections.Add(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
-                Logger.Error().Exception(ex).Message($"OnReconnected Error: {ex.Message}").Tag("SignalR").Write();
+                _logger.Error(ex, "OnReconnected Error: {0}", ex.Message);
                 throw;
             }
         }

@@ -2,10 +2,13 @@
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(6)]
     public class TruncateFieldsAction : EventPipelineActionBase {
+        public TruncateFieldsAction(ILoggerFactory loggerFactory = null) : base(loggerFactory) {}
+
         protected override bool IsCritical => true;
 
         public override Task ProcessAsync(EventContext ctx) {

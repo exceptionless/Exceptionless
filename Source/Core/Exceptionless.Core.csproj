@@ -41,36 +41,36 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AutoMapper, Version=4.1.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\AutoMapper.4.1.1\lib\net45\AutoMapper.dll</HintPath>
+    <Reference Include="AutoMapper, Version=4.2.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\AutoMapper.4.2.1\lib\net45\AutoMapper.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Elasticsearch.Net.1.7.1\lib\net45\Elasticsearch.Net.dll</HintPath>
+      <HintPath>..\..\packages\Elasticsearch.Net.1.8.0\lib\net45\Elasticsearch.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.1.44.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.1.44\lib\portable-net40+win+wpa81+MonoAndroid10+xamarinios10+MonoTouch10\Exceptionless.DateTimeExtensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.18.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.18\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
+    <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.19.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.19\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FluentValidation, Version=6.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\FluentValidation.6.2.0.0\lib\Net45\FluentValidation.dll</HintPath>
+    <Reference Include="FluentValidation, Version=6.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\FluentValidation.6.2.1.0\lib\Net45\FluentValidation.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.4.0.672\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.4.0.836\lib\net451\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.1.0.33\lib\net45\Foundatio.Repositories.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.1.0.36\lib\net451\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.33\lib\net45\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.36\lib\net451\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -82,11 +82,11 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NEST.1.7.1\lib\net45\Nest.dll</HintPath>
+      <HintPath>..\..\packages\NEST.1.8.0\lib\net45\Nest.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Nito.AsyncEx, Version=3.0.1.0, Culture=neutral, processorArchitecture=MSIL">
@@ -115,10 +115,6 @@
     </Reference>
     <Reference Include="SimpleInjector, Version=3.1.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <HintPath>..\..\packages\SimpleInjector.3.1.2\lib\net45\SimpleInjector.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="SimpleInjector.Packaging, Version=3.1.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.Packaging.3.1.2\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Stripe.net, Version=3.0.2.0, Culture=neutral, processorArchitecture=MSIL">
@@ -162,19 +158,23 @@
     <Compile Include="Authorization\AuthorizationRoles.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
+    <Compile Include="Extensions\AppDomainExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\PersistentEventExtensions.cs" />
+    <Compile Include="Filter\FieldAggregationProcessor.cs" />
     <Compile Include="Geo\IGeocodeService.cs" />
     <Compile Include="Geo\NullGeocodeService.cs" />
     <Compile Include="Jobs\CloseInactiveSessionsJob.cs" />
     <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
-    <Compile Include="Jobs\JobBootstrapper.cs" />
+    <Compile Include="Jobs\WorkItemHandlers\OrganizationNotificationWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\SetProjectIsConfiguredWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\RemoveProjectWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\RemoveOrganizationWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\StackWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\SetLocationFromGeoWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\ThrottleBotsWorkItemHandler.cs" />
+    <Compile Include="Jobs\WorkItemHandlers\OrganizationMaintenanceWorkItemHandler.cs" />
+    <Compile Include="Jobs\WorkItemHandlers\ProjectMaintenanceWorkItemHandler.cs" />
     <Compile Include="Mail\Engine\DirectoryTemplateResolver.cs" />
     <Compile Include="Mail\Engine\EmailTemplate.cs" />
     <Compile Include="Mail\Engine\EmbeddedTemplateResolver.cs" />
@@ -183,6 +183,7 @@
     <Compile Include="Mail\Engine\RazorEmailGenerator.cs" />
     <Compile Include="Mail\Engine\StringExtensions.cs" />
     <Compile Include="Mail\Engine\TemplatedEmail.cs" />
+    <Compile Include="Mail\Models\OrganizationNotificationModel.cs" />
     <Compile Include="Models\Application.cs" />
     <Compile Include="Models\Billing\ChangePlanResult.cs" />
     <Compile Include="Models\ClientConfiguration.cs" />
@@ -204,6 +205,7 @@
     <Compile Include="Models\Data\RequestInfo.cs" />
     <Compile Include="Models\Data\SimpleError.cs" />
     <Compile Include="Models\Data\StackFrame.cs" />
+    <Compile Include="Models\Data\ManualStackingInfo.cs" />
     <Compile Include="Models\Data\UserDescription.cs" />
     <Compile Include="Models\Data\UserInfo.cs" />
     <Compile Include="Models\Enums\NotificationMode.cs" />
@@ -228,33 +230,28 @@
     <Compile Include="Models\Organization.cs" />
     <Compile Include="Models\PersistentEvent.cs" />
     <Compile Include="Models\Project.cs" />
-    <Compile Include="Models\Results\EventPreviousAndNextIdResult.cs" />
-    <Compile Include="Models\Results\EventResult.cs" />
-    <Compile Include="Models\Results\EventResultBase.cs" />
-    <Compile Include="Models\Results\EventStackResult.cs" />
+    <Compile Include="Models\EventPreviousAndNextIdResult.cs" />
     <Compile Include="Models\SessionInfo.cs" />
     <Compile Include="Models\Stack.cs" />
-    <Compile Include="Models\Stats\EventStatsResult.cs" />
-    <Compile Include="Models\Stats\EventTermStatsResult.cs" />
-    <Compile Include="Models\Stats\Results\PagedResult.cs" />
-    <Compile Include="Models\Stats\Results\PlanPagedResult.cs" />
+    <Compile Include="Models\StackSummaryModel.cs" />
     <Compile Include="Models\Stats\EventTermStatsItem.cs" />
-    <Compile Include="Models\Stats\SessionStatsResult.cs" />
-    <Compile Include="Models\Stats\SessionTermStatsItem.cs" />
-    <Compile Include="Models\Stats\SessionTermTimelineItem.cs" />
-    <Compile Include="Models\Stats\SessionTermStatsResult.cs" />
+    <Compile Include="Models\Stats\EventTermStatsResult.cs" />
     <Compile Include="Models\Stats\EventTermTimelineItem.cs" />
-    <Compile Include="Models\Stats\EventTimelineItem.cs" />
-    <Compile Include="Models\Stats\SessionTimelineItem.cs" />
+    <Compile Include="Models\Stats\NumbersStatsResult.cs" />
+    <Compile Include="Models\Stats\NumbersTimelineItem.cs" />
+    <Compile Include="Models\Stats\NumbersTimelineStatsResult.cs" />
     <Compile Include="Models\Token.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WebHook.cs" />
+    <Compile Include="Models\WorkItems\OrganizationNotificationWorkItem.cs" />
     <Compile Include="Models\WorkItems\RemoveOrganizationWorkItem.cs" />
     <Compile Include="Models\WorkItems\RemoveProjectWorkItem.cs" />
     <Compile Include="Models\WorkItems\SetLocationFromGeoWorkItem.cs" />
     <Compile Include="Models\WorkItems\SetProjectIsConfiguredWorkItem.cs" />
     <Compile Include="Models\WorkItems\StackWorkItem.cs" />
     <Compile Include="Models\WorkItems\ThrottleBotsWorkItem.cs" />
+    <Compile Include="Models\WorkItems\OrganizationMaintenanceWorkItem.cs" />
+    <Compile Include="Models\WorkItems\ProjectMaintenanceWorkItem.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
     <Compile Include="Plugins\EventParser\EventMapperBase.cs" />
@@ -263,6 +260,7 @@
     <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\03_ManualStackingPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\60_LocationPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\05_ManualStackingFormattingPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
@@ -325,7 +323,6 @@
     <Compile Include="Models\Messaging\PlanOverage.cs" />
     <Compile Include="Models\Billing\BillingPlanStats.cs" />
     <Compile Include="Models\EventSummaryModel.cs" />
-    <Compile Include="Models\StackSummaryModel.cs" />
     <Compile Include="Models\SummaryData.cs" />
     <Compile Include="Pipeline\001_CheckEventDateAction.cs" />
     <Compile Include="Pipeline\006_TruncateFieldsAction.cs" />
@@ -447,7 +444,7 @@
     <Compile Include="Plugins\EventProcessor\Default\20_ErrorPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\EventPluginManager.cs" />
     <Compile Include="Plugins\EventProcessor\IEventProcessorPlugin.cs" />
-    <Compile Include="Utility\DataHelper.cs" />
+    <Compile Include="Utility\SampleDataService.cs" />
     <Compile Include="Utility\SimpleInjectorDependencyResolver.cs" />
     <Compile Include="Mail\IMailer.cs" />
     <Compile Include="Mail\Mailer.cs" />
@@ -478,6 +475,15 @@
     <Compile Include="Repositories\OrganizationRepository.cs" />
     <Compile Include="Repositories\ProjectRepository.cs" />
     <Compile Include="Repositories\UserRepository.cs" />
+    <Content Include="Mail\Templates\OrganizationNotice\Html.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Mail\Templates\OrganizationNotice\PlainText.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Include="Mail\Templates\OrganizationNotice\Subject.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

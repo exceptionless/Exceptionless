@@ -6,7 +6,7 @@ using Foundatio.Logging;
 namespace Exceptionless.Core.Pipeline {
     [Priority(20)]
     public class MarkAsCriticalAction : EventPipelineActionBase {
-        public MarkAsCriticalAction() {
+        public MarkAsCriticalAction(ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             ContinueOnError = true;
         }
 
@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Pipeline {
             if (ctx.Stack == null || !ctx.Stack.OccurrencesAreCritical)
                 return Task.CompletedTask;
 
-            Logger.Trace().Message("Marking error as critical.").Write();
+            _logger.Trace("Marking error as critical.");
             ctx.Event.MarkAsCritical();
 
             return Task.CompletedTask;

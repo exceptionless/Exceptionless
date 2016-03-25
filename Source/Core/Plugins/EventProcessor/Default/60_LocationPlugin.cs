@@ -9,6 +9,7 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
 using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Foundatio.Queues;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
@@ -17,7 +18,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         private readonly ICacheClient _cacheClient;
         private readonly IQueue<WorkItemData> _workItemQueue;
 
-        public LocationPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue) {
+        public LocationPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _cacheClient = new ScopedCacheClient(cacheClient, "geo");
             _workItemQueue = workItemQueue;
         }

@@ -4,17 +4,18 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Results;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Elasticsearch.Repositories.Queries.Options;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Foundatio.Repositories.Utility;
 using Nest;
+using Fields = Exceptionless.Core.Repositories.Configuration.EventIndex.Fields.PersistentEvent;
 using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
@@ -22,7 +23,7 @@ namespace Exceptionless.Core.Repositories {
         // NOTE: v1 event submission allowed users to specify there own id which may have been created with invalid date times.
         private static readonly DateTime _minObjectidDate = new DateTime(2000, 1, 1);
 
-        public EventRepository(ElasticRepositoryContext<PersistentEvent> context, EventIndex index) : base(context, index) {
+        public EventRepository(ElasticRepositoryContext<PersistentEvent> context, EventIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) {
             DisableCache();
             BatchNotifications = true;
 
@@ -76,19 +77,31 @@ namespace Exceptionless.Core.Repositories {
             await SaveAsync(ev, sendNotifications: sendNotifications).AnyContext();
             return true;
         }
-
-        public Task UpdateFixedByStackAsync(string organizationId, string stackId, bool value) {
+        
+        public Task UpdateFixedByStackAsync(string organizationId, string stackId, bool isFixed, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
 
-            return UpdateAllAsync(organizationId, new ExceptionlessQuery().WithStackId(stackId), new { is_fixed = value });
+            var query = new ExceptionlessQuery()
+                .WithOrganizationId(organizationId)
+                .WithStackId(stackId)
+                .WithFieldEquals(Fields.IsFixed, !isFixed);
+
+            // TODO: Update this to use the update by query syntax that's coming in 2.3.
+            return UpdateAllAsync(organizationId, query, new { is_fixed = isFixed }, sendNotifications);
         }
 
-        public Task UpdateHiddenByStackAsync(string organizationId, string stackId, bool value) {
+        public Task UpdateHiddenByStackAsync(string organizationId, string stackId, bool isHidden, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
+            
+            var query = new ExceptionlessQuery()
+                .WithOrganizationId(organizationId)
+                .WithStackId(stackId)
+                .WithFieldEquals(Fields.IsHidden, !isHidden);
 
-            return UpdateAllAsync(organizationId, new ExceptionlessQuery().WithStackId(stackId), new { is_hidden = value });
+            // TODO: Update this to use the update by query syntax that's coming in 2.3.
+            return UpdateAllAsync(organizationId, query, new { is_hidden = isHidden }, sendNotifications);
         }
 
         public Task RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {

@@ -22,7 +22,7 @@ using Newtonsoft.Json;
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
-    public class EventPostsJob : QueueProcessorJobBase<EventPost> {
+    public class EventPostsJob : QueueJobBase<EventPost> {
         private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;
         private readonly IMetricsClient _metricsClient;
@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IProjectRepository _projectRepository;
         private readonly IFileStorage _storage;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage) : base(queue) {
+        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
             _metricsClient = metricsClient;
@@ -41,38 +41,38 @@ namespace Exceptionless.Core.Jobs {
             AutoComplete = false;
         }
 
-        protected override async Task<JobResult> ProcessQueueEntryAsync(JobQueueEntryContext<EventPost> context) {
+        protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventPost> context) {
             var queueEntry = context.QueueEntry;
-            EventPostInfo eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, context.CancellationToken).AnyContext();
+            EventPostInfo eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, _logger, context.CancellationToken).AnyContext();
             if (eventPostInfo == null) {
                 await queueEntry.AbandonAsync().AnyContext();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, _logger).AnyContext();
                 return JobResult.FailedWithMessage($"Unable to retrieve post data '{queueEntry.Value.FilePath}'.");
             }
 
             bool isInternalProject = eventPostInfo.ProjectId == Settings.Current.InternalProjectId;
-            Logger.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPostInfo.ProjectId, eventPostInfo.IpAddress, eventPostInfo.ApiVersion, eventPostInfo.UserAgent).WriteIf(!isInternalProject);
+            _logger.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPostInfo.ProjectId, eventPostInfo.IpAddress, eventPostInfo.ApiVersion, eventPostInfo.UserAgent).WriteIf(!isInternalProject);
 
             List<PersistentEvent> events = null;
             try {
-                _metricsClient.Time(() => {
+                await _metricsClient.TimeAsync(async () => {
                     events = ParseEventPost(eventPostInfo);
-                    Logger.Info().Message("Parsed {0} events for post: id={1}", events.Count, queueEntry.Id).WriteIf(!isInternalProject);
-                }, MetricNames.PostsParsingTime);
+                    _logger.Info().Message("Parsed {0} events for post: id={1}", events.Count, queueEntry.Id).WriteIf(!isInternalProject);
+                }, MetricNames.PostsParsingTime).AnyContext();
                 await _metricsClient.CounterAsync(MetricNames.PostsParsed).AnyContext();
                 await _metricsClient.GaugeAsync(MetricNames.PostsEventCount, events.Count).AnyContext();
             } catch (Exception ex) {
                 await queueEntry.AbandonAsync().AnyContext();
                 await _metricsClient.CounterAsync(MetricNames.PostsParseErrors).AnyContext();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, _logger).AnyContext();
 
-                Logger.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).Write();
+                _logger.Error(ex, "An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message);
                 return JobResult.FromException(ex, $"An error occurred while processing the EventPost '{queueEntry.Id}': {ex.Message}");
             }
 
             if (!events.Any() || context.CancellationToken.IsCancellationRequested) {
                 await queueEntry.AbandonAsync().AnyContext();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, _logger).AnyContext();
                 return !events.Any() ? JobResult.Success : JobResult.Cancelled;
             }
 
@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Jobs {
                 var project = await _projectRepository.GetByIdAsync(eventPostInfo.ProjectId, true).AnyContext();
                 if (project == null) {
                     // NOTE: This could archive the data for a project that no longer exists.
-                    Logger.Error().Project(eventPostInfo.ProjectId).Message($"Unable to process EventPost \"{queueEntry.Value.FilePath}\": Unable to load project: {eventPostInfo.ProjectId}").Write();
+                    _logger.Error().Project(eventPostInfo.ProjectId).Message("Unable to process EventPost \"{0}\": Unable to load project: {1}", queueEntry.Value.FilePath, eventPostInfo.ProjectId).Write();
                     await CompleteEntryAsync(queueEntry, eventPostInfo, DateTime.UtcNow).AnyContext();
                     return JobResult.Success;
                 }
@@ -103,7 +103,7 @@ namespace Exceptionless.Core.Jobs {
             try {
                 events.ForEach(e => e.CreatedUtc = created);
                 var results = await _eventPipeline.RunAsync(events.Take(eventsToProcess).ToList(), eventPostInfo).AnyContext();
-                Logger.Info().Message("Ran {0} events through the pipeline: id={1} project={2} success={3} error={4}", results.Count, queueEntry.Id, eventPostInfo.ProjectId, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).WriteIf(!isInternalProject);
+                _logger.Info().Message("Ran {0} events through the pipeline: id={1} project={2} success={3} error={4}", results.Count, queueEntry.Id, eventPostInfo.ProjectId, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).WriteIf(!isInternalProject);
                 foreach (var eventContext in results) {
                     if (eventContext.IsCancelled)
                         continue;
@@ -111,7 +111,7 @@ namespace Exceptionless.Core.Jobs {
                     if (!eventContext.HasError)
                         continue;
 
-                    Logger.Error().Exception(eventContext.Exception).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, eventContext.ErrorMessage).Write();
+                    _logger.Error().Exception(eventContext.Exception).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, eventContext.ErrorMessage).Write();
                     if (eventContext.Exception is ValidationException)
                         continue;
 
@@ -131,7 +131,7 @@ namespace Exceptionless.Core.Jobs {
                     }
                 }
             } catch (Exception ex) {
-                Logger.Error().Exception(ex).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
+                _logger.Error().Exception(ex).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Project(eventPostInfo.ProjectId).Write();
                 if (ex is ArgumentException || ex is DocumentNotFoundException)
                     await queueEntry.CompleteAsync().AnyContext();
                 else
@@ -140,7 +140,7 @@ namespace Exceptionless.Core.Jobs {
 
             if (isSingleEvent && errorCount > 0) {
                 await queueEntry.AbandonAsync().AnyContext();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, _logger).AnyContext();
             } else {
                 await CompleteEntryAsync(queueEntry, eventPostInfo, created).AnyContext();
             }
@@ -151,10 +151,10 @@ namespace Exceptionless.Core.Jobs {
         private async Task CompleteEntryAsync(IQueueEntry<EventPost> queueEntry, EventPostInfo eventPostInfo, DateTime created) {
             await queueEntry.CompleteAsync().AnyContext();
             if (queueEntry.Value.ShouldArchive)
-                await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, queueEntry.Value.ShouldArchive).AnyContext();
+                await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, _logger, queueEntry.Value.ShouldArchive).AnyContext();
             else {
                 await _storage.DeleteFileAsync(queueEntry.Value.FilePath).AnyContext();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath).AnyContext();
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, _logger).AnyContext();
             }
         }
 

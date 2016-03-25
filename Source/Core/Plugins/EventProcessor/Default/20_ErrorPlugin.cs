@@ -5,10 +5,13 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(20)]
     public class ErrorPlugin : EventProcessorPluginBase {
+        public ErrorPlugin(ILoggerFactory loggerFactory = null) : base(loggerFactory) {}
+        
         public override Task EventProcessingAsync(EventContext context) {
             if (!context.Event.IsError())
                 return Task.CompletedTask;
@@ -19,7 +22,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             if (String.IsNullOrWhiteSpace(context.Event.Message))
                 context.Event.Message = error.Message;
-
+            
             if (context.StackSignatureData.Count > 0)
                 return Task.CompletedTask;
 
@@ -41,7 +44,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 targetInfo["Message"] = stackingTarget.Error.Message;
 
             error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
-
+            
             foreach (var key in signature.SignatureInfo.Keys)
                 context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
 

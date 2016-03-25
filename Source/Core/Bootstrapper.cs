@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AutoMapper;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
@@ -27,24 +28,22 @@ using Foundatio.Elasticsearch.Repositories;
 using Foundatio.Elasticsearch.Repositories.Queries.Builders;
 using Foundatio.Jobs;
 using Foundatio.Lock;
+using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
-using Foundatio.ServiceProviders;
 using Foundatio.Storage;
 using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
 using SimpleInjector;
-using SimpleInjector.Packaging;
 
 namespace Exceptionless.Core {
-    public class Bootstrapper : IPackage {
-        public void RegisterServices(Container container) {
-            // Foundation service provider
-            ServiceProvider.Current = container;
+    public class Bootstrapper {
+        public static void RegisterServices(Container container, ILoggerFactory loggerFactory) {
+            container.RegisterLogger(loggerFactory);
             container.RegisterSingleton<IDependencyResolver>(() => new SimpleInjectorDependencyResolver(container));
 
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
@@ -59,14 +58,15 @@ namespace Exceptionless.Core {
                 DateParseHandling = DateParseHandling.DateTimeOffset,
                 ContractResolver = contractResolver
             };
-            settings.AddModelConverters();
+
+            settings.AddModelConverters(loggerFactory.CreateLogger(nameof(Bootstrapper)));
 
             container.RegisterSingleton<IContractResolver>(() => contractResolver);
             container.RegisterSingleton<JsonSerializerSettings>(settings);
             container.RegisterSingleton<JsonSerializer>(JsonSerializer.Create(settings));
             container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
 
-            container.RegisterSingleton<IMetricsClient, InMemoryMetricsClient>();
+            container.RegisterSingleton<IMetricsClient>(() => new InMemoryMetricsClient(loggerFactory: loggerFactory));
 
             container.RegisterSingleton<QueryBuilderRegistry>(() => {
                 var builder = new QueryBuilderRegistry();
@@ -100,13 +100,16 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(behaviors: container.GetAllInstances<IQueueBehavior<MailMessage>>()));
             
             var workItemHandlers = new WorkItemHandlers();
-            workItemHandlers.Register<ReindexWorkItem, ReindexWorkItemHandler>();
-            workItemHandlers.Register<RemoveOrganizationWorkItem, RemoveOrganizationWorkItemHandler>();
-            workItemHandlers.Register<RemoveProjectWorkItem, RemoveProjectWorkItemHandler>();
-            workItemHandlers.Register<SetLocationFromGeoWorkItem, SetLocationFromGeoWorkItemHandler>();
-            workItemHandlers.Register<SetProjectIsConfiguredWorkItem, SetProjectIsConfiguredWorkItemHandler>();
-            workItemHandlers.Register<StackWorkItem, StackWorkItemHandler>();
-            workItemHandlers.Register<ThrottleBotsWorkItem, ThrottleBotsWorkItemHandler>();
+            workItemHandlers.Register<ReindexWorkItem>(container.GetInstance<ReindexWorkItemHandler>);
+            workItemHandlers.Register<RemoveOrganizationWorkItem>(container.GetInstance<RemoveOrganizationWorkItemHandler>);
+            workItemHandlers.Register<RemoveProjectWorkItem>(container.GetInstance<RemoveProjectWorkItemHandler>);
+            workItemHandlers.Register<SetLocationFromGeoWorkItem>(container.GetInstance<SetLocationFromGeoWorkItemHandler>);
+            workItemHandlers.Register<SetProjectIsConfiguredWorkItem>(container.GetInstance<SetProjectIsConfiguredWorkItemHandler>);
+            workItemHandlers.Register<StackWorkItem>(container.GetInstance<StackWorkItemHandler>);
+            workItemHandlers.Register<ThrottleBotsWorkItem>(container.GetInstance<ThrottleBotsWorkItemHandler>);
+            workItemHandlers.Register<OrganizationMaintenanceWorkItem>(container.GetInstance<OrganizationMaintenanceWorkItemHandler>);
+            workItemHandlers.Register<OrganizationNotificationWorkItem>(container.GetInstance<OrganizationNotificationWorkItemHandler>);
+            workItemHandlers.Register<ProjectMaintenanceWorkItem>(container.GetInstance<ProjectMaintenanceWorkItemHandler>);
             container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);
             container.RegisterSingleton<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(behaviors: container.GetAllInstances<IQueueBehavior<WorkItemData>>(), workItemTimeout: TimeSpan.FromHours(1)));
 
@@ -144,7 +147,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<ILockProvider, CacheLockProvider>();
             container.Register<StripeEventHandler>();
             container.RegisterSingleton<BillingManager>();
-            container.RegisterSingleton<DataHelper>();
+            container.RegisterSingleton<SampleDataService>();
             container.RegisterSingleton<EventStats>();
             container.RegisterSingleton<EventPipeline>();
             container.RegisterSingleton<EventPluginManager>();
@@ -154,6 +157,18 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<SystemHealthChecker>();
 
             container.RegisterSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
+            
+            container.RegisterSingleton<IMapper>(() => {
+                var profiles = container.GetAllInstances<Profile>();
+                var config = new MapperConfiguration(cfg => {
+                    cfg.ConstructServicesUsing(container.GetInstance);
+
+                    foreach (var profile in profiles)
+                        cfg.AddProfile(profile);
+                });
+
+                return config.CreateMapper();
+            });
         }
     }
 }

@@ -19,6 +19,8 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
+using Foundatio.Logging;
+using Foundatio.Logging.Xunit;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 using Nest;
@@ -28,7 +30,7 @@ using Xunit.Abstractions;
 using Fields = Exceptionless.Core.Repositories.Configuration.EventIndex.Fields.PersistentEvent;
 
 namespace Exceptionless.Api.Tests.Pipeline {
-    public class EventPipelineTests : CaptureTests {
+    public class EventPipelineTests : TestWithLoggingBase {
         private readonly ICacheClient _cacheClient = IoC.GetInstance<ICacheClient>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
@@ -40,7 +42,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         private readonly EventPipeline _pipeline = IoC.GetInstance<EventPipeline>();
 
-        public EventPipelineTests(CaptureFixture fixture, ITestOutputHelper output) : base(fixture, output) { }
+        public EventPipelineTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task NoFutureEventsAsync() {
@@ -264,6 +266,26 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
+        public async Task IgnoreDuplicateAutoEndSessionsAsync() {
+            await ResetAsync();
+
+            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
+                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionEnd)
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(2, contexts.Count(c => c.IsCancelled));
+            Assert.False(contexts.All(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(0, results.Total);
+        }
+
+        [Fact]
         public async Task WillMarkAutoSessionHeartbeatStackHidden() {
             await ResetAsync();
 
@@ -470,7 +492,27 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 Assert.True(sessionStart.HasSessionEndTime());
             }
         }
-        
+
+        [Fact]
+        public async Task IgnoreDuplicateManualEndSessionsAsync() {
+            await ResetAsync();
+
+            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var events = new List<PersistentEvent> {
+                GenerateEvent(firstEventDate, type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
+                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
+            };
+
+            var contexts = await _pipeline.RunAsync(events);
+            Assert.False(contexts.Any(c => c.HasError));
+            Assert.Equal(2, contexts.Count(c => c.IsCancelled));
+            Assert.False(contexts.All(c => c.IsProcessed));
+
+            await _client.RefreshAsync();
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
+            Assert.Equal(0, results.Total);
+        }
+
         [Fact]
         public async Task WillMarkManualSessionHeartbeatStackHidden() {
             await ResetAsync();
@@ -733,7 +775,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 totalEvents += events.Count;
             }
 
-            _writer.WriteLine($"Took {sw.ElapsedMilliseconds}ms to process {totalEvents} with an average post size of {Math.Round(totalEvents * 1.0/totalBatches, 4)}");
+            _logger.Trace().Message($"Took {sw.ElapsedMilliseconds}ms to process {totalEvents} with an average post size of {Math.Round(totalEvents * 1.0/totalBatches, 4)}");
         }
 
         [Fact(Skip = "Used to create performance data from the queue directory")]
@@ -860,7 +902,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 if (organization.IsSuspended) {
                     organization.SuspendedByUserId = TestConstants.UserId;
                     organization.SuspensionCode = SuspensionCode.Billing;
-                    organization.SuspensionDate = DateTime.Now;
+                    organization.SuspensionDate = DateTime.UtcNow;
                 }
 
                 await _organizationRepository.AddAsync(organization, true);

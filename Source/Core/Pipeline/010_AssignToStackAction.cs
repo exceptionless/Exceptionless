@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IMessagePublisher _publisher;
 
-        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager, IMessagePublisher publisher) {
+        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager, IMessagePublisher publisher, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             if (stackRepository == null)
                 throw new ArgumentNullException(nameof(stackRepository));
             if (formattingPluginManager == null)
@@ -55,9 +55,9 @@ namespace Exceptionless.Core.Pipeline {
                     }
 
                     if (ctx.Stack == null) {
-                        Logger.Trace().Message("Creating new event stack.").Write();
+                        _logger.Trace("Creating new event stack.");
                         ctx.IsNew = true;
-
+                        
                         string title = _formattingPluginManager.GetStackTitle(ctx.Event);
                         var stack = new Stack {
                             OrganizationId = ctx.Event.OrganizationId,

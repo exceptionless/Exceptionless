@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Filter {
         };
 
         public static QueryProcessResult Process(string query) {
-            if (String.IsNullOrEmpty(query))
+            if (String.IsNullOrWhiteSpace(query))
                 return new QueryProcessResult { IsValid = true };
 
             GroupNode result;
@@ -33,9 +33,12 @@ namespace Exceptionless.Core.Filter {
             var validator = new QueryProcessorVisitor(_freeFields);
             result.Accept(validator);
 
-            string expandedQuery = validator.UsesDataFields ? GenerateQueryVisitor.Run(result) : query;
-
-            return new QueryProcessResult { IsValid = true, UsesPremiumFeatures = validator.UsesPremiumFeatures, ExpandedQuery = expandedQuery };
+            var expandedQuery = validator.UsesDataFields ? GenerateQueryVisitor.Run(result) : query;
+            return new QueryProcessResult {
+                IsValid = true,
+                UsesPremiumFeatures = validator.UsesPremiumFeatures,
+                ExpandedQuery = expandedQuery
+            };
         }
 
         public static QueryProcessResult Validate(string query) {
@@ -53,7 +56,10 @@ namespace Exceptionless.Core.Filter {
             var validator = new QueryProcessorVisitor(_freeFields);
             result.Accept(validator);
 
-            return new QueryProcessResult { IsValid = true, UsesPremiumFeatures = validator.UsesPremiumFeatures };
+            return new QueryProcessResult {
+                IsValid = true,
+                UsesPremiumFeatures = validator.UsesPremiumFeatures
+            };
         }
     }
 
@@ -69,17 +75,17 @@ namespace Exceptionless.Core.Filter {
                 // using a field not in the free list
                 if (!_freeFields.Contains(node.Field.Field))
                     UsesPremiumFeatures = true;
-
+                
                 if (node.Field.Field.StartsWith("data.")) {
                     UsesDataFields = true;
 
                     var lt = node.Left as TermNode;
                     var rt = node.Right as TermNode;
                     string termType = GetTermType(lt?.TermMin, lt?.TermMax, lt?.Term, rt?.TermMin, rt?.TermMax, rt?.Term);
-                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(5)}-{termType}";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(5)}-{termType}";
                 } else if (node.Field.Field.StartsWith("ref.")) {
                     UsesDataFields = true;
-                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(4)}-r";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(4)}-r";
                 }
             }
 
@@ -95,14 +101,14 @@ namespace Exceptionless.Core.Filter {
                 // using a field not in the free list
                 if (!_freeFields.Contains(node.Field.Field))
                     UsesPremiumFeatures = true;
-
+                
                 if (node.Field.Field.StartsWith("data.")) {
                     UsesDataFields = true;
                     string termType = GetTermType(node.TermMin, node.TermMax, node.Term);
-                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(5)}-{termType}";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(5)}-{termType}";
                 } else if (node.Field.Field.StartsWith("ref.")) {
                     UsesDataFields = true;
-                    node.Field.Field = $"idx.{node.Field.Field.ToLower().Substring(4)}-r";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(4)}-r";
                 }
             }
 

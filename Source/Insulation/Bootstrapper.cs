@@ -6,32 +6,31 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
-using Exceptionless.Insulation.Logging;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
+using Foundatio.Logging.NLog;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Foundatio.Storage;
-using NLog.Fluent;
 using SimpleInjector;
-using SimpleInjector.Packaging;
 using StackExchange.Redis;
 
 namespace Exceptionless.Insulation {
-    public class Bootstrapper : IPackage {
-        public void RegisterServices(Container container) {
-            Logger.RegisterWriter(new NLogAdapter());
-            
+    public class Bootstrapper {
+        public static void RegisterServices(Container container, ILoggerFactory loggerFactory) {
+            loggerFactory.AddNLog();
+            var logger = loggerFactory.CreateLogger<Bootstrapper>();
+
             if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
                 container.RegisterSingleton<IGeocodeService>(() => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
             
             if (Settings.Current.EnableMetricsReporting)
                 container.RegisterSingleton<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.MetricsServerName, Settings.Current.MetricsServerPort, "ex"));
             else
-                Log.Warn().Message("StatsD Metrics is NOT enabled.").Write();
+                logger.Warn("StatsD Metrics is NOT enabled.");
 
             if (Settings.Current.EnableRedis) {
                 container.RegisterSingleton<ConnectionMultiplexer>(() => {
@@ -54,13 +53,13 @@ namespace Exceptionless.Insulation {
 
                 container.RegisterSingleton<IMessageBus>(() => new RedisMessageBus(container.GetInstance<ConnectionMultiplexer>().GetSubscriber(), $"{Settings.Current.AppScopePrefix}messages", container.GetInstance<ISerializer>()));
             } else {
-                Log.Warn().Message("Redis is NOT enabled.").Write();
+                logger.Warn("Redis is NOT enabled.");
             }
 
             if (Settings.Current.EnableAzureStorage)
                 container.RegisterSingleton<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events"));
             else
-                Log.Warn().Message("Azure Storage is NOT enabled.").Write();
+                logger.Warn("Azure Storage is NOT enabled.");
 
             var client = ExceptionlessClient.Default;
             container.RegisterSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
@@ -75,7 +74,7 @@ namespace Exceptionless.Insulation {
             client.Configuration.UseReferenceIds();
         }
 
-        private string GetQueueName<T>() {
+        private static string GetQueueName<T>() {
             return String.Concat(Settings.Current.AppScopePrefix, typeof(T).Name);
         }
     }

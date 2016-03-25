@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
+using AutoMapper;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -43,7 +44,7 @@ namespace Exceptionless.Api.Controllers {
             IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository,
             WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue,
             EventStats eventStats, BillingManager billingManager,
-            FormattingPluginManager formattingPluginManager) : base(stackRepository) {
+            FormattingPluginManager formattingPluginManager, ILoggerFactory loggerFactory, IMapper mapper) : base(stackRepository, loggerFactory, mapper) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -87,18 +88,17 @@ namespace Exceptionless.Api.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            stacks = stacks.Where(s => !s.DateFixed.HasValue).ToList();
-            if (stacks.Count <= 0)
-                return Ok();
+            var stacksToUpdate = stacks.Where(s => !s.DateFixed.HasValue).ToList();
+            if (stacksToUpdate.Count > 0) {
+                foreach (var stack in stacksToUpdate) {
+                    // TODO: Implement Fixed in version.
+                    stack.DateFixed = DateTime.UtcNow;
+                    //stack.FixedInVersion = "GET CURRENT VERSION FROM ELASTIC SEARCH";
+                    stack.IsRegressed = false;
+                }
 
-            foreach (var stack in stacks) {
-                // TODO: Implement Fixed in version.
-                stack.DateFixed = DateTime.UtcNow;
-                //stack.FixedInVersion = "GET CURRENT VERSION FROM ELASTIC SEARCH";
-                stack.IsRegressed = false;
+                await _stackRepository.SaveAsync(stacksToUpdate);
             }
-
-            await _stackRepository.SaveAsync(stacks);
 
             var workIds = new List<string>();
             foreach (var stack in stacks)
@@ -325,16 +325,15 @@ namespace Exceptionless.Api.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            stacks = stacks.Where(s => s.DateFixed.HasValue).ToList();
-            if (stacks.Count <= 0)
-                return StatusCode(HttpStatusCode.NoContent);
+            var stacksToUpdate = stacks.Where(s => s.DateFixed.HasValue).ToList();
+            if (stacksToUpdate.Count > 0) {
+                foreach (var stack in stacksToUpdate) {
+                    stack.DateFixed = null;
+                    stack.IsRegressed = false;
+                }
 
-            foreach (var stack in stacks) {
-                stack.DateFixed = null;
-                stack.IsRegressed = false;
+                await _stackRepository.SaveAsync(stacksToUpdate);
             }
-
-            await _stackRepository.SaveAsync(stacks);
 
             var workIds = new List<string>();
             foreach (var stack in stacks)
@@ -360,14 +359,13 @@ namespace Exceptionless.Api.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            stacks = stacks.Where(s => !s.IsHidden).ToList();
-            if (stacks.Count <= 0)
-                return Ok();
+            var stacksToUpdate = stacks.Where(s => !s.IsHidden).ToList();
+            if (stacksToUpdate.Count > 0) {
+                foreach (var stack in stacksToUpdate)
+                    stack.IsHidden = true;
 
-            foreach (var stack in stacks)
-                stack.IsHidden = true;
-
-            await _stackRepository.SaveAsync(stacks);
+                await _stackRepository.SaveAsync(stacksToUpdate);
+            }
 
             var workIds = new List<string>();
             foreach (var stack in stacks)
@@ -394,14 +392,13 @@ namespace Exceptionless.Api.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            stacks = stacks.Where(s => s.IsHidden).ToList();
-            if (stacks.Count <= 0)
-                return StatusCode(HttpStatusCode.NoContent);
+            var stacksToUpdate = stacks.Where(s => s.IsHidden).ToList();
+            if (stacksToUpdate.Count > 0) {
+                foreach (var stack in stacksToUpdate)
+                    stack.IsHidden = false;
 
-            foreach (var stack in stacks)
-                stack.IsHidden = false;
-
-            await _stackRepository.SaveAsync(stacks);
+                await _stackRepository.SaveAsync(stacksToUpdate);
+            }
 
             var workIds = new List<string>();
             foreach (var stack in stacks)
@@ -517,7 +514,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 results = await _repository.GetByFilterAsync(systemFilter, userFilter, sortBy, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
@@ -671,7 +668,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 terms = (await _eventStats.GetTermsStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1)).Terms;
             } catch (ApplicationException ex) {
-                Logger.Error().Exception(ex)
+                _logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
@@ -738,8 +735,7 @@ namespace Exceptionless.Api.Controllers {
                     LastOccurrence = term.LastOccurrence,
                     New = term.New,
                     Total = term.Total,
-                    Unique = term.Unique,
-                    Timeline = term.Timeline
+                    Unique = term.Unique
                 };
 
                 return summary;

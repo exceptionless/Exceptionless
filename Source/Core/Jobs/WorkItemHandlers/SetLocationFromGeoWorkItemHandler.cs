@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
@@ -8,7 +9,9 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Lock;
 using Foundatio.Logging;
+using Foundatio.Messaging;
 using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
@@ -17,12 +20,19 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IEventRepository _eventRepository;
         private readonly IGeocodeService _geocodeService;
         private readonly IMetricsClient _metricsClient;
+        private readonly ILockProvider _lockProvider;
 
-        public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMetricsClient metricsClient) {
+        public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMetricsClient metricsClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _cacheClient = new ScopedCacheClient(cacheClient, "geo");
             _eventRepository = eventRepository;
             _geocodeService = geocodeService;
             _metricsClient = metricsClient;
+            _lockProvider = new CacheLockProvider(cacheClient, messageBus);
+        }
+
+        public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
+            var cacheKey = $"{nameof(SetLocationFromGeoWorkItemHandler)}:{((SetLocationFromGeoWorkItem)workItem).EventId}";
+            return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         public override async Task HandleItemAsync(WorkItemContext context) {
@@ -39,7 +49,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                     location = result.ToLocation();
                     await _metricsClient.CounterAsync(MetricNames.UsageGeocodingApi).AnyContext();
                 } catch (Exception ex) {
-                    Logger.Error().Exception(ex).Message($"Error occurred looking up reverse geocode: {workItem.Geo}").Write();
+                    _logger.Error(ex, "Error occurred looking up reverse geocode: {0}", workItem.Geo);
                 }
             }
             

@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IStackRepository _stackRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
 
-        public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue) {
+        public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _stackRepository = stackRepository;
             _workItemQueue = workItemQueue;
             ContinueOnError = true;
@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Pipeline {
             foreach (var stackGroup in stacks) {
                 try {
                     var context = stackGroup.First();
-                    Logger.Trace().Message("Marking stack and events as regression.").Write();
+                    _logger.Trace("Marking stack and events as regression.");
                     await _stackRepository.MarkAsRegressedAsync(context.Stack.Id).AnyContext();
                     await _workItemQueue.EnqueueAsync(new StackWorkItem { OrganizationId = context.Event.OrganizationId, StackId = context.Stack.Id, UpdateIsFixed = true, IsFixed = false }).AnyContext();
                     await _stackRepository.InvalidateCacheAsync(context.Event.ProjectId, context.Event.StackId, context.SignatureHash).AnyContext();

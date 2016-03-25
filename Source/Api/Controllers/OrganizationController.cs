@@ -21,6 +21,7 @@ using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
@@ -44,7 +45,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IMessagePublisher _messagePublisher;
         private readonly EventStats _stats;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats) : base(organizationRepository) {
+        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats, ILoggerFactory loggerFactory, IMapper mapper) : base(organizationRepository, loggerFactory, mapper) {
             _cacheClient = cacheClient;
             _userRepository = userRepository;
             _projectRepository = projectRepository;
@@ -186,7 +187,7 @@ namespace Exceptionless.Api.Controllers {
                 var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
                 stripeInvoice = invoiceService.Get(id);
             } catch (Exception ex) {
-                Logger.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
+                _logger.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
             }
 
             if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
@@ -416,7 +417,7 @@ namespace Exceptionless.Api.Controllers {
                 await _repository.SaveAsync(organization, true);
                 await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
             } catch (Exception e) {
-                Logger.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
+                _logger.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
                 return Ok(ChangePlanResult.FailWithMessage(e.Message));
             }
 
@@ -535,7 +536,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             organization.IsSuspended = true;
-            organization.SuspensionDate = DateTime.Now;
+            organization.SuspensionDate = DateTime.UtcNow;
             organization.SuspendedByUserId = ExceptionlessUser.Id;
             organization.SuspensionCode = code;
             organization.SuspensionNotes = notes;
@@ -678,7 +679,7 @@ namespace Exceptionless.Api.Controllers {
         protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
             var workItems = new List<string>();
             foreach (var organization in organizations) {
-                Logger.Info().Message("User {0} deleting organization {1}.", ExceptionlessUser.Id, organization.Id).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
+                _logger.Info().Message("User {0} deleting organization {1}.", ExceptionlessUser.Id, organization.Id).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
                 workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveOrganizationWorkItem {
                     OrganizationId = organization.Id,
                     CurrentUserId = ExceptionlessUser.Id,
@@ -689,25 +690,16 @@ namespace Exceptionless.Api.Controllers {
             return workItems;
         }
 
-        protected override void CreateMaps() {
-            if (Mapper.FindTypeMapFor<Organization, ViewOrganization>() == null)
-                Mapper.CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
-                    vo.IsOverHourlyLimit = o.IsOverHourlyLimit();
-                    vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
-                });
-
-            if (Mapper.FindTypeMapFor<StripeInvoice, InvoiceGridModel>() == null)
-                Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
-
-            base.CreateMaps();
-        }
-
         protected override async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {
             await base.AfterResultMapAsync(models);
 
             var viewOrganizations = models.OfType<ViewOrganization>().ToList();
-            foreach (var viewOrganization in viewOrganizations)
+            foreach (var viewOrganization in viewOrganizations) {
+                DateTime usageRetention = DateTime.UtcNow.SubtractYears(1).StartOfMonth();
+                viewOrganization.Usage = viewOrganization.Usage.Where(u => u.Date > usageRetention).ToList();
+                viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > usageRetention).ToList();
                 viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, Settings.Current.ApiThrottleLimit);
+            }
         }
 
         private async Task<ViewOrganization> PopulateOrganizationStatsAsync(ViewOrganization organization) {

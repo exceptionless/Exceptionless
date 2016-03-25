@@ -18,7 +18,11 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : IRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
-        public RepositoryApiController(TRepository repository) : base(repository) {}
+        protected readonly ILogger _logger;
+
+        public RepositoryApiController(TRepository repository, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, mapper) {
+            _logger = loggerFactory.CreateLogger(GetType());
+        }
 
         public virtual async Task<IHttpActionResult> PostAsync(TNewModel value) {
             if (value == null)
@@ -196,7 +200,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 workIds = await DeleteModelsAsync(items) ?? new List<string>();
             } catch (Exception ex) {
-                Logger.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
+                _logger.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 
@@ -219,13 +223,6 @@ namespace Exceptionless.Api.Controllers {
         protected virtual async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<TModel> values) {
             await _repository.RemoveAsync(values);
             return new List<string>();
-        }
-
-        protected override void CreateMaps() {
-            if (Mapper.FindTypeMapFor<TNewModel, TModel>() == null)
-                Mapper.CreateMap<TNewModel, TModel>();
-
-            base.CreateMaps();
         }
     }
 }

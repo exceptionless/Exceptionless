@@ -1,26 +1,19 @@
 ﻿using System;
-using System.IO;
 using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
+using Foundatio.Extensions;
 using Foundatio.Jobs;
-using Foundatio.Logging;
+using Foundatio.ServiceProviders;
 
 namespace RetentionLimitsJob {
     public class Program {
-        public static int Main(string[] args) {
-            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\Api\App_Data");
-            if (Directory.Exists(path))
-                AppDomain.CurrentDomain.SetData("DataDirectory", path);
+        public static int Main() {
+            AppDomain.CurrentDomain.SetDataDirectory();
 
-            Logger.SetMinimumLogLevel(Settings.Current.MinimumLogLevel);
-
-            return JobRunner.RunInConsole(new JobRunOptions {
-                JobType = typeof(Exceptionless.Core.Jobs.RetentionLimitsJob),
-                ServiceProviderTypeName = "Exceptionless.Insulation.Jobs.FoundatioBootstrapper,Exceptionless.Insulation",
-                InstanceCount = 1,
-                Interval = TimeSpan.FromDays(1),
-                InitialDelay = TimeSpan.FromMinutes(15),
-                RunContinuous = true
-            });
+            var loggerFactory = Settings.Current.GetLoggerFactory();
+            var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
+            var job = serviceProvider.GetService<Exceptionless.Core.Jobs.RetentionLimitsJob>();
+            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromDays(1)).RunInConsole();
         }
     }
 }

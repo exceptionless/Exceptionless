@@ -14,13 +14,18 @@ namespace Exceptionless.Api.Utility {
     public sealed class OverageHandler : DelegatingHandler {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IMetricsClient _metricsClient;
+        private readonly ILogger _logger;
 
-        public OverageHandler(IOrganizationRepository organizationRepository, IMetricsClient metricsClient) {
+        public OverageHandler(IOrganizationRepository organizationRepository, IMetricsClient metricsClient, ILogger<OverageHandler> logger) {
             _organizationRepository = organizationRepository;
             _metricsClient = metricsClient;
+            _logger = logger;
         }
 
         private bool IsEventPost(HttpRequestMessage request) {
+            if (request.Method == HttpMethod.Get)
+                return request.RequestUri.AbsolutePath.Contains("/events/submit");
+
             if (request.Method != HttpMethod.Post)
                 return false;
 
@@ -40,7 +45,7 @@ namespace Exceptionless.Api.Utility {
                 long size = request.Content.Headers.ContentLength.GetValueOrDefault();
                 await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
                 if (size > Settings.Current.MaximumEventPostSize) {
-                    Logger.Warn().Message("Event submission discarded for being too large: {0}", size).Project(request.GetDefaultProjectId()).Write();
+                    _logger.Warn().Message("Event submission discarded for being too large: {0}", size).Project(request.GetDefaultProjectId()).Write();
                     await _metricsClient.CounterAsync(MetricNames.PostsDiscarded);
                     tooBig = true;
                 }

@@ -48,8 +48,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
                         .GeoPoint(f => f.Name(e => e.Geo).IndexLatLon())
                         .Number(f => f.Name(e => e.Value).IndexName("value"))
                         .Boolean(f => f.Name(e => e.IsFirstOccurrence).IndexName("first"))
-                        .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
-                        .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
+                        .Boolean(f => f.Name(e => e.IsFixed).IndexName(Fields.PersistentEvent.IsFixed))
+                        .Boolean(f => f.Name(e => e.IsHidden).IndexName(Fields.PersistentEvent.IsHidden))
                         .Object<object>(f => f.Name("idx").Dynamic())
                         .Object<DataDictionary>(f => f.Name(e => e.Data).Path("just_name").Properties(p2 => p2
                             .String(f2 => f2.Name(Event.KnownDataKeys.Version).IndexName("version").Index(FieldIndexOption.Analyzed).IndexAnalyzer("version_index").SearchAnalyzer("version_search"))
@@ -261,6 +261,8 @@ err['all_codes'] = codes.join(' ')";
                 public const string LocationLevel1 = "level1";
                 public const string LocationLevel2 = "level2";
                 public const string LocationLocality = "locality";
+                public const string IsFixed = "fixed";
+                public const string IsHidden = "hidden";
             }
         }
     }

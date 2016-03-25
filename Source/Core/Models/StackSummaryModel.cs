@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using Exceptionless.Core.Models.Stats;
 
 namespace Exceptionless.Core.Models {
     public class StackSummaryModel : SummaryData {
@@ -12,6 +10,5 @@ namespace Exceptionless.Core.Models {
         public long New { get; set; }
         public long Total { get; set; }
         public long Unique { get; set; }
-        public ICollection<EventTermTimelineItem> Timeline { get; set; }
     }
 }

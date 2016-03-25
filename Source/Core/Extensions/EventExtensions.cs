@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Globalization;
-using System.Linq;
+using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -8,33 +7,47 @@ using Exceptionless.Core.Models.Data;
 namespace Exceptionless {
     public static class EventExtensions {
         public static Error GetError(this Event ev) {
-            return ev.GetDataValue<Error>(Event.KnownDataKeys.Error);
-        }
+            if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.Error))
+                return null;
 
-        public static void SetError(this Event ev, Error error) {
-            if (error == null)
-                return;
+            try {
+                return ev.Data.GetValue<Error>(Event.KnownDataKeys.Error);
+            } catch (Exception) {}
 
-            ev.Data[Event.KnownDataKeys.Error] = error;
+            return null;
         }
 
         public static SimpleError GetSimpleError(this Event ev) {
-            return ev.GetDataValue<SimpleError>(Event.KnownDataKeys.SimpleError);
-        }
+            if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError))
+                return null;
 
-        public static void SetError(this Event ev, SimpleError error) {
-            if (error == null)
-                return;
+            try {
+                return ev.Data.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError);
+            } catch (Exception) {}
 
-            ev.Data[Event.KnownDataKeys.SimpleError] = error;
+            return null;
         }
 
         public static RequestInfo GetRequestInfo(this Event ev) {
-            return ev.GetDataValue<RequestInfo>(Event.KnownDataKeys.RequestInfo);
+            if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo))
+                return null;
+
+            try {
+                return ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo);
+            } catch (Exception) {}
+
+            return null;
         }
 
         public static EnvironmentInfo GetEnvironmentInfo(this Event ev) {
-            return ev.GetDataValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo);
+            if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.EnvironmentInfo))
+                return null;
+
+            try {
+                return ev.Data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo);
+            } catch (Exception) {}
+
+            return null;
         }
 
         /// <summary>
@@ -103,13 +116,6 @@ namespace Exceptionless {
             return ev.Type == Event.KnownTypes.SessionEnd;
         }
 
-        public static void SetEnvironmentInfo(this Event ev, EnvironmentInfo environmentInfo) {
-            if (environmentInfo == null)
-                return;
-
-            ev.Data[Event.KnownDataKeys.EnvironmentInfo] = environmentInfo;
-        }
-
         /// <summary>
         /// Adds the request info to the event.
         /// </summary>
@@ -119,18 +125,20 @@ namespace Exceptionless {
 
             ev.Data[Event.KnownDataKeys.RequestInfo] = request;
         }
-        
-        public static void SetSubmissionMethod(this Event ev, string submissionMethod) {
-            if (String.IsNullOrWhiteSpace(submissionMethod))
-                return;
 
-            ev.Data[Event.KnownDataKeys.SubmissionMethod] = submissionMethod.Trim();
+        /// <summary>
+        /// Gets the user info object from extended data.
+        /// </summary>
+        public static UserInfo GetUserIdentity(this Event ev) {
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.UserInfo, out value) ? value as UserInfo : null;
         }
 
         public static string GetVersion(this Event ev) {
-            return ev.GetDataValue<string>(Event.KnownDataKeys.Version);
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.Version, out value) ? value as string : null;
         }
-        
+
         /// <summary>
         /// Sets the version that the event happened on.
         /// </summary>
@@ -143,11 +151,81 @@ namespace Exceptionless {
             ev.Data[Event.KnownDataKeys.Version] = version.Trim();
         }
 
+        public static Location GetLocation(this Event ev) {
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.Location, out value) ? value as Location : null;
+        }
+        
+        public static void SetLocation(this Event ev, Location location) {
+            if (location == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.Location] = location;
+        }
+
+        public static void SetEnvironmentInfo(this Event ev, EnvironmentInfo environmentInfo) {
+            if (environmentInfo == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.EnvironmentInfo] = environmentInfo;
+        }
+        
         /// <summary>
-        /// Gets the user info object from extended data.
+        /// Gets the stacking info from extended data.
         /// </summary>
-        public static UserInfo GetUserIdentity(this Event ev) {
-            return ev.GetDataValue<UserInfo>(Event.KnownDataKeys.UserInfo);
+        public static ManualStackingInfo GetManualStackingInfo(this Event ev) {
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.ManualStackingInfo, out value) ? value as ManualStackingInfo : null;
+        }
+        
+        /// <summary>
+        /// Changes default stacking behavior
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="signatureData">Key value pair that determines how the event is stacked.</param>
+        public static void SetManualStackingInfo(this Event ev, IDictionary<string, string> signatureData) {
+            if (signatureData == null || signatureData.Count == 0)
+                return;
+
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(signatureData);
+        }
+
+        /// <summary>
+        /// Changes default stacking behavior
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="title">The stack title.</param>
+        /// <param name="signatureData">Key value pair that determines how the event is stacked.</param>
+        public static void SetManualStackingInfo(this Event ev, string title, IDictionary<string, string> signatureData) {
+            if (String.IsNullOrWhiteSpace(title) || signatureData == null || signatureData.Count == 0)
+                return;
+
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(title, signatureData);
+        }
+
+        /// <summary>
+        /// Changes default stacking behavior by setting the stacking info.
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="manualStackingKey">The manual stacking key.</param>
+        public static void SetManualStackingKey(this Event ev, string manualStackingKey) {
+            if (String.IsNullOrWhiteSpace(manualStackingKey))
+                return;
+
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(null, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
+        }
+
+        /// <summary>
+        /// Changes default stacking behavior by setting the stacking info.
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="title">The stack title.</param>
+        /// <param name="manualStackingKey">The manual stacking key.</param>
+        public static void SetManualStackingKey(this Event ev, string title, string manualStackingKey) {
+            if (String.IsNullOrWhiteSpace(title) || String.IsNullOrWhiteSpace(manualStackingKey))
+                return;
+
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(title, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
         }
 
         /// <summary>
@@ -188,7 +266,8 @@ namespace Exceptionless {
         /// Gets the user description from extended data.
         /// </summary>
         public static UserDescription GetUserDescription(this Event ev) {
-            return ev.GetDataValue<UserDescription>(Event.KnownDataKeys.UserDescription);
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.UserDescription, out value) ? value as UserDescription : null;
         }
 
         /// <summary>
@@ -214,135 +293,6 @@ namespace Exceptionless {
                 return;
 
             ev.Data[Event.KnownDataKeys.UserDescription] = description;
-        }
-
-        /// <summary>
-        /// Sets the event geo coordinates. Can be either "lat,lon" or an IP address that will be used to auto detect the geo coordinates.
-        /// </summary>
-        /// <param name="ev">The event.</param>
-        /// <param name="coordinates">The event coordinates.</param>
-        public static void SetGeo(this Event ev, string coordinates) {
-            if (String.IsNullOrWhiteSpace(coordinates)) {
-                ev.Geo = null;
-                return;
-            }
-
-            if (coordinates.Contains(",") || coordinates.Contains(".") || coordinates.Contains(":"))
-                ev.Geo = coordinates;
-            else
-                throw new ArgumentException("Must be either lat,lon or an IP address.", nameof(coordinates));
-        }
-
-        /// <summary>
-        /// Sets the event geo coordinates.
-        /// </summary>
-        /// <param name="ev">The event.</param>
-        /// <param name="latitude">The event latitude.</param>
-        /// <param name="longitude">The event longitude.</param>
-        public static void SetGeo(this Event ev, double latitude, double longitude) {
-            if (latitude < -90.0 || latitude > 90.0)
-                throw new ArgumentOutOfRangeException(nameof(latitude), "Must be a valid latitude value between -90.0 and 90.0.");
-            if (longitude < -180.0 || longitude > 180.0)
-                throw new ArgumentOutOfRangeException(nameof(longitude), "Must be a valid longitude value between -180.0 and 180.0.");
-
-            ev.Geo = latitude.ToString("#0.0#######", CultureInfo.InvariantCulture) + "," + longitude.ToString("#0.0#######", CultureInfo.InvariantCulture);
-        }
-
-        public static Location GetLocation(this Event ev) {
-            return ev.GetDataValue<Location>(Event.KnownDataKeys.Location);
-        }
-
-        public static void SetLocation(this Event ev, Location location) {
-            if (location == null)
-                return;
-
-            ev.Data[Event.KnownDataKeys.Location] = location;
-        }
-
-        /// <summary>
-        /// Adds one or more tags to the event.
-        /// </summary>
-        /// <param name="ev">The event.</param>
-        /// <param name="tags">The tags to be added to the event.</param>
-        public static void AddTags(this Event ev, params string[] tags) {
-            if (tags == null || tags.Length == 0)
-                return;
-
-            ev.Tags.AddRange(tags.Where(t => !String.IsNullOrWhiteSpace(t)).Select(t => t.Trim()));
-        }
-
-        /// <summary>
-        /// Sets the event reference id.
-        /// </summary>
-        /// <param name="ev">The event.</param>
-        /// <param name="referenceId">The event reference id.</param>
-        public static void SetReferenceId(this Event ev, string referenceId) {
-            if (!IsValidIdentifier(referenceId))
-                throw new ArgumentException("ReferenceId must contain between 8 and 100 alphanumeric or '-' characters.", nameof(referenceId));
-
-            ev.ReferenceId = referenceId;
-        }
-
-        /// <summary>
-        /// Returns the event reference id.
-        /// </summary>
-        /// <param name="ev">The event.</param>
-        /// <param name="name">Reference name</param>
-        /// <returns></returns>
-        public static string GetEventReference(this Event ev, string name) {
-            if (ev == null || String.IsNullOrEmpty(name))
-                return null;
-
-            return ev.Data.GetString($"@ref:{name}");
-        }
-
-        /// <summary>
-        /// Allows you to reference a parent event by its <seealso cref="Event.ReferenceId" /> property. This allows you to have parent and child relationships.
-        /// </summary>
-        /// <param name="ev">The event.</param>
-        /// <param name="name">Reference name</param>
-        /// <param name="id">The reference id that points to a specific event</param>
-        public static void SetEventReference(this Event ev, string name, string id) {
-            if (String.IsNullOrEmpty(name))
-                throw new ArgumentNullException(nameof(name));
-
-            if (!IsValidIdentifier(id) || String.IsNullOrEmpty(id))
-                throw new ArgumentException("Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(id));
-
-            ev.Data[$"@ref:{name}"] = id;
-        }
-
-        private static bool IsValidIdentifier(string value) {
-            if (value == null)
-                return true;
-
-            if (value.Length < 8 || value.Length > 100)
-                return false;
-
-            return value.IsValidIdentifier();
-        }
-
-        /// <summary>
-        /// Sets the manual stacking key
-        /// </summary>
-        /// <param name="ev">The event</param>
-        /// <param name="manualStackingKey">The manual stacking key.</param>
-        public static void SetManualStackingKey(this Event ev, string manualStackingKey) {
-            if (String.IsNullOrWhiteSpace(manualStackingKey))
-                return;
-
-            ev.Data[Event.KnownDataKeys.ManualStackingKey] = manualStackingKey.Trim();
-        }
-
-        public static T GetDataValue<T>(this Event ev, string key) {
-            if (ev == null || String.IsNullOrEmpty(key) || !ev.Data.ContainsKey(key))
-                return default(T);
-
-            try {
-                return ev.Data.GetValue<T>(key);
-            } catch (Exception) { }
-
-            return default(T);
         }
     }
 }

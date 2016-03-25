@@ -37,11 +37,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Foundatio, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.4.0.672\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\..\packages\Foundatio.4.0.836\lib\net451\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Nito.AsyncEx, Version=3.0.1.0, Culture=neutral, processorArchitecture=MSIL">
@@ -90,6 +90,10 @@
       <Link>NLog.config</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="..\run.bat">
+      <Link>run.bat</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -106,6 +110,7 @@ robocopy "$(SolutionDir)Source\Insulation\bin\$(ConfigurationName)" "$(TargetDir
 IF %25ERRORLEVEL%25 GEQ 8 exit 1
 
 robocopy "$(TargetDir)." "$(TargetDir)bin\." /MOV /XD bin /XF RetentionLimitsJob.* NLog.config /S /is /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy $(TargetDir) $(TargetDir)bin\ /MOV /XD bin /XF RetentionLimitsJob.* run.bat NLog.config /S /is /NFL /NDL /NJH /NJS /nc /ns /np
 IF %25ERRORLEVEL%25 GEQ 8 exit 1
 
 exit 0</PostBuildEvent>

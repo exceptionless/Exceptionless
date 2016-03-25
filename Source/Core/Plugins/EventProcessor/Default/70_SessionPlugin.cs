@@ -7,6 +7,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
+using Foundatio.Logging;
 using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
@@ -19,7 +20,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         private readonly AssignToStackAction _assignToStack;
         private readonly LocationPlugin _locationPlugin;
 
-        public SessionPlugin(ICacheClient cacheClient, IEventRepository eventRepository, AssignToStackAction assignToStack, UpdateStatsAction updateStats, LocationPlugin locationPlugin) {
+        public SessionPlugin(ICacheClient cacheClient, IEventRepository eventRepository, AssignToStackAction assignToStack, UpdateStatsAction updateStats, LocationPlugin locationPlugin, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _cacheClient = new ScopedCacheClient(cacheClient, "session");
             _eventRepository = eventRepository;
             _assignToStack = assignToStack;

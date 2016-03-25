@@ -5,7 +5,6 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using Exceptionless.Core.Extensions;
-using Foundatio.Logging;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core {
@@ -88,8 +87,7 @@ namespace Exceptionless.Core {
                     }
 
                     _configVariables = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(configPath));
-                } catch (Exception ex) {
-                    Logger.Error().Exception(ex).Message("Unable to load config.json file. Error: {0}", ex.Message);
+                } catch (Exception) {
                     _configVariables = new Dictionary<string, string>();
                     return null;
                 }
@@ -108,10 +106,8 @@ namespace Exceptionless.Core {
             if (_environmentVariables == null) {
                 try {
                     _environmentVariables = Environment.GetEnvironmentVariables().OfType<DictionaryEntry>().ToDictionary(e => e.Key.ToString(), e => e.Value.ToString());
-                } catch (Exception ex) {
+                } catch (Exception) {
                     _environmentVariables = new Dictionary<string, string>();
-
-                    Logger.Error().Exception(ex).Message("An Error occurred while reading environmental variables.").Write();
                     return null;
                 }
             }

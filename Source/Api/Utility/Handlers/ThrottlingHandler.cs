@@ -50,7 +50,7 @@ namespace Exceptionless.Api.Utility {
             if (String.IsNullOrEmpty(identifier))
                 return CreateResponse(request, HttpStatusCode.Forbidden, "Could not identify client.");
 
-            long requestCount = 1;
+            double requestCount = 1;
             try {
                 string cacheKey = GetCacheKey(identifier);
                 requestCount = await _cacheClient.IncrementAsync(cacheKey, 1);
@@ -65,7 +65,7 @@ namespace Exceptionless.Api.Utility {
             else
                 response = await base.SendAsync(request, cancellationToken);
 
-            long remaining = maxRequests - requestCount;
+            double remaining = maxRequests - requestCount;
             if (remaining < 0)
                 remaining = 0;
 

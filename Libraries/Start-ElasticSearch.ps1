@@ -1,4 +1,4 @@
-﻿$es_version = "1.7.3"
+﻿$es_version = "1.7.5"
 If ($env:ES_VERSION) {
     $es_version = $env:ES_VERSION
 }

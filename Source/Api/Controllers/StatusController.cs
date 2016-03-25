@@ -3,7 +3,6 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
-using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
@@ -50,7 +49,6 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="503">Contains a message detailing the service outage message.</response>
         [HttpGet]
         [Route("status")]
-        [ResponseType(typeof(StatusResult))]
         public async Task<IHttpActionResult> IndexAsync() {
             if (_lastHealthCheckResult == null || _nextHealthCheckTimeUtc < DateTime.UtcNow) {
                 _nextHealthCheckTimeUtc = DateTime.UtcNow.AddSeconds(5);
@@ -60,7 +58,22 @@ namespace Exceptionless.Api.Controllers {
             if (!_lastHealthCheckResult.IsHealthy)
                 return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, _lastHealthCheckResult.Message, _lastHealthCheckResult.Message);
 
-            return Ok(new StatusResult { Message = "All Systems Check", Version = Settings.Current.Version });
+            if (Settings.Current.HasAppScope) {
+                return Ok(new {
+                    Message = "All Systems Check",
+                    Settings.Current.Version,
+                    Settings.Current.AppScope,
+                    WebsiteMode = Settings.Current.WebsiteMode.ToString(),
+                    Environment.MachineName
+                });
+            }
+
+            return Ok(new {
+                Message = "All Systems Check",
+                Settings.Current.Version,
+                WebsiteMode = Settings.Current.WebsiteMode.ToString(),
+                Environment.MachineName
+            });
         }
 
         [HttpGet]
@@ -101,18 +114,7 @@ namespace Exceptionless.Api.Controllers {
                 }
             });
         }
-
-        [HttpGet]
-        [Route("metric-stats")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult MetricStats() {
-            var metricsClient = _metricsClient as InMemoryMetricsClient;
-            if (metricsClient == null)
-                return Ok();
-
-            return Ok(metricsClient.GetMetricStats());
-        }
-
+        
         [HttpPost]
         [Route("notifications/release")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]

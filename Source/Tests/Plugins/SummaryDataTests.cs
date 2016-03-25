@@ -5,7 +5,6 @@ using ApprovalTests.Reporters;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Stats;
 using Exceptionless.Core.Plugins.Formatting;
 using Newtonsoft.Json;
 using Xunit;
@@ -56,8 +55,7 @@ namespace Exceptionless.Api.Tests.Plugins {
                 Title = stack.Title,
                 New = 1,
                 Total = 1,
-                Unique = 1,
-                Timeline = new List<EventTermTimelineItem>()
+                Unique = 1
             };
 
             ApprovalsUtility.VerifyFile(Path.ChangeExtension(path, "summary.json"), JsonConvert.SerializeObject(summary, settings));
