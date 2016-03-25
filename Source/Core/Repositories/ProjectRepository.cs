@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Repositories {
 
         private async Task InvalidateCountCacheAsync(IEnumerable<string> organizationIds) {
             var keys = organizationIds.Where(id => !String.IsNullOrEmpty(id)).Select(id => $"count:{id}").Distinct().ToList();
-            if (keys?.Count > 0)
+            if (keys.Count > 0)
                 await Cache.RemoveAllAsync(keys).AnyContext();
         }
     }
