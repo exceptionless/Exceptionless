@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.True(fields.IsValid);
             Assert.Equal(2, fields.Aggregations.Count);
 
-            var result = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
+            var result = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
             Assert.Equal(2, result.Numbers.Length);
@@ -62,11 +62,11 @@ namespace Exceptionless.Api.Tests.Stats {
             foreach (var value in values)
                 await CreateEventsAsync(1, null, value);
             
-            var fields = FieldAggregationProcessor.Process("avg:value,distinct:value,sum:value,min:value,max:value", false);
+            var fields = FieldAggregationProcessor.Process("avg:value:0,distinct:value:0,sum:value,min:value:0,max:value", false);
             Assert.True(fields.IsValid);
             Assert.Equal(5, fields.Aggregations.Count);
 
-            var ntsr = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
+            var ntsr = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
             Assert.Equal(values.Length, ntsr.Total);
             Assert.Equal(values.Length, ntsr.Timeline.Sum(t => t.Total));
             Assert.Equal(5, ntsr.Numbers.Length);
@@ -76,7 +76,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(0, ntsr.Numbers[3]); // min
             Assert.Equal(100, ntsr.Numbers[4]); // max
 
-            var nsr = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
+            var nsr = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
             Assert.Equal(values.Length, nsr.Total);
             Assert.Equal(5, nsr.Numbers.Length);
             Assert.Equal(50, nsr.Numbers[0]); // average
@@ -98,7 +98,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.True(fields.IsValid);
             Assert.Equal(2, fields.Aggregations.Count);
 
-            var result = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, DateTime.MinValue, DateTime.MaxValue, null, userFilter: "project:" + TestConstants.ProjectId);
+            var result = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, DateTime.MinValue, DateTime.MaxValue, null, userFilter: $"project:{TestConstants.ProjectId}");
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
             Assert.Equal(await _stackRepository.CountAsync(), result.Numbers[0]);
@@ -141,18 +141,18 @@ namespace Exceptionless.Api.Tests.Stats {
             const int eventCount = 100;
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
-            
-            var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "tags", null, userFilter: "project:" + TestConstants.ProjectId);
+
+            var fields = FieldAggregationProcessor.Process("term:is_first_occurrence:-F", false);
+            Assert.True(fields.IsValid);
+
+            var result = await _stats.GetNumbersTermsStatsAsync("tags", fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
             Assert.Equal(eventCount, result.Total);
             // each event can be in multiple tag buckets since an event can have up to 3 sample tags
             Assert.InRange(result.Terms.Sum(t => t.Total), eventCount, eventCount * 3);
-            Assert.InRange(result.Terms.Sum(t => t.New), 1, 25 * TestConstants.EventTags.Count);
+            Assert.InRange(result.Terms.Sum(t => t.Numbers[0]), 1, 25 * TestConstants.EventTags.Count); // new
             Assert.InRange(result.Terms.Count, 1, TestConstants.EventTags.Count);
-            foreach (var term in result.Terms) {
-                Assert.InRange(term.New, 1, 25);
-                //Assert.InRange(term.Unique, 1, 25);
-                Assert.Equal(term.Total, term.Timeline.Sum(t => t.Total));
-            }
+            foreach (var term in result.Terms)
+                Assert.InRange(term.Numbers[0], 1, 25); // new
         }
 
         [Fact]
@@ -162,17 +162,19 @@ namespace Exceptionless.Api.Tests.Stats {
             const int eventCount = 100;
             await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
-            
-            var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "stack_id", null, userFilter: "project:" + TestConstants.ProjectId);
+
+            var fields = FieldAggregationProcessor.Process("distinct:stack_id,term:is_first_occurrence:-F", false);
+            Assert.True(fields.IsValid);
+
+            var result = await _stats.GetNumbersTermsStatsAsync("stack_id", fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 25);
             // TODO: Figure out why this is less than eventCount
-            //Assert.Equal(eventCount, result.Terms.Sum(t => t.Total));
-            Assert.InRange(result.Terms.Sum(t => t.New), 1, 25);
+            Assert.Equal(eventCount, result.Terms.Sum(t => t.Total));
+            Assert.InRange(result.Terms.Sum(t => t.Numbers[1]), 1, 25); // new
             foreach (var term in result.Terms) {
-                Assert.Equal(1, term.New);
-                Assert.Equal(1, term.Unique);
-                Assert.Equal(term.Total, term.Timeline.Sum(t => t.Total));
+                Assert.Equal(1, term.Numbers[0]); //unique
+                Assert.Equal(1, term.Numbers[1]); // new
             }
         }
 
@@ -183,15 +185,15 @@ namespace Exceptionless.Api.Tests.Stats {
             const int eventCount = 100;
             await RemoveDataAsync();
             await CreateDataAsync(eventCount);
-            
-            var result = await _stats.GetTermsStatsAsync(startDate, DateTime.UtcNow, "project_id", null);
+
+            var fields = FieldAggregationProcessor.Process("term:is_first_occurrence:-F", false);
+            Assert.True(fields.IsValid);
+
+            var result = await _stats.GetNumbersTermsStatsAsync("project_id", fields.Aggregations, startDate, DateTime.UtcNow, null);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 3); // 3 sample projects
-            Assert.InRange(result.Terms.Sum(t => t.New), 1, 25 * 3);
+            Assert.InRange(result.Terms.Sum(t => t.Numbers[0]), 1, 25 * 3); // new
             Assert.Equal(eventCount, result.Terms.Sum(t => t.Total));
-            foreach (var term in result.Terms) {
-                Assert.Equal(term.Total, term.Timeline.Sum(t => t.Total));
-            }
         }
         
         [Fact]
@@ -202,7 +204,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = DateTime.UtcNow.SubtractHours(1);
             await CreateSessionEventsAsync();
             
-            var fields = FieldAggregationProcessor.Process("avg:value,distinct:user.raw", false);
+            var fields = FieldAggregationProcessor.Process("avg:value:0,distinct:user.raw", false);
             Assert.True(fields.IsValid);
             Assert.Equal(2, fields.Aggregations.Count);
 

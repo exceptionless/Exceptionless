@@ -532,7 +532,7 @@ namespace Exceptionless.Api.Controllers {
             if (Settings.Current.EnableAccountCreation)
                 return true;
 
-            if (string.IsNullOrEmpty(token))
+            if (String.IsNullOrEmpty(token))
                 return false;
             
             var organization = await _organizationRepository.GetByInviteTokenAsync(token);

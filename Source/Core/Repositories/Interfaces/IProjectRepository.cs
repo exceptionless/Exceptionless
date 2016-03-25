@@ -7,7 +7,7 @@ using Foundatio.Repositories.Models;
 namespace Exceptionless.Core.Repositories {
     public interface IProjectRepository : IRepositoryOwnedByOrganization<Project> {
         Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10);
-        Task<long> IncrementNextSummaryEndOfDayTicksAsync(ICollection<string> ids);
+        Task<long> IncrementNextSummaryEndOfDayTicksAsync(ICollection<Project> projects);
         Task<long> GetCountByOrganizationIdAsync(string organizationId);
     }
 }

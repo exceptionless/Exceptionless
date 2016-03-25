@@ -53,9 +53,7 @@ namespace Exceptionless.Api.Tests.Plugins {
                 Data = data.Data,
                 Id = stack.Id,
                 Title = stack.Title,
-                New = 1,
                 Total = 1,
-                Unique = 1
             };
 
             ApprovalsUtility.VerifyFile(Path.ChangeExtension(path, "summary.json"), JsonConvert.SerializeObject(summary, settings));
