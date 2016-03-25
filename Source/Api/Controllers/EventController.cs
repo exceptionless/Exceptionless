@@ -154,7 +154,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
 
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
                 return OkWithResourceLinks(events.Documents.Select(e => {
                     var summaryData = _formattingPluginManager.GetEventSummaryData(e);
                     return new EventSummaryModel {

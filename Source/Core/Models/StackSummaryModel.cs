@@ -6,9 +6,6 @@ namespace Exceptionless.Core.Models {
         public string Title { get; set; }
         public DateTime FirstOccurrence { get; set; }
         public DateTime LastOccurrence { get; set; }
-
-        public long New { get; set; }
         public long Total { get; set; }
-        public long Unique { get; set; }
     }
 }

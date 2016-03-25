@@ -14,6 +14,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Filter;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -69,7 +70,7 @@ namespace Exceptionless.Api.Controllers {
             var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
             var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations, true);
 
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
                 return Ok(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()));
 
             return Ok(viewOrganizations);
@@ -87,7 +88,7 @@ namespace Exceptionless.Api.Controllers {
             var organizations = await _repository.GetByCriteriaAsync(criteria, options, sort, paid, suspended);
             var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
 
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
                 return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), organizations.HasMore, page, organizations.Total);
 
             return OkWithResourceLinks(viewOrganizations, organizations.HasMore, page, organizations.Total);
@@ -117,7 +118,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var viewOrganization = await MapAsync<ViewOrganization>(organization, true);
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
                 return Ok(await PopulateOrganizationStatsAsync(viewOrganization));
 
             return Ok(viewOrganization);
@@ -722,12 +723,16 @@ namespace Exceptionless.Api.Controllers {
                     builder.AppendFormat("organization:{0}", organization.Id);
             }
 
-            var result = await _stats.GetTermsStatsAsync(DateTime.MinValue, DateTime.MaxValue, "organization_id", builder.ToString());
+            var fields = new List<FieldAggregation> {
+                new FieldAggregation { Type = FieldAggregationType.Distinct, Field = "stack_id" }
+            };
+
+            var result = await _stats.GetNumbersTermsStatsAsync("organization_id", fields, DateTime.MinValue, DateTime.MaxValue, builder.ToString(), max: organizations.Count);
             foreach (var organization in organizations) {
                 var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
                 organization.EventCount = organizationStats?.Total ?? 0;
-                organization.StackCount = organizationStats?.Unique ?? 0;
-                organization.ProjectCount = (await _projectRepository.GetByOrganizationIdAsync(organization.Id, useCache: true)).Documents.Count;
+                organization.StackCount = (long)(organizationStats?.Numbers[0] ?? 0);
+                organization.ProjectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id);
             }
 
             return organizations;

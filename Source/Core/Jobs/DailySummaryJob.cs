@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Filter;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
@@ -98,11 +100,16 @@ namespace Exceptionless.Core.Jobs {
             }
 
             _logger.Info("Sending daily summary: users={0} project={1}", users.Count, project.Id);
+            
+            var fields = new List<FieldAggregation> {
+                new FieldAggregation { Type = FieldAggregationType.Distinct, Field = "stack_id" },
+                new TermFieldAggregation { Field = "is_first_occurrence", ExcludePattern = "F" }
+            };
 
-            var result = await _stats.GetTermsStatsAsync(data.UtcStartTime, data.UtcEndTime, "stack_id", "type:error project:" + data.Id, max: 5).AnyContext();
-            bool hasSubmittedErrors = result.Total > 0;
-            if (!hasSubmittedErrors)
-                hasSubmittedErrors = await _eventRepository.GetCountByProjectIdAsync(project.Id).AnyContext() > 0;
+            var result = await _stats.GetNumbersStatsAsync(fields, data.UtcStartTime, data.UtcEndTime, $"project:{data.Id} type:error").AnyContext();
+            bool hasSubmittedEvents = result.Total > 0;
+            if (!hasSubmittedEvents)
+                hasSubmittedEvents = await _eventRepository.GetCountByProjectIdAsync(project.Id).AnyContext() > 0;
 
             var notification = new DailySummaryModel {
                 ProjectId = project.Id,
@@ -111,9 +118,9 @@ namespace Exceptionless.Core.Jobs {
                 EndDate = data.UtcEndTime,
                 Total = result.Total,
                 PerHourAverage = result.Total / data.UtcEndTime.Subtract(data.UtcStartTime).TotalHours,
-                NewTotal = result.New,
-                UniqueTotal = result.Unique,
-                HasSubmittedEvents = hasSubmittedErrors,
+                NewTotal = result.Numbers[1],
+                UniqueTotal = result.Numbers[0],
+                HasSubmittedEvents = hasSubmittedEvents,
                 IsFreePlan = organization.PlanId == BillingManager.FreePlan.Id
             };
 
