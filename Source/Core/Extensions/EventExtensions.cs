@@ -17,6 +17,13 @@ namespace Exceptionless {
             return null;
         }
 
+        public static void SetError(this Event ev, Error error) {
+            if (error == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.Error] = error;
+        }
+
         public static SimpleError GetSimpleError(this Event ev) {
             if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError))
                 return null;
@@ -26,6 +33,13 @@ namespace Exceptionless {
             } catch (Exception) {}
 
             return null;
+        }
+        
+        public static void SetError(this Event ev, SimpleError error) {
+            if (error == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.SimpleError] = error;
         }
 
         public static RequestInfo GetRequestInfo(this Event ev) {
@@ -132,6 +146,13 @@ namespace Exceptionless {
         public static UserInfo GetUserIdentity(this Event ev) {
             object value;
             return ev.Data.TryGetValue(Event.KnownDataKeys.UserInfo, out value) ? value as UserInfo : null;
+        }
+
+        public static void SetSubmissionMethod(this Event ev, string submissionMethod) {
+            if (String.IsNullOrWhiteSpace(submissionMethod))
+                return;
+
+            ev.Data[Event.KnownDataKeys.SubmissionMethod] = submissionMethod.Trim();
         }
 
         public static string GetVersion(this Event ev) {
