@@ -216,14 +216,19 @@ namespace Exceptionless.Core.Utility {
             foreach (var field in fields) {
                 switch (field.Type) {
                     case FieldAggregationType.Average:
+                        aggregation.Average(field.Key, a => field.DefaultValueScript == null ? a.Field(field.Field) : a.Script(field.DefaultValueScript));
                         break;
                     case FieldAggregationType.Distinct:
+                        aggregation.Cardinality(field.Key, a => (field.DefaultValueScript == null ? a.Field(field.Field) : a.Script(field.DefaultValueScript)).PrecisionThreshold(100));
                         break;
                     case FieldAggregationType.Sum:
+                        aggregation.Sum(field.Key, a => field.DefaultValueScript == null ? a.Field(field.Field) : a.Script(field.DefaultValueScript));
                         break;
                     case FieldAggregationType.Min:
+                        aggregation.Min(field.Key, a => field.DefaultValueScript == null ? a.Field(field.Field) : a.Script(field.DefaultValueScript));
                         break;
                     case FieldAggregationType.Max:
+                        aggregation.Max(field.Key, a => field.DefaultValueScript == null ? a.Field(field.Field) : a.Script(field.DefaultValueScript));
                         break;
                     case FieldAggregationType.Last:
                         // TODO: Populate with the last value.

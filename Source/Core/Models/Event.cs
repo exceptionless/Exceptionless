@@ -43,6 +43,11 @@ namespace Exceptionless.Core.Models {
         public decimal? Value { get; set; }
 
         /// <summary>
+        /// The number of duplicated events.
+        /// </summary>
+        public int? Count { get; set; }
+
+        /// <summary>
         /// Optional data entries that contain additional information about this event.
         /// </summary>
         public DataDictionary Data { get; set; }
