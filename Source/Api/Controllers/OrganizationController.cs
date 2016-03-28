@@ -370,7 +370,7 @@ namespace Exceptionless.Api.Controllers {
                     organization.SubscribeDate = DateTime.Now;
 
                     var createCustomer = new StripeCustomerCreateOptions {
-                        Card = new StripeCreditCardOptions { TokenId = stripeToken },
+                        Source = new StripeSourceOptions { TokenId = stripeToken },
                         PlanId = planId,
                         Description = organization.Name,
                         Email = ExceptionlessUser.EmailAddress
@@ -384,8 +384,8 @@ namespace Exceptionless.Api.Controllers {
                     organization.BillingStatus = BillingStatus.Active;
                     organization.RemoveSuspension();
                     organization.StripeCustomerId = customer.Id;
-                    if (customer.StripeCardList.StripeCards.Count > 0)
-                        organization.CardLast4 = customer.StripeCardList.StripeCards[0].Last4;
+                    if (customer.SourceList.TotalCount > 0)
+                        organization.CardLast4 = customer.SourceList.Data[0].Last4;
                 } else {
                     var update = new StripeSubscriptionUpdateOptions { PlanId = planId };
                     var create = new StripeSubscriptionCreateOptions();
