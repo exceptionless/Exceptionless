@@ -39,6 +39,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly EventStats _eventStats;
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
+        private readonly List<FieldAggregation> _distinctUsersFields = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct } };
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository,
             IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository,
@@ -663,16 +664,16 @@ namespace Exceptionless.Api.Controllers {
             var timeInfo = GetTimeInfo(time, offset);
 
             try {
-                var terms = (await _eventStats.GetNumbersTermsStatsAsync("stack_id", new List<FieldAggregation>(), timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1)).Terms;
-                if (terms.Count == 0)
+                var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", _distinctUsersFields, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1);
+                if (ntsr.Terms.Count == 0)
                     return Ok(new object[0]);
 
-                var stackIds = terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
+                var stackIds = ntsr.Terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
                 var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
 
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase)) {
-                    var summaries = GetStackSummaries(stacks, terms);
-                    return OkWithResourceLinks(GetStackSummaries(stacks, terms).Take(limit).ToList(), summaries.Count > limit, page);
+                    var summaries = await GetStackSummariesAsync(stacks, ntsr, timeInfo.UtcRange.Start, timeInfo.UtcRange.End);
+                    return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, page);
                 }
 
                 return OkWithResourceLinks(stacks.Take(limit).ToList(), stacks.Count > limit, page);
@@ -714,13 +715,19 @@ namespace Exceptionless.Api.Controllers {
         private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, TimeSpan offset, DateTime utcStart, DateTime utcEnd) {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
-
-            var terms = (await _eventStats.GetNumbersTermsStatsAsync("stack_id", new List<FieldAggregation>(), utcStart, utcEnd, String.Join(" OR ", stacks.Select(r => "stack:" + r.Id)), null, offset, stacks.Count)).Terms;
-            return GetStackSummaries(stacks, terms);
+            
+            var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", _distinctUsersFields, utcStart, utcEnd, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), null, offset, stacks.Count);
+            return await GetStackSummariesAsync(stacks, ntsr, utcStart, utcEnd);
         }
 
-        private ICollection<StackSummaryModel> GetStackSummaries(IEnumerable<Stack> stacks, IEnumerable<NumbersTermStatsItem> terms) {
-            return stacks.Join(terms, s => s.Id, tk => tk.Term, (stack, term) => {
+        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, NumbersTermStatsResult stackTerms, DateTime utcStart, DateTime utcEnd) {
+            if (stacks.Count == 0)
+                return new List<StackSummaryModel>(0);
+
+            var projectIds = stacks.Select(s => s.ProjectId).Distinct().ToList();
+            var projectTerms = await _eventStats.GetNumbersTermsStatsAsync("project_id", _distinctUsersFields, utcStart, utcEnd, String.Join(" OR ", projectIds.Select(id => $"project:{id}")));
+
+            return stacks.Join(stackTerms.Terms, s => s.Id, tk => tk.Term, (stack, term) => {
                 var data = _formattingPluginManager.GetStackSummaryData(stack);
                 var summary = new StackSummaryModel {
                     TemplateKey = data.TemplateKey,
@@ -729,7 +736,10 @@ namespace Exceptionless.Api.Controllers {
                     Title = stack.Title,
                     FirstOccurrence = term.FirstOccurrence,
                     LastOccurrence = term.LastOccurrence,
-                    Total = term.Total
+                    Total = term.Total,
+
+                    Users = term.Numbers[0],
+                    TotalUsers = projectTerms.Terms.FirstOrDefault(t => t.Term == stack.ProjectId)?.Numbers[0] ?? 0
                 };
 
                 return summary;
