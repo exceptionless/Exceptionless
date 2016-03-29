@@ -22,6 +22,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (await _cacheClient.AddAsync(GetCacheKey(context), true, TimeSpan.FromMinutes(1)).AnyContext())
                 return;
 
+            _logger.Warn().Project(context.Event.ProjectId).Message("Discarding event due to duplicate reference id: {0}", context.Event.ReferenceId).Write();
             context.IsCancelled = true;
         }
         
