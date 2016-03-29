@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     continue;
 
                 AddClientIpAddress(request, context.EventPostInfo?.IpAddress);
-                await SetBrowserOsAndDeviceFromUserAgent(request, context);
+                await SetBrowserOsAndDeviceFromUserAgent(request, context).AnyContext();
                 
                 context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
             }
