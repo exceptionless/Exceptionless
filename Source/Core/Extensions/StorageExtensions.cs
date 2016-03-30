@@ -49,6 +49,8 @@ namespace Exceptionless.Core.Extensions {
             if (String.IsNullOrEmpty(path))
                 return false;
 
+            await storage.SetNotActiveAsync(path, logger).AnyContext();
+
             // don't move files that are already in the archive
             if (path.StartsWith("archive"))
                 return true;
@@ -67,8 +69,7 @@ namespace Exceptionless.Core.Extensions {
                 logger.Error(ex, "Error archiving event post data \"{0}\".", path);
                 return false;
             }
-
-            await storage.SetNotActiveAsync(path, logger).AnyContext();
+            
             return true;
         }
     }
