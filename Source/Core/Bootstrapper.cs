@@ -159,7 +159,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
             
             container.RegisterSingleton<IMapper>(() => {
-                var profiles = container.GetAllInstances<Profile>();
+                var profiles = container.GetAllInstances<AutoMapper.Profile>();
                 var config = new MapperConfiguration(cfg => {
                     cfg.ConstructServicesUsing(container.GetInstance);
 

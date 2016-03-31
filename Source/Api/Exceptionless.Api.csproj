@@ -51,7 +51,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Elasticsearch.Net, Version=2.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Elasticsearch.Net.2.0.4\lib\net46\Elasticsearch.Net.dll</HintPath>
+      <HintPath>..\..\packages\Elasticsearch.Net.2.1.0\lib\net46\Elasticsearch.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.1.44.0, Culture=neutral, processorArchitecture=MSIL">
@@ -64,14 +64,6 @@
     </Reference>
     <Reference Include="Foundatio, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Foundatio.4.0.869\lib\net451\Foundatio.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Foundatio.Repositories, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.1.0.41\lib\net451\Foundatio.Repositories.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.41\lib\net451\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Core, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -95,14 +87,12 @@
       <HintPath>..\..\packages\Microsoft.Owin.Security.3.0.1\lib\net45\Microsoft.Owin.Security.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nest, Version=2.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NEST.2.0.4\lib\net46\Nest.dll</HintPath>
     <Reference Include="ModernHttpClient, Version=2.4.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\modernhttpclient.2.4.2\lib\Portable-Net45+WinRT45+WP8+WPA81\ModernHttpClient.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NEST.1.8.0\lib\net45\Nest.dll</HintPath>
+    <Reference Include="Nest, Version=2.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NEST.2.1.0\lib\net46\Nest.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -310,6 +300,14 @@
     <ProjectReference Include="..\..\..\Foundatio.Repositories\src\Core\Foundatio.Repositories.csproj">
       <Project>{f5b6c2b5-485f-4a4b-8e00-d5f77676cd6e}</Project>
       <Name>Foundatio.Repositories</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Foundatio.Repositories\src\Core\Foundatio.Repositories.csproj">
+      <Project>{f5b6c2b5-485f-4a4b-8e00-d5f77676cd6e}</Project>
+      <Name>Foundatio.Repositories</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Foundatio.Repositories\src\Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj">
+      <Project>{3bfbd4c1-3f2c-46a4-9400-2cb9803644be}</Project>
+      <Name>Foundatio.Repositories.Elasticsearch</Name>
     </ProjectReference>
     <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>

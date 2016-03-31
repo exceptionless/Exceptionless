@@ -17,7 +17,6 @@ using Foundatio.Repositories.Utility;
 using Nest;
 using Fields = Exceptionless.Core.Repositories.Configuration.EventIndex.Fields.PersistentEvent;
 using SortOrder = Foundatio.Repositories.Models.SortOrder;
-using Fields = Exceptionless.Core.Repositories.Configuration.EventIndex.Fields.PersistentEvent;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
@@ -227,7 +226,7 @@ namespace Exceptionless.Core.Repositories {
             var results = await FindAsync(new ExceptionlessQuery()
                 .WithDateRange(utcStart, utcEventDate, Fields.Date)
                 .WithIndices(utcStart, utcEventDate, $"'{_index.VersionedName}-'yyyyMM")
-                .WithSort(FieldNamesFieldlds.Date, SortOrder.Descending)
+                .WithSort(EventIndex.Fields.PersistentEvent.Date, SortOrder.Descending)
                 .WithLimit(10)
                 .WithSelectedFields("id", "date")
                 .WithSystemFilter(systemFilter)
