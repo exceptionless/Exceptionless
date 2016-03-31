@@ -25,7 +25,7 @@ namespace Exceptionless.Tests.Utility {
 
         public static Project GenerateProject(bool generateId = false, string id = null, string organizationId = null, string name = null, Int64? nextSummaryEndOfDayTicks = null) {
             var project = new Project {
-                Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : String.Empty : id,
+                Id = !id.IsNullOrEmpty() ? id : generateId ? ObjectId.GenerateNewId().ToString() : null,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
                 Name = name ?? $"Project{id}"
             };

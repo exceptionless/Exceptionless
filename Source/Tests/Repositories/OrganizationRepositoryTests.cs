@@ -121,7 +121,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             var messagePublisher = IoC.GetInstance<IMessagePublisher>() as InMemoryMessageBus;
             Assert.NotNull(messagePublisher);
             messagePublisher.Subscribe<PlanOverage>(po => {
-                _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly}");
+                _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly})");
                 messages.Add(po);
             });
 
@@ -136,6 +136,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(0, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
 
             Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 3));
+            await Task.Delay(5);
             Assert.Equal(1, messages.Count);
             Assert.Equal(12, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
             Assert.Equal(12, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
@@ -146,7 +147,8 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _client.RefreshAsync(Indices.All);
 
             Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 751));
-            //Assert.Equal(2, messages.Count);
+            await Task.Delay(5);
+            Assert.Equal(2, messages.Count);
             Assert.Equal(751, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
             Assert.Equal(751, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
             Assert.Equal(740, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));

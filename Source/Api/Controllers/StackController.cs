@@ -511,9 +511,14 @@ namespace Exceptionless.Api.Controllers {
             var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
             
-            FindResults<Stack> results;
             try {
-                results = await _repository.GetByFilterAsync(systemFilter, userFilter, sortBy, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
+                var results = await _repository.GetByFilterAsync(systemFilter, userFilter, sortBy, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
+
+                var stacks = results.Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
+                if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
+                    return OkWithResourceLinks(await GetStackSummariesAsync(stacks, timeInfo.Offset, timeInfo.UtcRange.UtcStart, timeInfo.UtcRange.UtcEnd), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+
+                return OkWithResourceLinks(stacks, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
@@ -525,12 +530,6 @@ namespace Exceptionless.Api.Controllers {
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
-
-            var stacks = results.Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(await GetStackSummariesAsync(stacks, timeInfo.Offset, timeInfo.UtcRange.UtcStart, timeInfo.UtcRange.UtcEnd), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
-
-            return OkWithResourceLinks(stacks, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
         /// <summary>
@@ -664,10 +663,20 @@ namespace Exceptionless.Api.Controllers {
 
             var timeInfo = GetTimeInfo(time, offset);
 
-            ICollection<EventTermStatsItem> terms;
-
             try {
-                terms = (await _eventStats.GetTermsStatsAsync(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1)).Terms;
+                var terms = (await _eventStats.GetNumbersTermsStatsAsync("stack_id", new List<FieldAggregation>(), timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1)).Terms;
+                if (terms.Count == 0)
+                    return Ok(new object[0]);
+
+                var stackIds = terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
+                var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
+
+                if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase)) {
+                    var summaries = GetStackSummaries(stacks, terms);
+                    return OkWithResourceLinks(GetStackSummaries(stacks, terms).Take(limit).ToList(), summaries.Count > limit, page);
+                }
+
+                return OkWithResourceLinks(stacks.Take(limit).ToList(), stacks.Count > limit, page);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset, Page = page, Limit = limit })
@@ -679,19 +688,6 @@ namespace Exceptionless.Api.Controllers {
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
-
-            if (terms.Count == 0)
-                return Ok(new object[0]);
-
-            var stackIds = terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
-            var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
-
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase)) {
-                var summaries = GetStackSummaries(stacks, terms);
-                return OkWithResourceLinks(GetStackSummaries(stacks, terms).Take(limit).ToList(), summaries.Count > limit, page);
-            }
-
-            return OkWithResourceLinks(stacks.Take(limit).ToList(), stacks.Count > limit, page);
         }
 
         /// <summary>
@@ -720,11 +716,11 @@ namespace Exceptionless.Api.Controllers {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
 
-            var terms = (await _eventStats.GetTermsStatsAsync(utcStart, utcEnd, "stack_id", String.Join(" OR ", stacks.Select(r => "stack:" + r.Id)), null, offset, stacks.Count)).Terms;
+            var terms = (await _eventStats.GetNumbersTermsStatsAsync("stack_id", new List<FieldAggregation>(), utcStart, utcEnd, String.Join(" OR ", stacks.Select(r => "stack:" + r.Id)), null, offset, stacks.Count)).Terms;
             return GetStackSummaries(stacks, terms);
         }
 
-        private ICollection<StackSummaryModel> GetStackSummaries(IEnumerable<Stack> stacks, IEnumerable<EventTermStatsItem> terms) {
+        private ICollection<StackSummaryModel> GetStackSummaries(IEnumerable<Stack> stacks, IEnumerable<NumbersTermStatsItem> terms) {
             return stacks.Join(terms, s => s.Id, tk => tk.Term, (stack, term) => {
                 var data = _formattingPluginManager.GetStackSummaryData(stack);
                 var summary = new StackSummaryModel {
@@ -734,9 +730,7 @@ namespace Exceptionless.Api.Controllers {
                     Title = stack.Title,
                     FirstOccurrence = term.FirstOccurrence,
                     LastOccurrence = term.LastOccurrence,
-                    New = term.New,
-                    Total = term.Total,
-                    Unique = term.Unique
+                    Total = term.Total
                 };
 
                 return summary;

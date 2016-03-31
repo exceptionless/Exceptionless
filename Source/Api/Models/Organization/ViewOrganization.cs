@@ -27,7 +27,7 @@ namespace Exceptionless.Api.Models {
         public bool HasPremiumFeatures { get; set; }
         public int MaxUsers { get; set; }
         public int MaxProjects { get; set; }
-        public int ProjectCount { get; set; }
+        public long ProjectCount { get; set; }
         public long StackCount { get; set; }
         public long EventCount { get; set; }
         public ICollection<Invite> Invites { get; set; }

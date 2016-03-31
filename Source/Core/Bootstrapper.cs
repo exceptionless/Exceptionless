@@ -33,14 +33,12 @@ using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
-using Foundatio.ServiceProviders;
 using Foundatio.Storage;
 using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
 using SimpleInjector;
-using SimpleInjector.Advanced;
 
 namespace Exceptionless.Core {
     public class Bootstrapper {
@@ -110,6 +108,7 @@ namespace Exceptionless.Core {
             workItemHandlers.Register<StackWorkItem>(container.GetInstance<StackWorkItemHandler>);
             workItemHandlers.Register<ThrottleBotsWorkItem>(container.GetInstance<ThrottleBotsWorkItemHandler>);
             workItemHandlers.Register<OrganizationMaintenanceWorkItem>(container.GetInstance<OrganizationMaintenanceWorkItemHandler>);
+            workItemHandlers.Register<OrganizationNotificationWorkItem>(container.GetInstance<OrganizationNotificationWorkItemHandler>);
             workItemHandlers.Register<ProjectMaintenanceWorkItem>(container.GetInstance<ProjectMaintenanceWorkItemHandler>);
             container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);
             container.RegisterSingleton<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(behaviors: container.GetAllInstances<IQueueBehavior<WorkItemData>>(), workItemTimeout: TimeSpan.FromHours(1)));

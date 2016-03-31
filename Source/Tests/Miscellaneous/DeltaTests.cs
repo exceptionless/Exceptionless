@@ -12,7 +12,7 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
 
         [Fact]
         public void CanSetUnknownProperties() {
-            dynamic delta = new Delta<SimpleMessageA>(Log.CreateLogger<Delta<SimpleMessageA>>());
+            dynamic delta = new Delta<SimpleMessageA>();
             delta.Data = "Blah";
             delta.SomeUnknown = "yes";
             Assert.Equal(1, delta.UnknownProperties.Count);
@@ -20,7 +20,7 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
 
         [Fact]
         public void CanPatchUnrelatedTypes() {
-            dynamic delta = new Delta<SimpleMessageA>(Log.CreateLogger<Delta<SimpleMessageA>>());
+            dynamic delta = new Delta<SimpleMessageA>();
             delta.Data = "Blah";
 
             var msg = new SimpleMessageB {

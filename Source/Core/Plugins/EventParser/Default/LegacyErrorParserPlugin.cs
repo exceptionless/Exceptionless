@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
 
                 return ctx.Documents.FromJson<PersistentEvent>(_settings);
             } catch (Exception ex) {
-                _logger.Error().Message("Error parsing event: {0}", ex.Message).Exception(ex).Write();
+                _logger.Error(ex, "Error parsing event: {0}", ex.Message);
                 return null;
             }
         }

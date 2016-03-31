@@ -52,7 +52,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 var lastSessionEvent = session.Last();
                 
                 // cancel duplicate start events (1 per session id)
-                session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => ev.IsCancelled = true);
+                session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => {
+                    _logger.Warn().Project(projectId).Message("Discarding duplicate session start events.").Write();
+                    ev.IsCancelled = true;
+                });
                 var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
                 
                 // sync the session start event with the first session event.
@@ -60,7 +63,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     sessionStartEvent.Event.Date = firstSessionEvent.Event.Date;
 
                 // cancel duplicate end events (1 per session id)
-                session.Where(ev => ev.Event.IsSessionEnd()).Skip(1).ForEach(ev => ev.IsCancelled = true);
+                session.Where(ev => ev.Event.IsSessionEnd()).Skip(1).ForEach(ev => {
+                    _logger.Warn().Project(projectId).Message("Discarding duplicate session end events.").Write();
+                    ev.IsCancelled = true;
+                });
                 var sessionEndEvent = session.FirstOrDefault(ev => ev.Event.IsSessionEnd());
 
                 // sync the session end event with the last session event.
@@ -75,6 +81,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                 // do we already have a session start for this session id?
                 if (!String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent != null) {
+                    _logger.Warn().Project(projectId).Message("Discarding duplicate session start event for session: {0}", sessionStartEventId).Write();
                     sessionStartEvent.IsCancelled = true;
                 } else if (String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent != null) {
                     // no existing session, session start is in the batch
@@ -85,6 +92,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                     // if session end, without any session events, cancel
                     if (session.Count(s => !s.IsCancelled) == 1 && firstSessionEvent.Event.IsSessionEnd()) {
+                        _logger.Warn().Project(projectId).Message("Discarding session end event with no session events.").Write();
                         firstSessionEvent.IsCancelled = true;
                         continue;
                     }
@@ -110,7 +118,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     var lastSessionEvent = session.Last();
 
                     // cancel duplicate start events
-                    session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => ev.IsCancelled = true);
+                    session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => {
+                        _logger.Warn().Project(projectId).Message("Discarding duplicate session start events.").Write();
+                        ev.IsCancelled = true;
+                    });
                     var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
                     
                     // sync the session start event with the first session event.
@@ -124,6 +135,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                     // if session end, without any session events, cancel
                     if (String.IsNullOrEmpty(sessionId) && session.Count == 1 && firstSessionEvent.Event.IsSessionEnd()) {
+                        _logger.Warn().Project(projectId).Message("Discarding session end event with no session events.").Write();
                         firstSessionEvent.IsCancelled = true;
                         continue;
                     }
@@ -148,8 +160,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                             await SetIdentitySessionIdAsync(projectId, identityGroup.Key, sessionId).AnyContext();
                     } else {
                         // we already have a session start, cancel this one
-                        if (sessionStartEvent != null)
+                        if (sessionStartEvent != null) {
+                            _logger.Warn().Project(projectId).Message("Discarding duplicate session start event.").Write();
                             sessionStartEvent.IsCancelled = true;
+                        }
 
                         await UpdateSessionStartEventAsync(projectId, sessionId, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
                     }

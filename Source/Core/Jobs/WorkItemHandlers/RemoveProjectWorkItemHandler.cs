@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<RemoveProjectWorkItem>();
-            _logger.Info().Message("Received remove project work item for: {0} Reset Data: {1}", workItem.ProjectId, workItem.Reset).Write();
+            _logger.Info("Received remove project work item for: {0} Reset Data: {1}", workItem.ProjectId, workItem.Reset);
 
             await context.ReportProgressAsync(0, "Starting deletion...").AnyContext();
             var project = await _projectRepository.GetByIdAsync(workItem.ProjectId).AnyContext();

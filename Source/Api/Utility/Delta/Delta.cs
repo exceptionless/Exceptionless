@@ -8,7 +8,6 @@ using System.Dynamic;
 using System.Linq;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Reflection;
-using Foundatio.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -21,8 +20,7 @@ namespace Exceptionless.Api.Utility {
     public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType : class {
         // cache property accessors for this type and all its derived types.
         private static ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>> _propertyCache = new ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>>();
-
-        private readonly ILogger _logger;
+        
         private Dictionary<string, IMemberAccessor> _propertiesThatExist;
         private readonly Dictionary<string, object> _unknownProperties = new Dictionary<string, object>();
         private HashSet<string> _changedProperties;
@@ -32,7 +30,7 @@ namespace Exceptionless.Api.Utility {
         /// <summary>
         /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
         /// </summary>
-        public Delta(ILogger<Delta<TEntityType>> logger) : this(typeof(TEntityType), logger) {}
+        public Delta() : this(typeof(TEntityType)) {}
 
         /// <summary>
         /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
@@ -41,9 +39,7 @@ namespace Exceptionless.Api.Utility {
         ///     The derived entity type for which the changes would be tracked.
         ///     <paramref name="entityType" /> should be assignable to instances of <typeparamref name="TEntityType" />.
         /// </param>
-        /// <param name="logger"></param>
-        public Delta(Type entityType, ILogger<Delta<TEntityType>> logger) {
-            _logger = logger;
+        public Delta(Type entityType) {
             Initialize(entityType);
         }
 
@@ -86,8 +82,7 @@ namespace Exceptionless.Api.Utility {
                 if (value is JToken) {
                     try {
                         value = JsonConvert.DeserializeObject(value.ToString(), cacheHit.MemberType);
-                    } catch (Exception ex) {
-                        _logger.Error(ex, "Error deserializing value: {0}", value.ToString());
+                    } catch (Exception) {
                         return false;
                     }
                 } else {
