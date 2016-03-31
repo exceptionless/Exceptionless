@@ -12,17 +12,17 @@ using Xunit;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public class ElasticSearchConfigurationTests {
-        public readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        public readonly ElasticConfiguration _configuration = IoC.GetInstance<ElasticConfiguration>();
-        public readonly EventIndex _eventIndex = new EventIndex();
-        public readonly StackIndex _stackIndex = new StackIndex();
-        public readonly EventRepository _eventRepository = IoC.GetInstance<EventRepository>();
+        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
+        private readonly ElasticConfiguration _configuration = IoC.GetInstance<ElasticConfiguration>();
+        private readonly EventIndex _eventIndex = new EventIndex();
+        private readonly StackIndex _stackIndex = new StackIndex();
+        private readonly EventRepository _eventRepository = IoC.GetInstance<EventRepository>();
 
         [Fact]
-        public void CanCreateStackAlias() {
+        public async Task CanCreateStackAliasAsync() {
             _configuration.DeleteIndexes(_client);
             _configuration.ConfigureIndexes(_client);
-            var index = _client.GetIndex(descriptor => descriptor.Index(_stackIndex.VersionedName));
+            var index = await _client.GetIndexAsync(Indices.Index(_stackIndex.VersionedName));
             Assert.True(index.IsValid);
             Assert.Equal(1, index.Indices.Count);
 

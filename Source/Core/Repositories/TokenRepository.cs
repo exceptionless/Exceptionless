@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Repositories {
         public TokenRepository(ElasticRepositoryContext<Token> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) { }
 
         public Task<FindResults<Token>> GetApiTokensAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var filter = Query<Token>.Term(e => e.Type, TokenType.Access) && Query<Token>.Missing(e => e.UserId);
+            var filter = Query<Token>.Term(e => e.Type, TokenType.Access) && Query<Token>.Missing(e => e.Field(f => f.UserId));
             return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
                 .WithElasticFilter(filter)

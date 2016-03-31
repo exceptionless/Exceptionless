@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Repositories {
         
         // TODO: We need to index and search by the created time.
         public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null) {
-            var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && Query<PersistentEvent>.Missing(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]);
+            var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && Query<PersistentEvent>.Missing(e => e.Field(f => f.Idx[Event.KnownDataKeys.SessionEnd + "-d"]));
             if (createdBeforeUtc.Ticks > 0)
                 filter &= Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThanOrEquals(createdBeforeUtc));
 
@@ -230,7 +230,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithLimit(10)
                 .WithSelectedFields("id", "date")
                 .WithSystemFilter(systemFilter)
-                .WithElasticFilter(!Query<PersistentEvent>.Ids(new[] { ev.Id }))
+                .WithElasticFilter(!Query<PersistentEvent>.Ids(d => d.Values(ev.Id)))
                 .WithFilter(userFilter)).AnyContext();
 
             if (results.Total == 0)
@@ -275,7 +275,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithLimit(10)
                 .WithSelectedFields("id", "date")
                 .WithSystemFilter(systemFilter)
-                .WithElasticFilter(!Query<PersistentEvent>.Ids(new[] { ev.Id }))
+                .WithElasticFilter(!Query<PersistentEvent>.Ids(d => d.Values(ev.Id)))
                 .WithFilter(userFilter)).AnyContext();
 
             if (results.Total == 0)

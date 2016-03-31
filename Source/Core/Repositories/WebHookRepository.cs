@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
-            var filter = (Query<WebHook>.Term(e => e.OrganizationId, organizationId) && Query<WebHook>.Missing(e => e.ProjectId)) || Query<WebHook>.Term(e => e.ProjectId, projectId);
+            var filter = Query<WebHook>.Term(e => e.OrganizationId, organizationId) && Query<WebHook>.Missing(e => e.Field(f => f.ProjectId)) || Query<WebHook>.Term(e => e.ProjectId, projectId);
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))
