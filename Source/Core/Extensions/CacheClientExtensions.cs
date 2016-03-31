@@ -14,7 +14,7 @@ namespace Exceptionless.Extensions {
                 return count.HasValue ? count.Value : startingValue.Value;
 
             if (count.HasValue)
-                return await client.IncrementAsync(key, value).AnyContext();
+                return await client.IncrementAsync(key, value, timeToLive).AnyContext();
 
             long newValue = startingValue.Value + value;
             await client.SetAsync(key, newValue, timeToLive).AnyContext();
@@ -27,7 +27,7 @@ namespace Exceptionless.Extensions {
 
             var count = await client.GetAsync<long>(key).AnyContext();
             if (count.HasValue)
-                return await client.IncrementAsync(key, value).AnyContext();
+                return await client.IncrementAsync(key, value, timeToLive).AnyContext();
 
             long newValue = startingValue.Value + value;
             await client.SetAsync(key, newValue, timeToLive).AnyContext();
