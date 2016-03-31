@@ -110,7 +110,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 };
                 organization.Invites.Add(invite);
                 await _organizationRepository.SaveAsync(organization);
-                _client.Refresh(r => r.Force());
+                await _client.RefreshAsync(Indices.All);
 
                 Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -186,7 +186,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 };
                 organization.Invites.Add(invite);
                 await _organizationRepository.SaveAsync(organization);
-                await _client.RefreshAsync(r => r.Force());
+                await _client.RefreshAsync(Indices.All);
 
                 Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -267,18 +267,18 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         public async Task RemoveAllUsersAsync() {
             await _userRepository.RemoveAllAsync();
-            await _client.RefreshAsync(r => r.Force());
+            await _client.RefreshAsync(Indices.All);
         }
 
         public async Task RemoveAllOrganizationsAsync() {
             await _organizationRepository.RemoveAllAsync();
-            await _client.RefreshAsync(r => r.Force());
+            await _client.RefreshAsync(Indices.All);
             _sampleOrganizationsAdded = false;
         }
 
         public async Task RemoveAllProjectsAsync() {
             await _projectRepository.RemoveAllAsync();
-            await _client.RefreshAsync(r => r.Force());
+            await _client.RefreshAsync(Indices.All);
             _sampleProjectsAdded = false;
         }
 
@@ -287,7 +287,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 return;
 
             await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects());
-            await _client.RefreshAsync(r => r.Force());
+            await _client.RefreshAsync(Indices.All);
             _sampleProjectsAdded = true;
         }
 
@@ -296,7 +296,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 return;
 
             await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations());
-            await _client.RefreshAsync(r => r.Force());
+            await _client.RefreshAsync(Indices.All);
             _sampleOrganizationsAdded = true;
         }
 

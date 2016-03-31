@@ -10,15 +10,12 @@ namespace Exceptionless.Core.Repositories.Queries {
     }
 
     public class StackIdQueryBuilder : QueryBuilderBase {
-        public override void BuildFilter<T>(object query, object options, ref FilterContainer container) {
+        public override void BuildFilter<T>(object query, object options, ref QueryContainer container) {
             var stackIdQuery = query as IStackIdQuery;
             if (stackIdQuery?.StackIds == null || stackIdQuery.StackIds.Count <= 0)
                 return;
 
-            if (stackIdQuery.StackIds.Count == 1)
-                container &= Filter<T>.Term("stack", stackIdQuery.StackIds.First());
-            else
-                container &= Filter<T>.Terms("stack", stackIdQuery.StackIds.ToArray());
+            container &= Query<T>.Terms(t => t.Field("stack").Terms(stackIdQuery.StackIds.ToArray()));
         }
     }
 

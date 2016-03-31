@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -55,7 +55,7 @@ namespace Exceptionless.Api.Tests.Jobs {
 
             _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);
             Assert.Equal(JobResult.Success, await _job.RunAsync());
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
 
@@ -114,7 +114,7 @@ namespace Exceptionless.Api.Tests.Jobs {
                 await _userRepository.AddAsync(user, true);
             }
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
         }
 
         private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
@@ -133,16 +133,16 @@ namespace Exceptionless.Api.Tests.Jobs {
             await _projectRepository.RemoveAllAsync();
             await _cacheClient.RemoveAllAsync();
             await _organizationRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _cacheClient.RemoveAllAsync();
         }
 
         private async Task RemoveEventsAndStacks() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _eventRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _stackRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _cacheClient.RemoveAllAsync();
         }
     }

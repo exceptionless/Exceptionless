@@ -514,7 +514,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 await _repository.AddAsync(events);
             }
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
         }
 
         private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {

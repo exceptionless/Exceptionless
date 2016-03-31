@@ -10,15 +10,12 @@ namespace Exceptionless.Core.Repositories.Queries {
     }
 
     public class ProjectIdQueryBuilder : QueryBuilderBase {
-        public override void BuildFilter<T>(object query, object options, ref FilterContainer container) {
+        public override void BuildFilter<T>(object query, object options, ref QueryContainer container) {
             var projectIdQuery = query as IProjectIdQuery;
             if (projectIdQuery?.ProjectIds == null || projectIdQuery.ProjectIds.Count <= 0)
                 return;
 
-            if (projectIdQuery.ProjectIds.Count == 1)
-                container &= Filter<T>.Term("project", projectIdQuery.ProjectIds.First());
-            else
-                container &= Filter<T>.Terms("project", projectIdQuery.ProjectIds.ToArray());
+            container &= Query<T>.Terms(t => t.Field("project").Terms(projectIdQuery.ProjectIds.ToArray()));
         }
     }
 

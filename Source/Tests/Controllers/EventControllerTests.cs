@@ -128,7 +128,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                     Assert.IsType<StatusCodeResult>(actionResult);
                 });
 
-                await _client.RefreshAsync();
+                await _client.RefreshAsync(Indices.All);
                 Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
                 Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
 
@@ -138,7 +138,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 sw.Stop();
                 Trace.WriteLine(sw.Elapsed);
 
-                await _client.RefreshAsync();
+                await _client.RefreshAsync(Indices.All);
                 var stats = await _eventQueue.GetQueueStatsAsync();
                 Assert.Equal(batchCount, stats.Completed);
                 var minimum = batchSize * batchCount;
@@ -188,27 +188,27 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         public async Task RemoveAllOrganizationsAsync() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _organizationRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             _sampleOrganizationsAdded = false;
         }
 
         public async Task RemoveAllProjectsAsync() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _projectRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             _sampleProjectsAdded = false;
         }
 
         public async Task RemoveAllEventsAsync() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _eventRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
         }
 
         public async Task<long> EventCountAsync() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             return await _eventRepository.CountAsync();
         }
 
@@ -217,7 +217,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 return;
 
             await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects());
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             _sampleProjectsAdded = true;
         }
 
@@ -226,7 +226,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 return;
 
             await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations());
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             _sampleOrganizationsAdded = true;
         }
 

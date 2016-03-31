@@ -26,16 +26,16 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task CanCreateUpdateRemoveAsync() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.Equal(0, await _repository.CountAsync());
 
             var organization = new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id };
             Assert.Null(organization.Id);
 
             await _repository.AddAsync(organization);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.NotNull(organization.Id);
 
             organization = await _repository.GetByIdAsync(organization.Id);
@@ -49,9 +49,9 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task CanFindManyAsync() {
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.Equal(0, await _repository.CountAsync());
 
             await _repository.AddAsync(new[] {
@@ -60,7 +60,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 2 }
             });
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.Equal(3, await _repository.CountAsync());
 
             var organizations = await _repository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithPage(1).WithLimit(1));
@@ -78,11 +78,11 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(2, organizations.Total);
 
             await _repository.RemoveAsync(organizations.Documents);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             Assert.Equal(1, await _repository.CountAsync());
             await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
         }
 
         [Fact]
@@ -96,7 +96,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Assert.Equal(0, cache.Count);
             await _repository.AddAsync(organization, true);
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.NotNull(organization.Id);
             Assert.Equal(1, cache.Count);
 
@@ -107,7 +107,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, cache.Count);
 
             await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
             Assert.Equal(0, cache.Count);
         }
 
@@ -126,7 +126,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             });
 
             var o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 9));
             Assert.Equal(0, messages.Count);
@@ -144,7 +144,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
 
             o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(Indices.All);
 
             Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 751));
             await Task.Delay(5);

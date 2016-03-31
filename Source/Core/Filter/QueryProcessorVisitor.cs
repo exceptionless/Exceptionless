@@ -5,17 +5,18 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.LuceneQueryParser;
 using Exceptionless.LuceneQueryParser.Nodes;
 using Exceptionless.LuceneQueryParser.Visitor;
+using Fields = Exceptionless.Core.Repositories.Configuration.EventIndex.Fields.PersistentEvent;
 
 namespace Exceptionless.Core.Filter {
     public class QueryProcessor {
         private static readonly HashSet<string> _freeFields = new HashSet<string> {
-            "hidden",
-            "fixed",
-            "type",
-            "reference",
-            "organization",
-            "project",
-            "stack"
+            Fields.Type,
+            Fields.IsHidden,
+            Fields.IsFixed,
+            Fields.OrganizationId,
+            Fields.ProjectId,
+            Fields.StackId,
+            Fields.ReferenceId
         };
 
         public static QueryProcessResult Process(string query) {
