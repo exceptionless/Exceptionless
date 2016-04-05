@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Repositories {
         Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging);
         Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
         Task<BillingPlanStats> GetBillingPlanStatsAsync();
-        Task<bool> IncrementUsageAsync(string organizationId, bool tooBig, int count = 1);
+        Task<bool> IncrementUsageAsync(string organizationId, bool tooBig, int count = 1, bool applyHourlyLimit = true);
         Task<int> GetRemainingEventLimitAsync(string organizationId);
     }
 }

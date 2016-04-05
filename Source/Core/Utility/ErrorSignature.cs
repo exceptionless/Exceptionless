@@ -164,8 +164,10 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             var extraProperties = error.Data.GetValue<Dictionary<string, object>>(Error.KnownDataKeys.ExtraProperties);
-            if (extraProperties == null)
+            if (extraProperties == null) {
+                error.Data.Remove(Error.KnownDataKeys.ExtraProperties);
                 return;
+            }
 
             object value;
             if (extraProperties.TryGetValue("Number", out value))
