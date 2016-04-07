@@ -93,13 +93,13 @@ namespace Exceptionless.Core.Utility {
                  .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
                  .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
                  .Aggregations(agg => BuildAggregations(agg
-                     .Terms("terms", t => t
+                     .Terms("terms", t => BuildTermSort(t
                         .Field(term)
                         .Size(max)
                         .Aggregations(agg2 => BuildAggregations(agg2
                             .Min("first_occurrence", o => o.Field(ev => ev.Date))
                             .Max("last_occurrence", o => o.Field(ev => ev.Date)), fields)
-                        )
+                        ), fields)
                      ), fields)
                  )
              ).AnyContext();
@@ -139,7 +139,7 @@ namespace Exceptionless.Core.Utility {
 
             return stats;
         }
-
+        
         public async Task<NumbersTimelineStatsResult> GetNumbersTimelineStatsAsync(IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
@@ -257,6 +257,14 @@ namespace Exceptionless.Core.Utility {
             return aggregation;
         }
 
+        private TermsAggregationDescriptor<PersistentEvent> BuildTermSort(TermsAggregationDescriptor<PersistentEvent> aggregations, IEnumerable<FieldAggregation> fields) {
+            var field = fields.FirstOrDefault(f => f.SortOrder.HasValue);
+            if (field?.SortOrder == null)
+                return aggregations;
+            
+            return field.SortOrder.Value == Foundatio.Repositories.Models.SortOrder.Ascending ? aggregations.OrderAscending(field.Key) : aggregations.OrderDescending(field.Key);
+        }
+
         private double[] GetNumbers(AggregationsHelper aggregations, IEnumerable<FieldAggregation> fields) {
             var results = new List<double>();
             foreach (var field in fields) {
@@ -309,11 +317,11 @@ namespace Exceptionless.Core.Utility {
             }
         }
 
-        private static string HoursAndMinutes(TimeSpan ts) {
+        private string HoursAndMinutes(TimeSpan ts) {
             return (ts < TimeSpan.Zero ? "-" : "") + ts.ToString("hh\\:mm");
         }
 
-        private static Tuple<string, TimeSpan> GetInterval(DateTime utcStart, DateTime utcEnd, int desiredDataPoints = 100) {
+        private Tuple<string, TimeSpan> GetInterval(DateTime utcStart, DateTime utcEnd, int desiredDataPoints = 100) {
             string interval;
             var totalTime = utcEnd - utcStart;
 
