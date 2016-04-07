@@ -707,35 +707,24 @@ namespace Exceptionless.Api.Controllers {
             return (await PopulateOrganizationStatsAsync(new List<ViewOrganization> { organization })).FirstOrDefault();
         }
 
-        private async Task<List<ViewOrganization>> PopulateOrganizationStatsAsync(List<ViewOrganization> organizations) {
-            if (organizations.Count <= 0)
-                return organizations;
-
-            StringBuilder builder = new StringBuilder();
-            for (int index = 0; index < organizations.Count; index++) {
-                if (index > 0)
-                    builder.Append(" OR ");
-
-                var organization = organizations[index];
-                if (organization.RetentionDays > 0)
-                    builder.AppendFormat("(organization:{0} AND (date:[now/d-{1}d TO now/d+1d}} OR last:[now/d-{1}d TO now/d+1d}}))", organization.Id, organization.RetentionDays);
-                else
-                    builder.AppendFormat("organization:{0}", organization.Id);
-            }
-
+        private async Task<List<ViewOrganization>> PopulateOrganizationStatsAsync(List<ViewOrganization> viewOrganizations) {
+            if (viewOrganizations.Count <= 0)
+                return viewOrganizations;
+            
             var fields = new List<FieldAggregation> {
                 new FieldAggregation { Type = FieldAggregationType.Distinct, Field = "stack_id" }
             };
 
-            var result = await _stats.GetNumbersTermsStatsAsync("organization_id", fields, DateTime.MinValue, DateTime.MaxValue, builder.ToString(), max: organizations.Count);
-            foreach (var organization in organizations) {
+            var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, RetentionDays = o.RetentionDays }).ToList();
+            var result = await _stats.GetNumbersTermsStatsAsync("organization_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, organizations.BuildRetentionFilter(), max: viewOrganizations.Count);
+            foreach (var organization in viewOrganizations) {
                 var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
                 organization.EventCount = organizationStats?.Total ?? 0;
                 organization.StackCount = (long)(organizationStats?.Numbers[0] ?? 0);
                 organization.ProjectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id);
             }
 
-            return organizations;
+            return viewOrganizations;
         }
     }
 }

@@ -511,36 +511,24 @@ namespace Exceptionless.Api.Controllers {
             return (await PopulateProjectStatsAsync(new List<ViewProject> { project })).FirstOrDefault();
         }
 
-        private async Task<List<ViewProject>> PopulateProjectStatsAsync(List<ViewProject> projects) {
-            if (projects.Count <= 0)
-                return projects;
-
-            var organizations = await _organizationRepository.GetByIdsAsync(projects.Select(p => p.Id).ToArray(), true);
-            StringBuilder builder = new StringBuilder();
-            for (int index = 0; index < projects.Count; index++) {
-                if (index > 0)
-                    builder.Append(" OR ");
-
-                var project = projects[index];
-                var organization = organizations.Documents.FirstOrDefault(o => o.Id == project.Id);
-                if (organization != null && organization.RetentionDays > 0)
-                    builder.AppendFormat("(project:{0} AND (date:[now/d-{1}d TO now/d+1d}} OR last:[now/d-{1}d TO now/d+1d}}))", project.Id, organization.RetentionDays);
-                else
-                    builder.AppendFormat("project:{0}", project.Id);
-            }
-
+        private async Task<List<ViewProject>> PopulateProjectStatsAsync(List<ViewProject> viewProjects) {
+            if (viewProjects.Count <= 0)
+                return viewProjects;
+            
             var fields = new List<FieldAggregation> {
                 new FieldAggregation { Type = FieldAggregationType.Distinct, Field = "stack_id" }
             };
 
-            var result = await _stats.GetNumbersTermsStatsAsync("project_id", fields, DateTime.MinValue, DateTime.MaxValue, builder.ToString(), max: projects.Count);
-            foreach (var project in projects) {
-                var projectStats = result.Terms.FirstOrDefault(t => t.Term == project.Id);
-                project.EventCount = projectStats?.Total ?? 0;
-                project.StackCount = (long)(projectStats?.Numbers[0] ?? 0);
+            var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true)).Documents;
+            var filter = viewProjects.Select(p => new Project { Id = p.Id, OrganizationId = p.OrganizationId }).ToList().BuildRetentionFilter(organizations);
+            var ntsr = await _stats.GetNumbersTermsStatsAsync("project_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, filter, max: viewProjects.Count);
+            foreach (var project in viewProjects) {
+                var term = ntsr.Terms.FirstOrDefault(t => t.Term == project.Id);
+                project.EventCount = term?.Total ?? 0;
+                project.StackCount = (long)(term?.Numbers[0] ?? 0);
             }
 
-            return projects;
+            return viewProjects;
         }
     }
 }
