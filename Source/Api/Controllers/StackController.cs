@@ -43,6 +43,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly List<FieldAggregation> _distinctUsersFields = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct } };
+        private readonly List<FieldAggregation> _distinctUsersFieldsWithSort = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct, SortOrder = SortOrder.Descending } };
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository,
             IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository,
@@ -649,10 +650,70 @@ namespace Exceptionless.Api.Controllers {
         [Route("frequent")]
         [ResponseType(typeof(List<Stack>))]
         public Task<IHttpActionResult> FrequentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return FrequentInternalAsync(null, filter, time, offset, mode, page, limit);
+            return GetAllByTermsAsync(_distinctUsersFields, null, filter, time, offset, mode, page, limit);
         }
 
-        private async Task<IHttpActionResult> FrequentInternalAsync(string systemFilter = null, string userFilter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        /// <summary>
+        /// Gets most frequent by project
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The project could not be found.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> FrequentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
+                return NotFound();
+
+            return await GetAllByTermsAsync(_distinctUsersFields, String.Concat("project:", projectId), filter, time, offset, mode, page, limit);
+        }
+
+        /// <summary>
+        /// Get most users
+        /// </summary>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        [HttpGet]
+        [Route("users")]
+        [ResponseType(typeof(List<Stack>))]
+        public Task<IHttpActionResult> UsersAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return GetAllByTermsAsync(_distinctUsersFieldsWithSort, null, filter, time, offset, mode, page, limit);
+        }
+
+        /// <summary>
+        /// Gets most users by project
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The project could not be found.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/users")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> UsersByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
+                return NotFound();
+
+            return await GetAllByTermsAsync(_distinctUsersFieldsWithSort, String.Concat("project:", projectId), filter, time, offset, mode, page, limit);
+        }
+
+        private async Task<IHttpActionResult> GetAllByTermsAsync(ICollection<FieldAggregation> fields, string systemFilter = null, string userFilter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page, limit);
@@ -667,9 +728,9 @@ namespace Exceptionless.Api.Controllers {
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             if (String.IsNullOrEmpty(systemFilter))
                 systemFilter = BuildSystemFilter(organizations, userFilter, pr.UsesPremiumFeatures);
-            
+
             try {
-                var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", _distinctUsersFields, ti.UtcRange.Start, ti.UtcRange.End, systemFilter, userFilter, ti.Offset, GetSkip(page + 1, limit) + 1);
+                var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", fields, ti.UtcRange.Start, ti.UtcRange.End, systemFilter, userFilter, ti.Offset, GetSkip(page + 1, limit) + 1);
                 if (ntsr.Terms.Count == 0)
                     return Ok(new object[0]);
 
@@ -693,28 +754,6 @@ namespace Exceptionless.Api.Controllers {
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
-        }
-
-        /// <summary>
-        /// Gets most frequent by project
-        /// </summary>
-        /// <param name="projectId">The identifier of the project.</param>
-        /// <param name="filter">A filter that controls what data is returned from the server.</param>
-        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
-        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
-        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
-        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-        /// <response code="404">The project could not be found.</response>
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
-        [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> FrequentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var project = await GetProjectAsync(projectId);
-            if (project == null)
-                return NotFound();
-
-            return await FrequentInternalAsync(String.Concat("project:", projectId), filter, time, offset, mode, page, limit);
         }
 
         private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, TimeSpan offset, IList<Organization> organizations, DateTime utcStart, DateTime utcEnd) {
