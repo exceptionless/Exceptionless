@@ -93,14 +93,15 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(filter))
                 filter = filter.ReplaceFirst("stack:current", "stack:" + model.StackId);
 
-            var processResult = QueryProcessor.Process(filter);
-            if (!processResult.IsValid)
+            var pr = QueryProcessor.Process(filter);
+            if (!pr.IsValid)
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
+            
+            var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
+            var sf = BuildSystemFilter(organizations, filter, pr.UsesPremiumFeatures);
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
 
-            var systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
-            var timeInfo = GetTimeInfo(time, offset);
-            var result = await _repository.GetPreviousAndNextEventIdsAsync(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End);
-
+            var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, pr.ExpandedQuery, ti.UtcRange.Start, ti.UtcRange.End);
             return OkWithLinks(model, GetEntityResourceLink(result.Previous, "previous"), GetEntityResourceLink(result.Next, "next"), GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
 
@@ -128,20 +129,23 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(new object[0]);
 
-            var processResult = QueryProcessor.Process(userFilter);
-            if (!processResult.IsValid)
-                return BadRequest(processResult.Message);
+            var pr = QueryProcessor.Process(userFilter);
+            if (!pr.IsValid)
+                return BadRequest(pr.Message);
 
-            if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, processResult.UsesPremiumFeatures || usesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+            var ti = GetTimeInfo(time, offset);
+            if (String.IsNullOrEmpty(systemFilter)) {
+                var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
+                systemFilter = BuildSystemFilter(organizations, userFilter, pr.UsesPremiumFeatures || usesPremiumFeatures);
+                ti.ApplyMinimumUtcStartDate(organizations.GetRetentionUtcCutoff());
+            }
 
             var sortBy = GetSort(sort);
-            var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
 
             FindResults<PersistentEvent> events;
             try {
-                events = await _repository.GetByFilterAsync(systemFilter, processResult.ExpandedQuery, sortBy, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
+                events = await _repository.GetByFilterAsync(systemFilter, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })

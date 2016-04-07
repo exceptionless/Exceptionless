@@ -38,7 +38,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected ICollection<string> AllowedFields { get; private set; }
 
-        protected virtual TimeInfo GetTimeInfo(string time, string offset) {
+        protected virtual TimeInfo GetTimeInfo(string time, string offset, DateTime? minimumUtcStartDate = null) {
             string field = null;
             if (!String.IsNullOrEmpty(time) && time.Contains("|")) {
                 var parts = time.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
@@ -51,12 +51,15 @@ namespace Exceptionless.Api.Controllers {
             // range parsing needs to be based on the user's local time.
             var localRange = DateTimeRange.Parse(time, DateTime.UtcNow.Add(utcOffset));
             var utcRange = localRange != DateTimeRange.Empty ? localRange.Subtract(utcOffset) : localRange;
+            
+            if (utcRange.UtcStart < minimumUtcStartDate.GetValueOrDefault())
+                utcRange = new DateTimeRange(minimumUtcStartDate.GetValueOrDefault(), utcRange.End);
 
-            return new TimeInfo {
-                Field = field,
-                Offset = utcOffset,
-                UtcRange = utcRange
-            };
+            var timeInfo = new TimeInfo { Field = field, Offset = utcOffset,  UtcRange = utcRange };
+            if (minimumUtcStartDate.HasValue)
+                timeInfo.ApplyMinimumUtcStartDate(minimumUtcStartDate.Value);
+
+            return timeInfo;
         }
         
         protected virtual SortingOptions GetSort(string sort) {
@@ -129,31 +132,25 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public async Task<string> GetAssociatedOrganizationsFilterAsync(IOrganizationRepository repository, bool filterUsesPremiumFeatures, bool hasOrganizationOrProjectFilter, string retentionDateFieldName = "date") {
-            if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
+        public async Task<ICollection<Organization>> GetAssociatedOrganizationsAsync(IOrganizationRepository repository) {
+            if (repository == null)
                 return null;
 
-            var associatedOrganizations = await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true);
-            var organizations = associatedOrganizations.Documents.Where(o => !o.IsSuspended && (o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures))).ToList();
-            if (organizations.Count == 0)
+            return (await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true)).Documents;
+        }
+        
+        public string BuildSystemFilter(ICollection<Organization> organizations, string filter, bool usesPremiumFeatures, string retentionDateFieldName = "date") {
+            if (HasOrganizationOrProjectFilter(filter) && Request.IsGlobalAdmin())
+                return null;
+            
+            var allowedOrganizations = organizations.Where(o => !o.IsSuspended && (o.HasPremiumFeatures || (!o.HasPremiumFeatures && !usesPremiumFeatures))).ToList();
+            if (allowedOrganizations.Count == 0)
                 return "organization:none";
 
-            var builder = new StringBuilder();
-            for (int index = 0; index < organizations.Count; index++) {
-                if (index > 0)
-                    builder.Append(" OR ");
-
-                var organization = organizations[index];
-                if (organization.RetentionDays > 0)
-                    builder.AppendFormat("(organization:{0} AND {1}:[now/d-{2}d TO now/d+1d}})", organization.Id, retentionDateFieldName, organization.RetentionDays);
-                else
-                    builder.AppendFormat("organization:{0}", organization.Id);
-            }
-
-            return builder.ToString();
+            return allowedOrganizations.BuildRetentionFilter(retentionDateFieldName);
         }
-
-        protected bool HasOrganizationOrProjectFilter(string filter) {
+        
+        private bool HasOrganizationOrProjectFilter(string filter) {
             if (String.IsNullOrEmpty(filter))
                 return false;
 

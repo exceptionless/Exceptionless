@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
@@ -17,6 +18,10 @@ namespace Exceptionless.Core.Extensions {
 
         public static DateTime GetRetentionUtcCutoff(this Organization organization) {
             return organization.RetentionDays <= 0 ? DateTime.MinValue : DateTime.UtcNow.Date.AddDays(-organization.RetentionDays);
+        }
+
+        public static DateTime GetRetentionUtcCutoff(this ICollection<Organization> organizations) {
+            return organizations.Min(o => o.GetRetentionUtcCutoff());
         }
 
         public static void RemoveSuspension(this Organization organization) {
@@ -138,6 +143,22 @@ namespace Exceptionless.Core.Extensions {
             // remove old usage entries
             foreach (var usage in usages.Where(u => u.Date < DateTime.UtcNow.Subtract(maxUsageAge.Value)).ToList())
                 usages.Remove(usage);
+        }
+   
+        public static string BuildRetentionFilter(this IList<Organization> organizations, string retentionDateFieldName = "date") {
+            var builder = new StringBuilder();
+            for (int index = 0; index < organizations.Count; index++) {
+                if (index > 0)
+                    builder.Append(" OR ");
+
+                var organization = organizations[index];
+                if (organization.RetentionDays > 0)
+                    builder.AppendFormat("(organization:{0} AND {1}:[now/d-{2}d TO now/d+1d}})", organization.Id, retentionDateFieldName, organization.RetentionDays);
+                else
+                    builder.AppendFormat("organization:{0}", organization.Id);
+            }
+
+            return builder.ToString();
         }
     }
 }
