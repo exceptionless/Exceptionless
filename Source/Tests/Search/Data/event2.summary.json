@@ -5,6 +5,7 @@
   "data": {
     "Id": "54dbc16ca0f5c61398427b01",
     "Message": "Invalid hash. Parameter name: hash",
+    "Identity": "example@exceptionless.com",
     "Type": "Exception",
     "TypeFullName": "System.Exception",
     "Path": "/user.aspx"

@@ -11,7 +11,7 @@ using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(40)]
-    public class RequestInfoPlugin : EventProcessorPluginBase {
+    public sealed class RequestInfoPlugin : EventProcessorPluginBase {
         public const int MAX_VALUE_LENGTH = 1000;
         public static readonly List<string> DefaultExclusions = new List<string> {
             "*VIEWSTATE*",
