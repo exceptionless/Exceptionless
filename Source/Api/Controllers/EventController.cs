@@ -132,13 +132,10 @@ namespace Exceptionless.Api.Controllers {
             var pr = QueryProcessor.Process(userFilter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
-
-            var ti = GetTimeInfo(time, offset);
-            if (String.IsNullOrEmpty(systemFilter)) {
-                var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
-                systemFilter = BuildSystemFilter(organizations, userFilter, pr.UsesPremiumFeatures || usesPremiumFeatures);
-                ti.ApplyMinimumUtcStartDate(organizations.GetRetentionUtcCutoff());
-            }
+            
+            var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
+            systemFilter = String.Join(" ", new[] { systemFilter, BuildSystemFilter(organizations, userFilter, pr.UsesPremiumFeatures || usesPremiumFeatures) }.Where(f => !String.IsNullOrWhiteSpace(f)));
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
 
             var sortBy = GetSort(sort);
             var options = new PagingOptions { Page = page, Limit = limit };
