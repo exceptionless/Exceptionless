@@ -20,6 +20,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models.Stats;
 using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
@@ -37,19 +38,15 @@ namespace Exceptionless.Api.Controllers {
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
-        private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly ICacheClient _cacheClient;
+        private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly EventStats _eventStats;
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly List<FieldAggregation> _distinctUsersFields = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct } };
         private readonly List<FieldAggregation> _distinctUsersFieldsWithSort = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct, SortOrder = SortOrder.Descending } };
 
-        public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository,
-            IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository,
-            WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue,
-            ICacheClient cacheClient, EventStats eventStats, BillingManager billingManager,
-            FormattingPluginManager formattingPluginManager, ILoggerFactory loggerFactory, IMapper mapper) : base(stackRepository, loggerFactory, mapper) {
+        public StackController(IStackRepository stackRepository,  IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, ICacheClient cacheClient, EventStats eventStats, BillingManager billingManager, FormattingPluginManager formattingPluginManager, ILoggerFactory loggerFactory, IMapper mapper) : base(stackRepository, loggerFactory, mapper) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -511,8 +508,7 @@ namespace Exceptionless.Api.Controllers {
 
             var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = BuildSystemFilter(organizations, userFilter, pr.UsesPremiumFeatures, "last");
+            systemFilter = String.Join(" ", new[] { systemFilter, BuildSystemFilter(organizations, userFilter, pr.UsesPremiumFeatures, "last") }.Where(f => !String.IsNullOrWhiteSpace(f)));
             
             var sortBy = GetSort(sort);
             var options = new PagingOptions { Page = page, Limit = limit };
@@ -522,7 +518,7 @@ namespace Exceptionless.Api.Controllers {
 
                 var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
-                    return OkWithResourceLinks(await GetStackSummariesAsync(stacks, ti.Offset, organizations.ToList(), ti.UtcRange.UtcStart, ti.UtcRange.UtcEnd), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+                    return OkWithResourceLinks(await GetStackSummariesAsync(stacks, ti.Offset, systemFilter, ti.UtcRange.Start, ti.UtcRange.End), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
 
                 return OkWithResourceLinks(stacks, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
             } catch (ApplicationException ex) {
@@ -726,8 +722,7 @@ namespace Exceptionless.Api.Controllers {
 
             var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = BuildSystemFilter(organizations, userFilter, pr.UsesPremiumFeatures);
+            systemFilter = String.Join(" ", new []{ systemFilter, BuildSystemFilter(organizations, userFilter, pr.UsesPremiumFeatures) }.Where(f => !String.IsNullOrWhiteSpace(f)));
 
             try {
                 var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", fields, ti.UtcRange.Start, ti.UtcRange.End, systemFilter, userFilter, ti.Offset, GetSkip(page + 1, limit) + 1);
@@ -738,7 +733,7 @@ namespace Exceptionless.Api.Controllers {
                 var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
 
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase)) {
-                    var summaries = await GetStackSummariesAsync(stacks, ntsr, organizations.ToList());
+                    var summaries = await GetStackSummariesAsync(stacks, ntsr, systemFilter, ti.UtcRange.Start, ti.UtcRange.End);
                     return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, page);
                 }
 
@@ -756,19 +751,19 @@ namespace Exceptionless.Api.Controllers {
             }
         }
 
-        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, TimeSpan offset, IList<Organization> organizations, DateTime utcStart, DateTime utcEnd) {
+        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, TimeSpan offset, string systemFilter, DateTime utcStart, DateTime utcEnd) {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
             
-            var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", _distinctUsersFields, utcStart, utcEnd, organizations.BuildRetentionFilter(), String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), offset, stacks.Count);
-            return await GetStackSummariesAsync(stacks, ntsr, organizations);
+            var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", _distinctUsersFields, utcStart, utcEnd, systemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), offset, stacks.Count);
+            return await GetStackSummariesAsync(stacks, ntsr, systemFilter, utcStart, utcEnd);
         }
 
-        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, NumbersTermStatsResult stackTerms, IList<Organization> organizations) {
+        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, NumbersTermStatsResult stackTerms, string systemFilter, DateTime utcStart, DateTime utcEnd) {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>(0);
 
-            var totalUsers = await GetTotalUsersByProjectAsync(stacks, organizations);
+            var totalUsers = await GetUserCountByProjectIdsAsync(stacks, systemFilter, utcStart, utcEnd);
             return stacks.Join(stackTerms.Terms, s => s.Id, tk => tk.Term, (stack, term) => {
                 var data = _formattingPluginManager.GetStackSummaryData(stack);
                 var summary = new StackSummaryModel {
@@ -787,26 +782,26 @@ namespace Exceptionless.Api.Controllers {
                 return summary;
             }).ToList();
         }
-
-        private async Task<Dictionary<string, double>> GetTotalUsersByProjectAsync(ICollection<Stack> stacks, IList<Organization> organizations) {
-            var scopedCacheClient = new ScopedCacheClient(_cacheClient, "project:user-count:");
+        
+        private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, string systemFilter, DateTime utcStart, DateTime utcEnd) {
+            var scopedCacheClient = new ScopedCacheClient(_cacheClient, $"project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}");
             var projectIds = stacks.Select(s => s.ProjectId).Distinct().ToList();
             var cachedTotals = await scopedCacheClient.GetAllAsync<double>(projectIds);
 
             var totals = cachedTotals.Where(kvp => kvp.Value.HasValue).ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value);
             if (totals.Count == projectIds.Count)
                 return totals;
-            
+
             var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
-            var projectTerms = await _eventStats.GetNumbersTermsStatsAsync("project_id", _distinctUsersFields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, projects.BuildRetentionFilter(organizations));
+            var projectTerms = await _eventStats.GetNumbersTermsStatsAsync("project_id", _distinctUsersFields, utcStart, utcEnd, systemFilter, projects.BuildRetentionFilter());
 
             // Cache all projects that have more than 10 users for 30 seconds.
-            await scopedCacheClient.SetAllAsync(projectTerms.Terms.Where(t => t.Numbers[0] >= 10).ToDictionary(t => t.Term, t => t.Numbers[0]), TimeSpan.FromSeconds(30));
+            await scopedCacheClient.SetAllAsync(projectTerms.Terms.Where(t => t.Numbers[0] >= 10).ToDictionary(t => t.Term, t => t.Numbers[0]), TimeSpan.FromMinutes(5));
             totals.AddRange(projectTerms.Terms.ToDictionary(kvp => kvp.Term, kvp => kvp.Numbers[0]));
 
             return totals;
         }
-
+        
         private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
             if (String.IsNullOrEmpty(projectId))
                 return null;
