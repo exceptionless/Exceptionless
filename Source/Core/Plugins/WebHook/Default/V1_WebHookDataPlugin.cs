@@ -6,7 +6,7 @@ using Exceptionless.Core.Pipeline;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(10)]
-    public class VersionOne : WebHookDataPluginBase {
+    public sealed class VersionOne : WebHookDataPluginBase {
         public override Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
             if (ctx.Version.Major != 1)
                 return Task.FromResult<object>(null);

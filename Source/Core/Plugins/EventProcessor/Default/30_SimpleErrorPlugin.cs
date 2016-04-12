@@ -7,7 +7,7 @@ using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(30)]
-    public class SimpleErrorPlugin : EventProcessorPluginBase {
+    public sealed class SimpleErrorPlugin : EventProcessorPluginBase {
         public SimpleErrorPlugin(ILoggerFactory loggerFactory = null) : base(loggerFactory) {}
 
         public override Task EventProcessingAsync(EventContext context) {

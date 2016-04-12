@@ -14,7 +14,7 @@ using Foundatio.Queues;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(60)]
-    public class LocationPlugin : EventProcessorPluginBase {
+    public sealed class LocationPlugin : EventProcessorPluginBase {
         private readonly ICacheClient _cacheClient;
         private readonly IQueue<WorkItemData> _workItemQueue;
 

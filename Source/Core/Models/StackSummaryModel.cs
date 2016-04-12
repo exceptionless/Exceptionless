@@ -7,5 +7,8 @@ namespace Exceptionless.Core.Models {
         public DateTime FirstOccurrence { get; set; }
         public DateTime LastOccurrence { get; set; }
         public long Total { get; set; }
+
+        public double Users { get; set; }
+        public double TotalUsers { get; set; }
     }
 }

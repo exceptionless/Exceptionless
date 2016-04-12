@@ -7,7 +7,7 @@ using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(5)]
-    public class CheckForDuplicateReferenceIdPlugin : EventProcessorPluginBase {
+    public sealed class CheckForDuplicateReferenceIdPlugin : EventProcessorPluginBase {
         private readonly ICacheClient _cacheClient;
 
         public CheckForDuplicateReferenceIdPlugin(ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {

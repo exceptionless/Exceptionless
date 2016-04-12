@@ -13,7 +13,7 @@ using Foundatio.Queues;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(0)]
-    public class ThrottleBotsPlugin : EventProcessorPluginBase {
+    public sealed class ThrottleBotsPlugin : EventProcessorPluginBase {
         private readonly ICacheClient _cacheClient;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
