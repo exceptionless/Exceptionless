@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using AutoMapper;
-using AutoMapper.Internal;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -795,7 +794,7 @@ namespace Exceptionless.Api.Controllers {
             var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
             var projectTerms = await _eventStats.GetNumbersTermsStatsAsync("project_id", _distinctUsersFields, utcStart, utcEnd, systemFilter, projects.BuildRetentionFilter());
 
-            // Cache all projects that have more than 10 users for 30 seconds.
+            // Cache all projects that have more than 10 users for 5 minutes.
             await scopedCacheClient.SetAllAsync(projectTerms.Terms.Where(t => t.Numbers[0] >= 10).ToDictionary(t => t.Term, t => t.Numbers[0]), TimeSpan.FromMinutes(5));
             totals.AddRange(projectTerms.Terms.ToDictionary(kvp => kvp.Term, kvp => kvp.Numbers[0]));
 
