@@ -9,21 +9,21 @@ using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(99)]
-    public class DefaultFormattingPlugin : IFormattingPlugin {
+    public sealed class DefaultFormattingPlugin : FormattingPluginBase {
         private readonly IEmailGenerator _emailGenerator;
 
         public DefaultFormattingPlugin(IEmailGenerator emailGenerator) {
             _emailGenerator = emailGenerator;
         }
 
-        public string GetStackTitle(PersistentEvent ev) {
+        public override string GetStackTitle(PersistentEvent ev) {
             if (String.IsNullOrWhiteSpace(ev.Message) && ev.IsError())
                 return "Unknown Error";
 
             return ev.Message ?? ev.Source ?? $"{ev.Type} Event".TrimStart();
         }
 
-        public SummaryData GetStackSummaryData(Stack stack) {
+        public override SummaryData GetStackSummaryData(Stack stack) {
             var data = new Dictionary<string, object> { { "Type", stack.Type } };
 
             string value;
@@ -33,17 +33,19 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "stack-summary", Data = data };
         }
 
-        public SummaryData GetEventSummaryData(PersistentEvent ev) {
+        public override SummaryData GetEventSummaryData(PersistentEvent ev) {
             var data = new Dictionary<string, object> {
                 { "Message", GetStackTitle(ev) },
                 { "Source", ev.Source },
                 { "Type", ev.Type }
             };
 
+            AddUserIdentitySummaryData(data, ev.GetUserIdentity());
+
             return new SummaryData { TemplateKey = "event-summary", Data = data };
         }
 
-        public MailMessage GetEventNotificationMailMessage(EventNotification model) {
+        public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
             string messageOrSource = !String.IsNullOrEmpty(model.Event.Message) ? model.Event.Message : model.Event.Source;
             if (String.IsNullOrEmpty(messageOrSource))
                 return null;
@@ -69,7 +71,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return _emailGenerator.GenerateMessage(mailerModel, "Notice").ToMailMessage();
         }
 
-        public string GetEventViewName(PersistentEvent ev) {
+        public override string GetEventViewName(PersistentEvent ev) {
             return "Event";
         }
     }

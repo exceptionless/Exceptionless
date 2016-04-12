@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
@@ -22,6 +24,17 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
         public virtual string GetEventViewName(PersistentEvent ev) {
             return null;
+        }
+
+        protected void AddUserIdentitySummaryData(Dictionary<string, object> data, UserInfo identity) {
+            if (identity == null)
+                return;
+
+            if (!String.IsNullOrEmpty(identity.Identity))
+                data.Add("Identity", identity.Identity);
+
+            if (!String.IsNullOrEmpty(identity.Name))
+                data.Add("Name", identity.Name);
         }
     }
 }

@@ -4,6 +4,7 @@
   "template_key": "event-log-summary",
   "data": {
     "Message": null,
+    "Identity": "My-User-Identity",
     "Source": "GET /Print",
     "Level": "Error"
   }

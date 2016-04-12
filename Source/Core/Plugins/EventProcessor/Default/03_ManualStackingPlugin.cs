@@ -6,7 +6,7 @@ using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(3)]
-    public class ManualStackingPlugin : EventProcessorPluginBase {
+    public sealed class ManualStackingPlugin : EventProcessorPluginBase {
         public ManualStackingPlugin(ILoggerFactory loggerFactory = null) : base(loggerFactory) {}
 
         public override Task EventProcessingAsync(EventContext context) {

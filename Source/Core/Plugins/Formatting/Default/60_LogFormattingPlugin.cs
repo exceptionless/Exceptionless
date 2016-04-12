@@ -10,7 +10,7 @@ using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(60)]
-    public class LogFormattingPlugin : FormattingPluginBase {
+    public sealed class LogFormattingPlugin : FormattingPluginBase {
         private readonly IEmailGenerator _emailGenerator;
 
         public LogFormattingPlugin(IEmailGenerator emailGenerator) {
@@ -40,6 +40,8 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var data = new Dictionary<string, object> { { "Message", ev.Message } };
+            AddUserIdentitySummaryData(data, ev.GetUserIdentity());
+
             if (!String.IsNullOrWhiteSpace(ev.Source)) {
                 data.Add("Source", ev.Source);
 

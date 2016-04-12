@@ -9,7 +9,7 @@ using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(40)]
-    public class UsageFormattingPlugin : FormattingPluginBase {
+    public sealed class UsageFormattingPlugin : FormattingPluginBase {
         private readonly IEmailGenerator _emailGenerator;
 
         public UsageFormattingPlugin(IEmailGenerator emailGenerator) {
@@ -38,7 +38,10 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            return new SummaryData { TemplateKey = "event-feature-summary", Data = new Dictionary<string, object> { { "Source", ev.Source } } };
+            var data = new Dictionary<string, object> { { "Source", ev.Source } };
+            AddUserIdentitySummaryData(data, ev.GetUserIdentity());
+
+            return new SummaryData { TemplateKey = "event-feature-summary", Data = data };
         }
 
         public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
