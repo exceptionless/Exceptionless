@@ -5,6 +5,8 @@
   "data": {
     "Id": "54dbc16ca0f5c61398427b02",
     "Message": "A Task's exception(s) were not observed either by Waiting on the Task or accessing its Exception property. As a result, the unobserved exception was rethrown by the finalizer thread.",
+    "Identity": "example",
+    "Name": "Blake",
     "Type": "NullReferenceException",
     "TypeFullName": "System.NullReferenceException",
     "Method": "AssociateWithCurrentThread",

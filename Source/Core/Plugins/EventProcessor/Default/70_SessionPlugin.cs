@@ -12,7 +12,7 @@ using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(70)]
-    public class SessionPlugin : EventProcessorPluginBase {
+    public sealed class SessionPlugin : EventProcessorPluginBase {
         private static readonly TimeSpan _sessionTimeout = TimeSpan.FromMinutes(15);
         private readonly ICacheClient _cacheClient;
         private readonly IEventRepository _eventRepository;

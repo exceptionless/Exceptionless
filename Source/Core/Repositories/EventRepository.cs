@@ -296,15 +296,7 @@ namespace Exceptionless.Core.Repositories {
         public override Task<FindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return GetByOrganizationIdsAsync(new[] { organizationId }, paging, useCache, expiresIn);
         }
-
-        public Task<long> GetCountByOrganizationIdAsync(string organizationId) {
-            return CountAsync(new ExceptionlessQuery().WithOrganizationId(organizationId));
-        }
-
-        public Task<long> GetCountByStackIdAsync(string stackId) {
-            return CountAsync(new ExceptionlessQuery().WithStackId(stackId));
-        }
-
+        
         public override Task<FindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (organizationIds == null || organizationIds.Count == 0)
                 return Task.FromResult(new FindResults<PersistentEvent> { Documents = new List<PersistentEvent>(), Total = 0 });
@@ -357,6 +349,10 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<long> GetCountByProjectIdAsync(string projectId) {
             return CountAsync(new ExceptionlessQuery().WithProjectId(projectId));
+        }
+
+        public Task<long> GetCountByStackIdAsync(string stackId) {
+            return CountAsync(new ExceptionlessQuery().WithStackId(stackId));
         }
     }
 }

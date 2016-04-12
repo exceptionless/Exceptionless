@@ -62,15 +62,15 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.4.0.869\lib\net451\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.4.0.880\lib\net451\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.1.0.41\lib\net451\Foundatio.Repositories.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.1.0.51\lib\net451\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.41\lib\net451\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.51\lib\net451\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -240,9 +240,9 @@
     <Compile Include="Models\StackSummaryModel.cs" />
     <Compile Include="Models\Stats\NumbersStatsResult.cs" />
     <Compile Include="Models\Stats\NumbersTermStatsItem.cs" />
+    <Compile Include="Models\Stats\NumbersTermStatsResult.cs" />
     <Compile Include="Models\Stats\NumbersTimelineItem.cs" />
     <Compile Include="Models\Stats\NumbersTimelineStatsResult.cs" />
-    <Compile Include="Models\Stats\NumbersTermStatsResult.cs" />
     <Compile Include="Models\Token.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WebHook.cs" />
@@ -270,6 +270,7 @@
     <Compile Include="Repositories\Queries\ExceptionlessQuery.cs" />
     <Compile Include="Repositories\Queries\StackIdQuery.cs" />
     <Compile Include="Repositories\Queries\OrganizationIdQuery.cs" />
+    <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Utility\SettingsBase.cs" />
     <Compile Include="Utility\SingletonBase.cs" />
     <Compile Include="Utility\LastReferenceIdManager.cs" />
@@ -306,7 +307,6 @@
     <Compile Include="Plugins\EventProcessor\Default\70_SessionPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
     <Compile Include="Filter\QueryProcessorVisitor.cs" />
-    <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Mail\IMailSender.cs" />
     <Compile Include="Mail\InMemoryMailSender.cs" />

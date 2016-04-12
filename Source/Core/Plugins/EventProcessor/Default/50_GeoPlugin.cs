@@ -11,7 +11,7 @@ using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(50)]
-    public class GeoPlugin : EventProcessorPluginBase {
+    public sealed class GeoPlugin : EventProcessorPluginBase {
         private readonly IGeoIpService _geoIpService;
         private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 100 };
 

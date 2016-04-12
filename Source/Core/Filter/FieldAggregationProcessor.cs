@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Filter {
     public class FieldAggregationProcessor {
@@ -152,27 +153,29 @@ namespace Exceptionless.Core.Filter {
     public class FieldAggregation {
         public FieldAggregationType Type { get; set; }
         public string Field { get; set; }
+        public SortOrder? SortOrder { get; set; }
 
         public string Key {
             get {
-                switch (Type) {
-                    case FieldAggregationType.Average:
-                        return "avg_" + Field;
-                    case FieldAggregationType.Distinct:
-                        return "distinct_" + Field;
-                    case FieldAggregationType.Sum:
-                        return "sum_" + Field;
-                    case FieldAggregationType.Min:
-                        return "min_" + Field;
-                    case FieldAggregationType.Max:
-                        return "max_" + Field;
-                    case FieldAggregationType.Last:
-                        return "last_" + Field;
-                    case FieldAggregationType.Term:
-                        return "term_" + Field;
-                }
+                string field;
+                if (Type == FieldAggregationType.Average)
+                    field = "avg_" + Field;
+                else if (Type == FieldAggregationType.Distinct)
+                    field = "distinct_" + Field;
+                else if (Type == FieldAggregationType.Sum)
+                    field = "sum_" + Field;
+                else if (Type == FieldAggregationType.Min)
+                    field = "min_" + Field;
+                else if (Type == FieldAggregationType.Max)
+                    field = "max_" + Field;
+                else if (Type == FieldAggregationType.Last)
+                    field = "last_" + Field;
+                else if (Type == FieldAggregationType.Term)
+                    field = "term_" + Field;
+                else
+                    field = Field;
 
-                return Field;
+                return field.Replace('.', '_');
             }
         }
 
@@ -195,7 +198,7 @@ namespace Exceptionless.Core.Filter {
         }
         
         public override int GetHashCode() {
-            return ((int)Type * 397) ^ (Field?.GetHashCode() ?? 0) ^ (DefaultValue?.GetHashCode() ?? 0);
+            return ((int)Type * 397) ^ (Field?.GetHashCode() ?? 0) ^ (DefaultValue?.GetHashCode() ?? 0) ^ (SortOrder?.GetHashCode() ?? 0);
         }
 
         public static bool operator ==(FieldAggregation left, FieldAggregation right) {
@@ -231,8 +234,7 @@ namespace Exceptionless.Core.Filter {
         public override int GetHashCode() {
             unchecked {
                 int hashCode = base.GetHashCode();
-                hashCode = (hashCode * 397) ^ (ExcludePattern?.GetHashCode() ?? 0);
-                hashCode = (hashCode * 397) ^ (IncludePattern?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (ExcludePattern?.GetHashCode() ?? 0) ^ (IncludePattern?.GetHashCode() ?? 0);
                 return hashCode;
             }
         }
