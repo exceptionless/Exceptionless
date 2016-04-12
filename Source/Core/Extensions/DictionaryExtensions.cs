@@ -34,5 +34,11 @@ namespace Exceptionless.Core.Extensions {
 
             return values.Any(v => v.Equals(temp));
         }
+        
+        public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) {
+            TValue obj;
+            dictionary.TryGetValue(key, out obj);
+            return obj;
+        }
     }
 }
