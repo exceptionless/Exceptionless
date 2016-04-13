@@ -14,6 +14,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Filter;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -69,7 +70,7 @@ namespace Exceptionless.Api.Controllers {
             var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
             var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations, true);
 
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
                 return Ok(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()));
 
             return Ok(viewOrganizations);
@@ -87,7 +88,7 @@ namespace Exceptionless.Api.Controllers {
             var organizations = await _repository.GetByCriteriaAsync(criteria, options, sort, paid, suspended);
             var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
 
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
                 return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), organizations.HasMore, page, organizations.Total);
 
             return OkWithResourceLinks(viewOrganizations, organizations.HasMore, page, organizations.Total);
@@ -117,7 +118,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var viewOrganization = await MapAsync<ViewOrganization>(organization, true);
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.InvariantCultureIgnoreCase))
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
                 return Ok(await PopulateOrganizationStatsAsync(viewOrganization));
 
             return Ok(viewOrganization);
@@ -369,7 +370,7 @@ namespace Exceptionless.Api.Controllers {
                     organization.SubscribeDate = DateTime.Now;
 
                     var createCustomer = new StripeCustomerCreateOptions {
-                        Card = new StripeCreditCardOptions { TokenId = stripeToken },
+                        Source = new StripeSourceOptions { TokenId = stripeToken },
                         PlanId = planId,
                         Description = organization.Name,
                         Email = ExceptionlessUser.EmailAddress
@@ -383,8 +384,8 @@ namespace Exceptionless.Api.Controllers {
                     organization.BillingStatus = BillingStatus.Active;
                     organization.RemoveSuspension();
                     organization.StripeCustomerId = customer.Id;
-                    if (customer.StripeCardList.StripeCards.Count > 0)
-                        organization.CardLast4 = customer.StripeCardList.StripeCards[0].Last4;
+                    if (customer.SourceList.TotalCount > 0)
+                        organization.CardLast4 = customer.SourceList.Data[0].Last4;
                 } else {
                     var update = new StripeSubscriptionUpdateOptions { PlanId = planId };
                     var create = new StripeSubscriptionCreateOptions();
@@ -706,31 +707,24 @@ namespace Exceptionless.Api.Controllers {
             return (await PopulateOrganizationStatsAsync(new List<ViewOrganization> { organization })).FirstOrDefault();
         }
 
-        private async Task<List<ViewOrganization>> PopulateOrganizationStatsAsync(List<ViewOrganization> organizations) {
-            if (organizations.Count <= 0)
-                return organizations;
+        private async Task<List<ViewOrganization>> PopulateOrganizationStatsAsync(List<ViewOrganization> viewOrganizations) {
+            if (viewOrganizations.Count <= 0)
+                return viewOrganizations;
+            
+            var fields = new List<FieldAggregation> {
+                new FieldAggregation { Type = FieldAggregationType.Distinct, Field = "stack_id" }
+            };
 
-            StringBuilder builder = new StringBuilder();
-            for (int index = 0; index < organizations.Count; index++) {
-                if (index > 0)
-                    builder.Append(" OR ");
-
-                var organization = organizations[index];
-                if (organization.RetentionDays > 0)
-                    builder.AppendFormat("(organization:{0} AND (date:[now/d-{1}d TO now/d+1d}} OR last:[now/d-{1}d TO now/d+1d}}))", organization.Id, organization.RetentionDays);
-                else
-                    builder.AppendFormat("organization:{0}", organization.Id);
-            }
-
-            var result = await _stats.GetTermsStatsAsync(DateTime.MinValue, DateTime.MaxValue, "organization_id", builder.ToString());
-            foreach (var organization in organizations) {
+            var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, RetentionDays = o.RetentionDays }).ToList();
+            var result = await _stats.GetNumbersTermsStatsAsync("organization_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, organizations.BuildRetentionFilter(), max: viewOrganizations.Count);
+            foreach (var organization in viewOrganizations) {
                 var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
                 organization.EventCount = organizationStats?.Total ?? 0;
-                organization.StackCount = organizationStats?.Unique ?? 0;
-                organization.ProjectCount = (await _projectRepository.GetByOrganizationIdAsync(organization.Id, useCache: true)).Documents.Count;
+                organization.StackCount = (long)(organizationStats?.Numbers[0] ?? 0);
+                organization.ProjectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id);
             }
 
-            return organizations;
+            return viewOrganizations;
         }
     }
 }

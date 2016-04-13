@@ -11,7 +11,7 @@ using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(40)]
-    public class RequestInfoPlugin : EventProcessorPluginBase {
+    public sealed class RequestInfoPlugin : EventProcessorPluginBase {
         public const int MAX_VALUE_LENGTH = 1000;
         public static readonly List<string> DefaultExclusions = new List<string> {
             "*VIEWSTATE*",
@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     continue;
 
                 AddClientIpAddress(request, context.EventPostInfo?.IpAddress);
-                await SetBrowserOsAndDeviceFromUserAgent(request, context);
+                await SetBrowserOsAndDeviceFromUserAgent(request, context).AnyContext();
                 
                 context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
             }

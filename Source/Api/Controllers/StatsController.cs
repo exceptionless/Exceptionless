@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -38,19 +39,20 @@ namespace Exceptionless.Api.Controllers {
             if (!far.IsValid)
                 return BadRequest(far.Message);
             
-            var processResult = QueryProcessor.Process(filter);
-            if (!processResult.IsValid)
-                return BadRequest(processResult.Message);
+            var pr = QueryProcessor.Process(filter);
+            if (!pr.IsValid)
+                return BadRequest(pr.Message);
 
-            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, far.UsesPremiumFeatures || processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
+            var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
+            var sf = BuildSystemFilter(organizations, filter, far.UsesPremiumFeatures || pr.UsesPremiumFeatures);
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
 
             NumbersStatsResult result;
             try {
-                var timeInfo = GetTimeInfo(time, offset);
-                result = await _stats.GetNumbersStatsAsync(far.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
+                result = await _stats.GetNumbersStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, sf, pr.ExpandedQuery, ti.Offset);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex).Property("Search Filter", new {
-                    SystemFilter = systemFilter,
+                    SystemFilter = sf,
                     UserFilter = filter,
                     Time = time,
                     Offset = offset
@@ -77,19 +79,20 @@ namespace Exceptionless.Api.Controllers {
             if (!far.IsValid)
                 return BadRequest(far.Message);
             
-            var processResult = QueryProcessor.Process(filter);
-            if (!processResult.IsValid)
-                return BadRequest(processResult.Message);
+            var pr = QueryProcessor.Process(filter);
+            if (!pr.IsValid)
+                return BadRequest(pr.Message);
 
-            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, far.UsesPremiumFeatures || processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
+            var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
+            var sf = BuildSystemFilter(organizations, filter, far.UsesPremiumFeatures || pr.UsesPremiumFeatures);
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
 
             NumbersTimelineStatsResult result;
             try {
-                var timeInfo = GetTimeInfo(time, offset);
-                result = await _stats.GetNumbersTimelineStatsAsync(far.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
+                result = await _stats.GetNumbersTimelineStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, sf, pr.ExpandedQuery, ti.Offset);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex).Property("Search Filter", new {
-                    SystemFilter = systemFilter,
+                    SystemFilter = sf,
                     UserFilter = filter,
                     Time = time,
                     Offset = offset

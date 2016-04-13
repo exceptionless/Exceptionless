@@ -1,18 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Filter {
     public class FieldAggregationProcessor {
-        private static readonly HashSet<string> _allowedFields = new HashSet<string> {
+        private static readonly HashSet<string> _allowedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "value", "stack_id", "user.raw", "is_first_occurrence"
         };
         
-        private static readonly HashSet<string> _allowedTermFields = new HashSet<string> {
+        private static readonly HashSet<string> _allowedTermFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "is_first_occurrence"
         };
 
-        private static readonly HashSet<string> _freeFields = new HashSet<string> {
+        private static readonly HashSet<string> _allowedTermExcludesIncludes = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "f", "t"
+        };
+
+        private static readonly HashSet<string> _freeFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "value", "stack_id", "is_first_occurrence"
         };
 
@@ -37,67 +42,90 @@ namespace Exceptionless.Core.Filter {
                 else if (field.StartsWith("ref."))
                     field = $"idx.{field.Substring(4)}-r";
 
-                switch (type) {
-                    case "avg":
-                        result.Aggregations.Add(new FieldAggregation { Type = FieldAggregationType.Average, Field = field });
-                        break;
-                    case "distinct":
-                        result.Aggregations.Add(new FieldAggregation { Type = FieldAggregationType.Distinct, Field = field });
-                        break;
-                    case "sum":
-                        result.Aggregations.Add(new FieldAggregation { Type = FieldAggregationType.Sum, Field = field });
-                        break;
-                    case "min":
-                        result.Aggregations.Add(new FieldAggregation { Type = FieldAggregationType.Min, Field = field });
-                        break;
-                    case "max":
-                        result.Aggregations.Add(new FieldAggregation { Type = FieldAggregationType.Max, Field = field });
-                        break;
-                    case "last":
-                        result.Aggregations.Add(new FieldAggregation { Type = FieldAggregationType.Last, Field = field });
-                        break;
-                    case "term":
-                        var term = new TermFieldAggregation { Field = field };
-                        if (parts.Length > 2 && !String.IsNullOrWhiteSpace(parts[2])) {
-                            if (parts[2].StartsWith("-"))
-                                term.ExcludePattern = parts[2].Substring(1).Trim();
-                            else
-                                term.IncludePattern = parts[2].Trim();
-                        }
+                var fieldType = GetFieldAggregationTypet(type);
+                if (fieldType == null)
+                    return new FieldAggregationsResult { Message = $"Invalid type: {type}" };
+                
+                string defaultValueOrIncludeExclude = parts.Length > 2 && !String.IsNullOrWhiteSpace(parts[2]) ? parts[2]?.Trim() : null;
+                if (fieldType == FieldAggregationType.Term) {
+                    var term = new TermFieldAggregation { Field = field };
+                    if (defaultValueOrIncludeExclude != null) {
+                        if (defaultValueOrIncludeExclude.StartsWith("-"))
+                            term.ExcludePattern = defaultValueOrIncludeExclude.Substring(1).Trim();
+                        else
+                            term.IncludePattern = defaultValueOrIncludeExclude;
+                    }
 
-                        result.Aggregations.Add(term);
-                        break;
-                    default:
-                        return new FieldAggregationsResult { Message = $"Invalid type: {type} for aggregation: {aggregation}" };
+                    result.Aggregations.Add(term);
+                } else {
+                    result.Aggregations.Add(new FieldAggregation {
+                        Type = fieldType.Value,
+                        Field = field,
+                        DefaultValue = ParseDefaultValue(defaultValueOrIncludeExclude)
+                    });
                 }
             }
             
             if (result.Aggregations.Any(a => !_freeFields.Contains(a.Field)))
                 result.UsesPremiumFeatures = true;
             
-            if (applyRules) {
-                if (result.Aggregations.Count > 10)
-                    return new FieldAggregationsResult { Message = "Aggregation count exceeded" };
+            return applyRules ? ApplyRules(result, aggregations) : result;
+        }
 
-                // Duplicate aggregations
-                if (result.Aggregations.Count != aggregations.Length)
-                    return new FieldAggregationsResult { Message = "Duplicate aggregation detected" };
+        private static FieldAggregationsResult ApplyRules(FieldAggregationsResult result, string[] aggregations) {
+            if (result.Aggregations.Count > 10)
+                return new FieldAggregationsResult { Message = "Aggregation count exceeded" };
 
-                // Distinct queries are expensive.
-                if (result.Aggregations.Count(a => a.Type == FieldAggregationType.Distinct) > 1)
-                    return new FieldAggregationsResult { Message = "Distinct aggregation count exceeded" };
-                
-                // Term queries are expensive.
-                var terms = result.Aggregations.Where(a => a.Type == FieldAggregationType.Term).ToList();
-                if (terms.Count > 1 || terms.Any(a => !_allowedTermFields.Contains(a.Field)))
-                    return new FieldAggregationsResult { Message = "Terms aggregation count exceeded" };
+            // Duplicate aggregations
+            if (result.Aggregations.Count != aggregations.Length)
+                return new FieldAggregationsResult { Message = "Duplicate aggregation detected" };
 
-                // Only allow fields that are numeric or have high commonality.
-                if (result.Aggregations.Any(a => !_allowedFields.Contains(a.Field)))
-                    return new FieldAggregationsResult { Message = "Dissallowed field detected" };
-            }
-            
+            // Distinct queries are expensive.
+            if (result.Aggregations.Count(a => a.Type == FieldAggregationType.Distinct) > 1)
+                return new FieldAggregationsResult { Message = "Distinct aggregation count exceeded" };
+
+            // Term queries are expensive.
+            var terms = result.Aggregations.Where(a => a.Type == FieldAggregationType.Term).OfType<TermFieldAggregation>().ToList();
+            if (terms.Count > 1
+                || terms.Any(a => !_allowedTermFields.Contains(a.Field))
+                || terms.Any(a => a.ExcludePattern != null && !_allowedTermExcludesIncludes.Contains(a.ExcludePattern))
+                || terms.Any(a => a.IncludePattern != null && !_allowedTermExcludesIncludes.Contains(a.IncludePattern)))
+                return new FieldAggregationsResult { Message = "Terms aggregation count exceeded" };
+
+            // Only allow fields that are numeric or have high commonality.
+            if (result.Aggregations.Any(a => !_allowedFields.Contains(a.Field)))
+                return new FieldAggregationsResult { Message = "Dissallowed field detected" };
+
             return result;
+        }
+
+        private static FieldAggregationType? GetFieldAggregationTypet(string type) {
+            switch (type) {
+                case "avg":
+                    return FieldAggregationType.Average;
+                case "distinct":
+                    return FieldAggregationType.Distinct;
+                case "sum":
+                    return FieldAggregationType.Sum;
+                case "min":
+                    return FieldAggregationType.Min;
+                case "max":
+                    return FieldAggregationType.Max;
+                case "last":
+                    return FieldAggregationType.Last;
+                case "term":
+                    return FieldAggregationType.Term;
+            }
+
+            return null;
+        }
+
+        private static int? ParseDefaultValue(string defaultValue) {
+            int value;
+            if (Int32.TryParse(defaultValue, out value))
+                return value;
+
+            return null;
         }
     }
     
@@ -125,29 +153,35 @@ namespace Exceptionless.Core.Filter {
     public class FieldAggregation {
         public FieldAggregationType Type { get; set; }
         public string Field { get; set; }
+        public SortOrder? SortOrder { get; set; }
 
         public string Key {
             get {
-                switch (Type) {
-                    case FieldAggregationType.Average:
-                        return "avg_" + Field;
-                    case FieldAggregationType.Distinct:
-                        return "distinct_" + Field;
-                    case FieldAggregationType.Sum:
-                        return "sum_" + Field;
-                    case FieldAggregationType.Min:
-                        return "min_" + Field;
-                    case FieldAggregationType.Max:
-                        return "max_" + Field;
-                    case FieldAggregationType.Last:
-                        return "last_" + Field;
-                    case FieldAggregationType.Term:
-                        return "term_" + Field;
-                }
+                string field;
+                if (Type == FieldAggregationType.Average)
+                    field = "avg_" + Field;
+                else if (Type == FieldAggregationType.Distinct)
+                    field = "distinct_" + Field;
+                else if (Type == FieldAggregationType.Sum)
+                    field = "sum_" + Field;
+                else if (Type == FieldAggregationType.Min)
+                    field = "min_" + Field;
+                else if (Type == FieldAggregationType.Max)
+                    field = "max_" + Field;
+                else if (Type == FieldAggregationType.Last)
+                    field = "last_" + Field;
+                else if (Type == FieldAggregationType.Term)
+                    field = "term_" + Field;
+                else
+                    field = Field;
 
-                return Field;
+                return field.Replace('.', '_');
             }
         }
+
+        public int? DefaultValue { get; set; }
+
+        public string DefaultValueScript => DefaultValue.HasValue ? $"doc['{Field}'].empty ? {DefaultValue.Value} : doc['{Field}'].value" : null;
 
         protected bool Equals(FieldAggregation other) {
             return Type == other.Type && String.Equals(Field, other.Field);
@@ -164,7 +198,7 @@ namespace Exceptionless.Core.Filter {
         }
         
         public override int GetHashCode() {
-            return ((int)Type * 397) ^ (Field?.GetHashCode() ?? 0);
+            return ((int)Type * 397) ^ (Field?.GetHashCode() ?? 0) ^ (DefaultValue?.GetHashCode() ?? 0) ^ (SortOrder?.GetHashCode() ?? 0);
         }
 
         public static bool operator ==(FieldAggregation left, FieldAggregation right) {
@@ -200,8 +234,7 @@ namespace Exceptionless.Core.Filter {
         public override int GetHashCode() {
             unchecked {
                 int hashCode = base.GetHashCode();
-                hashCode = (hashCode * 397) ^ (ExcludePattern?.GetHashCode() ?? 0);
-                hashCode = (hashCode * 397) ^ (IncludePattern?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (ExcludePattern?.GetHashCode() ?? 0) ^ (IncludePattern?.GetHashCode() ?? 0);
                 return hashCode;
             }
         }

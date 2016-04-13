@@ -62,15 +62,15 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.4.0.836\lib\net451\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.4.0.880\lib\net451\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.1.0.36\lib\net451\Foundatio.Repositories.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.1.0.51\lib\net451\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.36\lib\net451\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.51\lib\net451\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.1.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -79,6 +79,10 @@
     </Reference>
     <Reference Include="MaxMind.GeoIP2, Version=2.5.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
       <HintPath>..\..\packages\MaxMind.GeoIP2.2.5.0\lib\net452\MaxMind.GeoIP2.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ModernHttpClient, Version=2.4.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\modernhttpclient.2.4.2\lib\Portable-Net45+WinRT45+WP8+WPA81\ModernHttpClient.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
@@ -117,8 +121,8 @@
       <HintPath>..\..\packages\SimpleInjector.3.1.2\lib\net45\SimpleInjector.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Stripe.net, Version=3.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Stripe.net.3.0.2\lib\net40\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net, Version=6.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Stripe.net.6.1.0\lib\net45\Stripe.net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -234,10 +238,9 @@
     <Compile Include="Models\SessionInfo.cs" />
     <Compile Include="Models\Stack.cs" />
     <Compile Include="Models\StackSummaryModel.cs" />
-    <Compile Include="Models\Stats\EventTermStatsItem.cs" />
-    <Compile Include="Models\Stats\EventTermStatsResult.cs" />
-    <Compile Include="Models\Stats\EventTermTimelineItem.cs" />
     <Compile Include="Models\Stats\NumbersStatsResult.cs" />
+    <Compile Include="Models\Stats\NumbersTermStatsItem.cs" />
+    <Compile Include="Models\Stats\NumbersTermStatsResult.cs" />
     <Compile Include="Models\Stats\NumbersTimelineItem.cs" />
     <Compile Include="Models\Stats\NumbersTimelineStatsResult.cs" />
     <Compile Include="Models\Token.cs" />
@@ -270,6 +273,7 @@
     <Compile Include="Repositories\Queries\ExceptionlessQuery.cs" />
     <Compile Include="Repositories\Queries\StackIdQuery.cs" />
     <Compile Include="Repositories\Queries\OrganizationIdQuery.cs" />
+    <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Utility\SettingsBase.cs" />
     <Compile Include="Utility\SingletonBase.cs" />
     <Compile Include="Utility\LastReferenceIdManager.cs" />
@@ -306,7 +310,6 @@
     <Compile Include="Plugins\EventProcessor\Default\70_SessionPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
     <Compile Include="Filter\QueryProcessorVisitor.cs" />
-    <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Mail\IMailSender.cs" />
     <Compile Include="Mail\InMemoryMailSender.cs" />

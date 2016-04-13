@@ -6,7 +6,7 @@ using Exceptionless.Core.Repositories;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(0)]
-    public class LoadDefaults : WebHookDataPluginBase {
+    public sealed class LoadDefaults : WebHookDataPluginBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;

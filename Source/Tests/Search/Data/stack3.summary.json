@@ -3,9 +3,9 @@
   "title": "Row not found or changed.",
   "first_occurrence": "0001-01-01T00:00:00",
   "last_occurrence": "0001-01-01T00:00:00",
-  "new": 1,
   "total": 1,
-  "unique": 1,
+  "users": 0.0,
+  "total_users": 0.0,
   "template_key": "stack-log-summary",
   "data": {
     "Title": "Row not found or changed."

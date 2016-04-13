@@ -47,6 +47,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                         .String(f => f.Name(e => e.Tags).IndexName("tag").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.2))
                         .GeoPoint(f => f.Name(e => e.Geo).IndexLatLon())
                         .Number(f => f.Name(e => e.Value).IndexName("value"))
+                        .Number(f => f.Name(e => e.Count).IndexName("count"))
                         .Boolean(f => f.Name(e => e.IsFirstOccurrence).IndexName("first"))
                         .Boolean(f => f.Name(e => e.IsFixed).IndexName(Fields.PersistentEvent.IsFixed))
                         .Boolean(f => f.Name(e => e.IsHidden).IndexName(Fields.PersistentEvent.IsHidden))

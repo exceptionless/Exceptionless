@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _mailer = mailer;
-            _lockProvider = new CacheLockProvider(cacheClient, messageBus);
+            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
         }
 
         public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
