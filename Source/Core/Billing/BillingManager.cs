@@ -242,7 +242,7 @@ namespace Exceptionless.Core.Billing {
             Price = 0,
             MaxProjects = -1,
             MaxUsers = -1,
-            RetentionDays = -1,
+            RetentionDays = Settings.Current.MaximumRetentionDays,
             MaxEventsPerMonth = -1,
             HasPremiumFeatures = true
         };

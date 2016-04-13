@@ -56,6 +56,9 @@ namespace Exceptionless.Core.Jobs {
                 if (nextPlan != null)
                     retentionDays = nextPlan.RetentionDays;
 
+                if (Settings.Current.MaximumRetentionDays > 0 && retentionDays > Settings.Current.MaximumRetentionDays)
+                    retentionDays = Settings.Current.MaximumRetentionDays;
+
                 DateTime cutoff = DateTime.UtcNow.Date.SubtractDays(retentionDays);
                 await _eventRepository.RemoveAllByDateAsync(organization.Id, cutoff).AnyContext();
             } catch (Exception ex) {
