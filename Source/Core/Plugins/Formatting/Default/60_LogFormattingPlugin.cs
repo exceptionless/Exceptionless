@@ -6,6 +6,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Validation;
 using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
@@ -25,16 +26,13 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Log))
                 return null;
 
-            var data = new Dictionary<string, object>();
-            string source = stack.SignatureInfo?.GetString("Source");
-            if (String.IsNullOrWhiteSpace(source) || !String.Equals(source, stack.Title)) {
-                data.Add("Title", stack.Title);
-            } else {
-                data.Add("Source", source);
+            var data = new Dictionary<string, object> { { "Title", stack.Title } };
 
-                string truncatedSource = source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
-                if (!String.Equals(source, truncatedSource))
-                    data.Add("SourceShortName", truncatedSource);
+            string source = stack.SignatureInfo?.GetString("Source");
+            if (!String.IsNullOrWhiteSpace(source) && String.Equals(source, stack.Title)) {
+                var parts = source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length > 1 && !String.Equals(source, parts.Last()) && parts.All(p => p.IsValidIdentifier()))
+                    data.Add("TitleShortName", parts.Last());
             }
 
             return new SummaryData { TemplateKey = "stack-log-summary", Data = data };
@@ -57,9 +55,9 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!String.IsNullOrWhiteSpace(ev.Source)) {
                 data.Add("Source", ev.Source);
 
-                string truncatedSource = ev.Source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
-                if (!String.Equals(ev.Source, truncatedSource))
-                    data.Add("SourceShortName", truncatedSource);
+                var parts = ev.Source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length > 1 && !String.Equals(ev.Source, parts.Last()) && parts.All(p => p.IsValidIdentifier()))
+                    data.Add("SourceShortName", parts.Last());
             }
 
             object temp;
