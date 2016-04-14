@@ -21,6 +21,8 @@ namespace Exceptionless {
                 if (field.StartsWith("@") || ev.Data[key] == null)
                     continue;
 
+                    continue;
+
                 Type dataType = ev.Data[key].GetType();
                 if (dataType == typeof(bool)) {
                     ev.Idx[field + "-b"] = ev.Data[key];
