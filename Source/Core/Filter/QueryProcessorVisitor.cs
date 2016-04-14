@@ -82,10 +82,10 @@ namespace Exceptionless.Core.Filter {
                     var lt = node.Left as TermNode;
                     var rt = node.Right as TermNode;
                     string termType = GetTermType(lt?.TermMin, lt?.TermMax, lt?.Term, rt?.TermMin, rt?.TermMax, rt?.Term);
-                    node.Field.Field = $"idx.{node.Field.Field.Substring(5)}-{termType}";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(5).ToLower()}-{termType}";
                 } else if (node.Field.Field.StartsWith("ref.")) {
                     UsesDataFields = true;
-                    node.Field.Field = $"idx.{node.Field.Field.Substring(4)}-r";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(4).ToLower()}-r";
                 }
             }
 
@@ -105,10 +105,10 @@ namespace Exceptionless.Core.Filter {
                 if (node.Field.Field.StartsWith("data.")) {
                     UsesDataFields = true;
                     string termType = GetTermType(node.TermMin, node.TermMax, node.Term);
-                    node.Field.Field = $"idx.{node.Field.Field.Substring(5)}-{termType}";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(5).ToLower()}-{termType}";
                 } else if (node.Field.Field.StartsWith("ref.")) {
                     UsesDataFields = true;
-                    node.Field.Field = $"idx.{node.Field.Field.Substring(4)}-r";
+                    node.Field.Field = $"idx.{node.Field.Field.Substring(4).ToLower()}-r";
                 }
             }
 
