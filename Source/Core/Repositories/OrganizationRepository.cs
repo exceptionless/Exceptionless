@@ -9,6 +9,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Extensions;
 using Foundatio.Caching;
 using Foundatio.Elasticsearch.Repositories;
@@ -209,13 +210,20 @@ namespace Exceptionless.Core.Repositories {
                 shouldSaveUsage = true;
 
             if (shouldSaveUsage) {
-                org = await GetByIdAsync(organizationId, false).AnyContext();
-                org.SetMonthlyUsage(monthlyTotal, monthlyBlocked, monthlyTooBig);
-                if (hourlyTotal > org.GetHourlyEventLimit())
-                    org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
+                try {
+                    org = await GetByIdAsync(organizationId, false).AnyContext();
+                    org.SetMonthlyUsage(monthlyTotal, monthlyBlocked, monthlyTooBig);
+                    if (hourlyTotal > org.GetHourlyEventLimit())
+                        org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
 
-                await SaveAsync(org, true).AnyContext();
-                await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
+                    await SaveAsync(org, true).AnyContext();
+                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
+                } catch (Exception ex) {
+                    _logger.Error(ex, "Error while saving organization usage data.");
+
+                    // Set the next document save for 5 seconds in the future.
+                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow.SubtractMinutes(4).SubtractSeconds(55), TimeSpan.FromDays(32)).AnyContext();
+                }
             }
 
             if (justWentOverMonthly)
