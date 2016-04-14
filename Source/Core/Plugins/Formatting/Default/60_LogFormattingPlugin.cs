@@ -25,7 +25,19 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Log))
                 return null;
 
-            return new SummaryData { TemplateKey = "stack-log-summary", Data = new Dictionary<string, object> { { "Title", stack.Title } } };
+            var data = new Dictionary<string, object>();
+            string source = stack.SignatureInfo?.GetString("Source");
+            if (String.IsNullOrWhiteSpace(source) || !String.Equals(source, stack.Title)) {
+                data.Add("Title", stack.Title);
+            } else {
+                data.Add("Source", source);
+
+                string truncatedSource = source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+                if (!String.Equals(source, truncatedSource))
+                    data.Add("SourceShortName", truncatedSource);
+            }
+
+            return new SummaryData { TemplateKey = "stack-log-summary", Data = data };
         }
 
         public override string GetStackTitle(PersistentEvent ev) {
