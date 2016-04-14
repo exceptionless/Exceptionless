@@ -15,7 +15,7 @@ namespace Exceptionless.Api.Tests.Search {
         [InlineData("data.date:[2012-01-01 TO *]", "idx.date-d:[2012-01-01 TO *]", true, true)]
         [InlineData("(data.date:[now/d-4d TO now/d+1d})", "(idx.date-d:[now/d-4d TO now/d+1d})", true, true)]
         [InlineData("data.count:[1..5}", "idx.count-n:[1..5}", true, true)]
-        [InlineData("data.Windows-identity:ejsmith", "idx.Windows-identity-s:ejsmith", true, true)]
+        [InlineData("data.Windows-identity:ejsmith", "idx.windows-identity-s:ejsmith", true, true)]
         [InlineData("data.age:(>30 AND <=40)", "idx.age-n:(>30 AND <=40)", true, true)]
         [InlineData("data.age:(+>=10 AND < 20)", "idx.age-n:(+>=10 AND < 20)", true, true)]
         [InlineData("data.age:(+>=10 +<20)", "idx.age-n:(+>=10 +<20)", true, true)]
