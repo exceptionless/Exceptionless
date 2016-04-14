@@ -100,6 +100,8 @@ namespace Exceptionless.Core.Billing {
             organization.RetentionDays = plan.RetentionDays;
             organization.MaxEventsPerMonth = plan.MaxEventsPerMonth;
             organization.HasPremiumFeatures = plan.HasPremiumFeatures;
+
+            organization.SetMonthlyUsage(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), organization.GetCurrentMonthlyTooBig());
         }
 
         public static BillingPlan FreePlan => new BillingPlan {
