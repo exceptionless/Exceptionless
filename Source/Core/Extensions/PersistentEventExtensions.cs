@@ -21,6 +21,9 @@ namespace Exceptionless {
                 if (field.StartsWith("@") || ev.Data[key] == null)
                     continue;
 
+                if (field.Length > 25 || !field.IsValidIdentifier())
+                    continue;
+
                 Type dataType = ev.Data[key].GetType();
                 if (dataType == typeof(bool)) {
                     ev.Idx[field + "-b"] = ev.Data[key];

@@ -38,6 +38,8 @@ namespace Exceptionless.Core {
 
         public long MaximumEventPostSize { get; private set; }
 
+        public int MaximumRetentionDays { get; private set; }
+
         public bool EnableDailySummary { get; private set; }
 
         public string MetricsServerName { get; private set; }
@@ -109,9 +111,9 @@ namespace Exceptionless.Core {
         public override void Initialize() {
             EnvironmentVariablePrefix = "Exceptionless_";
 
-            EnableSSL = GetBool("EnableSSL");
+            EnableSSL = GetBool(nameof(EnableSSL));
 
-            string value = GetString("BaseURL");
+            string value = GetString(nameof(BaseURL));
             if (!String.IsNullOrEmpty(value)) {
                 if (value.EndsWith("/"))
                     value = value.Substring(0, value.Length - 1);
@@ -124,54 +126,55 @@ namespace Exceptionless.Core {
                 BaseURL = value;
             }
 
-            InternalProjectId = GetString("InternalProjectId", "54b56e480ef9605a88a13153");
-            WebsiteMode = GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
-            AppScope = GetString("AppScope", String.Empty);
-            TestEmailAddress = GetString("TestEmailAddress");
-            AllowedOutboundAddresses = GetStringList("AllowedOutboundAddresses", "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
-            RunJobsInProcess = GetBool("RunJobsInProcess", true);
-            BotThrottleLimit = GetInt("BotThrottleLimit", 25);
-            ApiThrottleLimit = GetInt("ApiThrottleLimit", Int32.MaxValue);
+            InternalProjectId = GetString(nameof(InternalProjectId), "54b56e480ef9605a88a13153");
+            WebsiteMode = GetEnum<WebsiteMode>(nameof(WebsiteMode), WebsiteMode.Dev);
+            AppScope = GetString(nameof(AppScope), String.Empty);
+            TestEmailAddress = GetString(nameof(TestEmailAddress));
+            AllowedOutboundAddresses = GetStringList(nameof(AllowedOutboundAddresses), "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
+            RunJobsInProcess = GetBool(nameof(RunJobsInProcess), true);
+            BotThrottleLimit = GetInt(nameof(BotThrottleLimit), 25);
+            ApiThrottleLimit = GetInt(nameof(ApiThrottleLimit), Int32.MaxValue);
             EventSubmissionDisabled = GetBool(nameof(EventSubmissionDisabled));
-            MaximumEventPostSize = GetInt("MaximumEventPostSize", Int32.MaxValue);
-            EnableDailySummary = GetBool("EnableDailySummary");
-            MetricsServerName = GetString("MetricsServerName") ?? "127.0.0.1";
-            MetricsServerPort = GetInt("MetricsServerPort", 8125);
-            EnableMetricsReporting = GetBool("EnableMetricsReporting");
-            IntercomAppSecret = GetString("IntercomAppSecret");
-            EnableAccountCreation = GetBool("EnableAccountCreation", true);
+            MaximumEventPostSize = GetInt(nameof(MaximumEventPostSize), Int32.MaxValue);
+            MaximumRetentionDays = GetInt(nameof(MaximumRetentionDays), -1);
+            EnableDailySummary = GetBool(nameof(EnableDailySummary));
+            MetricsServerName = GetString(nameof(MetricsServerName)) ?? "127.0.0.1";
+            MetricsServerPort = GetInt(nameof(MetricsServerPort), 8125);
+            EnableMetricsReporting = GetBool(nameof(EnableMetricsReporting));
+            IntercomAppSecret = GetString(nameof(IntercomAppSecret));
+            EnableAccountCreation = GetBool(nameof(EnableAccountCreation), true);
             GoogleAppId = GetString(nameof(GoogleAppId));
             GoogleAppSecret = GetString(nameof(GoogleAppSecret));
             GoogleGeocodingApiKey = GetString(nameof(GoogleGeocodingApiKey));
-            MicrosoftAppId = GetString("MicrosoftAppId");
-            MicrosoftAppSecret = GetString("MicrosoftAppSecret");
-            FacebookAppId = GetString("FacebookAppId");
-            FacebookAppSecret = GetString("FacebookAppSecret");
-            GitHubAppId = GetString("GitHubAppId");
-            GitHubAppSecret = GetString("GitHubAppSecret");
-            StripeApiKey = GetString("StripeApiKey");
-            StorageFolder = GetString("StorageFolder");
-            BulkBatchSize = GetInt("BulkBatchSize", 1000);
+            MicrosoftAppId = GetString(nameof(MicrosoftAppId));
+            MicrosoftAppSecret = GetString(nameof(MicrosoftAppSecret));
+            FacebookAppId = GetString(nameof(FacebookAppId));
+            FacebookAppSecret = GetString(nameof(FacebookAppSecret));
+            GitHubAppId = GetString(nameof(GitHubAppId));
+            GitHubAppSecret = GetString(nameof(GitHubAppSecret));
+            StripeApiKey = GetString(nameof(StripeApiKey));
+            StorageFolder = GetString(nameof(StorageFolder));
+            BulkBatchSize = GetInt(nameof(BulkBatchSize), 1000);
 
-            SmtpHost = GetString("SmtpHost");
-            SmtpPort = GetInt("SmtpPort", 587);
-            SmtpEnableSsl = GetBool("SmtpEnableSsl", true);
-            SmtpUser = GetString("SmtpUser");
-            SmtpPassword = GetString("SmtpPassword");
+            SmtpHost = GetString(nameof(SmtpHost));
+            SmtpPort = GetInt(nameof(SmtpPort), 587);
+            SmtpEnableSsl = GetBool(nameof(SmtpEnableSsl), true);
+            SmtpUser = GetString(nameof(SmtpUser));
+            SmtpPassword = GetString(nameof(SmtpPassword));
 
-            AzureStorageConnectionString = GetConnectionString("AzureStorageConnectionString");
-            EnableAzureStorage = GetBool("EnableAzureStorage", !String.IsNullOrEmpty(AzureStorageConnectionString));
+            AzureStorageConnectionString = GetConnectionString(nameof(AzureStorageConnectionString));
+            EnableAzureStorage = GetBool(nameof(EnableAzureStorage), !String.IsNullOrEmpty(AzureStorageConnectionString));
 
-            ElasticSearchConnectionString = GetConnectionString("ElasticSearchConnectionString");
-            EnableElasticsearchTracing = GetBool("EnableElasticsearchTracing");
+            ElasticSearchConnectionString = GetConnectionString(nameof(ElasticSearchConnectionString));
+            EnableElasticsearchTracing = GetBool(nameof(EnableElasticsearchTracing));
 
-            RedisConnectionString = GetConnectionString("RedisConnectionString");
-            EnableRedis = GetBool("EnableRedis", !String.IsNullOrEmpty(RedisConnectionString));
+            RedisConnectionString = GetConnectionString(nameof(RedisConnectionString));
+            EnableRedis = GetBool(nameof(EnableRedis), !String.IsNullOrEmpty(RedisConnectionString));
 
             EnableSignalR = GetBool(nameof(EnableSignalR), true);
 
             Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
-            MinimumLogLevel = GetEnum<LogLevel>("MinimumLogLevel", LogLevel.Information);
+            MinimumLogLevel = GetEnum<LogLevel>(nameof(MinimumLogLevel), LogLevel.Information);
         }
 
         public const string JobBootstrappedServiceProvider = "Exceptionless.Insulation.Jobs.JobBootstrappedServiceProvider,Exceptionless.Insulation";
