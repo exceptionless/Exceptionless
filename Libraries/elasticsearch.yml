@@ -1,8 +1,6 @@
 cluster.name: exceptionless
 node.name: ex-es01
 #action.destructive_requires_name: true
-index.number_of_shards: 10
-#index.number_of_replicas: 1
 index.merge.scheduler.max_thread_count: 1
 index.translog.flush_threshold_size: 1gb
 #path.data: /mnt/data/db
