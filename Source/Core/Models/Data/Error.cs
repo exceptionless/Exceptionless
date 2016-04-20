@@ -1,4 +1,5 @@
 ﻿using System;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data {
     public class Error : InnerError {
@@ -32,7 +33,7 @@ namespace Exceptionless.Core.Models.Data {
 
         public override int GetHashCode() {
             unchecked {
-                return (base.GetHashCode() * 397) ^ (Modules != null ? Modules.GetCollectionHashCode() : 0);
+                return (base.GetHashCode() * 397) ^ (Modules?.GetCollectionHashCode() ?? 0);
             }
         }
     }
