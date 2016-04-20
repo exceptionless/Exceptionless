@@ -69,6 +69,38 @@ namespace Exceptionless.Core.Models.Data {
         /// </summary>
         public DataDictionary Data { get; set; }
 
+        protected bool Equals(RequestInfo other) {
+            return string.Equals(UserAgent, other.UserAgent) && string.Equals(HttpMethod, other.HttpMethod) && IsSecure == other.IsSecure && string.Equals(Host, other.Host) && Port == other.Port && string.Equals(Path, other.Path) && string.Equals(Referrer, other.Referrer) && string.Equals(ClientIpAddress, other.ClientIpAddress) && Cookies.CollectionEquals(other.Cookies) && QueryString.CollectionEquals(other.QueryString) && Equals(Data, other.Data);
+        }
+
+        public override bool Equals(object obj) {
+            if (ReferenceEquals(null, obj))
+                return false;
+            if (ReferenceEquals(this, obj))
+                return true;
+            if (obj.GetType() != this.GetType())
+                return false;
+            return Equals((RequestInfo)obj);
+        }
+
+        private static readonly List<string> _cookieHashCodeExclusions = new List<string> { "__LastReferenceId" };
+
+        public override int GetHashCode() {
+            unchecked {
+                var hashCode = UserAgent == null ? 0 : UserAgent.GetHashCode();
+                hashCode = (hashCode * 397) ^ (HttpMethod == null ? 0 : HttpMethod.GetHashCode());
+                hashCode = (hashCode * 397) ^ IsSecure.GetHashCode();
+                hashCode = (hashCode * 397) ^ (Host == null ? 0 : Host.GetHashCode());
+                hashCode = (hashCode * 397) ^ Port;
+                hashCode = (hashCode * 397) ^ (Path == null ? 0 : Path.GetHashCode());
+                hashCode = (hashCode * 397) ^ (Referrer == null ? 0 : Referrer.GetHashCode());
+                hashCode = (hashCode * 397) ^ (ClientIpAddress == null ? 0 : ClientIpAddress.GetHashCode());
+                hashCode = (hashCode * 397) ^ (Cookies == null ? 0 : Cookies.GetCollectionHashCode(_cookieHashCodeExclusions));
+                hashCode = (hashCode * 397) ^ (QueryString == null ? 0 : QueryString.GetCollectionHashCode());
+                hashCode = (hashCode * 397) ^ (Data == null ? 0 : Data.GetCollectionHashCode());
+                return hashCode;
+            }
+        }
         public static class KnownDataKeys {
             public const string Browser = "@browser";
             public const string BrowserVersion = "@browser_version";
