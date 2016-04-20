@@ -6,8 +6,5 @@
   "total": 1,
   "users": 0.0,
   "total_users": 0.0,
-  "template_key": "stack-log-summary",
-  "data": {
-    "Title": "GET /Print"
-  }
+  "template_key": "stack-log-summary"
 }

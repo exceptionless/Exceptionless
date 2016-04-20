@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("StackTrace"))
                 return null;
             
-            var data = new Dictionary<string, object> { { "Title", stack.Title } };
+            var data = new Dictionary<string, object>();
             string value;
             if (stack.SignatureInfo.TryGetValue("ExceptionType", out value)) {
                 data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
