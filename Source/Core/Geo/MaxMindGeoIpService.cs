@@ -8,6 +8,7 @@ using Foundatio.Logging;
 using Foundatio.Storage;
 using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
+using MaxMind.GeoIP2.Responses;
 
 namespace Exceptionless.Core.Geo {
     public class MaxMindGeoIpService : IGeoIpService, IDisposable {
@@ -45,8 +46,8 @@ namespace Exceptionless.Core.Geo {
                 return null;
 
             try {
-                var city = database.City(ip);
-                if (city?.Location != null) {
+                CityResponse city;
+                if (database.TryCity(ip, out city) && city?.Location != null) {
                     result = new GeoResult {
                         Latitude = city.Location.Latitude,
                         Longitude = city.Location.Longitude,
@@ -59,7 +60,7 @@ namespace Exceptionless.Core.Geo {
                 await _localCache.SetAsync(ip, result).AnyContext();
                 return result;
             } catch (Exception ex) {
-                if (ex is AddressNotFoundException || ex is GeoIP2Exception) {
+                if (ex is GeoIP2Exception) {
                     _logger.Trace().Message(ex.Message).Write();
                     await _localCache.SetAsync<GeoResult>(ip, null).AnyContext();
                 } else {

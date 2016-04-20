@@ -67,7 +67,7 @@ namespace Exceptionless.Serializer {
 
                     if (accessor.MemberType == typeof(DateTime?)) {
                         var offset = p.Value.ToObject<DateTimeOffset?>(serializer);
-                        accessor.SetValue(target, offset.HasValue ? offset.Value.DateTime : (DateTime?)null);
+                        accessor.SetValue(target, offset?.DateTime);
                         continue;
                     }
 

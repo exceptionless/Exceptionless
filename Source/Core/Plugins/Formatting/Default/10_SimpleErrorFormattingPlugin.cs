@@ -93,7 +93,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 BaseUrl = Settings.Current.BaseURL,
                 Subject = String.Concat(notificationType, ": ", error.Message.Truncate(120)),
                 Message = error.Message,
-                Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null
+                Url = requestInfo?.GetFullPath(true, true, true)
             };
 
             return _emailGenerator.GenerateMessage(mailerModel, "NoticeError").ToMailMessage();

@@ -8,7 +8,7 @@ namespace Exceptionless.Core.Extensions {
         public static MailMessage ToMailMessage(this System.Net.Mail.MailMessage message) {
             var notification = new MailMessage {
                 To = message.To.ToString(),
-                From = message.From != null ? message.From.ToString() : null,
+                From = message.From?.ToString(),
                 Subject = message.Subject
             };
 

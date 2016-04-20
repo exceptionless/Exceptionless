@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Reflection;
 using Exceptionless.Core.Pipeline;
 
 namespace Exceptionless.Core.Extensions {
@@ -11,22 +9,10 @@ namespace Exceptionless.Core.Extensions {
         public static IList<Type> SortByPriority(this IEnumerable<Type> types) {
             return types.OrderBy(t => {
                 var priorityAttribute = t.GetCustomAttributes(typeof(PriorityAttribute), true).FirstOrDefault() as PriorityAttribute;
-                return priorityAttribute != null ? priorityAttribute.Priority : 0;
+                return priorityAttribute?.Priority ?? 0;
             }).ToList();
         } 
-
-        public static bool IsNullable(this Type type) {
-            if (type.IsValueType)
-                return false;
-
-            return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(Nullable<>));
-        }
-
-        private static readonly ConcurrentDictionary<Type, object> _defaultValues = new ConcurrentDictionary<Type, object>(); 
-        public static object GetDefaultValue(this Type type) {
-            return _defaultValues.GetOrAdd(type, t => type.IsValueType ? Activator.CreateInstance(type) : null);
-        }
-
+        
         public static bool IsNumeric(this Type type) {
             if (type.IsArray)
                 return false;
@@ -89,37 +75,6 @@ namespace Exceptionless.Core.Extensions {
             }
 
             throw new ArgumentException($"An incompatible value specified.  Target Type: {targetType.FullName} Value Type: {value.GetType().FullName}", nameof(value));
-        }
-
-        public static PropertyInfo[] GetPublicProperties(this Type type) {
-            if (type.IsInterface) {
-                var propertyInfos = new List<PropertyInfo>();
-
-                var considered = new List<Type>();
-                var queue = new Queue<Type>();
-                considered.Add(type);
-                queue.Enqueue(type);
-                while (queue.Count > 0) {
-                    var subType = queue.Dequeue();
-                    foreach (var subInterface in subType.GetInterfaces()) {
-                        if (considered.Contains(subInterface))
-                            continue;
-
-                        considered.Add(subInterface);
-                        queue.Enqueue(subInterface);
-                    }
-
-                    var typeProperties = subType.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance);
-
-                    var newPropertyInfos = typeProperties.Where(x => !propertyInfos.Contains(x));
-
-                    propertyInfos.InsertRange(0, newPropertyInfos);
-                }
-
-                return propertyInfos.ToArray();
-            }
-
-            return type.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance);
         }
     }
 }

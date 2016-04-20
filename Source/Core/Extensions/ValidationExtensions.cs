@@ -14,14 +14,5 @@ namespace Exceptionless.Core.Extensions {
         public static IRuleBuilderOptions<T, TProperty> IsObjectId<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
             return ruleBuilder.SetValidator(new IsObjectIdValidator());
         }
-
-        public static bool TryValidate<T>(this AbstractValidator<T> validator, T value) {
-            try {
-                validator.ValidateAndThrow(value);
-                return true;
-            } catch {
-                return false;
-            }
-        }
     }
 }
