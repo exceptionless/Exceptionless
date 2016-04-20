@@ -164,6 +164,7 @@
     <Compile Include="Billing\StripeEventHandler.cs" />
     <Compile Include="Extensions\AppDomainExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
+    <Compile Include="Extensions\NumericExtensions.cs" />
     <Compile Include="Extensions\PersistentEventExtensions.cs" />
     <Compile Include="Filter\FieldAggregationProcessor.cs" />
     <Compile Include="Geo\IGeocodeService.cs" />
