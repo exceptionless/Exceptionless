@@ -2,8 +2,6 @@
 
 namespace Exceptionless.Core.Repositories.Base {
     public class DocumentNotFoundException : ApplicationException {
-        public DocumentNotFoundException() {}
-
         public DocumentNotFoundException(string id, string message = null) : base(message) {
             Id = id;
         }

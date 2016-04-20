@@ -215,11 +215,6 @@ namespace Exceptionless.Core.Extensions {
             return sb.ToString();
         }
 
-        private static readonly Regex _whitespace = new Regex(@"\s");
-        public static string RemoveWhiteSpace(this string s) {
-            return _whitespace.Replace(s, String.Empty);
-        }
-
         public static string ReplaceFirst(this string input, string find, string replace) {
             if (String.IsNullOrEmpty(input))
                 return input;
@@ -265,22 +260,7 @@ namespace Exceptionless.Core.Extensions {
 
             return String.Concat(buffer.Substring(0, keep - 3), "...");
         }
-
-        public static string Truncate(this string text, int length, string ellipsis, bool keepFullWordAtEnd) {
-            if (String.IsNullOrEmpty(text))
-                return String.Empty;
-
-            if (text.Length < length)
-                return text;
-
-            text = text.Substring(0, length);
-
-            if (keepFullWordAtEnd && text.LastIndexOf(' ') > 0)
-                text = text.Substring(0, text.LastIndexOf(' '));
-
-            return $"{text}{ellipsis}";
-        }
-
+        
         public static string ToLowerFiltered(this string value, char[] charsToRemove) {
             var builder = new StringBuilder(value.Length);
 
@@ -303,21 +283,7 @@ namespace Exceptionless.Core.Extensions {
 
             return builder.ToString();
         }
-
-        public static string[] SplitAndTrim(this string s, params string[] separator) {
-            if (s.IsNullOrEmpty())
-                return new string[0];
-
-            var result = ((separator == null) || (separator.Length == 0))
-                ? s.Split((char[])null, StringSplitOptions.RemoveEmptyEntries)
-                : s.Split(separator, StringSplitOptions.RemoveEmptyEntries);
-
-            for (int i = 0; i < result.Length; i++)
-                result[i] = result[i].Trim();
-
-            return result;
-        }
-
+        
         public static string[] SplitAndTrim(this string s, params char[] separator) {
             if (s.IsNullOrEmpty())
                 return new string[0];
@@ -333,101 +299,13 @@ namespace Exceptionless.Core.Extensions {
         public static bool IsNullOrEmpty(this string item) {
             return String.IsNullOrEmpty(item);
         }
-
-        public static bool IsNullOrWhiteSpace(this string item) {
-            return String.IsNullOrEmpty(item) || item.All(Char.IsWhiteSpace);
-        }
-
-        public static string HexEscape(this string value, params char[] anyCharOf) {
-            if (string.IsNullOrEmpty(value)) return value;
-            if (anyCharOf == null || anyCharOf.Length == 0) return value;
-
-            var encodeCharMap = new HashSet<char>(anyCharOf);
-
-            var sb = new StringBuilder();
-            var textLength = value.Length;
-            for (var i = 0; i < textLength; i++) {
-                var c = value[i];
-                if (encodeCharMap.Contains(c)) {
-                    sb.Append('%' + ((int)c).ToString("x"));
-                } else {
-                    sb.Append(c);
-                }
-            }
-            return sb.ToString();
-        }
-
+        
         private static readonly Regex _entityResolver = new Regex("([&][#](?'decimal'[0-9]+);)|([&][#][(x|X)](?'hex'[0-9a-fA-F]+);)|([&](?'html'\\w+);)");
-
-        public static string HtmlEntityEncode(this string value) {
-            return HtmlEntityEncode(value, true);
-        }
-
-        public static string HtmlEntityEncode(this string value, bool encodeTagsToo) {
-            string str = string.Empty;
-            foreach (char ch in value) {
-                int num = (int)ch;
-                switch (num) {
-                case 38:
-                    if (encodeTagsToo) {
-                        str = str + "&amp;";
-                        break;
-                    } else
-                        break;
-                case 60:
-                    if (encodeTagsToo) {
-                        str = str + "&lt;";
-                        break;
-                    } else
-                        break;
-                case 62:
-                    if (encodeTagsToo) {
-                        str = str + "&gt;";
-                        break;
-                    } else
-                        break;
-                default:
-                    str = (int)ch < 32 || (int)ch > 126 ? str + "&#" + num.ToString((IFormatProvider)NumberFormatInfo.InvariantInfo) + ";" : str + (object)ch;
-                    break;
-                }
-            }
-            return str;
-        }
-
+        
         public static string HtmlEntityDecode(this string encodedText) {
             return _entityResolver.Replace(encodedText, new MatchEvaluator(ResolveEntityAngleAmp));
         }
-
-        public static string HtmlEntityDecode(this string encodedText, bool encodeTagsToo) {
-            if (encodeTagsToo)
-                return _entityResolver.Replace(encodedText, new MatchEvaluator(ResolveEntityAngleAmp));
-            else
-                return _entityResolver.Replace(encodedText, new MatchEvaluator(ResolveEntityNotAngleAmp));
-        }
-
-        private static string ResolveEntityNotAngleAmp(Match matchToProcess) {
-            string str;
-            if (matchToProcess.Groups["decimal"].Success)
-                str = Convert.ToChar(Convert.ToInt32(matchToProcess.Groups["decimal"].Value)).ToString();
-            else if (matchToProcess.Groups["hex"].Success)
-                str = Convert.ToChar(HexToInt(matchToProcess.Groups["hex"].Value)).ToString();
-            else if (matchToProcess.Groups["html"].Success) {
-                string entity = matchToProcess.Groups["html"].Value;
-                switch (entity.ToLower()) {
-                case "lt":
-                case "gt":
-                case "amp":
-                    str = "&" + entity + ";";
-                    break;
-                default:
-                    str = EntityLookup(entity);
-                    break;
-                }
-            } else
-                str = "X";
-            return str;
-        }
-
+        
         private static string ResolveEntityAngleAmp(Match matchToProcess) {
             return !matchToProcess.Groups["decimal"].Success ? (!matchToProcess.Groups["hex"].Success ? (!matchToProcess.Groups["html"].Success ? "Y" : EntityLookup(matchToProcess.Groups["html"].Value)) : Convert.ToChar(HexToInt(matchToProcess.Groups["hex"].Value)).ToString()) : Convert.ToChar(Convert.ToInt32(matchToProcess.Groups["decimal"].Value)).ToString();
         }

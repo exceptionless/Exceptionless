@@ -53,15 +53,5 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                     await context.RenewLockAsync().AnyContext();
             }
         }
-
-        private void UpgradePlan(Organization organization) {
-            var plan = BillingManager.GetBillingPlan(organization.PlanId);
-            if (plan == null) {
-                _logger.Error("Unable to find a valid plan for organization: {0}", organization.Id);
-                return;
-            }
-
-            BillingManager.ApplyBillingPlan(organization, plan, user: null, updateBillingPrice: false);
-        }
     }
 }

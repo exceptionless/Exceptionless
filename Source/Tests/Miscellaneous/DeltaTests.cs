@@ -1,7 +1,5 @@
 ﻿using System;
-using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Api.Utility;
-using Foundatio.Logging;
 using Foundatio.Logging.Xunit;
 using Xunit;
 using Xunit.Abstractions;

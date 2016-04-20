@@ -81,8 +81,8 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                         ((JObject)error["Data"]).MoveOrRemoveIfNullOrEmpty(extendedData, "__ExceptionInfo");
                     }
 
-                    string id = doc["Id"] != null ? doc["Id"].Value<string>(): null;
-                    string projectId = doc["ProjectId"] != null ? doc["ProjectId"].Value<string>() : null;
+                    string id = doc["Id"]?.Value<string>();
+                    string projectId = doc["ProjectId"]?.Value<string>();
                     RenameAndValidateExtraExceptionProperties(projectId, id, error);
 
                     var inner = error["Inner"] as JObject;

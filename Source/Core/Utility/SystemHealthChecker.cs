@@ -6,14 +6,12 @@ using Foundatio.Caching;
 using Foundatio.Logging;
 using Foundatio.Storage;
 using Nest;
-using Nito.AsyncEx;
 
 namespace Exceptionless.Core.Utility {
     public class SystemHealthChecker {
         private readonly ICacheClient _cacheClient;
         private readonly IElasticClient _elasticClient;
         private readonly IFileStorage _storage;
-        private readonly AsyncManualResetEvent _resetEvent = new AsyncManualResetEvent(false);
         private readonly ILogger _logger;
 
         public SystemHealthChecker(ICacheClient cacheClient, IElasticClient elasticClient, IFileStorage storage, ILogger<SystemHealthChecker> logger) {

@@ -1,4 +1,5 @@
 ﻿using System;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data {
     public class UserDescription : IData {
@@ -21,5 +22,28 @@ namespace Exceptionless.Core.Models.Data {
         /// Extended data entries for this user description.
         /// </summary>
         public DataDictionary Data { get; set; }
+
+        protected bool Equals(UserDescription other) {
+            return string.Equals(EmailAddress, other.EmailAddress) && string.Equals(Description, other.Description) && Equals(Data, other.Data);
+        }
+
+        public override bool Equals(object obj) {
+            if (ReferenceEquals(null, obj))
+                return false;
+            if (ReferenceEquals(this, obj))
+                return true;
+            if (obj.GetType() != this.GetType())
+                return false;
+            return Equals((UserDescription)obj);
+        }
+
+        public override int GetHashCode() {
+            unchecked {
+                var hashCode = EmailAddress?.GetHashCode() ?? 0;
+                hashCode = (hashCode * 397) ^ (Description?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);
+                return hashCode;
+            }
+        }
     }
 }

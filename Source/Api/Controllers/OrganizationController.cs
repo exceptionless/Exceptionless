@@ -223,7 +223,7 @@ namespace Exceptionless.Api.Controllers {
                 invoice.Items.Add(item);
             }
 
-            var coupon = stripeInvoice.StripeDiscount != null ? stripeInvoice.StripeDiscount.StripeCoupon : null;
+            var coupon = stripeInvoice.StripeDiscount?.StripeCoupon;
             if (coupon != null) {
                 double discountAmount = coupon.AmountOff ?? stripeInvoice.Subtotal * (coupon.PercentOff.GetValueOrDefault() / 100.0);
                 string description = $"{coupon.Id} {(coupon.PercentOff.HasValue ? $"({coupon.PercentOff.Value}% off)" : $"({(coupon.AmountOff.GetValueOrDefault() / 100.0).ToString("C")} off)")}";
