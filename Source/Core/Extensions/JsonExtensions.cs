@@ -279,8 +279,8 @@ namespace Exceptionless.Core.Extensions {
                 return true;
 
             var collection = value as ICollection;
-            if (collection != null && collection.Count == 0)
-                return true;
+            if (collection != null)
+                return collection.Count == 0;
 
             if (!_countAccessors.ContainsKey(property.PropertyType)) {
                 if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType)) {
