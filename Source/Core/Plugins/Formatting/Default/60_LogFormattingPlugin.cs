@@ -6,7 +6,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Core.Validation;
 using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
@@ -26,13 +25,14 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Log))
                 return null;
 
-            var data = new Dictionary<string, object> { { "Title", stack.Title } };
-
+            var data = new Dictionary<string, object>();
             string source = stack.SignatureInfo?.GetString("Source");
             if (!String.IsNullOrWhiteSpace(source) && String.Equals(source, stack.Title)) {
                 var parts = source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length > 1 && !String.Equals(source, parts.Last()) && parts.All(p => p.IsValidIdentifier()))
-                    data.Add("TitleShortName", parts.Last());
+                if (parts.Length > 1 && !String.Equals(source, parts.Last()) && parts.All(p => p.IsValidIdentifier())) {
+                    data.Add("Source", source);
+                    data.Add("SourceShortName", parts.Last());
+                }
             }
 
             return new SummaryData { TemplateKey = "stack-log-summary", Data = data };
