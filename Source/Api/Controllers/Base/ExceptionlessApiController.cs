@@ -114,9 +114,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         public User ExceptionlessUser => Request.GetUser();
-
-        public AuthType AuthType => User.GetAuthType();
-
+        
         public bool CanAccessOrganization(string organizationId) {
             return Request.CanAccessOrganization(organizationId);
         }
@@ -225,13 +223,6 @@ namespace Exceptionless.Api.Controllers {
                 return null;
 
             return null;
-        }
-
-        protected bool HasOrganizationFilter(string filter) {
-            if (String.IsNullOrWhiteSpace(filter))
-                return false;
-
-            return filter.Contains("organization:");
         }
     }
 }

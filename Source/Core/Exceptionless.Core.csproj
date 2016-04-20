@@ -277,7 +277,6 @@
     <Compile Include="Utility\MetricNames.cs" />
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
-    <Compile Include="Dependency\DependencyResolverExtensions.cs" />
     <Compile Include="Dependency\IDependencyResolver.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\UserExtensions.cs" />
@@ -288,7 +287,6 @@
     <Compile Include="Extensions\HttpClientExtensions.cs" />
     <Compile Include="Extensions\ILGeneratorExtensions.cs" />
     <Compile Include="Extensions\NameValueCollectionExtensions.cs" />
-    <Compile Include="Extensions\NumericExtensions.cs" />
     <Compile Include="Extensions\QueueExtensions.cs" />
     <Compile Include="Extensions\StorageExtensions.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
@@ -298,7 +296,6 @@
     <Compile Include="Jobs\EventNotificationsJob.cs" />
     <Compile Include="Jobs\WebHooksJob.cs" />
     <Compile Include="Plugins\EventProcessor\Default\50_GeoPlugin.cs" />
-    <Compile Include="Utility\KeepAliveHttpConnection.cs" />
     <Compile Include="Models\Messaging\UserMembershipChanged.cs" />
     <Compile Include="Pipeline\Base\PipelineActionBase.cs" />
     <Compile Include="Pipeline\Base\PipelineBase.cs" />
@@ -372,14 +369,11 @@
     <Compile Include="Jobs\RetentionLimitsJob.cs" />
     <Compile Include="Models\Queues\EventUserDescription.cs" />
     <Compile Include="Models\Queues\MailMessage.cs" />
-    <Compile Include="Repositories\Exceptions\DuplicateDocumentException.cs" />
     <Compile Include="Repositories\Base\RepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Base\RepositoryOwnedByOrganization.cs" />
     <Compile Include="Repositories\Base\RepositoryOwnedByOrganizationAndProjectAndStack.cs" />
     <Compile Include="Repositories\EventRepository.cs" />
     <Compile Include="Serialization\DataObjectConverter.cs" />
-    <Compile Include="Utility\GenericEventArgs.cs" />
-    <Compile Include="Utility\LambdaComparer.cs" />
     <Compile Include="Utility\PathHelper.cs" />
     <Compile Include="Utility\Reflection\DelegateFactory.cs" />
     <Compile Include="Utility\Reflection\FieldAccessor.cs" />
@@ -438,7 +432,6 @@
     <Compile Include="Repositories\TokenRepository.cs" />
     <Compile Include="Repositories\WebHookRepository.cs" />
     <Compile Include="Serialization\ExceptionlessContractResolver.cs" />
-    <Compile Include="Serialization\JsonTextWriterWithDepth.cs" />
     <Compile Include="Serialization\LowerCaseUnderscorePropertyNamesContractResolver.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Plugins\EventProcessor\Default\20_ErrorPlugin.cs" />

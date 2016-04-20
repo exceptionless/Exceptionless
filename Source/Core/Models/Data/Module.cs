@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data {
     public class Module : IData {
@@ -43,12 +44,12 @@ namespace Exceptionless.Core.Models.Data {
         public override int GetHashCode() {
             unchecked {
                 var hashCode = ModuleId;
-                hashCode = (hashCode * 397) ^ (Name == null ? 0 : Name.GetHashCode());
-                hashCode = (hashCode * 397) ^ (Version == null ? 0 : Version.GetHashCode());
+                hashCode = (hashCode * 397) ^ (Name?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (Version?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ IsEntry.GetHashCode();
                 hashCode = (hashCode * 397) ^ CreatedDate.GetHashCode();
                 hashCode = (hashCode * 397) ^ ModifiedDate.GetHashCode();
-                hashCode = (hashCode * 397) ^ (Data == null ? 0 : Data.GetCollectionHashCode());
+                hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);
                 return hashCode;
             }
         }

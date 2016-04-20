@@ -53,16 +53,7 @@ namespace Exceptionless.Core.Extensions {
             foreach (var name in names)
                 target.Remove(name);
         }
-
-        public static bool RemoveAllIfNullOrEmpty(this IEnumerable<JProperty> elements, params string[] names) {
-            if (elements == null)
-                return false;
-
-            foreach (var p in elements.Where(t => names.Contains(t.Name) && t.IsNullOrEmpty()))
-                p.Remove();
-
-            return true;
-        }
+        
 
         public static bool RemoveAllIfNullOrEmpty(this JObject target, params string[] names) {
             if (target.IsNullOrEmpty())
@@ -117,16 +108,6 @@ namespace Exceptionless.Core.Extensions {
 
                 target.Add(name, p.Value);
             }
-        }
-
-        public static bool RenameAll(this IEnumerable<JProperty> properties, string currentName, string newName) {
-            foreach (var p in properties.Where(t => t.Name == currentName)) {
-                var parent = p.Parent as JObject;
-                if (parent != null)
-                    parent.Rename(currentName, newName);
-            }
-
-            return true;
         }
 
         public static bool RenameAll(this JObject target, string currentName, string newName) {
@@ -192,20 +173,7 @@ namespace Exceptionless.Core.Extensions {
             JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
             return data.ToObject<List<T>>(serializer);
         }
-
-        public static T FromJson<T>(this JObject data, JsonSerializerSettings settings = null) {
-            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
-            return data.ToObject<T>(serializer);
-        }
-
-        public static object FromJson(this string data, Type objectType, JsonSerializerSettings settings = null) {
-            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
-
-            using (var sw = new StringReader(data))
-            using (var sr = new JsonTextReader(sw))
-                return serializer.Deserialize(sr, objectType);
-        }
-
+        
         public static T FromJson<T>(this string data, JsonSerializerSettings settings = null) {
             JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
 
@@ -223,55 +191,7 @@ namespace Exceptionless.Core.Extensions {
                 return false;
             }
         }
-
-        public static byte[] ToBson<T>(this T data, JsonSerializerSettings settings = null) {
-            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
-            using (var ms = new MemoryStream()) {
-                using (var writer = new BsonWriter(ms))
-                    serializer.Serialize(writer, data, typeof(T));
-
-                return ms.ToArray();
-            }
-        }
-
-        public static T FromBson<T>(this byte[] data, JsonSerializerSettings settings = null) {
-            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
-
-            using (var sw = new MemoryStream(data))
-                using (var sr = new BsonReader(sw))
-                    return serializer.Deserialize<T>(sr);
         
-        }
-
-        public static object FromBson(this byte[] data, Type objectType, JsonSerializerSettings settings = null) {
-            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
-
-            using (var sw = new MemoryStream(data))
-            using (var sr = new BsonReader(sw))
-                return serializer.Deserialize(sr, objectType);
-
-        }
-
-        public static bool TryFromBson<T>(this byte[] data, out T value, JsonSerializerSettings settings = null) {
-            try {
-                value = data.FromBson<T>(settings);
-                return true;
-            } catch (Exception) {
-                value = default(T);
-                return false;
-            }
-        }
-
-        public static bool TryFromBson(this byte[] data, out object value, Type objectType, JsonSerializerSettings settings = null) {
-            try {
-                value = data.FromBson(objectType, settings);
-                return true;
-            } catch (Exception) {
-                value = null;
-                return false;
-            }
-        }
-
         private static readonly ConcurrentDictionary<Type, IMemberAccessor> _countAccessors = new ConcurrentDictionary<Type, IMemberAccessor>();
         public static bool IsValueEmptyCollection(this JsonProperty property, object target) {
             var value = property.ValueProvider.GetValue(target);

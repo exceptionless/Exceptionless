@@ -1,4 +1,5 @@
 using System;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data {
     public class EnvironmentInfo : IData {
@@ -118,17 +119,17 @@ namespace Exceptionless.Core.Models.Data {
             unchecked {
                 var hashCode = ProcessorCount;
                 hashCode = (hashCode * 397) ^ TotalPhysicalMemory.GetHashCode();
-                hashCode = (hashCode * 397) ^ (CommandLine == null ? 0 : CommandLine.GetHashCode());
-                hashCode = (hashCode * 397) ^ (ProcessName == null ? 0 : ProcessName.GetHashCode());
-                hashCode = (hashCode * 397) ^ (ProcessId == null ? 0 : ProcessId.GetHashCode());
-                hashCode = (hashCode * 397) ^ (Architecture == null ? 0 : Architecture.GetHashCode());
-                hashCode = (hashCode * 397) ^ (OSName == null ? 0 : OSName.GetHashCode());
-                hashCode = (hashCode * 397) ^ (OSVersion == null ? 0 :OSVersion.GetHashCode());
-                hashCode = (hashCode * 397) ^ (IpAddress == null ? 0 : IpAddress.GetHashCode());
-                hashCode = (hashCode * 397) ^ (MachineName == null ? 0 : MachineName.GetHashCode());
-                hashCode = (hashCode * 397) ^ (InstallId == null ? 0 : InstallId.GetHashCode());
-                hashCode = (hashCode * 397) ^ (RuntimeVersion == null ? 0 : RuntimeVersion.GetHashCode());
-                hashCode = (hashCode * 397) ^ (Data == null ? 0 : Data.GetCollectionHashCode());
+                hashCode = (hashCode * 397) ^ (CommandLine?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (ProcessName?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (ProcessId?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (Architecture?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (OSName?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (OSVersion?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (IpAddress?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (MachineName?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (InstallId?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (RuntimeVersion?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);
                 return hashCode;
             }
         }

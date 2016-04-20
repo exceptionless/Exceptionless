@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using Exceptionless.Core.Authorization;
@@ -108,11 +107,6 @@ namespace Exceptionless.Api.Extensions {
                 return null;
 
             return match.Value;
-        }
-
-        public static string GetCookie(this HttpRequestMessage request, string cookieName) {
-            CookieHeaderValue cookie = request?.Headers.GetCookies(cookieName).FirstOrDefault();
-            return cookie?[cookieName].Value;
         }
 
         public static AuthInfo GetBasicAuth(this HttpRequestMessage request) {

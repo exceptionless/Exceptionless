@@ -281,7 +281,6 @@
     <Compile Include="Utility\Handlers\ExceptionlessReferenceIdExceptionHandler.cs" />
     <Compile Include="Utility\FoundatioExceptionLogger.cs" />
     <Compile Include="Utility\FilterRoutesDocumentFilter.cs" />
-    <Compile Include="Utility\LowercaseHttpRoute.cs" />
     <Compile Include="Utility\Bindings\NakedParameterBinding.cs" />
     <Compile Include="Utility\Constraints\ObjectIdRouteConstraint.cs" />
     <Compile Include="Utility\Constraints\ObjectIdsRouteConstraint.cs" />

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data {
     public class RequestInfo : IData {
@@ -87,17 +88,17 @@ namespace Exceptionless.Core.Models.Data {
 
         public override int GetHashCode() {
             unchecked {
-                var hashCode = UserAgent == null ? 0 : UserAgent.GetHashCode();
-                hashCode = (hashCode * 397) ^ (HttpMethod == null ? 0 : HttpMethod.GetHashCode());
+                var hashCode = UserAgent?.GetHashCode() ?? 0;
+                hashCode = (hashCode * 397) ^ (HttpMethod?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ IsSecure.GetHashCode();
-                hashCode = (hashCode * 397) ^ (Host == null ? 0 : Host.GetHashCode());
+                hashCode = (hashCode * 397) ^ (Host?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ Port;
-                hashCode = (hashCode * 397) ^ (Path == null ? 0 : Path.GetHashCode());
-                hashCode = (hashCode * 397) ^ (Referrer == null ? 0 : Referrer.GetHashCode());
-                hashCode = (hashCode * 397) ^ (ClientIpAddress == null ? 0 : ClientIpAddress.GetHashCode());
-                hashCode = (hashCode * 397) ^ (Cookies == null ? 0 : Cookies.GetCollectionHashCode(_cookieHashCodeExclusions));
-                hashCode = (hashCode * 397) ^ (QueryString == null ? 0 : QueryString.GetCollectionHashCode());
-                hashCode = (hashCode * 397) ^ (Data == null ? 0 : Data.GetCollectionHashCode());
+                hashCode = (hashCode * 397) ^ (Path?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (Referrer?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (ClientIpAddress?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (Cookies?.GetCollectionHashCode(_cookieHashCodeExclusions) ?? 0);
+                hashCode = (hashCode * 397) ^ (QueryString?.GetCollectionHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);
                 return hashCode;
             }
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data {
     public class UserDescription : IData {
@@ -38,9 +39,9 @@ namespace Exceptionless.Core.Models.Data {
 
         public override int GetHashCode() {
             unchecked {
-                var hashCode = EmailAddress == null ? 0 : EmailAddress.GetHashCode();
-                hashCode = (hashCode * 397) ^ (Description == null ? 0 : Description.GetHashCode());
-                hashCode = (hashCode * 397) ^ (Data == null ? 0 : Data.GetCollectionHashCode());
+                var hashCode = EmailAddress?.GetHashCode() ?? 0;
+                hashCode = (hashCode * 397) ^ (Description?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);
                 return hashCode;
             }
         }

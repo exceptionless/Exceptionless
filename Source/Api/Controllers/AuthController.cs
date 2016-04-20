@@ -157,7 +157,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!IsValidPassword(model.Password)) {
-                _logger.Error().Message("Signup failed for \"{0}\": Invalid Password", model.Email).Tag("Signup").Identity(model.Email).Property("Password Length", model.Password != null ? model.Password.Length : 0).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Signup failed for \"{0}\": Invalid Password", model.Email).Tag("Signup").Identity(model.Email).Property("Password Length", model.Password?.Length ?? 0).SetActionContext(ActionContext).Write();
                 return BadRequest("Password must be at least 6 characters long.");
             }
 
@@ -282,7 +282,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IHttpActionResult> ChangePasswordAsync(ChangePasswordModel model) {
             if (model == null || !IsValidPassword(model.Password)) {
-                _logger.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", ExceptionlessUser.EmailAddress).Tag("Change Password").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Password Length", model?.Password != null ? model.Password.Length : 0).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", ExceptionlessUser.EmailAddress).Tag("Change Password").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Password Length", model?.Password?.Length ?? 0).SetActionContext(ActionContext).Write();
                 return BadRequest("The New Password must be at least 6 characters long.");
             }
 
@@ -379,7 +379,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!IsValidPassword(model.Password)) {
-                _logger.Error().Message("Reset password failed for \"{0}\": The New Password must be at least 6 characters long.", user.EmailAddress).Tag("Reset Password").Identity(user.EmailAddress).Property("User", user).Property("Password Length", model.Password != null ? model.Password.Length : 0).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Reset password failed for \"{0}\": The New Password must be at least 6 characters long.", user.EmailAddress).Tag("Reset Password").Identity(user.EmailAddress).Property("User", user).Property("Password Length", model.Password?.Length ?? 0).SetActionContext(ActionContext).Write();
                 return BadRequest("The New Password must be at least 6 characters long.");
             }
 

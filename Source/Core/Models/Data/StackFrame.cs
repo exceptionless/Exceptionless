@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Models.Data {
         public override int GetHashCode() {
             unchecked {
                 int hashCode = base.GetHashCode();
-                hashCode = (hashCode * 397) ^ (FileName == null ? 0 : FileName.GetHashCode());
+                hashCode = (hashCode * 397) ^ (FileName?.GetHashCode() ?? 0);
                 return hashCode;
             }
         }
