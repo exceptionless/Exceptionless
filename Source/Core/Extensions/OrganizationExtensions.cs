@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static DateTime GetRetentionUtcCutoff(this ICollection<Organization> organizations) {
-            return organizations.Min(o => o.GetRetentionUtcCutoff());
+            return organizations.Count > 0 ? organizations.Min(o => o.GetRetentionUtcCutoff()) : DateTime.MinValue;
         }
 
         public static void RemoveSuspension(this Organization organization) {
