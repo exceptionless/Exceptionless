@@ -10,7 +10,7 @@ Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://gith
 
 2. Search for similar [issues](https://github.com/exceptionless/Exceptionless/issues?q=is%3Aopen+is%3Aissue+label%3Abug); it may already be an identified problem.
 
-3. If this is a bug or problem that **requires any kind of extended discussion please chat with us [on gitter](https://gitter.im/exceptionless/Discuss) about it**. Do *not* open a bug on GitHub.
+3. If this is a bug or problem that **requires any kind of extended discussion please chat with us [on Slack](https://slack.exceptionless.com) about it**. Do *not* open a bug on GitHub.
 
 4. If this is a bug or problem that is clear, simple, and is unlikely to require *any* discussion -- it is OK to open an [issue on GitHub](https://github.com/exceptionless/exceptionless/issues) with a reproduction of the bug including workflows, screenshots, or links to examples. If possible, submit a Pull Request with a failing test. If you'd rather take matters into your own hands, fix the bug yourself (jump down to the "Contributing (Step-by-step)" section).
 5. When the bug is fixed, we will do our best to update the Exceptionless topic or GitHub issue with a resolution.
