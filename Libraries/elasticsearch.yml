@@ -9,7 +9,7 @@ index.translog.flush_threshold_size: 1gb
 bootstrap.mlockall: true
 script.disable_dynamic: false
 #gateway.expected_nodes: 3
-discovery.zen.ping.multicast.enabled: false
+discovery.zen.ping.multicast.enabled: true
 #discovery.zen.minimum_master_nodes: 2
 #discovery.zen.ping.unicast.hosts: [ '10.2.0.4', '10.2.0.5', '10.2.0.6' ]
 
