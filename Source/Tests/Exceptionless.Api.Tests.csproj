@@ -296,7 +296,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>robocopy $(ProjectDir)..\Insulation\bin\$(ConfigurationName) $(TargetDir) /S /NFL /NDL /NJH /NJS /nc /ns /np 
+    <PostBuildEvent>robocopy "$(ProjectDir)..\Insulation\bin\$(ConfigurationName)" "$(TargetDir)." /S /NFL /NDL /NJH /NJS /nc /ns /np 
 IF %25ERRORLEVEL%25 GEQ 8 exit 1
 exit 0</PostBuildEvent>
   </PropertyGroup>
