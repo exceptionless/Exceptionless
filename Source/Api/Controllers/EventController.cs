@@ -471,8 +471,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
             
-            string decodedId = Uri.UnescapeDataString(sessionIdOrUserId).Trim();
-            await _sessionCacheClient.SetAsync($"project:{project.Id}:{decodedId.ToSHA1()}:heartbeat", DateTime.UtcNow, TimeSpan.FromHours(2));
+            await _sessionCacheClient.SetAsync($"project:{project.Id}:{sessionIdOrUserId.ToSHA1()}:heartbeat", DateTime.UtcNow, TimeSpan.FromHours(2));
             
             return Ok();
         }
