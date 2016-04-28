@@ -456,7 +456,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/session/{sessionIdOrUserId:minlength(1)}/heartbeat")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public async Task<IHttpActionResult> GetSubmitHeartbeat(string projectId = null, int version = 2, string sessionIdOrUserId = null) {
+        public async Task<IHttpActionResult> RecordHeartbeatAsync(string projectId = null, int version = 2, string sessionIdOrUserId = null) {
             if (String.IsNullOrWhiteSpace(sessionIdOrUserId))
                 return Ok();
 
@@ -509,7 +509,7 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [ConfigurationResponseFilter]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public async Task<IHttpActionResult> GetSubmitEvent(string projectId = null, int version = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
+        public async Task<IHttpActionResult> GetSubmitEventAsync(string projectId = null, int version = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
             if (parameters == null || parameters.Count == 0)
                 return Ok();
 
