@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -15,10 +16,12 @@ using Foundatio.Repositories.Models;
 namespace Exceptionless.Core.Jobs {
     public class CloseInactiveSessionsJob : JobWithLockBase {
         private readonly IEventRepository _eventRepository;
+        private readonly ICacheClient _cacheClient;
         private readonly ILockProvider _lockProvider;
 
         public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _eventRepository = eventRepository;
+            _cacheClient = new ScopedCacheClient(cacheClient, "session");
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
         }
 
@@ -36,18 +39,24 @@ namespace Exceptionless.Core.Jobs {
 
                 foreach (var sessionStart in results.Documents) {
                     var lastActivityUtc = sessionStart.Date.UtcDateTime.AddSeconds((double)sessionStart.Value.GetValueOrDefault());
-                    if (lastActivityUtc > inactivePeriod)
+                    var lastHeartbeatActivityUtc = await GetLastHeartbeatActivityUtcAsync(sessionStart).AnyContext();
+
+                    if (lastHeartbeatActivityUtc.HasValue && lastHeartbeatActivityUtc.Value > lastActivityUtc)
+                        sessionStart.UpdateSessionStart(lastHeartbeatActivityUtc.Value, isSessionEnd: lastHeartbeatActivityUtc.Value <= inactivePeriod);
+                    else if (lastActivityUtc <= inactivePeriod)
+                        sessionStart.UpdateSessionStart(lastActivityUtc, isSessionEnd: true);
+                    else
                         continue;
 
-                    sessionStart.UpdateSessionStart(lastActivityUtc, true);
                     sessionsToUpdate.Add(sessionStart);
-
                     Debug.Assert(sessionStart.Value != null && sessionStart.Value >= 0, "Session start value cannot be a negative number.");
                 }
 
-                if (sessionsToUpdate.Count > 0)
+                if (sessionsToUpdate.Count > 0) {
                     await _eventRepository.SaveAsync(sessionsToUpdate).AnyContext();
-                
+                    await _cacheClient.RemoveAllAsync(sessionsToUpdate.SelectMany(GetSessionHeartbeatCacheKeys)).AnyContext();
+                }
+
                 // Sleep so we are not hammering the backend.
                 await Task.Delay(TimeSpan.FromSeconds(2.5)).AnyContext();
 
@@ -57,6 +66,23 @@ namespace Exceptionless.Core.Jobs {
             }
 
             return JobResult.Success;
+        }
+
+        private async Task<DateTime?> GetLastHeartbeatActivityUtcAsync(PersistentEvent sessionStart) {
+            var cacheValues = await _cacheClient.GetAllAsync<DateTime>(GetSessionHeartbeatCacheKeys(sessionStart)).AnyContext();
+            var heartbeats = cacheValues.Values.Where(v => v.HasValue).Select(v => v.Value).ToList();
+
+            return heartbeats.Count > 0 ? heartbeats.Max() : (DateTime?)null;
+        }
+
+        private IEnumerable<string> GetSessionHeartbeatCacheKeys(PersistentEvent sessionStart) {
+            var keys = new List<string> { $"project:{sessionStart.ProjectId}:{sessionStart.GetSessionId().ToSHA1()}:heartbeat" };
+
+            var user = sessionStart.GetUserIdentity();
+            if (user != null)
+                keys.Add($"project:{sessionStart.ProjectId}:{user.Identity.ToSHA1()}:heartbeat");
+
+            return keys;
         }
 
         private DateTime GetStartOfInactivePeriod() {
