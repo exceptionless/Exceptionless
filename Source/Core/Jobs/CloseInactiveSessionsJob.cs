@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
@@ -31,9 +32,9 @@ namespace Exceptionless.Core.Jobs {
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             const int LIMIT = 100;
 
-            var results = await _eventRepository.GetOpenSessionsAsync(GetStartOfInactivePeriod(), new PagingOptions().WithPage(1).WithLimit(LIMIT)).AnyContext();
+            var results = await _eventRepository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(1), new PagingOptions().WithPage(1).WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
-                var inactivePeriod = GetStartOfInactivePeriod();
+                var inactivePeriodUtc = DateTime.UtcNow.Subtract(DefaultInactivePeriod);
                 var sessionsToUpdate = new List<PersistentEvent>(LIMIT);
                 var cacheKeysToRemove = new List<string>(LIMIT * 2);
 
@@ -42,8 +43,8 @@ namespace Exceptionless.Core.Jobs {
                     var heartbeatResult = await GetHeartbeatAsync(sessionStart).AnyContext();
 
                     if (heartbeatResult != null && (heartbeatResult.Close || heartbeatResult.ActivityUtc > lastActivityUtc))
-                        sessionStart.UpdateSessionStart(heartbeatResult.ActivityUtc, isSessionEnd: heartbeatResult.Close || heartbeatResult.ActivityUtc <= inactivePeriod);
-                    else if (lastActivityUtc <= inactivePeriod)
+                        sessionStart.UpdateSessionStart(heartbeatResult.ActivityUtc, isSessionEnd: heartbeatResult.Close || heartbeatResult.ActivityUtc <= inactivePeriodUtc);
+                    else if (lastActivityUtc <= inactivePeriodUtc)
                         sessionStart.UpdateSessionStart(lastActivityUtc, isSessionEnd: true);
                     else
                         continue;
@@ -95,10 +96,6 @@ namespace Exceptionless.Core.Jobs {
             }
 
             return null;
-        }
-
-        private DateTime GetStartOfInactivePeriod() {
-            return DateTime.UtcNow.Subtract(DefaultInactivePeriod);
         }
         
         public TimeSpan DefaultInactivePeriod { get; set; } = TimeSpan.FromMinutes(5);
