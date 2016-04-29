@@ -447,17 +447,18 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="projectId">The identifier of the project.</param>
         /// <param name="version">The api version that should be used.</param>
-        /// <param name="sessionIdOrUserId">The session id or user id.</param>
+        /// <param name="id">The session id or user id.</param>
+        /// <param name="close">If true, the session will be closed.</param>
         /// <response code="202">Accepted</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
         [HttpGet]
-        [Route("~/api/v{version:int=2}/events/session/{sessionIdOrUserId:minlength(1)}/heartbeat")]
-        [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/session/{sessionIdOrUserId:minlength(1)}/heartbeat")]
+        [Route("~/api/v{version:int=2}/events/session/heartbeat")]
+        [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/session/heartbeat")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public async Task<IHttpActionResult> RecordHeartbeatAsync(string projectId = null, int version = 2, string sessionIdOrUserId = null) {
-            if (String.IsNullOrWhiteSpace(sessionIdOrUserId))
+        public async Task<IHttpActionResult> RecordHeartbeatAsync(string projectId = null, int version = 2, string id = null, bool close = false) {
+            if (String.IsNullOrWhiteSpace(id))
                 return Ok();
 
             if (projectId == null)
@@ -471,8 +472,10 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
             
-            await _sessionCacheClient.SetAsync($"project:{project.Id}:{sessionIdOrUserId.ToSHA1()}:heartbeat", DateTime.UtcNow, TimeSpan.FromHours(2));
-            
+            await _sessionCacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}", DateTime.UtcNow, TimeSpan.FromHours(2));
+            if (close)
+                await _sessionCacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
+
             return Ok();
         }
 

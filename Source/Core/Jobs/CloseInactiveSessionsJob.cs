@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -36,26 +35,34 @@ namespace Exceptionless.Core.Jobs {
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 var inactivePeriod = GetStartOfInactivePeriod();
                 var sessionsToUpdate = new List<PersistentEvent>(LIMIT);
+                var cacheKeysToRemove = new List<string>(LIMIT * 2);
 
                 foreach (var sessionStart in results.Documents) {
                     var lastActivityUtc = sessionStart.Date.UtcDateTime.AddSeconds((double)sessionStart.Value.GetValueOrDefault());
-                    var lastHeartbeatActivityUtc = await GetLastHeartbeatActivityUtcAsync(sessionStart).AnyContext();
+                    var heartbeatResult = await GetHeartbeatAsync(sessionStart).AnyContext();
 
-                    if (lastHeartbeatActivityUtc.HasValue && lastHeartbeatActivityUtc.Value > lastActivityUtc)
-                        sessionStart.UpdateSessionStart(lastHeartbeatActivityUtc.Value, isSessionEnd: lastHeartbeatActivityUtc.Value <= inactivePeriod);
+                    if (heartbeatResult != null && (heartbeatResult.Close || heartbeatResult.ActivityUtc > lastActivityUtc))
+                        sessionStart.UpdateSessionStart(heartbeatResult.ActivityUtc, isSessionEnd: heartbeatResult.Close || heartbeatResult.ActivityUtc <= inactivePeriod);
                     else if (lastActivityUtc <= inactivePeriod)
                         sessionStart.UpdateSessionStart(lastActivityUtc, isSessionEnd: true);
                     else
                         continue;
 
                     sessionsToUpdate.Add(sessionStart);
+                    if (heartbeatResult != null) {
+                        cacheKeysToRemove.Add(heartbeatResult.CacheKey);
+                        if (heartbeatResult.Close)
+                            cacheKeysToRemove.Add(heartbeatResult.CacheKey + "-close");
+                    }
+
                     Debug.Assert(sessionStart.Value != null && sessionStart.Value >= 0, "Session start value cannot be a negative number.");
                 }
 
-                if (sessionsToUpdate.Count > 0) {
+                if (sessionsToUpdate.Count > 0)
                     await _eventRepository.SaveAsync(sessionsToUpdate).AnyContext();
-                    await _cacheClient.RemoveAllAsync(sessionsToUpdate.SelectMany(GetSessionHeartbeatCacheKeys)).AnyContext();
-                }
+
+                if (cacheKeysToRemove.Count > 0)
+                    await _cacheClient.RemoveAllAsync(cacheKeysToRemove).AnyContext();
 
                 // Sleep so we are not hammering the backend.
                 await Task.Delay(TimeSpan.FromSeconds(2.5)).AnyContext();
@@ -68,27 +75,38 @@ namespace Exceptionless.Core.Jobs {
             return JobResult.Success;
         }
 
-        private async Task<DateTime?> GetLastHeartbeatActivityUtcAsync(PersistentEvent sessionStart) {
-            var cacheValues = await _cacheClient.GetAllAsync<DateTime>(GetSessionHeartbeatCacheKeys(sessionStart)).AnyContext();
-            var heartbeats = cacheValues.Values.Where(v => v.HasValue).Select(v => v.Value).ToList();
-
-            return heartbeats.Count > 0 ? heartbeats.Max() : (DateTime?)null;
-        }
-
-        private IEnumerable<string> GetSessionHeartbeatCacheKeys(PersistentEvent sessionStart) {
-            var keys = new List<string> { $"project:{sessionStart.ProjectId}:{sessionStart.GetSessionId().ToSHA1()}:heartbeat" };
+        private async Task<HeartbeatResult> GetHeartbeatAsync(PersistentEvent sessionStart) {
+            var result = await GetLastHeartbeatActivityUtcAsync($"project:{sessionStart.ProjectId}:heartbeat:{sessionStart.GetSessionId().ToSHA1()}");
+            if (result != null)
+                return result;
 
             var user = sessionStart.GetUserIdentity();
-            if (user != null)
-                keys.Add($"project:{sessionStart.ProjectId}:{user.Identity.ToSHA1()}:heartbeat");
+            if (user == null)
+                return null;
 
-            return keys;
+            return await GetLastHeartbeatActivityUtcAsync($"project:{sessionStart.ProjectId}:heartbeat:{user.Identity.ToSHA1()}");
+        }
+
+        private async Task<HeartbeatResult> GetLastHeartbeatActivityUtcAsync(string cacheKey) {
+            var cacheValue = await _cacheClient.GetAsync<DateTime>(cacheKey).AnyContext();
+            if (cacheValue.HasValue) {
+                var close = await _cacheClient.GetAsync(cacheKey + "-close", false).AnyContext();
+                return new HeartbeatResult { ActivityUtc =  cacheValue.Value, Close = close, CacheKey = cacheKey };
+            }
+
+            return null;
         }
 
         private DateTime GetStartOfInactivePeriod() {
             return DateTime.UtcNow.Subtract(DefaultInactivePeriod);
         }
         
-        public TimeSpan DefaultInactivePeriod { get; set; } = TimeSpan.FromMinutes(10);
+        public TimeSpan DefaultInactivePeriod { get; set; } = TimeSpan.FromMinutes(5);
+        
+        private class HeartbeatResult {
+            public DateTime ActivityUtc { get; set; }
+            public string CacheKey { get; set; }
+            public bool Close { get; set; }
+        }
     }
 }

@@ -34,11 +34,12 @@ namespace Exceptionless.Api.Tests.Jobs {
         public CloseInactiveSessionsJobTests(ITestOutputHelper output) : base(output) {}
 
         [Theory]
-        [InlineData(1, true, null)]
-        [InlineData(1, true, 70)]
-        [InlineData(1, false, 50)]
-        [InlineData(60, false, null)]
-        public async Task CloseInactiveSessions(int defaultInactivePeriodInMinutes, bool willCloseSession, int? sessionHeartbeatUpdatedAgoInSeconds) {
+        [InlineData(1, true, null, false)]
+        [InlineData(1, true, 70, false)]
+        [InlineData(1, false, 50, false)]
+        [InlineData(1, true, 50, true)]
+        [InlineData(60, false, null, false)]
+        public async Task CloseInactiveSessions(int defaultInactivePeriodInMinutes, bool willCloseSession, int? sessionHeartbeatUpdatedAgoInSeconds, bool heartbeatClosesSession) {
             await ResetAsync();
 
             const string userId = "blake@exceptionless.io";
@@ -60,7 +61,9 @@ namespace Exceptionless.Api.Tests.Jobs {
             var utcNow = DateTime.UtcNow;
             if (sessionHeartbeatUpdatedAgoInSeconds.HasValue) {
                 var client = new ScopedCacheClient(_cacheClient, "session");
-                await client.SetAsync($"project:{sessionStart.ProjectId}:{userId.ToSHA1()}:heartbeat", utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value));
+                await client.SetAsync($"project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value));
+                if (heartbeatClosesSession)
+                    await client.SetAsync($"project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}-close", true);
             }
 
             _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);

@@ -203,22 +203,7 @@ namespace Exceptionless {
             
             return startEvent;
         }
-
-        public static PersistentEvent ToSessionEndEvent(this PersistentEvent source, string sessionId) {
-            var endEvent = new PersistentEvent {
-                Date = source.Date,
-                OrganizationId = source.OrganizationId,
-                ProjectId = source.ProjectId,
-                Type = Event.KnownTypes.SessionEnd
-            };
-            
-            endEvent.SetSessionId(sessionId);
-            endEvent.SetUserIdentity(source.GetUserIdentity());
-            endEvent.AddRequestInfo(source.GetRequestInfo());
-
-            return endEvent;
-        }
-
+       
         public static IEnumerable<string> GetIpAddresses(this PersistentEvent ev) {
             if (ev == null)
                 yield break;
