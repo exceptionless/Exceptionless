@@ -11,6 +11,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
+using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Jobs {
@@ -19,14 +20,14 @@ namespace Exceptionless.Core.Jobs {
         private readonly ICacheClient _cacheClient;
         private readonly ILockProvider _lockProvider;
 
-        public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _eventRepository = eventRepository;
             _cacheClient = cacheClient;
-            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
+            _lockProvider = new CacheLockProvider(cacheClient, messageBus);
         }
 
         protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-            return _lockProvider.AcquireAsync(nameof(CloseInactiveSessionsJob), TimeSpan.FromMinutes(15), new CancellationToken(true));
+            return _lockProvider.AcquireAsync(nameof(CloseInactiveSessionsJob), TimeSpan.FromMinutes(1), new CancellationToken(true));
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
@@ -35,8 +36,8 @@ namespace Exceptionless.Core.Jobs {
             var results = await _eventRepository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(1), new PagingOptions().WithPage(1).WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 var inactivePeriodUtc = DateTime.UtcNow.Subtract(DefaultInactivePeriod);
-                var sessionsToUpdate = new List<PersistentEvent>(LIMIT);
-                var cacheKeysToRemove = new List<string>(LIMIT * 2);
+                var sessionsToUpdate = new List<PersistentEvent>(results.Documents.Count);
+                var cacheKeysToRemove = new List<string>(results.Documents.Count * 2);
 
                 foreach (var sessionStart in results.Documents) {
                     var lastActivityUtc = sessionStart.Date.UtcDateTime.AddSeconds((double)sessionStart.Value.GetValueOrDefault());
