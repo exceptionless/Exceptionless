@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Jobs {
 
         public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _eventRepository = eventRepository;
-            _cacheClient = new ScopedCacheClient(cacheClient, "session");
+            _cacheClient = cacheClient;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(15));
         }
 

@@ -60,10 +60,9 @@ namespace Exceptionless.Api.Tests.Jobs {
 
             var utcNow = DateTime.UtcNow;
             if (sessionHeartbeatUpdatedAgoInSeconds.HasValue) {
-                var client = new ScopedCacheClient(_cacheClient, "session");
-                await client.SetAsync($"project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value));
+                await _cacheClient.SetAsync($"project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value));
                 if (heartbeatClosesSession)
-                    await client.SetAsync($"project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}-close", true);
+                    await _cacheClient.SetAsync($"project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}-close", true);
             }
 
             _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);
