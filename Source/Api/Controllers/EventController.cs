@@ -22,6 +22,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models.Data;
 using FluentValidation;
+using Foundatio.Caching;
 using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
@@ -40,6 +41,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IValidator<UserDescription> _userDescriptionValidator;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IFileStorage _storage;
+        private readonly ICacheClient _sessionCacheClient;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
 
         public EventController(IEventRepository repository,
@@ -51,6 +53,7 @@ namespace Exceptionless.Api.Controllers {
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
             IFileStorage storage,
+            ICacheClient cacheClient,
             JsonSerializerSettings jsonSerializerSettings,
             ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
             _organizationRepository = organizationRepository;
@@ -61,6 +64,7 @@ namespace Exceptionless.Api.Controllers {
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
             _storage = storage;
+            _sessionCacheClient = new ScopedCacheClient(cacheClient, "session");
             _jsonSerializerSettings = jsonSerializerSettings;
 
             AllowedFields.Add("date");
@@ -439,6 +443,43 @@ namespace Exceptionless.Api.Controllers {
         }
 
         /// <summary>
+        /// Suvbmit heartbeat
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="version">The api version that should be used.</param>
+        /// <param name="id">The session id or user id.</param>
+        /// <param name="close">If true, the session will be closed.</param>
+        /// <response code="200">OK</response>
+        /// <response code="400">No project id specified and no default project was found.</response>
+        /// <response code="404">No project was found.</response>
+        [HttpGet]
+        [Route("~/api/v{version:int=2}/events/session/heartbeat")]
+        [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/session/heartbeat")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.Client)]
+        public async Task<IHttpActionResult> RecordHeartbeatAsync(string projectId = null, int version = 2, string id = null, bool close = false) {
+            if (String.IsNullOrWhiteSpace(id))
+                return Ok();
+
+            if (projectId == null)
+                projectId = Request.GetDefaultProjectId();
+
+            // must have a project id
+            if (String.IsNullOrEmpty(projectId))
+                return BadRequest("No project id specified and no default project was found.");
+
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
+                return NotFound();
+            
+            await _sessionCacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}", DateTime.UtcNow, TimeSpan.FromHours(2));
+            if (close)
+                await _sessionCacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
+
+            return Ok();
+        }
+
+        /// <summary>
         /// Create
         /// </summary>
         /// <remarks>
@@ -459,7 +500,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="type">The event type</param>
         /// <param name="userAgent">The user agent that submitted the event.</param>
         /// <param name="parameters">Parameters that control what properties are set on the event</param>
-        /// <response code="202">Accepted</response>
+        /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
         [HttpGet]
@@ -470,9 +511,9 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [ConfigurationResponseFilter]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public async Task<IHttpActionResult> GetSubmitEvent(string projectId = null, int version = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
+        public async Task<IHttpActionResult> GetSubmitEventAsync(string projectId = null, int version = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
             if (parameters == null || parameters.Count == 0)
-                return StatusCode(HttpStatusCode.OK);
+                return Ok();
 
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();
@@ -514,6 +555,11 @@ namespace Exceptionless.Api.Controllers {
                         DateTimeOffset dtValue;
                         if (DateTimeOffset.TryParse(kvp.Value.FirstOrDefault(), out dtValue))
                             ev.Date = dtValue;
+                        break;
+                    case "count":
+                        int intValue;
+                        if (Int32.TryParse(kvp.Value.FirstOrDefault(), out intValue))
+                            ev.Count = intValue;
                         break;
                     case "value":
                         decimal decValue;
@@ -572,7 +618,7 @@ namespace Exceptionless.Api.Controllers {
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 
-            return StatusCode(HttpStatusCode.OK);
+            return Ok();
         }
 
         /// <summary>
