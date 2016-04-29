@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -33,12 +34,16 @@ namespace Exceptionless.Api.Tests.Jobs {
         public CloseInactiveSessionsJobTests(ITestOutputHelper output) : base(output) {}
 
         [Theory]
-        [InlineData(1, true)]
-        [InlineData(60, false)]
-        public async Task CloseInactiveSessions(int defaultInactivePeriodInMinutes, bool willCloseSession) {
+        [InlineData(1, true, null, false)]
+        [InlineData(1, true, 70, false)]
+        [InlineData(1, false, 50, false)]
+        [InlineData(1, true, 50, true)]
+        [InlineData(60, false, null, false)]
+        public async Task CloseInactiveSessions(int defaultInactivePeriodInMinutes, bool willCloseSession, int? sessionHeartbeatUpdatedAgoInSeconds, bool heartbeatClosesSession) {
             await ResetAsync();
 
-            var ev = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), "blake@exceptionless.io");
+            const string userId = "blake@exceptionless.io";
+            var ev = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
 
             var context = await _pipeline.RunAsync(ev);
             Assert.False(context.HasError, context.ErrorMessage);
@@ -53,6 +58,14 @@ namespace Exceptionless.Api.Tests.Jobs {
             Assert.Equal(0, sessionStart.Value);
             Assert.False(sessionStart.HasSessionEndTime());
 
+            var utcNow = DateTime.UtcNow;
+            if (sessionHeartbeatUpdatedAgoInSeconds.HasValue) {
+                var client = new ScopedCacheClient(_cacheClient, "session");
+                await client.SetAsync($"project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value));
+                if (heartbeatClosesSession)
+                    await client.SetAsync($"project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}-close", true);
+            }
+
             _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);
             Assert.Equal(JobResult.Success, await _job.RunAsync());
             await _client.RefreshAsync();
@@ -60,11 +73,12 @@ namespace Exceptionless.Api.Tests.Jobs {
             Assert.Equal(2, events.Total);
 
             sessionStart = events.Documents.First(e => e.IsSessionStart());
+            decimal sessionStartDuration = (decimal)(sessionHeartbeatUpdatedAgoInSeconds.HasValue ? (utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value) - sessionStart.Date.UtcDateTime).TotalSeconds : 0);
             if (willCloseSession) {
-                Assert.Equal(0, sessionStart.Value);
+                Assert.Equal(sessionStartDuration, sessionStart.Value);
                 Assert.True(sessionStart.HasSessionEndTime());
             } else {
-                Assert.Equal(0, sessionStart.Value);
+                Assert.Equal(sessionStartDuration, sessionStart.Value);
                 Assert.False(sessionStart.HasSessionEndTime());
             }
         }
