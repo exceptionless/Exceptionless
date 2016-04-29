@@ -13,7 +13,7 @@ namespace CloseInactiveSessionsJob {
             var loggerFactory = Settings.Current.GetLoggerFactory();
             var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
             var job = serviceProvider.GetService<Exceptionless.Core.Jobs.CloseInactiveSessionsJob>();
-            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(30), interval: TimeSpan.FromMinutes(1)).RunInConsole();
+            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(30), interval: TimeSpan.FromSeconds(30)).RunInConsole();
         }
     }
 }
