@@ -449,7 +449,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="version">The api version that should be used.</param>
         /// <param name="id">The session id or user id.</param>
         /// <param name="close">If true, the session will be closed.</param>
-        /// <response code="202">Accepted</response>
+        /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
         [HttpGet]
@@ -500,7 +500,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="type">The event type</param>
         /// <param name="userAgent">The user agent that submitted the event.</param>
         /// <param name="parameters">Parameters that control what properties are set on the event</param>
-        /// <response code="202">Accepted</response>
+        /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
         [HttpGet]
