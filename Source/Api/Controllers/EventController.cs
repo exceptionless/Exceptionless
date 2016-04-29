@@ -41,7 +41,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IValidator<UserDescription> _userDescriptionValidator;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IFileStorage _storage;
-        private readonly ICacheClient _sessionCacheClient;
+        private readonly ICacheClient _cacheClient;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
 
         public EventController(IEventRepository repository,
@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Controllers {
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
             _storage = storage;
-            _sessionCacheClient = new ScopedCacheClient(cacheClient, "session");
+            _cacheClient = cacheClient;
             _jsonSerializerSettings = jsonSerializerSettings;
 
             AllowedFields.Add("date");
@@ -472,9 +472,9 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
             
-            await _sessionCacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}", DateTime.UtcNow, TimeSpan.FromHours(2));
+            await _cacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}", DateTime.UtcNow, TimeSpan.FromHours(2));
             if (close)
-                await _sessionCacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
+                await _cacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
 
             return Ok();
         }
