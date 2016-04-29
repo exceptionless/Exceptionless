@@ -78,12 +78,15 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task<HeartbeatResult> GetHeartbeatAsync(PersistentEvent sessionStart) {
-            var result = await GetLastHeartbeatActivityUtcAsync($"project:{sessionStart.ProjectId}:heartbeat:{sessionStart.GetSessionId().ToSHA1()}");
-            if (result != null)
-                return result;
+            string sessionId = sessionStart.GetSessionId();
+            if (!String.IsNullOrWhiteSpace(sessionId)) {
+                var result = await GetLastHeartbeatActivityUtcAsync($"project:{sessionStart.ProjectId}:heartbeat:{sessionId.ToSHA1()}");
+                if (result != null)
+                    return result;
+            }
 
             var user = sessionStart.GetUserIdentity();
-            if (user == null)
+            if (String.IsNullOrWhiteSpace(user?.Identity))
                 return null;
 
             return await GetLastHeartbeatActivityUtcAsync($"project:{sessionStart.ProjectId}:heartbeat:{user.Identity.ToSHA1()}");
