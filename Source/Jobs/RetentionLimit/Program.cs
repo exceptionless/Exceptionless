@@ -13,7 +13,7 @@ namespace RetentionLimitsJob {
             var loggerFactory = Settings.Current.GetLoggerFactory();
             var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
             var job = serviceProvider.GetService<Exceptionless.Core.Jobs.RetentionLimitsJob>();
-            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromDays(1)).RunInConsole();
+            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromHours(1)).RunInConsole();
         }
     }
 }

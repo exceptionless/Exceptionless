@@ -11,7 +11,6 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
-using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Jobs {
@@ -20,14 +19,14 @@ namespace Exceptionless.Core.Jobs {
         private readonly ICacheClient _cacheClient;
         private readonly ILockProvider _lockProvider;
 
-        public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _eventRepository = eventRepository;
             _cacheClient = cacheClient;
-            _lockProvider = new CacheLockProvider(cacheClient, messageBus);
+            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(1));
         }
 
         protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-            return _lockProvider.AcquireAsync(nameof(CloseInactiveSessionsJob), TimeSpan.FromMinutes(1), new CancellationToken(true));
+            return _lockProvider.AcquireAsync(nameof(CloseInactiveSessionsJob), TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {

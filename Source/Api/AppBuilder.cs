@@ -119,10 +119,10 @@ namespace Exceptionless.Api {
             new JobRunner(container.GetInstance<EventNotificationsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
             new JobRunner(container.GetInstance<MailMessageJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
             new JobRunner(container.GetInstance<WebHooksJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
-            new JobRunner(container.GetInstance<CloseInactiveSessionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(30), interval: TimeSpan.FromMinutes(1)).RunInBackground(token);
+            new JobRunner(container.GetInstance<CloseInactiveSessionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(30), interval: TimeSpan.FromSeconds(30)).RunInBackground(token);
             new JobRunner(container.GetInstance<DailySummaryJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(1), interval: TimeSpan.FromHours(1)).RunInBackground(token);
-            new JobRunner(container.GetInstance<DownloadGeoIPDatabaseJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.FromDays(1)).RunInBackground(token);
-            new JobRunner(container.GetInstance<RetentionLimitsJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromDays(1)).RunInBackground(token);
+            new JobRunner(container.GetInstance<DownloadGeoIPDatabaseJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.FromHours(1)).RunInBackground(token);
+            new JobRunner(container.GetInstance<RetentionLimitsJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromHours(1)).RunInBackground(token);
             new JobRunner(container.GetInstance<WorkItemJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2).RunInBackground(token);
 
             logger.Warn("Jobs running in process.");

@@ -13,7 +13,7 @@ namespace DownloadGeoIPDatabaseJob {
             var loggerFactory = Settings.Current.GetLoggerFactory();
             var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
             var job = serviceProvider.GetService<Exceptionless.Core.Jobs.DownloadGeoIPDatabaseJob>();
-            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.FromDays(1)).RunInConsole();
+            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.FromHours(1)).RunInConsole();
         }
     }
 }
