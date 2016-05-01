@@ -90,6 +90,13 @@ namespace Exceptionless.Core.Extensions {
             return true;
         }
 
+        public static bool IsValidFieldName(this string value) {
+            if (value == null || value.Length > 25)
+                return false;
+
+            return IsValidIdentifier(value);
+        }
+
         public static bool IsValidIdentifier(this string value) {
             if (value == null)
                 return false;

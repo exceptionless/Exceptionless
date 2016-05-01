@@ -47,18 +47,18 @@ namespace Exceptionless.Core.Jobs {
             var eventNotification = new EventNotification(context.QueueEntry.Value, eventModel);
             bool shouldLog = eventNotification.Event.ProjectId != Settings.Current.InternalProjectId;
             int emailsSent = 0;
-            _logger.Trace().Message("Process notification: project={0} event={1} stack={2}", eventNotification.Event.ProjectId, eventNotification.Event.Id, eventNotification.Event.StackId).WriteIf(shouldLog);
+            _logger.Trace().Message(() => $"Process notification: project={eventNotification.Event.ProjectId} event={eventNotification.Event.Id} stack={eventNotification.Event.StackId}").WriteIf(shouldLog);
 
             var project = await _projectRepository.GetByIdAsync(eventNotification.Event.ProjectId, true).AnyContext();
             if (project == null)
                 return JobResult.FailedWithMessage($"Could not load project: {eventNotification.Event.ProjectId}.");
-            _logger.Trace().Message($"Loaded project: name={project.Name}").WriteIf(shouldLog);
+            _logger.Trace().Message(() => $"Loaded project: name={project.Name}").WriteIf(shouldLog);
 
             var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
             if (organization == null)
                 return JobResult.FailedWithMessage($"Could not load organization: {project.OrganizationId}");
 
-            _logger.Trace().Message($"Loaded organization: {organization.Name}").WriteIf(shouldLog);
+            _logger.Trace().Message(() => $"Loaded organization: {organization.Name}").WriteIf(shouldLog);
 
             var stack = await _stackRepository.GetByIdAsync(eventNotification.Event.StackId).AnyContext();
             if (stack == null)
@@ -77,7 +77,7 @@ namespace Exceptionless.Core.Jobs {
             if (context.CancellationToken.IsCancellationRequested)
                 return JobResult.Cancelled;
 
-            _logger.Trace().Message("Loaded stack: title={0}", stack.Title).WriteIf(shouldLog);
+            _logger.Trace().Message(() => $"Loaded stack: title={stack.Title}").WriteIf(shouldLog);
             int totalOccurrences = stack.TotalOccurrences;
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
@@ -104,7 +104,7 @@ namespace Exceptionless.Core.Jobs {
 
             foreach (var kv in project.NotificationSettings) {
                 var settings = kv.Value;
-                _logger.Trace().Message("Processing notification: user={0}", kv.Key).WriteIf(shouldLog);
+                _logger.Trace().Message(() => $"Processing notification: user={kv.Key}").WriteIf(shouldLog);
 
                 var user = await _userRepository.GetByIdAsync(kv.Key).AnyContext();
                 if (String.IsNullOrEmpty(user?.EmailAddress)) {
@@ -127,7 +127,7 @@ namespace Exceptionless.Core.Jobs {
                     continue;
                 }
 
-                _logger.Trace().Message("Loaded user: email={0}", user.EmailAddress).WriteIf(shouldLog);
+                _logger.Trace().Message(() => $"Loaded user: email={user.EmailAddress}").WriteIf(shouldLog);
 
                 bool shouldReportNewError = settings.ReportNewErrors && eventNotification.IsNew && eventNotification.Event.IsError();
                 bool shouldReportCriticalError = settings.ReportCriticalErrors && eventNotification.IsCritical && eventNotification.Event.IsError();
@@ -136,12 +136,8 @@ namespace Exceptionless.Core.Jobs {
                 bool shouldReportCriticalEvent = settings.ReportCriticalEvents && eventNotification.IsCritical;
                 bool shouldReport = shouldReportNewError || shouldReportCriticalError || shouldReportRegression || shouldReportNewEvent || shouldReportCriticalEvent;
 
-                _logger.Trace().Message("Settings: newerror={0} criticalerror={1} regression={2} new={3} critical={4}",
-                    settings.ReportNewErrors, settings.ReportCriticalErrors,
-                    settings.ReportEventRegressions, settings.ReportNewEvents, settings.ReportCriticalEvents).WriteIf(shouldLog);
-                _logger.Trace().Message("Should process: newerror={0} criticalerror={1} regression={2} new={3} critical={4}",
-                    shouldReportNewError, shouldReportCriticalError,
-                    shouldReportRegression, shouldReportNewEvent, shouldReportCriticalEvent).WriteIf(shouldLog);
+                _logger.Trace().Message(() => $"Settings: newerror={settings.ReportNewErrors} criticalerror={settings.ReportCriticalErrors} regression={settings.ReportEventRegressions} new={settings.ReportNewEvents} critical={settings.ReportCriticalEvents}").WriteIf(shouldLog);
+                _logger.Trace().Message(() => $"Should process: newerror={shouldReportNewError} criticalerror={shouldReportCriticalError} regression={shouldReportRegression} new={shouldReportNewEvent} critical={shouldReportCriticalEvent}").WriteIf(shouldLog);
 
                 var request = eventNotification.Event.GetRequestInfo();
                 // check for known bots if the user has elected to not report them
@@ -175,7 +171,7 @@ namespace Exceptionless.Core.Jobs {
                 _logger.Trace("Sending email to {0}...", user.EmailAddress);
                 await _mailer.SendEventNoticeAsync(user.EmailAddress, model).AnyContext();
                 emailsSent++;
-                _logger.Trace().Message("Done sending email.").WriteIf(shouldLog);
+                _logger.Trace().Message(() => "Done sending email.").WriteIf(shouldLog);
             }
 
             // if we sent any emails, mark the last time a notification for this stack was sent.

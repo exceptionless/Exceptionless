@@ -17,11 +17,6 @@
   "geo": "40,-70",
   "value": 1.0,
   "data": {
-    "idx": {
-      "line count-s": "262",
-      "char count-s": "9386",
-      "load time-s": "14.6556ms"
-    },
     "@request": {
       "user_agent": "Mozilla/5.0 (Linux; Android 4.1.1; Prism II Build/HuaweiU8686) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.58 Mobile Safari/537.31",
       "http_method": "GET",
