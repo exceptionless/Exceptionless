@@ -549,7 +549,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         [Fact]
         public void CanIndexExtendedData() {
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: DateTime.Now);
-            ev.Data.Add("First Name", "Eric");
+            ev.Data.Add("First Name", "Eric"); // invalid field name
             ev.Data.Add("IsVerified", true);
             ev.Data.Add("IsVerified1", true.ToString());
             ev.Data.Add("Age", Int32.MaxValue);
@@ -566,8 +566,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             
             ev.CopyDataToIndex();
 
-            Assert.Equal(12, ev.Idx.Count);
-            Assert.True(ev.Idx.ContainsKey("first-name-s"));
+            Assert.False(ev.Idx.ContainsKey("first-name-s"));
             Assert.True(ev.Idx.ContainsKey("isverified-b"));
             Assert.True(ev.Idx.ContainsKey("isverified1-b"));
             Assert.True(ev.Idx.ContainsKey("age-n"));
@@ -579,6 +578,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(ev.Idx.ContainsKey("birthday-d"));
             Assert.True(ev.Idx.ContainsKey("birthdaywithoffset-d"));
             Assert.True(ev.Idx.ContainsKey("session-r"));
+            Assert.Equal(11, ev.Idx.Count);
         }
 
         [Fact]
