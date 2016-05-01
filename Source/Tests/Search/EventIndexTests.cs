@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
@@ -482,13 +483,19 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(count, result.Total);
         }
 
-        //[Theory]
-        //[InlineData("\"data.load time-s\":\"262", 1)]
-        //public async Task GetByCustomDataAsync(string filter, int count) {
-        //    var result = await GetByFilterAsync(filter);
-        //    Assert.NotNull(result);
-        //    Assert.Equal(count, result.Total);
-        //}
+        [Theory]
+        [InlineData("data.anumber:12", 1)]
+        [InlineData("data.anumber:>11", 1)]
+        [InlineData("data.anumber2:>11", 0)]
+        [InlineData("data.some-date:>2015-01-01", 1)]
+        [InlineData("data.some-date:<2015-01-01", 0)]
+        public async Task GetByCustomDataAsync(string filter, int count) {
+            await ResetAsync();
+
+            var result = await GetByFilterAsync(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Total);
+        }
 
         private static bool _isReset;
 
@@ -511,6 +518,9 @@ namespace Exceptionless.Api.Tests.Repositories {
                 var events = parserPluginManager.ParseEvents(File.ReadAllText(file), 2, "exceptionless/2.0.0.0");
                 Assert.NotNull(events);
                 Assert.True(events.Count > 0);
+                foreach (var ev in events)
+                    ev.CopyDataToIndex();
+
                 await _repository.AddAsync(events);
             }
 
@@ -518,6 +528,9 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
+            var result = QueryProcessor.Process(filter);
+            filter = result.ExpandedQuery;
+
             return _repository.GetByFilterAsync(null, filter, new SortingOptions(), null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }
