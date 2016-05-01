@@ -14,8 +14,8 @@
   ],
   "message": "Invalid hash. Parameter name: hash",
   "data": {
-    "some-date": "2016-12-09T17:28:44.966",
-    "anumber": 12, 
+    "some-date": "2016-12-09T17:28:44.966-06:00",
+    "anumber": 12,
     "@request": {
       "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36",
       "http_method": "POST",
