@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             const int LIMIT = 100;
 
             var workItem = context.GetData<ProjectMaintenanceWorkItem>();
-            _logger.Info("Received upgrade projects work item. Update Default Bot List: {0}", workItem.UpdateDefaultBotList);
+            Log.Info("Received upgrade projects work item. Update Default Bot List: {0}", workItem.UpdateDefaultBotList);
 
             var results = await _projectRepository.GetAllAsync(paging: new PagingOptions().WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
