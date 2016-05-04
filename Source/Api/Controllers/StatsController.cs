@@ -51,12 +51,13 @@ namespace Exceptionless.Api.Controllers {
             try {
                 result = await _stats.GetNumbersStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, sf, pr.ExpandedQuery, ti.Offset);
             } catch (ApplicationException ex) {
-                _logger.Error().Exception(ex).Property("Search Filter", new {
-                    SystemFilter = sf,
-                    UserFilter = filter,
-                    Time = time,
-                    Offset = offset
-                }).Tag("Search").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
+                _logger.Error().Exception(ex)
+                    .Message("An error has occurred. Please check your search filter.")
+                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = time, Offset = offset })
+                    .Tag("Search")
+                    .Identity(ExceptionlessUser.EmailAddress)
+                    .Property("User", ExceptionlessUser)
+                    .SetActionContext(ActionContext).Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
@@ -91,12 +92,13 @@ namespace Exceptionless.Api.Controllers {
             try {
                 result = await _stats.GetNumbersTimelineStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, sf, pr.ExpandedQuery, ti.Offset);
             } catch (ApplicationException ex) {
-                _logger.Error().Exception(ex).Property("Search Filter", new {
-                    SystemFilter = sf,
-                    UserFilter = filter,
-                    Time = time,
-                    Offset = offset
-                }).Tag("Search").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
+                _logger.Error().Exception(ex)
+                    .Message("An error has occurred. Please check your search filter.")
+                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = time, Offset = offset })
+                    .Tag("Search")
+                    .Identity(ExceptionlessUser.EmailAddress)
+                    .Property("User", ExceptionlessUser)
+                    .SetActionContext(ActionContext).Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }

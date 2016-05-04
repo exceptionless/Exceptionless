@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IProjectRepository _projectRepository;
         private readonly IFileStorage _storage;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory, false) {
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
             _metricsClient = metricsClient;

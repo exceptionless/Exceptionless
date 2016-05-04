@@ -149,6 +149,7 @@ namespace Exceptionless.Api.Controllers {
                 events = await _repository.GetByFilterAsync(systemFilter, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
+                    .Message("An error has occurred. Please check your search filter.")
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
