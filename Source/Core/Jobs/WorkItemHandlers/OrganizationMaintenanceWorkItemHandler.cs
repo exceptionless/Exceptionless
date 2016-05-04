@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             const int LIMIT = 100;
 
             var workItem = context.GetData<OrganizationMaintenanceWorkItem>();
-            _logger.Info("Received upgrade organizations work item. Upgrade Plans: {0}", workItem.UpgradePlans);
+            Log.Info("Received upgrade organizations work item. Upgrade Plans: {0}", workItem.UpgradePlans);
 
             var results = await _organizationRepository.GetAllAsync(paging: new PagingOptions().WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private void UpgradePlan(Organization organization) {
             var plan = BillingManager.GetBillingPlan(organization.PlanId);
             if (plan == null) {
-                _logger.Error().Message("Unable to find a valid plan for organization: {0}", organization.Id).Write();
+                Log.Error().Message("Unable to find a valid plan for organization: {0}", organization.Id).Write();
                 return;
             }
 

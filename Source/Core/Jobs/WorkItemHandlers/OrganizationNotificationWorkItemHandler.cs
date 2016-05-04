@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<OrganizationNotificationWorkItem>();
-            _logger.Info("Received organization notification work item for: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", workItem.OrganizationId, workItem.IsOverHourlyLimit, workItem.IsOverMonthlyLimit);
+            Log.Info("Received organization notification work item for: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", workItem.OrganizationId, workItem.IsOverHourlyLimit, workItem.IsOverMonthlyLimit);
 
             var organization = await _organizationRepository.GetByIdAsync(workItem.OrganizationId, true).AnyContext();
             if (organization == null)
@@ -48,16 +48,16 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             var results = await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
             foreach (var user in results.Documents) {
                 if (!user.IsEmailAddressVerified) {
-                    _logger.Info("User {0} with email address {1} has not been verified.", user.Id, user.EmailAddress);
+                    Log.Info("User {0} with email address {1} has not been verified.", user.Id, user.EmailAddress);
                     continue;
                 }
 
                 if (!user.EmailNotificationsEnabled) {
-                    _logger.Info().Message("User {0} with email address {1} has email notifications disabled.", user.Id, user.EmailAddress);
+                    Log.Info().Message("User {0} with email address {1} has email notifications disabled.", user.Id, user.EmailAddress);
                     continue;
                 }
 
-                _logger.Trace("Sending email to {0}...", user.EmailAddress);
+                Log.Trace("Sending email to {0}...", user.EmailAddress);
                 await _mailer.SendOrganizationNoticeAsync(user.EmailAddress, new OrganizationNotificationModel {
                     Organization = organization,
                     IsOverHourlyLimit = isOverHourlyLimit,
@@ -65,7 +65,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 }).AnyContext();
             }
 
-            _logger.Trace().Message("Done sending email.");
+            Log.Trace().Message("Done sending email.");
         }
     }
 }
