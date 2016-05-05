@@ -62,7 +62,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=4.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.4.1.971-pre\lib\net451\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.4.1.975-pre\lib\net451\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
