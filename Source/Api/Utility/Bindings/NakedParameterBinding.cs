@@ -18,6 +18,8 @@ namespace Exceptionless.Api.Utility {
                 return;
 
             var type = binding.ParameterBindings[0].Descriptor.ParameterType;
+            if (cancellationToken.IsCancellationRequested)
+                return;
 
             if (type == typeof(string)) {
                 string value = await actionContext.Request.Content.ReadAsStringAsync();
