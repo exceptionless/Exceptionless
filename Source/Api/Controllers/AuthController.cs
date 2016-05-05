@@ -255,7 +255,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("unlink/{providerName:minlength(1)}")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IHttpActionResult> RemoveExternalLoginAsync(string providerName, [NakedBody] string providerUserId) {
-            if (String.IsNullOrEmpty(providerName) || String.IsNullOrEmpty(providerUserId)) {
+            if (String.IsNullOrWhiteSpace(providerName) || String.IsNullOrWhiteSpace(providerUserId)) {
                 _logger.Error().Message("Remove external login failed for \"{0}\": Invalid Provider Name or Provider User Id.", ExceptionlessUser.EmailAddress).Tag("External Login", providerName).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Provider User Id", providerUserId).SetActionContext(ActionContext).Write();
                 return BadRequest("Invalid Provider Name or Provider User Id.");
             }
