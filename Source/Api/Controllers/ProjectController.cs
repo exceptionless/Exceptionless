@@ -192,16 +192,16 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid configuration value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpPost]
-        [Route("{id:objectid}/config/{key:minlength(1)}")]
+        [Route("{id:objectid}/config")]
         public async Task<IHttpActionResult> SetConfigAsync(string id, string key, [NakedBody] string value) {
+            if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value))
+                return BadRequest();
+
             var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
-            if (String.IsNullOrWhiteSpace(value))
-                return BadRequest();
-
-            project.Configuration.Settings[key] = value;
+            project.Configuration.Settings[key.Trim()] = value.Trim();
             project.Configuration.IncrementVersion();
             await _repository.SaveAsync(project, true);
 
@@ -215,13 +215,16 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="key">The key name of the configuration object.</param>
         /// <response code="404">The project could not be found.</response>
         [HttpDelete]
-        [Route("{id:objectid}/config/{key:minlength(1)}")]
+        [Route("{id:objectid}/config")]
         public async Task<IHttpActionResult> DeleteConfigAsync(string id, string key) {
+            if (String.IsNullOrWhiteSpace(key))
+                return BadRequest();
+
             var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
-            if (project.Configuration.Settings.Remove(key)) {
+            if (project.Configuration.Settings.Remove(key.Trim())) {
                 project.Configuration.IncrementVersion();
                 await _repository.SaveAsync(project, true);
             }
@@ -341,14 +344,17 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpPut]
         [HttpPost]
-        [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
+        [Route("{id:objectid}/promotedtabs")]
         public async Task<IHttpActionResult> PromoteTabAsync(string id, string name) {
+            if (String.IsNullOrWhiteSpace(name))
+                return BadRequest();
+
             var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
-            if (!project.PromotedTabs.Contains(name)) {
-                project.PromotedTabs.Add(name);
+            if (!project.PromotedTabs.Contains(name.Trim())) {
+                project.PromotedTabs.Add(name.Trim());
                 await _repository.SaveAsync(project, true);
             }
 
@@ -362,14 +368,17 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="name">The tab name.</param>
         /// <response code="404">The project could not be found.</response>
         [HttpDelete]
-        [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
+        [Route("{id:objectid}/promotedtabs")]
         public async Task<IHttpActionResult> DemoteTabAsync(string id, string name) {
+            if (String.IsNullOrWhiteSpace(name))
+                return BadRequest();
+
             var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
-            if (project.PromotedTabs.Contains(name)) {
-                project.PromotedTabs.Remove(name);
+            if (project.PromotedTabs.Contains(name.Trim())) {
+                project.PromotedTabs.Remove(name.Trim());
                 await _repository.SaveAsync(project, true);
             }
 
@@ -412,13 +421,16 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="value">Any string value.</param>
         /// <response code="404">The project could not be found.</response>
         [HttpPost]
-        [Route("{id:objectid}/data/{key:minlength(1)}")]
+        [Route("{id:objectid}/data")]
         public async Task<IHttpActionResult> PostDataAsync(string id, string key, [NakedBody]string value) {
+            if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value))
+                return BadRequest();
+
             var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
-            project.Data[key] = value;
+            project.Data[key.Trim()] = value.Trim();
             await _repository.SaveAsync(project, true);
 
             return Ok();
@@ -431,13 +443,16 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="key">The key name of the data object.</param>
         /// <response code="404">The project could not be found.</response>
         [HttpDelete]
-        [Route("{id:objectid}/data/{key:minlength(1)}")]
+        [Route("{id:objectid}/data")]
         public async Task<IHttpActionResult> DeleteDataAsync(string id, string key) {
+            if (String.IsNullOrWhiteSpace(key))
+                return BadRequest();
+
             var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
-            if (project.Data.Remove(key))
+            if (project.Data.Remove(key.Trim()))
                 await _repository.SaveAsync(project, true);
 
             return Ok();
