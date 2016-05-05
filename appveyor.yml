@@ -18,10 +18,6 @@ init:
   - git config --global user.name "AppVeyor CI"
   - ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
 
-install:
-  - nuget sources add -Name Foundatio -Source https://ci.appveyor.com/nuget/foundatio
-  - nuget sources add -Name Exceptionless.Net -Source https://ci.appveyor.com/nuget/exceptionless-net
-
 assembly_info:
   patch: true
   file: Source\GlobalAssemblyInfo.cs

@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IProjectRepository _projectRepository;
         private readonly IFileStorage _storage;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory, false) {
+        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
             _metricsClient = metricsClient;
@@ -204,6 +204,14 @@ namespace Exceptionless.Core.Jobs {
             }
 
             return events;
+        }
+        
+        protected override void LogProcessingQueueEntry(IQueueEntry<EventPost> queueEntry) {
+            _logger.Debug().Message(() => $"Processing {_queueEntryName} queue entry ({queueEntry.Id}).").Write();
+        }
+
+        protected override void LogAutoCompletedQueueEntry(IQueueEntry<EventPost> queueEntry) {
+            _logger.Debug().Message(() => $"Auto completed {_queueEntryName} queue entry ({queueEntry.Id}).").Write();
         }
     }
 }
