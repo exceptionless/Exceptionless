@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Utility;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
 using Microsoft.AspNet.SignalR;
@@ -11,12 +15,12 @@ using Microsoft.AspNet.SignalR.Infrastructure;
 namespace Exceptionless.Api.Hubs {
     public sealed class MessageBusBroker {
         private readonly IConnectionManager _connectionManager;
-        private readonly ConnectionMapping _userIdConnections;
+        private readonly ConnectionMapping _connectionMapping;
         private readonly IMessageSubscriber _subscriber;
 
-        public MessageBusBroker(IConnectionManager connectionManager, ConnectionMapping userIdConnections, IMessageSubscriber subscriber) {
+        public MessageBusBroker(IConnectionManager connectionManager, ConnectionMapping connectionMapping, IMessageSubscriber subscriber) {
             _connectionManager = connectionManager;
-            _userIdConnections = userIdConnections;
+            _connectionMapping = connectionMapping;
             _subscriber = subscriber;
         }
 
@@ -34,14 +38,14 @@ namespace Exceptionless.Api.Hubs {
                 return;
 
             // manage user organization group membership
-            foreach (var connectionId in _userIdConnections.GetConnections(userMembershipChanged.UserId)) {
+            foreach (var connectionId in await _connectionMapping.GetConnectionsAsync(userMembershipChanged.UserId)) {
                 if (userMembershipChanged.ChangeType == ChangeType.Added)
-                    await Context.Groups.Add(connectionId, userMembershipChanged.OrganizationId);
+                    await _connectionMapping.GroupAddAsync(userMembershipChanged.OrganizationId, connectionId) ;
                 else if (userMembershipChanged.ChangeType == ChangeType.Removed)
-                    await Context.Groups.Remove(connectionId, userMembershipChanged.OrganizationId);
+                    await _connectionMapping.GroupRemoveAsync(userMembershipChanged.OrganizationId, connectionId);
             }
 
-            await Context.Groups.TypedSend(userMembershipChanged.OrganizationId, userMembershipChanged);
+            await GroupSendAsync(userMembershipChanged.OrganizationId, userMembershipChanged);
         }
 
         private async Task OnEntityChangedAsync(ExtendedEntityChanged entityChanged, CancellationToken cancellationToken = default(CancellationToken)) {
@@ -49,52 +53,57 @@ namespace Exceptionless.Api.Hubs {
                 return;
 
             if (entityChanged.Type == typeof(User).Name) {
-                foreach (var connectionId in _userIdConnections.GetConnections(entityChanged.Id))
-                    await Context.Connection.TypedSend(connectionId, entityChanged);
+                foreach (var connectionId in await _connectionMapping.GetConnectionsAsync(entityChanged.Id))
+                    await GroupSendAsync(connectionId, entityChanged);
 
                 return;
             }
 
             if (!String.IsNullOrEmpty(entityChanged.OrganizationId))
-                await Context.Groups.TypedSend(entityChanged.OrganizationId, entityChanged);
+                await GroupSendAsync(entityChanged.OrganizationId, entityChanged);
         }
 
         private Task OnPlanOverageAsync(PlanOverage planOverage, CancellationToken cancellationToken = default(CancellationToken)) {
             if (planOverage != null)
-                return Context.Groups.TypedSend(planOverage.OrganizationId, planOverage);
+                return GroupSendAsync(planOverage.OrganizationId, planOverage);
 
             return Task.CompletedTask;
         }
 
         private Task OnPlanChangedAsync(PlanChanged planChanged, CancellationToken cancellationToken = default(CancellationToken)) {
             if (planChanged != null)
-                return Context.Groups.TypedSend(planChanged.OrganizationId, planChanged);
+                return GroupSendAsync(planChanged.OrganizationId, planChanged);
 
             return Task.CompletedTask;
         }
 
         private Task OnReleaseNotificationAsync(ReleaseNotification notification, CancellationToken cancellationToken = default(CancellationToken)) {
-            return Context.Connection.TypedBroadcast(notification);
+            return Context.Connection.TypedBroadcastAsync(notification);
         }
 
         private Task OnSystemNotificationAsync(SystemNotification notification, CancellationToken cancellationToken = default(CancellationToken)) {
-            return Context.Connection.TypedBroadcast(notification);
+            return Context.Connection.TypedBroadcastAsync(notification);
+        }
+
+        private async Task GroupSendAsync(string group, object value) {
+            var connectionIds = await _connectionMapping.GetGroupConnectionsAsync(group).AnyContext();
+            await Context.Connection.TypedSendAsync(connectionIds.ToList(), value);
         }
 
         private IPersistentConnectionContext Context => _connectionManager.GetConnectionContext<MessageBusConnection>();
     }
 
     public static class MessageBrokerExtensions {
-        public static Task TypedSend(this IConnection connection, string connectionId, object value) {
+        public static Task TypedSendAsync(this IConnection connection, string connectionId, object value) {
             return connection.Send(connectionId, new TypedMessage { Type = GetMessageType(value), Message = value });
         }
 
-        public static Task TypedBroadcast(this IConnection connection, object value) {
-            return connection.Broadcast(new TypedMessage { Type = GetMessageType(value), Message = value });
+        public static Task TypedSendAsync(this IConnection connection, IList<string> connectionIds, object value) {
+            return connection.Send(connectionIds, new TypedMessage { Type = GetMessageType(value), Message = value });
         }
 
-        public static Task TypedSend(this IConnectionGroupManager group, string name, object value) {
-            return group.Send(name, new TypedMessage { Type = GetMessageType(value), Message = value });
+        public static Task TypedBroadcastAsync(this IConnection connection, object value) {
+            return connection.Broadcast(new TypedMessage { Type = GetMessageType(value), Message = value });
         }
 
         private static string GetMessageType(object value) {
