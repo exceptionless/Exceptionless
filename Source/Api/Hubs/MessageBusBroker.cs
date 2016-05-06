@@ -15,10 +15,10 @@ using Microsoft.AspNet.SignalR.Infrastructure;
 namespace Exceptionless.Api.Hubs {
     public sealed class MessageBusBroker {
         private readonly IConnectionManager _connectionManager;
-        private readonly ConnectionMapping _connectionMapping;
+        private readonly IConnectionMapping _connectionMapping;
         private readonly IMessageSubscriber _subscriber;
 
-        public MessageBusBroker(IConnectionManager connectionManager, ConnectionMapping connectionMapping, IMessageSubscriber subscriber) {
+        public MessageBusBroker(IConnectionManager connectionManager, IConnectionMapping connectionMapping, IMessageSubscriber subscriber) {
             _connectionManager = connectionManager;
             _connectionMapping = connectionMapping;
             _subscriber = subscriber;
