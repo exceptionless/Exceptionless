@@ -30,40 +30,40 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Exceptionless, Version=3.5.1715.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.3.5.1715-pre\lib\net45\Exceptionless.dll</HintPath>
+    <Reference Include="Exceptionless, Version=3.5.1719.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.3.5.1719-pre\lib\net45\Exceptionless.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.Extras, Version=3.5.1715.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.3.5.1715-pre\lib\net45\Exceptionless.Extras.dll</HintPath>
+    <Reference Include="Exceptionless.Extras, Version=3.5.1719.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.3.5.1719-pre\lib\net45\Exceptionless.Extras.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.NLog, Version=3.5.1715.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.NLog.3.5.1715-pre\lib\net45\Exceptionless.NLog.dll</HintPath>
+    <Reference Include="Exceptionless.NLog, Version=3.5.1719.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.NLog.3.5.1719-pre\lib\net45\Exceptionless.NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.Portable, Version=3.5.1715.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.Portable.3.5.1715-pre\lib\net45\Exceptionless.Portable.dll</HintPath>
+    <Reference Include="Exceptionless.Portable, Version=3.5.1719.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.Portable.3.5.1719-pre\lib\net45\Exceptionless.Portable.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.WebApi, Version=3.5.1715.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.3.5.1715-pre\lib\net45\Exceptionless.WebApi.dll</HintPath>
+    <Reference Include="Exceptionless.WebApi, Version=3.5.1719.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.3.5.1719-pre\lib\net45\Exceptionless.WebApi.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=4.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.4.1.977-pre\lib\net451\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.4.1.978-pre\lib\net451\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.AzureStorage, Version=4.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.AzureStorage.4.1.977-pre\lib\net451\Foundatio.AzureStorage.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.AzureStorage.4.1.978-pre\lib\net451\Foundatio.AzureStorage.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Logging.NLog, Version=4.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Logging.NLog.4.1.975-pre\lib\net46\Foundatio.Logging.NLog.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Logging.NLog.4.1.978-pre\lib\net46\Foundatio.Logging.NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Redis, Version=4.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Redis.4.1.977-pre\lib\net451\Foundatio.Redis.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Redis.4.1.978-pre\lib\net451\Foundatio.Redis.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Geocoding, Version=3.4.0.0, Culture=neutral, PublicKeyToken=7c714700b88674c7, processorArchitecture=MSIL">

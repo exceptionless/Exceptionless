@@ -63,11 +63,11 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=4.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.4.1.977-pre\lib\net451\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.4.1.978-pre\lib\net451\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Logging.Xunit, Version=4.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Logging.Xunit.4.1.977-pre\lib\net46\Foundatio.Logging.Xunit.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Logging.Xunit.4.1.978-pre\lib\net46\Foundatio.Logging.Xunit.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
