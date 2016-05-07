@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -6,6 +7,7 @@ using System.Threading.Tasks;
 using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
 using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Api.Security {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
@@ -19,6 +21,13 @@ namespace Exceptionless.Api.Security {
             context.Response = response;
         }
 
+        private bool IsSecure(HttpRequestMessage request) {
+            bool isForwardedSsl = request.Headers.Contains("X-Forwarded-Proto")
+                && request.Headers.GetValues("X-Forwarded-Proto").FirstOrDefault() == Uri.UriSchemeHttps;
+
+            return isForwardedSsl || request.RequestUri.Scheme == Uri.UriSchemeHttps;
+        }
+
         public Task<HttpResponseMessage> ExecuteAuthorizationFilterAsync(HttpActionContext actionContext, CancellationToken cancellationToken, Func<Task<HttpResponseMessage>> continuation) {
             if (actionContext == null)
                 throw new ArgumentNullException(nameof(actionContext));
@@ -26,7 +35,7 @@ namespace Exceptionless.Api.Security {
             if (continuation == null)
                 throw new ArgumentNullException(nameof(continuation));
 
-            if (Settings.Current.EnableSSL && actionContext.Request.RequestUri.Scheme != Uri.UriSchemeHttps)
+            if (Settings.Current.EnableSSL && !IsSecure(actionContext.Request))
                 HandleNonHttpsRequest(actionContext);
 
             if (actionContext.Response != null)

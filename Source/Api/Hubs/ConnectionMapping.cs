@@ -1,31 +1,35 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Api.Hubs {
-    public class ConnectionMapping {
+    public class ConnectionMapping : IConnectionMapping {
         private readonly ConcurrentDictionary<string, HashSet<string>> _connections = new ConcurrentDictionary<string, HashSet<string>>();
 
-        public void Add(string key, string connectionId) {
+        public Task AddAsync(string key, string connectionId) {
             if (key == null)
-                return;
+                return Task.CompletedTask;
 
             _connections.AddOrUpdate(key, new HashSet<string>(new[] { connectionId }), (_, hs) => {
                 hs.Add(connectionId);
                 return hs;
             });
+
+            return Task.CompletedTask;
         }
 
-        public ICollection<string> GetConnections(string key) {
+        public Task<ICollection<string>> GetConnectionsAsync(string key) {
             if (key == null)
-                return new List<string>();
+                return Task.FromResult<ICollection<string>>(new List<string>());
 
-            return _connections.GetOrAdd(key, new HashSet<string>());
+            return Task.FromResult<ICollection<string>>(_connections.GetOrAdd(key, new HashSet<string>()));
         }
 
-        public void Remove(string key, string connectionId) {
+        public Task RemoveAsync(string key, string connectionId) {
             if (key == null)
-                return;
+                return Task.CompletedTask;
 
             bool shouldRemove = false;
             _connections.AddOrUpdate(key, new HashSet<string>(), (_, hs) => {
@@ -37,11 +41,13 @@ namespace Exceptionless.Api.Hubs {
             });
 
             if (!shouldRemove)
-                return;
+                return Task.CompletedTask;
 
             HashSet<string> connections;
             if (_connections.TryRemove(key, out connections) && connections.Count > 0)
                 _connections.TryAdd(key, connections);
+
+            return Task.CompletedTask;
         }
     }
 }
