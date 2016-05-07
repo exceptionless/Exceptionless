@@ -6,6 +6,7 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
+using Exceptionless.Plugins.Default;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
@@ -65,9 +66,13 @@ namespace Exceptionless.Insulation {
             container.RegisterSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
             container.RegisterSingleton<ExceptionlessClient>(() => client);
 
+            client.Configuration.RemovePlugin<UpdateConfigurationSettingsWhileIdlePlugin>();
+            client.Configuration.AddPlugin(new UpdateConfigurationSettingsWhileIdlePlugin(client.Configuration, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1)));
+
             client.Configuration.SetVersion(Settings.Current.Version);
             if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
                 client.Configuration.Enabled = false;
+
             client.Register();
             container.AddBootstrapper<HttpConfiguration>(config => client.RegisterWebApi(config));
             client.Configuration.UseInMemoryStorage();

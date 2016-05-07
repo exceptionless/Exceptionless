@@ -205,15 +205,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/remove-link")]
         public async Task<IHttpActionResult> RemoveLinkAsync(string id, [NakedBody] string url) {
-            if (String.IsNullOrEmpty(url))
+            if (String.IsNullOrWhiteSpace(url))
                 return BadRequest();
 
             var stack = await GetModelAsync(id, false);
             if (stack == null)
                 return NotFound();
             
-            if (stack.References.Contains(url)) {
-                stack.References.Remove(url);
+            if (stack.References.Contains(url.Trim())) {
+                stack.References.Remove(url.Trim());
                 await _stackRepository.SaveAsync(stack);
             }
 
