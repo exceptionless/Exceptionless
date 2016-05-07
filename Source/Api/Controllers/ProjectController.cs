@@ -164,6 +164,8 @@ namespace Exceptionless.Api.Controllers {
         /// Get configuration settings
         /// </summary>
         /// <param name="id">The identifier of the project.</param>
+        /// <param name="v">The client configuration version.</param>
+        /// <response code="304">The client configuration version is the current version.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("config")]
@@ -172,13 +174,16 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ResponseType(typeof(ClientConfiguration))]
-        public async Task<IHttpActionResult> GetConfigAsync(string id = null) {
+        public async Task<IHttpActionResult> GetConfigAsync(string id = null, int? v = null) {
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();
 
             var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
+
+            if (v.HasValue && v == project.Configuration.Version)
+                return StatusCode(HttpStatusCode.NotModified);
 
             return Ok(project.Configuration);
         }
@@ -498,6 +503,8 @@ namespace Exceptionless.Api.Controllers {
             value.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             value.AddDefaultOwnerNotificationSettings(ExceptionlessUser.Id);
             value.SetDefaultUserAgentBotPatterns();
+            value.Configuration.IncrementVersion();
+
             return base.AddModelAsync(value);
         }
 
