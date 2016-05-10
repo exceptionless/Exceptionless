@@ -459,7 +459,7 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         public async Task<IHttpActionResult> RecordHeartbeatAsync(string projectId = null, int version = 2, string id = null, bool close = false) {
-            if (String.IsNullOrWhiteSpace(id))
+            if (String.IsNullOrWhiteSpace(id) || Settings.Current.EventSubmissionDisabled)
                 return Ok();
 
             if (projectId == null)
@@ -472,7 +472,11 @@ namespace Exceptionless.Api.Controllers {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
-            
+
+            var org = await _organizationRepository.GetByIdAsync(project.OrganizationId, true);
+            if (org == null || org.IsSuspended)
+                return Ok();
+
             await _cacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}", DateTime.UtcNow, TimeSpan.FromHours(2));
             if (close)
                 await _cacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
