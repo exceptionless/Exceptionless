@@ -97,7 +97,10 @@ namespace Exceptionless.Api.Controllers {
                     await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { UpgradePlans = true });
                     break;
                 case "update-project-default-bot-lists":
-                    await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { UpdateDefaultBotList = true });
+                    await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { UpdateDefaultBotList = true, IncrementConfigurationVersion = true });
+                    break;
+                case "increment-project-configuration-version":
+                    await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { IncrementConfigurationVersion = true });
                     break;
                 default:
                     return NotFound();

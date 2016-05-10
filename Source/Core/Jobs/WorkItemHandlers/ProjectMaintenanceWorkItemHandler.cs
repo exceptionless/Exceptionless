@@ -1,9 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
@@ -31,15 +29,16 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             const int LIMIT = 100;
 
             var workItem = context.GetData<ProjectMaintenanceWorkItem>();
-            Log.Info("Received upgrade projects work item. Update Default Bot List: {0}", workItem.UpdateDefaultBotList);
+            Log.Info("Received upgrade projects work item. Update Default Bot List: {0} IncrementConfigurationVersion: {1}", workItem.UpdateDefaultBotList, workItem.IncrementConfigurationVersion);
 
             var results = await _projectRepository.GetAllAsync(paging: new PagingOptions().WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var project in results.Documents) {
-                    if (workItem.UpdateDefaultBotList) {
+                    if (workItem.UpdateDefaultBotList)
                         project.SetDefaultUserAgentBotPatterns();
+
+                    if (workItem.IncrementConfigurationVersion)
                         project.Configuration.IncrementVersion();
-                    }
                 }
 
                 if (workItem.UpdateDefaultBotList)
