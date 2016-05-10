@@ -70,9 +70,7 @@ namespace Exceptionless.Insulation {
             container.RegisterSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
             container.RegisterSingleton<ExceptionlessClient>(() => client);
 
-            client.Configuration.RemovePlugin<UpdateConfigurationSettingsWhileIdlePlugin>();
-            client.Configuration.AddPlugin(new UpdateConfigurationSettingsWhileIdlePlugin(client.Configuration, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1)));
-
+            client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
             client.Configuration.SetVersion(Settings.Current.Version);
             if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
                 client.Configuration.Enabled = false;
