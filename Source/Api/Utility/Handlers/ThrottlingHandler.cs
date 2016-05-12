@@ -4,48 +4,32 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Api.Extensions;
+using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
+using Foundatio.Metrics;
 
 namespace Exceptionless.Api.Utility {
-    public class ThrottlingHandler : DelegatingHandler {
+    public sealed class ThrottlingHandler : DelegatingHandler {
         private readonly ICacheClient _cacheClient;
+        private readonly IMetricsClient _metricsClient;
         private readonly Func<string, long> _maxRequestsForUserIdentifier;
         private readonly TimeSpan _period;
         private readonly string _message;
 
-        public ThrottlingHandler(ICacheClient cacheClient, Func<string, long> maxRequestsForUserIdentifier, TimeSpan period, string message = "The allowed number of requests has been exceeded.") {
+        public ThrottlingHandler(ICacheClient cacheClient, IMetricsClient metricsClient, Func<string, long> maxRequestsForUserIdentifier, TimeSpan period, string message = "The allowed number of requests has been exceeded.") {
             _cacheClient = cacheClient;
+            _metricsClient = metricsClient;
             _maxRequestsForUserIdentifier = maxRequestsForUserIdentifier;
             _period = period;
             _message = message;
         }
-
-        protected virtual string GetUserIdentifier(HttpRequestMessage request) {
-            var authType = request.GetAuthType();
-            if (authType == AuthType.Token)
-                return request.GetDefaultOrganizationId();
-
-            if (authType == AuthType.User) {
-                var user = request.GetUser();
-                if (user != null)
-                    return user.Id;
-            }
-
-            // fallback to using the IP address
-            var ip = request.GetClientIpAddress();
-            if (String.IsNullOrEmpty(ip) || ip == "::1")
-                ip = "127.0.0.1";
-
-            return ip;
-        }
-
-        protected virtual string GetCacheKey(string userIdentifier) {
-            return String.Concat("api", ":", userIdentifier, ":", DateTime.UtcNow.Floor(_period).Ticks);
-        }
-
+        
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+            if (IsUnthrottledRoute(request))
+                return await base.SendAsync(request, cancellationToken);
+
             string identifier = GetUserIdentifier(request);
             if (String.IsNullOrEmpty(identifier))
                 return CreateResponse(request, HttpStatusCode.Forbidden, "Could not identify client.");
@@ -66,7 +50,9 @@ namespace Exceptionless.Api.Utility {
                 response = await base.SendAsync(request, cancellationToken);
 
             double remaining = maxRequests - requestCount;
-            if (remaining < 0)
+            if (remaining == 0)
+                await _metricsClient.CounterAsync(MetricNames.ThrottleLimitExceeded);
+            else if (remaining < 0)
                 remaining = 0;
 
             response.Headers.Add(ExceptionlessHeaders.RateLimit, maxRequests.ToString());
@@ -80,6 +66,38 @@ namespace Exceptionless.Api.Utility {
             response.Content = new StringContent(message);
 
             return response;
+        }
+
+        private string GetUserIdentifier(HttpRequestMessage request) {
+            var authType = request.GetAuthType();
+            if (authType == AuthType.Token)
+                return request.GetDefaultOrganizationId();
+
+            if (authType == AuthType.User) {
+                var user = request.GetUser();
+                if (user != null)
+                    return user.Id;
+            }
+
+            // fallback to using the IP address
+            var ip = request.GetClientIpAddress();
+            if (String.IsNullOrEmpty(ip) || ip == "::1")
+                ip = "127.0.0.1";
+
+            return ip;
+        }
+
+        private string GetCacheKey(string userIdentifier) {
+            return String.Concat("api", ":", userIdentifier, ":", DateTime.UtcNow.Floor(_period).Ticks);
+        }
+
+        private bool IsUnthrottledRoute(HttpRequestMessage request) {
+            if (request.Method != HttpMethod.Get)
+                return false;
+
+            return request.RequestUri.AbsolutePath.EndsWith("/events/session/heartbeat", StringComparison.OrdinalIgnoreCase) 
+                || request.RequestUri.AbsolutePath.EndsWith("/projects/config", StringComparison.OrdinalIgnoreCase)
+                || request.RequestUri.AbsolutePath.StartsWith("/api/v2/push", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

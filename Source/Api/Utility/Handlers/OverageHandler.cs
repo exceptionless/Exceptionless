@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Utility {
             if (request.Method != HttpMethod.Post)
                 return false;
 
-            return request.RequestUri.AbsolutePath.Contains("/events") 
+            return request.RequestUri.AbsolutePath.EndsWith("/events", StringComparison.OrdinalIgnoreCase) 
                 || String.Equals(request.RequestUri.AbsolutePath, "/api/v1/error", StringComparison.OrdinalIgnoreCase);
         }
 

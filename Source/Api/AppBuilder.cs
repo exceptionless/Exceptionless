@@ -129,7 +129,7 @@ namespace Exceptionless.Api {
         }
 
         private static void EnableCors(HttpConfiguration config, IAppBuilder app) {
-            var exposedHeaders = new List<string> { "ETag", "Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-Exceptionless-Client", "X-Exceptionless-ConfigVersion" };
+            var exposedHeaders = new List<string> { "ETag", "Link", ExceptionlessHeaders.RateLimit, ExceptionlessHeaders.RateLimitRemaining, ExceptionlessHeaders.Client, ExceptionlessHeaders.ConfigurationVersion };
             app.UseCors(new CorsOptions {
                 PolicyProvider = new CorsPolicyProvider {
                     PolicyResolver = context => {
