@@ -5,5 +5,6 @@ namespace Exceptionless.Core.Authentication {
 		bool IsLoginValid(string username, string password);
 		string GetEmailForLogin(string username);
 		string GetNameForLogin(string username);
+		string GetLoginForEmail(string email);
 	}
 }
