@@ -42,8 +42,8 @@ namespace Exceptionless.Api.Controllers {
         private readonly EventStats _eventStats;
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
-        private readonly List<FieldAggregation> _distinctUsersFields = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct } };
-        private readonly List<FieldAggregation> _distinctUsersFieldsWithSort = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct, SortOrder = SortOrder.Descending } };
+        private readonly List<FieldAggregation> _distinctUsersFields = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct }, new FieldAggregation { Field = "count", DefaultValue = 1, Type = FieldAggregationType.Sum } };
+        private readonly List<FieldAggregation> _distinctUsersFieldsWithSort = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct, SortOrder = SortOrder.Descending }, new FieldAggregation { Field = "count", DefaultValue = 1, Type = FieldAggregationType.Sum } };
 
         public StackController(IStackRepository stackRepository,  IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, ICacheClient cacheClient, EventStats eventStats, BillingManager billingManager, FormattingPluginManager formattingPluginManager, ILoggerFactory loggerFactory, IMapper mapper) : base(stackRepository, loggerFactory, mapper) {
             _stackRepository = stackRepository;
@@ -772,7 +772,7 @@ namespace Exceptionless.Api.Controllers {
                     Title = stack.Title,
                     FirstOccurrence = term.FirstOccurrence,
                     LastOccurrence = term.LastOccurrence,
-                    Total = term.Total,
+                    Total = (long)term.Numbers[1],
 
                     Users = term.Numbers[0],
                     TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
@@ -791,8 +791,9 @@ namespace Exceptionless.Api.Controllers {
             if (totals.Count == projectIds.Count)
                 return totals;
 
+            var fields = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct } };
             var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
-            var projectTerms = await _eventStats.GetNumbersTermsStatsAsync("project_id", _distinctUsersFields, utcStart, utcEnd, systemFilter, projects.BuildRetentionFilter());
+            var projectTerms = await _eventStats.GetNumbersTermsStatsAsync("project_id", fields, utcStart, utcEnd, systemFilter, projects.BuildRetentionFilter());
 
             // Cache all projects that have more than 10 users for 5 minutes.
             await scopedCacheClient.SetAllAsync(projectTerms.Terms.Where(t => t.Numbers[0] >= 10).ToDictionary(t => t.Term, t => t.Numbers[0]), TimeSpan.FromMinutes(5));
