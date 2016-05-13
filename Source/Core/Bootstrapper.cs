@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
+using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
@@ -157,6 +158,8 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<SystemHealthChecker>();
 
             container.RegisterSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
+
+			container.Register<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
             
             container.RegisterSingleton<IMapper>(() => {
                 var profiles = container.GetAllInstances<Profile>();

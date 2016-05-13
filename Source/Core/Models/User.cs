@@ -29,6 +29,8 @@ namespace Exceptionless.Core.Models {
         public DateTime PasswordResetTokenExpiration { get; set; }
         public ICollection<OAuthAccount> OAuthAccounts { get; set; }
 
+		public bool IsFromActiveDirectory { get; set; }
+
         /// <summary>
         /// Gets or sets the users Full Name.
         /// </summary>

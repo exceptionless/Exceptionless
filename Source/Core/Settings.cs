@@ -58,7 +58,7 @@ namespace Exceptionless.Core {
 
 		public string LdapConnectionString { get; private set; }
 
-		public bool EnableLdapAuth { get; private set; }
+		public bool EnableActiveDirectoryAuth { get; internal set; }
 
         public bool EnableSignalR { get; private set; }
 
@@ -175,8 +175,7 @@ namespace Exceptionless.Core {
             RedisConnectionString = GetConnectionString(nameof(RedisConnectionString));
             EnableRedis = GetBool(nameof(EnableRedis), !String.IsNullOrEmpty(RedisConnectionString));
 
-	        LdapConnectionString = GetConnectionString(nameof(LdapConnectionString));
-	        EnableLdapAuth = GetBool(nameof(EnableLdapAuth));
+	        EnableActiveDirectoryAuth = GetBool(nameof(EnableActiveDirectoryAuth));
 
             EnableSignalR = GetBool(nameof(EnableSignalR), true);
 

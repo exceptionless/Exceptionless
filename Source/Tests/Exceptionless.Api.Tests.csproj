@@ -182,6 +182,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Authentication\TestDomainLoginProvider.cs" />
     <Compile Include="Billing\BillingManagerTests.cs" />
     <Compile Include="Controllers\AuthControllerTests.cs" />
     <Compile Include="Controllers\EventControllerTests.cs" />
