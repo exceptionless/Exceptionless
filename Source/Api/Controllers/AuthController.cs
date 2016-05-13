@@ -8,6 +8,7 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
+using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -27,7 +28,8 @@ using OAuth2.Models;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/auth")]
     public class AuthController : ExceptionlessApiController {
-        private readonly IOrganizationRepository _organizationRepository;
+	    private readonly IDomainLoginProvider _domainLoginProvider;
+	    private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly ICacheClient _cacheClient;
@@ -36,8 +38,9 @@ namespace Exceptionless.Api.Controllers {
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger) {
-            _organizationRepository = organizationRepository;
+        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider) {
+	        _domainLoginProvider = domainLoginProvider;
+	        _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
             _cacheClient = new ScopedCacheClient(cacheClient, "auth");
@@ -95,16 +98,48 @@ namespace Exceptionless.Api.Controllers {
             }
 
             User user;
-            try {
-                user = await _userRepository.GetByEmailAddressAsync(model.Email);
-            } catch (Exception ex) {
-                _logger.Error().Exception(ex).Critical().Message("Login failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
-                return Unauthorized();
-            }
+	        string loginEmail = model.Email;
+
+	        if (Settings.Current.EnableActiveDirectoryAuth) {
+		        if (_domainLoginProvider.IsLoginValid(model.Email, model.Password)) {
+					loginEmail = _domainLoginProvider.GetEmailForLogin(model.Email);
+		        } else {
+					_logger.Error().Message("Domain login failed for \"{0}\": Invalid Password.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+					return Unauthorized();
+				}
+	        }
+
+			try
+			{
+				user = await _userRepository.GetByEmailAddressAsync(loginEmail);
+			}
+			catch (Exception ex)
+			{
+				_logger.Error().Exception(ex).Critical().Message("Login failed for \"{0}\": {1}", loginEmail, ex.Message).Tag("Login").Identity(loginEmail).SetActionContext(ActionContext).Write();
+				return Unauthorized();
+			}
 
             if (user == null) {
-                _logger.Error().Message("Login failed for \"{0}\": User not found.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
-                return Unauthorized();
+	            if (Settings.Current.EnableActiveDirectoryAuth) {
+		            string name;
+		            try {
+			            name = _domainLoginProvider.GetNameForLogin(model.Email);
+		            } catch (Exception ex) {
+						_logger.Error().Exception(ex).Critical().Message("AD email lookup failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Login").Identity(loginEmail).SetActionContext(ActionContext).Write();
+						return Unauthorized();
+					}
+					user = new User { FullName = name, EmailAddress = loginEmail, IsFromActiveDirectory = true };
+					user.Roles.Add(AuthorizationRoles.Client);
+					user.Roles.Add(AuthorizationRoles.User);
+					await AddGlobalAdminRoleIfFirstUserAsync(user);
+
+					user.MarkEmailAddressVerified();
+
+					await _userRepository.AddAsync(user, true);
+				} else {
+					_logger.Error().Message("Login failed for \"{0}\": User not found.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+					return Unauthorized();
+				}
             }
 
             if (!user.IsActive) {
@@ -112,16 +147,20 @@ namespace Exceptionless.Api.Controllers {
                 return Unauthorized();
             }
 
-            if (String.IsNullOrEmpty(user.Salt)) {
-                _logger.Error().Message("Login failed for \"{0}\": The user has no salt defined.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
-                return Unauthorized();
-            }
+	        if (!user.IsFromActiveDirectory) {
+				if (String.IsNullOrEmpty(user.Salt))
+				{
+					_logger.Error().Message("Login failed for \"{0}\": The user has no salt defined.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+					return Unauthorized();
+				}
 
-            string encodedPassword = model.Password.ToSaltedHash(user.Salt);
-            if (!String.Equals(encodedPassword, user.Password)) {
-                _logger.Error().Message("Login failed for \"{0}\": Invalid Password.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
-                return Unauthorized();
-            }
+				string encodedPassword = model.Password.ToSaltedHash(user.Salt);
+				if (!String.Equals(encodedPassword, user.Password))
+				{
+					_logger.Error().Message("Login failed for \"{0}\": Invalid Password.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+					return Unauthorized();
+				}
+			}
 
             if (!String.IsNullOrEmpty(model.InviteToken))
                 await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
