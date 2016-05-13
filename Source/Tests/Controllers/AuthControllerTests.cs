@@ -392,7 +392,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 				// create model
 				var loginModel = new LoginModel
 				{
-					Email = TestDomainLoginProvider.ValidUsername,
+					Email = email,
 					Password = TestDomainLoginProvider.ValidPassword
 				};
 
@@ -427,9 +427,11 @@ namespace Exceptionless.Api.Tests.Controllers {
 				Settings.Current.EnableActiveDirectoryAuth = true;
 
 				// create model
+				var provider = new TestDomainLoginProvider();
+				string email = provider.GetEmailForLogin(TestDomainLoginProvider.ValidUsername);
 				var loginModel = new LoginModel
 				{
-					Email = TestDomainLoginProvider.ValidUsername,
+					Email = email,
 					Password = TestDomainLoginProvider.ValidPassword
 				};
 
@@ -450,8 +452,6 @@ namespace Exceptionless.Api.Tests.Controllers {
 				await _client.RefreshAsync(r => r.Force());
 
 				// Verify that a user account was added
-				var provider = new TestDomainLoginProvider();
-				string email = provider.GetEmailForLogin(TestDomainLoginProvider.ValidUsername);
 				var user = await _userRepository.GetByEmailAddressAsync(email);
 				Assert.NotNull(user);
 				Assert.Equal(provider.GetNameForLogin(TestDomainLoginProvider.ValidUsername), user.FullName);

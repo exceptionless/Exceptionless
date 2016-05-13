@@ -18,5 +18,12 @@ namespace Exceptionless.Api.Tests.Authentication
 		public string GetNameForLogin(string username) {
 			return username + " " + username.ToUpper();
 		}
+
+		public string GetLoginForEmail(string email) {
+			if (email == GetEmailForLogin(ValidUsername)) {
+				return ValidUsername;
+			}
+			return null;
+		}
 	}
 }

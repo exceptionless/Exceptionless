@@ -98,24 +98,22 @@ namespace Exceptionless.Api.Controllers {
             }
 
             User user;
-	        string loginEmail = model.Email;
-
+	        string adUsername = null;
 	        if (Settings.Current.EnableActiveDirectoryAuth) {
-		        if (_domainLoginProvider.IsLoginValid(model.Email, model.Password)) {
-					loginEmail = _domainLoginProvider.GetEmailForLogin(model.Email);
-		        } else {
-					_logger.Error().Message("Domain login failed for \"{0}\": Invalid Password.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+		        adUsername = _domainLoginProvider.GetLoginForEmail(model.Email);
+		        if (adUsername == null || !_domainLoginProvider.IsLoginValid(adUsername, model.Password)) {
+					_logger.Error().Message("Domain login failed for \"{0}\": Invalid Password or Account.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
 					return Unauthorized();
 				}
 	        }
 
 			try
 			{
-				user = await _userRepository.GetByEmailAddressAsync(loginEmail);
+				user = await _userRepository.GetByEmailAddressAsync(model.Email);
 			}
 			catch (Exception ex)
 			{
-				_logger.Error().Exception(ex).Critical().Message("Login failed for \"{0}\": {1}", loginEmail, ex.Message).Tag("Login").Identity(loginEmail).SetActionContext(ActionContext).Write();
+				_logger.Error().Exception(ex).Critical().Message("Login failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
 				return Unauthorized();
 			}
 
@@ -123,12 +121,12 @@ namespace Exceptionless.Api.Controllers {
 	            if (Settings.Current.EnableActiveDirectoryAuth) {
 		            string name;
 		            try {
-			            name = _domainLoginProvider.GetNameForLogin(model.Email);
+			            name = _domainLoginProvider.GetNameForLogin(adUsername);
 		            } catch (Exception ex) {
-						_logger.Error().Exception(ex).Critical().Message("AD email lookup failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Login").Identity(loginEmail).SetActionContext(ActionContext).Write();
+						_logger.Error().Exception(ex).Critical().Message("AD email lookup failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
 						return Unauthorized();
 					}
-					user = new User { FullName = name, EmailAddress = loginEmail, IsFromActiveDirectory = true };
+					user = new User { FullName = name, EmailAddress = model.Email, IsFromActiveDirectory = true };
 					user.Roles.Add(AuthorizationRoles.Client);
 					user.Roles.Add(AuthorizationRoles.User);
 					await AddGlobalAdminRoleIfFirstUserAsync(user);
