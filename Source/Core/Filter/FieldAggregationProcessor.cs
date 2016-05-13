@@ -6,7 +6,7 @@ using Foundatio.Repositories.Models;
 namespace Exceptionless.Core.Filter {
     public class FieldAggregationProcessor {
         private static readonly HashSet<string> _allowedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-            "value", "stack_id", "user.raw", "is_first_occurrence"
+            "count", "value", "stack_id", "user.raw", "is_first_occurrence"
         };
         
         private static readonly HashSet<string> _allowedTermFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Filter {
         };
 
         private static readonly HashSet<string> _freeFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-            "value", "stack_id", "is_first_occurrence"
+            "count", "value", "stack_id", "is_first_occurrence"
         };
 
         public static FieldAggregationsResult Process(string query, bool applyRules = true) {
