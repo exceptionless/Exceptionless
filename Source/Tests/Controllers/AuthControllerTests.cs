@@ -40,19 +40,29 @@ namespace Exceptionless.Api.Tests.Controllers {
             _output = output;
         }
 
-        [Fact]
-        public async Task CannotSignupWhenAccountCreationDisabledWithNoTokenAsync() {
+		[Theory]
+		[InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
+		[InlineData(true, "test1.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
+		[InlineData(false, "test1@exceptionless.io", "Password1$")]
+		public async Task CannotSignupWhenAccountCreationDisabledWithNoTokenAsync(bool enableAdAuth, string email, string password) {
             await ResetAsync();
 
             try {
                 _authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
                 Settings.Current.EnableAccountCreation = false;
+				Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
 
-                var signupModel = new SignupModel {
-                    Email = "test1@exceptionless.io",
+				if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername)
+				{
+					TestDomainLoginProvider provider = new TestDomainLoginProvider();
+					email = provider.GetEmailForLogin(email);
+				}
+
+				var signupModel = new SignupModel {
+                    Email = email,
                     InviteToken = "",
                     Name = "Test",
-                    Password = "Password1$"
+                    Password = password
                 };
                 var actionResult = await _authController.SignupAsync(signupModel);
 
@@ -68,19 +78,28 @@ namespace Exceptionless.Api.Tests.Controllers {
             }
         }
 
-        [Fact]
-        public async Task CannotSignupWhenAccountCreationDisabledWithInvalidTokenAsync() {
+		[Theory]
+		[InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
+		[InlineData(true, "test2.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
+		[InlineData(false, "test2@exceptionless.io", "Password1$")]
+        public async Task CannotSignupWhenAccountCreationDisabledWithInvalidTokenAsync(bool enableAdAuth, string email, string password) {
             await ResetAsync();
 
             try {
                 _authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
                 Settings.Current.EnableAccountCreation = false;
+	            Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
+
+	            if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername) {
+		            TestDomainLoginProvider provider = new TestDomainLoginProvider();
+		            email = provider.GetEmailForLogin(email);
+	            }
 
                 var signupModel = new SignupModel {
-                    Email = "test2@exceptionless.io",
+                    Email = email,
                     InviteToken = StringExtensions.GetNewToken(),
                     Name = "Test",
-                    Password = "Password1$"
+                    Password = password
                 };
                 var actionResult = await _authController.SignupAsync(signupModel);
 
@@ -96,17 +115,25 @@ namespace Exceptionless.Api.Tests.Controllers {
             }
         }
 
-        [Fact]
-        public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAsync() {
+		[Theory]
+		[InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
+		[InlineData(false, "test3@exceptionless.io", "Password1$")]
+		public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAsync(bool enableAdAuth, string email, string password) {
             await ResetAsync();
 
             try {
                 _authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
                 Settings.Current.EnableAccountCreation = false;
+				Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
 
-                var orgs = await _organizationRepository.GetAllAsync();
+				if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername)
+				{
+					TestDomainLoginProvider provider = new TestDomainLoginProvider();
+					email = provider.GetEmailForLogin(email);
+				}
+
+				var orgs = await _organizationRepository.GetAllAsync();
                 var organization = orgs.Documents.First();
-                var email = "test3@exceptionless.io";
                 var invite = new Invite {
                     Token = StringExtensions.GetNewToken(),
                     EmailAddress = email.ToLowerInvariant(),
@@ -122,7 +149,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                     Email = email,
                     InviteToken = invite.Token,
                     Name = "Test",
-                    Password = "Password1$"
+                    Password = password
                 };
                 var actionResult = await _authController.SignupAsync(signupModel);
                 var cancellation = new CancellationToken();
@@ -141,7 +168,56 @@ namespace Exceptionless.Api.Tests.Controllers {
             }
         }
 
-        [Fact]
+		[Fact]
+		public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAndInvalidAdAccountAsync()
+		{
+			await ResetAsync();
+
+			try
+			{
+				_authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
+				Settings.Current.EnableAccountCreation = false;
+				Settings.Current.EnableActiveDirectoryAuth = true;
+				
+				string email = "testuser1@exceptionless.io";
+				string password = "invalidAccount1";
+
+				var orgs = await _organizationRepository.GetAllAsync();
+				var organization = orgs.Documents.First();
+				var invite = new Invite
+				{
+					Token = StringExtensions.GetNewToken(),
+					EmailAddress = email.ToLowerInvariant(),
+					DateAdded = DateTime.UtcNow
+				};
+				organization.Invites.Add(invite);
+				await _organizationRepository.SaveAsync(organization);
+				_client.Refresh(r => r.Force());
+
+				Assert.NotNull(organization.GetInvite(invite.Token));
+
+				var signupModel = new SignupModel
+				{
+					Email = email,
+					InviteToken = invite.Token,
+					Name = "Test",
+					Password = password
+				};
+				var actionResult = await _authController.SignupAsync(signupModel);
+				var cancellation = new CancellationToken();
+				var result = await actionResult.ExecuteAsync(cancellation);
+				Assert.False(result.IsSuccessStatusCode, "Status Code is success.");
+				Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.StatusCode);
+				var error = GetErrorMessage(result);
+				Assert.Equal("Username and password combination failed to authenticate with Active Directory.", error);
+			}
+			finally
+			{
+				await ResetAsync();
+			}
+		}
+
+		[Fact]
         public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAsync() {
             await ResetAsync();
 
@@ -172,7 +248,80 @@ namespace Exceptionless.Api.Tests.Controllers {
             }
         }
 
-        [Fact]
+		[Fact]
+		public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndValidAdAccountAsync()
+		{
+			await ResetAsync();
+
+			try
+			{
+				_authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
+				Settings.Current.EnableAccountCreation = true;
+				Settings.Current.EnableActiveDirectoryAuth = true;
+
+				TestDomainLoginProvider provider = new TestDomainLoginProvider();
+				string email = provider.GetEmailForLogin(TestDomainLoginProvider.ValidUsername);
+
+				var signupModel = new SignupModel
+				{
+					Email = email,
+					InviteToken = "",
+					Name = "Test",
+					Password = TestDomainLoginProvider.ValidPassword
+				};
+				var actionResult = await _authController.SignupAsync(signupModel);
+				var cancellation = new CancellationToken();
+				var result = await actionResult.ExecuteAsync(cancellation);
+				var error = GetResult<HttpError>(result);
+				if (error != null)
+				{
+					_output.WriteLine("Error: {0}", error.Message);
+				}
+				Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
+				Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
+				var tokenResult = GetResult<TokenResult>(result);
+				Assert.NotNull(tokenResult);
+				Assert.False(string.IsNullOrEmpty(tokenResult.Token));
+			}
+			finally
+			{
+				await ResetAsync();
+			}
+		}
+
+		[Fact]
+		public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndInvalidAdAccountAsync()
+		{
+			await ResetAsync();
+
+			try
+			{
+				_authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
+				Settings.Current.EnableAccountCreation = true;
+				Settings.Current.EnableActiveDirectoryAuth = true;
+
+				var signupModel = new SignupModel
+				{
+					Email = "testuser2@exceptionless.io",
+					InviteToken = "",
+					Name = "Test",
+					Password = "literallydoesntmatter"
+				};
+				var actionResult = await _authController.SignupAsync(signupModel);
+				var cancellation = new CancellationToken();
+				var result = await actionResult.ExecuteAsync(cancellation);
+				Assert.False(result.IsSuccessStatusCode, "Status Code is success.");
+				Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.StatusCode);
+				var error = GetErrorMessage(result);
+				Assert.Equal("Username and password combination failed to authenticate with Active Directory.", error);
+			}
+			finally
+			{
+				await ResetAsync();
+			}
+		}
+
+		[Fact]
         public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAsync() {
             await ResetAsync();
 
@@ -217,7 +366,110 @@ namespace Exceptionless.Api.Tests.Controllers {
             }
         }
 
-	    [Fact]
+		[Fact]
+		public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndValidAdAccountAsync()
+		{
+			await ResetAsync();
+
+			try
+			{
+				_authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
+				Settings.Current.EnableAccountCreation = true;
+				Settings.Current.EnableActiveDirectoryAuth = true;
+
+				TestDomainLoginProvider provider = new TestDomainLoginProvider();
+				string email = provider.GetEmailForLogin(TestDomainLoginProvider.ValidUsername);
+
+				var orgs = await _organizationRepository.GetAllAsync();
+				var organization = orgs.Documents.First();
+				var invite = new Invite
+				{
+					Token = StringExtensions.GetNewToken(),
+					EmailAddress = email.ToLowerInvariant(),
+					DateAdded = DateTime.UtcNow
+				};
+				organization.Invites.Add(invite);
+				await _organizationRepository.SaveAsync(organization);
+				await _client.RefreshAsync(r => r.Force());
+
+				Assert.NotNull(organization.GetInvite(invite.Token));
+
+				var signupModel = new SignupModel
+				{
+					Email = email,
+					InviteToken = invite.Token,
+					Name = "Test",
+					Password = TestDomainLoginProvider.ValidPassword
+				};
+				var actionResult = await _authController.SignupAsync(signupModel);
+				var cancellation = new CancellationToken();
+				var result = await actionResult.ExecuteAsync(cancellation);
+				var error = GetResult<HttpError>(result);
+				if (error != null)
+				{
+					_output.WriteLine("Error: {0}", error.Message);
+				}
+				Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
+				Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
+				var tokenResult = GetResult<TokenResult>(result);
+				Assert.NotNull(tokenResult);
+				Assert.False(string.IsNullOrEmpty(tokenResult.Token));
+			}
+			finally
+			{
+				await ResetAsync();
+			}
+		}
+
+		[Fact]
+		public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndInvalidAdAccountAsync()
+		{
+			await ResetAsync();
+
+			try
+			{
+				_authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
+				Settings.Current.EnableAccountCreation = true;
+				Settings.Current.EnableActiveDirectoryAuth = true;
+
+				string email = "testuser4@exceptionless.io";
+
+				var orgs = await _organizationRepository.GetAllAsync();
+				var organization = orgs.Documents.First();
+				var invite = new Invite
+				{
+					Token = StringExtensions.GetNewToken(),
+					EmailAddress = email.ToLowerInvariant(),
+					DateAdded = DateTime.UtcNow
+				};
+				organization.Invites.Add(invite);
+				await _organizationRepository.SaveAsync(organization);
+				await _client.RefreshAsync(r => r.Force());
+
+				Assert.NotNull(organization.GetInvite(invite.Token));
+
+				var signupModel = new SignupModel
+				{
+					Email = email,
+					InviteToken = invite.Token,
+					Name = "Test",
+					Password = TestDomainLoginProvider.ValidPassword
+				};
+				var actionResult = await _authController.SignupAsync(signupModel);
+				var cancellation = new CancellationToken();
+				var result = await actionResult.ExecuteAsync(cancellation);
+				Assert.False(result.IsSuccessStatusCode, "Status Code is success.");
+				Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.StatusCode);
+				var error = GetErrorMessage(result);
+				Assert.Equal("Username and password combination failed to authenticate with Active Directory.", error);
+			}
+			finally
+			{
+				await ResetAsync();
+			}
+		}
+
+		[Fact]
 	    public async Task LoginValidAsync() {
 		    await ResetAsync();
 
@@ -382,8 +634,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 				{
 					EmailAddress = email,
 					IsEmailAddressVerified = true,
-					FullName = "User 6",
-					IsFromActiveDirectory = true
+					FullName = "User 6"
 				};
 				await _userRepository.AddAsync(user);
 
@@ -443,20 +694,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 				{
 					_output.WriteLine("Error: {0}", error.Message);
 				}
-				Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
-				Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
-				var tokenResult = GetResult<TokenResult>(result);
-				Assert.NotNull(tokenResult);
-				Assert.False(string.IsNullOrEmpty(tokenResult.Token));
-
-				await _client.RefreshAsync(r => r.Force());
-
-				// Verify that a user account was added
-				var user = await _userRepository.GetByEmailAddressAsync(email);
-				Assert.NotNull(user);
-				Assert.Equal(provider.GetNameForLogin(TestDomainLoginProvider.ValidUsername), user.FullName);
-				Assert.Equal(email, user.EmailAddress);
-				Assert.True(user.IsFromActiveDirectory);
+				Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
 			}
 			finally
 			{
@@ -522,8 +760,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 				{
 					EmailAddress = email,
 					IsEmailAddressVerified = true,
-					FullName = "User 6",
-					IsFromActiveDirectory = true
+					FullName = "User 6"
 				};
 				await _userRepository.AddAsync(user);
 
