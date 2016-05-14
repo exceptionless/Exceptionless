@@ -98,13 +98,9 @@ namespace Exceptionless.Api.Controllers {
             }
 
             User user;
-	        string adUsername = null;
-	        if (Settings.Current.EnableActiveDirectoryAuth) {
-		        adUsername = _domainLoginProvider.GetLoginForEmail(model.Email);
-		        if (adUsername == null || !_domainLoginProvider.IsLoginValid(adUsername, model.Password)) {
-					_logger.Error().Message("Domain login failed for \"{0}\": Invalid Password or Account.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
-					return Unauthorized();
-				}
+	        if (Settings.Current.EnableActiveDirectoryAuth && !IsAdLoginValid(model.Email, model.Password)) {
+				_logger.Error().Message("Domain login failed for \"{0}\": Invalid Password or Account.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+				return Unauthorized();
 	        }
 
 			try
@@ -118,26 +114,8 @@ namespace Exceptionless.Api.Controllers {
 			}
 
             if (user == null) {
-	            if (Settings.Current.EnableActiveDirectoryAuth) {
-		            string name;
-		            try {
-			            name = _domainLoginProvider.GetNameForLogin(adUsername);
-		            } catch (Exception ex) {
-						_logger.Error().Exception(ex).Critical().Message("AD email lookup failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
-						return Unauthorized();
-					}
-					user = new User { FullName = name, EmailAddress = model.Email, IsFromActiveDirectory = true };
-					user.Roles.Add(AuthorizationRoles.Client);
-					user.Roles.Add(AuthorizationRoles.User);
-					await AddGlobalAdminRoleIfFirstUserAsync(user);
-
-					user.MarkEmailAddressVerified();
-
-					await _userRepository.AddAsync(user, true);
-				} else {
-					_logger.Error().Message("Login failed for \"{0}\": User not found.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
-					return Unauthorized();
-				}
+				_logger.Error().Message("Login failed for \"{0}\": User not found.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+				return Unauthorized();
             }
 
             if (!user.IsActive) {
@@ -145,7 +123,7 @@ namespace Exceptionless.Api.Controllers {
                 return Unauthorized();
             }
 
-	        if (!user.IsFromActiveDirectory) {
+	        if (!Settings.Current.EnableActiveDirectoryAuth) {
 				if (String.IsNullOrEmpty(user.Salt))
 				{
 					_logger.Error().Message("Login failed for \"{0}\": The user has no salt defined.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
@@ -220,20 +198,27 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
+	        if (Settings.Current.EnableActiveDirectoryAuth && !IsAdLoginValid(model.Email, model.Password)) {
+				_logger.Error().Message("Signup failed (bad AD login) for \"{0}\"", model.Email).Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
+		        return BadRequest("Username and password combination failed to authenticate with Active Directory.");
+	        }
+
             user = new User {
                 IsActive = true,
                 FullName = model.Name,
                 EmailAddress = model.Email,
-                IsEmailAddressVerified = false
+                IsEmailAddressVerified = Settings.Current.EnableActiveDirectoryAuth
             };
             user.CreateVerifyEmailAddressToken();
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
             await AddGlobalAdminRoleIfFirstUserAsync(user);
 
-            user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
-            user.Password = model.Password.ToSaltedHash(user.Salt);
-
+	        if (!Settings.Current.EnableActiveDirectoryAuth) {
+				user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
+				user.Password = model.Password.ToSaltedHash(user.Salt);
+			}
+            
             try {
                 user = await _userRepository.AddAsync(user, true);
             } catch (ValidationException ex) {
@@ -629,6 +614,11 @@ namespace Exceptionless.Api.Controllers {
 
             return token.Id;
         }
+
+	    private bool IsAdLoginValid(string email, string password) {
+			string adUsername = _domainLoginProvider.GetLoginForEmail(email);
+		    return adUsername != null && _domainLoginProvider.IsLoginValid(adUsername, password);
+	    }
 
         private static bool IsValidPassword(string password) {
             if (String.IsNullOrWhiteSpace(password))
