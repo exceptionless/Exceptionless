@@ -97,12 +97,7 @@ namespace Exceptionless.Api.Controllers {
                 return Unauthorized();
             }
 
-            User user;
-	        if (Settings.Current.EnableActiveDirectoryAuth && !IsAdLoginValid(model.Email, model.Password)) {
-				_logger.Error().Message("Domain login failed for \"{0}\": Invalid Password or Account.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
-				return Unauthorized();
-	        }
-
+	        User user;
 			try
 			{
 				user = await _userRepository.GetByEmailAddressAsync(model.Email);
@@ -124,16 +119,19 @@ namespace Exceptionless.Api.Controllers {
             }
 
 	        if (!Settings.Current.EnableActiveDirectoryAuth) {
-				if (String.IsNullOrEmpty(user.Salt))
-				{
-					_logger.Error().Message("Login failed for \"{0}\": The user has no salt defined.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
-					return Unauthorized();
-				}
+		        if (String.IsNullOrEmpty(user.Salt)) {
+			        _logger.Error().Message("Login failed for \"{0}\": The user has no salt defined.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+			        return Unauthorized();
+		        }
 
-				string encodedPassword = model.Password.ToSaltedHash(user.Salt);
-				if (!String.Equals(encodedPassword, user.Password))
-				{
-					_logger.Error().Message("Login failed for \"{0}\": Invalid Password.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+		        string encodedPassword = model.Password.ToSaltedHash(user.Salt);
+		        if (!String.Equals(encodedPassword, user.Password)) {
+			        _logger.Error().Message("Login failed for \"{0}\": Invalid Password.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+			        return Unauthorized();
+		        }
+	        } else {
+				if (!IsAdLoginValid(model.Email, model.Password)) {
+					_logger.Error().Message("Domain login failed for \"{0}\": Invalid Password or Account.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
 					return Unauthorized();
 				}
 			}
