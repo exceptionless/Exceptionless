@@ -56,6 +56,10 @@ namespace Exceptionless.Core {
 
         public bool EnableElasticsearchTracing { get; private set; }
 
+		public string LdapConnectionString { get; private set; }
+
+		public bool EnableActiveDirectoryAuth { get; internal set; }
+
         public bool EnableSignalR { get; private set; }
 
         public string Version { get; private set; }
@@ -170,6 +174,9 @@ namespace Exceptionless.Core {
 
             RedisConnectionString = GetConnectionString(nameof(RedisConnectionString));
             EnableRedis = GetBool(nameof(EnableRedis), !String.IsNullOrEmpty(RedisConnectionString));
+
+	        LdapConnectionString = GetConnectionString(nameof(LdapConnectionString));
+	        EnableActiveDirectoryAuth = GetBool(nameof(EnableActiveDirectoryAuth), !String.IsNullOrEmpty(LdapConnectionString));
 
             EnableSignalR = GetBool(nameof(EnableSignalR), true);
 

@@ -8,6 +8,7 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
+using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -27,7 +28,8 @@ using OAuth2.Models;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/auth")]
     public class AuthController : ExceptionlessApiController {
-        private readonly IOrganizationRepository _organizationRepository;
+	    private readonly IDomainLoginProvider _domainLoginProvider;
+	    private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly ICacheClient _cacheClient;
@@ -36,8 +38,9 @@ namespace Exceptionless.Api.Controllers {
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger) {
-            _organizationRepository = organizationRepository;
+        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider) {
+	        _domainLoginProvider = domainLoginProvider;
+	        _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
             _cacheClient = new ScopedCacheClient(cacheClient, "auth");
@@ -94,17 +97,20 @@ namespace Exceptionless.Api.Controllers {
                 return Unauthorized();
             }
 
-            User user;
-            try {
-                user = await _userRepository.GetByEmailAddressAsync(model.Email);
-            } catch (Exception ex) {
-                _logger.Error().Exception(ex).Critical().Message("Login failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
-                return Unauthorized();
-            }
+	        User user;
+			try
+			{
+				user = await _userRepository.GetByEmailAddressAsync(model.Email);
+			}
+			catch (Exception ex)
+			{
+				_logger.Error().Exception(ex).Critical().Message("Login failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+				return Unauthorized();
+			}
 
             if (user == null) {
-                _logger.Error().Message("Login failed for \"{0}\": User not found.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
-                return Unauthorized();
+				_logger.Error().Message("Login failed for \"{0}\": User not found.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+				return Unauthorized();
             }
 
             if (!user.IsActive) {
@@ -112,16 +118,23 @@ namespace Exceptionless.Api.Controllers {
                 return Unauthorized();
             }
 
-            if (String.IsNullOrEmpty(user.Salt)) {
-                _logger.Error().Message("Login failed for \"{0}\": The user has no salt defined.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
-                return Unauthorized();
-            }
+	        if (!Settings.Current.EnableActiveDirectoryAuth) {
+		        if (String.IsNullOrEmpty(user.Salt)) {
+			        _logger.Error().Message("Login failed for \"{0}\": The user has no salt defined.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+			        return Unauthorized();
+		        }
 
-            string encodedPassword = model.Password.ToSaltedHash(user.Salt);
-            if (!String.Equals(encodedPassword, user.Password)) {
-                _logger.Error().Message("Login failed for \"{0}\": Invalid Password.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
-                return Unauthorized();
-            }
+		        string encodedPassword = model.Password.ToSaltedHash(user.Salt);
+		        if (!String.Equals(encodedPassword, user.Password)) {
+			        _logger.Error().Message("Login failed for \"{0}\": Invalid Password.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+			        return Unauthorized();
+		        }
+	        } else {
+				if (!IsAdLoginValid(model.Email, model.Password)) {
+					_logger.Error().Message("Domain login failed for \"{0}\": Invalid Password or Account.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+					return Unauthorized();
+				}
+			}
 
             if (!String.IsNullOrEmpty(model.InviteToken))
                 await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
@@ -183,20 +196,27 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
+	        if (Settings.Current.EnableActiveDirectoryAuth && !IsAdLoginValid(model.Email, model.Password)) {
+				_logger.Error().Message("Signup failed (bad AD login) for \"{0}\"", model.Email).Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
+		        return BadRequest("Username and password combination failed to authenticate with Active Directory.");
+	        }
+
             user = new User {
                 IsActive = true,
                 FullName = model.Name,
                 EmailAddress = model.Email,
-                IsEmailAddressVerified = false
+                IsEmailAddressVerified = Settings.Current.EnableActiveDirectoryAuth
             };
             user.CreateVerifyEmailAddressToken();
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
             await AddGlobalAdminRoleIfFirstUserAsync(user);
 
-            user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
-            user.Password = model.Password.ToSaltedHash(user.Salt);
-
+	        if (!Settings.Current.EnableActiveDirectoryAuth) {
+				user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
+				user.Password = model.Password.ToSaltedHash(user.Salt);
+			}
+            
             try {
                 user = await _userRepository.AddAsync(user, true);
             } catch (ValidationException ex) {
@@ -592,6 +612,11 @@ namespace Exceptionless.Api.Controllers {
 
             return token.Id;
         }
+
+	    private bool IsAdLoginValid(string email, string password) {
+			string adUsername = _domainLoginProvider.GetLoginForEmail(email);
+		    return adUsername != null && _domainLoginProvider.IsLoginValid(adUsername, password);
+	    }
 
         private static bool IsValidPassword(string password) {
             if (String.IsNullOrWhiteSpace(password))
