@@ -14,7 +14,7 @@ namespace Exceptionless.Api.Tests.Utility {
 
         private static void RegisterServices(Container container) {
             container.Register<IMailer, NullMailer>();
-			container.Register<IDomainLoginProvider, TestDomainLoginProvider>();
+            container.Register<IDomainLoginProvider, TestDomainLoginProvider>();
         }
 
         public static TService GetInstance<TService>() where TService : class {

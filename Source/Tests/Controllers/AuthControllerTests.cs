@@ -33,32 +33,33 @@ namespace Exceptionless.Api.Tests.Controllers {
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
 
-	    private const string SIGNUP_ENDPOINT = "signup";
-	    private const string LOGIN_ENDPOINT = "login";
+        private const string SIGNUP_ENDPOINT = "signup";
+        private const string LOGIN_ENDPOINT = "login";
 
         public AuthControllerTests(ITestOutputHelper output) {
             _output = output;
+            Settings.Current.EnableAccountCreation = true;
+            Settings.Current.EnableActiveDirectoryAuth = false;
         }
 
-		[Theory]
-		[InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
-		[InlineData(true, "test1.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
-		[InlineData(false, "test1@exceptionless.io", "Password1$")]
-		public async Task CannotSignupWhenAccountCreationDisabledWithNoTokenAsync(bool enableAdAuth, string email, string password) {
+        [Theory]
+        [InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
+        [InlineData(true, "test1.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
+        [InlineData(false, "test1@exceptionless.io", "Password1$")]
+        public async Task CannotSignupWhenAccountCreationDisabledWithNoTokenAsync(bool enableAdAuth, string email, string password) {
             await ResetAsync();
 
             try {
                 _authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
                 Settings.Current.EnableAccountCreation = false;
-				Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
+                Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
 
-				if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername)
-				{
-					TestDomainLoginProvider provider = new TestDomainLoginProvider();
-					email = provider.GetEmailForLogin(email);
-				}
+                if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername) {
+                    TestDomainLoginProvider provider = new TestDomainLoginProvider();
+                    email = provider.GetEmailAddressFromUsername(email);
+                }
 
-				var signupModel = new SignupModel {
+                var signupModel = new SignupModel {
                     Email = email,
                     InviteToken = "",
                     Name = "Test",
@@ -78,22 +79,22 @@ namespace Exceptionless.Api.Tests.Controllers {
             }
         }
 
-		[Theory]
-		[InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
-		[InlineData(true, "test2.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
-		[InlineData(false, "test2@exceptionless.io", "Password1$")]
+        [Theory]
+        [InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
+        [InlineData(true, "test2.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
+        [InlineData(false, "test2@exceptionless.io", "Password1$")]
         public async Task CannotSignupWhenAccountCreationDisabledWithInvalidTokenAsync(bool enableAdAuth, string email, string password) {
             await ResetAsync();
 
             try {
                 _authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
                 Settings.Current.EnableAccountCreation = false;
-	            Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
+                Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
 
-	            if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername) {
-		            TestDomainLoginProvider provider = new TestDomainLoginProvider();
-		            email = provider.GetEmailForLogin(email);
-	            }
+                if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername) {
+                    TestDomainLoginProvider provider = new TestDomainLoginProvider();
+                    email = provider.GetEmailAddressFromUsername(email);
+                }
 
                 var signupModel = new SignupModel {
                     Email = email,
@@ -115,24 +116,23 @@ namespace Exceptionless.Api.Tests.Controllers {
             }
         }
 
-		[Theory]
-		[InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
-		[InlineData(false, "test3@exceptionless.io", "Password1$")]
-		public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAsync(bool enableAdAuth, string email, string password) {
+        [Theory]
+        [InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
+        [InlineData(false, "test3@exceptionless.io", "Password1$")]
+        public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAsync(bool enableAdAuth, string email, string password) {
             await ResetAsync();
 
             try {
                 _authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
                 Settings.Current.EnableAccountCreation = false;
-				Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
+                Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
 
-				if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername)
-				{
-					TestDomainLoginProvider provider = new TestDomainLoginProvider();
-					email = provider.GetEmailForLogin(email);
-				}
+                if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername) {
+                    TestDomainLoginProvider provider = new TestDomainLoginProvider();
+                    email = provider.GetEmailAddressFromUsername(email);
+                }
 
-				var orgs = await _organizationRepository.GetAllAsync();
+                var orgs = await _organizationRepository.GetAllAsync();
                 var organization = orgs.Documents.First();
                 var invite = new Invite {
                     Token = StringExtensions.GetNewToken(),
@@ -168,56 +168,48 @@ namespace Exceptionless.Api.Tests.Controllers {
             }
         }
 
-		[Fact]
-		public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAndInvalidAdAccountAsync()
-		{
-			await ResetAsync();
+        [Fact]
+        public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAndInvalidAdAccountAsync() {
+            await ResetAsync();
 
-			try
-			{
-				_authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
-				Settings.Current.EnableAccountCreation = false;
-				Settings.Current.EnableActiveDirectoryAuth = true;
-				
-				string email = "testuser1@exceptionless.io";
-				string password = "invalidAccount1";
+            try {
+                _authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
+                Settings.Current.EnableAccountCreation = false;
+                Settings.Current.EnableActiveDirectoryAuth = true;
 
-				var orgs = await _organizationRepository.GetAllAsync();
-				var organization = orgs.Documents.First();
-				var invite = new Invite
-				{
-					Token = StringExtensions.GetNewToken(),
-					EmailAddress = email.ToLowerInvariant(),
-					DateAdded = DateTime.UtcNow
-				};
-				organization.Invites.Add(invite);
-				await _organizationRepository.SaveAsync(organization);
-				_client.Refresh(r => r.Force());
+                string email = "testuser1@exceptionless.io";
+                string password = "invalidAccount1";
 
-				Assert.NotNull(organization.GetInvite(invite.Token));
+                var orgs = await _organizationRepository.GetAllAsync();
+                var organization = orgs.Documents.First();
+                var invite = new Invite {
+                    Token = StringExtensions.GetNewToken(),
+                    EmailAddress = email.ToLowerInvariant(),
+                    DateAdded = DateTime.UtcNow
+                };
+                organization.Invites.Add(invite);
+                await _organizationRepository.SaveAsync(organization);
+                _client.Refresh(r => r.Force());
 
-				var signupModel = new SignupModel
-				{
-					Email = email,
-					InviteToken = invite.Token,
-					Name = "Test",
-					Password = password
-				};
-				var actionResult = await _authController.SignupAsync(signupModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				Assert.False(result.IsSuccessStatusCode, "Status Code is success.");
-				Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.StatusCode);
-				var error = GetErrorMessage(result);
-				Assert.Equal("Username and password combination failed to authenticate with Active Directory.", error);
-			}
-			finally
-			{
-				await ResetAsync();
-			}
-		}
+                Assert.NotNull(organization.GetInvite(invite.Token));
 
-		[Fact]
+                var signupModel = new SignupModel {
+                    Email = email,
+                    InviteToken = invite.Token,
+                    Name = "Test",
+                    Password = password
+                };
+                var actionResult = await _authController.SignupAsync(signupModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                Assert.False(result.IsSuccessStatusCode, "Status Code is success.");
+                Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.StatusCode);
+            } finally {
+                await ResetAsync();
+            }
+        }
+
+        [Fact]
         public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAsync() {
             await ResetAsync();
 
@@ -248,80 +240,67 @@ namespace Exceptionless.Api.Tests.Controllers {
             }
         }
 
-		[Fact]
-		public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndValidAdAccountAsync()
-		{
-			await ResetAsync();
+        [Fact]
+        public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndValidAdAccountAsync() {
+            await ResetAsync();
 
-			try
-			{
-				_authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
-				Settings.Current.EnableAccountCreation = true;
-				Settings.Current.EnableActiveDirectoryAuth = true;
+            try {
+                _authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
+                Settings.Current.EnableAccountCreation = true;
+                Settings.Current.EnableActiveDirectoryAuth = true;
 
-				TestDomainLoginProvider provider = new TestDomainLoginProvider();
-				string email = provider.GetEmailForLogin(TestDomainLoginProvider.ValidUsername);
+                TestDomainLoginProvider provider = new TestDomainLoginProvider();
+                string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
 
-				var signupModel = new SignupModel
-				{
-					Email = email,
-					InviteToken = "",
-					Name = "Test",
-					Password = TestDomainLoginProvider.ValidPassword
-				};
-				var actionResult = await _authController.SignupAsync(signupModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				var error = GetResult<HttpError>(result);
-				if (error != null)
-				{
-					_output.WriteLine("Error: {0}", error.Message);
-				}
-				Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
-				Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
-				var tokenResult = GetResult<TokenResult>(result);
-				Assert.NotNull(tokenResult);
-				Assert.False(string.IsNullOrEmpty(tokenResult.Token));
-			}
-			finally
-			{
-				await ResetAsync();
-			}
-		}
+                var signupModel = new SignupModel {
+                    Email = email,
+                    InviteToken = "",
+                    Name = "Test",
+                    Password = TestDomainLoginProvider.ValidPassword
+                };
+                var actionResult = await _authController.SignupAsync(signupModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                var error = GetResult<HttpError>(result);
+                if (error != null) {
+                    _output.WriteLine("Error: {0}", error.Message);
+                }
+                Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
+                Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
+                var tokenResult = GetResult<TokenResult>(result);
+                Assert.NotNull(tokenResult);
+                Assert.False(string.IsNullOrEmpty(tokenResult.Token));
+            } finally {
+                await ResetAsync();
+            }
+        }
 
-		[Fact]
-		public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndInvalidAdAccountAsync()
-		{
-			await ResetAsync();
+        [Fact]
+        public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndInvalidAdAccountAsync() {
+            await ResetAsync();
 
-			try
-			{
-				_authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
-				Settings.Current.EnableAccountCreation = true;
-				Settings.Current.EnableActiveDirectoryAuth = true;
+            try {
+                _authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
+                Settings.Current.EnableAccountCreation = true;
+                Settings.Current.EnableActiveDirectoryAuth = true;
 
-				var signupModel = new SignupModel
-				{
-					Email = "testuser2@exceptionless.io",
-					InviteToken = "",
-					Name = "Test",
-					Password = "literallydoesntmatter"
-				};
-				var actionResult = await _authController.SignupAsync(signupModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				Assert.False(result.IsSuccessStatusCode, "Status Code is success.");
-				Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.StatusCode);
-				var error = GetErrorMessage(result);
-				Assert.Equal("Username and password combination failed to authenticate with Active Directory.", error);
-			}
-			finally
-			{
-				await ResetAsync();
-			}
-		}
+                var signupModel = new SignupModel {
+                    Email = "testuser2@exceptionless.io",
+                    InviteToken = "",
+                    Name = "Test",
+                    Password = "literallydoesntmatter"
+                };
+                var actionResult = await _authController.SignupAsync(signupModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                Assert.False(result.IsSuccessStatusCode, "Status Code is success.");
+                Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.StatusCode);
+            } finally {
+                await ResetAsync();
+            }
+        }
 
-		[Fact]
+        [Fact]
         public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAsync() {
             await ResetAsync();
 
@@ -366,430 +345,374 @@ namespace Exceptionless.Api.Tests.Controllers {
             }
         }
 
-		[Fact]
-		public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndValidAdAccountAsync()
-		{
-			await ResetAsync();
+        [Fact]
+        public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndValidAdAccountAsync() {
+            await ResetAsync();
 
-			try
-			{
-				_authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
-				Settings.Current.EnableAccountCreation = true;
-				Settings.Current.EnableActiveDirectoryAuth = true;
+            try {
+                _authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
+                Settings.Current.EnableAccountCreation = true;
+                Settings.Current.EnableActiveDirectoryAuth = true;
 
-				TestDomainLoginProvider provider = new TestDomainLoginProvider();
-				string email = provider.GetEmailForLogin(TestDomainLoginProvider.ValidUsername);
+                TestDomainLoginProvider provider = new TestDomainLoginProvider();
+                string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
 
-				var orgs = await _organizationRepository.GetAllAsync();
-				var organization = orgs.Documents.First();
-				var invite = new Invite
-				{
-					Token = StringExtensions.GetNewToken(),
-					EmailAddress = email.ToLowerInvariant(),
-					DateAdded = DateTime.UtcNow
-				};
-				organization.Invites.Add(invite);
-				await _organizationRepository.SaveAsync(organization);
-				await _client.RefreshAsync(r => r.Force());
+                var orgs = await _organizationRepository.GetAllAsync();
+                var organization = orgs.Documents.First();
+                var invite = new Invite {
+                    Token = StringExtensions.GetNewToken(),
+                    EmailAddress = email.ToLowerInvariant(),
+                    DateAdded = DateTime.UtcNow
+                };
+                organization.Invites.Add(invite);
+                await _organizationRepository.SaveAsync(organization);
+                await _client.RefreshAsync(r => r.Force());
 
-				Assert.NotNull(organization.GetInvite(invite.Token));
+                Assert.NotNull(organization.GetInvite(invite.Token));
 
-				var signupModel = new SignupModel
-				{
-					Email = email,
-					InviteToken = invite.Token,
-					Name = "Test",
-					Password = TestDomainLoginProvider.ValidPassword
-				};
-				var actionResult = await _authController.SignupAsync(signupModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				var error = GetResult<HttpError>(result);
-				if (error != null)
-				{
-					_output.WriteLine("Error: {0}", error.Message);
-				}
-				Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
-				Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
-				var tokenResult = GetResult<TokenResult>(result);
-				Assert.NotNull(tokenResult);
-				Assert.False(string.IsNullOrEmpty(tokenResult.Token));
-			}
-			finally
-			{
-				await ResetAsync();
-			}
-		}
+                var signupModel = new SignupModel {
+                    Email = email,
+                    InviteToken = invite.Token,
+                    Name = "Test",
+                    Password = TestDomainLoginProvider.ValidPassword
+                };
+                var actionResult = await _authController.SignupAsync(signupModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                var error = GetResult<HttpError>(result);
+                if (error != null) {
+                    _output.WriteLine("Error: {0}", error.Message);
+                }
+                Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
+                Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
+                var tokenResult = GetResult<TokenResult>(result);
+                Assert.NotNull(tokenResult);
+                Assert.False(string.IsNullOrEmpty(tokenResult.Token));
+            } finally {
+                await ResetAsync();
+            }
+        }
 
-		[Fact]
-		public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndInvalidAdAccountAsync()
-		{
-			await ResetAsync();
+        [Fact]
+        public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndInvalidAdAccountAsync() {
+            await ResetAsync();
 
-			try
-			{
-				_authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
-				Settings.Current.EnableAccountCreation = true;
-				Settings.Current.EnableActiveDirectoryAuth = true;
+            try {
+                _authController.Request = CreateRequestMessage(SIGNUP_ENDPOINT, null, false, false);
+                Settings.Current.EnableAccountCreation = true;
+                Settings.Current.EnableActiveDirectoryAuth = true;
 
-				string email = "testuser4@exceptionless.io";
+                string email = "testuser4@exceptionless.io";
 
-				var orgs = await _organizationRepository.GetAllAsync();
-				var organization = orgs.Documents.First();
-				var invite = new Invite
-				{
-					Token = StringExtensions.GetNewToken(),
-					EmailAddress = email.ToLowerInvariant(),
-					DateAdded = DateTime.UtcNow
-				};
-				organization.Invites.Add(invite);
-				await _organizationRepository.SaveAsync(organization);
-				await _client.RefreshAsync(r => r.Force());
+                var orgs = await _organizationRepository.GetAllAsync();
+                var organization = orgs.Documents.First();
+                var invite = new Invite {
+                    Token = StringExtensions.GetNewToken(),
+                    EmailAddress = email.ToLowerInvariant(),
+                    DateAdded = DateTime.UtcNow
+                };
+                organization.Invites.Add(invite);
+                await _organizationRepository.SaveAsync(organization);
+                await _client.RefreshAsync(r => r.Force());
 
-				Assert.NotNull(organization.GetInvite(invite.Token));
+                Assert.NotNull(organization.GetInvite(invite.Token));
 
-				var signupModel = new SignupModel
-				{
-					Email = email,
-					InviteToken = invite.Token,
-					Name = "Test",
-					Password = TestDomainLoginProvider.ValidPassword
-				};
-				var actionResult = await _authController.SignupAsync(signupModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				Assert.False(result.IsSuccessStatusCode, "Status Code is success.");
-				Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.StatusCode);
-				var error = GetErrorMessage(result);
-				Assert.Equal("Username and password combination failed to authenticate with Active Directory.", error);
-			}
-			finally
-			{
-				await ResetAsync();
-			}
-		}
+                var signupModel = new SignupModel {
+                    Email = email,
+                    InviteToken = invite.Token,
+                    Name = "Test",
+                    Password = TestDomainLoginProvider.ValidPassword
+                };
+                var actionResult = await _authController.SignupAsync(signupModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                Assert.False(result.IsSuccessStatusCode, "Status Code is success.");
+                Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.StatusCode);
+            } finally {
+                await ResetAsync();
+            }
+        }
 
-		[Fact]
-	    public async Task LoginValidAsync() {
-		    await ResetAsync();
+        [Fact]
+        public async Task LoginValidAsync() {
+            await ResetAsync();
 
-		    try {
-				_authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
-			    Settings.Current.EnableActiveDirectoryAuth = false;
+            try {
+                _authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
+                Settings.Current.EnableActiveDirectoryAuth = false;
 
-				// add user
-			    const string email = "test6@exceptionless.io";
-			    const string password = "Test6 password";
-			    const string salt = "1234567890123456";
-			    string passwordHash = password.ToSaltedHash(salt);
-				var user = new User {
-				    EmailAddress = email,
-				    Password = passwordHash,
-				    Salt = salt,
-					IsEmailAddressVerified = true,
-					FullName = "User 6"
-			    };
-			    await _userRepository.AddAsync(user);
+                // add user
+                const string email = "test6@exceptionless.io";
+                const string password = "Test6 password";
+                const string salt = "1234567890123456";
+                string passwordHash = password.ToSaltedHash(salt);
+                var user = new User {
+                    EmailAddress = email,
+                    Password = passwordHash,
+                    Salt = salt,
+                    IsEmailAddressVerified = true,
+                    FullName = "User 6"
+                };
+                await _userRepository.AddAsync(user);
 
-				await _client.RefreshAsync(r => r.Force());
+                await _client.RefreshAsync(r => r.Force());
 
-				// create model
-				var loginModel = new LoginModel {
-				    Email = email,
-				    Password = password
-			    };
+                // create model
+                var loginModel = new LoginModel {
+                    Email = email,
+                    Password = password
+                };
 
-				var actionResult = await _authController.LoginAsync(loginModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				var error = GetResult<HttpError>(result);
-				if (error != null)
-				{
-					_output.WriteLine("Error: {0}", error.Message);
-				}
-				Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
-				Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
-				var tokenResult = GetResult<TokenResult>(result);
-				Assert.NotNull(tokenResult);
-				Assert.False(string.IsNullOrEmpty(tokenResult.Token));
-			} finally {
-			    await ResetAsync();
-		    }
-	    }
+                var actionResult = await _authController.LoginAsync(loginModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                var error = GetResult<HttpError>(result);
+                if (error != null) {
+                    _output.WriteLine("Error: {0}", error.Message);
+                }
+                Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
+                Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
+                var tokenResult = GetResult<TokenResult>(result);
+                Assert.NotNull(tokenResult);
+                Assert.False(string.IsNullOrEmpty(tokenResult.Token));
+            } finally {
+                await ResetAsync();
+            }
+        }
 
-		[Fact]
-		public async Task LoginInvalidPasswordAsync()
-		{
-			await ResetAsync();
+        [Fact]
+        public async Task LoginInvalidPasswordAsync() {
+            await ResetAsync();
 
-			try
-			{
-				_authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
-				Settings.Current.EnableActiveDirectoryAuth = false;
+            try {
+                _authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
+                Settings.Current.EnableActiveDirectoryAuth = false;
 
-				// add user
-				const string email = "test7@exceptionless.io";
-				const string password = "Test7 password";
-				const string salt = "1234567890123456";
-				string passwordHash = password.ToSaltedHash(salt);
-				var user = new User
-				{
-					EmailAddress = email,
-					Password = passwordHash,
-					Salt = salt,
-					IsEmailAddressVerified = true,
-					FullName = "User 7"
-				};
-				await _userRepository.AddAsync(user);
+                // add user
+                const string email = "test7@exceptionless.io";
+                const string password = "Test7 password";
+                const string salt = "1234567890123456";
+                string passwordHash = password.ToSaltedHash(salt);
+                var user = new User {
+                    EmailAddress = email,
+                    Password = passwordHash,
+                    Salt = salt,
+                    IsEmailAddressVerified = true,
+                    FullName = "User 7"
+                };
+                await _userRepository.AddAsync(user);
 
-				await _client.RefreshAsync(r => r.Force());
+                await _client.RefreshAsync(r => r.Force());
 
-				// create model
-				var loginModel = new LoginModel
-				{
-					Email = email,
-					Password = "This password ain't right"
-				};
+                // create model
+                var loginModel = new LoginModel {
+                    Email = email,
+                    Password = "This password ain't right"
+                };
 
-				var actionResult = await _authController.LoginAsync(loginModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				var error = GetResult<HttpError>(result);
-				if (error != null)
-				{
-					_output.WriteLine("Error: {0}", error.Message);
-				}
-				Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
-			}
-			finally
-			{
-				await ResetAsync();
-			}
-		}
+                var actionResult = await _authController.LoginAsync(loginModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                var error = GetResult<HttpError>(result);
+                if (error != null) {
+                    _output.WriteLine("Error: {0}", error.Message);
+                }
+                Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
+            } finally {
+                await ResetAsync();
+            }
+        }
 
-		[Fact]
-		public async Task LoginNoSuchUserAsync()
-		{
-			await ResetAsync();
+        [Fact]
+        public async Task LoginNoSuchUserAsync() {
+            await ResetAsync();
 
-			try
-			{
-				_authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
-				Settings.Current.EnableActiveDirectoryAuth = false;
+            try {
+                _authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
+                Settings.Current.EnableActiveDirectoryAuth = false;
 
-				// add user
-				const string email = "test8@exceptionless.io";
-				const string password = "Test8 password";
-				const string salt = "1234567890123456";
-				string passwordHash = password.ToSaltedHash(salt);
-				var user = new User
-				{
-					EmailAddress = email,
-					Password = passwordHash,
-					Salt = salt,
-					IsEmailAddressVerified = true,
-					FullName = "User 8"
-				};
-				await _userRepository.AddAsync(user);
+                // add user
+                const string email = "test8@exceptionless.io";
+                const string password = "Test8 password";
+                const string salt = "1234567890123456";
+                string passwordHash = password.ToSaltedHash(salt);
+                var user = new User {
+                    EmailAddress = email,
+                    Password = passwordHash,
+                    Salt = salt,
+                    IsEmailAddressVerified = true,
+                    FullName = "User 8"
+                };
+                await _userRepository.AddAsync(user);
 
-				await _client.RefreshAsync(r => r.Force());
+                await _client.RefreshAsync(r => r.Force());
 
-				// create model
-				var loginModel = new LoginModel
-				{
-					Email = "Thisguydoesntexist@exceptionless.io",
-					Password = "This password ain't right"
-				};
+                // create model
+                var loginModel = new LoginModel {
+                    Email = "Thisguydoesntexist@exceptionless.io",
+                    Password = "This password ain't right"
+                };
 
-				var actionResult = await _authController.LoginAsync(loginModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				var error = GetResult<HttpError>(result);
-				if (error != null)
-				{
-					_output.WriteLine("Error: {0}", error.Message);
-				}
-				Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
-			}
-			finally
-			{
-				await ResetAsync();
-			}
-		}
+                var actionResult = await _authController.LoginAsync(loginModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                var error = GetResult<HttpError>(result);
+                if (error != null) {
+                    _output.WriteLine("Error: {0}", error.Message);
+                }
+                Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
+            } finally {
+                await ResetAsync();
+            }
+        }
 
-		[Fact]
-		public async Task LoginValidExistingActiveDirectoryAsync()
-		{
-			await ResetAsync();
+        [Fact]
+        public async Task LoginValidExistingActiveDirectoryAsync() {
+            await ResetAsync();
 
-			try
-			{
-				_authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
-				Settings.Current.EnableActiveDirectoryAuth = true;
+            try {
+                _authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
+                Settings.Current.EnableActiveDirectoryAuth = true;
 
-				// add user
-				var provider = new TestDomainLoginProvider();
-				string email = provider.GetEmailForLogin(TestDomainLoginProvider.ValidUsername);
-				var user = new User
-				{
-					EmailAddress = email,
-					IsEmailAddressVerified = true,
-					FullName = "User 6"
-				};
-				await _userRepository.AddAsync(user);
+                // add user
+                var provider = new TestDomainLoginProvider();
+                string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
+                var user = new User {
+                    EmailAddress = email,
+                    IsEmailAddressVerified = true,
+                    FullName = "User 6"
+                };
+                await _userRepository.AddAsync(user);
 
-				await _client.RefreshAsync(r => r.Force());
+                await _client.RefreshAsync(r => r.Force());
 
-				// create model
-				var loginModel = new LoginModel
-				{
-					Email = email,
-					Password = TestDomainLoginProvider.ValidPassword
-				};
+                // create model
+                var loginModel = new LoginModel {
+                    Email = email,
+                    Password = TestDomainLoginProvider.ValidPassword
+                };
 
-				var actionResult = await _authController.LoginAsync(loginModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				var error = GetResult<HttpError>(result);
-				if (error != null)
-				{
-					_output.WriteLine("Error: {0}", error.Message);
-				}
-				Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
-				Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
-				var tokenResult = GetResult<TokenResult>(result);
-				Assert.NotNull(tokenResult);
-				Assert.False(string.IsNullOrEmpty(tokenResult.Token));
-			}
-			finally
-			{
-				await ResetAsync();
-			}
-		}
+                var actionResult = await _authController.LoginAsync(loginModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                var error = GetResult<HttpError>(result);
+                if (error != null) {
+                    _output.WriteLine("Error: {0}", error.Message);
+                }
+                Assert.True(result.IsSuccessStatusCode, "Status Code is failure.");
+                Assert.Equal(System.Net.HttpStatusCode.OK, result.StatusCode);
+                var tokenResult = GetResult<TokenResult>(result);
+                Assert.NotNull(tokenResult);
+                Assert.False(string.IsNullOrEmpty(tokenResult.Token));
+            } finally {
+                await ResetAsync();
+            }
+        }
 
-		[Fact]
-		public async Task LoginValidNonExistantActiveDirectoryAsync()
-		{
-			await ResetAsync();
+        [Fact]
+        public async Task LoginValidNonExistantActiveDirectoryAsync() {
+            await ResetAsync();
 
-			try
-			{
-				_authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
-				Settings.Current.EnableActiveDirectoryAuth = true;
+            try {
+                _authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
+                Settings.Current.EnableActiveDirectoryAuth = true;
 
-				// create model
-				var provider = new TestDomainLoginProvider();
-				string email = provider.GetEmailForLogin(TestDomainLoginProvider.ValidUsername);
-				var loginModel = new LoginModel
-				{
-					Email = email,
-					Password = TestDomainLoginProvider.ValidPassword
-				};
+                // create model
+                var provider = new TestDomainLoginProvider();
+                string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
+                var loginModel = new LoginModel {
+                    Email = email,
+                    Password = TestDomainLoginProvider.ValidPassword
+                };
 
-				var actionResult = await _authController.LoginAsync(loginModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				var error = GetResult<HttpError>(result);
-				if (error != null)
-				{
-					_output.WriteLine("Error: {0}", error.Message);
-				}
-				Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
-			}
-			finally
-			{
-				await ResetAsync();
-			}
-		}
+                var actionResult = await _authController.LoginAsync(loginModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                var error = GetResult<HttpError>(result);
+                if (error != null) {
+                    _output.WriteLine("Error: {0}", error.Message);
+                }
+                Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
+            } finally {
+                await ResetAsync();
+            }
+        }
 
-		[Fact]
-		public async Task LoginInvalidNonExistantActiveDirectoryAsync()
-		{
-			await ResetAsync();
+        [Fact]
+        public async Task LoginInvalidNonExistantActiveDirectoryAsync() {
+            await ResetAsync();
 
-			try
-			{
-				_authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
-				Settings.Current.EnableActiveDirectoryAuth = true;
+            try {
+                _authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
+                Settings.Current.EnableActiveDirectoryAuth = true;
 
-				// create model
-				var loginModel = new LoginModel
-				{
-					Email = TestDomainLoginProvider.ValidUsername + ".au",
-					Password = "Totallywrongpassword1234"
-				};
+                // create model
+                var loginModel = new LoginModel {
+                    Email = TestDomainLoginProvider.ValidUsername + ".au",
+                    Password = "Totallywrongpassword1234"
+                };
 
-				var actionResult = await _authController.LoginAsync(loginModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				var error = GetResult<HttpError>(result);
-				if (error != null)
-				{
-					_output.WriteLine("Error: {0}", error.Message);
-				}
-				Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
+                var actionResult = await _authController.LoginAsync(loginModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                var error = GetResult<HttpError>(result);
+                if (error != null) {
+                    _output.WriteLine("Error: {0}", error.Message);
+                }
+                Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
 
-				await _client.RefreshAsync(r => r.Force());
+                await _client.RefreshAsync(r => r.Force());
 
-				// Verify that a user account was not added
-				var provider = new TestDomainLoginProvider();
-				string email = provider.GetEmailForLogin(TestDomainLoginProvider.ValidUsername);
-				var user = await _userRepository.GetByEmailAddressAsync(email + ".au");
-				Assert.Null(user);
-			}
-			finally
-			{
-				await ResetAsync();
-			}
-		}
+                // Verify that a user account was not added
+                var provider = new TestDomainLoginProvider();
+                string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
+                var user = await _userRepository.GetByEmailAddressAsync(email + ".au");
+                Assert.Null(user);
+            } finally {
+                await ResetAsync();
+            }
+        }
 
-		[Fact]
-		public async Task LoginInvalidExistingActiveDirectoryAsync()
-		{
-			await ResetAsync();
+        [Fact]
+        public async Task LoginInvalidExistingActiveDirectoryAsync() {
+            await ResetAsync();
 
-			try
-			{
-				_authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
-				Settings.Current.EnableActiveDirectoryAuth = true;
+            try {
+                _authController.Request = CreateRequestMessage(LOGIN_ENDPOINT, null, false, false);
+                Settings.Current.EnableActiveDirectoryAuth = true;
 
-				// add user
-				var provider = new TestDomainLoginProvider();
-				string email = provider.GetEmailForLogin(TestDomainLoginProvider.ValidUsername);
-				var user = new User
-				{
-					EmailAddress = email,
-					IsEmailAddressVerified = true,
-					FullName = "User 6"
-				};
-				await _userRepository.AddAsync(user);
+                // add user
+                var provider = new TestDomainLoginProvider();
+                string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
+                var user = new User {
+                    EmailAddress = email,
+                    IsEmailAddressVerified = true,
+                    FullName = "User 6"
+                };
+                await _userRepository.AddAsync(user);
 
-				await _client.RefreshAsync(r => r.Force());
+                await _client.RefreshAsync(r => r.Force());
 
-				// create model
-				var loginModel = new LoginModel
-				{
-					Email = TestDomainLoginProvider.ValidUsername,
-					Password = "Totallywrongpassword1234"
-				};
+                // create model
+                var loginModel = new LoginModel {
+                    Email = TestDomainLoginProvider.ValidUsername,
+                    Password = "Totallywrongpassword1234"
+                };
 
-				var actionResult = await _authController.LoginAsync(loginModel);
-				var cancellation = new CancellationToken();
-				var result = await actionResult.ExecuteAsync(cancellation);
-				var error = GetResult<HttpError>(result);
-				if (error != null)
-				{
-					_output.WriteLine("Error: {0}", error.Message);
-				}
-				Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
-			}
-			finally
-			{
-				await ResetAsync();
-			}
-		}
+                var actionResult = await _authController.LoginAsync(loginModel);
+                var cancellation = new CancellationToken();
+                var result = await actionResult.ExecuteAsync(cancellation);
+                var error = GetResult<HttpError>(result);
+                if (error != null) {
+                    _output.WriteLine("Error: {0}", error.Message);
+                }
+                Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
+            } finally {
+                await ResetAsync();
+            }
+        }
 
-		private HttpRequestMessage CreateRequestMessage(string endpoint, ClaimsPrincipal user, bool isCompressed, bool isJson, string charset = "utf-8") {
+        private HttpRequestMessage CreateRequestMessage(string endpoint, ClaimsPrincipal user, bool isCompressed, bool isJson, string charset = "utf-8") {
             var request = new HttpRequestMessage();
 
             var context = new OwinContext();
