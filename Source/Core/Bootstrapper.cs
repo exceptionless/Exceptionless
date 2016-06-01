@@ -159,7 +159,7 @@ namespace Exceptionless.Core {
 
             container.RegisterSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
-			container.Register<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
+            container.Register<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
             
             container.RegisterSingleton<IMapper>(() => {
                 var profiles = container.GetAllInstances<Profile>();

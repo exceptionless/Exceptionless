@@ -23,7 +23,8 @@
     <ToolsOptionsCategory name="TextEditor">
       <ToolsOptionsSubCategory name="CSharp-Specific">
         <PropertyValue name="AutoComment">1</PropertyValue>
-        <PropertyValue name="ClosedFileDiagnostics">1</PropertyValue>
+        <PropertyValue name="CSharpClosedFileDiagnostics">-1</PropertyValue>
+        <PropertyValue name="ClosedFileDiagnostics">-1</PropertyValue>
         <PropertyValue name="DisplayLineSeparators">0</PropertyValue>
         <PropertyValue name="EnableHighlightRelatedKeywords">1</PropertyValue>
         <PropertyValue name="ExtractMethod_AllowMovingDeclaration">0</PropertyValue>
