@@ -1,5 +1,8 @@
 ﻿@using System
+@using System.Linq
+@using Exceptionless
 @using Exceptionless.Core.Extensions
+@using Exceptionless.Core.Models.Data
 @inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.EventNotificationModel>
 @if (Model.IsNew) {
 <text>
@@ -34,6 +37,49 @@ Source:
 Source:
 @Model.Url
 </text>
+}
+@if (Model.Event.Tags != null && Model.Event.Tags.Any()) {
+<text>
+
+Tags:
+@String.Join(", ", Model.Event.Tags)
+</text>
+}
+@{
+	UserDescription userDescription = Model.Event.GetUserDescription();
+	UserInfo userInfo = Model.Event.GetUserIdentity();
+}
+@if (userInfo != null) {
+	if (!String.IsNullOrEmpty(userInfo.Name)) {
+<text>
+
+User's Name:
+@userInfo.Name
+</text>
+	}
+	if (!String.IsNullOrEmpty(userInfo.Identity)) {
+<text>
+
+User's Identity:
+@userInfo.Identity
+</text>
+	}
+}
+@if (userDescription != null) {
+	if (!String.IsNullOrEmpty(userDescription.EmailAddress)) {
+<text>
+
+User's Email:
+@userDescription.EmailAddress
+</text>
+	}
+	if (!String.IsNullOrEmpty(userDescription.Description)) {
+<text>
+
+User's Description:
+@userDescription.Description
+</text>
+	}
 }
 
 View the event:
