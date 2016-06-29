@@ -175,8 +175,8 @@ namespace Exceptionless.Core.Repositories {
             double monthlyBlocked = await Cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organizationId), org.GetCurrentMonthlyBlocked()).AnyContext();
             bool overLimit = org.IsSuspended || (applyHourlyLimit && hourlyTotal > org.GetHourlyEventLimit()) || (monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus();
 
-            double monthlyTooBig = await Cache.IncrementIfAsync(GetHourlyTooBigCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig()).AnyContext();
-            double hourlyTooBig = await Cache.IncrementIfAsync(GetMonthlyTooBigCacheKey(organizationId), 1, TimeSpan.FromDays(32), tooBig, (uint)org.GetCurrentMonthlyTooBig()).AnyContext();
+            double hourlyTooBig = await Cache.IncrementIfAsync(GetHourlyTooBigCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig()).AnyContext();
+            double monthlyTooBig = await Cache.IncrementIfAsync(GetMonthlyTooBigCacheKey(organizationId), 1, TimeSpan.FromDays(32), tooBig, (uint)org.GetCurrentMonthlyTooBig()).AnyContext();
 
             double totalBlocked = count;
 
