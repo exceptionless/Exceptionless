@@ -1,6 +1,7 @@
 ﻿using System;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using System.Linq;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     public abstract class EventMapperBase<T> where T : class {
@@ -10,6 +11,10 @@ namespace Exceptionless.Core.Plugins.EventParser {
                 MapKnownDataTypes(ev, source);
 
             return ev;
+        }
+
+        public PersistentEvent[] Map(T[] sources) {
+            return sources.Select(source => Map(source)).ToArray();
         }
 
         protected virtual PersistentEvent CreateEvent(T source) {

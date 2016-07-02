@@ -13,12 +13,28 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
             if (userAgent != "raygun" && apiVersion != 1)
                 return null;
             
-            // TODO: We need to support batch here.
             var events = new List<PersistentEvent>();
-            RaygunModel model;
-            if (input.TryFromJson(out model))
-                events.Add(_mapper.Map(model));
-            
+            switch (input.GetJsonType()) {
+                case JsonType.Object: {
+                        RaygunModel model;
+                        if (input.TryFromJson(out model)) {
+                            PersistentEvent ev = _mapper.Map(model);
+                            events.Add(ev);
+                        }
+                        
+                        break;
+                    }
+                case JsonType.Array: {
+                        RaygunModel[] models;
+                        if (input.TryFromJson(out models)) {
+                            PersistentEvent[] parsedEvents = _mapper.Map(models);
+                            events.AddRange(parsedEvents);
+                        }
+
+                        break;
+                    }
+            }
+
             return events.Count > 0 ? events : null;
         }
     }
