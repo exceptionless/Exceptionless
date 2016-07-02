@@ -142,7 +142,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("notifications/system")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public async Task<IHttpActionResult> PostSystemNotificationAsync([NakedBody]string message) {
-            if (String.IsNullOrEmpty(message))
+            if (String.IsNullOrWhiteSpace(message))
                 return NotFound();
 
             var notification = new SystemNotification { Date = DateTimeOffset.UtcNow, Message = message };

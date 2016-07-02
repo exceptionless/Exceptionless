@@ -8,7 +8,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventParser;
-using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
@@ -51,7 +50,14 @@ namespace Exceptionless.Core.Jobs {
             }
 
             bool isInternalProject = eventPostInfo.ProjectId == Settings.Current.InternalProjectId;
-            _logger.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPostInfo.ProjectId, eventPostInfo.IpAddress, eventPostInfo.ApiVersion, eventPostInfo.UserAgent).WriteIf(!isInternalProject);
+            _logger.Info()
+                .Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPostInfo.ProjectId, eventPostInfo.IpAddress, eventPostInfo.ApiVersion, eventPostInfo.UserAgent)
+                .Property("ApiVersion", eventPostInfo.ApiVersion)
+                .Property("IpAddress", eventPostInfo.IpAddress)
+                .Property("Client", eventPostInfo.UserAgent)
+                .Property("Project", eventPostInfo.ProjectId)
+                .Property("@stack", "event-posted")
+                .WriteIf(!isInternalProject);
 
             var project = await _projectRepository.GetByIdAsync(eventPostInfo.ProjectId, true).AnyContext();
             if (project == null) {
@@ -92,7 +98,13 @@ namespace Exceptionless.Core.Jobs {
             var eventsToRetry = new List<PersistentEvent>();
             try {
                 var results = await _eventPipeline.RunAsync(events, eventPostInfo).AnyContext();
-                _logger.Info().Message(() => $"Ran {results.Count} events through the pipeline: id={queueEntry.Id} project={eventPostInfo.ProjectId} success={results.Count(r => r.IsProcessed)} error={results.Count(r => r.HasError)}").WriteIf(!isInternalProject);
+                _logger.Info()
+                    .Message(() => $"Ran {results.Count} events through the pipeline: id={queueEntry.Id} project={eventPostInfo.ProjectId} success={results.Count(r => r.IsProcessed)} error={results.Count(r => r.HasError)}")
+                    .Property("@value", results.Count)
+                    .Property("@stack", "event-processed")
+                    .Property("Project", eventPostInfo.ProjectId)
+                    .WriteIf(!isInternalProject);
+
                 foreach (var eventContext in results) {
                     if (eventContext.IsCancelled)
                         continue;
@@ -192,6 +204,14 @@ namespace Exceptionless.Core.Jobs {
             }
 
             return events;
+        }
+        
+        protected override void LogProcessingQueueEntry(IQueueEntry<EventPost> queueEntry) {
+            _logger.Debug().Message(() => $"Processing {_queueEntryName} queue entry ({queueEntry.Id}).").Write();
+        }
+
+        protected override void LogAutoCompletedQueueEntry(IQueueEntry<EventPost> queueEntry) {
+            _logger.Debug().Message(() => $"Auto completed {_queueEntryName} queue entry ({queueEntry.Id}).").Write();
         }
     }
 }

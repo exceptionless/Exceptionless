@@ -16,8 +16,6 @@ init:
   - git config --global core.autocrlf true
   - git config --global user.email "builds@exceptionless.io"
   - git config --global user.name "AppVeyor CI"
-
-install:
   - ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
 
 assembly_info:
@@ -67,7 +65,7 @@ notifications:
   - provider: Slack
     channel: '#notifications'
     auth_token:
-      secure: PigIGGo7UUDwdb0KGM/s7OfpAng/OMJx7q33jKfzudFBiXi1EBEd0DRmkbCc7CiX
+      secure: GniMpFE62HprSyQNQoej/fBOAdbQe8EMWAMMNXX0s2JxeNePjemiO1bCf4eYweE4p70mm0sCwMjeEP/Ps9aTMA==
     on_build_success: true
     on_build_failure: true
     on_build_status_changed: false

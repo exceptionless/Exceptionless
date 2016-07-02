@@ -6,6 +6,8 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
+using Exceptionless.Plugins.Default;
+using Exceptionless.Insulation.Redis;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
@@ -44,6 +46,9 @@ namespace Exceptionless.Insulation {
                 else
                     container.RegisterSingleton<ICacheClient, RedisHybridCacheClient>();
 
+                if (Settings.Current.EnableSignalR)
+                    container.RegisterSingleton<IConnectionMapping, RedisConnectionMapping>();
+
                 container.RegisterSingleton<IQueue<EventPost>>(() => new RedisQueue<EventPost>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventPost>(), behaviors: container.GetAllInstances<IQueueBehavior<EventPost>>()));
                 container.RegisterSingleton<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventUserDescription>(), behaviors: container.GetAllInstances<IQueueBehavior<EventUserDescription>>()));
                 container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new RedisQueue<EventNotificationWorkItem>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventNotificationWorkItem>(), behaviors: container.GetAllInstances<IQueueBehavior<EventNotificationWorkItem>>()));
@@ -65,9 +70,11 @@ namespace Exceptionless.Insulation {
             container.RegisterSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
             container.RegisterSingleton<ExceptionlessClient>(() => client);
 
+            client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
             client.Configuration.SetVersion(Settings.Current.Version);
             if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
                 client.Configuration.Enabled = false;
+
             client.Register();
             container.AddBootstrapper<HttpConfiguration>(config => client.RegisterWebApi(config));
             client.Configuration.UseInMemoryStorage();

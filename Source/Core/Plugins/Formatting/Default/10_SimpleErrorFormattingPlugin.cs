@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("StackTrace"))
                 return null;
             
-            var data = new Dictionary<string, object> { { "Title", stack.Title } };
+            var data = new Dictionary<string, object>();
             string value;
             if (stack.SignatureInfo.TryGetValue("ExceptionType", out value)) {
                 data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
@@ -93,7 +93,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 BaseUrl = Settings.Current.BaseURL,
                 Subject = String.Concat(notificationType, ": ", error.Message.Truncate(120)),
                 Message = error.Message,
-                Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null
+                Url = requestInfo?.GetFullPath(true, true, true)
             };
 
             return _emailGenerator.GenerateMessage(mailerModel, "NoticeError").ToMailMessage();

@@ -9,6 +9,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Extensions;
 using Foundatio.Caching;
 using Foundatio.Elasticsearch.Repositories;
@@ -174,8 +175,8 @@ namespace Exceptionless.Core.Repositories {
             double monthlyBlocked = await Cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organizationId), org.GetCurrentMonthlyBlocked()).AnyContext();
             bool overLimit = org.IsSuspended || (applyHourlyLimit && hourlyTotal > org.GetHourlyEventLimit()) || (monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus();
 
-            double monthlyTooBig = await Cache.IncrementIfAsync(GetHourlyTooBigCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig()).AnyContext();
-            double hourlyTooBig = await Cache.IncrementIfAsync(GetMonthlyTooBigCacheKey(organizationId), 1, TimeSpan.FromDays(32), tooBig, (uint)org.GetCurrentMonthlyTooBig()).AnyContext();
+            double hourlyTooBig = await Cache.IncrementIfAsync(GetHourlyTooBigCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig()).AnyContext();
+            double monthlyTooBig = await Cache.IncrementIfAsync(GetMonthlyTooBigCacheKey(organizationId), 1, TimeSpan.FromDays(32), tooBig, (uint)org.GetCurrentMonthlyTooBig()).AnyContext();
 
             double totalBlocked = count;
 
@@ -209,13 +210,20 @@ namespace Exceptionless.Core.Repositories {
                 shouldSaveUsage = true;
 
             if (shouldSaveUsage) {
-                org = await GetByIdAsync(organizationId, false).AnyContext();
-                org.SetMonthlyUsage(monthlyTotal, monthlyBlocked, monthlyTooBig);
-                if (hourlyTotal > org.GetHourlyEventLimit())
-                    org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
+                try {
+                    org = await GetByIdAsync(organizationId, false).AnyContext();
+                    org.SetMonthlyUsage(monthlyTotal, monthlyBlocked, monthlyTooBig);
+                    if (hourlyTotal > org.GetHourlyEventLimit())
+                        org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
 
-                await SaveAsync(org, true).AnyContext();
-                await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
+                    await SaveAsync(org, true).AnyContext();
+                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
+                } catch (Exception ex) {
+                    _logger.Error(ex, "Error while saving organization usage data.");
+
+                    // Set the next document save for 5 seconds in the future.
+                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow.SubtractMinutes(4).SubtractSeconds(55), TimeSpan.FromDays(32)).AnyContext();
+                }
             }
 
             if (justWentOverMonthly)

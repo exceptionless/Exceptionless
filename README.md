@@ -1,5 +1,5 @@
 # Exceptionless
-[![Build status](https://ci.appveyor.com/api/projects/status/4ept2hsism8bygls/branch/master?svg=true)](https://ci.appveyor.com/project/Exceptionless/exceptionless) [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/exceptionless/Discuss) [![Donate](https://img.shields.io/badge/donorbox-donate-blue.svg)](https://donorbox.org/exceptionless?recurring=true) 
+[![Build status](https://ci.appveyor.com/api/projects/status/4ept2hsism8bygls/branch/master?svg=true)](https://ci.appveyor.com/project/Exceptionless/exceptionless) [![Slack Status](https://slack.exceptionless.com/badge.svg)](https://slack.exceptionless.com) [![Donate](https://img.shields.io/badge/donorbox-donate-blue.svg)](https://donorbox.org/exceptionless?recurring=true) 
 
 The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.com) provides real-time error reporting for your JavaScript, Node, ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
 
@@ -21,7 +21,7 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
   3. Open the `Exceptionless.sln` Visual Studio solution file.
   4. Select `Exceptionless.Api` as startup projects.
   5. Run the project by pressing `F5` to start the server.
-  6. (OPTIONAL) For a user interface you must also setup and configure the [Exceptionless.UI](https://github.com/exceptionless/Exceptionless.UI) project.
+  6. We have a prebuilt [Exceptionless UI](https://github.com/exceptionless/Exceptionless.UI) that's configured to talk to the localhost server instance. Just navigate to [http://local-app.exceptionless.io](http://local-app.exceptionless.io) to get started.
 
 Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuBoDs) showing how to get started with the project.
 

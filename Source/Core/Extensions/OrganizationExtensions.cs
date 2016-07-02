@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static DateTime GetRetentionUtcCutoff(this ICollection<Organization> organizations) {
-            return organizations.Min(o => o.GetRetentionUtcCutoff());
+            return organizations.Count > 0 ? organizations.Min(o => o.GetRetentionUtcCutoff()) : DateTime.MinValue;
         }
 
         public static void RemoveSuspension(this Organization organization) {
@@ -35,9 +35,17 @@ namespace Exceptionless.Core.Extensions {
         public static int GetHourlyEventLimit(this Organization organization) {
             if (organization.MaxEventsPerMonth <= 0)
                 return Int32.MaxValue;
+            
+            int eventsLeftInMonth = organization.GetMaxEventsPerMonthWithBonus() - organization.GetCurrentMonthlyTotal();
+            if (eventsLeftInMonth < 0)
+                return 0;
 
-            // allow any single hour to have 10 times the monthly limit converted to hours
-            return (int)Math.Ceiling(organization.GetMaxEventsPerMonthWithBonus() / 730d * 10d);
+            var utcNow = DateTime.UtcNow;
+            var hoursLeftInMonth = (utcNow.EndOfMonth() - utcNow).TotalHours;
+            if (hoursLeftInMonth < 1.0)
+                return eventsLeftInMonth;
+
+            return (int)Math.Ceiling(eventsLeftInMonth / hoursLeftInMonth * 10d);
         }
 
         public static int GetMaxEventsPerMonthWithBonus(this Organization organization) {
@@ -47,11 +55,7 @@ namespace Exceptionless.Core.Extensions {
             int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > DateTime.UtcNow ? organization.BonusEventsPerMonth : 0;
             return organization.MaxEventsPerMonth + bonusEvents;
         } 
-
-        public static Task<bool> IsOverRequestLimitAsync(this Organization organization, ICacheClient cacheClient, int apiThrottleLimit) {
-            return IsOverRequestLimitAsync(organization.Id, cacheClient, apiThrottleLimit);
-        }
-
+        
         public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit) {
             var cacheKey = String.Concat("api", ":", organizationId, ":", DateTime.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
             var limit = await cacheClient.GetAsync<long>(cacheKey).AnyContext();

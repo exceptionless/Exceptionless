@@ -17,6 +17,9 @@ namespace Foundatio.Logging {
         /// <param name="builder">The log builder object.</param>
         /// <param name="tags">The tags to be added to the event.</param>
         public static ILogBuilder Tag(this ILogBuilder builder, params string[] tags) {
+            if (builder.LogData == null)
+                return builder;
+
             if (builder.LogData.Properties == null)
                 builder.LogData.Properties = new Dictionary<string, object>();
 
@@ -56,7 +59,8 @@ namespace Foundatio.Logging {
 
         public static ILogBuilder ContextProperty(this ILogBuilder builder, string key, object value) {
             var contextData = builder.GetContextData();
-            contextData[key] = value;
+            if (contextData != null)
+                contextData[key] = value;
 
             return builder;
         }
@@ -68,6 +72,9 @@ namespace Foundatio.Logging {
         /// <param name="submissionMethod">The submission method.</param>
         public static ILogBuilder MarkUnhandled(this ILogBuilder builder, string submissionMethod = null) {
             var contextData = builder.GetContextData();
+            if (contextData == null)
+                return builder;
+            
             contextData.MarkAsUnhandledError();
             if (!String.IsNullOrEmpty(submissionMethod))
                 contextData.SetSubmissionMethod(submissionMethod);
@@ -90,6 +97,9 @@ namespace Foundatio.Logging {
         }
 
         private static IDictionary<string, object> GetContextData(this ILogBuilder builder) {
+            if (builder.LogData == null)
+                return null;
+
             if (builder.LogData.Properties == null)
                 builder.LogData.Properties = new Dictionary<string, object>();
             

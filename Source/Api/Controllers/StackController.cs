@@ -151,15 +151,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/add-link")]
         public async Task<IHttpActionResult> AddLinkAsync(string id, [NakedBody] string url) {
+            if (String.IsNullOrWhiteSpace(url))
+                return BadRequest();
+
             var stack = await GetModelAsync(id, false);
             if (stack == null)
                 return NotFound();
-
-            if (String.IsNullOrEmpty(url))
-                return BadRequest();
-
-            if (!stack.References.Contains(url)) {
-                stack.References.Add(url);
+            
+            if (!stack.References.Contains(url.Trim())) {
+                stack.References.Add(url.Trim());
                 await _stackRepository.SaveAsync(stack);
             }
 
@@ -205,15 +205,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/remove-link")]
         public async Task<IHttpActionResult> RemoveLinkAsync(string id, [NakedBody] string url) {
+            if (String.IsNullOrWhiteSpace(url))
+                return BadRequest();
+
             var stack = await GetModelAsync(id, false);
             if (stack == null)
                 return NotFound();
-
-            if (String.IsNullOrEmpty(url))
-                return BadRequest();
-
-            if (stack.References.Contains(url)) {
-                stack.References.Remove(url);
+            
+            if (stack.References.Contains(url.Trim())) {
+                stack.References.Remove(url.Trim());
                 await _stackRepository.SaveAsync(stack);
             }
 
@@ -522,6 +522,7 @@ namespace Exceptionless.Api.Controllers {
                 return OkWithResourceLinks(stacks, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
+                    .Message("An error has occurred. Please check your search filter.")
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
@@ -739,6 +740,7 @@ namespace Exceptionless.Api.Controllers {
                 return OkWithResourceLinks(stacks.Take(limit).ToList(), stacks.Count > limit, page);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
+                    .Message("An error has occurred. Please check your search filter.")
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)

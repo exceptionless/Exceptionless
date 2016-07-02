@@ -8,8 +8,10 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Utility;
 using Foundatio.Caching;
 using Foundatio.Logging;
+using Foundatio.Metrics;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using SimpleInjector;
@@ -22,7 +24,7 @@ namespace Exceptionless.Api {
         public static void RegisterServices(Container container, ILoggerFactory loggerFactory) {
             container.Register<IUserIdProvider, PrincipalUserIdProvider>();
             container.Register<MessageBusConnection>();
-            container.RegisterSingleton<ConnectionMapping>();
+            container.RegisterSingleton<IConnectionMapping, ConnectionMapping>();
             container.RegisterSingleton<MessageBusBroker>();
 
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);
@@ -30,7 +32,7 @@ namespace Exceptionless.Api {
             container.RegisterSingleton<IConnectionManager>(() => new ConnectionManager(resolver));
 
             container.RegisterSingleton<OverageHandler>();
-            container.RegisterSingleton<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+            container.RegisterSingleton<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), container.GetInstance<IMetricsClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
             
             container.AppendToCollection(typeof(Profile), typeof(ApiMappings));
         }

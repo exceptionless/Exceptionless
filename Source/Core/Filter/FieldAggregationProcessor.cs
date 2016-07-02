@@ -37,10 +37,11 @@ namespace Exceptionless.Core.Filter {
                 if (String.IsNullOrEmpty(type) || String.IsNullOrEmpty(field))
                     return new FieldAggregationsResult { Message = $"Invalid type: {type} or field: {field}" };
                 
+                // TODO: This doesn't handle dates.
                 if (field.StartsWith("data."))
-                    field = $"idx.{field.Substring(5)}-n";
+                    field = $"idx.{field.Substring(5).ToLower()}-n";
                 else if (field.StartsWith("ref."))
-                    field = $"idx.{field.Substring(4)}-r";
+                    field = $"idx.{field.Substring(4).ToLower()}-r";
 
                 var fieldType = GetFieldAggregationTypet(type);
                 if (fieldType == null)

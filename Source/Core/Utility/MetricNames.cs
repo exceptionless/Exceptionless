@@ -18,5 +18,6 @@ namespace Exceptionless.Core.AppStats {
         public const string PostsBlocked = "posts.blocked";
 
         public const string UsageGeocodingApi = "usage.geocoding";
+        public const string ThrottleLimitExceeded = "throttle.limitexceeded";
     }
 }

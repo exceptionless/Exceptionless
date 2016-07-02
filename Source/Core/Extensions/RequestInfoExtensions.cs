@@ -93,21 +93,12 @@ namespace Exceptionless.Core.Extensions {
                     sb.Append('=');
                 }
                 if (p.Value != null)
-                    sb.Append(EscapeUriDataStringRfc3986(p.Value));
+                    sb.Append(p.Value);
                 sb.Append('&');
             }
             sb.Length--; // remove trailing &
 
             return sb.ToString();
-        }
-
-        private static readonly char[] _uriRfc3986CharsToEscape = { '!', '*', '\'', '(', ')' };
-
-        private static string EscapeUriDataStringRfc3986(string value) {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            return value; //.HexEscape(_uriRfc3986CharsToEscape);
         }
     }
 }

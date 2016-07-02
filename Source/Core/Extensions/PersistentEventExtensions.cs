@@ -11,14 +11,21 @@ namespace Exceptionless {
             keysToCopy = keysToCopy?.Length > 0 ? keysToCopy : ev.Data.Keys.ToArray();
 
             foreach (string key in keysToCopy.Where(k => !String.IsNullOrEmpty(k) && ev.Data.ContainsKey(k))) {
-                string field = key.Trim().ToLower().Replace(' ', '-');
+                string field = key.Trim().ToLower();
 
                 if (field.StartsWith("@ref:")) {
-                    ev.Idx[field.Substring(5) + "-r"] = (string)ev.Data[key];
+                    field = field.Substring(5);
+                    if (!field.IsValidFieldName())
+                        continue;
+
+                    ev.Idx[field + "-r"] = (string)ev.Data[key];
                     continue;
                 }
 
                 if (field.StartsWith("@") || ev.Data[key] == null)
+                    continue;
+
+                if (!field.IsValidFieldName())
                     continue;
 
                 Type dataType = ev.Data[key].GetType();
@@ -200,22 +207,7 @@ namespace Exceptionless {
             
             return startEvent;
         }
-
-        public static PersistentEvent ToSessionEndEvent(this PersistentEvent source, string sessionId) {
-            var endEvent = new PersistentEvent {
-                Date = source.Date,
-                OrganizationId = source.OrganizationId,
-                ProjectId = source.ProjectId,
-                Type = Event.KnownTypes.SessionEnd
-            };
-            
-            endEvent.SetSessionId(sessionId);
-            endEvent.SetUserIdentity(source.GetUserIdentity());
-            endEvent.AddRequestInfo(source.GetRequestInfo());
-
-            return endEvent;
-        }
-
+       
         public static IEnumerable<string> GetIpAddresses(this PersistentEvent ev) {
             if (ev == null)
                 yield break;

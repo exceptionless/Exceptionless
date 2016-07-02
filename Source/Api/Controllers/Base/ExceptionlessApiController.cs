@@ -114,9 +114,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         public User ExceptionlessUser => Request.GetUser();
-
-        public AuthType AuthType => User.GetAuthType();
-
+        
         public bool CanAccessOrganization(string organizationId) {
             return Request.CanAccessOrganization(organizationId);
         }
@@ -140,7 +138,7 @@ namespace Exceptionless.Api.Controllers {
         }
         
         public string BuildSystemFilter(ICollection<Organization> organizations, string filter, bool usesPremiumFeatures, string retentionDateFieldName = "date") {
-            if (HasOrganizationOrProjectFilter(filter) && Request.IsGlobalAdmin())
+            if (HasOrganizationOrProjectOrStackFilter(filter) && Request.IsGlobalAdmin())
                 return null;
             
             var allowedOrganizations = organizations.Where(o => !o.IsSuspended && (o.HasPremiumFeatures || (!o.HasPremiumFeatures && !usesPremiumFeatures))).ToList();
@@ -150,11 +148,11 @@ namespace Exceptionless.Api.Controllers {
             return allowedOrganizations.BuildRetentionFilter(retentionDateFieldName);
         }
         
-        private bool HasOrganizationOrProjectFilter(string filter) {
+        private bool HasOrganizationOrProjectOrStackFilter(string filter) {
             if (String.IsNullOrEmpty(filter))
                 return false;
 
-            return filter.Contains("organization:") || filter.Contains("project:");
+            return filter.Contains("organization:") || filter.Contains("project:") || filter.Contains("stack:");
         }
 
         protected StatusCodeActionResult StatusCodeWithMessage(HttpStatusCode statusCode, string message, string reason = null) {
@@ -225,13 +223,6 @@ namespace Exceptionless.Api.Controllers {
                 return null;
 
             return null;
-        }
-
-        protected bool HasOrganizationFilter(string filter) {
-            if (String.IsNullOrWhiteSpace(filter))
-                return false;
-
-            return filter.Contains("organization:");
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -38,63 +37,49 @@ namespace Exceptionless.Core.Extensions {
                 list.Add(r);
         }
 
-        public static bool IsNullOrEmpty<T>(this IEnumerable<T> items) {
-            return items == null || !items.Any();
-        }
-
-        public static IEnumerable<T> AsNullIfEmpty<T>(this IEnumerable<T> items) {
-            if (items == null || !items.Any())
-                return null;
-
-            return items;
-        }
-
         public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action) {
             foreach (var item in collection ?? new List<T>())
                 action(item);
         }
 
-        public static int IndexOf<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> selector) {
-            int index = 0;
+        public static bool CollectionEquals<T>(this IEnumerable<T> source, IEnumerable<T> other) {
+            var sourceEnumerator = source.GetEnumerator();
+            var otherEnumerator = other.GetEnumerator();
+
+            while (sourceEnumerator.MoveNext()) {
+                if (!otherEnumerator.MoveNext()) {
+                    // counts differ
+                    return false;
+                }
+
+                if (sourceEnumerator.Current.Equals(otherEnumerator.Current)) {
+                    // values aren't equal
+                    return false;
+                }
+            }
+
+            if (otherEnumerator.MoveNext()) {
+                // counts differ
+                return false;
+            }
+
+            return true;
+        }
+
+        public static int GetCollectionHashCode<T>(this IEnumerable<T> source) {
+            var assemblyQualifiedName = typeof(T).AssemblyQualifiedName;
+            int hashCode = assemblyQualifiedName?.GetHashCode() ?? 0;
+
             foreach (var item in source) {
-                if (selector(item))
-                    return index;
+                if (item == null)
+                    continue;
 
-                index++;
+                unchecked {
+                    hashCode = (hashCode * 397) ^ item.GetHashCode();
+                }
             }
 
-            // not found
-            return -1;
-        }
-
-        public static int IndexOf<TSource>(this IEnumerable<TSource> source, TSource item) {
-            return IndexOf(source, item, null);
-        }
-
-        public static int IndexOf<TSource>(this IEnumerable<TSource> source, TSource item, IEqualityComparer<TSource> itemComparer) {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            var listOfT = source as IList<TSource>;
-            if (listOfT != null)
-                return listOfT.IndexOf(item);
-
-            var list = source as IList;
-            if (list != null)
-                return list.IndexOf(item);
-
-            if (itemComparer == null)
-                itemComparer = EqualityComparer<TSource>.Default;
-
-            int i = 0;
-            foreach (TSource possibleItem in source) {
-                if (itemComparer.Equals(item, possibleItem))
-                    return i;
-
-                i++;
-            }
-
-            return -1;
+            return hashCode;
         }
     }
 }

@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<RemoveOrganizationWorkItem>();
-            _logger.Info("Received remove organization work item for: {0}", workItem.OrganizationId);
+            Log.Info("Received remove organization work item for: {0}", workItem.OrganizationId);
 
             await context.ReportProgressAsync(0, "Starting deletion...").AnyContext();
             var organization = await _organizationRepository.GetByIdAsync(workItem.OrganizationId).AnyContext();
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
             await context.ReportProgressAsync(10, "Removing subscriptions").AnyContext();
             if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
-                _logger.Info("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id);
+                Log.Info("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id);
 
                 var subscriptionService = new StripeSubscriptionService(Settings.Current.StripeApiKey);
                 var subscriptions = subscriptionService.List(organization.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
@@ -66,10 +66,10 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             foreach (User user in users.Documents) {
                 // delete the user if they are not associated to any other organizations and they are not the current user
                 if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id)) && !String.Equals(user.Id, workItem.CurrentUserId)) {
-                    _logger.Info("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id);
+                    Log.Info("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id);
                     await _userRepository.RemoveAsync(user.Id).AnyContext();
                 } else {
-                    _logger.Info("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id);
+                    Log.Info("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id);
                     user.OrganizationIds.Remove(organization.Id);
                     await _userRepository.SaveAsync(user, true).AnyContext();
                 }
@@ -86,17 +86,17 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             if (workItem.IsGlobalAdmin && projects.Total > 0) {
                 var completed = 1;
                 foreach (Project project in projects.Documents) {
-                    _logger.Info("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id);
+                    Log.Info("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id);
                     await _eventRepository.RemoveAllByProjectIdsAsync(new[] { project.Id }).AnyContext();
                     await _stackRepository.RemoveAllByProjectIdsAsync(new[] { project.Id }).AnyContext();
                     await context.ReportProgressAsync(CalculateProgress(projects.Total, completed++, 51, 89), "Removing projects...").AnyContext();
                 }
 
-                _logger.Info("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id);
+                Log.Info("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id);
                 await _projectRepository.RemoveAsync(projects.Documents).AnyContext();
             }
 
-            _logger.Info("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id);
+            Log.Info("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id);
             await context.ReportProgressAsync(90, "Removing organization").AnyContext();
             await _organizationRepository.RemoveAsync(organization.Id).AnyContext();
 

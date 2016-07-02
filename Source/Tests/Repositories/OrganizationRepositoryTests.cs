@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
@@ -127,32 +128,39 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             var o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
             await _client.RefreshAsync();
+            Assert.InRange(o.GetHourlyEventLimit(), 1, 750);
 
-            Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 9));
+            int totalToIncrement = o.GetHourlyEventLimit() - 1;
+            Assert.False(await _repository.IncrementUsageAsync(o.Id, false, totalToIncrement));
+            await _client.RefreshAsync();
+            o = await _repository.GetByIdAsync(o.Id);
             Assert.Equal(0, messages.Count);
-            Assert.Equal(9, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(9, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(totalToIncrement, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(totalToIncrement, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
             Assert.Equal(0, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
             Assert.Equal(0, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
 
-            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 3));
+            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 2));
+            await _client.RefreshAsync();
+            o = await _repository.GetByIdAsync(o.Id);
             await Task.Delay(5);
             Assert.Equal(1, messages.Count);
-            Assert.Equal(12, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(12, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(totalToIncrement + 2, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(totalToIncrement + 2, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
             Assert.Equal(1, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
             Assert.Equal(1, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
 
             o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
             await _client.RefreshAsync();
 
-            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 751));
+            totalToIncrement = o.GetHourlyEventLimit() + 20;
+            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, totalToIncrement));
             await Task.Delay(5);
             Assert.Equal(2, messages.Count);
-            Assert.Equal(751, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(751, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(740, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
-            Assert.Equal(740, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
+            Assert.Equal(totalToIncrement, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(totalToIncrement, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(20, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
+            Assert.Equal(20, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
         }
 
         [Fact]

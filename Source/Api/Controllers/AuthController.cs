@@ -8,6 +8,7 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
+using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -27,7 +28,8 @@ using OAuth2.Models;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/auth")]
     public class AuthController : ExceptionlessApiController {
-        private readonly IOrganizationRepository _organizationRepository;
+	    private readonly IDomainLoginProvider _domainLoginProvider;
+	    private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly ICacheClient _cacheClient;
@@ -36,8 +38,9 @@ namespace Exceptionless.Api.Controllers {
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger) {
-            _organizationRepository = organizationRepository;
+        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider) {
+	        _domainLoginProvider = domainLoginProvider;
+	        _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
             _cacheClient = new ScopedCacheClient(cacheClient, "auth");
@@ -94,7 +97,7 @@ namespace Exceptionless.Api.Controllers {
                 return Unauthorized();
             }
 
-            User user;
+	        User user;
             try {
                 user = await _userRepository.GetByEmailAddressAsync(model.Email);
             } catch (Exception ex) {
@@ -112,15 +115,22 @@ namespace Exceptionless.Api.Controllers {
                 return Unauthorized();
             }
 
-            if (String.IsNullOrEmpty(user.Salt)) {
-                _logger.Error().Message("Login failed for \"{0}\": The user has no salt defined.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
-                return Unauthorized();
-            }
+            if (!Settings.Current.EnableActiveDirectoryAuth) {
+                if (String.IsNullOrEmpty(user.Salt)) {
+                    _logger.Error().Message("Login failed for \"{0}\": The user has no salt defined.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+                    return Unauthorized();
+                }
 
-            string encodedPassword = model.Password.ToSaltedHash(user.Salt);
-            if (!String.Equals(encodedPassword, user.Password)) {
-                _logger.Error().Message("Login failed for \"{0}\": Invalid Password.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
-                return Unauthorized();
+                string encodedPassword = model.Password.ToSaltedHash(user.Salt);
+                if (!String.Equals(encodedPassword, user.Password)) {
+                    _logger.Error().Message("Login failed for \"{0}\": Invalid Password.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+                    return Unauthorized();
+                }
+            } else {
+                if (!IsValidActiveDirectoryLogin(model.Email, model.Password)) {
+                    _logger.Error().Message("Domain login failed for \"{0}\": Invalid Password or Account.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+                    return Unauthorized();
+                }
             }
 
             if (!String.IsNullOrEmpty(model.InviteToken))
@@ -157,7 +167,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!IsValidPassword(model.Password)) {
-                _logger.Error().Message("Signup failed for \"{0}\": Invalid Password", model.Email).Tag("Signup").Identity(model.Email).Property("Password Length", model.Password != null ? model.Password.Length : 0).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Signup failed for \"{0}\": Invalid Password", model.Email).Tag("Signup").Identity(model.Email).Property("Password Length", model.Password?.Length ?? 0).SetActionContext(ActionContext).Write();
                 return BadRequest("Password must be at least 6 characters long.");
             }
 
@@ -183,20 +193,27 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
+	        if (Settings.Current.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(model.Email, model.Password)) {
+				_logger.Error().Message("Signup failed for \"{0}\": Active Directory authentication failed.", model.Email).Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
+                return BadRequest();
+            }
+
             user = new User {
                 IsActive = true,
                 FullName = model.Name,
                 EmailAddress = model.Email,
-                IsEmailAddressVerified = false
+                IsEmailAddressVerified = Settings.Current.EnableActiveDirectoryAuth
             };
             user.CreateVerifyEmailAddressToken();
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
             await AddGlobalAdminRoleIfFirstUserAsync(user);
 
-            user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
-            user.Password = model.Password.ToSaltedHash(user.Salt);
-
+	        if (!Settings.Current.EnableActiveDirectoryAuth) {
+				user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
+				user.Password = model.Password.ToSaltedHash(user.Salt);
+			}
+            
             try {
                 user = await _userRepository.AddAsync(user, true);
             } catch (ValidationException ex) {
@@ -255,7 +272,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("unlink/{providerName:minlength(1)}")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IHttpActionResult> RemoveExternalLoginAsync(string providerName, [NakedBody] string providerUserId) {
-            if (String.IsNullOrEmpty(providerName) || String.IsNullOrEmpty(providerUserId)) {
+            if (String.IsNullOrWhiteSpace(providerName) || String.IsNullOrWhiteSpace(providerUserId)) {
                 _logger.Error().Message("Remove external login failed for \"{0}\": Invalid Provider Name or Provider User Id.", ExceptionlessUser.EmailAddress).Tag("External Login", providerName).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Provider User Id", providerUserId).SetActionContext(ActionContext).Write();
                 return BadRequest("Invalid Provider Name or Provider User Id.");
             }
@@ -282,7 +299,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IHttpActionResult> ChangePasswordAsync(ChangePasswordModel model) {
             if (model == null || !IsValidPassword(model.Password)) {
-                _logger.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", ExceptionlessUser.EmailAddress).Tag("Change Password").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Password Length", model?.Password != null ? model.Password.Length : 0).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", ExceptionlessUser.EmailAddress).Tag("Change Password").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).Property("Password Length", model?.Password?.Length ?? 0).SetActionContext(ActionContext).Write();
                 return BadRequest("The New Password must be at least 6 characters long.");
             }
 
@@ -379,7 +396,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!IsValidPassword(model.Password)) {
-                _logger.Error().Message("Reset password failed for \"{0}\": The New Password must be at least 6 characters long.", user.EmailAddress).Tag("Reset Password").Identity(user.EmailAddress).Property("User", user).Property("Password Length", model.Password != null ? model.Password.Length : 0).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Reset password failed for \"{0}\": The New Password must be at least 6 characters long.", user.EmailAddress).Tag("Reset Password").Identity(user.EmailAddress).Property("User", user).Property("Password Length", model.Password?.Length ?? 0).SetActionContext(ActionContext).Write();
                 return BadRequest("The New Password must be at least 6 characters long.");
             }
 
@@ -592,6 +609,11 @@ namespace Exceptionless.Api.Controllers {
 
             return token.Id;
         }
+
+	    private bool IsValidActiveDirectoryLogin(string email, string password) {
+			string domainUsername = _domainLoginProvider.GetUsernameFromEmailAddress(email);
+		    return domainUsername != null && _domainLoginProvider.Login(domainUsername, password);
+	    }
 
         private static bool IsValidPassword(string password) {
             if (String.IsNullOrWhiteSpace(password))

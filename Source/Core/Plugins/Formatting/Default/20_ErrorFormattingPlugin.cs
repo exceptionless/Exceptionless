@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("ExceptionType"))
                 return null;
             
-            var data = new Dictionary<string, object> { { "Title", stack.Title } };
+            var data = new Dictionary<string, object>();
             string value;
             if (stack.SignatureInfo.TryGetValue("ExceptionType", out value) && !String.IsNullOrEmpty(value)) {
                 data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
@@ -108,10 +108,10 @@ namespace Exceptionless.Core.Plugins.Formatting {
             var mailerModel = new EventNotificationModel(model) {
                 BaseUrl = Settings.Current.BaseURL,
                 Subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message.Truncate(120)),
-                Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null,
+                Url = requestInfo?.GetFullPath(true, true, true),
                 Message = stackingTarget.Error.Message,
                 TypeFullName = errorType,
-                MethodFullName = stackingTarget.Method != null ? stackingTarget.Method.GetFullName() : null
+                MethodFullName = stackingTarget.Method?.GetFullName()
             };
 
             return _emailGenerator.GenerateMessage(mailerModel, "NoticeError").ToMailMessage();
