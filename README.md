@@ -1,7 +1,7 @@
 # Exceptionless
 [![Build status](https://ci.appveyor.com/api/projects/status/4ept2hsism8bygls/branch/master?svg=true)](https://ci.appveyor.com/project/Exceptionless/exceptionless) [![Slack Status](https://slack.exceptionless.com/badge.svg)](https://slack.exceptionless.com) [![Donate](https://img.shields.io/badge/donorbox-donate-blue.svg)](https://donorbox.org/exceptionless?recurring=true) 
 
-The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.com) provides real-time error reporting for your JavaScript, Node, ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
+The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.com) provides real-time error reporting for your JavaScript, Node, .NET Core, ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
 
 ## Using Exceptionless
 Refer to the [Exceptionless documentation wiki](https://github.com/exceptionless/Exceptionless/wiki/Getting-Started).
