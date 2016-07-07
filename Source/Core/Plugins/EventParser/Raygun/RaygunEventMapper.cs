@@ -156,7 +156,10 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
             if (Int32.TryParse(request.GetHeaderValue("SERVER_PORT"), out port))
                 ri.Port = port;
             else if (Uri.TryCreate(request.HostName, UriKind.RelativeOrAbsolute, out uri))
-                ri.Port = uri.Port;
+                try {
+                    ri.Port = uri.Port;
+                }
+                catch { }
             else
                 ri.Port = 80;
 
@@ -209,7 +212,18 @@ namespace Exceptionless.Core.Plugins.EventParser.Raygun {
         }
 
         protected override string MapVersion(RaygunModel source) {
-            return source.Details?.Version;
+            var version = source.Details?.Version;
+
+            if (string.IsNullOrWhiteSpace(version)) {
+                return null;
+            }
+
+            // raygun send the string 'Not Supplied' when the version is not set in the client. We treat it as null instead.
+            if (version.ToLower() == "not supplied") {
+                return null;
+            }
+
+            return version;
         }
         
         private InnerError MapInnerError(Error error) {
