@@ -139,7 +139,6 @@ namespace Exceptionless.Core.Repositories {
 
         public async Task MarkAsRegressedAsync(string stackId) {
             var stack = await GetByIdAsync(stackId).AnyContext();
-            stack.DateFixed = null;
             stack.IsRegressed = true;
             await SaveAsync(stack, true).AnyContext();
         }
