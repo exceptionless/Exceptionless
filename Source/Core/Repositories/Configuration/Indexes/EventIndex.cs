@@ -132,22 +132,22 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     },
                     version_pad1 = new {
                         type = "pattern_replace",
-                        pattern = @"(\.|^)(\d{1})(?=\.|$)",
+                        pattern = @"(\.|^)(\d{1})(?=\.|-|$)",
                         replacement = @"$10000$2"
                     },
                     version_pad2 = new {
                         type = "pattern_replace",
-                        pattern = @"(\.|^)(\d{2})(?=\.|$)",
+                        pattern = @"(\.|^)(\d{2})(?=\.|-|$)",
                         replacement = @"$1000$2"
                     },
                     version_pad3 = new {
                         type = "pattern_replace",
-                        pattern = @"(\.|^)(\d{3})(?=\.|$)",
+                        pattern = @"(\.|^)(\d{3})(?=\.|-|$)",
                         replacement = @"$100$2"
                     },
                     version_pad4 = new {
                         type = "pattern_replace",
-                        pattern = @"(\.|^)(\d{4})(?=\.|$)",
+                        pattern = @"(\.|^)(\d{4})(?=\.|-|$)",
                         replacement = @"$10$2"
                     },
                     typename = new {

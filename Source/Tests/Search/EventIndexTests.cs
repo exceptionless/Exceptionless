@@ -206,6 +206,17 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("1.2", 1)]
         [InlineData("1.2.3", 1)]
         [InlineData("1.2.3.0", 1)]
+        [InlineData("0001.0002.0003.0000", 1)]
+        [InlineData("3", 1)]
+        [InlineData("3.2", 1)]
+        [InlineData("3.2.1", 1)]
+        [InlineData("3.2.1.0", 0)]
+        [InlineData("3.2.1-beta1", 1)]
+        // TODO: Add support for version ranges.
+        //[InlineData("<1", 0)]
+        //[InlineData(">1", 3)]
+        //[InlineData("<5", 3)]
+        //[InlineData("(>1 AND <4.0)", 2)]
         public async Task GetByVersionAsync(string version, int count) {
             await ResetAsync();
 
