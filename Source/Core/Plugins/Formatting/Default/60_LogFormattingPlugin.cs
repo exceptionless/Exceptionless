@@ -1,5 +1,6 @@
 ﻿using System;
-using System.Dynamic;
+using System.Collections.Generic;
+using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
@@ -24,7 +25,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Log))
                 return null;
 
-            return new SummaryData { TemplateKey = "stack-log-summary", Data = new { Title = stack.Title } };
+            return new SummaryData { TemplateKey = "stack-log-summary", Data = new Dictionary<string, object> { { "Title", stack.Title } } };
         }
 
         public override string GetStackTitle(PersistentEvent ev) {
@@ -38,15 +39,19 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            dynamic data = new ExpandoObject();
-            data.Message = ev.Message;
-            data.Source = ev.Source;
-            data.Type = ev.Type;
+            var data = new Dictionary<string, object> { { "Message", ev.Message } };
+            if (!String.IsNullOrWhiteSpace(ev.Source)) {
+                data.Add("Source", ev.Source);
+
+                string truncatedSource = ev.Source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+                if (!String.Equals(ev.Source, truncatedSource))
+                    data.Add("SourceShortName", truncatedSource);
+            }
 
             object temp;
             string level = ev.Data.TryGetValue(Event.KnownDataKeys.Level, out temp) ? temp as string : null;
             if (!String.IsNullOrWhiteSpace(level))
-                data.Level = level.Trim();
+                data.Add("Level", level.Trim());
 
             return new SummaryData { TemplateKey = "event-log-summary", Data = data };
         }

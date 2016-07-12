@@ -10,7 +10,7 @@ namespace Exceptionless.Api.Utility.Results {
     public class StatusCodeActionResult : IHttpActionResult {
         public StatusCodeActionResult(HttpStatusCode statusCode, HttpRequestMessage request, string message = null, string reason = null) {
             if (request == null)
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
 
             StatusCode = statusCode;
             Message = message ?? String.Empty;

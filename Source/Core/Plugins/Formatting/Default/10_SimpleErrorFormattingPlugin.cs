@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Dynamic;
+using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
@@ -20,22 +20,20 @@ namespace Exceptionless.Core.Plugins.Formatting {
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
         }
-        
+
         public override SummaryData GetStackSummaryData(Stack stack) {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("StackTrace"))
                 return null;
-
-            dynamic data = new ExpandoObject();
-            data.Title = stack.Title;
-
+            
+            var data = new Dictionary<string, object> { { "Title", stack.Title } };
             string value;
             if (stack.SignatureInfo.TryGetValue("ExceptionType", out value)) {
-                data.Type = value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
-                data.TypeFullName = value;
+                data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
+                data.Add("TypeFullName", value);
             }
 
             if (stack.SignatureInfo.TryGetValue("Path", out value))
-                data.Path = value;
+                data.Add("Path", value);
 
             return new SummaryData { TemplateKey = "stack-simple-summary",  Data = data };
         }
@@ -45,10 +43,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var error = ev.GetSimpleError();
-            if (error == null)
-                return null;
-
-            return error.Message;
+            return error?.Message;
         }
 
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {
@@ -58,18 +53,16 @@ namespace Exceptionless.Core.Plugins.Formatting {
             var error = ev.GetSimpleError();
             if (error == null)
                 return null;
-
-            dynamic data = new ExpandoObject();
-            data.Message = ev.Message;
-
+            
+            var data = new Dictionary<string, object> { { "Message", ev.Message } };
             if (!String.IsNullOrEmpty(error.Type)) {
-                data.Type = error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
-                data.TypeFullName = error.Type;
+                data.Add("Type", error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
+                data.Add("TypeFullName", error.Type);
             }
 
             var requestInfo = ev.GetRequestInfo();
-            if (requestInfo != null && !String.IsNullOrEmpty(requestInfo.Path))
-                data.Path = requestInfo.Path;
+            if (!String.IsNullOrEmpty(requestInfo?.Path))
+                data.Add("Path", requestInfo.Path);
 
             return new SummaryData { TemplateKey = "event-simple-summary", Data = data };
         }
@@ -83,12 +76,13 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var requestInfo = model.Event.GetRequestInfo();
+            string errorType = !String.IsNullOrEmpty(error.Type) ? error.Type : "Error";
 
-            string notificationType = String.Concat(error.Type, " Occurrence");
+            string notificationType = String.Concat(errorType, " Occurrence");
             if (model.IsNew)
-                notificationType = String.Concat(!model.IsCritical ? "New " : "new ", error.Type);
+                notificationType = String.Concat(!model.IsCritical ? "New " : "new ", errorType);
             else if (model.IsRegression)
-                notificationType = String.Concat(error.Type, " Regression");
+                notificationType = String.Concat(errorType, " Regression");
 
             if (model.IsCritical)
                 notificationType = String.Concat("Critical ", notificationType);

@@ -1,56 +1,29 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
 using Foundatio.Jobs;
-using Foundatio.Metrics;
+using Foundatio.Logging;
 using Foundatio.Queues;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class MailMessageJob : JobBase {
-        private readonly IQueue<MailMessage> _queue;
+    public class MailMessageJob : QueueJobBase<MailMessage> {
         private readonly IMailSender _mailSender;
-        private readonly IMetricsClient _metricsClient;
 
-        public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, IMetricsClient metricsClient) {
-            _queue = queue;
+        public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _mailSender = mailSender;
-            _metricsClient = metricsClient;
         }
 
-        protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            QueueEntry<MailMessage> queueEntry = null;
+        protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<MailMessage> context) {
+            _logger.Trace("Processing message '{0}'.", context.QueueEntry.Id);
+
             try {
-                queueEntry = _queue.Dequeue();
+                await _mailSender.SendAsync(context.QueueEntry.Value).AnyContext();
+                _logger.Info("Sent message: to={0} subject=\"{1}\"", context.QueueEntry.Value.To, context.QueueEntry.Value.Subject);
             } catch (Exception ex) {
-                if (!(ex is TimeoutException)) {
-                    Log.Error().Exception(ex).Message("Error trying to dequeue message: {0}", ex.Message).Write();
-                    return JobResult.FromException(ex);
-                }
+                return JobResult.FromException(ex);
             }
-
-            if (queueEntry == null)
-                return JobResult.Success;
-            
-            await _metricsClient.CounterAsync(MetricNames.EmailsDequeued);
-            Log.Trace().Message("Processing message '{0}'.", queueEntry.Id).Write();
-            
-            try {
-                await _mailSender.SendAsync(queueEntry.Value);
-                await _metricsClient.CounterAsync(MetricNames.EmailsSent);
-                Log.Info().Message("Sent message: to={0} subject=\"{1}\"", queueEntry.Value.To, queueEntry.Value.Subject).Write();
-            } catch (Exception ex) {
-                // TODO: Change to async once vnext is released.
-                _metricsClient.Counter(MetricNames.EmailsSendErrors);
-                Log.Error().Exception(ex).Message("Error sending message: id={0} error={1}", queueEntry.Id, ex.Message).Write();
-
-                queueEntry.Abandon();
-            }
-
-            queueEntry.Complete();
 
             return JobResult.Success;
         }

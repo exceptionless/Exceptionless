@@ -2,23 +2,25 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
     public class SaveEventAction : EventPipelineActionBase {
         private readonly IEventRepository _eventRepository;
 
-        public SaveEventAction(IEventRepository eventRepository) {
+        public SaveEventAction(IEventRepository eventRepository, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _eventRepository = eventRepository;
         }
 
-        protected override bool IsCritical { get { return true; } }
+        protected override bool IsCritical => true;
 
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {
-                _eventRepository.Add(contexts.Select(c => c.Event).ToList());
+                await _eventRepository.AddAsync(contexts.Select(c => c.Event).ToList()).AnyContext();
             } catch (Exception ex) {
                 foreach (var context in contexts) {
                     bool cont = false;
@@ -33,7 +35,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public override Task ProcessAsync(EventContext ctx) {
-            return Task.FromResult(0);
+            return Task.CompletedTask;
         }
     }
 }

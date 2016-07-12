@@ -1,20 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Extensions;
-using MongoDB.Driver;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core {
-    public class Settings {
+    public class Settings : SettingsBase<Settings> {
         public bool EnableSSL { get; private set; }
 
         public string BaseURL { get; private set; }
 
+        /// <summary>
+        /// Internal project id keeps us from recursively logging to ourself
+        /// </summary>
         public string InternalProjectId { get; private set; }
 
         public WebsiteMode WebsiteMode { get; private set; }
+
+        public string AppScope { get; private set; }
+
+        public bool HasAppScope => !String.IsNullOrEmpty(AppScope);
+
+        public string AppScopePrefix => HasAppScope ? AppScope + "-" : String.Empty;
 
         public string TestEmailAddress { get; private set; }
 
@@ -22,33 +30,15 @@ namespace Exceptionless.Core {
 
         public bool RunJobsInProcess { get; private set; }
 
-        public bool LogJobLocks { get; private set; }
-
-        public bool LogJobEvents { get; private set; }
-
-        public bool LogJobCompleted { get; private set; }
-
-        public bool LogStackingInfo { get; private set; }
-
-        public bool AppendMachineNameToDatabase { get; private set; }
-
-        public bool SaveIncomingErrorsToDisk { get; private set; }
-
-        public string IncomingErrorPath { get; private set; }
-
-        public bool EnableLogErrorReporting { get; private set; }
-
-        public bool EnableSignalR { get; private set; }
-
         public int BotThrottleLimit { get; private set; }
 
         public int ApiThrottleLimit { get; private set; }
 
+        public bool EventSubmissionDisabled { get; private set; }
+
         public long MaximumEventPostSize { get; private set; }
 
         public bool EnableDailySummary { get; private set; }
-
-        public bool ShouldAutoUpgradeDatabase { get; private set; }
 
         public string MetricsServerName { get; private set; }
 
@@ -60,31 +50,21 @@ namespace Exceptionless.Core {
 
         public bool EnableRedis { get; private set; }
 
-        public string MongoConnectionString { get; private set; }
+        public string ElasticSearchConnectionString { get; private set; }
 
-        public string MongoDatabaseName {
-            get {
-                if (String.IsNullOrEmpty(MongoConnectionString))
-                    return null;
+        public bool EnableElasticsearchTracing { get; private set; }
 
-                var url = new MongoUrl(MongoConnectionString);
-                string databaseName = url.DatabaseName;
-                if (AppendMachineNameToDatabase)
-                    databaseName += String.Concat("-", Environment.MachineName.ToLower());
-
-                return databaseName;
-            }
-        }
-
-        public string ElasticSearchConnectionString { get; set; }
+        public bool EnableSignalR { get; private set; }
 
         public string Version { get; private set; }
 
-        public bool EnableIntercom { get { return !String.IsNullOrEmpty(IntercomAppSecret); } }
+        public LogLevel MinimumLogLevel { get; private set; }
+
+        public bool EnableIntercom => !String.IsNullOrEmpty(IntercomAppSecret);
 
         public string IntercomAppSecret { get; private set; }
 
-        public bool EnableAccountCreation { get; private set; }
+        public bool EnableAccountCreation { get; internal set; }
 
         public string MicrosoftAppId { get; private set; }
 
@@ -102,175 +82,104 @@ namespace Exceptionless.Core {
 
         public string GoogleAppSecret { get; private set; }
 
-        public bool EnableBilling { get { return !String.IsNullOrEmpty(StripeApiKey); } }
+        public string GoogleGeocodingApiKey { get; private set; }
+
+        public bool EnableBilling => !String.IsNullOrEmpty(StripeApiKey);
 
         public string StripeApiKey { get; private set; }
 
         public string StorageFolder { get; private set; }
 
-        public string AzureStorageConnectionString { get; set; }
+        public string AzureStorageConnectionString { get; private set; }
 
         public bool EnableAzureStorage { get; private set; }
 
         public int BulkBatchSize { get; private set; }
-        
-        private static Settings Init() {
-            var settings = new Settings();
-            settings.EnableSSL = GetBool("EnableSSL");
+
+        internal string SmtpHost { get; private set; }
+
+        internal int SmtpPort { get; private set; }
+
+        internal bool SmtpEnableSsl { get; private set; }
+
+        internal string SmtpUser { get; private set; }
+
+        internal string SmtpPassword { get; private set; }
+
+        public override void Initialize() {
+            EnvironmentVariablePrefix = "Exceptionless_";
+
+            EnableSSL = GetBool("EnableSSL");
 
             string value = GetString("BaseURL");
             if (!String.IsNullOrEmpty(value)) {
                 if (value.EndsWith("/"))
                     value = value.Substring(0, value.Length - 1);
 
-                if (settings.EnableSSL && value.StartsWith("http:"))
+                if (EnableSSL && value.StartsWith("http:"))
                     value = value.ReplaceFirst("http:", "https:");
-                else if (!settings.EnableSSL && value.StartsWith("https:"))
+                else if (!EnableSSL && value.StartsWith("https:"))
                     value = value.ReplaceFirst("https:", "http:");
 
-                settings.BaseURL = value;
+                BaseURL = value;
             }
 
-            settings.InternalProjectId = GetString("InternalProjectId");
-            settings.WebsiteMode = GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
-            settings.TestEmailAddress = GetString("TestEmailAddress");
-            settings.AllowedOutboundAddresses = GetStringList("AllowedOutboundAddresses", "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
-            settings.RunJobsInProcess = GetBool("RunJobsInProcess", true);
-            settings.LogJobLocks = GetBool("LogJobLocks");
-            settings.LogJobEvents = GetBool("LogJobEvents");
-            settings.LogJobCompleted = GetBool("LogJobCompleted");
-            settings.LogStackingInfo = GetBool("LogStackingInfo");
-            settings.AppendMachineNameToDatabase = GetBool("AppendMachineNameToDatabase");
-            settings.SaveIncomingErrorsToDisk = GetBool("SaveIncomingErrorsToDisk");
-            settings.IncomingErrorPath = GetString("IncomingErrorPath");
-            settings.EnableLogErrorReporting = GetBool("EnableLogErrorReporting");
-            settings.EnableSignalR = GetBool("EnableSignalR", true);
-            settings.BotThrottleLimit = GetInt("BotThrottleLimit", 25);
-            settings.ApiThrottleLimit = GetInt("ApiThrottleLimit", Int32.MaxValue);
-            settings.MaximumEventPostSize = GetInt("MaximumEventPostSize", Int32.MaxValue);
-            settings.EnableDailySummary = GetBool("EnableDailySummary");
-            settings.ShouldAutoUpgradeDatabase = GetBool("ShouldAutoUpgradeDatabase", true);
-            settings.MetricsServerName = GetString("MetricsServerName") ?? "127.0.0.1";
-            settings.MetricsServerPort = GetInt("MetricsServerPort", 12000);
-            settings.EnableMetricsReporting = GetBool("EnableMetricsReporting");
-            settings.IntercomAppSecret = GetString("IntercomAppSecret");
-            settings.EnableAccountCreation = GetBool("EnableAccountCreation", true);
-            settings.GoogleAppId = GetString("GoogleAppId");
-            settings.GoogleAppSecret = GetString("GoogleAppSecret");
-            settings.MicrosoftAppId = GetString("MicrosoftAppId");
-            settings.MicrosoftAppSecret = GetString("MicrosoftAppSecret");
-            settings.FacebookAppId = GetString("FacebookAppId");
-            settings.FacebookAppSecret = GetString("FacebookAppSecret");
-            settings.GitHubAppId = GetString("GitHubAppId");
-            settings.GitHubAppSecret = GetString("GitHubAppSecret");
-            settings.StripeApiKey = GetString("StripeApiKey");
-            settings.StorageFolder = GetString("StorageFolder");
-            settings.BulkBatchSize = GetInt("BulkBatchSize", 1000);
+            InternalProjectId = GetString("InternalProjectId", "54b56e480ef9605a88a13153");
+            WebsiteMode = GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
+            AppScope = GetString("AppScope", String.Empty);
+            TestEmailAddress = GetString("TestEmailAddress");
+            AllowedOutboundAddresses = GetStringList("AllowedOutboundAddresses", "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
+            RunJobsInProcess = GetBool("RunJobsInProcess", true);
+            BotThrottleLimit = GetInt("BotThrottleLimit", 25);
+            ApiThrottleLimit = GetInt("ApiThrottleLimit", Int32.MaxValue);
+            EventSubmissionDisabled = GetBool(nameof(EventSubmissionDisabled));
+            MaximumEventPostSize = GetInt("MaximumEventPostSize", Int32.MaxValue);
+            EnableDailySummary = GetBool("EnableDailySummary");
+            MetricsServerName = GetString("MetricsServerName") ?? "127.0.0.1";
+            MetricsServerPort = GetInt("MetricsServerPort", 8125);
+            EnableMetricsReporting = GetBool("EnableMetricsReporting");
+            IntercomAppSecret = GetString("IntercomAppSecret");
+            EnableAccountCreation = GetBool("EnableAccountCreation", true);
+            GoogleAppId = GetString(nameof(GoogleAppId));
+            GoogleAppSecret = GetString(nameof(GoogleAppSecret));
+            GoogleGeocodingApiKey = GetString(nameof(GoogleGeocodingApiKey));
+            MicrosoftAppId = GetString("MicrosoftAppId");
+            MicrosoftAppSecret = GetString("MicrosoftAppSecret");
+            FacebookAppId = GetString("FacebookAppId");
+            FacebookAppSecret = GetString("FacebookAppSecret");
+            GitHubAppId = GetString("GitHubAppId");
+            GitHubAppSecret = GetString("GitHubAppSecret");
+            StripeApiKey = GetString("StripeApiKey");
+            StorageFolder = GetString("StorageFolder");
+            BulkBatchSize = GetInt("BulkBatchSize", 1000);
 
-            string connectionString = GetConnectionString("RedisConnectionString");
-            if (!String.IsNullOrEmpty(connectionString)) {
-                settings.RedisConnectionString = connectionString;
-                settings.EnableRedis = GetBool("EnableRedis", !String.IsNullOrEmpty(settings.RedisConnectionString));
-            }
+            SmtpHost = GetString("SmtpHost");
+            SmtpPort = GetInt("SmtpPort", 587);
+            SmtpEnableSsl = GetBool("SmtpEnableSsl", true);
+            SmtpUser = GetString("SmtpUser");
+            SmtpPassword = GetString("SmtpPassword");
 
-            connectionString = GetConnectionString("AzureStorageConnectionString");
-            if (!String.IsNullOrEmpty(connectionString)) {
-                settings.AzureStorageConnectionString = connectionString;
-                settings.EnableAzureStorage = GetBool("EnableAzureStorage", !String.IsNullOrEmpty(settings.AzureStorageConnectionString));
-            }
+            AzureStorageConnectionString = GetConnectionString("AzureStorageConnectionString");
+            EnableAzureStorage = GetBool("EnableAzureStorage", !String.IsNullOrEmpty(AzureStorageConnectionString));
 
-            connectionString = GetConnectionString("MongoConnectionString");
-            if (!String.IsNullOrEmpty(connectionString))
-                settings.MongoConnectionString = connectionString;
+            ElasticSearchConnectionString = GetConnectionString("ElasticSearchConnectionString");
+            EnableElasticsearchTracing = GetBool("EnableElasticsearchTracing");
 
-            connectionString = GetConnectionString("ElasticSearchConnectionString");
-            if (!String.IsNullOrEmpty(connectionString))
-                settings.ElasticSearchConnectionString = connectionString;
+            RedisConnectionString = GetConnectionString("RedisConnectionString");
+            EnableRedis = GetBool("EnableRedis", !String.IsNullOrEmpty(RedisConnectionString));
 
-            settings.Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
+            EnableSignalR = GetBool(nameof(EnableSignalR), true);
 
-            return settings;
+            Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
+            MinimumLogLevel = GetEnum<LogLevel>("MinimumLogLevel", LogLevel.Information);
         }
 
-        #region Singleton
+        public const string JobBootstrappedServiceProvider = "Exceptionless.Insulation.Jobs.JobBootstrappedServiceProvider,Exceptionless.Insulation";
 
-        protected Settings() {}
-
-        private static readonly Lazy<Settings> _instance = new Lazy<Settings>(Init);
-
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        [DebuggerNonUserCode]
-        public static Settings Current { get { return _instance.Value; } }
-
-        #endregion
-
-        private static bool GetBool(string name, bool defaultValue = false) {
-            string value = GetEnvironmentalVariable(name);
-            if (String.IsNullOrEmpty(value))
-                return ConfigurationManager.AppSettings.GetBool(name, defaultValue);
-            
-            bool boolean;
-            return Boolean.TryParse(value, out boolean) ? boolean : defaultValue;
-        }
-
-        private static string GetConnectionString(string name) {
-            string value = GetEnvironmentalVariable(name);
-            if (!String.IsNullOrEmpty(value))
-                return value;
-
-            var connectionString = ConfigurationManager.ConnectionStrings[name];
-            return connectionString != null ? connectionString.ConnectionString : null;
-        }
-
-        private static T GetEnum<T>(string name, T? defaultValue = null) where T : struct {
-            string value = GetEnvironmentalVariable(name);
-            if (String.IsNullOrEmpty(value))
-                return ConfigurationManager.AppSettings.GetEnum(name, defaultValue);
-
-            try {
-                return (T)Enum.Parse(typeof(T), value, true);
-            } catch (ArgumentException ex) {
-                if (defaultValue.HasValue && defaultValue is T)
-                    return (T)defaultValue;
-
-                string message = String.Format("Configuration key '{0}' has value '{1}' that could not be parsed as a member of the {2} enum type.", name, value, typeof(T).Name);
-                throw new ConfigurationErrorsException(message, ex);
-            }
-        }
-
-        private static int GetInt(string name, int defaultValue = 0) {
-            string value = GetEnvironmentalVariable(name);
-            if (String.IsNullOrEmpty(value))
-                return ConfigurationManager.AppSettings.GetInt(name, defaultValue);
-
-            int number;
-            return Int32.TryParse(value, out number) ? number : defaultValue;
-        }
-
-        private static string GetString(string name) {
-            return GetEnvironmentalVariable(name) ?? ConfigurationManager.AppSettings[name];
-        }
-
-        private static List<string> GetStringList(string name, string defaultValues = null, char[] separators = null) {
-            string value = GetEnvironmentalVariable(name);
-            if (String.IsNullOrEmpty(value))
-                return ConfigurationManager.AppSettings.GetStringList(name, defaultValues, separators);
-
-            if (separators == null)
-                separators = new[] { ',' };
-
-            return value.Split(separators, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
-        }
-
-        private static string GetEnvironmentalVariable(string name) {
-            if (String.IsNullOrEmpty(name))
-                return null;
-
-            try {
-                return Environment.GetEnvironmentVariable(name);
-            } catch (Exception) {
-                return null;
-            }
+        public LoggerFactory GetLoggerFactory() {
+            return new LoggerFactory {
+                DefaultLogLevel = MinimumLogLevel
+            };
         }
     }
 

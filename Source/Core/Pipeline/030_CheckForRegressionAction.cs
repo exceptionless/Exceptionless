@@ -2,33 +2,35 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
-using NLog.Fluent;
+using Foundatio.Jobs;
+using Foundatio.Logging;
+using Foundatio.Queues;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(30)]
     public class CheckForRegressionAction : EventPipelineActionBase {
         private readonly IStackRepository _stackRepository;
-        private readonly IEventRepository _eventRepository;
+        private readonly IQueue<WorkItemData> _workItemQueue;
 
-        public CheckForRegressionAction(IStackRepository stackRepository, IEventRepository eventRepository) {
+        public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _stackRepository = stackRepository;
-            _eventRepository = eventRepository;
+            _workItemQueue = workItemQueue;
+            ContinueOnError = true;
         }
 
-        protected override bool ContinueOnError { get { return true; } }
-
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
-            var stacks = contexts.Where(c => c.Stack != null && c.Stack.DateFixed.HasValue && c.Stack.DateFixed.Value < c.Event.Date.UtcDateTime).GroupBy(c => c.Event.StackId);
+            var stacks = contexts.Where(c => c.Stack?.DateFixed != null && c.Stack.DateFixed.Value < c.Event.Date.UtcDateTime).GroupBy(c => c.Event.StackId);
             foreach (var stackGroup in stacks) {
                 try {
                     var context = stackGroup.First();
-                    Log.Trace().Message("Marking stack and events as regression.").Write();
-                    _stackRepository.MarkAsRegressed(context.Stack.Id);
-                    _eventRepository.MarkAsRegressedByStack(context.Event.OrganizationId, context.Stack.Id);
-
-                    _stackRepository.InvalidateCache(context.Event.ProjectId, context.Event.StackId, context.SignatureHash);
+                    _logger.Trace("Marking stack and events as regression.");
+                    await _stackRepository.MarkAsRegressedAsync(context.Stack.Id).AnyContext();
+                    await _workItemQueue.EnqueueAsync(new StackWorkItem { OrganizationId = context.Event.OrganizationId, StackId = context.Stack.Id, UpdateIsFixed = true, IsFixed = false }).AnyContext();
+                    await _stackRepository.InvalidateCacheAsync(context.Event.ProjectId, context.Event.StackId, context.SignatureHash).AnyContext();
 
                     bool isFirstEvent = true;
                     foreach (var ctx in stackGroup) {
@@ -53,7 +55,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public override Task ProcessAsync(EventContext ctx) {
-            return Task.FromResult(0);
+            return Task.CompletedTask;
         }
     }
 }

@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
+using Foundatio.Logging;
 using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Pipeline {
@@ -12,18 +14,17 @@ namespace Exceptionless.Core.Pipeline {
     public class IncrementCountersAction : EventPipelineActionBase {
         private readonly IMetricsClient _metricsClient;
 
-        public IncrementCountersAction(IMetricsClient metricsClient) {
+        public IncrementCountersAction(IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _metricsClient = metricsClient;
+            ContinueOnError = true;
         }
-
-        protected override bool ContinueOnError { get { return true; } }
-
+        
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {
-                await _metricsClient.CounterAsync(MetricNames.EventsProcessed, contexts.Count);
+                await _metricsClient.CounterAsync(MetricNames.EventsProcessed, contexts.Count).AnyContext();
 
                 if (contexts.First().Organization.PlanId != BillingManager.FreePlan.Id)
-                    await _metricsClient.CounterAsync(MetricNames.EventsPaidProcessed, contexts.Count);
+                    await _metricsClient.CounterAsync(MetricNames.EventsPaidProcessed, contexts.Count).AnyContext();
             } catch (Exception ex) {
                 foreach (var context in contexts) {
                     bool cont = false;
@@ -38,7 +39,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public override Task ProcessAsync(EventContext ctx) {
-            return Task.FromResult(0);
+            return Task.CompletedTask;
         }
     }
 }

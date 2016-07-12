@@ -20,7 +20,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.User)]
         [ResponseType(typeof(QueryProcessResult))]
         public IHttpActionResult Validate(string query) {
-            return Ok(QueryProcessor.Process(query));
+            return Ok(QueryProcessor.Validate(query));
         }
 
         [Route("notfound")]

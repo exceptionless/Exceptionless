@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using MongoDB.Bson;
+using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Tests.Utility {
     internal static class ProjectData {
@@ -25,9 +25,9 @@ namespace Exceptionless.Tests.Utility {
 
         public static Project GenerateProject(bool generateId = false, string id = null, string organizationId = null, string name = null, Int64? nextSummaryEndOfDayTicks = null) {
             var project = new Project {
-                Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : String.Empty : id,
+                Id = !id.IsNullOrEmpty() ? id : generateId ? ObjectId.GenerateNewId().ToString() : null,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
-                Name = name ?? String.Format("Project{0}", id)
+                Name = name ?? $"Project{id}"
             };
 
             if (nextSummaryEndOfDayTicks.HasValue)

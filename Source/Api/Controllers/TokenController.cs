@@ -12,7 +12,8 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Admin;
+using Foundatio.Logging;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/tokens")]
@@ -21,7 +22,7 @@ namespace Exceptionless.App.Controllers.API {
         private readonly IApplicationRepository _applicationRepository;
         private readonly IProjectRepository _projectRepository;
 
-        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository) : base(repository) {
+        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
             _applicationRepository = applicationRepository;
             _projectRepository = projectRepository;
         }
@@ -38,15 +39,16 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
         [ResponseType(typeof(List<ViewToken>))]
-        public IHttpActionResult GetByOrganization(string organizationId, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByTypeAndOrganizationId(TokenType.Access, organizationId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, page);
+            var tokens = await _repository.GetByTypeAndOrganizationIdAsync(TokenType.Access, organizationId, options, true);
+            var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true)).ToList();
+            return OkWithResourceLinks(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
         }
 
         /// <summary>
@@ -59,19 +61,17 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
         [ResponseType(typeof(List<ViewToken>))]
-        public IHttpActionResult GetByProject(string projectId, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            var project = _projectRepository.GetById(projectId);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+        public async Task<IHttpActionResult> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
-            return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+            var tokens = await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, options);
+            var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true)).ToList();
+            return OkWithResourceLinks(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
         }
 
         /// <summary>
@@ -82,19 +82,16 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens/default")]
         [ResponseType(typeof(ViewToken))]
-        public IHttpActionResult GetDefaultToken(string projectId) {
-            if (String.IsNullOrEmpty(projectId))
+        public async Task<IHttpActionResult> GetDefaultTokenAsync(string projectId) {
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
-            var project = _projectRepository.GetById(projectId);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
-                return NotFound();
-
-            var token = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, new PagingOptions { Limit = 1 }).FirstOrDefault();
+            var token = (await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, new PagingOptions { Limit = 1 })).Documents.FirstOrDefault();
             if (token != null)
-                return Ok(Mapper.Map<Token, ViewToken>(token));
+                return await OkModelAsync(token);
 
-            return Post(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId});
+            return await PostAsync(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId});
         }
 
         /// <summary>
@@ -105,8 +102,8 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet]
         [Route("{id:token}", Name = "GetTokenById")]
         [ResponseType(typeof(ViewToken))]
-        public override IHttpActionResult GetById(string id) {
-            return base.GetById(id);
+        public override Task<IHttpActionResult> GetByIdAsync(string id) {
+            return base.GetByIdAsync(id);
         }
 
         /// <summary>
@@ -121,8 +118,8 @@ namespace Exceptionless.App.Controllers.API {
         [Route]
         [HttpPost]
         [ResponseType(typeof(ViewToken))]
-        public override IHttpActionResult Post(NewToken token) {
-            return base.Post(token);
+        public override Task<IHttpActionResult> PostAsync(NewToken token) {
+            return base.PostAsync(token);
         }
 
         /// <summary>
@@ -139,12 +136,17 @@ namespace Exceptionless.App.Controllers.API {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
         [HttpPost]
         [ResponseType(typeof(ViewToken))]
-        public IHttpActionResult PostByProject(string projectId, NewToken token) {
+        public async Task<IHttpActionResult> PostByProjectAsync(string projectId, NewToken token) {
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
+                return BadRequest();
+
             if (token == null)
                 token = new NewToken();
 
+            token.OrganizationId = project.OrganizationId;
             token.ProjectId = projectId;
-            return base.Post(token);
+            return await PostAsync(token);
         }
 
         /// <summary>
@@ -161,12 +163,15 @@ namespace Exceptionless.App.Controllers.API {
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
         [HttpPost]
         [ResponseType(typeof(ViewToken))]
-        public IHttpActionResult PostByOrganization(string organizationId, NewToken token) {
+        public async Task<IHttpActionResult> PostByOrganizationAsync(string organizationId, NewToken token) {
             if (token == null)
                 token = new NewToken();
 
+            if (!IsInOrganization(organizationId))
+                return BadRequest();
+
             token.OrganizationId = organizationId;
-            return base.Post(token);
+            return await PostAsync(token);
         }
 
         /// <summary>
@@ -179,36 +184,37 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="500">An error occurred while deleting one or more tokens.</response>
         [HttpDelete]
         [Route("{ids:tokens}")]
-        public async Task<IHttpActionResult> DeleteAsync(string ids) {
-            return await base.DeleteAsync(ids.FromDelimitedString());
+        public Task<IHttpActionResult> DeleteAsync(string ids) {
+            return base.DeleteAsync(ids.FromDelimitedString());
         }
 
         #endregion
 
-        protected override Token GetModel(string id, bool useCache = true) {
+        protected override async Task<Token> GetModelAsync(string id, bool useCache = true) {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            var model = _repository.GetById(id, useCache);
+            var model = await _repository.GetByIdAsync(id, useCache);
             if (model == null)
                 return null;
 
             if (!String.IsNullOrEmpty(model.OrganizationId) && !IsInOrganization(model.OrganizationId))
                 return null;
 
-            if (!String.IsNullOrEmpty(model.UserId) && model.UserId != Request.GetUser().Id)
+            if (!String.IsNullOrEmpty(model.UserId) && model.UserId != ExceptionlessUser.Id)
                 return null;
 
             if (model.Type != TokenType.Access)
                 return null;
 
-            if (!String.IsNullOrEmpty(model.ProjectId) && !IsInProject(model.ProjectId))
+            if (!String.IsNullOrEmpty(model.ProjectId) && !await IsInProjectAsync(model.ProjectId))
                 return null;
 
             return model;
         }
 
-        protected override PermissionResult CanAdd(Token value) {
+        protected override async Task<PermissionResult> CanAddAsync(Token value) {
+            // We only allow users to create organization scoped tokens.
             if (String.IsNullOrEmpty(value.OrganizationId))
                 return PermissionResult.Deny;
 
@@ -238,23 +244,30 @@ namespace Exceptionless.App.Controllers.API {
                 return PermissionResult.Deny;
 
             if (!String.IsNullOrEmpty(value.ProjectId)) {
-                Project project = _projectRepository.GetById(value.ProjectId, true);
-                if (!IsInProject(project))
+                var project = await GetProjectAsync(value.ProjectId);
+                if (project == null)
                     return PermissionResult.Deny;
 
                 value.OrganizationId = project.OrganizationId;
+                value.DefaultProjectId = null;
+            }
+
+            if (!String.IsNullOrEmpty(value.DefaultProjectId)) {
+                var project = await GetProjectAsync(value.DefaultProjectId);
+                if (project == null)
+                    return PermissionResult.Deny;
             }
 
             if (!String.IsNullOrEmpty(value.ApplicationId)) {
-                var application = _applicationRepository.GetById(value.ApplicationId, true);
+                var application = await _applicationRepository.GetByIdAsync(value.ApplicationId, true);
                 if (application == null || !IsInOrganization(application.OrganizationId))
                     return PermissionResult.Deny;
             }
 
-            return base.CanAdd(value);
+            return await base.CanAddAsync(value);
         }
 
-        protected override Token AddModel(Token value) {
+        protected override Task<Token> AddModelAsync(Token value) {
             value.Id = StringExtensions.GetNewToken();
             value.CreatedUtc = value.ModifiedUtc = DateTime.UtcNow;
             value.Type = TokenType.Access;
@@ -267,35 +280,30 @@ namespace Exceptionless.App.Controllers.API {
             if (value.Scopes.Contains(AuthorizationRoles.User))
                 value.Scopes.Add(AuthorizationRoles.Client);
 
-            return base.AddModel(value);
+            return base.AddModelAsync(value);
         }
 
-        protected override PermissionResult CanDelete(Token value) {
-            if (!String.IsNullOrEmpty(value.ProjectId) && !IsInProject(value.ProjectId))
+        protected override async Task<PermissionResult> CanDeleteAsync(Token value) {
+            if (!String.IsNullOrEmpty(value.ProjectId) && !await IsInProjectAsync(value.ProjectId))
                 return PermissionResult.DenyWithNotFound(value.Id);
 
-            return base.CanDelete(value);
+            return await base.CanDeleteAsync(value);
         }
 
-        private bool IsInProject(string projectId) {
+        private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
             if (String.IsNullOrEmpty(projectId))
-                return false;
+                return null;
 
-            return IsInProject(_projectRepository.GetById(projectId, true));
+            var project = await _projectRepository.GetByIdAsync(projectId, useCache);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return null;
+
+            return project;
         }
 
-        private bool IsInProject(Project value) {
-            if (value == null)
-                return false;
-
-            return IsInOrganization(value.OrganizationId);
-        }
-
-        protected override void CreateMaps() {
-            if (Mapper.FindTypeMapFor<NewToken, Token>() == null)
-                Mapper.CreateMap<NewToken, Token>().ForMember(m => m.Type, m => m.Ignore());
-
-            base.CreateMaps();
+        private async Task<bool> IsInProjectAsync(string projectId) {
+            var project = await GetProjectAsync(projectId);
+            return project != null;
         }
     }
 }

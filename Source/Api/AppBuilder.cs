@@ -1,32 +1,36 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Cors;
 using System.Web.Http;
+using System.Web.Http.Cors;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Routing;
-using AutoMapper;
-using Exceptionless.Api.Extensions;
+using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Migrations;
-using Exceptionless.Core.Models;
+using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
+using Foundatio.Jobs;
+using Foundatio.Logging;
+using Foundatio.Messaging;
+using Foundatio.Queues;
 using Microsoft.AspNet.SignalR;
+using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using NLog.Fluent;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
@@ -34,168 +38,181 @@ using Swashbuckle.Application;
 
 namespace Exceptionless.Api {
     public static class AppBuilder {
-        public static void Build(IAppBuilder app) {
-            BuildWithContainer(app, CreateContainer());
-        }
+        public static void Build(IAppBuilder app, Container container = null) {
+            var loggerFactory = Settings.Current.GetLoggerFactory();
+            var logger = loggerFactory.CreateLogger(nameof(AppBuilder));
 
-        public static void BuildWithContainer(IAppBuilder app, Container container) {
             if (container == null)
-                throw new ArgumentNullException("container");
+                container = CreateContainer(loggerFactory, logger);
 
-            var contractResolver = container.GetInstance<IContractResolver>();
-            var exceptionlessContractResolver = contractResolver as ExceptionlessContractResolver;
-            if (exceptionlessContractResolver != null)
-                exceptionlessContractResolver.UseDefaultResolverFor(typeof(Connection).Assembly);
+            var config = new HttpConfiguration();
+            config.Formatters.Remove(config.Formatters.XmlFormatter);
+            config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
 
-            if (Settings.Current.ShouldAutoUpgradeDatabase)
-                MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, Settings.Current.MongoDatabaseName);
-
-            Config = new HttpConfiguration();
-            Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
-            Config.Formatters.Remove(Config.Formatters.XmlFormatter);
-            Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
-            Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
-
-            var constraintResolver = new DefaultInlineConstraintResolver();
-            constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
-            constraintResolver.ConstraintMap.Add("objectids", typeof(ObjectIdsRouteConstraint));
-            constraintResolver.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
-            constraintResolver.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
-            Config.MapHttpAttributeRoutes(constraintResolver);
-
-            container.RegisterWebApiFilterProvider(Config);
+            SetupRouteConstraints(config);
+            container.RegisterWebApiControllers(config);
 
             VerifyContainer(container);
 
-            container.Bootstrap(Config);
-            container.Bootstrap(app);
-            Log.Info().Message("Starting api...").Write();
+            config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
 
-            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
-            Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
+            var contractResolver = container.GetInstance<IContractResolver>();
+            var exceptionlessContractResolver = contractResolver as ExceptionlessContractResolver;
+            exceptionlessContractResolver?.UseDefaultResolverFor(typeof(Connection).Assembly);
+            config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
-            Config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
-            Config.MessageHandlers.Add(container.GetInstance<EncodingDelegatingHandler>());
-            Config.MessageHandlers.Add(container.GetInstance<AuthMessageHandler>());
+            config.Services.Add(typeof(IExceptionLogger), new FoundatioExceptionLogger(loggerFactory.CreateLogger<FoundatioExceptionLogger>()));
+            config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
+
+            config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
+            config.MessageHandlers.Add(container.GetInstance<EncodingDelegatingHandler>());
+            config.MessageHandlers.Add(container.GetInstance<AuthMessageHandler>());
 
             // Throttle api calls to X every 15 minutes by IP address.
-            Config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
+            config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
 
             // Reject event posts in orgs over their max event limits.
-            Config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
+            config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
 
+            EnableCors(config, app);
+
+            container.Bootstrap(config);
+            container.Bootstrap(app);
+
+            app.UseWebApi(config);
+            SetupSignalR(app, container, loggerFactory);
+            SetupSwagger(config);
+
+            if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
+                Task.Run(async () => await CreateSampleDataAsync(container));
+            
+            var context = new OwinContext(app.Properties);
+            var token = context.Get<CancellationToken>("host.OnAppDisposing");
+            RunMessageBusBroker(container, logger, token);
+            RunJobs(container, loggerFactory, logger, token);
+
+            logger.Info("Starting api...");
+        }
+
+        private static void RunMessageBusBroker(Container container, ILogger logger, CancellationToken token = default(CancellationToken)) {
+            var workItemQueue = container.GetInstance<IQueue<WorkItemData>>();
+            var subscriber = container.GetInstance<IMessageSubscriber>();
+            
+            subscriber.Subscribe<PlanOverage>(async overage => {
+                logger.Info("Enqueueing plan overage work item for organization: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
+                await workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
+                    OrganizationId = overage.OrganizationId,
+                    IsOverHourlyLimit = overage.IsHourly,
+                    IsOverMonthlyLimit = !overage.IsHourly
+                });
+            }, token);
+        }
+
+        private static void RunJobs(Container container, LoggerFactory loggerFactory, ILogger logger, CancellationToken token = default(CancellationToken)) {
+            if (!Settings.Current.RunJobsInProcess) {
+                logger.Info("Jobs running out of process.");
+                return;
+            }
+            
+            new JobRunner(container.GetInstance<EventPostsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2)).RunInBackground(token);
+            new JobRunner(container.GetInstance<EventUserDescriptionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(3)).RunInBackground(token);
+            new JobRunner(container.GetInstance<EventNotificationsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
+            new JobRunner(container.GetInstance<MailMessageJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
+            new JobRunner(container.GetInstance<WebHooksJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
+            new JobRunner(container.GetInstance<CloseInactiveSessionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(30), interval: TimeSpan.FromMinutes(1)).RunInBackground(token);
+            new JobRunner(container.GetInstance<DailySummaryJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(1), interval: TimeSpan.FromHours(1)).RunInBackground(token);
+            new JobRunner(container.GetInstance<DownloadGeoIPDatabaseJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.FromDays(1)).RunInBackground(token);
+            new JobRunner(container.GetInstance<RetentionLimitsJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromDays(1)).RunInBackground(token);
+            new JobRunner(container.GetInstance<WorkItemJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2).RunInBackground(token);
+
+            logger.Warn("Jobs running in process.");
+        }
+
+        private static void EnableCors(HttpConfiguration config, IAppBuilder app) {
+            var exposedHeaders = new List<string> { "ETag", "Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-Exceptionless-Client", "X-Exceptionless-ConfigVersion" };
             app.UseCors(new CorsOptions {
-                    PolicyProvider = new CorsPolicyProvider
-                    {
-                        PolicyResolver = ctx => Task.FromResult(new CorsPolicy
-                        {
+                PolicyProvider = new CorsPolicyProvider {
+                    PolicyResolver = context => {
+                        var policy = new CorsPolicy {
                             AllowAnyHeader = true,
                             AllowAnyMethod = true,
                             AllowAnyOrigin = true,
                             SupportsCredentials = true,
                             PreflightMaxAge = 60 * 5
-                        })
-                    }
-                });
+                        };
 
-            app.CreatePerContext<Lazy<User>>("User", ctx => new Lazy<User>(() => {
-                if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
-                    return null;
-
-                string userId = ctx.Request.User.GetUserId();
-                if (String.IsNullOrEmpty(userId))
-                    return null;
-
-                var userRepository = container.GetInstance<IUserRepository>();
-                return userRepository.GetById(userId, true);
-            }));
-
-            app.CreatePerContext<Lazy<Project>>("DefaultProject", ctx => new Lazy<Project>(() => {
-                if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
-                    return null;
-
-                // TODO: Use project id from url. E.G., /projects/{projectId:objectid}/events
-                string projectId = ctx.Request.User.GetDefaultProjectId();
-                var projectRepository = container.GetInstance<IProjectRepository>();
-
-                if (String.IsNullOrEmpty(projectId)) {
-                    var firstOrgId = ctx.Request.User.GetOrganizationIds().FirstOrDefault();
-                    if (!String.IsNullOrEmpty(firstOrgId)) {
-                        var project = projectRepository.GetByOrganizationId(firstOrgId, useCache: true).FirstOrDefault();
-                        if (project != null)
-                            return project;
-                    }
-
-                    if (Settings.Current.WebsiteMode == WebsiteMode.Dev) {
-                        var dataHelper = container.GetInstance<DataHelper>();
-                        // create a default org and project
-                        projectId = dataHelper.CreateDefaultOrganizationAndProject(ctx.Request.GetUser());
+                        policy.ExposedHeaders.AddRange(exposedHeaders);
+                        return Task.FromResult(policy);
                     }
                 }
+            });
 
-                if (String.IsNullOrEmpty(projectId))
-                    return null;
+            var enableCorsAttribute = new EnableCorsAttribute("*", "*", "*") {
+                SupportsCredentials = true,
+                PreflightMaxAge = 60 * 5
+            };
 
-                return projectRepository.GetById(projectId, true);
-            }));
+            enableCorsAttribute.ExposedHeaders.AddRange(exposedHeaders);
+            config.EnableCors(enableCorsAttribute);
+        }
 
-            app.UseWebApi(Config);
-            var resolver = new SimpleInjectorSignalRDependencyResolver(container);
-            if (Settings.Current.EnableRedis)
-                resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
-            app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
+        private static void SetupRouteConstraints(HttpConfiguration config) {
+            var constraintResolver = new DefaultInlineConstraintResolver();
+            constraintResolver.ConstraintMap.Add("identifier", typeof(IdentifierRouteConstraint));
+            constraintResolver.ConstraintMap.Add("identifiers", typeof(IdentifiersRouteConstraint));
+            constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
+            constraintResolver.ConstraintMap.Add("objectids", typeof(ObjectIdsRouteConstraint));
+            constraintResolver.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
+            constraintResolver.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
+            config.MapHttpAttributeRoutes(constraintResolver);
+        }
 
-            Config.EnableSwagger("schema/{apiVersion}", c => {
+        private static void SetupSignalR(IAppBuilder app, Container container, ILoggerFactory loggerFactory) {
+            if (!Settings.Current.EnableSignalR)
+                return;
+
+            var resolver = container.GetInstance<IDependencyResolver>();
+            var hubPipeline = (IHubPipeline)resolver.GetService(typeof(IHubPipeline));
+            hubPipeline.AddModule(new ErrorHandlingPipelineModule(loggerFactory.CreateLogger<ErrorHandlingPipelineModule>()));
+
+            app.MapSignalR<MessageBusConnection>("/api/v2/push", new ConnectionConfiguration { Resolver = resolver });
+            container.GetInstance<MessageBusBroker>().Start();
+        }
+
+        private static void SetupSwagger(HttpConfiguration config) {
+            config.EnableSwagger("schema/{apiVersion}", c => {
                 c.SingleApiVersion("v2", "Exceptionless");
                 c.ApiKey("access_token").In("header").Name("access_token").Description("API Key Authentication");
                 c.BasicAuth("basic").Description("Basic HTTP Authentication");
-                c.IncludeXmlComments(String.Format(@"{0}\bin\Exceptionless.Api.xml", AppDomain.CurrentDomain.BaseDirectory));
+                c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\bin\Exceptionless.Api.xml");
                 c.IgnoreObsoleteActions();
                 c.DocumentFilter<FilterRoutesDocumentFilter>();
             }).EnableSwaggerUi("docs/{*assetPath}", c => {
                 c.InjectStylesheet(typeof(AppBuilder).Assembly, "Exceptionless.Api.Content.docs.css");
                 c.InjectJavaScript(typeof(AppBuilder).Assembly, "Exceptionless.Api.Content.docs.js");
             });
-
-            Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
-
-            var context = new OwinContext(app.Properties);
-            var token = context.Get<CancellationToken>("host.OnAppDisposing");
-
-            CreateSampleData(container);
-
-            if (Settings.Current.RunJobsInProcess) {
-                Task.Factory.StartNew(() => container.GetInstance<EventPostsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<EventUserDescriptionsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<MailMessageJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<EventNotificationsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<WebHooksJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                //Task.Factory.StartNew(() => container.GetInstance<DailySummaryJob>().RunContinuousAsync(delay: TimeSpan.FromMinutes(15), token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                //Task.Factory.StartNew(() => container.GetInstance<RetentionLimitsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                //Task.Factory.StartNew(() => container.GetInstance<StaleAccountsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-            }
         }
 
-        private static void CreateSampleData(Container container) {
+        private static async Task CreateSampleDataAsync(Container container) {
             if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
                 return;
 
             var userRepository = container.GetInstance<IUserRepository>();
-            if (userRepository.Count() != 0)
+            if (await userRepository.CountAsync() != 0)
                 return;
 
-            var dataHelper = container.GetInstance<DataHelper>();
-            dataHelper.CreateTestData();
+            var dataHelper = container.GetInstance<SampleDataService>();
+            await dataHelper.CreateDataAsync();
         }
 
-        public static Container CreateContainer(bool includeInsulation = true) {
+        public static Container CreateContainer(LoggerFactory loggerFactory, ILogger logger, bool includeInsulation = true) {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
-            container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
+            container.Options.DefaultScopedLifestyle = new WebApiRequestLifestyle();
 
-            container.RegisterPackage<Core.Bootstrapper>();
-            container.RegisterPackage<Bootstrapper>();
-
+            Core.Bootstrapper.RegisterServices(container, loggerFactory);
+            Bootstrapper.RegisterServices(container, loggerFactory);
+            
             if (!includeInsulation)
                 return container;
 
@@ -203,15 +220,21 @@ namespace Exceptionless.Api {
             try {
                 insulationAssembly = Assembly.Load("Exceptionless.Insulation");
             } catch (Exception ex) {
-                Log.Error().Message("Unable to load the insulation assembly.").Exception(ex).Write();
+                logger.Error(ex, "Unable to load the insulation assembly.");
             }
 
-            if (insulationAssembly != null)
-                container.RegisterPackages(new[] { insulationAssembly });
+            if (insulationAssembly != null) {
+                var bootstrapperType = insulationAssembly.GetType("Exceptionless.Insulation.Bootstrapper");
+                if (bootstrapperType == null)
+                    return container;
+
+                bootstrapperType.GetMethod("RegisterServices", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[] { container, loggerFactory });
+            }
 
             return container;
         }
 
+        [Conditional("DEBUG")]
         private static void VerifyContainer(Container container) {
             try {
                 container.Verify();
@@ -233,7 +256,5 @@ namespace Exceptionless.Api {
                 throw;
             }
         }
-
-        public static HttpConfiguration Config { get; private set; }
     }
 }

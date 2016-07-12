@@ -99,7 +99,7 @@ namespace Exceptionless.Core.Extensions {
         /// <returns></returns>
         public static string ToStringHex<T>(this Enum @enum)
             where T : struct, IComparable, IFormattable, IConvertible {
-            return String.Format("{0:x8}", @enum); //hex            
+            return $"{@enum:x8}"; //hex            
         }
 
         /// <summary>

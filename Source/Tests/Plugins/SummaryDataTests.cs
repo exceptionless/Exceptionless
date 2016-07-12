@@ -5,19 +5,17 @@ using ApprovalTests.Reporters;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Stats;
 using Exceptionless.Core.Plugins.Formatting;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Plugins {
-    [UseReporter(typeof(HappyDiffReporter))]
+    [UseReporter(typeof(DiffReporter))]
     public class SummaryDataTests {
         private readonly FormattingPluginManager _formattingPluginManager = IoC.GetInstance<FormattingPluginManager>();
 
         [Theory]
-        [PropertyData("Events")]
+        [MemberData("Events")]
         public void EventSummaryData(string path) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
@@ -39,7 +37,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         [Theory]
-        [PropertyData("Stacks")]
+        [MemberData("Stacks")]
         public void StackSummaryData(string path) {
             var settings = IoC.GetInstance<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
@@ -55,10 +53,7 @@ namespace Exceptionless.Api.Tests.Plugins {
                 Data = data.Data,
                 Id = stack.Id,
                 Title = stack.Title,
-                New = 1,
                 Total = 1,
-                Unique = 1,
-                Timeline = new List<TermTimelineItem>()
             };
 
             ApprovalsUtility.VerifyFile(Path.ChangeExtension(path, "summary.json"), JsonConvert.SerializeObject(summary, settings));

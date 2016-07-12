@@ -3,12 +3,17 @@ using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Logging;
 using Newtonsoft.Json.Linq;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(2000)]
     public class V2EventUpgrade : IEventUpgraderPlugin {
+        private readonly ILogger _logger;
+        public V2EventUpgrade(ILogger<V2EventUpgrade> logger) {
+            _logger = logger;
+        }
+
         public void Upgrade(EventUpgraderContext ctx) {
             if (ctx.Version > new Version(2, 0))
                 return;
@@ -58,7 +63,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
 
                 if (isNotFound && hasRequestInfo) {
                     doc.RemoveAll("Code", "Type", "Message", "Inner", "StackTrace", "TargetMethod", "Modules");
-                    if (extendedData != null && extendedData["__ExceptionInfo"] != null)
+                    if (extendedData?["__ExceptionInfo"] != null)
                         extendedData.Remove("__ExceptionInfo");
 
                     doc.Add("Type", new JValue("404"));
@@ -71,7 +76,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                     error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Inner", "StackTrace", "TargetMethod", "Modules");
 
                     // Copy the exception info from root extended data to the current errors extended data.
-                    if (extendedData != null && extendedData["__ExceptionInfo"] != null) {
+                    if (extendedData?["__ExceptionInfo"] != null) {
                         error.Add("Data", new JObject());
                         ((JObject)error["Data"]).MoveOrRemoveIfNullOrEmpty(extendedData, "__ExceptionInfo");
                     }
@@ -108,7 +113,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             var extendedData = error["Data"] as JObject;
-            if (extendedData == null || extendedData["__ExceptionInfo"] == null)
+            if (extendedData?["__ExceptionInfo"] == null)
                 return;
 
             string json = extendedData["__ExceptionInfo"].ToString();
@@ -118,7 +123,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             if (json.Length > 200000) {
-                Log.Error().Project(projectId).Message("Event: {0} __ExceptionInfo is Too Big: {1}", id, json.Length).Write();
+                _logger.Error().Project(projectId).Property("EventId", id).Message("__ExceptionInfo is Too Big: {0}", json.Length).Write();
                 return;
             }
 

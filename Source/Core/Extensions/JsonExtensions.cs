@@ -8,6 +8,7 @@ using Exceptionless.Core.Reflection;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Serializer;
+using Foundatio.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
 using Newtonsoft.Json.Linq;
@@ -301,29 +302,31 @@ namespace Exceptionless.Core.Extensions {
             return count == 0;
         }
 
-        public static void AddModelConverters(this JsonSerializerSettings settings) {
+        public static void AddModelConverters(this JsonSerializerSettings settings, ILogger logger) {
             var knownDataTypes = new Dictionary<string, Type> {
+                { Event.KnownDataKeys.Error, typeof(Error) },
                 { Event.KnownDataKeys.EnvironmentInfo, typeof(EnvironmentInfo) },
+                { Event.KnownDataKeys.Location, typeof(Location) },
                 { Event.KnownDataKeys.RequestInfo, typeof(RequestInfo) },
                 { Event.KnownDataKeys.SimpleError, typeof(SimpleError) },
+                { Event.KnownDataKeys.ManualStackingInfo, typeof(ManualStackingInfo) },
                 { Event.KnownDataKeys.UserDescription, typeof(UserDescription) },
-                { Event.KnownDataKeys.UserInfo, typeof(UserInfo) },
-                { Event.KnownDataKeys.Error, typeof(Error) }
+                { Event.KnownDataKeys.UserInfo, typeof(UserInfo) }
             };
 
-            settings.Converters.Add(new DataObjectConverter<PersistentEvent>(knownDataTypes));
-            settings.Converters.Add(new DataObjectConverter<Event>(knownDataTypes));
-            settings.Converters.Add(new DataObjectConverter<EnvironmentInfo>());
-            settings.Converters.Add(new DataObjectConverter<Error>());
-            settings.Converters.Add(new DataObjectConverter<InnerError>());
-            settings.Converters.Add(new DataObjectConverter<Method>());
-            settings.Converters.Add(new DataObjectConverter<Module>());
-            settings.Converters.Add(new DataObjectConverter<Parameter>());
-            settings.Converters.Add(new DataObjectConverter<RequestInfo>());
-            settings.Converters.Add(new DataObjectConverter<SimpleError>());
-            settings.Converters.Add(new DataObjectConverter<StackFrame>());
-            settings.Converters.Add(new DataObjectConverter<UserDescription>());
-            settings.Converters.Add(new DataObjectConverter<UserInfo>());
+            settings.Converters.Add(new DataObjectConverter<PersistentEvent>(logger, knownDataTypes));
+            settings.Converters.Add(new DataObjectConverter<Event>(logger, knownDataTypes));
+            settings.Converters.Add(new DataObjectConverter<EnvironmentInfo>(logger));
+            settings.Converters.Add(new DataObjectConverter<Error>(logger));
+            settings.Converters.Add(new DataObjectConverter<InnerError>(logger));
+            settings.Converters.Add(new DataObjectConverter<Method>(logger));
+            settings.Converters.Add(new DataObjectConverter<Module>(logger));
+            settings.Converters.Add(new DataObjectConverter<Parameter>(logger));
+            settings.Converters.Add(new DataObjectConverter<RequestInfo>(logger));
+            settings.Converters.Add(new DataObjectConverter<SimpleError>(logger));
+            settings.Converters.Add(new DataObjectConverter<StackFrame>(logger));
+            settings.Converters.Add(new DataObjectConverter<UserDescription>(logger));
+            settings.Converters.Add(new DataObjectConverter<UserInfo>(logger));
         }
     }
 

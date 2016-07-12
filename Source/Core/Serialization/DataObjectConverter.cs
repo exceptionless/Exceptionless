@@ -6,18 +6,21 @@ using System.Reflection;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Reflection;
+using Foundatio.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
-using NLog.Fluent;
 
 namespace Exceptionless.Serializer {
     public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData, new() {
         private readonly IDictionary<string, Type> _dataTypeRegistry = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+        private readonly ILogger _logger;
         private static IDictionary<string, IMemberAccessor> _propertyAccessors = new Dictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
         private readonly char[] _filteredChars = { '.', '-', '_' };
 
-        public DataObjectConverter(IEnumerable<KeyValuePair<string, Type>> knownDataTypes = null) {
+        public DataObjectConverter(ILogger logger, IEnumerable<KeyValuePair<string, Type>> knownDataTypes = null) {
+            _logger = logger;
+
             if (knownDataTypes != null)
                 _dataTypeRegistry.AddRange(knownDataTypes);
 
@@ -101,7 +104,7 @@ namespace Exceptionless.Serializer {
 
                     return;
                 } catch (Exception) {
-                    Log.Info().Message("Error deserializing known data type \"{0}\": {1}", p.Name, p.Value.ToString()).Write();
+                    _logger.Info("Error deserializing known data type \"{0}\": {1}", p.Name, p.Value.ToString());
                 }
             }
 
@@ -150,13 +153,9 @@ namespace Exceptionless.Serializer {
             return new T();
         }
 
-        public override bool CanRead {
-            get { return true; }
-        }
+        public override bool CanRead => true;
 
-        public override bool CanWrite {
-            get { return false; }
-        }
+        public override bool CanWrite => false;
 
         public override bool CanConvert(Type objectType) {
             return objectType == typeof(T);

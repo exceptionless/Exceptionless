@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -19,6 +20,11 @@ namespace Exceptionless.Core.Extensions {
                 return false;
 
             return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(Nullable<>));
+        }
+
+        private static readonly ConcurrentDictionary<Type, object> _defaultValues = new ConcurrentDictionary<Type, object>(); 
+        public static object GetDefaultValue(this Type type) {
+            return _defaultValues.GetOrAdd(type, t => type.IsValueType ? Activator.CreateInstance(type) : null);
         }
 
         public static bool IsNumeric(this Type type) {
@@ -45,7 +51,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static T ToType<T>(this object value) {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             Type targetType = typeof(T);
             TypeConverter converter = TypeDescriptor.GetConverter(targetType);
@@ -61,7 +67,7 @@ namespace Exceptionless.Core.Extensions {
                     return (T)parsedValue;
                 }
 
-                var message = String.Format("The Enum value of '{0}' is not defined as a valid value for '{1}'.", value, targetType.FullName);
+                var message = $"The Enum value of '{value}' is not defined as a valid value for '{targetType.FullName}'.";
                 throw new ArgumentException(message);
             }
 
@@ -78,11 +84,11 @@ namespace Exceptionless.Core.Extensions {
                     object convertedValue = Convert.ChangeType(value, targetType);
                     return (T)convertedValue;
                 } catch (Exception e) {
-                    throw new ArgumentException(String.Format("An incompatible value specified.  Target Type: {0} Value Type: {1}", targetType.FullName, value.GetType().FullName), "value", e);
+                    throw new ArgumentException($"An incompatible value specified.  Target Type: {targetType.FullName} Value Type: {value.GetType().FullName}", nameof(value), e);
                 }
             }
 
-            throw new ArgumentException(String.Format("An incompatible value specified.  Target Type: {0} Value Type: {1}", targetType.FullName, value.GetType().FullName), "value");
+            throw new ArgumentException($"An incompatible value specified.  Target Type: {targetType.FullName} Value Type: {value.GetType().FullName}", nameof(value));
         }
 
         public static PropertyInfo[] GetPublicProperties(this Type type) {

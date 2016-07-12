@@ -17,13 +17,10 @@ namespace Exceptionless.Core.Mail.Models {
         public string Url { get; set; }
         public string Subject { get; set; }
         public string Message { get; set; }
+        public string Source { get; set; }
 
         public string MethodFullName { get; set; }
         public string TypeFullName { get; set; }
-        public string TypeName {
-            get {
-                return !String.IsNullOrEmpty(TypeFullName) ? TypeFullName.Split('.').Last() : String.Empty;
-            }
-        }
+        public string TypeName => !String.IsNullOrEmpty(TypeFullName) ? TypeFullName.Split('.').Last() : String.Empty;
     }
 }

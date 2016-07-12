@@ -4,7 +4,7 @@ using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Billing;
 using Exceptionless.Api.Utility;
-using NLog.Fluent;
+using Foundatio.Logging;
 using Stripe;
 #pragma warning disable 1998
 
@@ -13,28 +13,30 @@ namespace Exceptionless.Api.Controllers {
     [ApiExplorerSettings(IgnoreApi = true)]
     public class StripeController : ExceptionlessApiController {
         private readonly StripeEventHandler _stripeEventHandler;
+        private readonly ILogger _logger;
 
-        public StripeController(StripeEventHandler stripeEventHandler) {
+        public StripeController(StripeEventHandler stripeEventHandler, ILogger<StripeController> logger) {
             _stripeEventHandler = stripeEventHandler;
+            _logger = logger;
         }
 
         [Route]
         [HttpPost]
-        public async Task<IHttpActionResult> Post([NakedBody]string json) {
+        public async Task<IHttpActionResult> PostAsync([NakedBody]string json) {
             StripeEvent stripeEvent;
             try {
                 stripeEvent = StripeEventUtility.ParseEvent(json);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Unable to parse incoming event.").Property("event", json).ContextProperty("HttpActionContext", ActionContext).Write();
+                _logger.Error().Exception(ex).Message("Unable to parse incoming event.").Property("event", json).SetActionContext(ActionContext).Write();
                 return BadRequest("Unable to parse incoming event");
             }
 
             if (stripeEvent == null) {
-                Log.Warn().Message("Null stripe event.").ContextProperty("HttpActionContext", ActionContext).Write();
+                _logger.Warn().Message("Null stripe event.").SetActionContext(ActionContext).Write();
                 return BadRequest("Incoming event empty");
             }
 
-            _stripeEventHandler.HandleEvent(stripeEvent);
+            await _stripeEventHandler.HandleEventAsync(stripeEvent);
 
             return Ok();
         }

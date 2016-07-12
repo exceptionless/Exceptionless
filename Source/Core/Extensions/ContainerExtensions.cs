@@ -1,26 +1,17 @@
 ﻿using System;
+using Foundatio.Logging;
 using SimpleInjector;
 using SimpleInjector.Advanced;
-using SimpleInjector.Packaging;
 
 namespace Exceptionless.Core.Extensions {
     public static class ContainerExtensions {
-        public static void RegisterPackage<TPackage>(this Container container) {
+        public static void RegisterLogger(this IServiceProvider serviceProvider, ILoggerFactory loggerFactory) {
+            var container = serviceProvider as Container;
             if (container == null)
-                throw new ArgumentNullException("container");
+                return;
 
-            var package = Activator.CreateInstance(typeof(TPackage)) as IPackage;
-            if (package == null)
-                throw new ArgumentException("TPackage must implement IPackage.");
-
-            package.RegisterServices(container);
-        }
-
-        public static void RegisterSingleImplementation<TImplementation>(this Container container, params Type[] serviceTypesToRegisterFor) {
-            var implementationType = typeof(TImplementation);
-            var registration = Lifestyle.Singleton.CreateRegistration(implementationType, implementationType, container);
-            foreach (var serviceType in serviceTypesToRegisterFor)
-                container.AddRegistration(serviceType, registration);
+            container.RegisterSingleton<ILoggerFactory>(loggerFactory);
+            container.RegisterSingleton(typeof(ILogger<>), typeof(Logger<>));
         }
 
         public static void Bootstrap<T>(this Container container, T target) {

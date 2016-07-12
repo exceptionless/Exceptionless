@@ -2,15 +2,17 @@
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(6)]
     public class TruncateFieldsAction : EventPipelineActionBase {
-        protected override bool IsCritical { get { return true; } }
+        public TruncateFieldsAction(ILoggerFactory loggerFactory = null) : base(loggerFactory) {}
 
-        public override async Task ProcessAsync(EventContext ctx) {
-            if (ctx.Event.Tags != null)
-                ctx.Event.Tags.RemoveWhere(t => String.IsNullOrEmpty(t) || t.Length > 255);
+        protected override bool IsCritical => true;
+
+        public override Task ProcessAsync(EventContext ctx) {
+            ctx.Event.Tags?.RemoveWhere(t => String.IsNullOrEmpty(t) || t.Length > 255);
 
             if (ctx.Event.Message != null && ctx.Event.Message.Length > 2000)
                 ctx.Event.Message = ctx.Event.Message.Truncate(2000);
@@ -21,6 +23,8 @@ namespace Exceptionless.Core.Pipeline {
                 ctx.Event.Source = ctx.Event.Source.Truncate(2000);
             else if (String.IsNullOrEmpty(ctx.Event.Source))
                 ctx.Event.Source = null;
+
+            return Task.CompletedTask;
         }
     }
 }

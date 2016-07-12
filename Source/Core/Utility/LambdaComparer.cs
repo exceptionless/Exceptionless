@@ -27,9 +27,9 @@ namespace Exceptionless.Core.Helpers
         public LambdaComparer(Func<T, T, int> compareValuesFunc, Func<T, int> getHashCodeFunc)
         {
             if (compareValuesFunc == null)
-                throw new ArgumentNullException("compareValuesFunc");
+                throw new ArgumentNullException(nameof(compareValuesFunc));
             if (getHashCodeFunc == null)
-                throw new ArgumentNullException("getHashCodeFunc");
+                throw new ArgumentNullException(nameof(getHashCodeFunc));
 
             _compareValuesFunc = compareValuesFunc;
             _getHashCodeFunc = getHashCodeFunc;

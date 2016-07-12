@@ -6,31 +6,43 @@ using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Tests.Utility {
     internal static class EventData {
-        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null) {
+        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null, decimal? value = -1) {
             for (int i = 0; i < count; i++)
-                yield return GenerateEvent(organizationIds, projectIds, stackIds, startDate, endDate, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden, maxErrorNestingLevel: maxErrorNestingLevel, referenceIds: referenceIds);
+                yield return GenerateEvent(organizationIds, projectIds, stackIds, startDate, endDate, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden, maxErrorNestingLevel: maxErrorNestingLevel, referenceIds: referenceIds, value: value);
         }
 
-        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null) {
+        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null, decimal? value = -1) {
             for (int i = 0; i < count; i++)
-                yield return GenerateEvent(organizationId, projectId, stackId, startDate, endDate, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden, maxErrorNestingLevel: maxErrorNestingLevel, referenceId: referenceId);
+                yield return GenerateEvent(organizationId, projectId, stackId, startDate, endDate, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden, maxErrorNestingLevel: maxErrorNestingLevel, referenceId: referenceId, value: value);
         }
 
         public static PersistentEvent GenerateSampleEvent() {
             return GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, maxErrorNestingLevel: 4);
         }
 
-        public static PersistentEvent GenerateEvent(string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null) {
+        public static PersistentEvent GenerateEvent(string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null, string type = null, string sessionId = null, string userIdentity = null, decimal? value = -1) {
             return GenerateEvent(
                     organizationId != null ? new[] { organizationId } : null,
                     projectId != null ? new[] { projectId } : null,
                     stackId != null ? new[] { stackId } : null,
                     startDate, endDate, occurrenceDate, maxErrorNestingLevel, generateTags, generateData, isFixed, isHidden,
-                    referenceId != null ? new[] { referenceId } : null
+                    referenceId != null ? new[] { referenceId } : null,
+                    type,
+                    sessionId,
+                    userIdentity,
+                    value
                 );
         }
 
-        public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null) {
+        public static PersistentEvent GenerateSessionStartEvent(DateTimeOffset occurrenceDate, string sessionId = null, string userIdentity = null, decimal? value = -1) {
+            return GenerateEvent(projectIds: new string[0], type: Event.KnownTypes.Session, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false, value: value);
+        }
+
+        public static PersistentEvent GenerateSessionEndEvent(DateTimeOffset occurrenceDate, string sessionId = null, string userIdentity = null) {
+            return GenerateEvent(projectIds: new string[0], type: Event.KnownTypes.SessionEnd, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false);
+        }
+
+        public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null, string type = null, string sessionId = null,  string userIdentity = null, decimal? value = -1) {
             if (!startDate.HasValue || startDate > DateTimeOffset.Now.AddHours(1))
                 startDate = DateTimeOffset.Now.AddDays(-30);
             if (!endDate.HasValue || endDate > DateTimeOffset.Now.AddHours(1))
@@ -40,11 +52,15 @@ namespace Exceptionless.Tests.Utility {
                 OrganizationId = organizationIds.Random(TestConstants.OrganizationId),
                 ProjectId = projectIds.Random(TestConstants.ProjectId),
                 ReferenceId = referenceIds.Random(),
-                Date = occurrenceDate.HasValue ? occurrenceDate.Value : RandomData.GetDateTimeOffset(startDate, endDate),
+                Date = occurrenceDate ?? RandomData.GetDateTimeOffset(startDate, endDate),
+                Value = value.GetValueOrDefault() >= 0 ? value : RandomData.GetDecimal(0, Int32.MaxValue),
                 IsFixed = isFixed,
                 IsHidden = isHidden,
                 StackId = stackIds.Random()
             };
+            
+            if (!String.IsNullOrEmpty(userIdentity))
+                ev.SetUserIdentity(userIdentity);
 
             if (generateData) {
                 for (int i = 0; i < RandomData.GetInt(1, 5); i++) {
@@ -64,13 +80,23 @@ namespace Exceptionless.Tests.Utility {
                 }
             }
 
-            ev.Type = Event.KnownTypes.Error;
+            if (String.IsNullOrEmpty(type) || String.Equals(type, Event.KnownTypes.Error, StringComparison.OrdinalIgnoreCase)) {
+                ev.Type = Event.KnownTypes.Error;
 
-            // limit error variation so that stacking will occur
-            if (_randomErrors == null)
-                _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError(maxErrorNestingLevel)));
-            
-            ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
+                // limit error variation so that stacking will occur
+                if (_randomErrors == null)
+                    _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError(maxErrorNestingLevel)));
+
+                ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
+            } else {
+                ev.Type = type.ToLower();
+            }
+
+            if (!String.IsNullOrEmpty(sessionId))
+                ev.SetSessionId(sessionId);
+
+            if (ev.IsSessionStart())
+                ev.Value = null;
 
             return ev;
         }

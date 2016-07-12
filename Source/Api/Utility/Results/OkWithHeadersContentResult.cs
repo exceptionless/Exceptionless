@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Results;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Utility.Results {
     public class OkWithHeadersContentResult<T> : OkNegotiatedContentResult<T> {
@@ -36,7 +36,9 @@ namespace Exceptionless.Api.Utility.Results {
     public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<ICollection<TEntity>> where TEntity : class {
         public OkWithResourceLinks(ICollection<TEntity> content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
 
-        public OkWithResourceLinks(ICollection<TEntity> content, ApiController controller, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) : base(content, controller) {
+        public OkWithResourceLinks(ICollection<TEntity> content, ApiController controller, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) : this(content, controller, hasMore, page, null, pagePropertyAccessor, headers, isDescending) {}
+
+        public OkWithResourceLinks(ICollection<TEntity> content, ApiController controller, bool hasMore, int? page = null, long? total = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) : base(content, controller) {
             if (content == null)
                 return;
 
@@ -49,6 +51,9 @@ namespace Exceptionless.Api.Utility.Results {
             var headerItems = new Dictionary<string, IEnumerable<string>>();
             if (links.Count > 0)
                 headerItems.Add("Link", links.ToArray());
+
+            if (total.HasValue)
+                headerItems.Add("X-Result-Count", new[] { total.ToString() });
 
             if (headers != null)
                 foreach (var header in headers)
@@ -70,8 +75,8 @@ namespace Exceptionless.Api.Utility.Results {
             if (!String.IsNullOrEmpty(url.Query))
                 baseUrl = baseUrl.Replace(url.Query, "");
 
-            string previousLink = String.Format("<{0}?{1}>; rel=\"previous\"", baseUrl, previousParameters.ToQueryString());
-            string nextLink = String.Format("<{0}?{1}>; rel=\"next\"", baseUrl, nextParameters.ToQueryString());
+            string previousLink = $"<{baseUrl}?{previousParameters.ToQueryString()}>; rel=\"previous\"";
+            string nextLink = $"<{baseUrl}?{nextParameters.ToQueryString()}>; rel=\"next\"";
 
             var links = new List<string>();
             if (includePrevious)
@@ -123,8 +128,8 @@ namespace Exceptionless.Api.Utility.Results {
             if (!String.IsNullOrEmpty(url.Query))
                 baseUrl = baseUrl.Replace(url.Query, "");
 
-            string previousLink = String.Format("<{0}?{1}>; rel=\"previous\"", baseUrl, previousParameters.ToQueryString());
-            string nextLink = String.Format("<{0}?{1}>; rel=\"next\"", baseUrl, nextParameters.ToQueryString());
+            string previousLink = $"<{baseUrl}?{previousParameters.ToQueryString()}>; rel=\"previous\"";
+            string nextLink = $"<{baseUrl}?{nextParameters.ToQueryString()}>; rel=\"next\"";
 
             var links = new List<string>();
             if (includePrevious)

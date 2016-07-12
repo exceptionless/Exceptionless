@@ -1,19 +1,23 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(20)]
     public class MarkAsCriticalAction : EventPipelineActionBase {
-        protected override bool ContinueOnError { get { return true; } }
+        public MarkAsCriticalAction(ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+            ContinueOnError = true;
+        }
 
-        public override async Task ProcessAsync(EventContext ctx) {
+        public override Task ProcessAsync(EventContext ctx) {
             if (ctx.Stack == null || !ctx.Stack.OccurrencesAreCritical)
-                return;
+                return Task.CompletedTask;
 
-            Log.Trace().Message("Marking error as critical.").Write();
+            _logger.Trace("Marking error as critical.");
             ctx.Event.MarkAsCritical();
+
+            return Task.CompletedTask;
         }
     }
 }

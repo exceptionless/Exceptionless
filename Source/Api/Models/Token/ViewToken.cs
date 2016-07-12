@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using Exceptionless.Core.Models;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Models {
-    public class ViewToken : IIdentity {
+    public class ViewToken : IIdentity, IHaveDates {
         public string Id { get; set; }
         public string OrganizationId { get; set; }
         public string ProjectId { get; set; }
@@ -15,5 +15,6 @@ namespace Exceptionless.Api.Models {
         public string Notes { get; set; }
         public DateTime CreatedUtc { get; set; }
         public DateTime ModifiedUtc { get; set; }
+        DateTime IHaveDates.UpdatedUtc { get { return ModifiedUtc; } set { ModifiedUtc = value; } }
     }
 }

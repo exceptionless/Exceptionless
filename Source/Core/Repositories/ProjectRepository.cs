@@ -1,71 +1,64 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using FluentValidation;
-using Foundatio.Caching;
-using Foundatio.Messaging;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
+using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Elasticsearch.Repositories;
+using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Logging;
+using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
+using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class ProjectRepository : MongoRepositoryOwnedByOrganization<Project>, IProjectRepository {
-        public ProjectRepository(MongoDatabase database, IValidator<Project> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, validator, cacheClient, messagePublisher) {
-        }
-
-        public long GetCountByOrganizationId(string organizationId) {
-            return _collection.Count(new OneOptions().WithOrganizationId(organizationId).GetMongoQuery(_getIdValue));
+    public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
+        public ProjectRepository(ElasticRepositoryContext<Project> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) {
+            DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
         
-        public ICollection<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
-            IMongoQuery query = Query.LT(FieldNames.NextSummaryEndOfDayTicks, new BsonInt64(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
-            return Find<Project>(new MongoOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.NextSummaryEndOfDayTicks).WithLimit(limit));
+        public Task<long> GetCountByOrganizationIdAsync(string organizationId) {
+            return CountAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithCacheKey(organizationId));
         }
 
-        public long IncrementNextSummaryEndOfDayTicks(ICollection<string> ids) {
-            if (ids == null || !ids.Any())
-                throw new ArgumentNullException("ids");
-
-            UpdateBuilder update = Update.Inc(FieldNames.NextSummaryEndOfDayTicks, TimeSpan.TicksPerDay);
-            return UpdateAll(new QueryOptions().WithIds(ids), update);
+        public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
+            var filter = Filter<Project>.Range(r => r.OnField(o => o.NextSummaryEndOfDayTicks).Lower(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
+            return FindAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithSelectedFields("id", "next_summary_end_of_day_ticks").WithLimit(limit));
         }
 
-        #region Collection Setup
-
-        public const string CollectionName = "project";
-
-        protected override string GetCollectionName() {
-            return CollectionName;
+        public async Task<long> IncrementNextSummaryEndOfDayTicksAsync(ICollection<Project> projects) {
+            if (projects == null || !projects.Any())
+                throw new ArgumentNullException(nameof(projects));
+            
+            string script = $"ctx._source.next_summary_end_of_day_ticks += {TimeSpan.TicksPerDay};";
+            var recordsAffected = await UpdateAllAsync((string)null, new ExceptionlessQuery().WithIds(projects.Select(p => p.Id)), script, false).AnyContext();
+            if (recordsAffected > 0)
+                await InvalidateCacheAsync(projects).AnyContext();
+            
+            return recordsAffected;
         }
 
-        private static class FieldNames {
-            public const string Id = CommonFieldNames.Id;
-            public const string OrganizationId = CommonFieldNames.OrganizationId;
-            public const string Name = "Name";
-            public const string Configuration = "Configuration";
-            public const string Configuration_Version = "Configuration.Version";
-            public const string NotificationSettings = "NotificationSettings";
-            public const string PromotedTabs = "PromotedTabs";
-            public const string CustomContent = "CustomContent";
-            public const string TotalEventCount = "TotalEventCount";
-            public const string LastEventDate = "LastEventDate";
-            public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
+        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<Project>> documents) {
+            if (!IsCacheEnabled)
+                return;
+            
+            await InvalidateCountCacheAsync(documents.Select(d => d.Value.OrganizationId)).AnyContext();
+            await base.InvalidateCacheAsync(documents).AnyContext();
         }
-       
-        protected override void ConfigureClassMap(BsonClassMap<Project> cm) {
-            base.ConfigureClassMap(cm);
-            cm.GetMemberMap(c => c.Name).SetElementName(FieldNames.Name);
-            cm.GetMemberMap(c => c.Configuration).SetElementName(FieldNames.Configuration);
-            cm.GetMemberMap(c => c.CustomContent).SetElementName(FieldNames.CustomContent).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.NextSummaryEndOfDayTicks).SetElementName(FieldNames.NextSummaryEndOfDayTicks);
+        
+        private async Task OnDocumentsAdded(object sender, DocumentsEventArgs<Project> documents) {
+            if (!IsCacheEnabled)
+                return;
 
-            cm.GetMemberMap(c => c.PromotedTabs).SetElementName(FieldNames.PromotedTabs).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Project)obj).PromotedTabs.Any());
-            cm.GetMemberMap(c => c.NotificationSettings).SetElementName(FieldNames.NotificationSettings).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Project)obj).NotificationSettings.Any());
+            await InvalidateCountCacheAsync(documents.Documents.Select(d => d.OrganizationId)).AnyContext();
         }
 
-        #endregion
+        private async Task InvalidateCountCacheAsync(IEnumerable<string> organizationIds) {
+            var keys = organizationIds.Where(id => !String.IsNullOrEmpty(id)).Select(id => $"count:{id}").Distinct().ToList();
+            if (keys.Count > 0)
+                await Cache.RemoveAllAsync(keys).AnyContext();
+        }
     }
 }

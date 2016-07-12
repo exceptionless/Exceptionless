@@ -11,7 +11,7 @@ namespace Exceptionless.Api.Security {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public class RequireHttpsAttribute : FilterAttribute, IAuthorizationFilter {
         protected virtual void HandleNonHttpsRequest(HttpActionContext context) {
-            string url = String.Format("https://{0}{1}", context.Request.RequestUri.Host, context.Request.RequestUri.PathAndQuery);
+            string url = String.Concat("https://", context.Request.RequestUri.Host, context.Request.RequestUri.PathAndQuery);
 
             HttpResponseMessage response = context.ControllerContext.Request.CreateResponse(HttpStatusCode.Redirect);
             response.Headers.Location = new Uri(url);
@@ -19,22 +19,22 @@ namespace Exceptionless.Api.Security {
             context.Response = response;
         }
 
-        async Task<HttpResponseMessage> IAuthorizationFilter.ExecuteAuthorizationFilterAsync(HttpActionContext actionContext, CancellationToken cancellationToken, Func<Task<HttpResponseMessage>> continuation) {
+        public Task<HttpResponseMessage> ExecuteAuthorizationFilterAsync(HttpActionContext actionContext, CancellationToken cancellationToken, Func<Task<HttpResponseMessage>> continuation) {
             if (actionContext == null)
-                throw new ArgumentNullException("actionContext");
+                throw new ArgumentNullException(nameof(actionContext));
 
             if (continuation == null)
-                throw new ArgumentNullException("continuation");
+                throw new ArgumentNullException(nameof(continuation));
 
             if (Settings.Current.EnableSSL && actionContext.Request.RequestUri.Scheme != Uri.UriSchemeHttps)
                 HandleNonHttpsRequest(actionContext);
 
             if (actionContext.Response != null)
-                return actionContext.Response;
+                return Task.FromResult(actionContext.Response);
 
-            return await continuation();
+            return continuation();
         }
 
-        bool IFilter.AllowMultiple { get { return true; } }
+        bool IFilter.AllowMultiple => true;
     }
 }

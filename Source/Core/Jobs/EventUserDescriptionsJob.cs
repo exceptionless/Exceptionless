@@ -1,73 +1,44 @@
 ﻿using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Jobs;
-using Foundatio.Metrics;
+using Foundatio.Logging;
 using Foundatio.Queues;
-using NLog.Fluent;
+
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
-    public class EventUserDescriptionsJob : JobBase {
-        private readonly IQueue<EventUserDescription> _queue;
+    public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription> {
         private readonly IEventRepository _eventRepository;
-        private readonly IMetricsClient _metricsClient;
 
-        public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, IMetricsClient metricsClient) {
-            _queue = queue;
+        public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventRepository = eventRepository;
-            _metricsClient = metricsClient;
         }
 
-        protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            QueueEntry<EventUserDescription> queueEntry = null;
-            try {
-                queueEntry = _queue.Dequeue();
-            } catch (Exception ex) {
-                if (!(ex is TimeoutException)) {
-                    Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next EventUserDescription: {0}", ex.Message).Write();
-                    return JobResult.FromException(ex);
-                }
-            }
-            if (queueEntry == null)
-                return JobResult.Success;
-                
-            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionDequeued);
-            Log.Trace().Message("Processing user description: id={0}", queueEntry.Id).Write();
+        protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventUserDescription> context) {
+            _logger.Trace("Processing user description: id={0}", context.QueueEntry.Id);
 
             try {
-                ProcessUserDescription(queueEntry.Value);
-                Log.Info().Message("Processed user description: id={0}", queueEntry.Id).Write();
-                await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionProcessed);
+                await ProcessUserDescriptionAsync(context.QueueEntry.Value).AnyContext();
+                _logger.Info("Processed user description: id={0}", context.QueueEntry.Id);
             } catch (DocumentNotFoundException ex){
-                // TODO: Change to async once vnext is released.
-                _metricsClient.Counter(MetricNames.EventsUserDescriptionErrors);
-                queueEntry.Abandon();
-                Log.Error().Exception(ex).Message("An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, queueEntry.Id).Write();
+                _logger.Error(ex, "An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, context.QueueEntry.Id);
                 return JobResult.FromException(ex);
             } catch (Exception ex) {
-                // TODO: Change to async once vnext is released.
-                _metricsClient.Counter(MetricNames.EventsUserDescriptionErrors);
-                queueEntry.Abandon();
-
-                Log.Error().Exception(ex).Message("An error occurred while processing the EventUserDescription '{0}': {1}", queueEntry.Id, ex.Message).Write();
+                _logger.Error(ex, "An error occurred while processing the EventUserDescription '{0}': {1}", context.QueueEntry.Id, ex.Message);
                 return JobResult.FromException(ex);
             }
-
-            queueEntry.Complete();
 
             return JobResult.Success;
         }
-
-        private void ProcessUserDescription(EventUserDescription description) {
-            var ev = _eventRepository.GetByReferenceId(description.ProjectId, description.ReferenceId).FirstOrDefault();
+        
+        private async Task ProcessUserDescriptionAsync(EventUserDescription description) {
+            var ev = (await _eventRepository.GetByReferenceIdAsync(description.ProjectId, description.ReferenceId).AnyContext()).Documents.FirstOrDefault();
             if (ev == null)
                 throw new DocumentNotFoundException(description.ReferenceId);
 
@@ -81,7 +52,7 @@ namespace Exceptionless.Core.Jobs {
 
             ev.SetUserDescription(ud);
 
-            _eventRepository.Save(ev);
+            await _eventRepository.SaveAsync(ev).AnyContext();
         }
     }
 }

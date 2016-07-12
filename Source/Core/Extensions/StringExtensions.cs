@@ -8,11 +8,18 @@ using System.Security.Cryptography;
 
 namespace Exceptionless.Core.Extensions {
     public static class StringExtensions {
+        public static bool IsLocalHost(this string ip) {
+            if (String.IsNullOrEmpty(ip))
+                return false;
+
+            return String.Equals(ip, "::1") || String.Equals(ip, "127.0.0.1");
+        }
+
         public static bool IsPrivateNetwork(this string ip) {
             if (String.IsNullOrEmpty(ip))
                 return false;
 
-            if (String.Equals(ip, "::1") || String.Equals(ip, "127.0.0.1"))
+            if (ip.IsLocalHost())
                 return true;
 
             // 10.0.0.0 – 10.255.255.255 (Class A)
@@ -37,7 +44,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static string GetRandomString(int length, string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") {
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", "length cannot be less than zero.");
+                throw new ArgumentOutOfRangeException(nameof(length), "length cannot be less than zero.");
 
             if (string.IsNullOrEmpty(allowedChars))
                 throw new ArgumentException("allowedChars may not be empty.");
@@ -45,7 +52,7 @@ namespace Exceptionless.Core.Extensions {
             const int byteSize = 0x100;
             var allowedCharSet = new HashSet<char>(allowedChars).ToArray();
             if (byteSize < allowedCharSet.Length)
-                throw new ArgumentException(String.Format("allowedChars may contain no more than {0} characters.", byteSize));
+                throw new ArgumentException($"allowedChars may contain no more than {byteSize} characters.");
 
             using (var rng = new RNGCryptoServiceProvider()) {
                 var result = new StringBuilder();
@@ -271,7 +278,7 @@ namespace Exceptionless.Core.Extensions {
             if (keepFullWordAtEnd && text.LastIndexOf(' ') > 0)
                 text = text.Substring(0, text.LastIndexOf(' '));
 
-            return String.Format("{0}{1}", text, ellipsis);
+            return $"{text}{ellipsis}";
         }
 
         public static string ToLowerFiltered(this string value, char[] charsToRemove) {

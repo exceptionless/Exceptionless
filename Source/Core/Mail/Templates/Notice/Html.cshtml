@@ -29,12 +29,19 @@
                                 }
                             </p>
 
+                            @if (!String.IsNullOrEmpty(Model.Message) || !String.IsNullOrEmpty(Model.Source) || !String.IsNullOrEmpty(Model.Url)) {
                             <div class="fieldset" style="margin: 0; padding: 15px; font-family: 'Open Sans', arial, sans-serif; font-size: 13px; background-color: #ffffff; margin-bottom: 15px; border: 1px solid #D5D5D5; border-radius: 4px;">
                                 @if (!String.IsNullOrEmpty(Model.Message)) {
                                 <div class="field" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
                                     <h5 style="margin: 0 0 8px 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; line-height: 1.1; margin-bottom: 15px; color: #000; font-weight: 900; font-size: 13px;">Message</h5>
                                     @Model.Message
                                 </div>
+                                }
+                                @if (!String.IsNullOrEmpty(Model.Source)){
+                                    <div class="field" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
+                                        <h5 style="margin: 0 0 8px 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; line-height: 1.1; margin-bottom: 15px; color: #000; font-weight: 900; font-size: 13px;">Source</h5>
+                                        @Model.Source
+                                    </div>
                                 }
                                 @if (!String.IsNullOrEmpty(Model.Url)) {
                                     if (!String.IsNullOrEmpty(Model.Message)) {
@@ -46,6 +53,7 @@
                                     </div>
                                 }
                             </div>
+                            }
 
                             <!-- Button -->
                             <p class="center" style="margin: 10px auto 0 auto; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 10px; font-weight: normal; font-size: 14px; line-height: 1.6; text-align: center;">

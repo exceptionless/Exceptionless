@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         internal static void AppendMethod(Method method, StringBuilder sb, bool includeParameters = true) {
-            if (method == null || String.IsNullOrEmpty(method.Name)) {
+            if (String.IsNullOrEmpty(method?.Name)) {
                 sb.Append("<null>");
                 return;
             }
@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Extensions {
 
             sb.Append(method.Name);
 
-            if (method.GenericArguments.Count > 0) {
+            if (method.GenericArguments?.Count > 0) {
                 sb.Append("[");
                 bool first = true;
                 foreach (string arg in method.GenericArguments) {
@@ -54,35 +54,24 @@ namespace Exceptionless.Core.Extensions {
             if (includeParameters) {
                 sb.Append("(");
                 bool first = true;
-                foreach (Parameter p in method.Parameters) {
-                    if (first)
-                        first = false;
-                    else
-                        sb.Append(", ");
+                if (method.Parameters?.Count > 0) {
+                    foreach (Parameter p in method.Parameters) {
+                        if (first)
+                            first = false;
+                        else
+                            sb.Append(", ");
 
-                    if (String.IsNullOrEmpty(p.Type))
-                        sb.Append("<UnknownType>");
-                    else
-                        sb.Append(p.Type.Replace('+', '.'));
+                        if (String.IsNullOrEmpty(p.Type))
+                            sb.Append("<UnknownType>");
+                        else
+                            sb.Append(p.Type.Replace('+', '.'));
 
-                    sb.Append(" ");
-                    sb.Append(p.Name);
+                        sb.Append(" ");
+                        sb.Append(p.Name);
+                    }
                 }
                 sb.Append(")");
             }
-        }
-
-        public static string GetDeclaringTypeFullName(this Method method) {
-            if (method == null)
-                return null;
-
-            if (!String.IsNullOrEmpty(method.DeclaringNamespace) && !String.IsNullOrEmpty(method.DeclaringType))
-                return String.Concat(method.DeclaringNamespace, ".", method.DeclaringType.Replace('+', '.'));
-
-            if (!String.IsNullOrEmpty(method.DeclaringType))
-                return method.DeclaringType.Replace('+', '.');
-
-            return String.Empty;
         }
     }
 }

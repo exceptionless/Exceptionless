@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Linq;
 using Exceptionless.Core.Dependency;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     public class EventUpgraderPluginManager : PluginManagerBase<IEventUpgraderPlugin> {
-        public EventUpgraderPluginManager(IDependencyResolver dependencyResolver = null) : base(dependencyResolver) { }
+        public EventUpgraderPluginManager(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) : base(dependencyResolver, loggerFactory) { }
 
         /// <summary>
         /// Runs all of the event upgrade plugins upgrade method.
@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 try {
                     plugin.Upgrade(context);
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling upgrade in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    _logger.Error().Exception(ex).Message("Error calling upgrade in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("Context", context).Write();
                     throw;
                 }
             }

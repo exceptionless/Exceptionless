@@ -1,161 +1,93 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading;
+using System.Diagnostics;
 using System.Threading.Tasks;
-using Exceptionless.Core.Migrations;
-using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Extensions;
 using Foundatio.Caching;
-using Foundatio.Messaging;
-using Foundatio.Queues;
+using Foundatio.Logging;
 using Foundatio.Storage;
-using MongoDB.Driver;
 using Nest;
+using Nito.AsyncEx;
 
 namespace Exceptionless.Core.Utility {
     public class SystemHealthChecker {
         private readonly ICacheClient _cacheClient;
-        private readonly MongoDatabase _db;
         private readonly IElasticClient _elasticClient;
         private readonly IFileStorage _storage;
-        private readonly IQueue<StatusMessage> _queue;
-        private readonly IMessageBus _messageBus;
+        private readonly AsyncManualResetEvent _resetEvent = new AsyncManualResetEvent(false);
+        private readonly ILogger _logger;
 
-        public SystemHealthChecker(ICacheClient cacheClient, MongoDatabase db, IElasticClient elasticClient, IFileStorage storage, IQueue<StatusMessage> queue, IMessageBus messageBus) {
-            _cacheClient = cacheClient;
-            _db = db;
+        public SystemHealthChecker(ICacheClient cacheClient, IElasticClient elasticClient, IFileStorage storage, ILogger<SystemHealthChecker> logger) {
+            _cacheClient = new ScopedCacheClient(cacheClient, "health");
             _elasticClient = elasticClient;
             _storage = storage;
-            _queue = queue;
-            _messageBus = messageBus;
+            _logger = logger;
         }
-    
-        public HealthCheckResult CheckCache() {
+
+        public async Task<HealthCheckResult> CheckCacheAsync() {
+            var sw = Stopwatch.StartNew();
             try {
-                if (_cacheClient.Get<string>("__PING__") != null)
+                var cacheValue = await _cacheClient.GetAsync<string>("__PING__").AnyContext();
+                if (cacheValue.HasValue)
                     return HealthCheckResult.NotHealthy("Cache Not Working");
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Cache Not Working: " + ex.Message);
+            } finally {
+                sw.Stop();
+                _logger.Trace("Checking cache took {0}ms", sw.ElapsedMilliseconds);
             }
 
             return HealthCheckResult.Healthy;
         }
 
-        public HealthCheckResult CheckMongo() {
+        public async Task<HealthCheckResult> CheckElasticsearchAsync() {
+            var sw = Stopwatch.StartNew();
             try {
-                _db.Server.Ping();
-
-                if (!IsDbUpToDate())
-                    return HealthCheckResult.NotHealthy("Mongo DB Schema Outdated");
+                var response = await _elasticClient.PingAsync().AnyContext();
+                if (!response.IsValid)
+                    return HealthCheckResult.NotHealthy("Elasticsearch Ping Failed");
             } catch (Exception ex) {
-                return HealthCheckResult.NotHealthy("Mongo Not Working: " + ex.Message);
-            }
-
-            return HealthCheckResult.Healthy;
-        }
-
-        public async Task<HealthCheckResult> CheckElasticSearchAsync() {
-            try {
-                var res = await _elasticClient.PingAsync();
-                if (!res.IsValid)
-                    return HealthCheckResult.NotHealthy("ElasticSearch Ping Failed");
-            } catch (Exception ex) {
-                return HealthCheckResult.NotHealthy("ElasticSearch Not Working: " + ex.Message);
+                return HealthCheckResult.NotHealthy("Elasticsearch Not Working: " + ex.Message);
+            } finally {
+                sw.Stop();
+                _logger.Trace("Checking Elasticsearch took {0}ms", sw.ElapsedMilliseconds);
             }
 
             return HealthCheckResult.Healthy;
         }
 
         public async Task<HealthCheckResult> CheckStorageAsync() {
+            const string path = "healthcheck.txt";
+
+            var sw = Stopwatch.StartNew();
             try {
-                await _storage.GetFileListAsync(limit: 1);
+                if (!await _storage.ExistsAsync(path).AnyContext())
+                    await _storage.SaveFileAsync(path, DateTime.UtcNow.ToString()).AnyContext();
+
+                await _storage.DeleteFileAsync(path).AnyContext();
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Storage Not Working: " + ex.Message);
+            } finally {
+                sw.Stop();
+                _logger.Trace("Checking storage took {0}ms", sw.ElapsedMilliseconds);
             }
 
             return HealthCheckResult.Healthy;
         }
-
-        public HealthCheckResult CheckQueue() {
-            var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
-            try {
-                _queue.Enqueue(message);
-                if (_queue.GetQueueCount() == 0)
-                    return HealthCheckResult.NotHealthy("Queue Not Working: No items were enqueued.");
-      
-                var workItem = _queue.Dequeue(TimeSpan.Zero);
-                if (workItem == null)
-                    return HealthCheckResult.NotHealthy("Queue Not Working: No items could be dequeued.");
-
-                workItem.Complete();
-            } catch (Exception ex) {
-                return HealthCheckResult.NotHealthy("Queues Not Working: " + ex.Message);
-            }
-
-            return HealthCheckResult.Healthy;
-        }
-
-         public HealthCheckResult CheckMessageBus() {
-            //var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
-            //var resetEvent = new AutoResetEvent(false);
-            //Action<StatusMessage> handler = msg => resetEvent.Set();
-
-             //try {
-             //    _messageBus.Subscribe(handler);
-             //    _messageBus.Publish(message);
-             //    bool success = resetEvent.WaitOne(5000);
-             //    if (!success)
-             //        return HealthCheckResult.NotHealthy("MessageBus Not Working: Failed to receive message.");
-             //} catch (Exception ex) {
-             //    return HealthCheckResult.NotHealthy("MessageBus Not Working: " + ex.Message);
-             //} finally {
-             //    _messageBus.Unsubscribe(handler);
-             //}
         
-             return HealthCheckResult.Healthy;
-        }
-    
         public async Task<HealthCheckResult> CheckAllAsync() {
-            var result = CheckCache();
+            var result = await CheckCacheAsync().AnyContext();
+            if (!result.IsHealthy)
+                return result;
+            
+            result = await CheckElasticsearchAsync().AnyContext();
             if (!result.IsHealthy)
                 return result;
 
-            result = CheckMongo();
+            result = await CheckStorageAsync().AnyContext();
             if (!result.IsHealthy)
                 return result;
-
-            result = await CheckElasticSearchAsync();
-            if (!result.IsHealthy)
-                return result;
-
-            result = await CheckStorageAsync();
-            if (!result.IsHealthy)
-                return result;
-
-            result = CheckQueue();
-            if (!result.IsHealthy)
-                return result;
-
-            result = CheckMessageBus();
-            if (!result.IsHealthy)
-                return result;
-
+            
             return HealthCheckResult.Healthy;
-        }
-
-        private static bool? _dbIsUpToDate;
-        private static DateTime _lastDbUpToDateCheck;
-        private static readonly object _dbIsUpToDateLock = new object();
-
-        public static bool IsDbUpToDate() {
-            lock (_dbIsUpToDateLock) {
-                if (_dbIsUpToDate.HasValue && (_dbIsUpToDate.Value || DateTime.Now.Subtract(_lastDbUpToDateCheck).TotalSeconds < 10))
-                    return _dbIsUpToDate.Value;
-
-                _lastDbUpToDateCheck = DateTime.Now;
-                _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(Settings.Current.MongoConnectionString, Settings.Current.MongoDatabaseName);
-
-                return _dbIsUpToDate.Value;
-            }
         }
     }
 
@@ -163,11 +95,9 @@ namespace Exceptionless.Core.Utility {
         public bool IsHealthy { get; set; }
         public string Message { get; set; }
 
-        private static readonly HealthCheckResult _healthy = new HealthCheckResult {
+        public static HealthCheckResult Healthy { get; } = new HealthCheckResult {
             IsHealthy = true
         };
-
-        public static HealthCheckResult Healthy { get { return _healthy; } }
 
         public static HealthCheckResult NotHealthy(string message = null) {
             return new HealthCheckResult { IsHealthy = false, Message = message };

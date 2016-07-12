@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
@@ -6,28 +7,28 @@ using Exceptionless.Core.Pipeline;
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(10)]
     public class VersionOne : WebHookDataPluginBase {
-        public override object CreateFromEvent(WebHookDataContext ctx) {
+        public override Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
             if (ctx.Version.Major != 1)
-                return null;
+                return Task.FromResult<object>(null);
 
             var error = ctx.Event.GetError();
             if (error == null)
-                return null;
+                return Task.FromResult<object>(null);
 
             var requestInfo = ctx.Event.GetRequestInfo();
             var environmentInfo = ctx.Event.GetEnvironmentInfo();
 
-            return new VersionOneWebHookEvent {
+            return Task.FromResult<object>(new VersionOneWebHookEvent {
                 Id = ctx.Event.Id,
                 OccurrenceDate = ctx.Event.Date,
                 Tags = ctx.Event.Tags,
-                MachineName = environmentInfo != null ? environmentInfo.MachineName : null,
-                RequestPath = requestInfo != null ? requestInfo.GetFullPath() : null,
-                IpAddress = requestInfo != null ? requestInfo.ClientIpAddress : environmentInfo != null ? environmentInfo.IpAddress : null,
+                MachineName = environmentInfo?.MachineName,
+                RequestPath = requestInfo?.GetFullPath(),
+                IpAddress = requestInfo != null ? requestInfo.ClientIpAddress : environmentInfo?.IpAddress,
                 Message = error.Message,
                 Type = error.Type,
                 Code = error.Code,
-                TargetMethod = error.TargetMethod != null ? error.TargetMethod.GetFullName() : null,
+                TargetMethod = error.TargetMethod?.GetFullName(),
                 ProjectId = ctx.Event.ProjectId,
                 ProjectName = ctx.Project.Name,
                 OrganizationId = ctx.Event.OrganizationId,
@@ -42,14 +43,14 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 DateFixed = ctx.Stack.DateFixed,
                 IsRegression = ctx.IsRegression,
                 IsNew = ctx.IsNew
-            };
+            });
         }
 
-        public override object CreateFromStack(WebHookDataContext ctx) {
+        public override Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
             if (ctx.Version.Major != 1)
-                return null;
+                return Task.FromResult<object>(null);
 
-              return new VersionOneWebHookStack {
+              return Task.FromResult<object>(new VersionOneWebHookStack {
                 Id = ctx.Stack.Id,
                 Title = ctx.Stack.Title,
                 Description = ctx.Stack.Description,
@@ -68,12 +69,12 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 IsRegression = ctx.Stack.IsRegressed,
                 IsCritical = ctx.Stack.OccurrencesAreCritical || ctx.Stack.Tags != null && ctx.Stack.Tags.Contains("Critical"),
                 FixedInVersion = ctx.Stack.FixedInVersion
-            };
+            });
         }
 
         public class VersionOneWebHookEvent {
             public string Id { get; set; }
-            public string Url { get { return String.Concat(Settings.Current.BaseURL, "/event/", Id); } }
+            public string Url => String.Concat(Settings.Current.BaseURL, "/event/", Id);
             public DateTimeOffset OccurrenceDate { get; set; }
             public TagSet Tags { get; set; }
             public string MachineName { get; set; }
@@ -88,7 +89,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             public string OrganizationId { get; set; }
             public string OrganizationName { get; set; }
             public string ErrorStackId { get; set; }
-            public string ErrorStackUrl { get { return String.Concat(Settings.Current.BaseURL, "/stack/", ErrorStackId); } }
+            public string ErrorStackUrl => String.Concat(Settings.Current.BaseURL, "/stack/", ErrorStackId);
             public string ErrorStackTitle { get; set; }
             public string ErrorStackDescription { get; set; }
             public TagSet ErrorStackTags { get; set; }
@@ -98,12 +99,12 @@ namespace Exceptionless.Core.Plugins.WebHook {
             public DateTime? DateFixed { get; set; }
             public bool IsNew { get; set; }
             public bool IsRegression { get; set; }
-            public bool IsCritical { get { return Tags != null && Tags.Contains("Critical"); } }
+            public bool IsCritical => Tags != null && Tags.Contains("Critical");
         }
 
         public class VersionOneWebHookStack {
             public string Id { get; set; }
-            public string Url { get { return String.Concat(Settings.Current.BaseURL, "/stack/", Id); } }
+            public string Url => String.Concat(Settings.Current.BaseURL, "/stack/", Id);
             public string Title { get; set; }
             public string Description { get; set; }
 

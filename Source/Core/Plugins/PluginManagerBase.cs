@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Dependency;
-using NLog.Fluent;
 using Exceptionless.Core.Helpers;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins {
     public abstract class PluginManagerBase<TPlugin> {
+        protected readonly ILogger _logger;
         protected readonly IDependencyResolver _dependencyResolver;
 
-        public PluginManagerBase(IDependencyResolver dependencyResolver = null) {
+        public PluginManagerBase(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) {
+            _logger = loggerFactory.CreateLogger(GetType());
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
             Plugins = new SortedList<int, TPlugin>();
             LoadDefaultPlugins();
@@ -20,7 +22,7 @@ namespace Exceptionless.Core.Plugins {
 
         public void AddPlugin(Type pluginType) {
             var attr = pluginType.GetCustomAttributes(typeof(PriorityAttribute), true).FirstOrDefault() as PriorityAttribute;
-            int priority = attr != null ? attr.Priority : 0;
+            int priority = attr?.Priority ?? 0;
 
             var plugin = (TPlugin)_dependencyResolver.GetService(pluginType);
             Plugins.Add(priority, plugin);
@@ -33,7 +35,7 @@ namespace Exceptionless.Core.Plugins {
                 try {
                     AddPlugin(type);
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Unable to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message).Write();
+                    _logger.Error(ex, "Unable to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message);
                 }
             }
         }

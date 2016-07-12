@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Results;
 using Exceptionless.Api.Extensions;
@@ -13,6 +14,7 @@ using Exceptionless.Api.Utility.Results;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RequireHttpsExceptLocal]
@@ -56,16 +58,30 @@ namespace Exceptionless.Api.Controllers {
                 UtcRange = utcRange
             };
         }
+        
+        protected virtual SortingOptions GetSort(string sort) {
+            var sortingOptions = new SortingOptions();
 
-        protected virtual Tuple<string, SortOrder> GetSort(string sort) {
-            var order = SortOrder.Ascending;
-            if (!String.IsNullOrEmpty(sort) && sort.StartsWith("-")) {
-                sort = sort.Substring(1);
-                order = SortOrder.Descending;
+            if (!String.IsNullOrEmpty(sort)) {
+                var fields = sort.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var field in fields) {
+                    string name = field.Trim();
+                    if (String.IsNullOrEmpty(name))
+                        continue;
+
+                    var order = SortOrder.Ascending;
+                    if (!String.IsNullOrEmpty(sort) && sort.StartsWith("-")) {
+                        name = name.Substring(1);
+                        order = SortOrder.Descending;
+                    }
+
+                    if (AllowedFields.Contains(name))
+                        sortingOptions.Fields.Add(new FieldSort { Field = name, Order = order });
+                }
             }
 
-            return Tuple.Create(AllowedFields.Contains(sort) ? sort : null, order);
-        } 
+            return sortingOptions;
+        }
 
         protected int GetLimit(int limit) {
             if (limit < 1)
@@ -94,17 +110,9 @@ namespace Exceptionless.Api.Controllers {
             return skip;
         }
 
-        public User ExceptionlessUser {
-            get { return Request.GetUser(); }
-        }
+        public User ExceptionlessUser => Request.GetUser();
 
-        public Project DefaultProject {
-            get { return Request.GetDefaultProject(); }
-        }
-
-        public AuthType AuthType {
-            get { return User.GetAuthType(); }
-        }
+        public AuthType AuthType => User.GetAuthType();
 
         public bool CanAccessOrganization(string organizationId) {
             return Request.CanAccessOrganization(organizationId);
@@ -121,11 +129,12 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public string GetAssociatedOrganizationsFilter(IOrganizationRepository repository, bool filterUsesPremiumFeatures, bool hasOrganizationOrProjectFilter, string retentionDateFieldName = "date") {
+        public async Task<string> GetAssociatedOrganizationsFilterAsync(IOrganizationRepository repository, bool filterUsesPremiumFeatures, bool hasOrganizationOrProjectFilter, string retentionDateFieldName = "date") {
             if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
                 return null;
 
-            var organizations = repository.GetByIds(GetAssociatedOrganizationIds(), useCache: true).Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
+            var associatedOrganizations = await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true);
+            var organizations = associatedOrganizations.Documents.Where(o => !o.IsSuspended && (o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures))).ToList();
             if (organizations.Count == 0)
                 return "organization:none";
 
@@ -133,7 +142,7 @@ namespace Exceptionless.Api.Controllers {
             for (int index = 0; index < organizations.Count; index++) {
                 if (index > 0)
                     builder.Append(" OR ");
-                
+
                 var organization = organizations[index];
                 if (organization.RetentionDays > 0)
                     builder.AppendFormat("(organization:{0} AND {1}:[now/d-{2}d TO now/d+1d}})", organization.Id, retentionDateFieldName, organization.RetentionDays);
@@ -145,18 +154,18 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected bool HasOrganizationOrProjectFilter(string filter) {
-            if (String.IsNullOrWhiteSpace(filter))
+            if (String.IsNullOrEmpty(filter))
                 return false;
 
             return filter.Contains("organization:") || filter.Contains("project:");
         }
 
-        public string GetDefaultOrganizationId() {
-            return Request.GetDefaultOrganizationId();
-        }
-
         protected StatusCodeActionResult StatusCodeWithMessage(HttpStatusCode statusCode, string message, string reason = null) {
             return new StatusCodeActionResult(statusCode, Request, message, reason);
+        }
+
+        protected IHttpActionResult WorkInProgress(IEnumerable<string> workers) {
+            return new NegotiatedContentResult<WorkInProgressResult>(HttpStatusCode.Accepted, new WorkInProgressResult(workers), this);
         }
 
         protected IHttpActionResult BadRequest(ModelActionResults results) {
@@ -195,8 +204,8 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithResourceLinks<TEntity>(content, this, hasMore, null, pagePropertyAccessor, headers, isDescending);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, int page, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
-            return new OkWithResourceLinks<TEntity>(content, this, hasMore, page);
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
+            return new OkWithResourceLinks<TEntity>(content, this, hasMore, page, total);
         }
 
         protected Dictionary<string, IEnumerable<string>> GetLimitedByPlanHeader(long totalLimitedByPlan) {
@@ -207,11 +216,25 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected string GetResourceLink(string url, string type) {
-            return url != null ? String.Format("<{0}>; rel=\"{1}\"", url, type) : null;
+            return url != null ? $"<{url}>; rel=\"{type}\"" : null;
         }
 
         protected bool NextPageExceedsSkipLimit(int page, int limit) {
             return (page + 1) * limit >= MAXIMUM_SKIP;
+        }
+
+        public string GetSystemFilter(bool filterUsesPremiumFeatures, bool hasOrganizationFilter) {
+            if (hasOrganizationFilter && Request.IsGlobalAdmin())
+                return null;
+
+            return null;
+        }
+
+        protected bool HasOrganizationFilter(string filter) {
+            if (String.IsNullOrWhiteSpace(filter))
+                return false;
+
+            return filter.Contains("organization:");
         }
     }
 }

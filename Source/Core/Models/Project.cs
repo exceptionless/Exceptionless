@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
     [DebuggerDisplay("Id: {Id}, Name: {Name}, NextSummaryEndOfDayTicks: {NextSummaryEndOfDayTicks}")]
-    public class Project : IOwnedByOrganizationWithIdentity, IData {
+    public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates {
         public Project() {
             Configuration = new ClientConfiguration();
             NotificationSettings = new Dictionary<string, NotificationSettings>();
             PromotedTabs = new HashSet<string>();
-            DeleteBotDataEnabled = true;
+            DeleteBotDataEnabled = false;
             Data = new DataDictionary();
         }
 
@@ -21,6 +22,11 @@ namespace Exceptionless.Core.Models {
         public string OrganizationId { get; set; }
 
         public string Name { get; set; }
+
+        /// <summary>
+        /// Returns true if we've detected that the project has recieved data.
+        /// </summary>
+        public bool? IsConfigured { get; set; }
 
         public ClientConfiguration Configuration { get; set; }
 
@@ -42,5 +48,11 @@ namespace Exceptionless.Core.Models {
         /// projects local time.
         /// </summary>
         public Int64 NextSummaryEndOfDayTicks { get; set; }
+
+        public DateTime CreatedUtc { get; set; }
+
+        public DateTime ModifiedUtc { get; set; }
+
+        DateTime IHaveDates.UpdatedUtc { get { return ModifiedUtc; } set { ModifiedUtc = value; } }
     }
 }

@@ -43,6 +43,11 @@ namespace Exceptionless.Core.Models {
         public decimal? Value { get; set; }
 
         /// <summary>
+        /// The number of duplicated events.
+        /// </summary>
+        public int? Count { get; set; }
+
+        /// <summary>
         /// Optional data entries that contain additional information about this event.
         /// </summary>
         public DataDictionary Data { get; set; }
@@ -52,18 +57,14 @@ namespace Exceptionless.Core.Models {
         /// </summary>
         public string ReferenceId { get; set; }
 
-        /// <summary>
-        /// A unique id that identifies a usage session that this event belongs to.
-        /// </summary>
-        public string SessionId { get; set; }
-
         public static class KnownTypes {
             public const string Error = "error";
-            public const string NotFound = "404";
-            public const string Log = "log";
             public const string FeatureUsage = "usage";
-            public const string SessionStart = "start";
-            public const string SessionEnd = "end";
+            public const string Log = "log";
+            public const string NotFound = "404";
+            public const string Session = "session";
+            public const string SessionEnd = "sessionend";
+            public const string SessionHeartbeat = "heartbeat";
         }
 
         public static class KnownTags {
@@ -81,7 +82,11 @@ namespace Exceptionless.Core.Models {
             public const string UserDescription = "@user_description";
             public const string Version = "@version";
             public const string Level = "@level";
+            public const string Location = "@location";
             public const string SubmissionMethod = "@submission_method";
+            public const string SessionEnd = "sessionend";
+            public const string SessionHasError = "haserror";
+            public const string ManualStackingInfo = "@stack";
         }
     }
 }

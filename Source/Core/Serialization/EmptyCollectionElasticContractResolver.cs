@@ -1,7 +1,6 @@
 using System;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
 using Nest;
 using Nest.Resolvers;
 using Newtonsoft.Json;
@@ -20,14 +19,11 @@ namespace Exceptionless.Core.Serialization {
         }
 
         protected override JsonDictionaryContract CreateDictionaryContract(Type objectType) {
-            if (objectType != typeof(DataDictionary) && objectType != typeof(SettingsDictionary))
-                return base.CreateDictionaryContract(objectType);
-
             JsonDictionaryContract contract = base.CreateDictionaryContract(objectType);
-            contract.PropertyNameResolver = propertyName => propertyName;
+            contract.DictionaryKeyResolver = propertyName => propertyName;
             return contract;
         }
-
+        
         protected override string ResolvePropertyName(string propertyName) {
             return propertyName.ToLowerUnderscoredWords();
         }

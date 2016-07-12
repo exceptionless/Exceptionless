@@ -1,9 +1,15 @@
 ﻿using System;
+using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Api.Utility;
+using Foundatio.Logging;
+using Foundatio.Logging.Xunit;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Miscellaneous {
-    public class DeltaTests {
+    public class DeltaTests : TestWithLoggingBase {
+        public DeltaTests(ITestOutputHelper output) : base(output) {}
+
         [Fact]
         public void CanSetUnknownProperties() {
             dynamic delta = new Delta<SimpleMessageA>();

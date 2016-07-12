@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Dynamic;
+using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
@@ -17,27 +17,35 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         public string GetStackTitle(PersistentEvent ev) {
-            return ev.Message;
+            if (String.IsNullOrWhiteSpace(ev.Message) && ev.IsError())
+                return "Unknown Error";
+
+            return ev.Message ?? ev.Source ?? $"{ev.Type} Event".TrimStart();
         }
 
         public SummaryData GetStackSummaryData(Stack stack) {
-            dynamic data = new ExpandoObject();
-            data.Type = stack.Type;
+            var data = new Dictionary<string, object> { { "Type", stack.Type } };
 
             string value;
-            if (stack.SignatureInfo.TryGetValue("Source", out value)) {
-                data.Source = value;
-            }
+            if (stack.SignatureInfo.TryGetValue("Source", out value))
+                data.Add("Source", value);
 
             return new SummaryData { TemplateKey = "stack-summary", Data = data };
         }
 
         public SummaryData GetEventSummaryData(PersistentEvent ev) {
-            return new SummaryData { TemplateKey = "event-summary", Data = new { Message = ev.Message, Source = ev.Source, Type = ev.Type } };
+            var data = new Dictionary<string, object> {
+                { "Message", GetStackTitle(ev) },
+                { "Source", ev.Source },
+                { "Type", ev.Type }
+            };
+
+            return new SummaryData { TemplateKey = "event-summary", Data = data };
         }
 
         public MailMessage GetEventNotificationMailMessage(EventNotification model) {
-            if (String.IsNullOrEmpty(model.Event.Message))
+            string messageOrSource = !String.IsNullOrEmpty(model.Event.Message) ? model.Event.Message : model.Event.Source;
+            if (String.IsNullOrEmpty(messageOrSource))
                 return null;
 
             string notificationType = "Occurrence event";
@@ -52,9 +60,10 @@ namespace Exceptionless.Core.Plugins.Formatting {
             var requestInfo = model.Event.GetRequestInfo();
             var mailerModel = new EventNotificationModel(model) {
                 BaseUrl = Settings.Current.BaseURL,
-                Subject = String.Concat(notificationType, ": ", model.Event.Message.Truncate(120)),
-                Message =  model.Event.Message,
-                Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null
+                Subject = String.Concat(notificationType, ": ", messageOrSource.Truncate(120)),
+                Message = model.Event.Message,
+                Source = model.Event.Source,
+                Url = requestInfo?.GetFullPath(true, true, true)
             };
 
             return _emailGenerator.GenerateMessage(mailerModel, "Notice").ToMailMessage();

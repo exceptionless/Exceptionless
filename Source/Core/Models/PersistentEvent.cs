@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
-    [DebuggerDisplay("{Id}, {Date}")]
-    public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity {
+    [DebuggerDisplay("Id: {Id}, Type: {Type}, Date: {Date}, Value: {Value}")]
+    public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveCreatedDate {
         public PersistentEvent() {
             Idx = new DataDictionary();
         }

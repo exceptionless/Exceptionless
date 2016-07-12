@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Utility {
 
         public ErrorSignature(Error error, IEnumerable<string> userNamespaces = null, IEnumerable<string> userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true) {
             if (error == null)
-                throw new ArgumentNullException("error");
+                throw new ArgumentNullException(nameof(error));
 
             Error = error;
 
@@ -35,9 +35,9 @@ namespace Exceptionless.Core.Utility {
             Parse();
         }
 
-        public string[] UserNamespaces { get { return _userNamespaces.ToArray(); } }
+        public string[] UserNamespaces => _userNamespaces.ToArray();
 
-        public string[] UserCommonMethods { get { return _userCommonMethods.ToArray(); } }
+        public string[] UserCommonMethods => _userCommonMethods.ToArray();
 
         public Error Error { get; private set; }
 
@@ -73,8 +73,8 @@ namespace Exceptionless.Core.Utility {
                     continue;
 
                 foreach (StackFrame stackFrame in stackTrace.Where(IsUserFrame)) {
-                    SignatureInfo.Add("ExceptionType", e.Type);
-                    SignatureInfo.Add("Method", GetStackFrameSignature(stackFrame));
+                    SignatureInfo.AddItemIfNotEmpty("ExceptionType", e.Type);
+                    SignatureInfo.AddItemIfNotEmpty("Method", GetStackFrameSignature(stackFrame));
                     if (ShouldFlagSignatureTarget)
                         stackFrame.IsSignatureTarget = true;
                     AddSpecialCaseDetails(e);
@@ -88,23 +88,19 @@ namespace Exceptionless.Core.Utility {
 
             if (innerMostError.TargetMethod != null) {
                 // Use the target method if it exists.
-                SignatureInfo.Add("ExceptionType", innerMostError.Type);
-                SignatureInfo.Add("Method", GetStackFrameSignature(innerMostError.TargetMethod));
+                SignatureInfo.AddItemIfNotEmpty("ExceptionType", innerMostError.Type);
+                SignatureInfo.AddItemIfNotEmpty("Method", GetStackFrameSignature(innerMostError.TargetMethod));
                 if (ShouldFlagSignatureTarget)
                     innerMostError.TargetMethod.IsSignatureTarget = true;
             } else if (innerMostError.StackTrace != null && innerMostError.StackTrace.Count > 0) {
                 // Use the topmost stack frame.
-                SignatureInfo.Add("ExceptionType", innerMostError.Type);
-                SignatureInfo.Add("Method", GetStackFrameSignature(innerMostError.StackTrace[0]));
+                SignatureInfo.AddItemIfNotEmpty("ExceptionType", innerMostError.Type);
+                SignatureInfo.AddItemIfNotEmpty("Method", GetStackFrameSignature(innerMostError.StackTrace[0]));
                 if (ShouldFlagSignatureTarget)
                     innerMostError.StackTrace[0].IsSignatureTarget = true;
             } else {
-                // All else failed, use the type and message.
-                if (!String.IsNullOrWhiteSpace(innerMostError.Type))
-                    SignatureInfo.Add("ExceptionType", innerMostError.Type);
-
-                if (!String.IsNullOrWhiteSpace(innerMostError.Message))
-                    SignatureInfo.Add("Message", innerMostError.Message);
+                // All else failed, use the type.
+                SignatureInfo.AddItemIfNotEmpty("ExceptionType", innerMostError.Type);
             }
 
             AddSpecialCaseDetails(innerMostError);
@@ -136,7 +132,7 @@ namespace Exceptionless.Core.Utility {
 
         private bool IsUserFrame(StackFrame frame) {
             if (frame == null)
-                throw new ArgumentNullException("frame");
+                throw new ArgumentNullException(nameof(frame));
 
             if (frame.Name == null)
                 return false;
@@ -168,8 +164,10 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             var extraProperties = error.Data.GetValue<Dictionary<string, object>>(Error.KnownDataKeys.ExtraProperties);
-            if (extraProperties == null)
+            if (extraProperties == null) {
+                error.Data.Remove(Error.KnownDataKeys.ExtraProperties);
                 return;
+            }
 
             object value;
             if (extraProperties.TryGetValue("Number", out value))

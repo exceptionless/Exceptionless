@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using Exceptionless.Core.Models.Admin;
+using System.Threading.Tasks;
+using Exceptionless.Core.Models;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IWebHookRepository : IRepositoryOwnedByOrganizationAndProject<WebHook> {
-        void RemoveByUrl(string targetUrl);
-        ICollection<WebHook> GetByOrganizationIdOrProjectId(string organizationId, string projectId);
+        Task RemoveByUrlAsync(string targetUrl);
+        Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId);
     }
 }

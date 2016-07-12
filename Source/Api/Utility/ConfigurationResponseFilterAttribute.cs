@@ -1,35 +1,23 @@
 ﻿using System;
 using System.Net;
-using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Http.Filters;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Utility;
+using Exceptionless.Api.Extensions;
 
 namespace Exceptionless.Api.Utility {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class ConfigurationResponseFilterAttribute : ActionFilterAttribute {
-        [Inject]
-        public IProjectRepository ProjectRepository { get; set; }
-
-        public override void OnActionExecuted(HttpActionExecutedContext context) {
+        public override Task OnActionExecutedAsync(HttpActionExecutedContext context, CancellationToken cancellationToken) {
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             if (context.Response == null || context.Response.StatusCode != HttpStatusCode.Accepted)
-                return;
+                return Task.CompletedTask;
 
-            var ctx = context.Request.GetOwinContext();
-            if (ctx == null || ctx.Request == null || ctx.Request.User == null)
-                return;
-            
-            string projectId = ctx.Request.User.GetProjectId();
-            if (String.IsNullOrEmpty(projectId))
-                return;
-
-            var project = ProjectRepository.GetById(projectId, true);
+            var project = context.Request?.GetProject();
             if (project == null)
-                return;
+                return Task.CompletedTask;
 
             string headerName = ExceptionlessHeaders.ConfigurationVersion;
             if (context.Request.RequestUri.AbsolutePath.StartsWith("/api/v1"))
@@ -37,6 +25,8 @@ namespace Exceptionless.Api.Utility {
 
             // add the current configuration version to the response headers so the client will know if it should update its config.
             context.Response.Headers.Add(headerName, project.Configuration.Version.ToString());
+
+            return Task.CompletedTask;
         }
     }
 }

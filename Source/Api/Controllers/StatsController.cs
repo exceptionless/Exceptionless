@@ -1,65 +1,60 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Stats;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stats")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class StatsController : ExceptionlessApiController {
         private readonly IOrganizationRepository _organizationRepository;
-        private readonly IProjectRepository _projectRepository;
-        private readonly IStackRepository _stackRepository;
         private readonly EventStats _stats;
+        private readonly ILogger _logger;
 
-        public StatsController(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, EventStats stats) {
+        public StatsController(IOrganizationRepository organizationRepository, EventStats stats, ILogger<StatsController> logger) {
             _organizationRepository = organizationRepository;
-            _projectRepository = projectRepository;
-            _stackRepository = stackRepository;
             _stats = stats;
+            _logger = logger;
         }
-
+        
         /// <summary>
-        /// Get all
+        /// Gets a list of numbers based on the passed in fields.
         /// </summary>
+        /// <param name="fields">A comma delimited list of values you want returned. Example: avg:value,distinct:value,sum:users,max:value,min:value,last:value</param>
         /// <param name="filter">A filter that controls what data is returned from the server.</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         [HttpGet]
         [Route]
-        [ResponseType(typeof(EventStatsResult))]
-        public IHttpActionResult Get(string filter = null, string time = null, string offset = null) {
-            return GetInternal(null, filter, time, offset);
-        }
-
-        private IHttpActionResult GetInternal(string systemFilter, string userFilter = null, string time = null, string offset = null) {
-            var timeInfo = GetTimeInfo(time, offset);
-
-            var processResult = QueryProcessor.Process(userFilter);
+        [ResponseType(typeof(NumbersStatsResult))]
+        public async Task<IHttpActionResult> GetAsync(string fields = null, string filter = null, string time = null, string offset = null) {
+            var far = FieldAggregationProcessor.Process(fields);
+            if (!far.IsValid)
+                return BadRequest(far.Message);
+            
+            var processResult = QueryProcessor.Process(filter);
             if (!processResult.IsValid)
                 return BadRequest(processResult.Message);
 
-            if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, far.UsesPremiumFeatures || processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
-            EventStatsResult result;
+            NumbersStatsResult result;
             try {
-                result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
+                var timeInfo = GetTimeInfo(time, offset);
+                result = await _stats.GetNumbersStatsAsync(far.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
-                Log.Error().Exception(ex)
-                    .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset })
-                    .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
-                    .ContextProperty("HttpActionContext", ActionContext)
-                    .Write();
+                _logger.Error().Exception(ex).Property("Search Filter", new {
+                    SystemFilter = systemFilter,
+                    UserFilter = filter,
+                    Time = time,
+                    Offset = offset
+                }).Tag("Search").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
@@ -68,47 +63,42 @@ namespace Exceptionless.Api.Controllers {
         }
 
         /// <summary>
-        /// Get by project
+        /// Gets a timeline of data with buckets that contain list of numbers based on the passed in fields.
         /// </summary>
-        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="fields">A comma delimited list of values you want returned. Example: avg:value,distinct:value,sum:users,max:value,min:value,last:value</param>
         /// <param name="filter">A filter that controls what data is returned from the server.</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-        /// <response code="404">The project could not be found.</response>
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stats")]
-        [ResponseType(typeof(EventStatsResult))]
-        public IHttpActionResult GetByProject(string projectId, string filter = null, string time = null, string offset = null) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
+        [Route("timeline")]
+        [ResponseType(typeof(NumbersTimelineStatsResult))]
+        public async Task<IHttpActionResult> GetTimelineAsync(string fields = null, string filter = null, string time = null, string offset = null) {
+            var far = FieldAggregationProcessor.Process(fields);
+            if (!far.IsValid)
+                return BadRequest(far.Message);
+            
+            var processResult = QueryProcessor.Process(filter);
+            if (!processResult.IsValid)
+                return BadRequest(processResult.Message);
 
-            Project project = _projectRepository.GetById(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
-                return NotFound();
+            string systemFilter = await GetAssociatedOrganizationsFilterAsync(_organizationRepository, far.UsesPremiumFeatures || processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
-            return GetInternal(String.Concat("project:", projectId), filter, time, offset);
-        }
+            NumbersTimelineStatsResult result;
+            try {
+                var timeInfo = GetTimeInfo(time, offset);
+                result = await _stats.GetNumbersTimelineStatsAsync(far.Aggregations, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
+            } catch (ApplicationException ex) {
+                _logger.Error().Exception(ex).Property("Search Filter", new {
+                    SystemFilter = systemFilter,
+                    UserFilter = filter,
+                    Time = time,
+                    Offset = offset
+                }).Tag("Search").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
 
-        /// <summary>
-        /// Get by stack
-        /// </summary>
-        /// <param name="stackId">The identifier of the stack.</param>
-        /// <param name="filter">A filter that controls what data is returned from the server.</param>
-        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
-        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-        /// <response code="404">The stack could not be found.</response>
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/stats")]
-        [ResponseType(typeof(EventStatsResult))]
-        public IHttpActionResult GetByStack(string stackId, string filter = null, string time = null, string offset = null) {
-            if (String.IsNullOrEmpty(stackId))
-                return NotFound();
+                return BadRequest("An error has occurred. Please check your search filter.");
+            }
 
-            Stack stack = _stackRepository.GetById(stackId);
-            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
-                return NotFound();
-
-            return GetInternal(String.Concat("stack:", stackId), filter, time, offset);
+            return Ok(result);
         }
     }
 }

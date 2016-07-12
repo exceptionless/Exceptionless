@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using AutoMapper;
+using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Jobs;
@@ -9,24 +8,36 @@ using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Tests.Utility;
+using Foundatio.Logging;
+using Foundatio.Logging.Xunit;
+using Foundatio.Metrics;
+using Foundatio.Queues;
+using RazorSharpEmail;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Mail {
-    public class MailerTests {
-        public MailerTests() {
-            Mapper.CreateMap<Event, PersistentEvent>();
+    public class MailerTests : TestWithLoggingBase {
+        private readonly IMailer _mailer;
+        private readonly InMemoryMailSender _mailSender = IoC.GetInstance<IMailSender>() as InMemoryMailSender;
+        private readonly MailMessageJob _mailJob = IoC.GetInstance<MailMessageJob>();
+
+        public MailerTests(ITestOutputHelper output) : base(output) {
+            _mailer = IoC.GetInstance<IMailer>();
+            if (_mailer is NullMailer)
+                _mailer = new Mailer(IoC.GetInstance<IEmailGenerator>(), IoC.GetInstance<IQueue<MailMessage>>(), IoC.GetInstance<FormattingPluginManager>(), IoC.GetInstance<IMetricsClient>(), Log.CreateLogger<Mailer>());
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public void SendLogNotification() {
-            var mailer = IoC.GetInstance<Mailer>();
-            mailer.SendNotice(Settings.Current.TestEmailAddress, new EventNotification {
+        public async Task SendLogNotificationAsync() {
+            await _mailer.SendEventNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
                 Event = new PersistentEvent {
-                    Id = "1", 
+                    Id = "1",
                     OrganizationId = "1",
-                    ProjectId = "1", 
-                    StackId = "1", 
+                    ProjectId = "1",
+                    StackId = "1",
                     Message = "Happy days are here again...",
                     Type = Event.KnownTypes.Log
                 },
@@ -36,17 +47,18 @@ namespace Exceptionless.Api.Tests.Mail {
                 TotalOccurrences = 1,
                 ProjectName = "Testing"
             });
+
+            await RunMailJobAsync();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public void SendNotFoundNotification() {
-            var mailer = IoC.GetInstance<Mailer>();
-            mailer.SendNotice(Settings.Current.TestEmailAddress, new EventNotification {
+        public async Task SendNotFoundNotificationAsync() {
+            await _mailer.SendEventNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
                 Event = new PersistentEvent {
-                    Id = "1", 
+                    Id = "1",
                     OrganizationId = "1",
-                    ProjectId = "1", 
-                    StackId = "1", 
+                    ProjectId = "1",
+                    StackId = "1",
                     Source = "[GET] /not-found?page=20",
                     Type = Event.KnownTypes.NotFound
                 },
@@ -56,139 +68,113 @@ namespace Exceptionless.Api.Tests.Mail {
                 TotalOccurrences = 1,
                 ProjectName = "Testing"
             });
+
+            await RunMailJobAsync();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public void SendSimpleErrorNotification() {
-            PersistentEvent ev = null;
-            //var client = new ExceptionlessClient("123456789");
-            //try {
-            //    throw new Exception("Happy days are here again...");
-            //} catch (Exception ex) {
-            //    var builder = ex.ToExceptionless(client: client);
-            //    EventEnrichmentManager.Enrich(new EventEnrichmentContext(client, builder.EnrichmentContextData), builder.Target);
-            //    ev = Mapper.Map<PersistentEvent>(builder.Target);
-            //}
+        public async Task SendOrganizationHourlyOverageNotificationAsync() {
+            await _mailer.SendOrganizationNoticeAsync(Settings.Current.TestEmailAddress, new OrganizationNotificationModel {
+                Organization = OrganizationData.GenerateSampleOrganization(),
+                IsOverHourlyLimit = true
+            });
 
-            ev.Id = "1";
-            ev.OrganizationId = "1";
-            ev.ProjectId = "1";
-            ev.StackId = "1";
+            await RunMailJobAsync();
+        }
 
-            var mailer = IoC.GetInstance<Mailer>();
-            mailer.SendNotice(Settings.Current.TestEmailAddress, new EventNotification {
-                Event = ev,
+        [Fact(Skip = "Used for testing html formatting.")]
+        public async Task SendOrganizationMonthlyOverageNotificationAsync() {
+            await _mailer.SendOrganizationNoticeAsync(Settings.Current.TestEmailAddress, new OrganizationNotificationModel {
+                Organization = OrganizationData.GenerateSampleOrganization(),
+                IsOverMonthlyLimit = true
+            });
+
+            await RunMailJobAsync();
+        }
+
+        [Fact(Skip = "Used for testing html formatting.")]
+        public async Task SendSimpleErrorNotificationAsync() {
+            await _mailer.SendEventNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
+                Event = new PersistentEvent {
+                    Id = "1",
+                    OrganizationId = "1",
+                    ProjectId = "1",
+                    StackId = "1"
+                },
                 IsNew = true,
                 IsCritical = true,
                 IsRegression = false,
                 TotalOccurrences = 1,
                 ProjectName = "Testing"
             });
+
+            await RunMailJobAsync();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public void SendErrorNotification() {
-            PersistentEvent ev = null;
-            //var client = new ExceptionlessClient(c => {
-            //    c.ApiKey = "123456789";
-            //    c.UseErrorEnrichment();
-            //});
-            //try {
-            //    throw new Exception("Happy days are here again...");
-            //} catch (Exception ex) {
-            //    var builder = ex.ToExceptionless(client: client);
-            //    EventEnrichmentManager.Enrich(new EventEnrichmentContext(client, builder.EnrichmentContextData), builder.Target);
-            //    ev = Mapper.Map<PersistentEvent>(builder.Target);
-            //}
-
-            ev.Id = "1";
-            ev.OrganizationId = "1";
-            ev.ProjectId = "1";
-            ev.StackId = "1";
-
-            var mailer = IoC.GetInstance<Mailer>();
-            mailer.SendNotice(Settings.Current.TestEmailAddress, new EventNotification {
-                Event = ev,
+        public async Task SendErrorNotificationAsync() {
+            await _mailer.SendEventNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
+                Event = new PersistentEvent {
+                    Id = "1",
+                    OrganizationId = "1",
+                    ProjectId = "1",
+                    StackId = "1"
+                },
                 IsNew = true,
                 IsCritical = true,
                 IsRegression = false,
                 TotalOccurrences = 1,
                 ProjectName = "Testing"
             });
+
+            await RunMailJobAsync();
         }
-
-        [Fact]
-        public void SendInvite() {
-            var mailer = IoC.GetInstance<Mailer>();
-            var mailerSender = IoC.GetInstance<IMailSender>() as InMemoryMailSender;
-            var mailJob = IoC.GetInstance<MailMessageJob>();
-            Assert.NotNull(mailerSender);
-
+        
+        [Fact(Skip = "Used for testing html formatting.")]
+        public async Task SendInviteAsync() {
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
-            mailer.SendInvite(user, organization, new Invite {
+            await _mailer.SendInviteAsync(user, organization, new Invite {
                 DateAdded = DateTime.Now,
                 EmailAddress = Settings.Current.TestEmailAddress,
                 Token = "1"
             });
-            mailJob.Run();
-
-            Assert.Equal(1, mailerSender.TotalSent);
-            Assert.Equal(Settings.Current.TestEmailAddress, mailerSender.LastMessage.To);
-            Assert.Contains("Join Organization", mailerSender.LastMessage.HtmlBody);
+            
+            await RunMailJobAsync();
+            if (_mailSender != null) {
+                Assert.Equal(Settings.Current.TestEmailAddress, _mailSender.LastMessage.To);
+                Assert.Contains("Join Organization", _mailSender.LastMessage.HtmlBody);
+            }
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public void SendAddedToOrganization() {
-            var mailer = IoC.GetInstance<Mailer>();
+        public async Task SendAddedToOrganizationAsync() {
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
-            mailer.SendAddedToOrganization(user, organization, user);
+
+            await _mailer.SendAddedToOrganizationAsync(user, organization, user);
+            await RunMailJobAsync();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public void SendPasswordReset() {
-            var mailer = IoC.GetInstance<Mailer>();
+        public async Task SendPasswordResetAsync() {
             User user = UserData.GenerateSampleUser();
-            mailer.SendPasswordReset(user);
+            await _mailer.SendPasswordResetAsync(user);
+            await RunMailJobAsync();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public void SendVerifyEmail() {
-            var mailer = IoC.GetInstance<Mailer>();
+        public async Task SendVerifyEmailAsync() {
             User user = UserData.GenerateSampleUser();
-            mailer.SendVerifyEmail(user);
+            await _mailer.SendVerifyEmailAsync(user);
+            await RunMailJobAsync();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public void SendSummaryNotification() {
-            var mailer = IoC.GetInstance<Mailer>();
-            mailer.SendDailySummary(Settings.Current.TestEmailAddress, new DailySummaryModel {
+        public async Task SendSummaryNotificationAsync() {
+            await _mailer.SendDailySummaryAsync(Settings.Current.TestEmailAddress, new DailySummaryModel {
                 ProjectId = "1",
                 BaseUrl = "http://be.exceptionless.io",
-                MostFrequent = new List<EventStackResult> {
-                    new EventStackResult {
-                        First = DateTime.Now,
-                        Id = "1",
-                        Last = DateTime.Now,
-                        Is404 = false,
-                        Method = "Blah()",
-                        Path = "/blah",
-                        Title = "Some Error",
-                        Total = 12,
-                        Type = "SomeError"
-                    }
-                },
-                New = new List<Stack> {
-                    new Stack {
-                        DateFixed = DateTime.Now,
-                        Description = "Error 1",
-                        FirstOccurrence = DateTime.Now,
-                        IsRegressed = true,
-                        LastOccurrence = DateTime.Now,
-                        TotalOccurrences = 12
-                    }
-                },
                 StartDate = DateTime.Now.Date,
                 EndDate = DateTime.Now.EndOfDay(),
                 NewTotal = 1,
@@ -200,14 +186,25 @@ namespace Exceptionless.Api.Tests.Mail {
                 HasSubmittedEvents = true,
                 IsFreePlan = false
             });
+            await RunMailJobAsync();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
-        public void SendPaymentFailed() {
-            var mailer = IoC.GetInstance<Mailer>();
+        public async Task SendPaymentFailedAsync() {
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
-            mailer.SendPaymentFailed(user, organization);
+            await _mailer.SendPaymentFailedAsync(user, organization);
+            await RunMailJobAsync();
+        }
+
+        private async Task RunMailJobAsync() {
+            await _mailJob.RunAsync();
+            if (_mailSender == null)
+                return;
+
+            _logger.Info($"To:       {_mailSender.LastMessage.To}");
+            _logger.Info($"Subject: {_mailSender.LastMessage.Subject}");
+            _logger.Info($"TextBody:\n{_mailSender.LastMessage.TextBody}");
         }
     }
 }

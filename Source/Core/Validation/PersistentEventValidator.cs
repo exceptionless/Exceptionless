@@ -38,10 +38,7 @@ namespace Exceptionless.Core.Validation {
 
             if (!IsValidIdentifier(ev.ReferenceId))
                 result.Errors.Add(new ValidationFailure("ReferenceId", "ReferenceId must contain between 8 and 100 alphanumeric or '-' characters."));
-
-            if (!IsValidIdentifier(ev.SessionId))
-                result.Errors.Add(new ValidationFailure("SessionId", "SessionId must contain between 8 and 100 alphanumeric or '-' characters."));
-
+            
             foreach (var tag in ev.Tags) {
                 if (String.IsNullOrEmpty(tag))
                     result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));

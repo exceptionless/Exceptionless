@@ -3,7 +3,6 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
-using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
@@ -29,6 +28,9 @@ namespace Exceptionless.Api.Controllers {
         private readonly IQueue<EventUserDescription> _userDescriptionQueue;
         private readonly IMetricsClient _metricsClient;
 
+        private static HealthCheckResult _lastHealthCheckResult;
+        private static DateTime _nextHealthCheckTimeUtc = DateTime.MinValue;
+
         public StatusController(ICacheClient cacheClient, IMessagePublisher messagePublisher, SystemHealthChecker healthChecker, IQueue<EventPost> eventQueue, IQueue<MailMessage> mailQueue, IQueue<EventNotificationWorkItem> notificationQueue, IQueue<WebHookNotification> webHooksQueue, IQueue<EventUserDescription> userDescriptionQueue, IMetricsClient metricsClient) {
             _cacheClient = cacheClient;
             _messagePublisher = messagePublisher;
@@ -47,65 +49,78 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="503">Contains a message detailing the service outage message.</response>
         [HttpGet]
         [Route("status")]
-        [ResponseType(typeof(StatusResult))]
-        public async Task<IHttpActionResult> Index() {
-            var result = await _healthChecker.CheckAllAsync();
-            if (!result.IsHealthy)
-                return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, result.Message, result.Message);
+        public async Task<IHttpActionResult> IndexAsync() {
+            if (_lastHealthCheckResult == null || _nextHealthCheckTimeUtc < DateTime.UtcNow) {
+                _nextHealthCheckTimeUtc = DateTime.UtcNow.AddSeconds(5);
+                _lastHealthCheckResult = await _healthChecker.CheckAllAsync();
+            }
 
-            return Ok(new StatusResult { Message = "All Systems Check", Version = Settings.Current.Version });
+            if (!_lastHealthCheckResult.IsHealthy)
+                return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, _lastHealthCheckResult.Message, _lastHealthCheckResult.Message);
+
+            if (Settings.Current.HasAppScope) {
+                return Ok(new {
+                    Message = "All Systems Check",
+                    Settings.Current.Version,
+                    Settings.Current.AppScope,
+                    WebsiteMode = Settings.Current.WebsiteMode.ToString(),
+                    Environment.MachineName
+                });
+            }
+
+            return Ok(new {
+                Message = "All Systems Check",
+                Settings.Current.Version,
+                WebsiteMode = Settings.Current.WebsiteMode.ToString(),
+                Environment.MachineName
+            });
         }
 
         [HttpGet]
         [Route("queue-stats")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult QueueStats() {
+        public async Task<IHttpActionResult> QueueStatsAsync() {
+            var eventQueueStats = await _eventQueue.GetQueueStatsAsync();
+            var mailQueueStats = await _mailQueue.GetQueueStatsAsync();
+            var userDescriptionQueueStats = await _userDescriptionQueue.GetQueueStatsAsync();
+            var notificationQueueStats = await _notificationQueue.GetQueueStatsAsync();
+            var webHooksQueueStats = await _webHooksQueue.GetQueueStatsAsync();
+
             return Ok(new {
                 EventPosts = new {
-                    Active = _eventQueue.GetQueueCount(),
-                    Deadletter = _eventQueue.GetDeadletterCount(),
-                    Working = _eventQueue.GetWorkingCount()
+                    Active = eventQueueStats.Enqueued,
+                    Deadletter = eventQueueStats.Deadletter,
+                    Working = eventQueueStats.Working
                 },
                 MailMessages = new {
-                    Active = _mailQueue.GetQueueCount(),
-                    Deadletter = _mailQueue.GetDeadletterCount(),
-                    Working = _mailQueue.GetWorkingCount()
+                    Active = mailQueueStats.Enqueued,
+                    Deadletter = mailQueueStats.Deadletter,
+                    Working = mailQueueStats.Working
                 },
                 UserDescriptions = new {
-                    Active = _userDescriptionQueue.GetQueueCount(),
-                    Deadletter = _userDescriptionQueue.GetDeadletterCount(),
-                    Working = _userDescriptionQueue.GetWorkingCount()
+                    Active = userDescriptionQueueStats.Enqueued,
+                    Deadletter = userDescriptionQueueStats.Deadletter,
+                    Working = userDescriptionQueueStats.Working
                 },
                 Notifications = new {
-                    Active = _notificationQueue.GetQueueCount(),
-                    Deadletter = _notificationQueue.GetDeadletterCount(),
-                    Working = _notificationQueue.GetWorkingCount()
+                    Active = notificationQueueStats.Enqueued,
+                    Deadletter = notificationQueueStats.Deadletter,
+                    Working = notificationQueueStats.Working
                 },
                 WebHooks = new {
-                    Active = _webHooksQueue.GetQueueCount(),
-                    Deadletter = _webHooksQueue.GetDeadletterCount(),
-                    Working = _webHooksQueue.GetWorkingCount()
+                    Active = webHooksQueueStats.Enqueued,
+                    Deadletter = webHooksQueueStats.Deadletter,
+                    Working = webHooksQueueStats.Working
                 }
             });
         }
-
-        [HttpGet]
-        [Route("metric-stats")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult MetricStats() {
-            var metricsClient = _metricsClient as InMemoryMetricsClient;
-            if (metricsClient == null)
-                return Ok();
-
-            return Ok(metricsClient.GetMetricStats());
-        }
-
+        
         [HttpPost]
         [Route("notifications/release")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult PostReleaseNotification([NakedBody]string message = null, bool critical = false) {
+        public async Task<IHttpActionResult> PostReleaseNotificationAsync([NakedBody]string message = null, bool critical = false) {
             var notification = new ReleaseNotification { Critical = critical, Date = DateTimeOffset.UtcNow, Message = message };
-            _messagePublisher.Publish(notification);
+            await _messagePublisher.PublishAsync(notification);
             return Ok(notification);
         }
 
@@ -115,8 +130,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("notifications/system")]
         [ResponseType(typeof(SystemNotification))]
-        public IHttpActionResult GetSystemNotification() {
-            var notification = _cacheClient.Get<SystemNotification>("system-notification");
+        public async Task<IHttpActionResult> GetSystemNotificationAsync() {
+            var notification = await _cacheClient.GetAsync<SystemNotification>("system-notification");
             if (notification == null)
                 return Ok();
 
@@ -126,13 +141,13 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("notifications/system")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult PostSystemNotification([NakedBody]string message) {
+        public async Task<IHttpActionResult> PostSystemNotificationAsync([NakedBody]string message) {
             if (String.IsNullOrEmpty(message))
                 return NotFound();
 
             var notification = new SystemNotification { Date = DateTimeOffset.UtcNow, Message = message };
-            _cacheClient.Set("system-notification", notification);
-            _messagePublisher.Publish(notification);
+            await _cacheClient.SetAsync("system-notification", notification);
+            await _messagePublisher.PublishAsync(notification);
 
             return Ok(notification);
         }
@@ -140,9 +155,9 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("notifications/system")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult RemoveSystemNotification() {
-            _cacheClient.Remove("system-notification");
-            _messagePublisher.Publish(new SystemNotification { Date = DateTimeOffset.UtcNow });
+        public async Task<IHttpActionResult> RemoveSystemNotificationAsync() {
+            await _cacheClient.RemoveAsync("system-notification");
+            await _messagePublisher.PublishAsync(new SystemNotification { Date = DateTimeOffset.UtcNow });
             return Ok();
         }
     }

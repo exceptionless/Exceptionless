@@ -1,20 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(5)]
     public class RunEventProcessingPluginsAction : EventPipelineActionBase {
         private readonly EventPluginManager _pluginManager;
 
-        public RunEventProcessingPluginsAction(EventPluginManager pluginManager) {
+        public RunEventProcessingPluginsAction(EventPluginManager pluginManager, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _pluginManager = pluginManager;
+            ContinueOnError = true;
         }
 
-        protected override bool ContinueOnError { get { return true; } }
-
-        public override async Task ProcessAsync(EventContext ctx) {
-            await _pluginManager.EventProcessingAsync(ctx);
+        public override Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+            return _pluginManager.EventBatchProcessingAsync(contexts);
         }
     }
 }

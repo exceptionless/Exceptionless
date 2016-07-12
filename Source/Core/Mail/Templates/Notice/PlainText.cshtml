@@ -21,6 +21,13 @@ Message:
 @Model.Message
 </text>
 }
+@if (!String.IsNullOrEmpty(Model.Source)) {
+<text>
+
+Source:
+@Model.Source
+</text>
+}
 @if (!String.IsNullOrEmpty(Model.Url)) {
 <text>
 

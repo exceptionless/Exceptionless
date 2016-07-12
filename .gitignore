@@ -80,6 +80,7 @@ _TeamCity*
 # NCrunch
 *.ncrunch*
 .*crunch*.local.xml
+_Ncrunch*
 
 # Installshield output folder
 [Ee]xpress/
@@ -159,12 +160,9 @@ $RECYCLE.BIN/
 dump.rdb
 
 #App
-.idea
-bower_components
-dist
-lib
-node_modules
 App_Data
-Exceptionless.sln.GhostDoc.xml
-/Libraries/elasticsearch*/
-/Libraries/MongoDB
+/Libraries/elasticsearch-*
+/.vs
+
+*.DS_Store
+*.orig

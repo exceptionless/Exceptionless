@@ -17,11 +17,11 @@ namespace Exceptionless.Core.Extensions {
 
         public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer) {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             if (keySelector == null)
-                throw new ArgumentNullException("keySelector");
+                throw new ArgumentNullException(nameof(keySelector));
             if (comparer == null)
-                throw new ArgumentNullException("comparer");
+                throw new ArgumentNullException(nameof(comparer));
 
             return DistinctByImpl(source, keySelector, comparer);
         }
@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action) {
-            foreach (var item in collection)
+            foreach (var item in collection ?? new List<T>())
                 action(item);
         }
 
@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static int IndexOf<TSource>(this IEnumerable<TSource> source, TSource item, IEqualityComparer<TSource> itemComparer) {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             var listOfT = source as IList<TSource>;
             if (listOfT != null)

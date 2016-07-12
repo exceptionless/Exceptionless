@@ -4,9 +4,6 @@ using System.Web.Http.Controllers;
 namespace Exceptionless.Api.Security {
     public class RequireHttpsExceptLocalAttribute : RequireHttpsAttribute {
         protected override void HandleNonHttpsRequest(HttpActionContext context) {
-            if (context == null)
-                throw new ArgumentNullException("context");
-
             if (HostIsLocal(context.Request.RequestUri.Host))
                 return;
 
@@ -14,7 +11,7 @@ namespace Exceptionless.Api.Security {
         }
 
         private bool HostIsLocal(string hostName) {
-            return hostName.Contains("localtest.me") || hostName.Equals("localhost", StringComparison.OrdinalIgnoreCase);
+            return hostName.Equals("localhost", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

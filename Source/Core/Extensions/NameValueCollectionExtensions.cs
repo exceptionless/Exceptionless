@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Extensions {
                 if (defaultValue.HasValue && defaultValue is T)
                     return (T)defaultValue;
 
-                throw new ConfigurationErrorsException(String.Format("The configuration key '{0}' was not found and no default value was specified.", name));
+                throw new ConfigurationErrorsException($"The configuration key '{name}' was not found and no default value was specified.");
             }
 
             try {
@@ -58,7 +58,7 @@ namespace Exceptionless.Core.Extensions {
                 if (defaultValue.HasValue && defaultValue is T)
                     return (T)defaultValue;
 
-                string message = String.Format("Configuration key '{0}' has value '{1}' that could not be parsed as a member of the {2} enum type.", name, value, typeof(T).Name);
+                string message = $"Configuration key '{name}' has value '{value}' that could not be parsed as a member of the {typeof(T).Name} enum type.";
                 throw new ConfigurationErrorsException(message, ex);
             }
         }

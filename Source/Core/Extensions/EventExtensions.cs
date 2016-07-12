@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -95,10 +96,17 @@ namespace Exceptionless {
         }
 
         /// <summary>
+        /// Returns true if the event type is session heartbeat.
+        /// </summary>
+        public static bool IsSessionHeartbeat(this Event ev) {
+            return ev.Type == Event.KnownTypes.SessionHeartbeat;
+        }
+
+        /// <summary>
         /// Returns true if the event type is session start.
         /// </summary>
         public static bool IsSessionStart(this Event ev) {
-            return ev.Type == Event.KnownTypes.SessionStart;
+            return ev.Type == Event.KnownTypes.Session;
         }
 
         /// <summary>
@@ -126,6 +134,11 @@ namespace Exceptionless {
             return ev.Data.TryGetValue(Event.KnownDataKeys.UserInfo, out value) ? value as UserInfo : null;
         }
 
+        public static string GetVersion(this Event ev) {
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.Version, out value) ? value as string : null;
+        }
+
         /// <summary>
         /// Sets the version that the event happened on.
         /// </summary>
@@ -136,6 +149,83 @@ namespace Exceptionless {
                 return;
 
             ev.Data[Event.KnownDataKeys.Version] = version.Trim();
+        }
+
+        public static Location GetLocation(this Event ev) {
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.Location, out value) ? value as Location : null;
+        }
+        
+        public static void SetLocation(this Event ev, Location location) {
+            if (location == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.Location] = location;
+        }
+
+        public static void SetEnvironmentInfo(this Event ev, EnvironmentInfo environmentInfo) {
+            if (environmentInfo == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.EnvironmentInfo] = environmentInfo;
+        }
+        
+        /// <summary>
+        /// Gets the stacking info from extended data.
+        /// </summary>
+        public static ManualStackingInfo GetManualStackingInfo(this Event ev) {
+            object value;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.ManualStackingInfo, out value) ? value as ManualStackingInfo : null;
+        }
+        
+        /// <summary>
+        /// Changes default stacking behavior
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="signatureData">Key value pair that determines how the event is stacked.</param>
+        public static void SetManualStackingInfo(this Event ev, IDictionary<string, string> signatureData) {
+            if (signatureData == null || signatureData.Count == 0)
+                return;
+
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(signatureData);
+        }
+
+        /// <summary>
+        /// Changes default stacking behavior
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="title">The stack title.</param>
+        /// <param name="signatureData">Key value pair that determines how the event is stacked.</param>
+        public static void SetManualStackingInfo(this Event ev, string title, IDictionary<string, string> signatureData) {
+            if (String.IsNullOrWhiteSpace(title) || signatureData == null || signatureData.Count == 0)
+                return;
+
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(title, signatureData);
+        }
+
+        /// <summary>
+        /// Changes default stacking behavior by setting the stacking info.
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="manualStackingKey">The manual stacking key.</param>
+        public static void SetManualStackingKey(this Event ev, string manualStackingKey) {
+            if (String.IsNullOrWhiteSpace(manualStackingKey))
+                return;
+
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(null, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
+        }
+
+        /// <summary>
+        /// Changes default stacking behavior by setting the stacking info.
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="title">The stack title.</param>
+        /// <param name="manualStackingKey">The manual stacking key.</param>
+        public static void SetManualStackingKey(this Event ev, string title, string manualStackingKey) {
+            if (String.IsNullOrWhiteSpace(title) || String.IsNullOrWhiteSpace(manualStackingKey))
+                return;
+
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(title, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
         }
 
         /// <summary>

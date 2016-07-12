@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Models;
-using NLog.Fluent;
+using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin> {
-        public EventParserPluginManager(IDependencyResolver dependencyResolver = null) : base(dependencyResolver){}
+        public EventParserPluginManager(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) : base(dependencyResolver, loggerFactory){}
 
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
 
                     return events;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling ParseEvents in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    _logger.Error(ex, "Error calling ParseEvents in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message);
                 }
             }
 

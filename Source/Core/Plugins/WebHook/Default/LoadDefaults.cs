@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 
@@ -15,24 +17,24 @@ namespace Exceptionless.Core.Plugins.WebHook {
             _stackRepository = stackRepository;
         }
 
-        public override object CreateFromEvent(WebHookDataContext ctx) {
+        public override async Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
             if (ctx.Event == null)
                 throw new ArgumentException("Event cannot be null.");
 
             if (ctx.Project == null)
-                ctx.Project = _projectRepository.GetById(ctx.Event.ProjectId, true);
+                ctx.Project = await _projectRepository.GetByIdAsync(ctx.Event.ProjectId, true).AnyContext();
 
             if (ctx.Project == null)
                 throw new ArgumentException("Project not found.");
 
             if (ctx.Organization == null)
-                ctx.Organization = _organizationRepository.GetById(ctx.Event.OrganizationId);
+                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Event.OrganizationId, true).AnyContext();
 
             if (ctx.Organization == null)
                 throw new ArgumentException("Organization not found.");
 
             if (ctx.Stack == null)
-                ctx.Stack = _stackRepository.GetById(ctx.Event.StackId);
+                ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId).AnyContext();
 
             if (ctx.Stack == null)
                 throw new ArgumentException("Stack not found.");
@@ -40,18 +42,18 @@ namespace Exceptionless.Core.Plugins.WebHook {
             return null;
         }
 
-        public override object CreateFromStack(WebHookDataContext ctx) {
+        public override async Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
             if (ctx.Stack == null)
                 throw new ArgumentException("Stack cannot be null.");
 
             if (ctx.Project == null)
-                ctx.Project = _projectRepository.GetById(ctx.Stack.ProjectId, true);
+                ctx.Project = await _projectRepository.GetByIdAsync(ctx.Stack.ProjectId, true).AnyContext();
 
             if (ctx.Project == null)
                 throw new ArgumentException("Project not found.");
 
             if (ctx.Organization == null)
-                ctx.Organization = _organizationRepository.GetById(ctx.Stack.OrganizationId);
+                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Stack.OrganizationId, true).AnyContext();
 
             if (ctx.Organization == null)
                 throw new ArgumentException("Organization not found.");

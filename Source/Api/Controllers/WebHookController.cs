@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
+using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
@@ -12,7 +12,8 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Admin;
+using Foundatio.Logging;
+using Foundatio.Repositories.Models;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
@@ -22,13 +23,13 @@ namespace Exceptionless.App.Controllers.API {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
 
-        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager) : base(repository) {
+        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
             _projectRepository = projectRepository;
             _billingManager = billingManager;
         }
 
         #region CRUD
-        
+
         /// <summary>
         /// Get by project
         /// </summary>
@@ -39,19 +40,16 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
         [ResponseType(typeof(List<WebHook>))]
-        public IHttpActionResult GetByProject(string projectId, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            var project = _projectRepository.GetById(projectId);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+        public async Task<IHttpActionResult> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
                 return NotFound();
 
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByProjectId(projectId, options);
-            return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+            var results = await _repository.GetByProjectIdAsync(projectId, options, true);
+            return OkWithResourceLinks(results.Documents, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
         /// <summary>
@@ -62,8 +60,8 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet]
         [Route("{id:objectid}", Name = "GetWebHookById")]
         [ResponseType(typeof(WebHook))]
-        public override IHttpActionResult GetById(string id) {
-            return base.GetById(id);
+        public override Task<IHttpActionResult> GetByIdAsync(string id) {
+            return base.GetByIdAsync(id);
         }
 
         /// <summary>
@@ -75,8 +73,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="409">The web hook already exists.</response>
         [Route]
         [HttpPost]
-        public override IHttpActionResult Post(NewWebHook webhook) {
-            return base.Post(webhook);
+        public override Task<IHttpActionResult> PostAsync(NewWebHook webhook) {
+            return base.PostAsync(webhook);
         }
 
         /// <summary>
@@ -89,8 +87,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="500">An error occurred while deleting one or more web hooks.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public async Task<IHttpActionResult> DeleteAsync(string ids) {
-            return await base.DeleteAsync(ids.FromDelimitedString());
+        public Task<IHttpActionResult> DeleteAsync(string ids) {
+            return base.DeleteAsync(ids.FromDelimitedString());
         }
 
         #endregion
@@ -105,7 +103,7 @@ namespace Exceptionless.App.Controllers.API {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public IHttpActionResult Subscribe(JObject data, int version = 1) {
+        public Task<IHttpActionResult> SubscribeAsync(JObject data, int version = 1) {
             var webHook = new NewWebHook {
                 EventTypes = new[] { data.GetValue("event").Value<string>() },
                 Url = data.GetValue("target_url").Value<string>(),
@@ -117,7 +115,7 @@ namespace Exceptionless.App.Controllers.API {
             else
                 webHook.OrganizationId = Request.GetDefaultOrganizationId();
 
-            return Post(webHook);
+            return PostAsync(webHook);
         }
 
         /// <summary>
@@ -128,14 +126,14 @@ namespace Exceptionless.App.Controllers.API {
         [Route("unsubscribe")]
         [Route("~/api/v1/projecthook/unsubscribe")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public IHttpActionResult Unsubscribe(JObject data) {
+        public async Task<IHttpActionResult> UnsubscribeAsync(JObject data) {
             var targetUrl = data.GetValue("target_url").Value<string>();
 
             // don't let this anon method delete non-zapier hooks
             if (!targetUrl.Contains("zapier"))
                 return NotFound();
 
-            _repository.RemoveByUrl(targetUrl);
+            await _repository.RemoveByUrlAsync(targetUrl);
             return Ok();
         }
 
@@ -156,69 +154,75 @@ namespace Exceptionless.App.Controllers.API {
             });
         }
 
-        protected override WebHook GetModel(string id, bool useCache = true) {
+        protected override async Task<WebHook> GetModelAsync(string id, bool useCache = true) {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            var webHook = _repository.GetById(id, useCache);
+            var webHook = await _repository.GetByIdAsync(id, useCache);
             if (webHook == null)
                 return null;
 
             if (!String.IsNullOrEmpty(webHook.OrganizationId) && !IsInOrganization(webHook.OrganizationId))
                 return null;
 
-            if (!String.IsNullOrEmpty(webHook.ProjectId) && !IsInProject(webHook.ProjectId))
+            if (!String.IsNullOrEmpty(webHook.ProjectId) && !await IsInProjectAsync(webHook.ProjectId))
                 return null;
 
             return webHook;
         }
 
-        protected override ICollection<WebHook> GetModels(string[] ids, bool useCache = true) {
+        protected override async Task<ICollection<WebHook>> GetModelsAsync(string[] ids, bool useCache = true) {
+            var results = new List<WebHook>();
             if (ids == null || ids.Length == 0)
-                return new List<WebHook>();
+                return results;
 
-            ICollection<WebHook> webHooks = _repository.GetByIds(ids, useCache: useCache);
+            var webHooks = (await _repository.GetByIdsAsync(ids, useCache)).Documents;
             if (webHooks == null)
-                return new List<WebHook>();
+                return results;
 
-            return webHooks.Where(m => 
-                    (!String.IsNullOrEmpty(m.OrganizationId) && IsInOrganization(m.OrganizationId)) || 
-                    (!String.IsNullOrEmpty(m.ProjectId) && IsInProject(m.ProjectId))
-                ).ToList();
+            foreach (var webHook in webHooks) {
+                if ((!String.IsNullOrEmpty(webHook.OrganizationId) && IsInOrganization(webHook.OrganizationId))
+                    || (!String.IsNullOrEmpty(webHook.ProjectId) && (await IsInProjectAsync(webHook.ProjectId))))
+                    results.Add(webHook);
+            }
+
+            return results;
         }
 
-        protected override PermissionResult CanAdd(WebHook value) {
+        protected override async Task<PermissionResult> CanAddAsync(WebHook value) {
             if (String.IsNullOrEmpty(value.Url) || value.EventTypes.Length == 0)
                 return PermissionResult.Deny;
 
             if (String.IsNullOrEmpty(value.ProjectId) && String.IsNullOrEmpty(value.OrganizationId))
                 return PermissionResult.Deny;
 
-            Project project = null;
-            if (!String.IsNullOrEmpty(value.ProjectId)) {
-                project = _projectRepository.GetById(value.ProjectId, true);
-                if (!IsInProject(project))
-                    return PermissionResult.DenyWithMessage("Invalid project id specified.");
-            }
-
             if (!String.IsNullOrEmpty(value.OrganizationId) && !IsInOrganization(value.OrganizationId))
                 return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
-            if (!_billingManager.HasPremiumFeatures(project != null ? project.OrganizationId : value.OrganizationId))
+            Project project = null;
+            if (!String.IsNullOrEmpty(value.ProjectId)) {
+                project = await GetProjectAsync(value.ProjectId);
+                if (project == null)
+                    return PermissionResult.DenyWithMessage("Invalid project id specified.");
+
+                value.OrganizationId = project.OrganizationId;
+            }
+
+            if (!await _billingManager.HasPremiumFeaturesAsync(project != null ? project.OrganizationId : value.OrganizationId))
                 return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add integrations.");
 
             return PermissionResult.Allow;
         }
 
-        protected override WebHook AddModel(WebHook value) {
+        protected override Task<WebHook> AddModelAsync(WebHook value) {
             int version = IsValidWebHookVersion(value.Version) ? value.Version.Major : 2;
             value.Version = new Version(version, 0, 0, 0);
 
-            return base.AddModel(value);
+            return base.AddModelAsync(value);
         }
 
-        protected override PermissionResult CanDelete(WebHook value) {
-            if (!String.IsNullOrEmpty(value.ProjectId) && !IsInProject(value.ProjectId))
+        protected override async Task<PermissionResult> CanDeleteAsync(WebHook value) {
+            if (!String.IsNullOrEmpty(value.ProjectId) && !await IsInProjectAsync(value.ProjectId))
                 return PermissionResult.DenyWithNotFound(value.Id);
 
             if (!String.IsNullOrEmpty(value.OrganizationId) && !IsInOrganization(value.OrganizationId))
@@ -227,18 +231,20 @@ namespace Exceptionless.App.Controllers.API {
             return PermissionResult.Allow;
         }
 
-        private bool IsInProject(string projectId) {
+        private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
             if (String.IsNullOrEmpty(projectId))
-                return false;
+                return null;
 
-            return IsInProject(_projectRepository.GetById(projectId, true));
+            var project = await _projectRepository.GetByIdAsync(projectId, useCache);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return null;
+
+            return project;
         }
 
-        private bool IsInProject(Project value) {
-            if (value == null)
-                return false;
-
-            return IsInOrganization(value.OrganizationId);
+        private async Task<bool> IsInProjectAsync(string projectId) {
+            var project = await GetProjectAsync(projectId);
+            return project != null;
         }
 
         private bool IsValidWebHookVersion(Version version) {
