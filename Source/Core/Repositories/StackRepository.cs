@@ -154,13 +154,5 @@ namespace Exceptionless.Core.Repositories {
 
             await base.InvalidateCacheAsync(documents).AnyContext();
         }
-
-        public async Task InvalidateCacheAsync(string projectId, string stackId, string signatureHash) {
-            if (!IsCacheEnabled)
-                return;
-
-            await Cache.RemoveAsync(stackId).AnyContext();
-            await Cache.RemoveAsync(GetStackSignatureCacheKey(projectId, signatureHash)).AnyContext();
-        }
     }
 }
