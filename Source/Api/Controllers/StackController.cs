@@ -94,9 +94,8 @@ namespace Exceptionless.Api.Controllers {
             if (stacksToUpdate.Count > 0) {
                 foreach (var stack in stacksToUpdate) {
                     // TODO: Implement Fixed in version.
-                    stack.DateFixed = DateTime.UtcNow;
                     //stack.FixedInVersion = "GET CURRENT VERSION FROM ELASTIC SEARCH";
-                    stack.IsRegressed = false;
+                    stack.MarkFixed();
                 }
 
                 await _stackRepository.SaveAsync(stacksToUpdate);
@@ -329,10 +328,8 @@ namespace Exceptionless.Api.Controllers {
 
             var stacksToUpdate = stacks.Where(s => s.DateFixed.HasValue).ToList();
             if (stacksToUpdate.Count > 0) {
-                foreach (var stack in stacksToUpdate) {
-                    stack.DateFixed = null;
-                    stack.IsRegressed = false;
-                }
+                foreach (var stack in stacksToUpdate)
+                    stack.MarkNotFixed();
 
                 await _stackRepository.SaveAsync(stacksToUpdate);
             }

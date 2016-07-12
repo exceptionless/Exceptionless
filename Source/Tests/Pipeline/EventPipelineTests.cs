@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         private readonly EventPipeline _pipeline = IoC.GetInstance<EventPipeline>();
 
-        public EventPipelineTests(ITestOutputHelper output) : base(output) { }
+        public EventPipelineTests(ITestOutputHelper output) : base(output) {}
 
         [Fact]
         public async Task NoFutureEventsAsync() {
@@ -663,8 +663,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _pipeline.RunAsync(contexts);
-            await _client.RefreshAsync();
-
             Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
             Assert.Equal(1, contexts.Count(c => c.IsNew));
             Assert.Equal(1, contexts.Count(c => !c.IsNew));
@@ -687,8 +685,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.NotNull(ev);
 
             var stack = await _stackRepository.GetByIdAsync(ev.StackId);
-            stack.DateFixed = DateTime.UtcNow;
-            stack.IsRegressed = false;
+            stack.MarkFixed();
             await _stackRepository.SaveAsync(stack, true);
             await _client.RefreshAsync();
 
@@ -708,8 +705,49 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _pipeline.RunAsync(contexts);
-            await _client.RefreshAsync();
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
+        }
+
+        [Fact]
+        public async Task EnsureVersionedRegressionAsync() {
+            await ResetAsync();
+
+            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow);
+            var context = new EventContext(ev);
+            await _pipeline.RunAsync(context);
+            await _client.RefreshAsync();
+
+            Assert.True(context.IsProcessed);
+            Assert.False(context.IsRegression);
+
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
+            Assert.NotNull(ev);
+
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+            stack.MarkFixed("1.0.0");
+            await _stackRepository.SaveAsync(stack, true);
+            await _client.RefreshAsync();
+            
+            var contexts = new List<EventContext> {
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1))),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1), semver: "1.0.0")),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1), semver: "1.0.0-beta2"))
+            };
+
+            await _pipeline.RunAsync(contexts);
+            await _client.RefreshAsync();
+            Assert.Equal(0, contexts.Count(c => c.IsRegression));
+            Assert.Equal(3, contexts.Count(c => !c.IsRegression));
+
+            contexts = new List<EventContext> {
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1), semver: "1.0.0")),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1), semver: "1.0.1-rc"))
+            };
+
+            await _pipeline.RunAsync(contexts);
+            await _client.RefreshAsync();
+            Assert.Equal(1, contexts.Count(c => c.IsRegression));
+            Assert.Equal(1, contexts.Count(c => !c.IsRegression));
         }
 
         private bool _canResetDataForProcessEvents = true;
