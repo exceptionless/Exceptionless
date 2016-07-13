@@ -38,7 +38,7 @@ namespace Exceptionless.Api {
         }
 
         public class ApiMappings : Profile {
-            public ApiMappings() {
+            protected override void Configure() {
                 CreateMap<UserDescription, EventUserDescription>();
                 
                 CreateMap<NewOrganization, Organization>();
