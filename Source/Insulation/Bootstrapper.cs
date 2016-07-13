@@ -75,7 +75,7 @@ namespace Exceptionless.Insulation {
             if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
                 client.Configuration.Enabled = false;
 
-            client.Register();
+            client.Startup();
             container.AddBootstrapper<HttpConfiguration>(config => client.RegisterWebApi(config));
             client.Configuration.UseInMemoryStorage();
             client.Configuration.UseReferenceIds();

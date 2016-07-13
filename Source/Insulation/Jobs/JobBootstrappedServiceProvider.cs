@@ -11,7 +11,7 @@ namespace Exceptionless.Insulation.Jobs {
         protected override IServiceProvider BootstrapInternal(ILoggerFactory loggerFactory) {
             ExceptionlessClient.Default.Configuration.SetVersion(Settings.Current.Version);
             ExceptionlessClient.Default.Configuration.UseLogger(new NLogExceptionlessLog(Exceptionless.Logging.LogLevel.Warn));
-            ExceptionlessClient.Default.Register();
+            ExceptionlessClient.Default.Startup();
 
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;

@@ -356,9 +356,9 @@ namespace Exceptionless.Api.Controllers {
                 // If they are on a paid plan and then downgrade to a free plan then cancel their stripe subscription.
                 if (!String.Equals(organization.PlanId, BillingManager.FreePlan.Id) && String.Equals(plan.Id, BillingManager.FreePlan.Id)) {
                     if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
-                        var subs = subscriptionService.List(organization.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
-                        foreach (var sub in subs)
-                            subscriptionService.Cancel(organization.StripeCustomerId, sub.Id);
+                        var subs = await subscriptionService.ListAsync(organization.StripeCustomerId);
+                        foreach (var sub in subs.Where(s => !s.CanceledAt.HasValue))
+                            await subscriptionService.CancelAsync(organization.StripeCustomerId, sub.Id);
                     }
 
                     organization.BillingStatus = BillingStatus.Trialing;
@@ -370,7 +370,7 @@ namespace Exceptionless.Api.Controllers {
                     organization.SubscribeDate = DateTime.Now;
 
                     var createCustomer = new StripeCustomerCreateOptions {
-                        Source = new StripeSourceOptions { TokenId = stripeToken },
+                        SourceToken = stripeToken,
                         PlanId = planId,
                         Description = organization.Name,
                         Email = ExceptionlessUser.EmailAddress
@@ -379,7 +379,7 @@ namespace Exceptionless.Api.Controllers {
                     if (!String.IsNullOrWhiteSpace(couponId))
                         createCustomer.CouponId = couponId;
 
-                    StripeCustomer customer = customerService.Create(createCustomer);
+                    StripeCustomer customer = await customerService.CreateAsync(createCustomer);
 
                     organization.BillingStatus = BillingStatus.Active;
                     organization.RemoveSuspension();
@@ -397,13 +397,14 @@ namespace Exceptionless.Api.Controllers {
                         cardUpdated = true;
                     }
 
-                    var subscription = subscriptionService.List(organization.StripeCustomerId).FirstOrDefault(s => !s.CanceledAt.HasValue);
+                    var subscriptionList = await subscriptionService.ListAsync(organization.StripeCustomerId);
+                    var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
                     if (subscription != null)
-                        subscriptionService.Update(organization.StripeCustomerId, subscription.Id, update);
+                        await subscriptionService.UpdateAsync(organization.StripeCustomerId, subscription.Id, update);
                     else
-                        subscriptionService.Create(organization.StripeCustomerId, planId, create);
+                        await subscriptionService.CreateAsync(organization.StripeCustomerId, planId, create);
 
-                    customerService.Update(organization.StripeCustomerId, new StripeCustomerUpdateOptions {
+                    await customerService.UpdateAsync(organization.StripeCustomerId, new StripeCustomerUpdateOptions {
                         Email = ExceptionlessUser.EmailAddress
                     });
 
