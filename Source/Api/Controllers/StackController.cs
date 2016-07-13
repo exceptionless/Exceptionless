@@ -25,6 +25,7 @@ using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
+using McSherry.SemanticVersioning;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Api.Controllers {
@@ -82,21 +83,24 @@ namespace Exceptionless.Api.Controllers {
         /// Mark fixed
         /// </summary>
         /// <param name="ids">A comma delimited list of stack identifiers.</param>
+        /// <param name="version">A version number that the stack was fixed in.</param>
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost]
         [Route("{ids:objectids}/mark-fixed")]
-        public async Task<IHttpActionResult> MarkFixedAsync(string ids) {
+        public async Task<IHttpActionResult> MarkFixedAsync(string ids, string version = null) {
+            version = version?.Trim();
+            SemanticVersion semanticVersion = null;
+            if (!String.IsNullOrEmpty(version) && !SemanticVersion.TryParse(version, out semanticVersion))
+                return BadRequest("Invalid semantic version");
+
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
             var stacksToUpdate = stacks.Where(s => !s.DateFixed.HasValue).ToList();
             if (stacksToUpdate.Count > 0) {
-                foreach (var stack in stacksToUpdate) {
-                    // TODO: Implement Fixed in version.
-                    //stack.FixedInVersion = "GET CURRENT VERSION FROM ELASTIC SEARCH";
-                    stack.MarkFixed();
-                }
+                foreach (var stack in stacksToUpdate)
+                    stack.MarkFixed(semanticVersion);
 
                 await _stackRepository.SaveAsync(stacksToUpdate);
             }
