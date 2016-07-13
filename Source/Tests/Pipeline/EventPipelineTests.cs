@@ -23,6 +23,7 @@ using Foundatio.Logging;
 using Foundatio.Logging.Xunit;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
+using McSherry.SemanticVersioning;
 using Nest;
 using Xunit;
 using Xunit.Abstractions;
@@ -717,6 +718,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _pipeline.RunAsync(context);
             await _client.RefreshAsync();
 
+            Assert.False(context.Event.IsFixed);
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
 
@@ -724,7 +726,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.NotNull(ev);
 
             var stack = await _stackRepository.GetByIdAsync(ev.StackId);
-            stack.MarkFixed("1.0.0");
+            stack.MarkFixed(new SemanticVersion(1, 0));
             await _stackRepository.SaveAsync(stack, true);
             await _client.RefreshAsync();
             
@@ -736,9 +738,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             await _pipeline.RunAsync(contexts);
             await _client.RefreshAsync();
+            Assert.Equal(3, contexts.Count(c => c.Event.IsFixed));
             Assert.Equal(0, contexts.Count(c => c.IsRegression));
             Assert.Equal(3, contexts.Count(c => !c.IsRegression));
-
+            
             contexts = new List<EventContext> {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1), semver: "1.0.0")),
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1), semver: "1.0.1-rc"))
@@ -746,6 +749,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             await _pipeline.RunAsync(contexts);
             await _client.RefreshAsync();
+            Assert.Equal(0, contexts.Count(c => c.Event.IsFixed));
             Assert.Equal(1, contexts.Count(c => c.IsRegression));
             Assert.Equal(1, contexts.Count(c => !c.IsRegression));
         }

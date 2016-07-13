@@ -4,15 +4,10 @@ using McSherry.SemanticVersioning;
 
 namespace Exceptionless.Core.Extensions {
     public static class StackExtensions {
-        public static void MarkFixed(this Stack stack, string version = null) {
+        public static void MarkFixed(this Stack stack, SemanticVersion version = null) {
             stack.IsRegressed = false;
             stack.DateFixed = DateTime.UtcNow;
-
-            SemanticVersion semanticVersion;
-            if (version != null && SemanticVersion.TryParse(version.Trim(), out semanticVersion))
-                stack.FixedInVersion = semanticVersion.ToString();
-            else
-                stack.FixedInVersion = null;
+            stack.FixedInVersion = version != null ? version.ToString() : null;
         }
 
         public static void MarkNotFixed(this Stack stack, string version = null) {
