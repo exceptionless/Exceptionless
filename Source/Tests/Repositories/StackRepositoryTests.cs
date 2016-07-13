@@ -31,12 +31,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(stack.DateFixed);
 
             await _repository.MarkAsRegressedAsync(TestConstants.StackId);
-
             await _client.RefreshAsync();
+
             stack = await _repository.GetByIdAsync(TestConstants.StackId);
             Assert.NotNull(stack);
             Assert.True(stack.IsRegressed);
-            Assert.Null(stack.DateFixed);
+            Assert.NotNull(stack.DateFixed);
         }
 
         [Fact]
