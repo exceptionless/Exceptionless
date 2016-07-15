@@ -6,15 +6,19 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
+using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
+using McSherry.SemanticVersioning;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(30)]
     public class CheckForRegressionAction : EventPipelineActionBase {
         private readonly IStackRepository _stackRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
+        private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 250 };
+        private static readonly SemanticVersion _defaultSemanticVersion = new SemanticVersion(0, 0);
 
         public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _stackRepository = stackRepository;
@@ -23,22 +27,40 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
-            var stacks = contexts.Where(c => c.Stack?.DateFixed != null && c.Stack.DateFixed.Value < c.Event.Date.UtcDateTime).GroupBy(c => c.Event.StackId);
+            var stacks = contexts.Where(c => !c.Stack.IsRegressed && c.Stack.DateFixed.HasValue).OrderBy(c => c.Event.Date).GroupBy(c => c.Event.StackId);
             foreach (var stackGroup in stacks) {
                 try {
-                    var context = stackGroup.First();
-                    _logger.Trace("Marking stack and events as regression.");
-                    await _stackRepository.MarkAsRegressedAsync(context.Stack.Id).AnyContext();
-                    await _workItemQueue.EnqueueAsync(new StackWorkItem { OrganizationId = context.Event.OrganizationId, StackId = context.Stack.Id, UpdateIsFixed = true, IsFixed = false }).AnyContext();
-                    await _stackRepository.InvalidateCacheAsync(context.Event.ProjectId, context.Event.StackId, context.SignatureHash).AnyContext();
+                    var stack = stackGroup.First().Stack;
 
-                    bool isFirstEvent = true;
+                    EventContext regressedContext = null;
+                    SemanticVersion regressedVersion = null;
+                    if (String.IsNullOrEmpty(stack.FixedInVersion)) {
+                        regressedContext = stackGroup.FirstOrDefault(c => stack.DateFixed < c.Event.Date.UtcDateTime);
+                    } else {
+                        var fixedInVersion = await GetSemanticVersionAsync(stack.FixedInVersion).AnyContext();
+                        var versions = stackGroup.GroupBy(c => c.Event.GetVersion());
+                        foreach (var versionGroup in versions) {
+                            var version = await GetSemanticVersionAsync(versionGroup.Key).AnyContext() ?? _defaultSemanticVersion;
+                            if (version < fixedInVersion)
+                                continue;
+                            
+                            regressedVersion = version;
+                            regressedContext = versionGroup.First();
+                            break;
+                        }
+                    }
+
+                    if (regressedContext == null)
+                        return;
+
+                    _logger.Trace("Marking stack and events as regressed in version: {version}", regressedVersion);
+                    stack.IsRegressed = true;
+                    await _stackRepository.MarkAsRegressedAsync(stack.Id).AnyContext();
+                    await _workItemQueue.EnqueueAsync(new StackWorkItem { OrganizationId = stack.OrganizationId, StackId = stack.Id, UpdateIsFixed = true, IsFixed = false }).AnyContext();
+                    
                     foreach (var ctx in stackGroup) {
                         ctx.Event.IsFixed = false;
-
-                        // Only mark the first event context as regressed.
-                        ctx.IsRegression = isFirstEvent;
-                        isFirstEvent = false;
+                        ctx.IsRegression = ctx == regressedContext;
                     }
                 } catch (Exception ex) {
                     foreach (var context in stackGroup) {
@@ -56,6 +78,23 @@ namespace Exceptionless.Core.Pipeline {
 
         public override Task ProcessAsync(EventContext ctx) {
             return Task.CompletedTask;
+        }
+        
+        private async Task<SemanticVersion> GetSemanticVersionAsync(string version) {
+            version = version?.Trim();
+            if (String.IsNullOrEmpty(version))
+                return null;
+            
+            var cacheValue = await _localCache.GetAsync<SemanticVersion>(version).AnyContext();
+            if (cacheValue.HasValue)
+                return cacheValue.Value;
+
+            SemanticVersion semanticVersion;
+            if (!SemanticVersion.TryParse(version, out semanticVersion))
+                _logger.Trace("Unable to parse version: {version}", version);
+
+            await _localCache.SetAsync(version, semanticVersion).AnyContext();
+            return semanticVersion;
         }
     }
 }
