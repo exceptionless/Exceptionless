@@ -97,7 +97,7 @@ namespace Exceptionless.Api.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            var stacksToUpdate = stacks.Where(s => !s.DateFixed.HasValue).ToList();
+            var stacksToUpdate = stacks.Where(s => s.IsRegressed || !s.DateFixed.HasValue).ToList();
             if (stacksToUpdate.Count > 0) {
                 foreach (var stack in stacksToUpdate)
                     stack.MarkFixed(semanticVersion);
