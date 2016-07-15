@@ -20,6 +20,8 @@ namespace Exceptionless.Api.Tests {
         [InlineData("1.2 7ab3b4da18", null)]
         [InlineData("1.2.3", "1.2.3")]
         [InlineData("1.2.3 7ab3b4da18", "1.2.3")]
+        [InlineData("1.2.3-beta2", "1.2.3-beta2")]
+        [InlineData("1.2.3.0", "1.2.3-0")]
         [InlineData("1.2.3.4", "1.2.3-4")]
         [InlineData("1.2.3.4 7ab3b4da18", "1.2.3-4")]
         public async Task SemanticVersionTests(string input, string expected) {
