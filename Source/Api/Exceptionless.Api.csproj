@@ -74,8 +74,8 @@
       <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.54\lib\net451\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="libSemVer.NET, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\McSherry.SemanticVersioning.1.1.0\lib\libSemVer.NET.dll</HintPath>
+    <Reference Include="McSherry.SemanticVersioning, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\McSherry.SemanticVersioning.1.2.0\lib\net45\McSherry.SemanticVersioning.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Core, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
