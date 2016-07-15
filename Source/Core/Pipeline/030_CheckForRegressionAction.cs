@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Pipeline {
                     EventContext regressedContext = null;
                     SemanticVersion regressedVersion = null;
                     if (String.IsNullOrEmpty(stack.FixedInVersion)) {
-                        regressedContext = stackGroup.First();
+                        regressedContext = stackGroup.FirstOrDefault(c => stack.DateFixed < c.Event.Date.UtcDateTime);
                     } else {
                         var fixedInVersion = await GetSemanticVersionAsync(stack.FixedInVersion).AnyContext();
                         var versions = stackGroup.GroupBy(c => c.Event.GetVersion());
