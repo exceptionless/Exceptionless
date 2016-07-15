@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Utility {
             SemanticVersion semanticVersion;
             Version v;
             if (!SemanticVersion.TryParse(version, out semanticVersion) && Version.TryParse(version, out v))
-                semanticVersion = new SemanticVersion(v.Major > 0 ? v.Major : 0, v.Minor > 0 ? v.Minor : 0, v.Build > 0 ? v.Build : 0, v.Revision > 0 ? new[] { v.Revision.ToString() } : Enumerable.Empty<string>());
+                semanticVersion = new SemanticVersion(v.Major > 0 ? v.Major : 0, v.Minor > 0 ? v.Minor : 0, v.Build > 0 ? v.Build : 0, v.Revision >= 0 ? new[] { v.Revision.ToString() } : Enumerable.Empty<string>());
             else
                 _logger.Info("Unable to parse version: {version}", version);
 
