@@ -281,6 +281,7 @@
     <Compile Include="Repositories\Queries\OrganizationIdQuery.cs" />
     <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Utility\IConnectionMapping.cs" />
+    <Compile Include="Utility\SemanticVersionParser.cs" />
     <Compile Include="Utility\SettingsBase.cs" />
     <Compile Include="Utility\SingletonBase.cs" />
     <Compile Include="Utility\LastReferenceIdManager.cs" />
