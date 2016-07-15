@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Models {
 
             if (value is string)
                 return (string)value;
-                
+
             return String.Empty;
         }
     }

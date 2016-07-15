@@ -139,7 +139,6 @@ namespace Exceptionless.Core.Repositories {
 
         public async Task MarkAsRegressedAsync(string stackId) {
             var stack = await GetByIdAsync(stackId).AnyContext();
-            stack.DateFixed = null;
             stack.IsRegressed = true;
             await SaveAsync(stack, true).AnyContext();
         }
@@ -154,14 +153,6 @@ namespace Exceptionless.Core.Repositories {
                 .Distinct()).AnyContext();
 
             await base.InvalidateCacheAsync(documents).AnyContext();
-        }
-
-        public async Task InvalidateCacheAsync(string projectId, string stackId, string signatureHash) {
-            if (!IsCacheEnabled)
-                return;
-
-            await Cache.RemoveAsync(stackId).AnyContext();
-            await Cache.RemoveAsync(GetStackSignatureCacheKey(projectId, signatureHash)).AnyContext();
         }
     }
 }

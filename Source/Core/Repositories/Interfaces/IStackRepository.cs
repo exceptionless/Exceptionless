@@ -12,6 +12,5 @@ namespace Exceptionless.Core.Repositories {
 
         Task MarkAsRegressedAsync(string stackId);
         Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true);
-        Task InvalidateCacheAsync(string projectId, string stackId, string signatureHash);
     }
 }
