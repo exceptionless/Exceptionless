@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Pipeline {
                         var versions = stackGroup.GroupBy(c => c.Event.GetVersion());
                         foreach (var versionGroup in versions) {
                             var version = await GetSemanticVersionAsync(versionGroup.Key).AnyContext() ?? _defaultSemanticVersion;
-                            if (version <= fixedInVersion)
+                            if (version < fixedInVersion)
                                 continue;
                             
                             regressedVersion = version;
