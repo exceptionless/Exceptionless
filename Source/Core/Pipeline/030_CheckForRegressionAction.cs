@@ -6,6 +6,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
@@ -17,12 +18,12 @@ namespace Exceptionless.Core.Pipeline {
     public class CheckForRegressionAction : EventPipelineActionBase {
         private readonly IStackRepository _stackRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
-        private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 250 };
-        private static readonly SemanticVersion _defaultSemanticVersion = new SemanticVersion(0, 0);
+        private readonly SemanticVersionParser _semanticVersionParser;
 
-        public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue, SemanticVersionParser semanticVersionParser, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _stackRepository = stackRepository;
             _workItemQueue = workItemQueue;
+            _semanticVersionParser = semanticVersionParser;
             ContinueOnError = true;
         }
 
@@ -37,10 +38,10 @@ namespace Exceptionless.Core.Pipeline {
                     if (String.IsNullOrEmpty(stack.FixedInVersion)) {
                         regressedContext = stackGroup.FirstOrDefault(c => stack.DateFixed < c.Event.Date.UtcDateTime);
                     } else {
-                        var fixedInVersion = await GetSemanticVersionAsync(stack.FixedInVersion).AnyContext();
+                        var fixedInVersion = await _semanticVersionParser.ParseAsync(stack.FixedInVersion).AnyContext();
                         var versions = stackGroup.GroupBy(c => c.Event.GetVersion());
                         foreach (var versionGroup in versions) {
-                            var version = await GetSemanticVersionAsync(versionGroup.Key).AnyContext() ?? _defaultSemanticVersion;
+                            var version = await _semanticVersionParser.ParseAsync(versionGroup.Key).AnyContext() ?? _semanticVersionParser.Default;
                             if (version < fixedInVersion)
                                 continue;
                             
@@ -78,23 +79,6 @@ namespace Exceptionless.Core.Pipeline {
 
         public override Task ProcessAsync(EventContext ctx) {
             return Task.CompletedTask;
-        }
-        
-        private async Task<SemanticVersion> GetSemanticVersionAsync(string version) {
-            version = version?.Trim();
-            if (String.IsNullOrEmpty(version))
-                return null;
-            
-            var cacheValue = await _localCache.GetAsync<SemanticVersion>(version).AnyContext();
-            if (cacheValue.HasValue)
-                return cacheValue.Value;
-
-            SemanticVersion semanticVersion;
-            if (!SemanticVersion.TryParse(version, out semanticVersion))
-                _logger.Trace("Unable to parse version: {version}", version);
-
-            await _localCache.SetAsync(version, semanticVersion).AnyContext();
-            return semanticVersion;
         }
     }
 }
