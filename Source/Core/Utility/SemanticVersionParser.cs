@@ -27,20 +27,21 @@ namespace Exceptionless.Core.Utility {
                 return cacheValue.Value;
             
             int spaceIndex = version.IndexOf(" ", StringComparison.OrdinalIgnoreCase);
-            if (spaceIndex > 0) {
-                // valid semantic versions have to be at least 5 characters long.
-                if (spaceIndex < 5) {
-                    _logger.Info("Unable to parse version: {version}", version);
-                    return null;
-                }
-
+            if (spaceIndex > 0)
                 version = version.Substring(0, spaceIndex).Trim();
+            
+            SemanticVersion semanticVersion = null;
+            if (version.Length >= 5 && SemanticVersion.TryParse(version, out semanticVersion)) {
+                await _localCache.SetAsync(version, semanticVersion).AnyContext();
+                return semanticVersion;
             }
             
-            SemanticVersion semanticVersion;
             Version v;
-            if (!SemanticVersion.TryParse(version, out semanticVersion) && Version.TryParse(version, out v))
+            int major;
+            if (version.Length >= 3 && Version.TryParse(version, out v))
                 semanticVersion = new SemanticVersion(v.Major > 0 ? v.Major : 0, v.Minor > 0 ? v.Minor : 0, v.Build > 0 ? v.Build : 0, v.Revision >= 0 ? new[] { v.Revision.ToString() } : Enumerable.Empty<string>());
+            else if (Int32.TryParse(version, out major))
+                semanticVersion = new SemanticVersion(major, 0);
             else
                 _logger.Info("Unable to parse version: {version}", version);
 
