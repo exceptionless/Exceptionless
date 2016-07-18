@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Extensions {
             if (organization.MaxEventsPerMonth <= 0)
                 return Int32.MaxValue;
             
-            int eventsLeftInMonth = organization.GetMaxEventsPerMonthWithBonus() - organization.GetCurrentMonthlyTotal();
+            int eventsLeftInMonth = organization.GetMaxEventsPerMonthWithBonus() - (organization.GetCurrentMonthlyTotal() - organization.GetCurrentMonthlyBlocked());
             if (eventsLeftInMonth < 0)
                 return 0;
 
