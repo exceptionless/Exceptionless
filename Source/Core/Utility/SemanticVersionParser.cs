@@ -29,7 +29,11 @@ namespace Exceptionless.Core.Utility {
             int spaceIndex = version.IndexOf(" ", StringComparison.OrdinalIgnoreCase);
             if (spaceIndex > 0)
                 version = version.Substring(0, spaceIndex).Trim();
-            
+
+            int wildCardIndex = version.IndexOf("*", StringComparison.OrdinalIgnoreCase);
+            if (wildCardIndex > 0)
+                version = version.Replace(".*", String.Empty).Replace("*", String.Empty);
+
             SemanticVersion semanticVersion = null;
             if (version.Length >= 5 && SemanticVersion.TryParse(version, out semanticVersion)) {
                 await _localCache.SetAsync(version, semanticVersion).AnyContext();
