@@ -384,8 +384,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("by-ref/{referenceId:identifier}/user-description")]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description")]
-        //[OverrideAuthorization]
-        //[Authorize(Roles = AuthorizationRoles.Client)]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
