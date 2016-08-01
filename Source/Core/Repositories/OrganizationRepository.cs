@@ -226,18 +226,25 @@ namespace Exceptionless.Core.Repositories {
             return overLimit;
         }
 
-        private double GetTotalBlocked(Organization org, int count, double monthlyTotal, double monthlyBlocked, double hourlyTotal, double hourlyBlocked, bool applyHourlyLimit) {
-            if (org.IsSuspended)
+        private double GetTotalBlocked(Organization organization, int count, double monthlyTotal, double monthlyBlocked, double hourlyTotal, double hourlyBlocked, bool applyHourlyLimit) {
+            if (organization.IsSuspended)
                 return count;
 
-            int monthlyEventLimit = org.GetMaxEventsPerMonthWithBonus();
-            if ((monthlyTotal - monthlyBlocked) > monthlyEventLimit)
-                return monthlyTotal - monthlyBlocked - monthlyEventLimit;
+            int hourlyEventLimit = organization.GetHourlyEventLimit();
+            int monthlyEventLimit = organization.GetMaxEventsPerMonthWithBonus();
+            double originalAllowedMonthlyEventTotal = monthlyTotal - monthlyBlocked - count;
+            
+            // If the original count is less than the max events per month and original count + hourly limit is greater than the max events per month then use the monthly limit.
+            if (originalAllowedMonthlyEventTotal < monthlyEventLimit && (originalAllowedMonthlyEventTotal + hourlyEventLimit) >= monthlyEventLimit)
+                return originalAllowedMonthlyEventTotal < monthlyEventLimit ? monthlyTotal - monthlyBlocked - monthlyEventLimit : count;
 
-            int hourlyEventLimit = org.GetHourlyEventLimit();
+            double originalAllowedHourlyEventTotal = hourlyTotal - hourlyBlocked - count;
             if (applyHourlyLimit && (hourlyTotal - hourlyBlocked) > hourlyEventLimit)
-                return hourlyTotal - hourlyBlocked - hourlyEventLimit;
+                return originalAllowedHourlyEventTotal < hourlyEventLimit ? hourlyTotal - hourlyBlocked - hourlyEventLimit : count;
 
+            if ((monthlyTotal - monthlyBlocked) > monthlyEventLimit)
+                return originalAllowedMonthlyEventTotal < monthlyEventLimit ? monthlyTotal - monthlyBlocked - monthlyEventLimit : count;
+            
             return count;
         }
 
