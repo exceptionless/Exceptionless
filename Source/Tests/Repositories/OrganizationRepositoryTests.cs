@@ -192,12 +192,22 @@ namespace Exceptionless.Api.Tests.Repositories {
             o.SuspensionCode = SuspensionCode.Billing;
             o = await _repository.SaveAsync(o, true);
             
-            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 5));
+            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 4995));
             Assert.Equal(0, messages.Count);
-            Assert.Equal(10, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(10, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(5, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
-            Assert.Equal(5, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
+            Assert.Equal(5000, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(5000, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(4995, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
+            Assert.Equal(4995, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
+
+            o.RemoveSuspension();
+            o = await _repository.SaveAsync(o, true);
+
+            Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 1));
+            Assert.Equal(0, messages.Count);
+            Assert.Equal(5001, await cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(5001, await cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(4995, await cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
+            Assert.Equal(4995, await cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
         }
 
         private string GetHourlyBlockedCacheKey(string organizationId) {
