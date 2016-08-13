@@ -12,6 +12,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
     public class CloseInactiveSessionsJob : JobWithLockBase {
@@ -66,7 +67,7 @@ namespace Exceptionless.Core.Jobs {
                     await _cacheClient.RemoveAllAsync(cacheKeysToRemove).AnyContext();
 
                 // Sleep so we are not hammering the backend.
-                await Task.Delay(TimeSpan.FromSeconds(2.5)).AnyContext();
+                await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
 
                 await results.NextPageAsync().AnyContext();
                 if (results.Documents.Count > 0)
