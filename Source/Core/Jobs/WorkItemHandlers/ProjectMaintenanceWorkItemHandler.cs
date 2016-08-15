@@ -10,6 +10,7 @@ using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase {
@@ -45,7 +46,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                     await _projectRepository.SaveAsync(results.Documents).AnyContext();
 
                 // Sleep so we are not hammering the backend.
-                await Task.Delay(TimeSpan.FromSeconds(2.5)).AnyContext();
+                await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
 
                 await results.NextPageAsync().AnyContext();
                 if (results.Documents.Count > 0)

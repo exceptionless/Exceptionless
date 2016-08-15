@@ -163,7 +163,7 @@ namespace Exceptionless.Core.Repositories {
         public async Task<bool> IncrementUsageAsync(string organizationId, bool tooBig, int count = 1, bool applyHourlyLimit = true) {
             const int USAGE_SAVE_MINUTES = 5;
 
-            if (String.IsNullOrEmpty(organizationId))
+            if (String.IsNullOrEmpty(organizationId) || count == 0)
                 return false;
 
             var org = await GetByIdAsync(organizationId, true).AnyContext();
@@ -172,25 +172,17 @@ namespace Exceptionless.Core.Repositories {
 
             double hourlyTotal = await Cache.IncrementAsync(GetHourlyTotalCacheKey(organizationId), count, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal()).AnyContext();
             double monthlyTotal = await Cache.IncrementAsync(GetMonthlyTotalCacheKey(organizationId), count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal()).AnyContext();
+            double hourlyBlocked = await Cache.GetAsync<long>(GetHourlyBlockedCacheKey(organizationId), org.GetCurrentHourlyBlocked()).AnyContext();
             double monthlyBlocked = await Cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organizationId), org.GetCurrentMonthlyBlocked()).AnyContext();
-            bool overLimit = org.IsSuspended || (applyHourlyLimit && hourlyTotal > org.GetHourlyEventLimit()) || (monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus();
+            double totalBlocked = GetTotalBlocked(org, count, monthlyTotal, monthlyBlocked, hourlyTotal, hourlyBlocked, applyHourlyLimit);
 
-            double hourlyTooBig = await Cache.IncrementIfAsync(GetHourlyTooBigCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig()).AnyContext();
-            double monthlyTooBig = await Cache.IncrementIfAsync(GetMonthlyTooBigCacheKey(organizationId), 1, TimeSpan.FromDays(32), tooBig, (uint)org.GetCurrentMonthlyTooBig()).AnyContext();
-
-            double totalBlocked = count;
-
-            // If the original count is less than the max events per month and original count + hourly limit is greater than the max events per month then use the monthly limit.
-            if ((monthlyTotal - monthlyBlocked - count) < org.GetMaxEventsPerMonthWithBonus() && (monthlyTotal - monthlyBlocked - count + org.GetHourlyEventLimit()) >= org.GetMaxEventsPerMonthWithBonus())
-                totalBlocked = (monthlyTotal - monthlyBlocked - count) < org.GetMaxEventsPerMonthWithBonus() ? monthlyTotal - monthlyBlocked - org.GetMaxEventsPerMonthWithBonus() : count;
-            else if (applyHourlyLimit && hourlyTotal > org.GetHourlyEventLimit())
-                totalBlocked = (hourlyTotal - count) < org.GetHourlyEventLimit() ? hourlyTotal - org.GetHourlyEventLimit() : count;
-            else if ((monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus())
-                totalBlocked = (monthlyTotal - monthlyBlocked - count) < org.GetMaxEventsPerMonthWithBonus() ? monthlyTotal - monthlyBlocked - org.GetMaxEventsPerMonthWithBonus() : count;
-
-            double hourlyBlocked = await Cache.IncrementIfAsync(GetHourlyBlockedCacheKey(organizationId), (int)totalBlocked, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked()).AnyContext();
+            bool overLimit = totalBlocked > 0;
+            hourlyBlocked = await Cache.IncrementIfAsync(GetHourlyBlockedCacheKey(organizationId), (int)totalBlocked, TimeSpan.FromMinutes(61), overLimit, (uint)hourlyBlocked).AnyContext();
             monthlyBlocked = await Cache.IncrementIfAsync(GetMonthlyBlockedCacheKey(organizationId), (int)totalBlocked, TimeSpan.FromDays(32), overLimit, (uint)monthlyBlocked).AnyContext();
 
+            double hourlyTooBig = await Cache.IncrementIfAsync(GetHourlyTooBigCacheKey(organizationId), count, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig()).AnyContext();
+            double monthlyTooBig = await Cache.IncrementIfAsync(GetMonthlyTooBigCacheKey(organizationId), count, TimeSpan.FromDays(32), tooBig, (uint)org.GetCurrentMonthlyTooBig()).AnyContext();
+            
             bool justWentOverHourly = hourlyTotal > org.GetHourlyEventLimit() && hourlyTotal <= org.GetHourlyEventLimit() + count;
             bool justWentOverMonthly = monthlyTotal > org.GetMaxEventsPerMonthWithBonus() && monthlyTotal <= org.GetMaxEventsPerMonthWithBonus() + count;
             
@@ -232,6 +224,28 @@ namespace Exceptionless.Core.Repositories {
                 await PublishMessageAsync(new PlanOverage { OrganizationId = org.Id, IsHourly = true }).AnyContext();
 
             return overLimit;
+        }
+
+        private double GetTotalBlocked(Organization organization, int count, double monthlyTotal, double monthlyBlocked, double hourlyTotal, double hourlyBlocked, bool applyHourlyLimit) {
+            if (organization.IsSuspended)
+                return count;
+
+            int hourlyEventLimit = organization.GetHourlyEventLimit();
+            int monthlyEventLimit = organization.GetMaxEventsPerMonthWithBonus();
+            double originalAllowedMonthlyEventTotal = monthlyTotal - monthlyBlocked - count;
+            
+            // If the original count is less than the max events per month and original count + hourly limit is greater than the max events per month then use the monthly limit.
+            if (originalAllowedMonthlyEventTotal < monthlyEventLimit && (originalAllowedMonthlyEventTotal + hourlyEventLimit) >= monthlyEventLimit)
+                return originalAllowedMonthlyEventTotal < monthlyEventLimit ? monthlyTotal - monthlyBlocked - monthlyEventLimit : count;
+
+            double originalAllowedHourlyEventTotal = hourlyTotal - hourlyBlocked - count;
+            if (applyHourlyLimit && (hourlyTotal - hourlyBlocked) > hourlyEventLimit)
+                return originalAllowedHourlyEventTotal < hourlyEventLimit ? hourlyTotal - hourlyBlocked - hourlyEventLimit : count;
+
+            if ((monthlyTotal - monthlyBlocked) > monthlyEventLimit)
+                return originalAllowedMonthlyEventTotal < monthlyEventLimit ? monthlyTotal - monthlyBlocked - monthlyEventLimit : count;
+            
+            return 0;
         }
 
         public async Task<int> GetRemainingEventLimitAsync(string organizationId) {

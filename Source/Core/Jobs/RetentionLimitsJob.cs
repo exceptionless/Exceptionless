@@ -11,6 +11,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
     public class RetentionLimitsJob : JobWithLockBase {
@@ -35,7 +36,7 @@ namespace Exceptionless.Core.Jobs {
                     await EnforceEventCountLimitsAsync(organization).AnyContext();
 
                     // Sleep so we are not hammering the backend.
-                    await Task.Delay(TimeSpan.FromSeconds(5)).AnyContext();
+                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
                 }
 
                 await results.NextPageAsync().AnyContext();

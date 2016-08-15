@@ -17,6 +17,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
     public class DailySummaryJob : JobWithLockBase {
@@ -73,7 +74,7 @@ namespace Exceptionless.Core.Jobs {
                     await ProcessSummaryNotificationAsync(notification).AnyContext();
 
                     // Sleep so were not hammering the database.
-                    await Task.Delay(TimeSpan.FromSeconds(1));
+                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(1));
                 }
 
                 projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
