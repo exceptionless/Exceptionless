@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Jobs {
 
             var createdUtc = DateTime.UtcNow;
             var events = await ParseEventPostAsync(eventPostInfo, createdUtc, queueEntry.Id, isInternalProject).AnyContext();
-            if (events == null || !events.Any()) {
+            if (events == null || events.Count == 0) {
                 await CompleteEntryAsync(queueEntry, eventPostInfo, createdUtc).AnyContext();
                 return JobResult.Success;
             }
@@ -89,9 +89,10 @@ namespace Exceptionless.Core.Jobs {
 
                 // Discard any events over there limit.
                 events = events.Take(eventsToProcess).ToList();
-
-                // Increment by count - 1 since we already incremented it by 1 in the OverageHandler.
-                await _organizationRepository.IncrementUsageAsync(project.OrganizationId, false, events.Count - 1, applyHourlyLimit: false).AnyContext();
+                
+                // Increment the count if greater than 1, since we already incremented it by 1 in the OverageHandler.
+                if (events.Count > 1)
+                    await _organizationRepository.IncrementUsageAsync(project.OrganizationId, false, events.Count - 1, applyHourlyLimit: false).AnyContext();
             }
 
             int errorCount = 0;
