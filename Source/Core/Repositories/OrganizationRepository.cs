@@ -11,10 +11,11 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Extensions;
+using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Elasticsearch.Repositories;
-using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Logging;
+using Foundatio.Messaging;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
@@ -22,13 +23,16 @@ using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository {
-        public OrganizationRepository(ElasticRepositoryContext<Organization> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) {}
+        public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<OrganizationRepository> logger) 
+            : base(configuration.Client, validator, cache, messagePublisher, logger) {
+            ElasticType = configuration.Organizations.Organization;
+        }
 
         public Task<Organization> GetByInviteTokenAsync(string token) {
             if (String.IsNullOrEmpty(token))
                 throw new ArgumentNullException(nameof(token));
 
-            return FindOneAsync(new ExceptionlessQuery().WithFieldEquals(OrganizationIndex.Fields.Organization.InviteToken, token));
+            return FindOneAsync(new ExceptionlessQuery().WithFieldEquals(OrganizationIndexType.Fields.InviteToken, token));
         }
 
         public Task<Organization> GetByStripeCustomerIdAsync(string customerId) {
@@ -39,7 +43,7 @@ namespace Exceptionless.Core.Repositories {
             return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
-        public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
+        public Task<IFindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
             var filter = Filter<Organization>.Range(r => r.OnField(o => o.RetentionDays).Greater(0));
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
@@ -47,7 +51,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithPaging(paging));
         }
 
-        public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
+        public Task<IFindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
             var filter = Filter<Organization>.MatchAll();
             if (!String.IsNullOrWhiteSpace(criteria))
                 filter &= Filter<Organization>.Term(o => o.Name, criteria);
@@ -77,16 +81,16 @@ namespace Exceptionless.Core.Repositories {
             var query = new ExceptionlessQuery().WithPaging(paging).WithElasticFilter(filter);
             switch (sortBy) {
                 case OrganizationSortBy.Newest:
-                    query.WithSort(OrganizationIndex.Fields.Organization.Id, SortOrder.Descending);
+                    query.WithSort(OrganizationIndexType.Fields.Id, SortOrder.Descending);
                     break;
                 case OrganizationSortBy.Subscribed:
-                    query.WithSort(OrganizationIndex.Fields.Organization.SubscribeDate, SortOrder.Descending);
+                    query.WithSort(OrganizationIndexType.Fields.SubscribeDate, SortOrder.Descending);
                     break;
                 // case OrganizationSortBy.MostActive:
-                //    query.WithSort(OrganizationIndex.Fields.Organization.TotalEventCount, SortOrder.Descending);
+                //    query.WithSort(OrganizationIndexType.Fields.TotalEventCount, SortOrder.Descending);
                 //    break;
                 default:
-                    query.WithSort(OrganizationIndex.Fields.Organization.Name, SortOrder.Ascending);
+                    query.WithSort(OrganizationIndexType.Fields.Name, SortOrder.Ascending);
                     break;
             }
 
@@ -96,7 +100,7 @@ namespace Exceptionless.Core.Repositories {
         public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
             var query = new ExceptionlessQuery()
                 .WithSelectedFields("plan_id", "is_suspended", "billing_price", "billing_status")
-                .WithSort(OrganizationIndex.Fields.Organization.PlanId, SortOrder.Descending);
+                .WithSort(OrganizationIndexType.Fields.PlanId, SortOrder.Descending);
 
             var results = (await FindAsync(query).AnyContext()).Documents;
 

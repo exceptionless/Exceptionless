@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Foundatio.Elasticsearch.Repositories.Queries.Builders;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Queries {
@@ -9,16 +9,16 @@ namespace Exceptionless.Core.Repositories.Queries {
         List<string> StackIds { get; }
     }
 
-    public class StackIdQueryBuilder : QueryBuilderBase {
-        public override void BuildFilter<T>(object query, object options, ref FilterContainer container) {
-            var stackIdQuery = query as IStackIdQuery;
+    public class StackIdQueryBuilder : IElasticQueryBuilder {
+        public void Build<T>(QueryBuilderContext<T> ctx) where T : class, new() {
+            var stackIdQuery = ctx.GetSourceAs<IStackIdQuery>();
             if (stackIdQuery?.StackIds == null || stackIdQuery.StackIds.Count <= 0)
                 return;
 
             if (stackIdQuery.StackIds.Count == 1)
-                container &= Filter<T>.Term("stack", stackIdQuery.StackIds.First());
+                ctx.Filter &= Filter<T>.Term("stack", stackIdQuery.StackIds.First());
             else
-                container &= Filter<T>.Terms("stack", stackIdQuery.StackIds.ToArray());
+                ctx.Filter &= Filter<T>.Terms("stack", stackIdQuery.StackIds.ToArray());
         }
     }
 

@@ -45,6 +45,10 @@
       <HintPath>..\..\packages\AutoMapper.5.1.1\lib\net45\AutoMapper.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="ElasticMacros, Version=1.0.42.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.ElasticMacros.1.0.42\lib\net46\ElasticMacros.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Elasticsearch.Net.1.9.0\lib\net45\Elasticsearch.Net.dll</HintPath>
       <Private>True</Private>
@@ -66,11 +70,11 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.1.0.87\lib\net46\Foundatio.Repositories.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.2.0.138-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories.Elasticsearch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.1.0.87\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.2.0.138-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -272,7 +276,7 @@
     <Compile Include="Plugins\EventProcessor\Default\60_LocationPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\05_ManualStackingFormattingPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
-    <Compile Include="Repositories\Configuration\ElasticConfiguration.cs" />
+    <Compile Include="Repositories\Configuration\ExceptionlessElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\StackIndex.cs" />

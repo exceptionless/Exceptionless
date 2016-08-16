@@ -29,9 +29,9 @@ namespace Exceptionless.Api.Tests.Utility {
             RegisterServices(container);
 
             var client = container.GetInstance<IElasticClient>();
-            var configuration = container.GetInstance<ElasticConfiguration>();
-            configuration.DeleteIndexes(client);
-            configuration.ConfigureIndexes(client);
+            var configuration = container.GetInstance<ExceptionlessElasticConfiguration>();
+            configuration.DeleteIndexes();
+            configuration.ConfigureIndexes();
             
             return container;
         }

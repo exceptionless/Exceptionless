@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using AutoMapper;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
@@ -18,21 +17,18 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Elasticsearch.Configuration;
-using Foundatio.Elasticsearch.Jobs;
-using Foundatio.Elasticsearch.Repositories;
-using Foundatio.Elasticsearch.Repositories.Queries.Builders;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Repositories.Elasticsearch.Configuration;
+using Foundatio.Repositories.Elasticsearch.Jobs;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Nest;
@@ -68,19 +64,9 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
 
             container.RegisterSingleton<IMetricsClient>(() => new InMemoryMetricsClient(loggerFactory: loggerFactory));
-
-            container.RegisterSingleton<QueryBuilderRegistry>(() => {
-                var builder = new QueryBuilderRegistry();
-                builder.RegisterDefaults();
-                builder.Register(new OrganizationIdQueryBuilder());
-                builder.Register(new ProjectIdQueryBuilder());
-                builder.Register(new StackIdQueryBuilder());
-
-                return builder;
-            });
-
-            container.RegisterSingleton<ElasticConfigurationBase, ElasticConfiguration>();
-            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ElasticConfigurationBase>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
+            
+            container.RegisterSingleton<IElasticConfiguration, ExceptionlessElasticConfiguration>();
+            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<IElasticConfiguration>().Client);
             container.RegisterSingleton<EventIndex, EventIndex>();
             container.RegisterSingleton<OrganizationIndex, OrganizationIndex>();
             container.RegisterSingleton<StackIndex, StackIndex>();
@@ -136,7 +122,6 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IGeocodeService, NullGeocodeService>();
 
             container.Register(typeof(IValidator<>), new[] { typeof(Bootstrapper).Assembly }, Lifestyle.Singleton);
-            container.Register(typeof(ElasticRepositoryContext<>), typeof(ElasticRepositoryContext<>), Lifestyle.Singleton);
 
             container.RegisterSingleton<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingleton<IMailer, Mailer>();

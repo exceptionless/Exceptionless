@@ -5,18 +5,22 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
-using Foundatio.Elasticsearch.Configuration;
-using Foundatio.Elasticsearch.Repositories;
-using Foundatio.Elasticsearch.Repositories.Queries;
+using FluentValidation;
+using Foundatio.Caching;
 using Foundatio.Logging;
+using Foundatio.Messaging;
+using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
+using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganizationAndProject<T> : RepositoryOwnedByOrganization<T>, IRepositoryOwnedByProject<T> where T : class, IOwnedByProject, IIdentity, IOwnedByOrganization, new() {
-        public RepositoryOwnedByOrganizationAndProject(ElasticRepositoryContext<T> context, IElasticIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) { }
+        public RepositoryOwnedByOrganizationAndProject(IElasticClient client, IValidator<T> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger logger) 
+            : base(client, validator, cache, messagePublisher, logger) { }
+        
 
-        public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public virtual Task<IFindResults<T>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithPaging(paging)
@@ -28,7 +32,7 @@ namespace Exceptionless.Core.Repositories {
             return RemoveAllAsync(new ExceptionlessQuery().WithProjectIds(projectIds));
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<T>> documents) {
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<T>> documents) {
             if (!IsCacheEnabled)
                 return;
 

@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Extensions {
             return organization.RetentionDays <= 0 ? DateTime.MinValue : DateTime.UtcNow.Date.AddDays(-organization.RetentionDays);
         }
 
-        public static DateTime GetRetentionUtcCutoff(this ICollection<Organization> organizations) {
+        public static DateTime GetRetentionUtcCutoff(this IReadOnlyCollection<Organization> organizations) {
             return organizations.Count > 0 ? organizations.Min(o => o.GetRetentionUtcCutoff()) : DateTime.MinValue;
         }
 

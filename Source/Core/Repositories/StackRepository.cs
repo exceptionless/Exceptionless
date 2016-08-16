@@ -1,17 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Elasticsearch.Repositories;
-using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Logging;
+using Foundatio.Messaging;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
@@ -22,7 +25,10 @@ namespace Exceptionless.Core.Repositories {
         private const string STACKING_VERSION = "v2";
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(ElasticRepositoryContext<Stack> context, StackIndex index, IEventRepository eventRepository, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) {
+        public StackRepository(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, IValidator<Stack> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<StackRepository> logger) 
+            : base(configuration.Client, validator, cache, messagePublisher, logger) {
+            ElasticType = configuration.Stacks.Stack;
+
             _eventRepository = eventRepository;
             DocumentsChanging.AddHandler(OnDocumentChangingAsync);
         }
@@ -57,7 +63,7 @@ namespace Exceptionless.Core.Repositories {
         public async Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
-            var result = await Context.ElasticClient.UpdateAsync<Stack>(s => s
+            var result = await _client.UpdateAsync<Stack>(s => s
                 .Id(stackId)
                 .RetryOnConflict(3)
                 .Lang("groovy")
@@ -87,7 +93,7 @@ namespace Exceptionless.Core.Repositories {
                     Id = stackId,
                     OrganizationId = organizationId,
                     ProjectId = projectId,
-                    Type = EntityType
+                    Type = ElasticType.Name
                 }, TimeSpan.FromSeconds(1.5)).AnyContext();
             }
         }
@@ -99,12 +105,12 @@ namespace Exceptionless.Core.Repositories {
                 .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash)));
         }
 
-        public Task<FindResults<Stack>> GetByFilterAsync(string systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+        public Task<IFindResults<Stack>> GetByFilterAsync(string systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (sorting.Fields.Count == 0)
-                sorting.Fields.Add(new FieldSort { Field = StackIndex.Fields.Stack.LastOccurrence, Order = SortOrder.Descending });
+                sorting.Fields.Add(new FieldSort { Field = StackIndexType.Fields.LastOccurrence, Order = SortOrder.Descending });
 
             var search = new ExceptionlessQuery()
-                .WithDateRange(utcStart, utcEnd, field ?? StackIndex.Fields.Stack.LastOccurrence)
+                .WithDateRange(utcStart, utcEnd, field ?? StackIndexType.Fields.LastOccurrence)
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
                 .WithPaging(paging)
@@ -113,25 +119,25 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(search);
         }
 
-        public Task<FindResults<Stack>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
+        public Task<IFindResults<Stack>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
             var filterContainer = Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).GreaterOrEquals(utcStart)) && Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).LowerOrEquals(utcEnd));
             var query = new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithElasticFilter(filterContainer)
                 .WithFilter(filter)
-                .WithSort(StackIndex.Fields.Stack.LastOccurrence, SortOrder.Descending)
+                .WithSort(StackIndexType.Fields.LastOccurrence, SortOrder.Descending)
                 .WithPaging(paging);
 
             return FindAsync(query);
         }
 
-        public Task<FindResults<Stack>> GetNewAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
+        public Task<IFindResults<Stack>> GetNewAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
             var filterContainer = Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart)) && Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
             var query = new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithElasticFilter(filterContainer)
                 .WithFilter(filter)
-                .WithSort(StackIndex.Fields.Stack.FirstOccurrence, SortOrder.Descending)
+                .WithSort(StackIndexType.Fields.FirstOccurrence, SortOrder.Descending)
                 .WithPaging(paging);
 
             return FindAsync(query);
@@ -143,7 +149,7 @@ namespace Exceptionless.Core.Repositories {
             await SaveAsync(stack, true).AnyContext();
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<Stack>> documents) {
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents) {
             if (!IsCacheEnabled)
                 return;
 

@@ -144,7 +144,7 @@ namespace Exceptionless.Api.Controllers {
             var sortBy = GetSort(sort);
             var options = new PagingOptions { Page = page, Limit = limit };
 
-            FindResults<PersistentEvent> events;
+            IFindResults<PersistentEvent> events;
             try {
                 events = await _repository.GetByFilterAsync(systemFilter, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
             } catch (ApplicationException ex) {

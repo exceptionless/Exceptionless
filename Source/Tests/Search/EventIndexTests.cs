@@ -14,7 +14,7 @@ using Xunit;
 namespace Exceptionless.Api.Tests.Repositories {
     public class EventIndexTests {
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
-        private readonly ElasticConfiguration _configuration = IoC.GetInstance<ElasticConfiguration>();
+        private readonly ExceptionlessElasticConfiguration _configuration = IoC.GetInstance<ExceptionlessElasticConfiguration>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
 
         [Theory]
@@ -518,8 +518,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private async Task CreateEventsAsync() {
-            _configuration.DeleteIndexes(_client);
-            _configuration.ConfigureIndexes(_client);
+            _configuration.DeleteIndexes();
+            _configuration.ConfigureIndexes();
 
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories)) {
@@ -538,7 +538,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _client.RefreshAsync();
         }
 
-        private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
+        private Task<IFindResults<PersistentEvent>> GetByFilterAsync(string filter) {
             var result = QueryProcessor.Process(filter);
             filter = result.ExpandedQuery;
 

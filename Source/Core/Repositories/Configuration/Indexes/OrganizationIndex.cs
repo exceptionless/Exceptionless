@@ -2,107 +2,143 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Models;
-using Foundatio.Elasticsearch.Configuration;
-using Foundatio.Elasticsearch.Extensions;
+using Foundatio.Caching;
+using Foundatio.Logging;
+using Foundatio.Repositories.Elasticsearch.Configuration;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class OrganizationIndex : IElasticIndex {
-        private const string KEYWORD_LOWERCASE = "keyword_lowercase";
+    public sealed class OrganizationIndex : VersionedIndex {
+        public OrganizationIndex(IElasticClient client, ICacheClient cache = null, ILoggerFactory loggerFactory = null) 
+            : base(client, Settings.Current.AppScopePrefix + "organizations", 1, cache, loggerFactory) {
 
-        public int Version => 1;
-        public static string Alias => Settings.Current.AppScopePrefix + "organizations";
-        public string AliasName => Alias;
-        public string VersionedName => String.Concat(AliasName, "-v", Version);
+            Application = new ApplicationIndexType(this);
+            AddType(Application);
 
-        public IDictionary<Type, IndexType> GetIndexTypes() {
-            return new Dictionary<Type, IndexType> {
-                { typeof(Application), new IndexType { Name = "application" } },
-                //{ typeof(MigrationResult), new IndexType { Name = "migrations"} },
-                { typeof(Organization), new IndexType { Name = "organization" } },
-                { typeof(Project), new IndexType { Name = "project" } },
-                { typeof(Models.Token), new IndexType { Name = "token" } },
-                { typeof(User), new IndexType { Name = "user" } },
-                { typeof(WebHook), new IndexType { Name = "webhook" } }
-            };
+            Organization = new OrganizationIndexType(this);
+            AddType(Organization);
+
+            Project = new ProjectIndexType(this);
+            AddType(Project);
+
+            Token = new TokenIndexType(this);
+            AddType(Token);
+
+            User = new UserIndexType(this);
+            AddType(User);
+
+            WebHook = new WebHookIndexType(this);
+            AddType(WebHook);
         }
+        
+        public ApplicationIndexType Application { get; }
+        public OrganizationIndexType Organization { get; }
+        public ProjectIndexType Project { get; }
+        public TokenIndexType Token { get; }
+        public UserIndexType User { get; }
+        public WebHookIndexType WebHook { get; }
+    } 
 
-        public CreateIndexDescriptor CreateIndex(CreateIndexDescriptor idx) {
-            var keywordLowercaseAnalyzer = new CustomAnalyzer { Filter = new List<string> { "lowercase" }, Tokenizer = "keyword" };
-            return idx.Analysis(descriptor => descriptor.Analyzers(bases => bases.Add(KEYWORD_LOWERCASE, keywordLowercaseAnalyzer)))
-                      .AddMapping<Application>(GetApplicationMap)
-                      .AddMapping<Organization>(GetOrganizationMap)
-                      .AddMapping<Project>(GetProjectMap)
-                      .AddMapping<Models.Token>(GetTokenMap)
-                      .AddMapping<User>(GetUserMap)
-                      .AddMapping<WebHook>(GetWebHookMap);
-        }
+    public class ApplicationIndexType : IndexType<Application> {
+        public ApplicationIndexType(OrganizationIndex index) : base(index, "application") { }
 
-        private PutMappingDescriptor<Application> GetApplicationMap(PutMappingDescriptor<Application> map){
+        public override PutMappingDescriptor<Application> BuildMapping(PutMappingDescriptor<Application> map) {
             return map
-                .Index(VersionedName)
                 .Dynamic()
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
-                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
-                     .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
+                    .SetupDefaults()
+                    .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
              );
         }
+    }
+    
+    public class OrganizationIndexType : IndexType<Organization> {
+        public OrganizationIndexType(OrganizationIndex index) : base(index, "organization") { }
 
-        private PutMappingDescriptor<Organization> GetOrganizationMap(PutMappingDescriptor<Organization> map){
+        public override PutMappingDescriptor<Organization> BuildMapping(PutMappingDescriptor<Organization> map) {
             return map
-                .Index(VersionedName)
                 .Dynamic()
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
-                    .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.Organization.CreatedUtc))
-                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.Organization.ModifiedUtc))
-                    .String(f => f.Name(e => e.Id).IndexName(Fields.Organization.Id).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.Name).IndexName(Fields.Organization.Name).Index(FieldIndexOption.Analyzed))
+                    .SetupDefaults()
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.ModifiedUtc))
+                    .String(f => f.Name(e => e.Name).IndexName(Fields.Name).Index(FieldIndexOption.Analyzed))
                     .String(f => f.Name(u => u.StripeCustomerId).IndexName("stripe").Index(FieldIndexOption.NotAnalyzed))
                     .Boolean(f => f.Name(u => u.HasPremiumFeatures).IndexName("premium"))
-                    .String(f => f.Name(u => u.PlanId).IndexName(Fields.Organization.PlanId).Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(u => u.PlanId).IndexName(Fields.PlanId).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.PlanName).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.PlanDescription).Index(FieldIndexOption.No))
                     .String(f => f.Name(u => u.CardLast4).Index(FieldIndexOption.NotAnalyzed))
-                    .Date(f => f.Name(u => u.SubscribeDate).IndexName(Fields.Organization.SubscribeDate))
-                    .Number(f => f.Name(u => u.BillingStatus).IndexName(Fields.Organization.BillingStatus))
+                    .Date(f => f.Name(u => u.SubscribeDate).IndexName(Fields.SubscribeDate))
+                    .Number(f => f.Name(u => u.BillingStatus).IndexName(Fields.BillingStatus))
                     .String(f => f.Name(u => u.BillingChangedByUserId).Index(FieldIndexOption.NotAnalyzed))
-                    .Number(f => f.Name(u => u.BillingPrice).IndexName(Fields.Organization.BillingPrice))
-                    .Boolean(f => f.Name(u => u.IsSuspended).IndexName(Fields.Organization.IsSuspended))
+                    .Number(f => f.Name(u => u.BillingPrice).IndexName(Fields.BillingPrice))
+                    .Boolean(f => f.Name(u => u.IsSuspended).IndexName(Fields.IsSuspended))
                     .String(f => f.Name(u => u.SuspendedByUserId).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.SuspensionNotes).Index(FieldIndexOption.NotAnalyzed))
                     .Number(f => f.Name(u => u.RetentionDays).IndexName("retention"))
                     .Object<DataDictionary>(f => f.Name(u => u.Data).Dynamic(false))
                     .Object<Invite>(f => f.Name(o => o.Invites.First()).RootPath().Properties(ip => ip
-                        .String(fu => fu.Name(i => i.Token).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.Organization.InviteToken))
-                        .String(fu => fu.Name(i => i.EmailAddress).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.Organization.InviteEmail))))
+                        .String(fu => fu.Name(i => i.Token).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.InviteToken))
+                        .String(fu => fu.Name(i => i.EmailAddress).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.InviteEmail))))
                     .Object<UsageInfo>(ui => ui.Name(o => o.Usage.First()).RootPath().Properties(ip => ip
-                        .Date(fu => fu.Name(i => i.Date).IndexName(Fields.Organization.UsageDate))
-                        .Number(fu => fu.Name(i => i.Total).IndexName(Fields.Organization.UsageTotal))
-                        .Number(fu => fu.Name(i => i.Blocked).IndexName(Fields.Organization.UsageBlocked))
-                        .Number(fu => fu.Name(i => i.Limit).IndexName(Fields.Organization.UsageLimit))
-                        .Number(fu => fu.Name(i => i.TooBig).IndexName(Fields.Organization.UsageTooBig))))
+                        .Date(fu => fu.Name(i => i.Date).IndexName(Fields.UsageDate))
+                        .Number(fu => fu.Name(i => i.Total).IndexName(Fields.UsageTotal))
+                        .Number(fu => fu.Name(i => i.Blocked).IndexName(Fields.UsageBlocked))
+                        .Number(fu => fu.Name(i => i.Limit).IndexName(Fields.UsageLimit))
+                        .Number(fu => fu.Name(i => i.TooBig).IndexName(Fields.UsageTooBig))))
                     .Object<UsageInfo>(ui => ui.Name(o => o.OverageHours.First()).RootPath().Properties(ip => ip
-                        .Date(fu => fu.Name(i => i.Date).IndexName(Fields.Organization.OverageHoursDate))
-                        .Number(fu => fu.Name(i => i.Total).IndexName(Fields.Organization.OverageHoursTotal))
-                        .Number(fu => fu.Name(i => i.Blocked).IndexName(Fields.Organization.OverageHoursBlocked))
-                        .Number(fu => fu.Name(i => i.Limit).IndexName(Fields.Organization.OverageHoursLimit))
-                        .Number(fu => fu.Name(i => i.TooBig).IndexName(Fields.Organization.OverageHoursTooBig))))
+                        .Date(fu => fu.Name(i => i.Date).IndexName(Fields.OverageHoursDate))
+                        .Number(fu => fu.Name(i => i.Total).IndexName(Fields.OverageHoursTotal))
+                        .Number(fu => fu.Name(i => i.Blocked).IndexName(Fields.OverageHoursBlocked))
+                        .Number(fu => fu.Name(i => i.Limit).IndexName(Fields.OverageHoursLimit))
+                        .Number(fu => fu.Name(i => i.TooBig).IndexName(Fields.OverageHoursTooBig))))
                 );
         }
 
-        private PutMappingDescriptor<Project> GetProjectMap(PutMappingDescriptor<Project> map) {
+        public class Fields {
+            public const string Id = "id";
+            public const string CreatedUtc = "created";
+            public const string ModifiedUtc = "modified";
+            public const string Name = "name";
+            public const string SubscribeDate = "subscribed";
+
+            public const string BillingPrice = "price";
+            public const string BillingStatus = "status";
+            public const string IsSuspended = "suspended";
+            public const string PlanId = "plan";
+
+            public const string InviteToken = "invite.token";
+            public const string InviteEmail = "invite.email";
+
+            public const string UsageDate = "usage.date";
+            public const string UsageTotal = "usage.total";
+            public const string UsageBlocked = "usage.blocked";
+            public const string UsageLimit = "usage.limit";
+            public const string UsageTooBig = "usage.toobig";
+
+            public const string OverageHoursDate = "overage.date";
+            public const string OverageHoursTotal = "overage.total";
+            public const string OverageHoursBlocked = "overage.blocked";
+            public const string OverageHoursLimit = "overage.limit";
+            public const string OverageHoursTooBig = "overage.toobig";
+        }
+    }
+
+    public class ProjectIndexType : IndexType<Project> {
+        public ProjectIndexType(OrganizationIndex index) : base(index, "project") { }
+
+        public override PutMappingDescriptor<Project> BuildMapping(PutMappingDescriptor<Project> map) {
             return map
-                .Index(VersionedName)
                 .Dynamic()
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
-                    .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.Project.CreatedUtc))
-                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.Project.ModifiedUtc))
-                    .String(f => f.Name(e => e.Id).IndexName(Fields.Project.Id).Index(FieldIndexOption.NotAnalyzed))
+                    .SetupDefaults()
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.ModifiedUtc))
                     .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.Name).IndexName(Fields.Project.Name).Index(FieldIndexOption.Analyzed))
+                    .String(f => f.Name(e => e.Name).IndexName(Fields.Name).Index(FieldIndexOption.Analyzed))
                     .String(f => f.Name(u => u.PromotedTabs).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.CustomContent).Index(FieldIndexOption.No))
                     .Object<ClientConfiguration>(f => f.Name(u => u.Configuration).Dynamic(false))
@@ -111,16 +147,25 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 );
         }
 
-        private PutMappingDescriptor<Models.Token> GetTokenMap(PutMappingDescriptor<Models.Token> map) {
+        public class Fields {
+            public const string Id = "id";
+            public const string Name = "name";
+            public const string CreatedUtc = "created";
+            public const string ModifiedUtc = "modified";
+        }
+    }
+
+    public class TokenIndexType : IndexType<Models.Token> {
+        public TokenIndexType(OrganizationIndex index) : base(index, "token") { }
+
+        public override PutMappingDescriptor<Models.Token> BuildMapping(PutMappingDescriptor<Models.Token> map) {
             return map
-                .Index(VersionedName)
                 .Dynamic()
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
+                    .SetupDefaults()
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.ModifiedUtc))
                     .String(f => f.Name(e => e.CreatedBy).IndexName("createdby").Index(FieldIndexOption.NotAnalyzed))
-                    .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.Token.CreatedUtc))
-                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.Token.ModifiedUtc))
-                    .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.ApplicationId).IndexName("application").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
@@ -131,19 +176,34 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .String(f => f.Name(u => u.Notes).Index(FieldIndexOption.No))
                 );
         }
+        
+        public class Fields {
+            public const string CreatedUtc = "created";
+            public const string ModifiedUtc = "modified";
+        }
+    }
 
-        public PutMappingDescriptor<User> GetUserMap(PutMappingDescriptor<User> map) {
+    public class UserIndexType : IndexType<User> {
+        private const string KEYWORD_LOWERCASE = "keyword_lowercase";
+
+        public UserIndexType(OrganizationIndex index) : base(index, "user") { }
+        
+        public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
+            var keywordLowercaseAnalyzer = new CustomAnalyzer { Filter = new List<string> { "lowercase" }, Tokenizer = "keyword" };
+            return idx.Analysis(descriptor => descriptor.Analyzers(bases => bases.Add(KEYWORD_LOWERCASE, keywordLowercaseAnalyzer)))
+                .AddMapping<User>(BuildMapping);
+        }
+
+        public override PutMappingDescriptor<User> BuildMapping(PutMappingDescriptor<User> map) {
             return map
-                .Index(VersionedName)
                 .Dynamic()
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
-                    .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.User.CreatedUtc))
-                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.User.ModifiedUtc))
-                    .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
+                    .SetupDefaults()
+                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.ModifiedUtc))
                     .String(f => f.Name(e => e.OrganizationIds).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.FullName).IndexName("name"))
-                    .String(f => f.Name(u => u.EmailAddress).IndexName(Fields.User.EmailAddress).Analyzer(KEYWORD_LOWERCASE))
+                    .String(f => f.Name(u => u.EmailAddress).IndexName(Fields.EmailAddress).Analyzer(KEYWORD_LOWERCASE))
                     .String(f => f.Name(u => u.Password).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.Salt).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.PasswordResetToken).Index(FieldIndexOption.NotAnalyzed))
@@ -151,18 +211,27 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .String(f => f.Name(u => u.Roles).Index(FieldIndexOption.NotAnalyzed))
                     .Object<OAuthAccount>(f => f.Name(o => o.OAuthAccounts.First()).RootPath().Properties(mp => mp
                         .String(fu => fu.Name(m => m.Provider).Index(FieldIndexOption.NotAnalyzed))
-                        .String(fu => fu.Name(m => m.ProviderUserId).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.User.OAuthAccountProviderUserId))
+                        .String(fu => fu.Name(m => m.ProviderUserId).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.OAuthAccountProviderUserId))
                         .String(fu => fu.Name(m => m.Username).Index(FieldIndexOption.NotAnalyzed))))
                 );
         }
+        
+        public class Fields {
+            public const string CreatedUtc = "created";
+            public const string ModifiedUtc = "modified";
+            public const string OAuthAccountProviderUserId = "oauthaccount.provideruserid";
+            public const string EmailAddress = "email";
+        }
+    }
 
-        private PutMappingDescriptor<WebHook> GetWebHookMap(PutMappingDescriptor<WebHook> map) {
+    public class WebHookIndexType : IndexType<WebHook> {
+        public WebHookIndexType(OrganizationIndex index) : base(index, "webhook") { }
+
+        public override PutMappingDescriptor<WebHook> BuildMapping(PutMappingDescriptor<WebHook> map) {
             return map
-                .Index(VersionedName)
                 .Dynamic()
                 .Properties(p => p
-                    .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.WebHook.CreatedUtc))
-                    .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
+                    .SetupDefaults()
                     .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.Url).Index(FieldIndexOption.NotAnalyzed))
@@ -171,56 +240,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         public class Fields {
-            public class Organization {
-                public const string Id = "id";
-                public const string CreatedUtc = "created";
-                public const string ModifiedUtc = "modified";
-                public const string Name = "name";
-                public const string SubscribeDate = "subscribed";
-
-                public const string BillingPrice = "price";
-                public const string BillingStatus = "status";
-                public const string IsSuspended = "suspended";
-                public const string PlanId = "plan";
-
-                public const string InviteToken = "invite.token";
-                public const string InviteEmail = "invite.email";
-
-                public const string UsageDate = "usage.date";
-                public const string UsageTotal = "usage.total";
-                public const string UsageBlocked = "usage.blocked";
-                public const string UsageLimit = "usage.limit";
-                public const string UsageTooBig = "usage.toobig";
-
-                public const string OverageHoursDate = "overage.date";
-                public const string OverageHoursTotal = "overage.total";
-                public const string OverageHoursBlocked = "overage.blocked";
-                public const string OverageHoursLimit = "overage.limit";
-                public const string OverageHoursTooBig = "overage.toobig";
-            }
-
-            public class Project {
-                public const string Id = "id";
-                public const string Name = "name";
-                public const string CreatedUtc = "created";
-                public const string ModifiedUtc = "modified";
-            }
-
-            public class Token {
-                public const string CreatedUtc = "created";
-                public const string ModifiedUtc = "modified";
-            }
-
-            public class User {
-                public const string CreatedUtc = "created";
-                public const string ModifiedUtc = "modified";
-                public const string OAuthAccountProviderUserId = "oauthaccount.provideruserid";
-                public const string EmailAddress = "email";
-            }
-
-            public class WebHook {
-                public const string CreatedUtc = "created";
-            }
+            public const string CreatedUtc = "created";
         }
     }
 }

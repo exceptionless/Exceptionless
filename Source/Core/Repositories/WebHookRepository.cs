@@ -6,22 +6,28 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
-using Foundatio.Elasticsearch.Repositories;
-using Foundatio.Elasticsearch.Repositories.Queries;
+using FluentValidation;
+using Foundatio.Caching;
 using Foundatio.Logging;
+using Foundatio.Messaging;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
-        public WebHookRepository(ElasticRepositoryContext<WebHook> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) { }
+        public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<WebHookRepository> logger) 
+            : base(configuration.Client, validator, cache, messagePublisher, logger) {
+            ElasticType = configuration.Organizations.WebHook;
+        }
 
         public Task RemoveByUrlAsync(string targetUrl) {
             var filter = Filter<WebHook>.Term(e => e.Url, targetUrl);
             return RemoveAllAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
-        public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
+        public Task<IFindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
             var filter = (Filter<WebHook>.Term(e => e.OrganizationId, organizationId) && Filter<WebHook>.Missing(e => e.ProjectId)) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
@@ -39,7 +45,7 @@ namespace Exceptionless.Core.Repositories {
             public const string StackPromoted = "StackPromoted";
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<WebHook>> documents) {
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents) {
             if (!IsCacheEnabled)
                 return;
 

@@ -6,29 +6,33 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
-using Foundatio.Elasticsearch.Configuration;
-using Foundatio.Elasticsearch.Repositories;
-using Foundatio.Elasticsearch.Repositories.Queries;
+using FluentValidation;
+using Foundatio.Caching;
 using Foundatio.Logging;
+using Foundatio.Messaging;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
+using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
-        public RepositoryOwnedByOrganization(ElasticRepositoryContext<T> context, IElasticIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) { }
+        public RepositoryOwnedByOrganization(IElasticClient client, IValidator<T> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger logger) 
+            : base(client, validator, cache, messagePublisher, logger) { }
 
-        public Task<long> CountByOrganizationIdAsync(string organizationId) {
+        public Task<CountResult> CountByOrganizationIdAsync(string organizationId) {
             var options = new ExceptionlessQuery().WithOrganizationId(organizationId);
             return CountAsync(options);
         }
 
-        public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public virtual Task<IFindResults<T>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return GetByOrganizationIdsAsync(new[] { organizationId }, paging, useCache, expiresIn);
         }
 
-        public virtual Task<FindResults<T>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public virtual Task<IFindResults<T>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (organizationIds == null || organizationIds.Count == 0)
-                return Task.FromResult(new FindResults<T> { Documents = new List<T>(), Total = 0 });
+                return Task.FromResult<IFindResults<T>>(new FindResults<T>());
 
             // NOTE: There is no way to currently invalidate this.. If you try and cache this result, you should expect it to be dirty.
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
@@ -42,8 +46,8 @@ namespace Exceptionless.Core.Repositories {
         public Task RemoveAllByOrganizationIdsAsync(string[] organizationIds) {
             return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationIds(organizationIds));
         }
-
-        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<T>> documents) {
+        
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<T>> documents) {
             if (!IsCacheEnabled)
                 return;
 
@@ -57,18 +61,18 @@ namespace Exceptionless.Core.Repositories {
             await base.InvalidateCacheAsync(documents).AnyContext();
         }
 
-        protected Task<long> UpdateAllAsync(string organizationId, object query, object update, bool sendNotifications = true) {
-            return UpdateAllAsync(new[] { organizationId }, query, update, sendNotifications);
+        protected Task<long> PatchAllAsync<TQuery>(string organizationId, TQuery query, object update, bool sendNotifications = true) where TQuery : IPagableQuery, ISelectedFieldsQuery {
+            return PatchAllAsync(new[] { organizationId }, query, update, sendNotifications);
         }
 
-        protected async Task<long> UpdateAllAsync(string[] organizationIds, object query, object update, bool sendNotifications = true) {
-            var recordsAffected = await UpdateAllAsync(query, update, false).AnyContext();
+        protected async Task<long> PatchAllAsync<TQuery>(string[] organizationIds, TQuery query, object update, bool sendNotifications = true) where TQuery : IPagableQuery, ISelectedFieldsQuery {
+            var recordsAffected = await PatchAllAsync(query, update, false).AnyContext();
             if (sendNotifications) {
                 foreach (var organizationId in organizationIds) {
                     await PublishMessageAsync(new ExtendedEntityChanged {
                         ChangeType = ChangeType.Saved,
                         OrganizationId = organizationId,
-                        Type = EntityType
+                        Type = ElasticType.Name
                     }, TimeSpan.FromSeconds(1.5)).AnyContext();
                 }
             }
