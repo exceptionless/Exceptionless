@@ -28,7 +28,7 @@ using Nest;
 using Xunit;
 using Xunit.Abstractions;
 
-using Fields = Exceptionless.Core.Repositories.Configuration.EventIndex.Fields.PersistentEvent;
+using Fields = Exceptionless.Core.Repositories.Configuration.EventIndexType.Fields;
 
 namespace Exceptionless.Api.Tests.Pipeline {
     public class EventPipelineTests : TestWithLoggingBase {

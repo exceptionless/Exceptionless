@@ -257,7 +257,7 @@ namespace Exceptionless.Api.Tests.Stats {
             await _eventPipeline.RunAsync(events);
             await _client.RefreshAsync();
             
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndex.Fields.PersistentEvent.Date));
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Fields.Date));
             Assert.Equal(6, results.Total);
             Assert.Equal(3, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 

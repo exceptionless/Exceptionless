@@ -6,10 +6,12 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Elasticsearch.Repositories;
-using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Logging;
+using Foundatio.Messaging;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
@@ -17,7 +19,10 @@ using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class UserRepository : RepositoryBase<User>, IUserRepository {
-        public UserRepository(ElasticRepositoryContext<User> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) { }
+        public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<UserRepository> logger) 
+            : base(configuration.Client, validator, cache, messagePublisher, logger) {
+            ElasticType = configuration.Organizations.User;
+        }
 
         public Task<User> GetByEmailAddressAsync(string emailAddress) {
             if (String.IsNullOrWhiteSpace(emailAddress))
@@ -42,7 +47,7 @@ namespace Exceptionless.Core.Repositories {
 
             provider = provider.ToLowerInvariant();
 
-            var filter = Filter<User>.Term(OrganizationIndex.Fields.User.OAuthAccountProviderUserId, new List<string>() { providerUserId });
+            var filter = Filter<User>.Term(UserIndexType.Fields.OAuthAccountProviderUserId, new List<string>() { providerUserId });
             var results = (await FindAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext()).Documents;
 
             return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
@@ -56,31 +61,31 @@ namespace Exceptionless.Core.Repositories {
             return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
-        public virtual Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public virtual Task<IFindResults<User>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return GetByOrganizationIdsAsync(new[] { organizationId }, paging, useCache, expiresIn);
         }
 
-        public virtual Task<FindResults<User>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public virtual Task<IFindResults<User>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (organizationIds == null || organizationIds.Count == 0)
-                return Task.FromResult(new FindResults<User> { Documents = new List<User>(), Total = 0 });
+                return Task.FromResult<IFindResults<User>>(new FindResults<User>());
 
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
             var filter = Filter<User>.Term(u => u.OrganizationIds, organizationIds);
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithPaging(paging)
-                .WithSort(OrganizationIndex.Fields.User.EmailAddress, SortOrder.Ascending)
+                .WithSort(UserIndexType.Fields.EmailAddress, SortOrder.Ascending)
                 .WithCacheKey(useCache ? cacheKey : null)
                 .WithExpiresIn(expiresIn));
         }
 
-        public Task<long> CountByOrganizationIdAsync(string organizationId) {
+        public Task<CountResult> CountByOrganizationIdAsync(string organizationId) {
             var filter = Filter<User>.Term(u => u.OrganizationIds, new[] { organizationId });
             var options = new ExceptionlessQuery().WithElasticFilter(filter);
             return CountAsync(options);
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<User>> documents) {
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents) {
             if (!IsCacheEnabled)
                 return;
 

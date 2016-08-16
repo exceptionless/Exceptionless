@@ -13,7 +13,7 @@ using Xunit;
 namespace Exceptionless.Api.Tests.Repositories {
     public class StackIndexTests {
         private readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
-        private readonly ElasticConfiguration _configuration = IoC.GetInstance<ElasticConfiguration>();
+        private readonly ExceptionlessElasticConfiguration _configuration = IoC.GetInstance<ExceptionlessElasticConfiguration>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         
         [Theory]
@@ -212,8 +212,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private async Task CreateStacksAsync() {
-            _configuration.DeleteIndexes(_client);
-            _configuration.ConfigureIndexes(_client);
+            _configuration.DeleteIndexes();
+            _configuration.ConfigureIndexes();
 
             var serializer = IoC.GetInstance<JsonSerializer>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "stack*.json", SearchOption.AllDirectories)) {
@@ -232,7 +232,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _client.RefreshAsync();
         }
 
-        private Task<FindResults<Stack>> GetByFilterAsync(string filter) {
+        private Task<IFindResults<Stack>> GetByFilterAsync(string filter) {
             return _repository.GetByFilterAsync(null, filter, new SortingOptions(), null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }

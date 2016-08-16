@@ -33,12 +33,12 @@ namespace Exceptionless.Api.Utility.Results {
         }
     }
 
-    public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<ICollection<TEntity>> where TEntity : class {
-        public OkWithResourceLinks(ICollection<TEntity> content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
+    public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerable<TEntity>> where TEntity : class {
+        public OkWithResourceLinks(IEnumerable<TEntity> content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
 
-        public OkWithResourceLinks(ICollection<TEntity> content, ApiController controller, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) : this(content, controller, hasMore, page, null, pagePropertyAccessor, headers, isDescending) {}
+        public OkWithResourceLinks(IEnumerable<TEntity> content, ApiController controller, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) : this(content, controller, hasMore, page, null, pagePropertyAccessor, headers, isDescending) {}
 
-        public OkWithResourceLinks(ICollection<TEntity> content, ApiController controller, bool hasMore, int? page = null, long? total = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) : base(content, controller) {
+        public OkWithResourceLinks(IEnumerable<TEntity> content, ApiController controller, bool hasMore, int? page = null, long? total = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) : base(content, controller) {
             if (content == null)
                 return;
 
@@ -87,15 +87,16 @@ namespace Exceptionless.Api.Utility.Results {
             return links;
         }
 
-        public static List<string> GetBeforeAndAfterLinks(Uri url, ICollection<TEntity> content, bool isDescending, bool hasMore, Func<TEntity, string> pagePropertyAccessor) {
+        public static List<string> GetBeforeAndAfterLinks(Uri url, IEnumerable<TEntity> content, bool isDescending, bool hasMore, Func<TEntity, string> pagePropertyAccessor) {
+            var contentList = content.ToList();
             if (pagePropertyAccessor == null && typeof(IIdentity).IsAssignableFrom(typeof(TEntity)))
                 pagePropertyAccessor = e => ((IIdentity)e).Id;
 
             if (pagePropertyAccessor == null)
                 return new List<string>();
 
-            string firstId = content.Any() ? pagePropertyAccessor(!isDescending ? content.First() : content.Last()) : String.Empty;
-            string lastId = content.Any() ? pagePropertyAccessor(!isDescending ? content.Last() : content.First()) : String.Empty;
+            string firstId = contentList.Any() ? pagePropertyAccessor(!isDescending ? contentList.First() : contentList.Last()) : String.Empty;
+            string lastId = contentList.Any() ? pagePropertyAccessor(!isDescending ? contentList.Last() : contentList.First()) : String.Empty;
 
             bool hasBefore = false;
             bool hasAfter = false;
@@ -114,7 +115,7 @@ namespace Exceptionless.Api.Utility.Results {
 
             bool includePrevious = hasBefore ? hasMore : true;
             bool includeNext = !hasBefore ? hasMore : true;
-            if (hasBefore && !content.Any()) {
+            if (hasBefore && !contentList.Any()) {
                 // are we currently before the first page?
                 includePrevious = false;
                 includeNext = true;

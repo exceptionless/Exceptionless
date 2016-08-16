@@ -6,41 +6,46 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
-using Foundatio.Elasticsearch.Repositories;
-using Foundatio.Elasticsearch.Repositories.Queries;
+using FluentValidation;
+using Foundatio.Caching;
 using Foundatio.Logging;
+using Foundatio.Messaging;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
-        public ProjectRepository(ElasticRepositoryContext<Project> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) {
+        public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<ProjectRepository> logger) 
+            : base(configuration.Client, validator, cache, messagePublisher, logger) {
+            ElasticType = configuration.Organizations.Project;
             DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
-        
-        public Task<long> GetCountByOrganizationIdAsync(string organizationId) {
+
+        public Task<CountResult> GetCountByOrganizationIdAsync(string organizationId) {
             return CountAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithCacheKey(organizationId));
         }
 
-        public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
+        public Task<IFindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
             var filter = Filter<Project>.Range(r => r.OnField(o => o.NextSummaryEndOfDayTicks).Lower(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
             return FindAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithSelectedFields("id", "next_summary_end_of_day_ticks").WithLimit(limit));
         }
 
-        public async Task<long> IncrementNextSummaryEndOfDayTicksAsync(ICollection<Project> projects) {
+        public async Task<CountResult> IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects) {
             if (projects == null || !projects.Any())
                 throw new ArgumentNullException(nameof(projects));
             
             string script = $"ctx._source.next_summary_end_of_day_ticks += {TimeSpan.TicksPerDay};";
-            var recordsAffected = await UpdateAllAsync((string)null, new ExceptionlessQuery().WithIds(projects.Select(p => p.Id)), script, false).AnyContext();
+            var recordsAffected = await PatchAllAsync((string)null, new ExceptionlessQuery().WithIds(projects.Select(p => p.Id)), script, false).AnyContext();
             if (recordsAffected > 0)
                 await InvalidateCacheAsync(projects).AnyContext();
             
-            return recordsAffected;
+            return new CountResult(recordsAffected);
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<Project>> documents) {
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Project>> documents) {
             if (!IsCacheEnabled)
                 return;
             

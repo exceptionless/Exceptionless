@@ -44,7 +44,7 @@ namespace Exceptionless.Api.Controllers {
             return model;
         }
 
-        protected virtual async Task<ICollection<TModel>> GetModelsAsync(string[] ids, bool useCache = true) {
+        protected virtual async Task<IReadOnlyCollection<TModel>> GetModelsAsync(string[] ids, bool useCache = true) {
             if (ids == null || ids.Length == 0)
                 return new List<TModel>();
 

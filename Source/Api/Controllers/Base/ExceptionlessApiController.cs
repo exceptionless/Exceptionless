@@ -130,14 +130,14 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public async Task<ICollection<Organization>> GetAssociatedOrganizationsAsync(IOrganizationRepository repository) {
+        public async Task<IReadOnlyCollection<Organization>> GetAssociatedOrganizationsAsync(IOrganizationRepository repository) {
             if (repository == null)
                 return null;
 
             return (await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true)).Documents;
         }
         
-        public string BuildSystemFilter(ICollection<Organization> organizations, string filter, bool usesPremiumFeatures, string retentionDateFieldName = "date") {
+        public string BuildSystemFilter(IReadOnlyCollection<Organization> organizations, string filter, bool usesPremiumFeatures, string retentionDateFieldName = "date") {
             if (HasOrganizationOrProjectOrStackFilter(filter) && Request.IsGlobalAdmin())
                 return null;
             
@@ -195,11 +195,11 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithHeadersContentResult<T>(content, this, headers);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
             return new OkWithResourceLinks<TEntity>(content, this, hasMore, null, pagePropertyAccessor, headers, isDescending);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
             return new OkWithResourceLinks<TEntity>(content, this, hasMore, page, total);
         }
 
