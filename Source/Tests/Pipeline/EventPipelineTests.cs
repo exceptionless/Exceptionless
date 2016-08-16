@@ -6,8 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Exceptionless.Api.Tests.Repositories;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventParser;
@@ -16,11 +18,14 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
 using Foundatio.Logging.Xunit;
+using Foundatio.Metrics;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 using McSherry.SemanticVersioning;
@@ -31,24 +36,33 @@ using Xunit.Abstractions;
 using Fields = Exceptionless.Core.Repositories.Configuration.EventIndexType.Fields;
 
 namespace Exceptionless.Api.Tests.Pipeline {
-    public class EventPipelineTests : TestWithLoggingBase {
-        private readonly ICacheClient _cacheClient = IoC.GetInstance<ICacheClient>();
-        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
-        private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
-        private readonly ITokenRepository _tokenRepository = IoC.GetInstance<ITokenRepository>();
-        private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
-        private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
-        private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
+    public sealed class EventPipelineTests : ElasticRepositoryTestBase {
+        private readonly EventPipeline _pipeline;
+        private readonly IEventRepository _eventRepository;
+        private readonly IStackRepository _stackRepository;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
+        private readonly UserRepository _userRepository;
 
-        private readonly EventPipeline _pipeline = IoC.GetInstance<EventPipeline>();
+        public EventPipelineTests(ITestOutputHelper output) : base(output) {
+            _eventRepository = new EventRepository(_configuration, IoC.GetInstance<IValidator<PersistentEvent>>(), _cache, null, Log.CreateLogger<EventRepository>());
+            Log.SetLogLevel<EventRepository>(LogLevel.Warning);
+            _stackRepository = new StackRepository(_configuration, _eventRepository, IoC.GetInstance<IValidator<Stack>>(), _cache, null, Log.CreateLogger<StackRepository>());
+            Log.SetLogLevel<StackRepository>(LogLevel.Warning);
+            _organizationRepository = new OrganizationRepository(_configuration, IoC.GetInstance<IValidator<Organization>>(), _cache, null, Log.CreateLogger<OrganizationRepository>());
+            Log.SetLogLevel<OrganizationRepository>(LogLevel.Warning);
+            _projectRepository = new ProjectRepository(_configuration, IoC.GetInstance<IValidator<Project>>(), _cache, null, Log.CreateLogger<ProjectRepository>());
+            Log.SetLogLevel<ProjectRepository>(LogLevel.Warning);
+            _userRepository = new UserRepository(_configuration, IoC.GetInstance<IValidator<User>>(), _cache, null, Log.CreateLogger<UserRepository>());
+            Log.SetLogLevel<UserRepository>(LogLevel.Warning);
 
-        public EventPipelineTests(ITestOutputHelper output) : base(output) {}
+            _pipeline = new EventPipeline(IoC.GetInstance<IDependencyResolver>(), _organizationRepository, _projectRepository, IoC.GetInstance<IMetricsClient>(), Log);
+
+            RemoveDataAsync().GetAwaiter().GetResult();
+        }
 
         [Fact]
         public async Task NoFutureEventsAsync() {
-            await ResetAsync();
-
             var localTime = DateTime.Now;
             var ev = GenerateEvent(localTime.AddMinutes(10));
 
@@ -67,10 +81,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         private async Task CreateAutoSessionInternalAsync(DateTimeOffset date) {
-            await ResetAsync();
-
             var ev = GenerateEvent(date, "blake@exceptionless.io");
-
             var context = await _pipeline.RunAsync(ev);
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
@@ -110,10 +121,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task IgnoreAutoSessionsWithoutIdentityAsync() {
-            await ResetAsync();
-
             var ev = GenerateEvent(DateTimeOffset.Now);
-
             var context = await _pipeline.RunAsync(ev);
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
@@ -128,10 +136,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         
         [Fact]
         public async Task CreateAutoSessionStartEventsAsync() {
-            await ResetAsync();
-
             DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
-
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io"),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
@@ -160,10 +165,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task UpdateAutoMultipleSessionStartEventDurationsAsync() {
-            await ResetAsync();
-
             DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
-
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.Session),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.Session),
@@ -187,8 +189,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task UpdateAutoSessionLastActivityAsync() {
-            await ResetAsync();
-
             var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
             var lastEventDate = firstEventDate.Add(TimeSpan.FromMinutes(1));
 
@@ -231,8 +231,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CloseExistingAutoSessionAsync() {
-            await ResetAsync();
-
             DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io"),
@@ -268,8 +266,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task IgnoreDuplicateAutoEndSessionsAsync() {
-            await ResetAsync();
-
             DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
@@ -288,10 +284,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task WillMarkAutoSessionHeartbeatStackHidden() {
-            await ResetAsync();
-
             var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
-
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
             };
@@ -325,10 +318,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         private async Task CreateManualSessionInternalAsync(DateTimeOffset start) {
-            await ResetAsync();
-
             var ev = GenerateEvent(start, sessionId: "12345678");
-
             var context = await _pipeline.RunAsync(ev);
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
@@ -369,10 +359,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CreateManualSingleSessionStartEventAsync() {
-            await ResetAsync();
-
             var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
-
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.Session, sessionId: "12345678"),
@@ -398,10 +385,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         
         [Fact]
         public async Task CreateManualSessionStartEventAsync() {
-            await ResetAsync();
-
             var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
-
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, sessionId: "12345678"),
                 // This event will be deduplicated as part of the manual session plugin.
@@ -429,8 +413,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task UpdateManualSessionLastActivityAsync() {
-            await ResetAsync();
-
             var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
             var lastEventDate = firstEventDate.Add(TimeSpan.FromMinutes(1));
 
@@ -456,8 +438,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
         
         [Fact]
         public async Task CloseExistingManualSessionAsync() {
-            await ResetAsync();
-
             DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, sessionId: "12345678"),
@@ -496,8 +476,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task IgnoreDuplicateManualEndSessionsAsync() {
-            await ResetAsync();
-
             DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
@@ -516,10 +494,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task WillMarkManualSessionHeartbeatStackHidden() {
-            await ResetAsync();
-
             var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
-
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
             };
@@ -584,8 +559,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task SyncStackTagsAsync() {
-            await ResetAsync();
-
             const string Tag1 = "Tag One";
             const string Tag2 = "Tag Two";
             const string Tag2_Lowercase = "tag two";
@@ -624,8 +597,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task EnsureSingleNewStackAsync() {
-            await ResetAsync();
-
             string source = Guid.NewGuid().ToString();
             var contexts = new List<EventContext> {
                 new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = DateTime.UtcNow, Type = Event.KnownTypes.Log }),
@@ -642,8 +613,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task EnsureSingleGlobalErrorStackAsync() {
-            await ResetAsync();
-            
             var contexts = new List<EventContext> {
                 new EventContext(new PersistentEvent {
                     ProjectId = TestConstants.ProjectId,
@@ -672,8 +641,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task EnsureSingleRegressionAsync() {
-            await ResetAsync();
-
             var utcNow = DateTime.UtcNow;
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
             var context = new EventContext(ev);
@@ -722,8 +689,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task EnsureVersionedRegressionAsync() {
-            await ResetAsync();
-
             var utcNow = DateTime.UtcNow;
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
             var context = new EventContext(ev);
@@ -772,16 +737,9 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal("1.0.1-rc3", regressedEvent.GetVersion());
         }
 
-        private bool _canResetDataForProcessEvents = true;
-
         [Theory]
         [MemberData("Events")]
         public async Task ProcessEventsAsync(string errorFilePath) {
-            if (_canResetDataForProcessEvents) {
-                _canResetDataForProcessEvents = false;
-                await ResetAsync();
-            }
-
             var pipeline = IoC.GetInstance<EventPipeline>();
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
             var events = parserPluginManager.ParseEvents(File.ReadAllText(errorFilePath), 2, "exceptionless/2.0.0.0");
@@ -802,8 +760,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task PipelinePerformance() {
-            await ResetAsync();
-
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
             var pipeline = IoC.GetInstance<EventPipeline>();
             var startDate = DateTimeOffset.Now.SubtractHours(1);
@@ -935,20 +891,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             }
         }
 
-        private static bool _isReset;
-        private async Task ResetAsync() {
-            if (!_isReset) {
-                _isReset = true;
-                await RemoveDataAsync();
-                await CreateDataAsync();
-            } else {
-                await RemoveEventsAndStacks();
-            }
-        }
-
         private async Task CreateDataAsync() {
-            await _client.RefreshAsync();
-
             foreach (Organization organization in OrganizationData.GenerateSampleOrganizations()) {
                 if (organization.Id == TestConstants.OrganizationId3)
                     BillingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, UserData.GenerateSampleUser());
@@ -990,28 +933,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 occurrenceDate = DateTimeOffset.Now;
 
             return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
-        }
-
-        private async Task RemoveDataAsync() {
-            await RemoveEventsAndStacks();
-            await _tokenRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-            await _userRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-            await _projectRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-            await _organizationRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-            await _cacheClient.RemoveAllAsync();
-        }
-
-        private async Task RemoveEventsAndStacks() {
-            await _client.RefreshAsync();
-            await _eventRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-            await _stackRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-            await _cacheClient.RemoveAllAsync();
         }
     }
 }

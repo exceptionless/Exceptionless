@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Api.Tests.Repositories;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
@@ -11,26 +13,43 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using FluentValidation;
+using Foundatio.Logging;
+using Foundatio.Metrics;
 using Foundatio.Repositories.Models;
-using Nest;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Stats {
-    public class StatsTests {
-        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
-        private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
-        private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
-        private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
-        private readonly EventStats _stats = IoC.GetInstance<EventStats>();
-        private readonly EventPipeline _eventPipeline = IoC.GetInstance<EventPipeline>();
+    public sealed class StatsTests : ElasticRepositoryTestBase {
+        private readonly EventStats _stats;
+        private readonly EventPipeline _eventPipeline;
+        private readonly IEventRepository _eventRepository;
+        private readonly IStackRepository _stackRepository;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
+
+        public StatsTests(ITestOutputHelper output) : base(output) {
+            _eventRepository = new EventRepository(_configuration, IoC.GetInstance<IValidator<PersistentEvent>>(), _cache, null, Log.CreateLogger<EventRepository>());
+            Log.SetLogLevel<EventRepository>(LogLevel.Warning);
+            _stackRepository = new StackRepository(_configuration, _eventRepository, IoC.GetInstance<IValidator<Stack>>(), _cache, null, Log.CreateLogger<StackRepository>());
+            Log.SetLogLevel<StackRepository>(LogLevel.Warning);
+            _organizationRepository = new OrganizationRepository(_configuration, IoC.GetInstance<IValidator<Organization>>(), _cache, null, Log.CreateLogger<OrganizationRepository>());
+            Log.SetLogLevel<OrganizationRepository>(LogLevel.Warning);
+            _projectRepository = new ProjectRepository(_configuration, IoC.GetInstance<IValidator<Project>>(), _cache, null, Log.CreateLogger<ProjectRepository>());
+            Log.SetLogLevel<ProjectRepository>(LogLevel.Warning);
+
+            _stats = new EventStats(_client, _configuration.Events, Log.CreateLogger<EventStats>());
+            _eventPipeline = new EventPipeline(IoC.GetInstance<IDependencyResolver>(), _organizationRepository, _projectRepository, IoC.GetInstance<IMetricsClient>(), Log);
+
+            RemoveDataAsync().GetAwaiter().GetResult();
+        }
 
         [Fact]
         public async Task CanGetNumbersAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
-            await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
             
             var fields = FieldAggregationProcessor.Process("distinct:stack_id,term:is_first_occurrence:-F", false);
@@ -56,7 +75,6 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             var  values = new decimal?[] { null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
-            await RemoveDataAsync();
             await CreateDataAsync(0, false);
 
             foreach (var value in values)
@@ -91,7 +109,6 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
-            await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
             
             var fields = FieldAggregationProcessor.Process("distinct:stack_id,term:is_first_occurrence:-F", false);
@@ -118,7 +135,6 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 1;
-            await RemoveDataAsync();
             await CreateDataAsync(eventCount);
             
             var fields = FieldAggregationProcessor.Process("distinct:stack_id", false);
@@ -139,7 +155,6 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
-            await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
 
             var fields = FieldAggregationProcessor.Process("term:is_first_occurrence:-F", false);
@@ -160,7 +175,6 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
-            await RemoveDataAsync();
             await CreateDataAsync(eventCount, false);
 
             var fields = FieldAggregationProcessor.Process("distinct:stack_id,term:is_first_occurrence:-F", false);
@@ -183,7 +197,6 @@ namespace Exceptionless.Api.Tests.Stats {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
-            await RemoveDataAsync();
             await CreateDataAsync(eventCount);
 
             var fields = FieldAggregationProcessor.Process("term:is_first_occurrence:-F", false);
@@ -198,7 +211,6 @@ namespace Exceptionless.Api.Tests.Stats {
         
         [Fact]
         public async Task CanGetSessionStatsAsync() {
-            await RemoveDataAsync();
             await CreateDataAsync();
 
             var startDate = DateTime.UtcNow.SubtractHours(1);
@@ -218,8 +230,6 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         private async Task CreateDataAsync(int eventCount = 0, bool multipleProjects = true) {
-            await _client.RefreshAsync();
-
             var orgs = OrganizationData.GenerateSampleOrganizations();
             await _organizationRepository.AddAsync(orgs, true);
 
@@ -232,8 +242,6 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         private async Task CreateEventsAsync(int eventCount, string[] projectIds, decimal? value = -1) {
-            await _client.RefreshAsync();
-
             var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow, value: value);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
                 await _eventPipeline.RunAsync(eventGroup);
@@ -242,8 +250,6 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         private async Task<List<PersistentEvent>> CreateSessionEventsAsync() {
-            await _client.RefreshAsync();
-
             var startDate = DateTimeOffset.UtcNow.SubtractHours(1);
             var events = new List<PersistentEvent> {
                 EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "1"),
@@ -265,17 +271,6 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(TimeSpan.FromMinutes(20).TotalSeconds, (int)(sessionStarts.Sum(e => e.Value.GetValueOrDefault()) / sessionStarts.Count));
 
             return events;
-        }
-
-        private async Task RemoveDataAsync() {
-            await _client.RefreshAsync();
-            await _eventRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-            await _stackRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-            await _projectRepository.RemoveAllAsync();
-            await _organizationRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
         }
     }
 }

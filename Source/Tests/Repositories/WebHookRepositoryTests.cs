@@ -5,18 +5,24 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Tests.Utility;
-using Nest;
+using FluentValidation;
 using Xunit;
+using Xunit.Abstractions;
+using Foundatio.Logging;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public class WebHookRepositoryTests : IDisposable {
-        public readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        private readonly IWebHookRepository _repository = IoC.GetInstance<IWebHookRepository>();
+    public sealed class WebHookRepositoryTests : ElasticRepositoryTestBase {
+        private readonly IWebHookRepository _repository;
+
+        public WebHookRepositoryTests(ITestOutputHelper output) : base(output) {
+            _repository = new WebHookRepository(_configuration, IoC.GetInstance<IValidator<WebHook>>(), _cache, null, Log.CreateLogger<WebHookRepository>());
+            Log.SetLogLevel<WebHookRepository>(LogLevel.Warning);
+
+            RemoveDataAsync().GetAwaiter().GetResult();
+        }
 
         [Fact]
         public async Task GetByOrganizationIdOrProjectIdAsync() {
-            await RemoveDataAsync();
-
             await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 0, 0, 0) });
             await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 0, 0, 0) });
             await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 0, 0, 0) });
@@ -30,23 +36,12 @@ namespace Exceptionless.Api.Tests.Repositories {
         
         [Fact]
         public async Task CanSaveWebHookVersionAsync() {
-            await RemoveDataAsync();
-
             await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(1, 1, 1, 1) });
             await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = new Version(2, 2, 2, 2) });
             await _client.RefreshAsync();
 
             Assert.Equal(new Version(1, 1, 1, 1), (await _repository.GetByProjectIdAsync(TestConstants.ProjectId)).Documents.First().Version);
             Assert.Equal(new Version(2, 2, 2, 2), (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles)).Documents.First().Version);
-        }
-
-        protected async Task RemoveDataAsync() {
-            await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
-        }
-
-        public void Dispose() {
-            //await RemoveDataAsync();
         }
     }
 }

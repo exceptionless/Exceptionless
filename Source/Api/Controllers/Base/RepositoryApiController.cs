@@ -178,27 +178,28 @@ namespace Exceptionless.Api.Controllers {
 
         public virtual async Task<IHttpActionResult> DeleteAsync(string[] ids) {
             var items = await GetModelsAsync(ids, false);
-            if (!items.Any())
+            if (items.Count == 0)
                 return NotFound();
 
             var results = new ModelActionResults();
             results.AddNotFound(ids.Except(items.Select(i => i.Id)));
 
-            foreach (var model in items.ToList()) {
+            var list = items.ToList();
+            foreach (var model in items) {
                 var permission = await CanDeleteAsync(model);
                 if (permission.Allowed)
                     continue;
 
-                items.Remove(model);
+                list.Remove(model);
                 results.Failure.Add(permission);
             }
 
-            if (items.Count == 0)
+            if (list.Count == 0)
                 return results.Failure.Count == 1 ? Permission(results.Failure.First()) : BadRequest(results);
 
             IEnumerable<string> workIds;
             try {
-                workIds = await DeleteModelsAsync(items) ?? new List<string>();
+                workIds = await DeleteModelsAsync(list) ?? new List<string>();
             } catch (Exception ex) {
                 _logger.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
@@ -208,7 +209,7 @@ namespace Exceptionless.Api.Controllers {
                 return WorkInProgress(workIds);
 
             results.Workers.AddRange(workIds);
-            results.Success.AddRange(items.Select(i => i.Id));
+            results.Success.AddRange(list.Select(i => i.Id));
             return BadRequest(results);
         }
 

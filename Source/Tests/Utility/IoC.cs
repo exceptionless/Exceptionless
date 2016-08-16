@@ -27,8 +27,7 @@ namespace Exceptionless.Api.Tests.Utility {
             var logger = loggerFactory.CreateLogger(nameof(IoC));
             var container = AppBuilder.CreateContainer(loggerFactory, logger);
             RegisterServices(container);
-
-            var client = container.GetInstance<IElasticClient>();
+            
             var configuration = container.GetInstance<ExceptionlessElasticConfiguration>();
             configuration.DeleteIndexes();
             configuration.ConfigureIndexes();
