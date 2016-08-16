@@ -65,8 +65,8 @@ namespace Exceptionless.Core {
 
             container.RegisterSingleton<IMetricsClient>(() => new InMemoryMetricsClient(loggerFactory: loggerFactory));
             
-            container.RegisterSingleton<IElasticConfiguration, ExceptionlessElasticConfiguration>();
-            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<IElasticConfiguration>().Client);
+            container.RegisterSingleton<ExceptionlessElasticConfiguration>();
+            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ExceptionlessElasticConfiguration>().Client);
             container.RegisterSingleton<EventIndex, EventIndex>();
             container.RegisterSingleton<OrganizationIndex, OrganizationIndex>();
             container.RegisterSingleton<StackIndex, StackIndex>();

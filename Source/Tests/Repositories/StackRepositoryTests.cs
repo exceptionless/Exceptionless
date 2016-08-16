@@ -2,26 +2,31 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
-using Foundatio.Logging.Xunit;
-using Nest;
+using FluentValidation;
+using Foundatio.Repositories.Models;
 using Xunit;
 using Xunit.Abstractions;
+using Foundatio.Logging;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public class StackRepositoryTests : TestWithLoggingBase {
-        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
-        private readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
+    public sealed class StackRepositoryTests : ElasticRepositoryTestBase {
+        private readonly IStackRepository _repository;
 
-        public StackRepositoryTests(ITestOutputHelper output) : base(output) {}
+        public StackRepositoryTests(ITestOutputHelper output) : base(output) {
+            var eventRepository = new EventRepository(_configuration, IoC.GetInstance<IValidator<PersistentEvent>>(), _cache, null, Log.CreateLogger<EventRepository>());
+            Log.SetLogLevel<EventRepository>(LogLevel.Warning);
+            _repository = new StackRepository(_configuration, eventRepository, IoC.GetInstance<IValidator<Stack>>(), _cache, null, Log.CreateLogger<StackRepository>());
+            Log.SetLogLevel<StackRepository>(LogLevel.Warning);
+
+            RemoveDataAsync().GetAwaiter().GetResult();
+        }
         
         [Fact]
         public async Task CanMarkAsRegressedAsync() {
-            await RemoveDataAsync();
-
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: DateTime.Now.SubtractMonths(1)));
             await _client.RefreshAsync();
 
@@ -41,8 +46,6 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task CanIncrementEventCounterAsync() {
-            await RemoveDataAsync();
-
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
             await _client.RefreshAsync();
 
@@ -77,10 +80,33 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
             Assert.Equal(utcNow.AddDays(1), stack.LastOccurrence);
         }
-        
-        protected async Task RemoveDataAsync() {
-            await _eventRepository.RemoveAllAsync();
+
+        [Fact]
+        public async Task CanFindManyAsync() {
+            Assert.Equal(0, await _repository.CountAsync());
+
+            await _repository.AddAsync(StackData.GenerateSampleStacks());
             await _client.RefreshAsync();
+
+            var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(1).WithLimit(1));
+            Assert.NotNull(stacks);
+            Assert.Equal(3, stacks.Total);
+            Assert.Equal(1, stacks.Documents.Count);
+
+            var stacks2 = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(1));
+            Assert.NotNull(stacks);
+            Assert.Equal(1, stacks.Documents.Count);
+
+            Assert.NotEqual(stacks.Documents.First().Id, stacks2.Documents.First().Id);
+
+            stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId);
+            Assert.NotNull(stacks);
+            Assert.Equal(3, stacks.Documents.Count);
+
+            await _repository.RemoveAsync(stacks.Documents);
+            await _client.RefreshAsync();
+
+            Assert.Equal(0, await _repository.CountAsync());
             await _repository.RemoveAllAsync();
             await _client.RefreshAsync();
         }

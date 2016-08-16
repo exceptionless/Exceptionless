@@ -171,7 +171,7 @@ namespace Exceptionless.App.Controllers.API {
             return webHook;
         }
 
-        protected override async Task<ICollection<WebHook>> GetModelsAsync(string[] ids, bool useCache = true) {
+        protected override async Task<IReadOnlyCollection<WebHook>> GetModelsAsync(string[] ids, bool useCache = true) {
             var results = new List<WebHook>();
             if (ids == null || ids.Length == 0)
                 return results;

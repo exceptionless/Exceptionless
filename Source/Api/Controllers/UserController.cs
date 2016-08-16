@@ -259,7 +259,7 @@ namespace Exceptionless.Api.Controllers {
             return null;
         }
 
-        protected override Task<ICollection<User>> GetModelsAsync(string[] ids, bool useCache = true) {
+        protected override Task<IReadOnlyCollection<User>> GetModelsAsync(string[] ids, bool useCache = true) {
             if (Request.IsGlobalAdmin())
                 return base.GetModelsAsync(ids, useCache);
 

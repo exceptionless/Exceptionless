@@ -21,7 +21,6 @@ using Foundatio.Jobs;
 using Foundatio.Logging.Xunit;
 using Foundatio.Metrics;
 using Foundatio.Queues;
-using Foundatio.Repositories.Models;
 using Microsoft.Owin;
 using Nest;
 using Newtonsoft.Json;
@@ -240,7 +239,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             await _client.RefreshAsync();
         }
 
-        public async Task<CountResult> EventCountAsync() {
+        public async Task<long> EventCountAsync() {
             await _client.RefreshAsync();
             return await _eventRepository.CountAsync();
         }

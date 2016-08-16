@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Extensions {
             project.Configuration.Settings[SettingsDictionary.KnownKeys.UserAgentBotPatterns] = "*bot*,*crawler*,*spider*,*aolbuild*,*teoma*,*yahoo*";
         }
 
-        public static string BuildRetentionFilter(this IList<Project> projects, ICollection<Organization> organizations = null) {
+        public static string BuildRetentionFilter(this IList<Project> projects, IReadOnlyCollection<Organization> organizations = null) {
             StringBuilder builder = new StringBuilder();
             for (int index = 0; index < projects.Count; index++) {
                 if (index > 0)

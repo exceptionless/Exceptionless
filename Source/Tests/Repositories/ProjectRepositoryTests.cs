@@ -1,20 +1,27 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
-using Nest;
+using FluentValidation;
 using Xunit;
+using Xunit.Abstractions;
+using Foundatio.Logging;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public class ProjectRepositoryTests {
-        public readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        public readonly IProjectRepository _repository = IoC.GetInstance<IProjectRepository>();
+    public sealed class ProjectRepositoryTests : ElasticRepositoryTestBase {
+        private readonly IProjectRepository _repository;
+
+        public ProjectRepositoryTests(ITestOutputHelper output) : base(output) {
+            _repository = new ProjectRepository(_configuration, IoC.GetInstance<IValidator<Project>>(), _cache, null, Log.CreateLogger<ProjectRepository>());
+            Log.SetLogLevel<ProjectRepository>(LogLevel.Warning);
+
+            RemoveDataAsync().GetAwaiter().GetResult();
+        }
 
         [Fact]
         public async Task IncrementNextSummaryEndOfDayTicksAsync() {
-            await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
             Assert.Equal(0, await _repository.CountAsync());
 
             var project = await _repository.AddAsync(ProjectData.GenerateSampleProject());

@@ -4,19 +4,25 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
-using Nest;
+using FluentValidation;
 using Xunit;
+using Xunit.Abstractions;
 using Token = Exceptionless.Core.Models.Token;
+using Foundatio.Logging;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public class TokenRepositoryTests : IDisposable {
-        public readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        private readonly ITokenRepository _repository = IoC.GetInstance<ITokenRepository>();
+    public sealed class TokenRepositoryTests : ElasticRepositoryTestBase {
+        private readonly ITokenRepository _repository;
+
+        public TokenRepositoryTests(ITestOutputHelper output) : base(output) {
+            _repository = new TokenRepository(_configuration, IoC.GetInstance<IValidator<Token>>(), _cache, null, Log.CreateLogger<TokenRepository>());
+            Log.SetLogLevel<TokenRepository>(LogLevel.Warning);
+
+            RemoveDataAsync().GetAwaiter().GetResult();
+        }
 
         [Fact]
         public async Task GetAndRemoveByProjectIdOrDefaultProjectIdAsync() {
-            await RemoveDataAsync();
-
             await _repository.AddAsync(new Token { OrganizationId = TestConstants.OrganizationId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
             await _repository.AddAsync(new Token { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
             await _repository.AddAsync(new Token { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
@@ -49,15 +55,6 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(0, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);
             Assert.Equal(0, (await _repository.GetByProjectIdAsync(TestConstants.ProjectId)).Total);
             Assert.Equal(1, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles)).Total);
-        }
-
-        protected async Task RemoveDataAsync() {
-            await _repository.RemoveAllAsync();
-            await _client.RefreshAsync();
-        }
-
-        public async void Dispose() {
-            await RemoveDataAsync();
         }
     }
 }
