@@ -10,6 +10,7 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Stats;
 using Foundatio.Logging;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Queries;
@@ -48,13 +49,16 @@ namespace Exceptionless.Core.Utility {
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _eventIndex.Name)
+                .Type(_eventIndex.Event.Name)
                 .Query(ElasticQueryBuilder.Default.BuildQuery<PersistentEvent>(filter, null))
                 .Aggregations(agg => BuildAggregations(agg, fields))
             ).AnyContext();
+            _logger.Trace(() => response.GetRequest());
 
             if (!response.IsValid) {
-                _logger.Error("Retrieving stats failed: {0}", response.ServerError.Error);
-                throw new ApplicationException("Retrieving stats failed.");
+                string message = $"Retrieving stats failed: {response.GetErrorMessage()}";
+                _logger.Error().Exception(response.ConnectionStatus.OriginalException).Message(message).Property("request", response.GetRequest()).Write();
+                throw new ApplicationException(message, response.ConnectionStatus.OriginalException);
             }
 
             return new NumbersStatsResult {
@@ -87,25 +91,28 @@ namespace Exceptionless.Core.Utility {
             utcEnd = filter.DateRanges.First().GetEndDate();
 
             var response = await _elasticClient.SearchAsync<PersistentEvent>(s => s
-                 .SearchType(SearchType.Count)
-                 .IgnoreUnavailable()
-                 .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _eventIndex.Name)
-                 .Query(ElasticQueryBuilder.Default.BuildQuery<PersistentEvent>(filter, null))
-                 .Aggregations(agg => BuildAggregations(agg
-                     .Terms("terms", t => BuildTermSort(t
+                .SearchType(SearchType.Count)
+                .IgnoreUnavailable()
+                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _eventIndex.Name)
+                .Type(_eventIndex.Event.Name)
+                .Query(ElasticQueryBuilder.Default.BuildQuery<PersistentEvent>(filter, null))
+                .Aggregations(agg => BuildAggregations(agg
+                    .Terms("terms", t => BuildTermSort(t
                         .Field(term)
                         .Size(max)
                         .Aggregations(agg2 => BuildAggregations(agg2
                             .Min("first_occurrence", o => o.Field(ev => ev.Date))
                             .Max("last_occurrence", o => o.Field(ev => ev.Date)), fields)
                         ), fields)
-                     ), fields)
-                 )
-             ).AnyContext();
+                    ), fields)
+                )
+            ).AnyContext();
+            _logger.Trace(() => response.GetRequest());
 
             if (!response.IsValid) {
-                _logger.Error("Retrieving stats failed: {0}", response.ServerError.Error);
-                throw new ApplicationException("Retrieving stats failed.");
+                string message = $"Retrieving stats failed: {response.GetErrorMessage()}";
+                _logger.Error().Exception(response.ConnectionStatus.OriginalException).Message(message).Property("request", response.GetRequest()).Write();
+                throw new ApplicationException(message, response.ConnectionStatus.OriginalException);
             }
 
             var stats = new NumbersTermStatsResult {
@@ -161,6 +168,7 @@ namespace Exceptionless.Core.Utility {
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _eventIndex.Name)
+                .Type(_eventIndex.Event.Name)
                 .Query(ElasticQueryBuilder.Default.BuildQuery<PersistentEvent>(filter, null))
                 .Aggregations(agg => BuildAggregations(agg
                     .DateHistogram("timelime", t => t
@@ -174,10 +182,12 @@ namespace Exceptionless.Core.Utility {
                     .Max("last_occurrence", t => t.Field(ev => ev.Date)), fields)
                 )
             ).AnyContext();
+            _logger.Trace(() => response.GetRequest());
 
             if (!response.IsValid) {
-                _logger.Error("Retrieving stats failed: {0}", response.ServerError.Error);
-                throw new ApplicationException("Retrieving stats failed.");
+                string message = $"Retrieving stats failed: {response.GetErrorMessage()}";
+                _logger.Error().Exception(response.ConnectionStatus.OriginalException).Message(message).Property("request", response.GetRequest()).Write();
+                throw new ApplicationException(message, response.ConnectionStatus.OriginalException);
             }
             
             var stats = new NumbersTimelineStatsResult { Total = response.Total, Numbers = GetNumbers(response.Aggs, fields) };
@@ -300,14 +310,23 @@ namespace Exceptionless.Core.Utility {
 
         private async Task UpdateFilterStartDateRangesAsync(ElasticQuery filter, DateTime utcEnd) {
             // TODO: Cache this to save an extra search request when a date range isn't filtered.
-            var result = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+            var response = await _elasticClient.SearchAsync<PersistentEvent>(s => s
                    .IgnoreUnavailable()
                    .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _eventIndex.Name)
+                   .Type(_eventIndex.Event.Name)
                    .Query(d => ElasticQueryBuilder.Default.BuildQuery<PersistentEvent>(filter, null))
                    .SortAscending(ev => ev.Date)
                    .Take(1)).AnyContext();
 
-            var firstEvent = result.Hits.FirstOrDefault()?.Source;
+            _logger.Trace(() => response.GetRequest());
+
+            if (!response.IsValid) {
+                string message = $"Error getting updated start date: {response.GetErrorMessage()}";
+                _logger.Error().Exception(response.ConnectionStatus.OriginalException).Message(message).Property("request", response.GetRequest()).Write();
+                throw new ApplicationException(message, response.ConnectionStatus.OriginalException);
+            }
+            
+            var firstEvent = response.Hits.FirstOrDefault()?.Source;
             if (firstEvent != null) {
                 filter.DateRanges.Clear();
                 filter.WithDateRange(firstEvent.Date.UtcDateTime, utcEnd, EventIndexType.Fields.Date);

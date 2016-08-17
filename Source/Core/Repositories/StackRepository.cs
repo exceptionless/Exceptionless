@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Remoting.Contexts;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
@@ -65,6 +64,7 @@ namespace Exceptionless.Core.Repositories {
             // Only update the LastOccurrence if the new date is greater then the existing date.
             var result = await _client.UpdateAsync<Stack>(s => s
                 .Id(stackId)
+                .Index(GetIndexById(stackId))
                 .RetryOnConflict(3)
                 .Lang("groovy")
                 .Script(@"if (ctx._source.total_occurrences == 0 || ctx._source.first_occurrence > minOccurrenceDateUtc) {

@@ -6,7 +6,6 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
-using Exceptionless.Plugins.Default;
 using Exceptionless.Insulation.Redis;
 using Foundatio.Caching;
 using Foundatio.Jobs;

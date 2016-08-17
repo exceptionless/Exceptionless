@@ -74,9 +74,9 @@ namespace Exceptionless.Api.Tests.Stats {
         public async Task CanGetEventStatsAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
-            var  values = new decimal?[] { null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
             await CreateDataAsync(0, false);
 
+            var  values = new decimal?[] { null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
             foreach (var value in values)
                 await CreateEventsAsync(1, null, value);
             
