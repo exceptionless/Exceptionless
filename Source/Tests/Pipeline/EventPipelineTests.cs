@@ -18,18 +18,14 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using FluentValidation;
-using Foundatio.Caching;
 using Foundatio.Logging;
-using Foundatio.Logging.Xunit;
 using Foundatio.Metrics;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 using McSherry.SemanticVersioning;
-using Nest;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -59,6 +55,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             _pipeline = new EventPipeline(IoC.GetInstance<IDependencyResolver>(), _organizationRepository, _projectRepository, IoC.GetInstance<IMetricsClient>(), Log);
 
             RemoveDataAsync().GetAwaiter().GetResult();
+            CreateProjectDataAsync().GetAwaiter().GetResult();
         }
 
         [Fact]
@@ -891,7 +888,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             }
         }
 
-        private async Task CreateDataAsync() {
+        private async Task CreateProjectDataAsync() {
             foreach (Organization organization in OrganizationData.GenerateSampleOrganizations()) {
                 if (organization.Id == TestConstants.OrganizationId3)
                     BillingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, UserData.GenerateSampleUser());
