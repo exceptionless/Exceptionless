@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;

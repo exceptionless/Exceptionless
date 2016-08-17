@@ -10,7 +10,6 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Serializer;
 using Foundatio.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Bson;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 

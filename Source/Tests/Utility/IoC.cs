@@ -4,8 +4,6 @@ using Exceptionless.Api.Tests.Mail;
 using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Repositories.Configuration;
-using Nest;
 using SimpleInjector;
 
 namespace Exceptionless.Api.Tests.Utility {
@@ -27,10 +25,6 @@ namespace Exceptionless.Api.Tests.Utility {
             var logger = loggerFactory.CreateLogger(nameof(IoC));
             var container = AppBuilder.CreateContainer(loggerFactory, logger);
             RegisterServices(container);
-            
-            var configuration = container.GetInstance<ExceptionlessElasticConfiguration>();
-            configuration.DeleteIndexes();
-            configuration.ConfigureIndexes();
             
             return container;
         }

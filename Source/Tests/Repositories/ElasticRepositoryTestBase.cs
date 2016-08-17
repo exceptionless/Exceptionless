@@ -11,7 +11,7 @@ using Nest;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public class ElasticRepositoryTestBase : TestWithLoggingBase {
+    public class ElasticRepositoryTestBase : TestWithLoggingBase, IDisposable {
         protected readonly ExceptionlessElasticConfiguration _configuration;
         protected readonly InMemoryCacheClient _cache;
         protected readonly IElasticClient _client;
@@ -30,18 +30,23 @@ namespace Exceptionless.Api.Tests.Repositories {
         
         protected virtual async Task RemoveDataAsync(bool configureIndexes = true) {
             var minimumLevel = Log.MinimumLevel;
-            Log.MinimumLevel = LogLevel.Error;
-
-            await _cache.RemoveAllAsync();
+            Log.MinimumLevel = LogLevel.Trace;
+            
             await _workItemQueue.DeleteQueueAsync();
-
-            _configuration.DeleteIndexes();
+            await _configuration.DeleteIndexesAsync();
+            await _cache.RemoveAllAsync();
             if (configureIndexes)
-                _configuration.ConfigureIndexes();
+                await _configuration.ConfigureIndexesAsync();
             
             await _client.RefreshAsync();
 
             Log.MinimumLevel = minimumLevel;
+        }
+
+        public void Dispose() {
+            _workItemQueue.Dispose();
+            _configuration.Dispose();
+            _cache.Dispose();
         }
     }
 }

@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
-using Geocoding;
 using Geocoding.Google;
 
 namespace Exceptionless.Insulation.Geo {
