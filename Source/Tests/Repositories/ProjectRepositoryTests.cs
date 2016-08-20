@@ -1,23 +1,16 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
-using FluentValidation;
 using Xunit;
 using Xunit.Abstractions;
-using Foundatio.Logging;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public sealed class ProjectRepositoryTests : ElasticRepositoryTestBase {
+    public sealed class ProjectRepositoryTests : ElasticTestBase {
         private readonly IProjectRepository _repository;
 
         public ProjectRepositoryTests(ITestOutputHelper output) : base(output) {
-            _repository = new ProjectRepository(_configuration, IoC.GetInstance<IValidator<Project>>(), _cache, null, Log.CreateLogger<ProjectRepository>());
-            Log.SetLogLevel<ProjectRepository>(LogLevel.Warning);
-
-            RemoveDataAsync().GetAwaiter().GetResult();
+            _repository = GetService<IProjectRepository>();
         }
 
         [Fact]

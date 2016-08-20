@@ -10,19 +10,25 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Tests.Utility;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Plugins {
     [UseReporter(typeof(DiffReporter))]
-    public class WebHookDataTests {
-        private readonly WebHookDataPluginManager _webHookDataPluginManager = IoC.GetInstance<WebHookDataPluginManager>();
-        private readonly FormattingPluginManager _formattingPluginManager = IoC.GetInstance<FormattingPluginManager>();
+    public class WebHookDataTests : TestBase {
+        private readonly WebHookDataPluginManager _webHookData;
+        private readonly FormattingPluginManager _formatter;
+
+        public WebHookDataTests(ITestOutputHelper output) : base(output) {
+            _webHookData = GetService<WebHookDataPluginManager>();
+            _formatter = GetService<FormattingPluginManager>();
+        }
 
         [Theory]
         [MemberData("WebHookData")]
         public async Task CreateFromEventAsync(Version version, bool expectData) {
-            var settings = IoC.GetInstance<JsonSerializerSettings>();
+            var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
-            var data = await _webHookDataPluginManager.CreateFromEventAsync(GetWebHookDataContext(version));
+            var data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
             if (expectData) {
                 string filePath = $@"..\..\Plugins\WebHookData\v{version}.event.expected.json";
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
@@ -34,9 +40,9 @@ namespace Exceptionless.Api.Tests.Plugins {
         [Theory]
         [MemberData("WebHookData")]
         public async Task CanCreateFromStackAsync(Version version, bool expectData) {
-            var settings = IoC.GetInstance<JsonSerializerSettings>();
+            var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
-            var data = await _webHookDataPluginManager.CreateFromStackAsync(GetWebHookDataContext(version));
+            var data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
             if (expectData) {
                 string filePath = $@"..\..\Plugins\WebHookData\v{version}.stack.expected.json";
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
@@ -55,7 +61,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         private WebHookDataContext GetWebHookDataContext(Version version) {
             var json = File.ReadAllText(Path.GetFullPath(@"..\..\ErrorData\1477.expected.json"));
 
-            var settings = IoC.GetInstance<JsonSerializerSettings>();
+            var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
 
             var ev = JsonConvert.DeserializeObject<PersistentEvent>(json, settings);
@@ -65,7 +71,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             ev.Id = TestConstants.EventId;
 
             var context = new WebHookDataContext(version, ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
-            context.Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: _formattingPluginManager.GetStackTitle(ev), signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc");
+            context.Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: _formatter.GetStackTitle(ev), signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc");
             context.Stack.Tags = new TagSet { "Test" };
             context.Stack.FirstOccurrence = context.Stack.LastOccurrence = ev.Date.DateTime;
 

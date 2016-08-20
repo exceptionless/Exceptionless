@@ -6,10 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Exceptionless.Api.Tests.Repositories;
-using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventParser;
@@ -20,9 +17,7 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
-using FluentValidation;
 using Foundatio.Logging;
-using Foundatio.Metrics;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 using McSherry.SemanticVersioning;
@@ -32,39 +27,31 @@ using Xunit.Abstractions;
 using Fields = Exceptionless.Core.Repositories.Configuration.EventIndexType.Fields;
 
 namespace Exceptionless.Api.Tests.Pipeline {
-    public sealed class EventPipelineTests : ElasticRepositoryTestBase {
+    public sealed class EventPipelineTests : ElasticTestBase {
         private readonly EventPipeline _pipeline;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly UserRepository _userRepository;
+        private readonly IUserRepository _userRepository;
 
         public EventPipelineTests(ITestOutputHelper output) : base(output) {
-            _eventRepository = new EventRepository(_configuration, IoC.GetInstance<IValidator<PersistentEvent>>(), _cache, null, Log.CreateLogger<EventRepository>());
-            Log.SetLogLevel<EventRepository>(LogLevel.Warning);
-            _stackRepository = new StackRepository(_configuration, _eventRepository, IoC.GetInstance<IValidator<Stack>>(), _cache, null, Log.CreateLogger<StackRepository>());
-            Log.SetLogLevel<StackRepository>(LogLevel.Warning);
-            _organizationRepository = new OrganizationRepository(_configuration, IoC.GetInstance<IValidator<Organization>>(), _cache, null, Log.CreateLogger<OrganizationRepository>());
-            Log.SetLogLevel<OrganizationRepository>(LogLevel.Warning);
-            _projectRepository = new ProjectRepository(_configuration, IoC.GetInstance<IValidator<Project>>(), _cache, null, Log.CreateLogger<ProjectRepository>());
-            Log.SetLogLevel<ProjectRepository>(LogLevel.Warning);
-            _userRepository = new UserRepository(_configuration, IoC.GetInstance<IValidator<User>>(), _cache, null, Log.CreateLogger<UserRepository>());
-            Log.SetLogLevel<UserRepository>(LogLevel.Warning);
-
-            _pipeline = new EventPipeline(IoC.GetInstance<IDependencyResolver>(), _organizationRepository, _projectRepository, IoC.GetInstance<IMetricsClient>(), Log);
-
-            RemoveDataAsync().GetAwaiter().GetResult();
+            _eventRepository = GetService<IEventRepository>();
+            _stackRepository = GetService<IStackRepository>();
+            _organizationRepository = GetService<IOrganizationRepository>();
+            _projectRepository = GetService<IProjectRepository>();
+            _userRepository = GetService<IUserRepository>();
+            _pipeline = GetService<EventPipeline>();
+            
             CreateProjectDataAsync().GetAwaiter().GetResult();
         }
-
+        
         [Fact]
         public async Task NoFutureEventsAsync() {
             var localTime = DateTime.Now;
             var ev = GenerateEvent(localTime.AddMinutes(10));
 
             await _pipeline.RunAsync(ev);
-            await _client.RefreshAsync();
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
@@ -238,19 +225,19 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(contexts.Any(c => c.HasError));
             Assert.False(contexts.Any(c => c.IsCancelled));
             Assert.True(contexts.Any(c => c.IsProcessed));
-            await _client.RefreshAsync();
             
             events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.Session),
                 GenerateEvent(firstEventDate.AddSeconds(20), "blake@exceptionless.io", Event.KnownTypes.SessionEnd)
             };
 
+            await _client.RefreshAsync();
             contexts = await _pipeline.RunAsync(events);
             Assert.False(contexts.Any(c => c.HasError));
             Assert.Equal(1, contexts.Count(c => c.IsCancelled));
             Assert.Equal(1, contexts.Count(c => c.IsProcessed));
-            await _client.RefreshAsync();
 
+            await _client.RefreshAsync();
             var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
             Assert.Equal(4, results.Total);
             Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -445,19 +432,19 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(contexts.Any(c => c.HasError));
             Assert.False(contexts.Any(c => c.IsCancelled));
             Assert.True(contexts.Any(c => c.IsProcessed));
-            await _client.RefreshAsync();
             
             events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.Session, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(20), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
             };
 
+            await _client.RefreshAsync();
             contexts = await _pipeline.RunAsync(events);
             Assert.False(contexts.Any(c => c.HasError));
             Assert.Equal(1, contexts.Count(c => c.IsCancelled));
             Assert.True(contexts.Any(c => c.IsProcessed));
-            await _client.RefreshAsync();
 
+            await _client.RefreshAsync();
             var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(Fields.Date));
             Assert.Equal(4, results.Total);
             Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -564,7 +551,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag1);
             
             await _pipeline.RunAsync(ev);
-            await _client.RefreshAsync();
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
@@ -576,18 +562,16 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.Now);
             ev.Tags.Add(Tag2);
 
-            await _pipeline.RunAsync(ev);
             await _client.RefreshAsync();
-
+            await _pipeline.RunAsync(ev);
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.Now);
             ev.Tags.Add(Tag2_Lowercase);
 
-            await _pipeline.RunAsync(ev);
             await _client.RefreshAsync();
-
+            await _pipeline.RunAsync(ev);
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
         }
@@ -601,7 +585,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
             
             await _pipeline.RunAsync(contexts);
-            await _client.RefreshAsync();
             Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
             Assert.Equal(1, contexts.Count(c => c.IsNew));
             Assert.Equal(1, contexts.Count(c => !c.IsNew));
@@ -642,7 +625,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
             var context = new EventContext(ev);
             await _pipeline.RunAsync(context);
-            await _client.RefreshAsync();
 
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
@@ -653,15 +635,14 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var stack = await _stackRepository.GetByIdAsync(ev.StackId);
             stack.MarkFixed();
             await _stackRepository.SaveAsync(stack, true);
-            await _client.RefreshAsync();
 
             var contexts = new List<EventContext> {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1))),
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1)))
             };
 
-            await _pipeline.RunAsync(contexts);
             await _client.RefreshAsync();
+            await _pipeline.RunAsync(contexts);
             Assert.Equal(0, contexts.Count(c => c.IsRegression));
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
 
@@ -670,8 +651,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)))
             };
 
-            await _pipeline.RunAsync(contexts);
             await _client.RefreshAsync();
+            await _pipeline.RunAsync(contexts);
             Assert.Equal(1, contexts.Count(c => c.IsRegression));
             Assert.Equal(1, contexts.Count(c => !c.IsRegression));
 
@@ -680,6 +661,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)))
             };
 
+            await _client.RefreshAsync();
             await _pipeline.RunAsync(contexts);
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
         }
@@ -702,7 +684,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var stack = await _stackRepository.GetByIdAsync(ev.StackId);
             stack.MarkFixed(new SemanticVersion(1, 0, 1, new []{ "rc2" }));
             await _stackRepository.SaveAsync(stack, true);
-            await _client.RefreshAsync();
             
             var contexts = new List<EventContext> {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1))),
@@ -710,8 +691,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0-beta2"))
             };
 
-            await _pipeline.RunAsync(contexts);
             await _client.RefreshAsync();
+            await _pipeline.RunAsync(contexts);
             Assert.Equal(3, contexts.Count(c => c.Event.IsFixed));
             Assert.Equal(0, contexts.Count(c => c.IsRegression));
             Assert.Equal(3, contexts.Count(c => !c.IsRegression));
@@ -723,8 +704,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1), semver: "1.0.1-rc3"))
             };
 
-            await _pipeline.RunAsync(contexts);
             await _client.RefreshAsync();
+            await _pipeline.RunAsync(contexts);
             Assert.Equal(0, contexts.Count(c => c.Event.IsFixed));
             Assert.Equal(1, contexts.Count(c => c.IsRegression));
             Assert.Equal(3, contexts.Count(c => !c.IsRegression));
@@ -737,8 +718,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
         [Theory]
         [MemberData("Events")]
         public async Task ProcessEventsAsync(string errorFilePath) {
-            var pipeline = IoC.GetInstance<EventPipeline>();
-            var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
+            var pipeline = GetService<EventPipeline>();
+            var parserPluginManager = GetService<EventParserPluginManager>();
             var events = parserPluginManager.ParseEvents(File.ReadAllText(errorFilePath), 2, "exceptionless/2.0.0.0");
             Assert.NotNull(events);
             Assert.True(events.Count > 0);
@@ -757,8 +738,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task PipelinePerformance() {
-            var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
-            var pipeline = IoC.GetInstance<EventPipeline>();
+            var parserPluginManager = GetService<EventParserPluginManager>();
+            var pipeline = GetService<EventPipeline>();
             var startDate = DateTimeOffset.Now.SubtractHours(1);
             var totalBatches = 0;
             var totalEvents = 0;
@@ -794,7 +775,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         [Fact(Skip = "Used to create performance data from the queue directory")]
         public async Task GeneratePerformanceData() {
             var currentBatchCount = 0;
-            var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
+            var parserPluginManager = GetService<EventParserPluginManager>();
             var dataDirectory = Path.GetFullPath(@"..\..\Pipeline\Data\");
             
             foreach (var file in Directory.GetFiles(dataDirectory))

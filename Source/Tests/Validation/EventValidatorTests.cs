@@ -3,15 +3,16 @@ using System.Linq;
 using Exceptionless.Core.Validation;
 using Exceptionless.Core.Models;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Validation {
-    public class EventValidatorTests {
+    public class EventValidatorTests : TestBase {
         private readonly PersistentEventValidator _validator;
 
-        public EventValidatorTests() {
+        public EventValidatorTests(ITestOutputHelper output) : base(output) {
             _validator = new PersistentEventValidator();
         }
-        
+
         [Theory]
         [InlineData(null, false)]
         [InlineData("", false)]

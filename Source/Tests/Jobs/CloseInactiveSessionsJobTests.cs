@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -12,25 +11,30 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using Foundatio.Logging.Xunit;
-using Nest;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Jobs {
-    public class CloseInactiveSessionsJobTests : TestWithLoggingBase {
-        private readonly CloseInactiveSessionsJob _job = IoC.GetInstance<CloseInactiveSessionsJob>();
-        private readonly ICacheClient _cacheClient = IoC.GetInstance<ICacheClient>();
-        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
-        private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
-        private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
-        private readonly ITokenRepository _tokenRepository = IoC.GetInstance<ITokenRepository>();
-        private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
-        private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
-        private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
-        private readonly EventPipeline _pipeline = IoC.GetInstance<EventPipeline>();
+    public class CloseInactiveSessionsJobTests : ElasticTestBase {
+        private readonly CloseInactiveSessionsJob _job;
+        private readonly ICacheClient _cacheClient;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
+        private readonly IEventRepository _eventRepository;
+        private readonly UserRepository _userRepository;
+        private readonly EventPipeline _pipeline;
 
-        public CloseInactiveSessionsJobTests(ITestOutputHelper output) : base(output) {}
+        public CloseInactiveSessionsJobTests(ITestOutputHelper output) : base(output) {
+            _job = GetService<CloseInactiveSessionsJob>();
+            _cacheClient = GetService<ICacheClient>();
+            _organizationRepository = GetService<IOrganizationRepository>();
+            _projectRepository = GetService<IProjectRepository>();
+            _eventRepository = GetService<IEventRepository>();
+            _userRepository = GetService<UserRepository>();
+            _pipeline = GetService<EventPipeline>();
+
+            CreateDataAsync().GetAwaiter().GetResult();
+        }
 
         [Theory]
         [InlineData(1, true, null, false)]
@@ -39,8 +43,6 @@ namespace Exceptionless.Api.Tests.Jobs {
         [InlineData(1, true, 50, true)]
         [InlineData(60, false, null, false)]
         public async Task CloseInactiveSessions(int defaultInactivePeriodInMinutes, bool willCloseSession, int? sessionHeartbeatUpdatedAgoInSeconds, bool heartbeatClosesSession) {
-            await ResetAsync();
-
             const string userId = "blake@exceptionless.io";
             var ev = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
 
@@ -78,17 +80,6 @@ namespace Exceptionless.Api.Tests.Jobs {
             } else {
                 Assert.Equal(sessionStartDuration, sessionStart.Value);
                 Assert.False(sessionStart.HasSessionEndTime());
-            }
-        }
-
-        private static bool _isReset;
-        private async Task ResetAsync() {
-            if (!_isReset) {
-                _isReset = true;
-                await RemoveDataAsync();
-                await CreateDataAsync();
-            } else {
-                await RemoveEventsAndStacks();
             }
         }
 
@@ -134,28 +125,6 @@ namespace Exceptionless.Api.Tests.Jobs {
                 occurrenceDate = DateTimeOffset.Now;
 
             return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
-        }
-
-        private async Task RemoveDataAsync() {
-            await RemoveEventsAndStacks();
-            await _tokenRepository.RemoveAllAsync();
-            await _cacheClient.RemoveAllAsync();
-            await _userRepository.RemoveAllAsync();
-            await _cacheClient.RemoveAllAsync();
-            await _projectRepository.RemoveAllAsync();
-            await _cacheClient.RemoveAllAsync();
-            await _organizationRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-            await _cacheClient.RemoveAllAsync();
-        }
-
-        private async Task RemoveEventsAndStacks() {
-            await _client.RefreshAsync();
-            await _eventRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-            await _stackRepository.RemoveAllAsync();
-            await _client.RefreshAsync();
-            await _cacheClient.RemoveAllAsync();
         }
     }
 }

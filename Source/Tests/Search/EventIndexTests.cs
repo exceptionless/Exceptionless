@@ -1,26 +1,24 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
-using FluentValidation;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
-using Foundatio.Logging;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public sealed class EventIndexTests : ElasticRepositoryTestBase {
+    public sealed class EventIndexTests : ElasticTestBase {
         private readonly IEventRepository _repository;
 
         public EventIndexTests(ITestOutputHelper output) : base(output) {
-            _repository = new EventRepository(_configuration, IoC.GetInstance<IValidator<PersistentEvent>>(), _cache, null, Log.CreateLogger<EventRepository>());
-            Log.SetLogLevel<EventRepository>(LogLevel.Warning);
-
-            RemoveDataAsync().GetAwaiter().GetResult();
+            SystemClock.UtcNowFunc = () => new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc);
+            _repository = GetService<IEventRepository>();
+            CreateEventsAsync().GetAwaiter().GetResult();
         }
 
         [Theory]
@@ -28,8 +26,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("54dbc16ca0f5c61398427b00", 1)]
         [InlineData("54dbc16ca0f5c61398427b01", 1)]
         public async Task GetByIdAsync(string id, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("id:" + id);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -39,8 +35,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("000000000000000000000000", 0)]
         [InlineData("1ecd0826e447ad1e78877555", 3)]
         public async Task GetByOrganizationIdAsync(string id, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("organization:" + id);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -50,8 +44,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("000000000000000000000000", 0)]
         [InlineData("1ecd0826e447ad1e78877ab2", 3)]
         public async Task GetByProjectIdAsync(string id, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("project:" + id);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -62,8 +54,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("1ecd0826e447a44e78877ab1", 1)]
         [InlineData("2ecd0826e447a44e78877ab2", 2)]
         public async Task GetByStackIdAsync(string id, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("stack:" + id);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -73,8 +63,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("000000000", 0)]
         [InlineData("876554321", 1)]
         public async Task GetByReferenceIdAsync(string id, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("reference:" + id);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -85,8 +73,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("error", 2)]
         [InlineData("custom", 0)]
         public async Task GetByTypeAsync(string type, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("type:" + type);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -96,8 +82,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("_missing_:submission", 2)]
         [InlineData("submission:UnobservedTaskException", 1)]
         public async Task GetBySubmissionMethodAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -106,8 +90,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Theory]
         [InlineData("\"GET /Print\"", 1)]
         public async Task GetBySourceAsync(string source, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("source:" + source);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -116,8 +98,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Theory]
         [InlineData("Error", 1)]
         public async Task GetByLevelAsync(string level, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("level:" + level);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -128,8 +108,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("\"2014-12-09T17:28:44.966+00:00\"", 1)]
         [InlineData("\"2015-02-11T20:54:04.3457274+00:00\"", 1)]
         public async Task GetByDateAsync(string date, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("date:" + date);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -139,19 +117,15 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData(false, 2)]
         [InlineData(true, 1)]
         public async Task GetByFirstAsync(bool first, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("first:" + first.ToString().ToLower());
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
 
         [Theory]
-        [InlineData("\"Invalid hash. Parameter name: hash\"", 1)] //see what the actual def is for the standard anaylizer
+        [InlineData("\"Invalid hash. Parameter name: hash\"", 1)] //see what the actual def is for the standard analyzer
         [InlineData("message:\"Invalid hash. Parameter name: hash\"", 1)]
         public async Task GetByMessageAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -164,8 +138,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("tag:Niemyjski", 1)]
         [InlineData("tag:\"Blake Niemyjski\"", 1)]
         public async Task GetByTagAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -178,8 +150,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("value:>0", 1)]
         [InlineData("value:(>0 AND <=10)", 1)]
         public async Task GetByValueAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -189,8 +159,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData(false, 2)]
         [InlineData(true, 1)]
         public async Task GetByFixedAsync(bool @fixed, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("fixed:" + @fixed.ToString().ToLower());
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -200,8 +168,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData(false, 2)]
         [InlineData(true, 1)]
         public async Task GetByHiddenAsync(bool hidden, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("hidden:" + hidden.ToString().ToLower());
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -224,8 +190,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         //[InlineData("<5", 3)]
         //[InlineData("(>1 AND <4.0)", 2)]
         public async Task GetByVersionAsync(string version, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("version:" + version);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -236,8 +200,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("machine:SERVER-01", 1)]
         [InlineData("machine:\"SERVER-01\"", 1)]
         public async Task GetByMachineAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -249,8 +211,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("10.0.0.208", 1)]
         [InlineData("ip:10.0.0.208", 1)]
         public async Task GetByIPAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -260,8 +220,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("x86", 0)]
         [InlineData("x64", 1)]
         public async Task GetByArchitectureAsync(string architecture, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("architecture:" + architecture);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -273,8 +231,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("5.0", 2)]
         [InlineData("Macintosh", 1)]
         public async Task GetByUserAgentAsync(string userAgent, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("useragent:" + userAgent);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -284,8 +240,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("\"/user.aspx\"", 1)]
         [InlineData("path:\"/user.aspx\"", 1)]
         public async Task GetByPathAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -296,8 +250,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("browser:\"Chrome Mobile\"", 1)]
         [InlineData("browser.raw:\"Chrome Mobile\"", 1)]
         public async Task GetByBrowserAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -308,8 +260,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("browser.version:26.0.1410", 1)]
         [InlineData("browser.version.raw:26.0.1410", 1)]
         public async Task GetByBrowserVersionAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -319,8 +269,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("39", 1)]
         [InlineData("26", 1)]
         public async Task GetByBrowserMajorVersionAsync(string browserMajorVersion, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("browser.major:" + browserMajorVersion);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -331,8 +279,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("device:\"Huawei U8686\"", 1)]
         [InlineData("device.raw:\"Huawei U8686\"", 1)]
         public async Task GetByDeviceAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -346,8 +292,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("os:\"Microsoft Windows Server\"", 1)]
         [InlineData("os:\"Microsoft Windows Server 2012 R2 Standard\"", 1)]
         public async Task GetByOSAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -359,8 +303,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("os.version.raw:10.10", 0)]
         [InlineData("os.version.raw:10.10.1", 1)]
         public async Task GetByOSVersionAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -370,8 +312,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("4", 1)]
         [InlineData("10", 1)]
         public async Task GetByOSMajorVersionAsync(string osMajorVersion, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync("os.major:" + osMajorVersion);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -382,8 +322,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("-bot:true", 2)]
         [InlineData("bot:true", 1)]
         public async Task GetByBotAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -395,8 +333,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("error.code:500", 1)]
         [InlineData("error.code:5000", 0)]
         public async Task GetByErrorCodeAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -407,8 +343,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("error.message:\"Invalid hash. Parameter name: hash\"", 1)]
         [InlineData("error.message:\"A Task's exception(s)\"", 1)]
         public async Task GetByErrorMessageAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -418,8 +352,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("AssociateWithCurrentThread", 1)]
         [InlineData("error.targetmethod:AssociateWithCurrentThread", 1)]
         public async Task GetByErrorTargetMethodAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -430,8 +362,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("error.targettype:Exception", 1)]
         [InlineData("error.targettype.raw:System.Exception", 1)]
         public async Task GetByErrorTargetTypeAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -444,8 +374,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("error.type:System.NullReferenceException", 1)]
         [InlineData("error.type:System.Exception", 1)]
         public async Task GetByErrorTypeAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -459,8 +387,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("user:exceptionless.com", 1)]
         [InlineData("example", 1)]
         public async Task GetByUserAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -470,8 +396,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("Blake", 2)] // Matches due to user name and partial tag
         [InlineData("user.name:Blake", 1)]
         public async Task GetByUserNameAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -482,8 +406,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("user.email:test@exceptionless.com", 1)]
         [InlineData("user.email:exceptionless.com", 1)]
         public async Task GetByUserEmailAddressAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -493,8 +415,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("\"my custom description\"", 1)]
         [InlineData("user.description:\"my custom description\"", 1)]
         public async Task GetByUserDescriptionAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -507,15 +427,13 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("data.some-date:>2015-01-01", 1)]
         [InlineData("data.some-date:<2015-01-01", 0)]
         public async Task GetByCustomDataAsync(string filter, int count) {
-            await CreateEventsAsync();
-
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
         
         private async Task CreateEventsAsync() {
-            var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
+            var parserPluginManager = GetService<EventParserPluginManager>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
                     continue;
@@ -536,6 +454,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             var result = QueryProcessor.Process(filter);
             filter = result.ExpandedQuery;
 
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
             return _repository.GetByFilterAsync(null, filter, new SortingOptions(), null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }
