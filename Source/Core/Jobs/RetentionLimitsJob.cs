@@ -39,7 +39,9 @@ namespace Exceptionless.Core.Jobs {
                     await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
                 }
 
-                await results.NextPageAsync().AnyContext();
+                if (!await results.NextPageAsync().AnyContext())
+                    break;
+
                 if (results.Documents.Count > 0)
                     await context.RenewLockAsync().AnyContext();
             }

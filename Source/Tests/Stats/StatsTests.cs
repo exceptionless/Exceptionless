@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Api.Tests.Repositories;
-using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
@@ -13,36 +10,26 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
-using FluentValidation;
-using Foundatio.Logging;
-using Foundatio.Metrics;
 using Foundatio.Repositories.Models;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Stats {
-    public sealed class StatsTests : ElasticRepositoryTestBase {
+    public sealed class StatsTests : ElasticTestBase {
         private readonly EventStats _stats;
-        private readonly EventPipeline _eventPipeline;
+        private readonly EventPipeline _pipeline;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
 
         public StatsTests(ITestOutputHelper output) : base(output) {
-            _eventRepository = new EventRepository(_configuration, IoC.GetInstance<IValidator<PersistentEvent>>(), _cache, null, Log.CreateLogger<EventRepository>());
-            Log.SetLogLevel<EventRepository>(LogLevel.Warning);
-            _stackRepository = new StackRepository(_configuration, _eventRepository, IoC.GetInstance<IValidator<Stack>>(), _cache, null, Log.CreateLogger<StackRepository>());
-            Log.SetLogLevel<StackRepository>(LogLevel.Warning);
-            _organizationRepository = new OrganizationRepository(_configuration, IoC.GetInstance<IValidator<Organization>>(), _cache, null, Log.CreateLogger<OrganizationRepository>());
-            Log.SetLogLevel<OrganizationRepository>(LogLevel.Warning);
-            _projectRepository = new ProjectRepository(_configuration, IoC.GetInstance<IValidator<Project>>(), _cache, null, Log.CreateLogger<ProjectRepository>());
-            Log.SetLogLevel<ProjectRepository>(LogLevel.Warning);
-
-            _stats = new EventStats(_client, _configuration.Events, Log.CreateLogger<EventStats>());
-            _eventPipeline = new EventPipeline(IoC.GetInstance<IDependencyResolver>(), _organizationRepository, _projectRepository, IoC.GetInstance<IMetricsClient>(), Log);
-
-            RemoveDataAsync().GetAwaiter().GetResult();
+            _stats = GetService<EventStats>();
+            _pipeline = GetService<EventPipeline>();
+            _eventRepository = GetService<IEventRepository>();
+            _stackRepository = GetService<IStackRepository>();
+            _organizationRepository = GetService<IOrganizationRepository>();
+            _projectRepository = GetService<IProjectRepository>();
         }
 
         [Fact]
@@ -244,7 +231,7 @@ namespace Exceptionless.Api.Tests.Stats {
         private async Task CreateEventsAsync(int eventCount, string[] projectIds, decimal? value = -1) {
             var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow, value: value);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
-                await _eventPipeline.RunAsync(eventGroup);
+                await _pipeline.RunAsync(eventGroup);
 
             await _client.RefreshAsync();
         }
@@ -260,9 +247,9 @@ namespace Exceptionless.Api.Tests.Stats {
                 EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(50), userIdentity: "3")
             };
             
-            await _eventPipeline.RunAsync(events);
+            await _pipeline.RunAsync(events);
+
             await _client.RefreshAsync();
-            
             var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Fields.Date));
             Assert.Equal(6, results.Total);
             Assert.Equal(3, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());

@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Tests.Utility;
-using FluentValidation;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
@@ -18,17 +16,13 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public sealed class EventRepositoryTests : ElasticRepositoryTestBase {
+    public sealed class EventRepositoryTests : ElasticTestBase {
         private readonly IEventRepository _repository;
         private readonly IStackRepository _stackRepository;
 
         public EventRepositoryTests(ITestOutputHelper output) : base(output) {
-            _repository = new EventRepository(_configuration, IoC.GetInstance<IValidator<PersistentEvent>>(), _cache, null, Log.CreateLogger<EventRepository>());
-            Log.SetLogLevel<EventRepository>(LogLevel.Warning);
-            _stackRepository = new StackRepository(_configuration, _repository, IoC.GetInstance<IValidator<Stack>>(), _cache, null, Log.CreateLogger<StackRepository>());
-            Log.SetLogLevel<StackRepository>(LogLevel.Warning);
-
-            RemoveDataAsync().GetAwaiter().GetResult();
+            _repository = GetService<IEventRepository>();
+            _stackRepository = GetService<IStackRepository>();
         }
 
         [Fact]

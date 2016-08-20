@@ -9,11 +9,16 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Plugins {
     [UseReporter(typeof(DiffReporter))]
-    public class EventParserTests {
-        private readonly EventParserPluginManager _eventParserPluginManager = IoC.GetInstance<EventParserPluginManager>();
+    public class EventParserTests : TestBase {
+        private readonly EventParserPluginManager _parser;
+
+        public EventParserTests(ITestOutputHelper output) : base(output) {
+            _parser = GetService<EventParserPluginManager>();
+        }
 
         public static IEnumerable<object[]> EventData => new[] {
             new object[] { " \t", 0, null, Event.KnownTypes.Log }, 
@@ -32,7 +37,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         [Theory]
         [MemberData("EventData")]
         public void ParseEvents(string input, int expectedEvents, string[] expectedMessage, string expectedType) {
-            var events = _eventParserPluginManager.ParseEvents(input, 2, "exceptionless/2.0.0.0");
+            var events = _parser.ParseEvents(input, 2, "exceptionless/2.0.0.0");
             Assert.Equal(expectedEvents, events.Count);
             for (int index = 0; index < events.Count; index++) {
                 var ev = events[index];
@@ -47,10 +52,10 @@ namespace Exceptionless.Api.Tests.Plugins {
         public void VerifyEventParserSerialization(string eventsFilePath) {
             var json = File.ReadAllText(eventsFilePath);
 
-            var events = _eventParserPluginManager.ParseEvents(json, 2, "exceptionless/2.0.0.0");
+            var events = _parser.ParseEvents(json, 2, "exceptionless/2.0.0.0");
             Assert.Equal(1, events.Count);
 
-            ApprovalsUtility.VerifyFile(eventsFilePath, events.First().ToJson(Formatting.Indented, IoC.GetInstance<JsonSerializerSettings>()));
+            ApprovalsUtility.VerifyFile(eventsFilePath, events.First().ToJson(Formatting.Indented, GetService<JsonSerializerSettings>()));
         }
 
         [Theory]
@@ -58,7 +63,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public void CanDeserializeEvents(string eventsFilePath) {
             var json = File.ReadAllText(eventsFilePath);
 
-            var ev = json.FromJson<PersistentEvent>(IoC.GetInstance<JsonSerializerSettings>());
+            var ev = json.FromJson<PersistentEvent>(GetService<JsonSerializerSettings>());
             Assert.NotNull(ev);
         }
 

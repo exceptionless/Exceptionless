@@ -4,14 +4,13 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Serializer;
-using Foundatio.Logging.Xunit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests {
-    public class SerializerTests : TestWithLoggingBase {
+    public class SerializerTests : TestBase {
         public SerializerTests(ITestOutputHelper output) : base(output) {}
 
         [Fact]
