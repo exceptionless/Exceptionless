@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         private const string VERSION_PAD3_TOKEN_FILTER = "version_pad3";
         const string VERSION_PAD4_TOKEN_FILTER = "version_pad4";
 
-        public EventIndexType(EventIndex index) : base(index, "event", document => document.Date.UtcDateTime) {}
+        public EventIndexType(EventIndex index) : base(index, "events", document => document.Date.UtcDateTime) {}
         
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
             return idx.Analysis(BuildAnalysis)
