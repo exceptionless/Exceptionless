@@ -109,7 +109,7 @@ namespace Exceptionless.Core.Pipeline {
                 ctx.Event.IsFirstOccurrence = ctx.IsNew;
 
                 // sync the fixed and hidden flags to the error occurrence
-                ctx.Event.IsFixed = ctx.Stack.DateFixed.HasValue;
+                ctx.Event.IsFixed = ctx.Stack.DateFixed.HasValue && !ctx.Stack.IsRegressed;
                 ctx.Event.IsHidden = ctx.Stack.IsHidden;
             }
 
