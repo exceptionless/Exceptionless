@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public WebHookIndexType WebHook { get; }
     } 
 
-    public class ApplicationIndexType : IndexType<Application> {
+    public class ApplicationIndexType : IndexTypeBase<Application> {
         public ApplicationIndexType(OrganizationIndex index) : base(index, "application") { }
 
         public override PutMappingDescriptor<Application> BuildMapping(PutMappingDescriptor<Application> map) {
@@ -54,7 +54,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
     }
     
-    public class OrganizationIndexType : IndexType<Organization> {
+    public class OrganizationIndexType : IndexTypeBase<Organization> {
         public OrganizationIndexType(OrganizationIndex index) : base(index, "organization") { }
 
         public override PutMappingDescriptor<Organization> BuildMapping(PutMappingDescriptor<Organization> map) {
@@ -137,7 +137,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
     }
 
-    public class ProjectIndexType : IndexType<Project> {
+    public class ProjectIndexType : IndexTypeBase<Project> {
         public ProjectIndexType(OrganizationIndex index) : base(index, "project") { }
 
         public override PutMappingDescriptor<Project> BuildMapping(PutMappingDescriptor<Project> map) {
@@ -169,7 +169,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
     }
 
-    public class TokenIndexType : IndexType<Models.Token> {
+    public class TokenIndexType : IndexTypeBase<Models.Token> {
         public TokenIndexType(OrganizationIndex index) : base(index, "token") { }
 
         public override PutMappingDescriptor<Models.Token> BuildMapping(PutMappingDescriptor<Models.Token> map) {
@@ -208,7 +208,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
     }
 
-    public class UserIndexType : IndexType<User> {
+    public class UserIndexType : IndexTypeBase<User> {
         private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
 
         public UserIndexType(OrganizationIndex index) : base(index, "user") { }
@@ -261,7 +261,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
     }
 
-    public class WebHookIndexType : IndexType<WebHook> {
+    public class WebHookIndexType : IndexTypeBase<WebHook> {
         public WebHookIndexType(OrganizationIndex index) : base(index, "webhook") { }
 
         public override PutMappingDescriptor<WebHook> BuildMapping(PutMappingDescriptor<WebHook> map) {

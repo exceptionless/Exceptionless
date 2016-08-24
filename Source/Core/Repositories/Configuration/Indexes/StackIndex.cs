@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public StackIndexType Stack { get; }
     }
 
-    public class StackIndexType : IndexType<Stack> {
+    public class StackIndexType : IndexTypeBase<Stack> {
         public StackIndexType(StackIndex index) : base(index, "stack") {}
 
         public override PutMappingDescriptor<Stack> BuildMapping(PutMappingDescriptor<Stack> map) {

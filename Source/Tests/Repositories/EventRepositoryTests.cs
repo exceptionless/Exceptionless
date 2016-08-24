@@ -186,10 +186,9 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Fact]
         public async Task CanMarkAsFixedAsync() {
             const int NUMBER_OF_EVENTS_TO_CREATE = 10000;
-            
             await _repository.AddAsync(EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2).ToList(), sendNotification: false);
-            await _client.RefreshAsync();
 
+            await _client.RefreshAsync();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, await _repository.CountAsync());
 
             var sw = Stopwatch.StartNew();
