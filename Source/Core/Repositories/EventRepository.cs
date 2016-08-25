@@ -26,13 +26,7 @@ namespace Exceptionless.Core.Repositories {
 
             DisableCache();
             BatchNotifications = true;
-        }
-
-        protected override object GetQueryOptions() {
-            return new QueryOptions(typeof(PersistentEvent)) {
-                AllowedAggregationFields = ElasticType.AllowedAggregationFields.ToArray(),
-                DefaultExcludes = new[] { "idx" }
-            };
+            DefaultExcludes.Add("idx");
         }
         
         // TODO: We need to index and search by the created time.
