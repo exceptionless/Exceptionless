@@ -225,10 +225,15 @@ namespace Exceptionless.Api.Controllers {
 
             var coupon = stripeInvoice.StripeDiscount?.StripeCoupon;
             if (coupon != null) {
-                double discountAmount = coupon.AmountOff ?? stripeInvoice.Subtotal * (coupon.PercentOff.GetValueOrDefault() / 100.0);
-                string description = $"{coupon.Id} {(coupon.PercentOff.HasValue ? $"({coupon.PercentOff.Value}% off)" : $"({(coupon.AmountOff.GetValueOrDefault() / 100.0).ToString("C")} off)")}";
-
-                invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
+                if (coupon.AmountOff.HasValue) {
+                    double discountAmount = coupon.AmountOff.GetValueOrDefault() / 100.0;
+                    string description = $"{coupon.Id} ({discountAmount.ToString("C")} off)";
+                    invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
+                } else {
+                    double discountAmount = (stripeInvoice.Subtotal / 100.0) * (coupon.PercentOff.GetValueOrDefault() / 100.0);
+                    string description = $"{coupon.Id} ({coupon.PercentOff.GetValueOrDefault()}% off)";
+                    invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
+                }
             }
 
             return Ok(invoice);
