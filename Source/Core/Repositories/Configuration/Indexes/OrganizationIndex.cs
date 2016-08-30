@@ -236,16 +236,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
         private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
 
         public UserIndexType(OrganizationIndex index) : base(index, "user") { }
-
-        public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
-            return base.Configure(idx)
-                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
-        }
-
+        
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
             var keywordLowercaseAnalyzer = new CustomAnalyzer { Filter = new List<string> { "lowercase" }, Tokenizer = "keyword" };
-            return idx.Analysis(descriptor => descriptor.Analyzers(bases => bases.Add(KEYWORD_LOWERCASE_ANALYZER, keywordLowercaseAnalyzer)))
+            return idx
+                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)
+                .Analysis(descriptor => descriptor.Analyzers(bases => bases.Add(KEYWORD_LOWERCASE_ANALYZER, keywordLowercaseAnalyzer)))
                 .AddMapping<User>(BuildMapping);
         }
 
