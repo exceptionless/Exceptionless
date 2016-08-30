@@ -29,7 +29,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public CreateIndexDescriptor CreateIndex(CreateIndexDescriptor idx) {
             var keywordLowercaseAnalyzer = new CustomAnalyzer { Filter = new List<string> { "lowercase" }, Tokenizer = "keyword" };
-            return idx.Analysis(descriptor => descriptor.Analyzers(bases => bases.Add(KEYWORD_LOWERCASE, keywordLowercaseAnalyzer)))
+            return idx.NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                      .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)
+                      .Analysis(descriptor => descriptor.Analyzers(bases => bases.Add(KEYWORD_LOWERCASE, keywordLowercaseAnalyzer)))
                       .AddMapping<Application>(GetApplicationMap)
                       .AddMapping<Organization>(GetOrganizationMap)
                       .AddMapping<Project>(GetProjectMap)
