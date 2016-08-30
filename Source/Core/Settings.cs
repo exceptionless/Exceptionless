@@ -54,6 +54,10 @@ namespace Exceptionless.Core {
 
         public string ElasticSearchConnectionString { get; private set; }
 
+        public int ElasticSearchNumberOfShards { get; private set; }
+
+        public int ElasticSearchNumberOfReplicas { get; private set; }
+
         public bool EnableElasticsearchTracing { get; private set; }
 
 		public string LdapConnectionString { get; private set; }
@@ -170,6 +174,8 @@ namespace Exceptionless.Core {
             EnableAzureStorage = GetBool(nameof(EnableAzureStorage), !String.IsNullOrEmpty(AzureStorageConnectionString));
 
             ElasticSearchConnectionString = GetConnectionString(nameof(ElasticSearchConnectionString));
+            ElasticSearchNumberOfShards = GetInt(nameof(ElasticSearchNumberOfShards), 1);
+            ElasticSearchNumberOfReplicas = GetInt(nameof(ElasticSearchNumberOfReplicas), 0);
             EnableElasticsearchTracing = GetBool(nameof(EnableElasticsearchTracing));
 
             RedisConnectionString = GetConnectionString(nameof(RedisConnectionString));

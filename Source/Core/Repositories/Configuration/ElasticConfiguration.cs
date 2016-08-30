@@ -15,6 +15,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public ElasticConfiguration(IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, ILogger<ElasticConfiguration> logger) : base(workItemQueue, cacheClient) {
             _logger = logger;
+            _logger.Info().Message($"All new indexes will be created with {Settings.Current.ElasticSearchNumberOfShards} Shards and {Settings.Current.ElasticSearchNumberOfReplicas} Replicas");
         }
 
         protected override ConnectionSettings GetConnectionSettings(IEnumerable<Uri> serverUris, IEnumerable<IElasticIndex> indexes) {
