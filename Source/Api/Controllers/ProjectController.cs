@@ -17,6 +17,7 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
@@ -541,8 +542,9 @@ namespace Exceptionless.Api.Controllers {
             };
 
             var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true)).Documents;
-            var filter = viewProjects.Select(p => new Project { Id = p.Id, OrganizationId = p.OrganizationId }).ToList().BuildRetentionFilter(organizations);
-            var ntsr = await _stats.GetNumbersTermsStatsAsync("project_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, filter, max: viewProjects.Count);
+            var projects = viewProjects.Select(p => new Project { Id = p.Id, OrganizationId = p.OrganizationId }).ToList();
+            var sf = new ExceptionlessSystemFilterQuery(projects, organizations);
+            var ntsr = await _stats.GetNumbersTermsStatsAsync("project_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, sf, max: viewProjects.Count);
             foreach (var project in viewProjects) {
                 var term = ntsr.Terms.FirstOrDefault(t => t.Term == project.Id);
                 project.EventCount = term?.Total ?? 0;

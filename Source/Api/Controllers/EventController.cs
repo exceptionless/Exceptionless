@@ -21,6 +21,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
@@ -87,24 +88,22 @@ namespace Exceptionless.Api.Controllers {
             if (model == null)
                 return NotFound();
 
-            var organization = await _organizationRepository.GetByIdAsync(model.OrganizationId, true);
+            var organization = await GetOrganizationAsync(model.OrganizationId);
             if (organization == null)
                 return NotFound();
-
-            if (organization.RetentionDays > 0 && model.Date.UtcDateTime < DateTime.UtcNow.SubtractDays(organization.RetentionDays))
+            
+            if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < DateTime.UtcNow.SubtractDays(organization.RetentionDays))
                 return PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
             if (!String.IsNullOrEmpty(filter))
-                filter = filter.ReplaceFirst("stack:current", "stack:" + model.StackId);
+                filter = filter.ReplaceFirst("stack:current", $"stack:{model.StackId}");
 
             var pr = QueryProcessor.Process(filter);
             if (!pr.IsValid)
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
-            
-            var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
-            var sf = BuildSystemFilter(organizations, filter, pr.UsesPremiumFeatures);
-            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
 
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
             var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, pr.ExpandedQuery, ti.UtcRange.Start, ti.UtcRange.End);
             return OkWithLinks(model, GetEntityResourceLink(result.Previous, "previous"), GetEntityResourceLink(result.Next, "next"), GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
@@ -119,38 +118,44 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public Task<IHttpActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return GetInternalAsync(null, filter, sort, time, offset, mode, page, limit);
+        public async Task<IHttpActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organizations = (await GetAssociatedOrganizationsAsync(_organizationRepository)).Where(o => !o.IsSuspended).ToList();
+            if (organizations.Count == 0)
+                return Ok(Enumerable.Empty<PersistentEvent>());
+
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
-        private async Task<IHttpActionResult> GetInternalAsync(string systemFilter = null, string userFilter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, bool usesPremiumFeatures = false) {
+        private async Task<IHttpActionResult> GetInternalAsync(IExceptionlessSystemFilterQuery sf, TimeInfo ti, string userFilter = null, string sort = null, string mode = null, int page = 1, int limit = 10, bool usesPremiumFeatures = false) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page + 1, limit);
             if (skip > MAXIMUM_SKIP)
-                return Ok(new object[0]);
+                return Ok(Enumerable.Empty<PersistentEvent>());
 
             var pr = QueryProcessor.Process(userFilter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
             
-            var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
-            systemFilter = String.Join(" ", new[] { systemFilter, BuildSystemFilter(organizations, userFilter, pr.UsesPremiumFeatures || usesPremiumFeatures) }.Where(f => !String.IsNullOrWhiteSpace(f)));
-            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
+            sf.IsGlobalAdmin = Request.IsGlobalAdmin();
 
             var sortBy = GetSort(sort);
             var options = new PagingOptions { Page = page, Limit = limit };
 
             IFindResults<PersistentEvent> events;
             try {
-                events = await _repository.GetByFilterAsync(systemFilter, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
+                events = await _repository.GetByFilterAsync(sf, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your search filter.")
-                    .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
+                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = userFilter, Sort = sort, Time = ti, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
                     .Property("User", ExceptionlessUser)
@@ -185,15 +190,23 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
         /// <response code="404">The organization could not be found.</response>
+        /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
                 return NotFound();
 
-            return await GetInternalAsync(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit);
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
+            return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
         /// <summary>
@@ -207,7 +220,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
         /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
         [ResponseType(typeof(List<PersistentEvent>))]
@@ -216,7 +231,16 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            return await GetInternalAsync($"project:{projectId}", filter, sort, time, offset, mode, page, limit);
+            var organization = await GetOrganizationAsync(project.OrganizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
         /// <summary>
@@ -230,19 +254,27 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
         /// <response code="404">The stack could not be found.</response>
+        /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByStackAsync(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(stackId))
+            var stack = await GetStackAsync(stackId);
+            if (stack == null)
+                return NotFound();
+            
+            var organization = await GetOrganizationAsync(stack.OrganizationId);
+            if (organization == null)
                 return NotFound();
 
-            var stack = await _stackRepository.GetByIdAsync(stackId, true);
-            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
-                return NotFound();
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            return await GetInternalAsync(String.Concat("stack:", stackId), filter, sort, time, offset, mode, page, limit);
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(stack, organization);
+            return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
         /// <summary>
@@ -253,15 +285,18 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-        /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
+        /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route("by-ref/{referenceId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(referenceId))
-                return NotFound();
+            var organizations = (await GetAssociatedOrganizationsAsync(_organizationRepository)).Where(o => !o.IsSuspended).ToList();
+            if (organizations.Count == 0)
+                return Ok(Enumerable.Empty<PersistentEvent>());
 
-            return await GetInternalAsync(null, String.Concat("reference:", referenceId), null, null, offset, mode, page, limit);
+            var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit);
         }
 
         /// <summary>
@@ -273,19 +308,27 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-        /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string projectId, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(referenceId))
-                return NotFound();
-
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
+            
+            var organization = await GetOrganizationAsync(project.OrganizationId);
+            if (organization == null)
+                return NotFound();
 
-            return await GetInternalAsync($"project:{projectId}", String.Concat("reference:", referenceId), null, null, offset, mode, page, limit);
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null,  mode, page, limit);
         }
 
         /// <summary>
@@ -299,12 +342,18 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-        /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
+        /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route("sessions/{sessionId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return await GetInternalAsync(null, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, time, offset, mode, page, limit, true);
+            var organizations = (await GetAssociatedOrganizationsAsync(_organizationRepository)).Where(o => !o.IsSuspended).ToList();
+            if (organizations.Count == 0)
+                return Ok(Enumerable.Empty<PersistentEvent>());
+
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, true);
         }
 
         /// <summary>
@@ -319,7 +368,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-        /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
@@ -327,8 +378,17 @@ namespace Exceptionless.Api.Controllers {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
+            
+            var organization = await GetOrganizationAsync(project.OrganizationId);
+            if (organization == null)
+                return NotFound();
 
-            return await GetInternalAsync($"project:{projectId}", $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, time, offset, mode, page, limit, true);
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, true);
         }
 
         /// <summary>
@@ -341,12 +401,18 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-        /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
+        /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route("sessions")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            return await GetInternalAsync(null, $"type:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit, true);
+            var organizations = (await GetAssociatedOrganizationsAsync(_organizationRepository)).Where(o => !o.IsSuspended).ToList();
+            if (organizations.Count == 0)
+                return Ok(Enumerable.Empty<PersistentEvent>());
+
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }
 
         /// <summary>
@@ -360,7 +426,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-        /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions")]
         [ResponseType(typeof(List<PersistentEvent>))]
@@ -368,8 +436,17 @@ namespace Exceptionless.Api.Controllers {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
-            
-            return await GetInternalAsync($"project:{projectId}", $"type:{Event.KnownTypes.Session} {filter}", sort, time, offset, mode, page, limit, true);
+
+            var organization = await GetOrganizationAsync(project.OrganizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }
         
         /// <summary>
@@ -444,7 +521,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         /// <summary>
-        /// Suvbmit heartbeat
+        /// Submit heartbeat
         /// </summary>
         /// <param name="projectId">The identifier of the project.</param>
         /// <param name="version">The api version that should be used.</param>
@@ -473,8 +550,8 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            var org = await _organizationRepository.GetByIdAsync(project.OrganizationId, true);
-            if (org == null || org.IsSuspended)
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true);
+            if (organization == null || organization.IsSuspended)
                 return Ok();
 
             await _cacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}", DateTime.UtcNow, TimeSpan.FromHours(2));
@@ -739,6 +816,13 @@ namespace Exceptionless.Api.Controllers {
             return base.DeleteAsync(ids.FromDelimitedString());
         }
 
+        private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true) {
+            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
+                return null;
+            
+            return _organizationRepository.GetByIdAsync(organizationId, useCache);
+        }
+
         private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
             if (String.IsNullOrEmpty(projectId))
                 return null;
@@ -748,6 +832,17 @@ namespace Exceptionless.Api.Controllers {
                 return null;
 
             return project;
+        }
+        
+        private async Task<Stack> GetStackAsync(string stackId, bool useCache = true) {
+            if (String.IsNullOrEmpty(stackId))
+                return null;
+
+            var stack = await _stackRepository.GetByIdAsync(stackId, useCache);
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
+                return null;
+
+            return stack;
         }
     }
 }
