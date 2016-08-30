@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         bool IsGlobalAdmin { get; set; }
     }
 
-    public class SystemFilterQueryBuilder : IElasticQueryBuilder {
+    public class ExceptionlessSystemFilterQueryBuilder : IElasticQueryBuilder {
         public void Build<T>(QueryBuilderContext<T> ctx) where T : class, new() {
             var sfq = ctx.GetSourceAs<IExceptionlessSystemFilterQuery>();
             if (sfq == null)
