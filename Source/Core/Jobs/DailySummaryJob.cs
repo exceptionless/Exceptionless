@@ -9,14 +9,18 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
@@ -51,7 +55,6 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.SuccessWithMessage("Summary notifications are disabled due to null mailer.");
 
             const int BATCH_SIZE = 25;
-
             var projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
             while (projects.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 var documentsUpdated = await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projects).AnyContext();
@@ -107,7 +110,8 @@ namespace Exceptionless.Core.Jobs {
                 new TermFieldAggregation { Field = "is_first_occurrence", ExcludePattern = "F" }
             };
 
-            var result = await _stats.GetNumbersStatsAsync(fields, data.UtcStartTime, data.UtcEndTime, $"project:{data.Id} type:error").AnyContext();
+            var query = new ExceptionlessQuery().WithProjectId(data.Id).WithFieldEquals(EventIndexType.Fields.Type, Event.KnownTypes.Error);
+            var result = await _stats.GetNumbersStatsAsync(fields, data.UtcStartTime, data.UtcEndTime, query).AnyContext();
             bool hasSubmittedEvents = result.Total > 0;
             if (!hasSubmittedEvents)
                 hasSubmittedEvents = await _eventRepository.GetCountByProjectIdAsync(project.Id).AnyContext() > 0;

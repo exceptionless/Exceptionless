@@ -148,21 +148,5 @@ namespace Exceptionless.Core.Extensions {
             foreach (var usage in usages.Where(u => u.Date < DateTime.UtcNow.Subtract(maxUsageAge.Value)).ToList())
                 usages.Remove(usage);
         }
-   
-        public static string BuildRetentionFilter(this IList<Organization> organizations, string retentionDateFieldName = "date") {
-            var builder = new StringBuilder();
-            for (int index = 0; index < organizations.Count; index++) {
-                if (index > 0)
-                    builder.Append(" OR ");
-
-                var organization = organizations[index];
-                if (organization.RetentionDays > 0)
-                    builder.AppendFormat("(organization:{0} AND {1}:[now/d-{2}d TO now/d+1d}})", organization.Id, retentionDateFieldName, organization.RetentionDays);
-                else
-                    builder.AppendFormat("organization:{0}", organization.Id);
-            }
-
-            return builder.ToString();
-        }
     }
 }

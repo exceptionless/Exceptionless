@@ -105,7 +105,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash)));
         }
 
-        public Task<IFindResults<Stack>> GetByFilterAsync(string systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+        public Task<IFindResults<Stack>> GetByFilterAsync(IRepositoryQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (sorting.Fields.Count == 0)
                 sorting.Fields.Add(new FieldSort { Field = StackIndexType.Fields.LastOccurrence, Order = SortOrder.Descending });
 

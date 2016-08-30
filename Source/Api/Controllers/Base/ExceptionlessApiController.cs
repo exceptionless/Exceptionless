@@ -133,25 +133,11 @@ namespace Exceptionless.Api.Controllers {
             if (repository == null)
                 return null;
 
-            return (await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true)).Documents;
-        }
-        
-        public string BuildSystemFilter(IReadOnlyCollection<Organization> organizations, string filter, bool usesPremiumFeatures, string retentionDateFieldName = "date") {
-            if (HasOrganizationOrProjectOrStackFilter(filter) && Request.IsGlobalAdmin())
+            var ids = GetAssociatedOrganizationIds();
+            if (ids.Count == 0)
                 return null;
-            
-            var allowedOrganizations = organizations.Where(o => !o.IsSuspended && (o.HasPremiumFeatures || (!o.HasPremiumFeatures && !usesPremiumFeatures))).ToList();
-            if (allowedOrganizations.Count == 0)
-                return "organization:none";
 
-            return allowedOrganizations.BuildRetentionFilter(retentionDateFieldName);
-        }
-        
-        private bool HasOrganizationOrProjectOrStackFilter(string filter) {
-            if (String.IsNullOrEmpty(filter))
-                return false;
-
-            return filter.Contains("organization:") || filter.Contains("project:") || filter.Contains("stack:");
+            return (await repository.GetByIdsAsync(ids, true)).Documents;
         }
 
         protected StatusCodeActionResult StatusCodeWithMessage(HttpStatusCode statusCode, string message, string reason = null) {

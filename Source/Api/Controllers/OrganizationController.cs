@@ -20,6 +20,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
@@ -716,7 +717,8 @@ namespace Exceptionless.Api.Controllers {
             };
 
             var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, RetentionDays = o.RetentionDays }).ToList();
-            var result = await _stats.GetNumbersTermsStatsAsync("organization_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, organizations.BuildRetentionFilter(), max: viewOrganizations.Count);
+            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            var result = await _stats.GetNumbersTermsStatsAsync("organization_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, sf, max: viewOrganizations.Count);
             foreach (var organization in viewOrganizations) {
                 var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
                 organization.EventCount = organizationStats?.Total ?? 0;

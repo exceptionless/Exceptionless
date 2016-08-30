@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
@@ -8,6 +9,7 @@ using Exceptionless.Core.Filter;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models.Stats;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Logging;
 
 namespace Exceptionless.Api.Controllers {
@@ -42,10 +44,15 @@ namespace Exceptionless.Api.Controllers {
             var pr = QueryProcessor.Process(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
-
-            var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
-            var sf = BuildSystemFilter(organizations, filter, far.UsesPremiumFeatures || pr.UsesPremiumFeatures);
+            
+            var organizations = (await GetAssociatedOrganizationsAsync(_organizationRepository)).Where(o => !o.IsSuspended).ToList();
+            if (organizations.Count == 0)
+                return Ok(NumbersStatsResult.Empty);
+            
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organizations) {
+                UsesPremiumFeatures = far.UsesPremiumFeatures || pr.UsesPremiumFeatures
+            };
 
             NumbersStatsResult result;
             try {
@@ -84,9 +91,14 @@ namespace Exceptionless.Api.Controllers {
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 
-            var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
-            var sf = BuildSystemFilter(organizations, filter, far.UsesPremiumFeatures || pr.UsesPremiumFeatures);
+            var organizations = (await GetAssociatedOrganizationsAsync(_organizationRepository)).Where(o => !o.IsSuspended).ToList();
+            if (organizations.Count == 0)
+                return Ok(NumbersTimelineStatsResult.Empty);
+
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organizations) {
+                UsesPremiumFeatures = far.UsesPremiumFeatures || pr.UsesPremiumFeatures
+            };
 
             NumbersTimelineStatsResult result;
             try {
