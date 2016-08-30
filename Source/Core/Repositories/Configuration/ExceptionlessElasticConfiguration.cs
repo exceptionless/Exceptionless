@@ -19,10 +19,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
             // register our custom app query builders
             ElasticQueryBuilder.Default.RegisterDefaults();
+            ElasticQueryBuilder.Default.Register(new ExceptionlessSystemFilterQueryBuilder());
             ElasticQueryBuilder.Default.Register(new OrganizationIdQueryBuilder());
             ElasticQueryBuilder.Default.Register(new ProjectIdQueryBuilder());
             ElasticQueryBuilder.Default.Register(new StackIdQueryBuilder());
 
+            _logger.Info().Message($"All new indexes will be created with {Settings.Current.ElasticSearchNumberOfShards} Shards and {Settings.Current.ElasticSearchNumberOfReplicas} Replicas");
             Stacks = new StackIndex(Client, cacheClient, loggerFactory);
             Events = new EventIndex(Client, cacheClient, loggerFactory);
             Organizations = new OrganizationIndex(Client, cacheClient, loggerFactory);
