@@ -45,7 +45,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public EventIndexType(EventIndex index) : base(index, "events", document => document.Date.UtcDateTime) {}
         
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
-            return idx.Analysis(BuildAnalysis)
+            return idx
+                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)
+                .Analysis(BuildAnalysis)
                 .AddMapping<PersistentEvent>(BuildMapping);
         }
 

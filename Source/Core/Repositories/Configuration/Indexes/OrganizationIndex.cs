@@ -43,6 +43,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public class ApplicationIndexType : IndexTypeBase<Application> {
         public ApplicationIndexType(OrganizationIndex index) : base(index, "application") { }
 
+        public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
+            return base.Configure(idx)
+                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+        }
+
         public override PutMappingDescriptor<Application> BuildMapping(PutMappingDescriptor<Application> map) {
             return map
                 .Dynamic()
@@ -56,6 +62,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
     
     public class OrganizationIndexType : IndexTypeBase<Organization> {
         public OrganizationIndexType(OrganizationIndex index) : base(index, "organization") { }
+
+        public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
+            return base.Configure(idx)
+                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+        }
 
         public override PutMappingDescriptor<Organization> BuildMapping(PutMappingDescriptor<Organization> map) {
             return map
@@ -140,6 +152,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public class ProjectIndexType : IndexTypeBase<Project> {
         public ProjectIndexType(OrganizationIndex index) : base(index, "project") { }
 
+        public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
+            return base.Configure(idx)
+                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+        }
+
         public override PutMappingDescriptor<Project> BuildMapping(PutMappingDescriptor<Project> map) {
             return map
                 .Type(Name)
@@ -171,6 +189,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
     public class TokenIndexType : IndexTypeBase<Models.Token> {
         public TokenIndexType(OrganizationIndex index) : base(index, "token") { }
+
+        public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
+            return base.Configure(idx)
+                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+        }
 
         public override PutMappingDescriptor<Models.Token> BuildMapping(PutMappingDescriptor<Models.Token> map) {
             return map
@@ -212,7 +236,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
         private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
 
         public UserIndexType(OrganizationIndex index) : base(index, "user") { }
-        
+
+        public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
+            return base.Configure(idx)
+                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+        }
+
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
             var keywordLowercaseAnalyzer = new CustomAnalyzer { Filter = new List<string> { "lowercase" }, Tokenizer = "keyword" };
             return idx.Analysis(descriptor => descriptor.Analyzers(bases => bases.Add(KEYWORD_LOWERCASE_ANALYZER, keywordLowercaseAnalyzer)))
@@ -263,6 +293,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
     public class WebHookIndexType : IndexTypeBase<WebHook> {
         public WebHookIndexType(OrganizationIndex index) : base(index, "webhook") { }
+
+        public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
+            return base.Configure(idx)
+                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+        }
 
         public override PutMappingDescriptor<WebHook> BuildMapping(PutMappingDescriptor<WebHook> map) {
             return map

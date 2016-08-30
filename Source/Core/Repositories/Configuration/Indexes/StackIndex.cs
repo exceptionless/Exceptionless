@@ -18,7 +18,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
     }
 
     public class StackIndexType : IndexTypeBase<Stack> {
-        public StackIndexType(StackIndex index) : base(index, "stack") {}
+        public StackIndexType(StackIndex index) : base(index, "stack") { }
+
+        public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
+            return base.Configure(idx)
+                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+        }
 
         public override PutMappingDescriptor<Stack> BuildMapping(PutMappingDescriptor<Stack> map) {
             const string SET_FIXED_SCRIPT = @"ctx._source['fixed'] = !!ctx._source['date_fixed']";
