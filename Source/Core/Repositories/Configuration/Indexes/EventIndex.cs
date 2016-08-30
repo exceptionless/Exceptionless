@@ -25,7 +25,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public PutTemplateDescriptor CreateTemplate(PutTemplateDescriptor template) {
             return template
                 .Template(VersionedName + "-*")
-                .Settings(s => s.Add("analysis", BuildAnalysisSettings()))
+                .Settings(s => s
+                    .Add("number_of_shards", Settings.Current.ElasticSearchNumberOfShards)
+                    .Add("number_of_replicas", Settings.Current.ElasticSearchNumberOfReplicas)
+                    .Add("analysis", BuildAnalysisSettings()))
                 .AddMapping<PersistentEvent>(map => map
                     .Dynamic(DynamicMappingOption.Ignore)
                     .DynamicTemplates(dt => dt.Add(t => t.Name("idx_reference").Match("*-r").Mapping(m => m.Generic(f => f.Type("string").Index("not_analyzed")))))
