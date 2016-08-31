@@ -75,7 +75,6 @@ namespace Exceptionless.Core.Repositories.Queries {
             }
 
             string field = GetDateField(ctx.GetOptionsAs<IElasticQueryOptions>());
-            
             if (sfq.Stack != null) {
                 var organization = sfq.Organizations.Single(o => o.Id == sfq.Stack.OrganizationId);
                 if (organization.RetentionDays > 0)
