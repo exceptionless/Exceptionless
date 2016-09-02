@@ -132,6 +132,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <param name="projectId">The identifier of the project.</param>
         /// <param name="token">The token.</param>
         /// <response code="400">An error occurred while creating the token.</response>
+        /// <response code="404">The project could not be found.</response>
         /// <response code="409">The token already exists.</response>
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
         [HttpPost]
@@ -139,7 +140,7 @@ namespace Exceptionless.App.Controllers.API {
         public async Task<IHttpActionResult> PostByProjectAsync(string projectId, NewToken token) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
-                return BadRequest();
+                return NotFound();
 
             if (token == null)
                 token = new NewToken();

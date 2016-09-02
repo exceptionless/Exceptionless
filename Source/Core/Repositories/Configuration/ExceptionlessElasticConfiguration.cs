@@ -42,7 +42,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override void ConfigureSettings(ConnectionSettings settings) {
-            settings.EnableTcpKeepAlive(30 * 1000, 2000)
+            settings
+                .EnableTcpKeepAlive(30 * 1000, 2000)
                 .SetDefaultTypeNameInferrer(p => p.Name.ToLowerUnderscoredWords())
                 .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords())
                 .MaximumRetries(5);

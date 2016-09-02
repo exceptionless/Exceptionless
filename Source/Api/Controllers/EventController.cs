@@ -135,9 +135,12 @@ namespace Exceptionless.Api.Controllers {
         private async Task<IHttpActionResult> GetInternalAsync(IExceptionlessSystemFilterQuery sf, TimeInfo ti, string userFilter = null, string sort = null, string mode = null, int page = 1, int limit = 10, bool usesPremiumFeatures = false) {
             page = GetPage(page);
             limit = GetLimit(limit);
-            var skip = GetSkip(page + 1, limit);
+            var skip = GetSkip(page, limit);
             if (skip > MAXIMUM_SKIP)
                 return Ok(Enumerable.Empty<PersistentEvent>());
+
+            var sortBy = GetSort(sort);
+            var options = new PagingOptions { Page = page, Limit = limit };
 
             var pr = QueryProcessor.Process(userFilter);
             if (!pr.IsValid)
@@ -145,10 +148,7 @@ namespace Exceptionless.Api.Controllers {
             
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
             sf.IsGlobalAdmin = Request.IsGlobalAdmin();
-
-            var sortBy = GetSort(sort);
-            var options = new PagingOptions { Page = page, Limit = limit };
-
+            
             IFindResults<PersistentEvent> events;
             try {
                 events = await _repository.GetByFilterAsync(sf, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
