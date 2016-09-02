@@ -9,7 +9,7 @@ namespace Exceptionless.Api.Tests {
         public ElasticTestBase(ITestOutputHelper output) : base(output) {
             _configuration = GetService<ExceptionlessElasticConfiguration>();
             _configuration.DeleteIndexesAsync().GetAwaiter().GetResult();
-            _configuration.ConfigureIndexesAsync().GetAwaiter().GetResult();
+            _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false).GetAwaiter().GetResult();
         }
     }
 }

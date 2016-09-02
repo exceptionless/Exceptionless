@@ -1,4 +1,5 @@
 using System;
+using ElasticMacros;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Repositories.Elasticsearch.Configuration;
@@ -21,7 +22,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public EventIndexType Event { get; }
     }
     
-    public class EventIndexType : MonthlyIndexType<PersistentEvent> {
+    public class EventIndexType : MonthlyIndexType<PersistentEvent>, IHaveMacros {
         private const string COMMA_WHITESPACE_ANALYZER = "comma_whitespace";
         private const string EMAIL_ANALYZER = "email";
         private const string VERSION_INDEX_ANALYZER = "version_index";
@@ -153,6 +154,35 @@ namespace Exceptionless.Core.Repositories.Configuration {
                                 .Fields(fields => fields.String(ss => ss.Name(Fields.UserRaw).Index(FieldIndexOption.NotAnalyzed))))
                             .String(f3 => f3.Name(r => r.Name).IndexName(Fields.UserName).Index(FieldIndexOption.Analyzed).IncludeInAll())))))
                 );
+        }
+
+        public void ConfigureMacros(ElasticMacrosConfiguration configuration) {
+            configuration.AddAnalyzedFields(new[] {
+                Fields.Source,
+                Fields.Message,
+                Fields.Tags,
+                Fields.Version,
+                Fields.Level,
+                Fields.SubmissionMethod,
+                Fields.IpAddress,
+                Fields.RequestUserAgent,
+                Fields.RequestPath,
+                Fields.Browser,
+                Fields.BrowserVersion,
+                Fields.Device,
+                Fields.OperatingSystem,
+                Fields.OperatingSystemVersion,
+                Fields.ErrorMessage,
+                Fields.ErrorTargetType,
+                Fields.ErrorTargetMethod,
+                Fields.ErrorType,
+                Fields.ErrorMessage,
+                Fields.MachineName,
+                Fields.UserDescription,
+                Fields.UserEmail,
+                Fields.User,
+                Fields.UserName
+            });
         }
         
         const string FLATTEN_ERRORS_SCRIPT = @"
