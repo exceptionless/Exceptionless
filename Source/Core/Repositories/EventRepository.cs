@@ -7,12 +7,8 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
-using Foundatio.Caching;
-using Foundatio.Logging;
-using Foundatio.Messaging;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
-using Foundatio.Repositories.Elasticsearch.Queries.Options;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
@@ -20,10 +16,8 @@ using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
-        public EventRepository(ExceptionlessElasticConfiguration configuration, IValidator<PersistentEvent> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<EventRepository> logger) 
-            : base(configuration.Client, validator, cache, messagePublisher, logger) {
-            ElasticType = configuration.Events.Event;
-
+        public EventRepository(ExceptionlessElasticConfiguration configuration, IValidator<PersistentEvent> validator) 
+            : base(configuration.Events.Event, validator) {
             DisableCache();
             BatchNotifications = true;
             DefaultExcludes.Add("idx");

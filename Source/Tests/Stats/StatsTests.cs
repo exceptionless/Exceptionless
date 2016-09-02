@@ -7,12 +7,14 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories.Models;
 using Xunit;
 using Xunit.Abstractions;
+using LogLevel = Foundatio.Logging.LogLevel;
 
 namespace Exceptionless.Api.Tests.Stats {
     public sealed class StatsTests : ElasticTestBase {
@@ -144,10 +146,12 @@ namespace Exceptionless.Api.Tests.Stats {
             const int eventCount = 100;
             await CreateDataAsync(eventCount, false);
 
+            Log.MinimumLevel = LogLevel.Trace;
             var fields = FieldAggregationProcessor.Process("term:is_first_occurrence:-F", false);
             Assert.True(fields.IsValid);
 
-            var result = await _stats.GetNumbersTermsStatsAsync("tags", fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
+            var sf = new ExceptionlessSystemFilterQuery(ProjectData.GenerateSampleProject(), OrganizationData.GenerateSampleOrganization());
+            var result = await _stats.GetNumbersTermsStatsAsync("tags", fields.Aggregations, startDate, DateTime.UtcNow, sf, "fixed:false");
             Assert.Equal(eventCount, result.Total);
             // each event can be in multiple tag buckets since an event can have up to 3 sample tags
             Assert.InRange(result.Terms.Sum(t => t.Total), eventCount, eventCount * 3);
@@ -167,7 +171,8 @@ namespace Exceptionless.Api.Tests.Stats {
             var fields = FieldAggregationProcessor.Process("distinct:stack_id,term:is_first_occurrence:-F", false);
             Assert.True(fields.IsValid);
 
-            var result = await _stats.GetNumbersTermsStatsAsync("stack_id", fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
+            var sf = new ExceptionlessSystemFilterQuery(ProjectData.GenerateSampleProject(), OrganizationData.GenerateSampleOrganization());
+            var result = await _stats.GetNumbersTermsStatsAsync("stack_id", fields.Aggregations, startDate, DateTime.UtcNow, sf);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 25);
             // TODO: Figure out why this is less than eventCount
@@ -189,7 +194,8 @@ namespace Exceptionless.Api.Tests.Stats {
             var fields = FieldAggregationProcessor.Process("term:is_first_occurrence:-F", false);
             Assert.True(fields.IsValid);
 
-            var result = await _stats.GetNumbersTermsStatsAsync("project_id", fields.Aggregations, startDate, DateTime.UtcNow, null);
+            var sf = new ExceptionlessSystemFilterQuery(OrganizationData.GenerateSampleOrganization());
+            var result = await _stats.GetNumbersTermsStatsAsync("project_id", fields.Aggregations, startDate, DateTime.UtcNow, sf);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 3); // 3 sample projects
             Assert.InRange(result.Terms.Sum(t => t.Numbers[0]), 1, 25 * 3); // new
@@ -222,7 +228,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var projects = ProjectData.GenerateSampleProjects();
             await _projectRepository.AddAsync(projects, true);
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             if (eventCount > 0)
                 await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId });
@@ -233,7 +239,7 @@ namespace Exceptionless.Api.Tests.Stats {
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
                 await _pipeline.RunAsync(eventGroup);
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
         }
 
         private async Task<List<PersistentEvent>> CreateSessionEventsAsync() {
@@ -249,7 +255,7 @@ namespace Exceptionless.Api.Tests.Stats {
             
             await _pipeline.RunAsync(events);
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Fields.Date));
             Assert.Equal(6, results.Total);
             Assert.Equal(3, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());

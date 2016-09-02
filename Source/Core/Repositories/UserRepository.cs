@@ -8,8 +8,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Logging;
-using Foundatio.Messaging;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
@@ -19,26 +17,26 @@ using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class UserRepository : RepositoryBase<User>, IUserRepository {
-        public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<UserRepository> logger) 
-            : base(configuration.Client, validator, cache, messagePublisher, logger) {
-            ElasticType = configuration.Organizations.User;
-        }
+        public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator) 
+            : base(configuration.Organizations.User, validator) {}
 
-        public Task<User> GetByEmailAddressAsync(string emailAddress) {
+        public async Task<User> GetByEmailAddressAsync(string emailAddress) {
             if (String.IsNullOrWhiteSpace(emailAddress))
                 return null;
 
             emailAddress = emailAddress.ToLowerInvariant().Trim();
             var filter = Filter<User>.Term(u => u.EmailAddress, emailAddress);
-            return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithCacheKey(emailAddress));
+            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithCacheKey(emailAddress)).AnyContext();
+            return hit?.Document;
         }
 
-        public Task<User> GetByPasswordResetTokenAsync(string token) {
+        public async Task<User> GetByPasswordResetTokenAsync(string token) {
             if (String.IsNullOrEmpty(token))
                 return null;
 
             var filter = Filter<User>.Term(u => u.PasswordResetToken, token);
-            return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter));
+            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext();
+            return hit?.Document;
         }
 
         public async Task<User> GetUserByOAuthProviderAsync(string provider, string providerUserId) {
@@ -53,12 +51,13 @@ namespace Exceptionless.Core.Repositories {
             return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
         }
 
-        public Task<User> GetByVerifyEmailAddressTokenAsync(string token) {
+        public async Task<User> GetByVerifyEmailAddressTokenAsync(string token) {
             if (String.IsNullOrEmpty(token))
                 return null;
 
             var filter = Filter<User>.Term(u => u.VerifyEmailAddressToken, token);
-            return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter));
+            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext();
+            return hit?.Document;
         }
 
         public virtual Task<IFindResults<User>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {

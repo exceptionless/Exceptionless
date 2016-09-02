@@ -34,7 +34,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Fact(Skip="Performance Testing")]
         public async Task GetAsyncPerformance() {
             var ev = await _repository.AddAsync(new RandomEventGenerator().GeneratePersistent());
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             Assert.Equal(1, await _repository.CountAsync());
 
             var sw = Stopwatch.StartNew();
@@ -54,7 +54,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 events.Add(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now.Subtract(TimeSpan.FromMinutes(i))));
 
             await _repository.AddAsync(events);
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             Assert.Equal(events.Count, await _repository.CountAsync());
 
             var results = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(2));
@@ -79,7 +79,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             
             _logger.Debug("");
             _logger.Debug("Before {0}: {1}", sortedIds[2].Item1, sortedIds[2].Item2.ToLongTimeString());
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             string query = $"stack:{TestConstants.StackId} project:{TestConstants.ProjectId} date:[now-1h TO now+1h]";
             var results = (await _repository.GetByOrganizationIdsAsync(new[] { TestConstants.OrganizationId }, query, new PagingOptions().WithLimit(20))).Documents.ToArray();
             Assert.Equal(sortedIds.Count, results.Length);
@@ -106,7 +106,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             _logger.Debug("");
             _logger.Debug("Tests:");
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             Assert.Equal(_ids.Count, await _repository.CountAsync());
             for (int i = 0; i < sortedIds.Count; i++) {
                 _logger.Debug("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
@@ -133,7 +133,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             _logger.Debug("");
             _logger.Debug("Tests:");
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             Assert.Equal(_ids.Count, await _repository.CountAsync());
             for (int i = 0; i < sortedIds.Count; i++) {
                 _logger.Debug("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
@@ -150,7 +150,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             string referenceId = ObjectId.GenerateNewId().ToString();
             await _repository.AddAsync(EventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, referenceId: referenceId).ToList());
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             var results = await _repository.GetByReferenceIdAsync(TestConstants.ProjectId, referenceId);
             Assert.True(results.Total > 0);
             Assert.NotNull(results.Documents.First());
@@ -178,7 +178,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             await _repository.AddAsync(events);
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
             Assert.Equal(3, results.Total);
         }
@@ -188,18 +188,18 @@ namespace Exceptionless.Api.Tests.Repositories {
             const int NUMBER_OF_EVENTS_TO_CREATE = 10000;
             await _repository.AddAsync(EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2).ToList(), sendNotification: false);
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, await _repository.CountAsync());
 
             var sw = Stopwatch.StartNew();
             await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.StackId2, false, sendNotifications: false);
             _logger.Info(() => $"Time to mark not fixed events as not fixed: {sw.ElapsedMilliseconds}ms");
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             sw.Restart();
 
             await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.StackId2, true, sendNotifications: false);
             _logger.Info(() => $"Time to mark not fixed events as fixed: {sw.ElapsedMilliseconds}ms");
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             sw.Stop();
             
             var results = await GetByFilterAsync($"stack:{TestConstants.StackId2} fixed:true");
@@ -215,7 +215,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             events.ForEach(e => e.AddRequestInfo(new RequestInfo { ClientIpAddress = _clientIpAddress }));
             await _repository.AddAsync(events);
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             events = (await _repository.GetByStackIdAsync(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
             events.ForEach(e => {
@@ -227,7 +227,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             await _repository.HideAllByClientIpAndDateAsync(TestConstants.OrganizationId, _clientIpAddress, DateTime.UtcNow.SubtractDays(3), DateTime.UtcNow.AddDays(2));
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             events = (await _repository.GetByStackIdAsync(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
             events.ForEach(e => Assert.True(e.IsHidden));

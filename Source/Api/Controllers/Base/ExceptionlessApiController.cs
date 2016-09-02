@@ -8,7 +8,6 @@ using System.Web.Http.Results;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Api.Utility.Results;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;

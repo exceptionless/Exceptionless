@@ -186,7 +186,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 }
             }
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
         }
 
         private Task<IFindResults<Stack>> GetByFilterAsync(string filter) {

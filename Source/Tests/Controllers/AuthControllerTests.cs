@@ -119,7 +119,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             organization.Invites.Add(invite);
 
             organization = await _organizationRepository.SaveAsync(organization);
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -158,7 +158,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization);
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -256,7 +256,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization);
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -294,7 +294,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization);
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -331,7 +331,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization);
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -366,7 +366,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             await _userRepository.AddAsync(user);
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             // create model
             var loginModel = new LoginModel {
@@ -404,7 +404,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
 
             await _userRepository.AddAsync(user);
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             // create model
             var loginModel = new LoginModel {
@@ -436,7 +436,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             await _userRepository.AddAsync(user);
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             // create model
             var loginModel = new LoginModel {
@@ -464,7 +464,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
 
             await _userRepository.AddAsync(user);
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             // create model
             var loginModel = new LoginModel {
@@ -536,7 +536,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 FullName = "User 6"
             };
             await _userRepository.AddAsync(user);
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             // create model
             var loginModel = new LoginModel {
@@ -581,7 +581,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         public async Task CreateOrganizationAndProjectsAsync() {
             await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations());
             await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects());
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
         }
     }
 }

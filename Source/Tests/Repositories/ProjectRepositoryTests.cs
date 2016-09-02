@@ -18,13 +18,13 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(0, await _repository.CountAsync());
 
             var project = await _repository.AddAsync(ProjectData.GenerateSampleProject());
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             Assert.NotNull(project.Id);
             Assert.Equal(1, await _repository.CountAsync());
             Assert.Equal(1, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
             
             Assert.Equal(1, await _repository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }));
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
 
             var updatedProject = await _repository.GetByIdAsync(project.Id);
             // TODO: Modified date isn't currently updated in the update scripts.
@@ -37,12 +37,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             var project2 = await _repository.AddAsync(ProjectData.GenerateProject(organizationId: project.OrganizationId));
             Assert.NotNull(project2.Id);
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             Assert.Equal(2, await _repository.CountAsync());
             Assert.Equal(2, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
 
             await _repository.RemoveAsync(project2, false);
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             Assert.Equal(1, await _repository.CountAsync());
             Assert.Equal(1, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
         }

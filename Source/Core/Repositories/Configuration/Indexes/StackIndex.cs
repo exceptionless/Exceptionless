@@ -1,24 +1,20 @@
 using System;
 using Exceptionless.Core.Models;
-using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class StackIndex : VersionedIndex {
-        public StackIndex(IElasticClient client, ICacheClient cache = null, ILoggerFactory loggerFactory = null) 
-            : base(client, Settings.Current.AppScopePrefix + "stacks", 1, cache, loggerFactory) {
-            Stack = new StackIndexType(this);
-            AddType(Stack);
+        public StackIndex(IElasticConfiguration configuration) : base(configuration, Settings.Current.AppScopePrefix + "stacks", 1) {
+            AddType(Stack = new StackIndexType(this));
         }
 
         public StackIndexType Stack { get; }
     }
 
     public class StackIndexType : IndexTypeBase<Stack> {
-        public StackIndexType(StackIndex index) : base(index, "stack") { }
+        public StackIndexType(StackIndex index) : base(index, "stacks") { }
 
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
             return base.Configure(idx)
