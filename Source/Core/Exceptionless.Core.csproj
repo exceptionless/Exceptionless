@@ -278,6 +278,7 @@
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ExceptionlessElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
+    <Compile Include="Repositories\Configuration\Indexes\IHaveMacros.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\StackIndex.cs" />
     <Compile Include="Repositories\Queries\ProjectIdQuery.cs" />
