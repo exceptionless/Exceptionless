@@ -7,9 +7,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
-using Foundatio.Caching;
-using Foundatio.Logging;
-using Foundatio.Messaging;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
@@ -17,10 +14,8 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
-        public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<WebHookRepository> logger) 
-            : base(configuration.Client, validator, cache, messagePublisher, logger) {
-            ElasticType = configuration.Organizations.WebHook;
-        }
+        public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator) 
+            : base(configuration.Organizations.WebHook, validator) {}
 
         public Task RemoveByUrlAsync(string targetUrl) {
             var filter = Filter<WebHook>.Term(e => e.Url, targetUrl);

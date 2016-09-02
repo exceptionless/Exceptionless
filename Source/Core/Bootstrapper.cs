@@ -27,10 +27,10 @@ using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Jobs;
 using Foundatio.Serializer;
 using Foundatio.Storage;
-using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
@@ -65,11 +65,6 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IMetricsClient>(() => new InMemoryMetricsClient(loggerFactory: loggerFactory));
             
             container.RegisterSingleton<ExceptionlessElasticConfiguration>();
-            container.RegisterSingleton<IElasticClient>(() => container.GetInstance<ExceptionlessElasticConfiguration>().Client);
-            container.RegisterSingleton<EventIndex, EventIndex>();
-            container.RegisterSingleton<OrganizationIndex, OrganizationIndex>();
-            container.RegisterSingleton<StackIndex, StackIndex>();
-
             container.RegisterSingleton<ICacheClient, InMemoryCacheClient>();
 
             container.RegisterSingleton<IEnumerable<IQueueBehavior<EventPost>>>(() => new[] { new MetricsQueueBehavior<EventPost>(container.GetInstance<IMetricsClient>()) });

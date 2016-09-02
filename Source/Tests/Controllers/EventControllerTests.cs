@@ -18,6 +18,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
+using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Microsoft.Owin;
@@ -128,7 +129,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.IsType<StatusCodeResult>(actionResult);
             });
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
             Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
 
@@ -136,9 +137,9 @@ namespace Exceptionless.Api.Tests.Controllers {
             var sw = Stopwatch.StartNew();
             await processEventsJob.RunUntilEmptyAsync();
             sw.Stop();
-            Trace.WriteLine(sw.Elapsed);
+            _logger.Info(sw.Elapsed.ToString());
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             var stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(batchCount, stats.Completed);
             var minimum = batchSize * batchCount;
@@ -173,14 +174,14 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
         
         public async Task<long> EventCountAsync() {
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             return await _eventRepository.CountAsync();
         }
 
         public async Task CreateOrganizationAndProjectsAsync() {
             await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations());
             await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects());
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
         }
     }
 }

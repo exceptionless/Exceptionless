@@ -10,7 +10,6 @@ using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
-using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
@@ -24,10 +23,8 @@ namespace Exceptionless.Core.Repositories {
         private const string STACKING_VERSION = "v2";
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, IValidator<Stack> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<StackRepository> logger) 
-            : base(configuration.Client, validator, cache, messagePublisher, logger) {
-            ElasticType = configuration.Stacks.Stack;
-
+        public StackRepository(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, IValidator<Stack> validator) 
+            : base(configuration.Stacks.Stack, validator) {
             _eventRepository = eventRepository;
             DocumentsChanging.AddHandler(OnDocumentChangingAsync);
         }
@@ -98,11 +95,12 @@ namespace Exceptionless.Core.Repositories {
             }
         }
 
-        public Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
-            return FindOneAsync(new ExceptionlessQuery()
+        public async Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
+            var hit = await FindOneAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithElasticFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))
-                .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash)));
+                .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash))).AnyContext();
+            return hit?.Document;
         }
 
         public Task<IFindResults<Stack>> GetByFilterAsync(IRepositoryQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {

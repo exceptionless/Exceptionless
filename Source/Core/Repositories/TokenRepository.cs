@@ -8,8 +8,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Logging;
-using Foundatio.Messaging;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
@@ -19,10 +17,8 @@ using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Core.Repositories {
     public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository {
-        public TokenRepository(ExceptionlessElasticConfiguration configuration, IValidator<Token> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<TokenRepository> logger) 
-            : base(configuration.Client, validator, cache, messagePublisher, logger) {
-            ElasticType = configuration.Organizations.Token;
-        }
+        public TokenRepository(ExceptionlessElasticConfiguration configuration, IValidator<Token> validator) 
+            : base(configuration.Organizations.Token, validator) {}
 
         public Task<IFindResults<Token>> GetApiTokensAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             var filter = Filter<Token>.Term(e => e.Type, TokenType.Access) && Filter<Token>.Missing(e => e.UserId);
@@ -85,11 +81,12 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public Task<Token> GetByRefreshTokenAsync(string refreshToken) {
+        public async Task<Token> GetByRefreshTokenAsync(string refreshToken) {
             if (String.IsNullOrEmpty(refreshToken))
                 throw new ArgumentNullException(nameof(refreshToken));
 
-            return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(Filter<Token>.Term(t => t.Refresh, refreshToken)));
+            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(Filter<Token>.Term(t => t.Refresh, refreshToken))).AnyContext();
+            return hit?.Document;
         }
 
         public override Task<IFindResults<Token>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {

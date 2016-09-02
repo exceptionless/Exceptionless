@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -68,7 +68,7 @@ namespace Exceptionless.Api.Tests.Jobs {
 
             _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);
             Assert.Equal(JobResult.Success, await _job.RunAsync());
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
             events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
 
@@ -117,7 +117,7 @@ namespace Exceptionless.Api.Tests.Jobs {
                 await _userRepository.AddAsync(user, true);
             }
 
-            await _client.RefreshAsync();
+            await _configuration.Client.RefreshAsync();
         }
 
         private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {

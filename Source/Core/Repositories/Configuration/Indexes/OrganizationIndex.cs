@@ -2,34 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Models;
-using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class OrganizationIndex : VersionedIndex {
-        public OrganizationIndex(IElasticClient client, ICacheClient cache = null, ILoggerFactory loggerFactory = null) 
-            : base(client, Settings.Current.AppScopePrefix + "organizations", 1, cache, loggerFactory) {
-
-            Application = new ApplicationIndexType(this);
-            AddType(Application);
-
-            Organization = new OrganizationIndexType(this);
-            AddType(Organization);
-
-            Project = new ProjectIndexType(this);
-            AddType(Project);
-
-            Token = new TokenIndexType(this);
-            AddType(Token);
-
-            User = new UserIndexType(this);
-            AddType(User);
-
-            WebHook = new WebHookIndexType(this);
-            AddType(WebHook);
+        public OrganizationIndex(IElasticConfiguration configuration) : base(configuration, Settings.Current.AppScopePrefix + "organizations", 1) {
+            AddType(Application = new ApplicationIndexType(this));
+            AddType(Organization = new OrganizationIndexType(this));
+            AddType(Project = new ProjectIndexType(this));
+            AddType(Token = new TokenIndexType(this));
+            AddType(User = new UserIndexType(this));
+            AddType(WebHook = new WebHookIndexType(this));
         }
         
         public ApplicationIndexType Application { get; }

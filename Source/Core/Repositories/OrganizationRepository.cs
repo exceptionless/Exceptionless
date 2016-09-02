@@ -14,7 +14,6 @@ using Exceptionless.Extensions;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
-using Foundatio.Messaging;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
@@ -23,24 +22,24 @@ using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository {
-        public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<OrganizationRepository> logger) 
-            : base(configuration.Client, validator, cache, messagePublisher, logger) {
-            ElasticType = configuration.Organizations.Organization;
-        }
+        public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator) 
+            : base(configuration.Organizations.Organization, validator) {}
 
-        public Task<Organization> GetByInviteTokenAsync(string token) {
+        public async Task<Organization> GetByInviteTokenAsync(string token) {
             if (String.IsNullOrEmpty(token))
                 throw new ArgumentNullException(nameof(token));
 
-            return FindOneAsync(new ExceptionlessQuery().WithFieldEquals(OrganizationIndexType.Fields.InviteToken, token));
+            var hit = await FindOneAsync(new ExceptionlessQuery().WithFieldEquals(OrganizationIndexType.Fields.InviteToken, token)).AnyContext();
+            return hit?.Document;
         }
 
-        public Task<Organization> GetByStripeCustomerIdAsync(string customerId) {
+        public async Task<Organization> GetByStripeCustomerIdAsync(string customerId) {
             if (String.IsNullOrEmpty(customerId))
                 throw new ArgumentNullException(nameof(customerId));
 
             var filter = Filter<Organization>.Term(o => o.StripeCustomerId, customerId);
-            return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter));
+            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext();
+            return hit?.Document;
         }
 
         public Task<IFindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {

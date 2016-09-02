@@ -7,9 +7,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
-using Foundatio.Caching;
-using Foundatio.Logging;
-using Foundatio.Messaging;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
@@ -18,9 +15,8 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
-        public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, ICacheClient cache, IMessagePublisher messagePublisher, ILogger<ProjectRepository> logger) 
-            : base(configuration.Client, validator, cache, messagePublisher, logger) {
-            ElasticType = configuration.Organizations.Project;
+        public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator) 
+            : base(configuration.Organizations.Project, validator) {
             DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
 

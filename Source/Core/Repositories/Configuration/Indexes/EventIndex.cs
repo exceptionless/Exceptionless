@@ -1,20 +1,16 @@
 using System;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class EventIndex : MonthlyIndex {
-        public EventIndex(IElasticClient client, ICacheClient cache = null, ILoggerFactory loggerFactory = null) 
-            : base(client, Settings.Current.AppScopePrefix + "events", 1, cache, loggerFactory) {
+        public EventIndex(IElasticConfiguration configuration) : base(configuration, Settings.Current.AppScopePrefix + "events", 1) {
             DateFormat = "yyyyMM";
-            Event = new EventIndexType(this);
             MaxIndexAge = TimeSpan.FromDays(180);
 
-            AddType(Event);
+            AddType(Event = new EventIndexType(this));
             AddAlias($"{Name}-today", TimeSpan.FromDays(1));
             AddAlias($"{Name}-last3days", TimeSpan.FromDays(7));
             AddAlias($"{Name}-last7days", TimeSpan.FromDays(7));

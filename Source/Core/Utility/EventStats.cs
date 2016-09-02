@@ -18,13 +18,11 @@ using Nest;
 
 namespace Exceptionless.Core.Utility {
     public class EventStats {
-        private readonly IElasticClient _elasticClient;
-        private readonly EventIndex _eventIndex;
+        private readonly ExceptionlessElasticConfiguration _configuration;
         private readonly ILogger _logger;
 
-        public EventStats(IElasticClient elasticClient, EventIndex eventIndex, ILogger<EventStats> logger) {
-            _elasticClient = elasticClient;
-            _eventIndex = eventIndex;
+        public EventStats(ExceptionlessElasticConfiguration configuration, ILogger<EventStats> logger) {
+            _configuration = configuration;
             _logger = logger;
         }
  
@@ -44,15 +42,16 @@ namespace Exceptionless.Core.Utility {
             
             utcStart = filter.DateRanges.First().GetStartDate();
             utcEnd = filter.DateRanges.First().GetEndDate();
-
-            var response = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+            
+            var descriptor = new SearchDescriptor<PersistentEvent>()
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _eventIndex.Name)
-                .Type(_eventIndex.Event.Name)
-                .Query(ElasticQueryBuilder.Default.BuildQuery<PersistentEvent>(filter, null))
-                .Aggregations(agg => BuildAggregations(agg, fields))
-            ).AnyContext();
+                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _configuration.Events.Name)
+                .Type(_configuration.Events.Event.Name)
+                .Aggregations(agg => BuildAggregations(agg, fields));
+
+            ElasticQueryBuilder.Default.ConfigureSearch(filter, null, descriptor);
+            var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 
             if (!response.IsValid) {
@@ -89,13 +88,12 @@ namespace Exceptionless.Core.Utility {
 
             utcStart = filter.DateRanges.First().GetStartDate();
             utcEnd = filter.DateRanges.First().GetEndDate();
-
-            var response = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+            
+            var descriptor = new SearchDescriptor<PersistentEvent>()
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _eventIndex.Name)
-                .Type(_eventIndex.Event.Name)
-                .Query(ElasticQueryBuilder.Default.BuildQuery<PersistentEvent>(filter, null))
+                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _configuration.Events.Name)
+                .Type(_configuration.Events.Event.Name)
                 .Aggregations(agg => BuildAggregations(agg
                     .Terms("terms", t => BuildTermSort(t
                         .Field(term)
@@ -105,8 +103,10 @@ namespace Exceptionless.Core.Utility {
                             .Max("last_occurrence", o => o.Field(ev => ev.Date)), fields)
                         ), fields)
                     ), fields)
-                )
-            ).AnyContext();
+                );
+
+            ElasticQueryBuilder.Default.ConfigureSearch(filter, null, descriptor);
+            var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 
             if (!response.IsValid) {
@@ -163,13 +163,12 @@ namespace Exceptionless.Core.Utility {
             utcStart = filter.DateRanges.First().GetStartDate();
             utcEnd = filter.DateRanges.First().GetEndDate();
             var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
-
-            var response = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+            
+            var descriptor = new SearchDescriptor<PersistentEvent>()
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _eventIndex.Name)
-                .Type(_eventIndex.Event.Name)
-                .Query(ElasticQueryBuilder.Default.BuildQuery<PersistentEvent>(filter, null))
+                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _configuration.Events.Name)
+                .Type(_configuration.Events.Event.Name)
                 .Aggregations(agg => BuildAggregations(agg
                     .DateHistogram("timelime", t => t
                         .Field(ev => ev.Date)
@@ -180,8 +179,10 @@ namespace Exceptionless.Core.Utility {
                     )
                     .Min("first_occurrence", t => t.Field(ev => ev.Date))
                     .Max("last_occurrence", t => t.Field(ev => ev.Date)), fields)
-                )
-            ).AnyContext();
+                );
+
+            ElasticQueryBuilder.Default.ConfigureSearch(filter, null, descriptor);
+            var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 
             if (!response.IsValid) {
@@ -310,14 +311,15 @@ namespace Exceptionless.Core.Utility {
 
         private async Task UpdateFilterStartDateRangesAsync(ElasticQuery filter, DateTime utcEnd) {
             // TODO: Cache this to save an extra search request when a date range isn't filtered.
-            var response = await _elasticClient.SearchAsync<PersistentEvent>(s => s
-                   .IgnoreUnavailable()
-                   .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _eventIndex.Name)
-                   .Type(_eventIndex.Event.Name)
-                   .Query(d => ElasticQueryBuilder.Default.BuildQuery<PersistentEvent>(filter, null))
-                   .SortAscending(ev => ev.Date)
-                   .Take(1)).AnyContext();
+            var descriptor = new SearchDescriptor<PersistentEvent>()
+                .IgnoreUnavailable()
+                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _configuration.Events.Name)
+                .Type(_configuration.Events.Event.Name)
+                .SortAscending(ev => ev.Date)
+                .Take(1);
 
+            ElasticQueryBuilder.Default.ConfigureSearch(filter, null, descriptor);
+            var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 
             if (!response.IsValid) {
