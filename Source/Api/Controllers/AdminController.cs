@@ -10,6 +10,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
@@ -20,13 +21,15 @@ namespace Exceptionless.Api.Controllers {
     [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
     [ApiExplorerSettings(IgnoreApi = true)]
     public class AdminController : ExceptionlessApiController {
+        private readonly ExceptionlessElasticConfiguration _configuration;
         private readonly IFileStorage _fileStorage;
         private readonly IMessagePublisher _messagePublisher;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IQueue<WorkItemData> _workItemQueue;
 
-        public AdminController(IFileStorage fileStorage, IMessagePublisher messagePublisher, IOrganizationRepository organizationRepository, IQueue<EventPost> eventPostQueue, IQueue<WorkItemData> workItemQueue) {
+        public AdminController(ExceptionlessElasticConfiguration configuration, IFileStorage fileStorage, IMessagePublisher messagePublisher, IOrganizationRepository organizationRepository, IQueue<EventPost> eventPostQueue, IQueue<WorkItemData> workItemQueue) {
+            _configuration = configuration;
             _fileStorage = fileStorage;
             _messagePublisher = messagePublisher;
             _organizationRepository = organizationRepository;
@@ -93,6 +96,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("maintenance/{name:minlength(1)}")]
         public async Task<IHttpActionResult> RunJobAsync(string name) {
             switch (name.ToLower()) {
+                case "indexes":
+                    await _configuration.ConfigureIndexesAsync();
+                    break;
                 case "update-organization-plans":
                     await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { UpgradePlans = true });
                     break;
