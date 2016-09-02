@@ -18,6 +18,7 @@ using Exceptionless.DateTimeExtensions;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/users")]
@@ -78,18 +79,24 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null)
                 return NotFound();
 
-            var users = await _repository.GetByOrganizationIdAsync(organizationId);
-            var viewUsers = (await MapCollectionAsync<ViewUser>(users.Documents, true)).ToList();
+            page = GetPage(page);
+            limit = GetLimit(limit);
+            var skip = GetSkip(page, limit);
+            if (skip > MAXIMUM_SKIP)
+                return Ok(Enumerable.Empty<ViewUser>());
+
+            var options = new PagingOptions { Limit = MAXIMUM_SKIP };
+            var results = await _repository.GetByOrganizationIdAsync(organizationId, options);
+            var users = (await MapCollectionAsync<ViewUser>(results.Documents, true)).ToList();
             if (organization.Invites.Any()) {
-                viewUsers.AddRange(organization.Invites.Select(i => new ViewUser {
+                users.AddRange(organization.Invites.Select(i => new ViewUser {
                     EmailAddress = i.EmailAddress,
                     IsInvite = true
                 }));
             }
 
-            page = GetPage(page);
-            limit = GetLimit(limit);
-            return OkWithResourceLinks(viewUsers.Skip(GetSkip(page, limit)).Take(limit).ToList(), viewUsers.Count > limit, page);
+            var pagedUsers = users.Skip(skip).Take(limit).ToList();
+            return OkWithResourceLinks(pagedUsers, users.Count > GetSkip(page + 1, limit), page);
         }
 
         /// <summary>
