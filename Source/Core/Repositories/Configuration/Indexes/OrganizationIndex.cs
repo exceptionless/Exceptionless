@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ElasticMacros;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
@@ -45,7 +46,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
     }
     
-    public class OrganizationIndexType : IndexTypeBase<Organization> {
+    public class OrganizationIndexType : IndexTypeBase<Organization>, IHaveMacros {
         public OrganizationIndexType(OrganizationIndex index) : base(index, "organization") { }
 
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
@@ -95,6 +96,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
                         .Number(fu => fu.Name(i => i.TooBig).IndexName(Fields.OverageHoursTooBig))))
                 );
         }
+        
+        public void ConfigureMacros(ElasticMacrosConfiguration configuration) {
+            configuration.AddAnalyzedField(Fields.Name);
+        }
 
         public class Fields {
             public const string CreatedUtc = "created";
@@ -134,7 +139,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
     }
 
-    public class ProjectIndexType : IndexTypeBase<Project> {
+    public class ProjectIndexType : IndexTypeBase<Project>, IHaveMacros {
         public ProjectIndexType(OrganizationIndex index) : base(index, "project") { }
 
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
@@ -159,6 +164,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Object<Dictionary<string, NotificationSettings>>(f => f.Name(u => u.NotificationSettings).Dynamic(false))
                     .Object<DataDictionary>(f => f.Name(u => u.Data).Dynamic(false))
                 );
+        }
+
+        public void ConfigureMacros(ElasticMacrosConfiguration configuration) {
+            configuration.AddAnalyzedField(Fields.Name);
         }
 
         public class Fields {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using ElasticMacros;
 using Elasticsearch.Net.ConnectionPool;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
@@ -28,8 +29,19 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddIndex(Events = new EventIndex(this));
             AddIndex(Organizations = new OrganizationIndex(this));
 
+            ElasticQueryBuilder.Default.Register(new ElasticMacroSearchQueryBuilder(new ElasticMacroProcessor(c => {
+                foreach (var index in Indexes)
+                    foreach (var indexType in index.IndexTypes.OfType<IHaveMacros>()) {
+                        indexType.ConfigureMacros(c);
+                    }
+            })));
+            
             // TODO: REMOVE THIS
-            ConfigureIndexesAsync().GetAwaiter().GetResult();
+            ConfigureIndexesAsync(beginReindexingOutdated: false).GetAwaiter().GetResult();
+        }
+
+        private static ElasticMacrosConfiguration AddAnalyzedField(ElasticMacrosConfiguration c) {
+            return c.AddAnalyzedField("test");
         }
 
         public StackIndex Stacks { get; }

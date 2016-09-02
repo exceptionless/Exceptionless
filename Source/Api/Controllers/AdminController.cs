@@ -97,7 +97,7 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> RunJobAsync(string name) {
             switch (name.ToLower()) {
                 case "indexes":
-                    await _configuration.ConfigureIndexesAsync();
+                    await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);
                     break;
                 case "update-organization-plans":
                     await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { UpgradePlans = true });

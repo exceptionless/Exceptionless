@@ -1,4 +1,5 @@
 using System;
+using ElasticMacros;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
@@ -13,7 +14,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public StackIndexType Stack { get; }
     }
 
-    public class StackIndexType : IndexTypeBase<Stack> {
+    public class StackIndexType : IndexTypeBase<Stack>, IHaveMacros {
         public StackIndexType(StackIndex index) : base(index, "stacks") { }
 
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
@@ -49,6 +50,15 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Boolean(f => f.Name(s => s.OccurrencesAreCritical).IndexName(Fields.OccurrencesAreCritical))
                     .Number(f => f.Name(s => s.TotalOccurrences).IndexName(Fields.TotalOccurrences))
                 );
+        }
+        
+        public void ConfigureMacros(ElasticMacrosConfiguration configuration) {
+            configuration.AddAnalyzedFields(new[] {
+                Fields.Title,
+                Fields.Description,
+                Fields.Tags,
+                Fields.References
+            });
         }
 
         public class Fields {
