@@ -507,7 +507,7 @@ namespace Exceptionless.Api.Controllers {
         private async Task<IHttpActionResult> GetInternalAsync(IExceptionlessSystemFilterQuery sf, TimeInfo ti, string userFilter = null, string sort = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
-            int skip = GetSkip(page + 1, limit);
+            int skip = GetSkip(page, limit);
             if (skip > MAXIMUM_SKIP)
                 return Ok(Enumerable.Empty<Stack>());
 

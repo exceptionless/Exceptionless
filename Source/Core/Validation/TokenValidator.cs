@@ -7,7 +7,7 @@ namespace Exceptionless.Core.Validation {
     public class TokenValidator : AbstractValidator<Token> {
         public TokenValidator() {
             RuleFor(t => t.Id).NotEmpty().WithMessage("Please specify a valid id.");
-            RuleFor(t => t.OrganizationId).IsObjectId().When(p => !String.IsNullOrEmpty(p.OrganizationId)).WithMessage("Please specify a valid organization id.");
+            RuleFor(t => t.OrganizationId).IsObjectId().When(p => !String.IsNullOrEmpty(p.OrganizationId) || p.Type == TokenType.Access).WithMessage("Please specify a valid organization id.");
             RuleFor(t => t.OrganizationId).NotEmpty().When(p => !String.IsNullOrEmpty(p.ProjectId)).WithMessage("Please specify a valid organization id.");
             RuleFor(t => t.CreatedUtc).NotEmpty().WithMessage("Please specify a valid created date.");
             RuleFor(t => t.ModifiedUtc).NotEmpty().WithMessage("Please specify a valid modified date.");
