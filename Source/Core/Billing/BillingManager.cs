@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Billing {
             if (user == null)
                 return false;
 
-            var organizations = (await _organizationRepository.GetByIdsAsync(user.OrganizationIds).AnyContext()).Documents.Where(o => o.PlanId == FreePlan.Id);
+            var organizations = (await _organizationRepository.GetByIdsAsync(user.OrganizationIds).AnyContext()).Where(o => o.PlanId == FreePlan.Id);
             return !organizations.Any();
         }
 
@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Billing {
                 return ChangePlanResult.FailWithMessage($"Please remove {projectCount - maxProjects} project{((projectCount - maxProjects) > 0 ? "s" : String.Empty)} and try again.");
 
             // Ensure the user can't be apart of more than one free plan.
-            if (String.Equals(plan.Id, FreePlan.Id) && user != null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds)).Documents.Any(o => String.Equals(o.PlanId, FreePlan.Id)))
+            if (String.Equals(plan.Id, FreePlan.Id) && user != null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds).AnyContext()).Any(o => String.Equals(o.PlanId, FreePlan.Id)))
                 return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
             
             return new ChangePlanResult { Success = true };

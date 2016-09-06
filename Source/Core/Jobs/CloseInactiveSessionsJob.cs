@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Jobs {
         private async Task<HeartbeatResult> GetHeartbeatAsync(PersistentEvent sessionStart) {
             string sessionId = sessionStart.GetSessionId();
             if (!String.IsNullOrWhiteSpace(sessionId)) {
-                var result = await GetLastHeartbeatActivityUtcAsync($"project:{sessionStart.ProjectId}:heartbeat:{sessionId.ToSHA1()}");
+                var result = await GetLastHeartbeatActivityUtcAsync($"project:{sessionStart.ProjectId}:heartbeat:{sessionId.ToSHA1()}").AnyContext();
                 if (result != null)
                     return result;
             }
@@ -91,7 +91,7 @@ namespace Exceptionless.Core.Jobs {
             if (String.IsNullOrWhiteSpace(user?.Identity))
                 return null;
 
-            return await GetLastHeartbeatActivityUtcAsync($"project:{sessionStart.ProjectId}:heartbeat:{user.Identity.ToSHA1()}");
+            return await GetLastHeartbeatActivityUtcAsync($"project:{sessionStart.ProjectId}:heartbeat:{user.Identity.ToSHA1()}").AnyContext();
         }
 
         private async Task<HeartbeatResult> GetLastHeartbeatActivityUtcAsync(string cacheKey) {

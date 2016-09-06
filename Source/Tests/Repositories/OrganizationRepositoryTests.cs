@@ -25,6 +25,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         public OrganizationRepositoryTests(ITestOutputHelper output) : base(output) {
             _cache = GetService<ICacheClient>() as InMemoryCacheClient;
             _repository = GetService<IOrganizationRepository>();
+
+            Log.SetLogLevel<OrganizationRepository>(LogLevel.Trace);
         }
         
         [Fact]
@@ -204,19 +206,19 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private string GetHourlyBlockedCacheKey(string organizationId) {
-            return String.Concat("organization:usage-blocked", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("Organization:usage-blocked", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetHourlyTotalCacheKey(string organizationId) {
-            return String.Concat("organization:usage-total", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("Organization:usage-total", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetMonthlyBlockedCacheKey(string organizationId) {
-            return String.Concat("organization:usage-blocked", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
+            return String.Concat("Organization:usage-blocked", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetMonthlyTotalCacheKey(string organizationId) {
-            return String.Concat("organization:usage-total", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
+            return String.Concat("Organization:usage-total", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
     }
 }

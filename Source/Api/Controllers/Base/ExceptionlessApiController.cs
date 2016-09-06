@@ -136,7 +136,7 @@ namespace Exceptionless.Api.Controllers {
             if (ids.Count == 0)
                 return null;
 
-            return (await repository.GetByIdsAsync(ids, true)).Documents;
+            return await repository.GetByIdsAsync(ids, true);
         }
 
         protected StatusCodeActionResult StatusCodeWithMessage(HttpStatusCode statusCode, string message, string reason = null) {

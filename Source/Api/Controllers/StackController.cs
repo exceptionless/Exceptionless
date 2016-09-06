@@ -817,7 +817,7 @@ namespace Exceptionless.Api.Controllers {
                     return Ok(Enumerable.Empty<Stack>());
 
                 var stackIds = ntsr.Terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
-                var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
+                var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
 
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase)) {
                     var summaries = await GetStackSummariesAsync(stacks, ntsr, sf, ti);

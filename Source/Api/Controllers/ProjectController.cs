@@ -469,7 +469,7 @@ namespace Exceptionless.Api.Controllers {
 
             // TODO: We can optimize this by normalizing the project model to include the organization name.
             var viewProjects = models.OfType<ViewProject>().ToList();
-            var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true)).Documents;
+            var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true);
             foreach (var viewProject in viewProjects) {
                 var organization = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId);
                 if (organization != null) {
@@ -541,7 +541,7 @@ namespace Exceptionless.Api.Controllers {
                 new FieldAggregation { Type = FieldAggregationType.Distinct, Field = "stack_id" }
             };
 
-            var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true)).Documents;
+            var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true);
             var projects = viewProjects.Select(p => new Project { Id = p.Id, OrganizationId = p.OrganizationId }).ToList();
             var sf = new ExceptionlessSystemFilterQuery(projects, organizations);
             var ntsr = await _stats.GetNumbersTermsStatsAsync("project_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, sf, max: viewProjects.Count);
