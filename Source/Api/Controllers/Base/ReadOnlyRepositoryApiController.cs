@@ -48,7 +48,7 @@ namespace Exceptionless.Api.Controllers {
             if (ids == null || ids.Length == 0)
                 return new List<TModel>();
 
-            var models = (await _repository.GetByIdsAsync(ids, useCache)).Documents;
+            var models = await _repository.GetByIdsAsync(ids, useCache);
             if (!_isOwnedByOrganization)
                 return models;
 

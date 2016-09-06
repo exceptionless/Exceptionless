@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using ElasticMacros;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
@@ -46,7 +45,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
     }
     
-    public class OrganizationIndexType : IndexTypeBase<Organization>, IHaveMacros {
+    public class OrganizationIndexType : IndexTypeBase<Organization> {
         public OrganizationIndexType(OrganizationIndex index) : base(index, "organization") { }
 
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
@@ -97,8 +96,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 );
         }
         
-        public void ConfigureMacros(ElasticMacrosConfiguration configuration) {
-            configuration.AddAnalyzedField(Fields.Name);
+        public override bool IsAnalyzedField(string field) {
+            return field == Fields.Name;
         }
 
         public class Fields {
@@ -139,7 +138,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
     }
 
-    public class ProjectIndexType : IndexTypeBase<Project>, IHaveMacros {
+    public class ProjectIndexType : IndexTypeBase<Project> {
         public ProjectIndexType(OrganizationIndex index) : base(index, "project") { }
 
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
@@ -165,9 +164,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Object<DataDictionary>(f => f.Name(u => u.Data).Dynamic(false))
                 );
         }
-
-        public void ConfigureMacros(ElasticMacrosConfiguration configuration) {
-            configuration.AddAnalyzedField(Fields.Name);
+        
+        public override bool IsAnalyzedField(string field) {
+            return field == Fields.Name;
         }
 
         public class Fields {

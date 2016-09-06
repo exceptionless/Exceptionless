@@ -77,7 +77,7 @@ namespace Exceptionless.Core.Jobs {
                     await ProcessSummaryNotificationAsync(notification).AnyContext();
 
                     // Sleep so were not hammering the database.
-                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(1));
+                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(1)).AnyContext();
                 }
 
                 projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
@@ -97,7 +97,7 @@ namespace Exceptionless.Core.Jobs {
                 return;
             }
 
-            var users = (await _userRepository.GetByIdsAsync(userIds).AnyContext()).Documents.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(organization.Id)).ToList();
+            var users = (await _userRepository.GetByIdsAsync(userIds).AnyContext()).Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(organization.Id)).ToList();
             if (users.Count == 0) {
                 _logger.Info("Project \"{0}\" has no users to send summary to.", project.Id);
                 return;

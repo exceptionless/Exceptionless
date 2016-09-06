@@ -11,6 +11,7 @@ using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Xunit;
 using Xunit.Abstractions;
@@ -32,6 +33,8 @@ namespace Exceptionless.Api.Tests.Stats {
             _stackRepository = GetService<IStackRepository>();
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();
+
+            Log.SetLogLevel<EventStats>(LogLevel.Trace);
         }
 
         [Fact]
@@ -193,9 +196,8 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var fields = FieldAggregationProcessor.Process("term:is_first_occurrence:-F", false);
             Assert.True(fields.IsValid);
-
-            var sf = new ExceptionlessSystemFilterQuery(OrganizationData.GenerateSampleOrganization());
-            var result = await _stats.GetNumbersTermsStatsAsync("project_id", fields.Aggregations, startDate, DateTime.UtcNow, sf);
+            
+            var result = await _stats.GetNumbersTermsStatsAsync("project_id", fields.Aggregations, startDate, DateTime.UtcNow, null);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 3); // 3 sample projects
             Assert.InRange(result.Terms.Sum(t => t.Numbers[0]), 1, 25 * 3); // new

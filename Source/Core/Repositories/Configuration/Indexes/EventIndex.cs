@@ -1,5 +1,5 @@
 using System;
-using ElasticMacros;
+using System.Collections.Generic;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Repositories.Elasticsearch.Configuration;
@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public EventIndexType Event { get; }
     }
     
-    public class EventIndexType : MonthlyIndexType<PersistentEvent>, IHaveMacros {
+    public class EventIndexType : MonthlyIndexType<PersistentEvent> {
         private const string COMMA_WHITESPACE_ANALYZER = "comma_whitespace";
         private const string EMAIL_ANALYZER = "email";
         private const string VERSION_INDEX_ANALYZER = "version_index";
@@ -156,8 +156,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 );
         }
 
-        public void ConfigureMacros(ElasticMacrosConfiguration configuration) {
-            configuration.AddAnalyzedFields(new[] {
+
+        private readonly List<string> _analyzedFields = new List<string> {
                 Fields.Source,
                 Fields.Message,
                 Fields.Tags,
@@ -182,9 +182,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 Fields.UserEmail,
                 Fields.User,
                 Fields.UserName
-            });
+        };
+
+        public override bool IsAnalyzedField(string field) {
+            return _analyzedFields.Contains(field);
         }
-        
+
         const string FLATTEN_ERRORS_SCRIPT = @"
 if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))
     return

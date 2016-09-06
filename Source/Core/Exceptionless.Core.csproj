@@ -45,8 +45,8 @@
       <HintPath>..\..\packages\AutoMapper.5.1.1\lib\net45\AutoMapper.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="ElasticMacros, Version=1.0.58.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.ElasticMacros.1.0.58\lib\net46\ElasticMacros.dll</HintPath>
+    <Reference Include="ElasticMacros, Version=1.0.68.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.ElasticMacros.1.0.68\lib\net46\ElasticMacros.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
@@ -57,8 +57,8 @@
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.2.53\lib\net45\Exceptionless.DateTimeExtensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.58.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.58\lib\net46\Exceptionless.LuceneQueryParser.dll</HintPath>
+    <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.68.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.68\lib\net46\Exceptionless.LuceneQueryParser.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FluentValidation, Version=6.2.1.0, Culture=neutral, processorArchitecture=MSIL">
@@ -69,12 +69,12 @@
       <HintPath>..\..\packages\Foundatio.4.2.1176\lib\net46\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=2.0.209.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.2.0.209-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
+    <Reference Include="Foundatio.Repositories, Version=2.0.227.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.2.0.227-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=2.0.209.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.2.0.209-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=2.0.227.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.2.0.227-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -278,7 +278,6 @@
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ExceptionlessElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\IHaveMacros.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\StackIndex.cs" />
     <Compile Include="Repositories\Queries\ProjectIdQuery.cs" />

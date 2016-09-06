@@ -175,7 +175,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             if (context.GetProperty("SetSessionStartEventId") != null)
                 await SetSessionStartEventIdAsync(context.Project.Id, context.Event.GetSessionId(), context.Event.Id).AnyContext();
 
-            await base.EventProcessedAsync(context);
+            await base.EventProcessedAsync(context).AnyContext();
         }
 
         private static List<List<EventContext>> CreateSessionGroups(IGrouping<String, EventContext> identityGroup) {

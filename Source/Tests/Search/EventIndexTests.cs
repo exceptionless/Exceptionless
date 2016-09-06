@@ -79,6 +79,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Theory]
+        [InlineData("_exists_:submission", 1)]
         [InlineData("_missing_:submission", 2)]
         [InlineData("submission:UnobservedTaskException", 1)]
         public async Task GetBySubmissionMethodAsync(string filter, int count) {
@@ -453,6 +454,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         private Task<IFindResults<PersistentEvent>> GetByFilterAsync(string filter) {
             var result = QueryProcessor.Process(filter);
             filter = result.ExpandedQuery;
+            _logger.Info($"Expanded Filter: {filter}");
 
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
             return _repository.GetByFilterAsync(null, filter, new SortingOptions(), null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
