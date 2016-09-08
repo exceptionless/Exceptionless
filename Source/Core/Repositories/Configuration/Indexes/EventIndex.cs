@@ -156,37 +156,37 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 );
         }
 
+        // TODO: Let the query parser know about our analyzed fields for smarter query generation.
+        //private readonly List<string> _analyzedFields = new List<string> {
+        //        Fields.Source,
+        //        Fields.Message,
+        //        Fields.Tags,
+        //        Fields.Version,
+        //        Fields.Level,
+        //        Fields.SubmissionMethod,
+        //        Fields.IpAddress,
+        //        Fields.RequestUserAgent,
+        //        Fields.RequestPath,
+        //        Fields.Browser,
+        //        Fields.BrowserVersion,
+        //        Fields.Device,
+        //        Fields.OperatingSystem,
+        //        Fields.OperatingSystemVersion,
+        //        Fields.ErrorMessage,
+        //        Fields.ErrorTargetType,
+        //        Fields.ErrorTargetMethod,
+        //        Fields.ErrorType,
+        //        Fields.ErrorMessage,
+        //        Fields.MachineName,
+        //        Fields.UserDescription,
+        //        Fields.UserEmail,
+        //        Fields.User,
+        //        Fields.UserName
+        //};
 
-        private readonly List<string> _analyzedFields = new List<string> {
-                Fields.Source,
-                Fields.Message,
-                Fields.Tags,
-                Fields.Version,
-                Fields.Level,
-                Fields.SubmissionMethod,
-                Fields.IpAddress,
-                Fields.RequestUserAgent,
-                Fields.RequestPath,
-                Fields.Browser,
-                Fields.BrowserVersion,
-                Fields.Device,
-                Fields.OperatingSystem,
-                Fields.OperatingSystemVersion,
-                Fields.ErrorMessage,
-                Fields.ErrorTargetType,
-                Fields.ErrorTargetMethod,
-                Fields.ErrorType,
-                Fields.ErrorMessage,
-                Fields.MachineName,
-                Fields.UserDescription,
-                Fields.UserEmail,
-                Fields.User,
-                Fields.UserName
-        };
-
-        public override bool IsAnalyzedField(string field) {
-            return _analyzedFields.Contains(field);
-        }
+        //public bool IsAnalyzedField(string field) {
+        //    return _analyzedFields.Contains(field);
+        //}
 
         const string FLATTEN_ERRORS_SCRIPT = @"
 if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))

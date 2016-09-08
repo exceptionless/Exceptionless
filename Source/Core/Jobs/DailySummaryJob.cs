@@ -55,16 +55,15 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.SuccessWithMessage("Summary notifications are disabled due to null mailer.");
 
             const int BATCH_SIZE = 25;
-            var projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
-            while (projects.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
-                var documentsUpdated = await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projects).AnyContext();
-                _logger.Info("Got {0} projects to process. ", projects.Count);
-                Debug.Assert(projects.Count == documentsUpdated);
+            var results = await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext();
+            while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
+                _logger.Info("Got {0} projects to process. ", results.Documents.Count);
 
-                foreach (var project in projects) {
-                    var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
+                foreach (var project in results.Documents) {
+                    var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks);
                     if (utcStartTime < DateTime.UtcNow.Date.SubtractDays(2)) {
                         _logger.Info("Skipping daily summary older than two days for project \"{0}\" with a start time of \"{1}\".", project.Id, utcStartTime);
+                        await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }).AnyContext();
                         continue;
                     }
 
@@ -75,13 +74,16 @@ namespace Exceptionless.Core.Jobs {
                     };
 
                     await ProcessSummaryNotificationAsync(notification).AnyContext();
+                    await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }).AnyContext();
 
-                    // Sleep so were not hammering the database.
+                    // Sleep so we are not hammering the backend.
                     await SystemClock.SleepAsync(TimeSpan.FromSeconds(1)).AnyContext();
                 }
-
-                projects = (await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext()).Documents;
-                if (projects.Count > 0)
+                
+                if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
+                    break;
+                
+                if (results.Documents.Count > 0)
                     await context.RenewLockAsync().AnyContext();
             }
 
