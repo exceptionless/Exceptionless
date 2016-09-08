@@ -3,9 +3,13 @@ cluster.name: exceptionless
 script.disable_dynamic: false
 index.number_of_shards: 1
 index.number_of_replicas: 0
-action.auto_create_index: false
+action.auto_create_index: +.marvel-*
 node.local: true
 http.port: 9200
 transport.tcp.port: 9300
 bootstrap.mlockall: true
 discovery.zen.ping.multicast.enabled: false
+
+# non-ssd configuration
+#index.merge.scheduler.max_thread_count: 1
+#index.translog.flush_threshold_size: 1gb

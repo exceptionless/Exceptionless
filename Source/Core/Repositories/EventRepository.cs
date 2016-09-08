@@ -140,14 +140,12 @@ namespace Exceptionless.Core.Repositories {
 
         public async Task RemoveOldestEventsAsync(string stackId, int maxEventsPerStack) {
             var options = new PagingOptions { Limit = maxEventsPerStack, Page = 2 };
-            var events = await GetOldestEventsAsync(stackId, options).AnyContext();
-            while (events.Total > 0) {
-                await RemoveAsync(events.Documents).AnyContext();
+            var results = await GetOldestEventsAsync(stackId, options).AnyContext();
+            while (results.Documents.Count > 0) {
+                await RemoveAsync(results.Documents).AnyContext();
 
-                if (!events.HasMore)
+                if (!await results.NextPageAsync().AnyContext())
                     break;
-
-                events = await GetOldestEventsAsync(stackId, options).AnyContext();
             }
         }
 

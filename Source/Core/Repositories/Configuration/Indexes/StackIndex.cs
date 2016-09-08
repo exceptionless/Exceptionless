@@ -52,16 +52,17 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 );
         }
 
-        private readonly List<string> _analyzedFields = new List<string> {
-            Fields.Title,
-            Fields.Description,
-            Fields.Tags,
-            Fields.References
-        };
+        // TODO: Let the query parser know about our analyzed fields for smarter query generation.
+        //private readonly List<string> _analyzedFields = new List<string> {
+        //    Fields.Title,
+        //    Fields.Description,
+        //    Fields.Tags,
+        //    Fields.References
+        //};
 
-        public override bool IsAnalyzedField(string field) {
-            return _analyzedFields.Contains(field);
-        }
+        //public bool IsAnalyzedField(string field) {
+        //    return _analyzedFields.Contains(field);
+        //}
 
         public class Fields {
             public const string OrganizationId = "organization";
