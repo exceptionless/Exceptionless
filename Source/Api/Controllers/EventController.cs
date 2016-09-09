@@ -28,6 +28,7 @@ using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
+using Foundatio.Utility;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Api.Controllers {
@@ -92,7 +93,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null)
                 return NotFound();
             
-            if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < DateTime.UtcNow.SubtractDays(organization.RetentionDays))
+            if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < SystemClock.UtcNow.SubtractDays(organization.RetentionDays))
                 return PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
             if (!String.IsNullOrEmpty(filter))
@@ -553,7 +554,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null || organization.IsSuspended)
                 return Ok();
 
-            await _cacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}", DateTime.UtcNow, TimeSpan.FromHours(2));
+            await _cacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}", SystemClock.UtcNow, TimeSpan.FromHours(2));
             if (close)
                 await _cacheClient.SetAsync($"project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
 

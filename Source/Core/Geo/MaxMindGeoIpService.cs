@@ -6,6 +6,7 @@ using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Logging;
 using Foundatio.Storage;
+using Foundatio.Utility;
 using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
 using MaxMind.GeoIP2.Responses;
@@ -73,7 +74,7 @@ namespace Exceptionless.Core.Geo {
 
         private async Task<DatabaseReader> GetDatabaseAsync(CancellationToken cancellationToken) {
             // Try to load the new database from disk if the current one is an hour old.
-            if (_database != null && _databaseLastChecked.HasValue && _databaseLastChecked.Value < DateTime.UtcNow.SubtractHours(1)) {
+            if (_database != null && _databaseLastChecked.HasValue && _databaseLastChecked.Value < SystemClock.UtcNow.SubtractHours(1)) {
                 _database.Dispose();
                 _database = null;
             }
@@ -81,10 +82,10 @@ namespace Exceptionless.Core.Geo {
             if (_database != null)
                 return _database;
 
-            if (_databaseLastChecked.HasValue && _databaseLastChecked.Value >= DateTime.UtcNow.SubtractSeconds(30))
+            if (_databaseLastChecked.HasValue && _databaseLastChecked.Value >= SystemClock.UtcNow.SubtractSeconds(30))
                 return null;
 
-            _databaseLastChecked = DateTime.UtcNow;
+            _databaseLastChecked = SystemClock.UtcNow;
 
             if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH).AnyContext()) {
                 _logger.Warn("No GeoIP database was found.");

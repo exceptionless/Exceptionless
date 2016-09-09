@@ -1,12 +1,13 @@
 ﻿using System;
 using Exceptionless.Core.Models;
+using Foundatio.Utility;
 using McSherry.SemanticVersioning;
 
 namespace Exceptionless.Core.Extensions {
     public static class StackExtensions {
         public static void MarkFixed(this Stack stack, SemanticVersion version = null) {
             stack.IsRegressed = false;
-            stack.DateFixed = DateTime.UtcNow;
+            stack.DateFixed = SystemClock.UtcNow;
             stack.FixedInVersion = version != null ? version.ToString() : null;
         }
 

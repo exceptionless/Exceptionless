@@ -33,9 +33,9 @@ namespace Exceptionless.Core.Jobs {
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             const int LIMIT = 100;
 
-            var results = await _eventRepository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(1), new PagingOptions().WithPage(1).WithLimit(LIMIT)).AnyContext();
+            var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), new PagingOptions().WithPage(1).WithLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
-                var inactivePeriodUtc = DateTime.UtcNow.Subtract(DefaultInactivePeriod);
+                var inactivePeriodUtc = SystemClock.UtcNow.Subtract(DefaultInactivePeriod);
                 var sessionsToUpdate = new List<PersistentEvent>(results.Documents.Count);
                 var cacheKeysToRemove = new List<string>(results.Documents.Count * 2);
 

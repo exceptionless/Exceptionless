@@ -17,6 +17,7 @@ using Foundatio.Logging;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
+using Foundatio.Utility;
 using Nest;
 using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
@@ -136,27 +137,27 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private string GetHourlyBlockedCacheKey(string organizationId) {
-            return String.Concat("usage-blocked", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("usage-blocked", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetHourlyTotalCacheKey(string organizationId) {
-            return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("usage-total", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetHourlyTooBigCacheKey(string organizationId) {
-            return String.Concat("usage-toobig", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("usage-toobig", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetMonthlyBlockedCacheKey(string organizationId) {
-            return String.Concat("usage-blocked", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+            return String.Concat("usage-blocked", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetMonthlyTotalCacheKey(string organizationId) {
-            return String.Concat("usage-total", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+            return String.Concat("usage-total", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetMonthlyTooBigCacheKey(string organizationId) {
-            return String.Concat("usage-toobig", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+            return String.Concat("usage-toobig", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetUsageSavedCacheKey(string organizationId) {
@@ -194,14 +195,14 @@ namespace Exceptionless.Core.Repositories {
 
             // don't save on the 1st increment, but set the last saved date so we will save in 5 minutes
             if (!lastCounterSavedDate.HasValue)
-                await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
+                await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
 
             // save usages if we just went over one of the limits
             if (justWentOverHourly || justWentOverMonthly)
                 shouldSaveUsage = true;
 
             // save usages if the last time we saved them is more than 5 minutes ago
-            if (lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes >= USAGE_SAVE_MINUTES)
+            if (lastCounterSavedDate.HasValue && SystemClock.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes >= USAGE_SAVE_MINUTES)
                 shouldSaveUsage = true;
 
             if (shouldSaveUsage) {
@@ -212,12 +213,12 @@ namespace Exceptionless.Core.Repositories {
                         org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
 
                     await SaveAsync(org, true).AnyContext();
-                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
+                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
                 } catch (Exception ex) {
                     _logger.Error(ex, "Error while saving organization usage data.");
 
                     // Set the next document save for 5 seconds in the future.
-                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow.SubtractMinutes(4).SubtractSeconds(55), TimeSpan.FromDays(32)).AnyContext();
+                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), SystemClock.UtcNow.SubtractMinutes(4).SubtractSeconds(55), TimeSpan.FromDays(32)).AnyContext();
                 }
             }
 

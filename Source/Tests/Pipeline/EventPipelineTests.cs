@@ -20,10 +20,11 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
+using Foundatio.Utility;
 using McSherry.SemanticVersioning;
 using Xunit;
 using Xunit.Abstractions;
-
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using Fields = Exceptionless.Core.Repositories.Configuration.EventIndexType.Fields;
 
 namespace Exceptionless.Api.Tests.Pipeline {
@@ -48,7 +49,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         
         [Fact]
         public async Task NoFutureEventsAsync() {
-            var localTime = DateTime.Now;
+            var localTime = SystemClock.UtcNow;
             var ev = GenerateEvent(localTime.AddMinutes(10));
 
             await _pipeline.RunAsync(ev);
@@ -508,7 +509,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         
         [Fact]
         public void CanIndexExtendedData() {
-            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: DateTime.Now);
+            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: SystemClock.UtcNow);
             ev.Data.Add("First Name", "Eric"); // invalid field name
             ev.Data.Add("IsVerified", true);
             ev.Data.Add("IsVerified1", true.ToString());
@@ -547,7 +548,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             const string Tag2 = "Tag Two";
             const string Tag2_Lowercase = "tag two";
 
-            PersistentEvent ev = GenerateEvent(DateTime.Now);
+            PersistentEvent ev = GenerateEvent(SystemClock.UtcNow);
             ev.Tags.Add(Tag1);
             
             await _pipeline.RunAsync(ev);
@@ -559,7 +560,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1 }, stack.Tags);
 
-            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.Now);
+            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
             ev.Tags.Add(Tag2);
 
             await _configuration.Client.RefreshAsync();
@@ -567,7 +568,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
 
-            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.Now);
+            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
             ev.Tags.Add(Tag2_Lowercase);
 
             await _configuration.Client.RefreshAsync();
@@ -580,8 +581,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
         public async Task EnsureSingleNewStackAsync() {
             string source = Guid.NewGuid().ToString();
             var contexts = new List<EventContext> {
-                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = DateTime.UtcNow, Type = Event.KnownTypes.Log }),
-                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = DateTime.UtcNow, Type = Event.KnownTypes.Log}),
+                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log }),
+                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log}),
             };
             
             await _pipeline.RunAsync(contexts);
@@ -598,7 +599,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                     ProjectId = TestConstants.ProjectId,
                     OrganizationId = TestConstants.OrganizationId,
                     Message = "Test Exception",
-                    Date = DateTime.UtcNow,
+                    Date = SystemClock.UtcNow,
                     Type = Event.KnownTypes.Error,
                     Data = new DataDictionary { { "@error", new Error { Message = "Test Exception", Type = "Error" } } }
                 }),
@@ -606,7 +607,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                     ProjectId = TestConstants.ProjectId,
                     OrganizationId = TestConstants.OrganizationId,
                     Message = "Test Exception",
-                    Date = DateTime.UtcNow,
+                    Date = SystemClock.UtcNow,
                     Type = Event.KnownTypes.Error,
                     Data = new DataDictionary { { "@error", new Error { Message = "Test Exception 2", Type = "Error" } } }
                 }),
@@ -621,7 +622,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task EnsureSingleRegressionAsync() {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = SystemClock.UtcNow;
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
             var context = new EventContext(ev);
             await _pipeline.RunAsync(context);
@@ -672,7 +673,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task EnsureVersionedRegressionAsync() {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = SystemClock.UtcNow;
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
             var context = new EventContext(ev);
             await _pipeline.RunAsync(context);
@@ -729,7 +730,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(events.Count > 0);
             
             foreach (var ev in events) {
-                ev.Date = DateTime.UtcNow;
+                ev.Date = SystemClock.UtcNow;
                 ev.ProjectId = TestConstants.ProjectId;
                 ev.OrganizationId = TestConstants.OrganizationId;
             }
@@ -882,12 +883,12 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
                 organization.StripeCustomerId = Guid.NewGuid().ToString("N");
                 organization.CardLast4 = "1234";
-                organization.SubscribeDate = DateTime.Now;
+                organization.SubscribeDate = SystemClock.UtcNow;
 
                 if (organization.IsSuspended) {
                     organization.SuspendedByUserId = TestConstants.UserId;
                     organization.SuspensionCode = SuspensionCode.Billing;
-                    organization.SuspensionDate = DateTime.UtcNow;
+                    organization.SuspensionDate = SystemClock.UtcNow;
                 }
 
                 await _organizationRepository.AddAsync(organization, true);

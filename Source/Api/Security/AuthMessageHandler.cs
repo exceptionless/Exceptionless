@@ -8,6 +8,7 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Api.Security {
     public class AuthMessageHandler : DelegatingHandler {
@@ -78,7 +79,7 @@ namespace Exceptionless.Api.Security {
             if (tokenRecord == null)
                 return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
-            if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < DateTime.UtcNow)
+            if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < SystemClock.UtcNow)
                 return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
             if (!String.IsNullOrEmpty(tokenRecord.UserId)) {

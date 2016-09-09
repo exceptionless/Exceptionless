@@ -18,6 +18,7 @@ using Exceptionless.DateTimeExtensions;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
+using Foundatio.Utility;
 using Newtonsoft.Json.Linq;
 using OAuth2.Client;
 using OAuth2.Client.Impl;
@@ -81,11 +82,11 @@ namespace Exceptionless.Api.Controllers {
             
             // Only allow 5 password attempts per 15 minute period.
             string userLoginAttemptsCacheKey = $"user:{model.Email}:attempts";
-            long userLoginAttempts = await _cacheClient.IncrementAsync(userLoginAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+            long userLoginAttempts = await _cacheClient.IncrementAsync(userLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
             // Only allow 15 login attempts per 15 minute period by a single ip.
             string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
-            long ipLoginAttempts = await _cacheClient.IncrementAsync(ipLoginAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+            long ipLoginAttempts = await _cacheClient.IncrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
             if (userLoginAttempts > 5) {
                 _logger.Error().Message("Login denied for \"{0}\" for the {1} time.", model.Email, userLoginAttempts).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
@@ -186,7 +187,7 @@ namespace Exceptionless.Api.Controllers {
             bool hasValidInviteToken = !String.IsNullOrWhiteSpace(model.InviteToken) && await _organizationRepository.GetByInviteTokenAsync(model.InviteToken) != null;
             if (!hasValidInviteToken) {
                 // Only allow 10 signups per hour period by a single ip.
-                long ipSignupAttempts = await _cacheClient.IncrementAsync(ipSignupAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+                long ipSignupAttempts = await _cacheClient.IncrementAsync(ipSignupAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
                 if (ipSignupAttempts > 10) {
                     _logger.Error().Message("Signup denied for \"{0}\" for the {1} time.", model.Email, ipSignupAttempts).Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
                     return BadRequest();
@@ -335,7 +336,7 @@ namespace Exceptionless.Api.Controllers {
             
             // Only allow 3 checks attempts per hour period by a single ip.
             string ipEmailAddressAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:email:attempts";
-            long attempts = await _cacheClient.IncrementAsync(ipEmailAddressAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+            long attempts = await _cacheClient.IncrementAsync(ipEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
 
             if (attempts > 3 || await _userRepository.GetByEmailAddressAsync(email) == null)
                 return StatusCode(HttpStatusCode.NoContent);
@@ -594,15 +595,15 @@ namespace Exceptionless.Api.Controllers {
 
         private async Task<string> GetTokenAsync(User user) {
             var userTokens = await _tokenRepository.GetByUserIdAsync(user.Id);
-            var validAccessToken = userTokens.Documents.FirstOrDefault(t => (!t.ExpiresUtc.HasValue || t.ExpiresUtc > DateTime.UtcNow) && t.Type == TokenType.Access);
+            var validAccessToken = userTokens.Documents.FirstOrDefault(t => (!t.ExpiresUtc.HasValue || t.ExpiresUtc > SystemClock.UtcNow) && t.Type == TokenType.Access);
             if (validAccessToken != null)
                 return validAccessToken.Id;
 
             var token = await _tokenRepository.AddAsync(new Token {
                 Id = Core.Extensions.StringExtensions.GetNewToken(),
                 UserId = user.Id,
-                CreatedUtc = DateTime.UtcNow,
-                ModifiedUtc = DateTime.UtcNow,
+                CreatedUtc = SystemClock.UtcNow,
+                ModifiedUtc = SystemClock.UtcNow,
                 CreatedBy = user.Id,
                 Type = TokenType.Access
             });

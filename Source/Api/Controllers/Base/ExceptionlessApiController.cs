@@ -13,6 +13,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
     [RequireHttpsExceptLocal]
@@ -47,7 +48,7 @@ namespace Exceptionless.Api.Controllers {
             var utcOffset = GetOffset(offset);
 
             // range parsing needs to be based on the user's local time.
-            var localRange = DateTimeRange.Parse(time, DateTime.UtcNow.Add(utcOffset));
+            var localRange = DateTimeRange.Parse(time, SystemClock.UtcNow.Add(utcOffset));
             var utcRange = localRange != DateTimeRange.Empty ? localRange.Subtract(utcOffset) : localRange;
             
             if (utcRange.UtcStart < minimumUtcStartDate.GetValueOrDefault())

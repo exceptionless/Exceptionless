@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Jobs {
 
                 foreach (var project in results.Documents) {
                     var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks);
-                    if (utcStartTime < DateTime.UtcNow.Date.SubtractDays(2)) {
+                    if (utcStartTime < SystemClock.UtcNow.Date.SubtractDays(2)) {
                         _logger.Info("Skipping daily summary older than two days for project \"{0}\" with a start time of \"{1}\".", project.Id, utcStartTime);
                         await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }).AnyContext();
                         continue;

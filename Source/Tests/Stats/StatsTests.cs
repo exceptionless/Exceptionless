@@ -13,6 +13,7 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Foundatio.Logging.LogLevel;
@@ -40,7 +41,7 @@ namespace Exceptionless.Api.Tests.Stats {
         [Fact]
         public async Task CanGetNumbersAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
-            var startDate = DateTime.UtcNow.SubtractDays(60);
+            var startDate = SystemClock.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             await CreateDataAsync(eventCount, false);
             
@@ -48,7 +49,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.True(fields.IsValid);
             Assert.Equal(2, fields.Aggregations.Count);
 
-            var result = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
+            var result = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, SystemClock.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
             Assert.Equal(2, result.Numbers.Length);
@@ -57,7 +58,7 @@ namespace Exceptionless.Api.Tests.Stats {
             
             var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
             foreach (var stack in stacks.Documents) {
-                var nsr = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
+                var nsr = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, SystemClock.UtcNow, null, userFilter: "stack:" + stack.Id);
                 Assert.Equal(stack.TotalOccurrences, nsr.Total);
             }
         }
@@ -65,7 +66,7 @@ namespace Exceptionless.Api.Tests.Stats {
         [Fact]
         public async Task CanGetEventStatsAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
-            var startDate = DateTime.UtcNow.SubtractDays(60);
+            var startDate = SystemClock.UtcNow.SubtractDays(60);
             await CreateDataAsync(0, false);
 
             var  values = new decimal?[] { null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
@@ -76,7 +77,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.True(fields.IsValid);
             Assert.Equal(5, fields.Aggregations.Count);
 
-            var ntsr = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
+            var ntsr = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, SystemClock.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
             Assert.Equal(values.Length, ntsr.Total);
             Assert.Equal(values.Length, ntsr.Timeline.Sum(t => t.Total));
             Assert.Equal(5, ntsr.Numbers.Length);
@@ -86,7 +87,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(0, ntsr.Numbers[3]); // min
             Assert.Equal(100, ntsr.Numbers[4]); // max
 
-            var nsr = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
+            var nsr = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, SystemClock.UtcNow, null, userFilter: $"project:{TestConstants.ProjectId}");
             Assert.Equal(values.Length, nsr.Total);
             Assert.Equal(5, nsr.Numbers.Length);
             Assert.Equal(50, nsr.Numbers[0]); // average
@@ -99,7 +100,7 @@ namespace Exceptionless.Api.Tests.Stats {
         [Fact]
         public async Task CanGetEventStatsWithoutDateRangeAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
-            var startDate = DateTime.UtcNow.SubtractDays(60);
+            var startDate = SystemClock.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             await CreateDataAsync(eventCount, false);
             
@@ -115,7 +116,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
             foreach (var stack in stacks.Documents) {
-                var ns = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
+                var ns = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, SystemClock.UtcNow, null, userFilter: "stack:" + stack.Id);
                 Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, ns.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Timeline.Sum(t => t.Total));
@@ -125,7 +126,7 @@ namespace Exceptionless.Api.Tests.Stats {
         [Fact]
         public async Task CanGetEventStatsForTimeZoneAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
-            var startDate = DateTime.UtcNow.SubtractDays(60);
+            var startDate = SystemClock.UtcNow.SubtractDays(60);
             const int eventCount = 1;
             await CreateDataAsync(eventCount);
             
@@ -133,11 +134,11 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.True(fields.IsValid);
             Assert.Equal(1, fields.Aggregations.Count);
 
-            var resultUtc = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null);
+            var resultUtc = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, SystemClock.UtcNow, null);
             Assert.Equal(eventCount, resultUtc.Total);
             Assert.Equal(eventCount, resultUtc.Timeline.Sum(t => t.Total));
 
-            var resultLocal = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, displayTimeOffset: TimeSpan.FromHours(-4));
+            var resultLocal = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, SystemClock.UtcNow, null, displayTimeOffset: TimeSpan.FromHours(-4));
             Assert.Equal(eventCount, resultLocal.Total);
             Assert.Equal(eventCount, resultLocal.Timeline.Sum(t => t.Total));
         }
@@ -145,7 +146,7 @@ namespace Exceptionless.Api.Tests.Stats {
         [Fact]
         public async Task CanGetEventTermStatsByTagAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
-            var startDate = DateTime.UtcNow.SubtractDays(60);
+            var startDate = SystemClock.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             await CreateDataAsync(eventCount, false);
 
@@ -154,7 +155,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.True(fields.IsValid);
 
             var sf = new ExceptionlessSystemFilterQuery(ProjectData.GenerateSampleProject(), OrganizationData.GenerateSampleOrganization());
-            var result = await _stats.GetNumbersTermsStatsAsync("tags", fields.Aggregations, startDate, DateTime.UtcNow, sf, "fixed:false");
+            var result = await _stats.GetNumbersTermsStatsAsync("tags", fields.Aggregations, startDate, SystemClock.UtcNow, sf, "fixed:false");
             Assert.Equal(eventCount, result.Total);
             // each event can be in multiple tag buckets since an event can have up to 3 sample tags
             Assert.InRange(result.Terms.Sum(t => t.Total), eventCount, eventCount * 3);
@@ -167,7 +168,7 @@ namespace Exceptionless.Api.Tests.Stats {
         [Fact]
         public async Task CanGetEventTermStatsByStackAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
-            var startDate = DateTime.UtcNow.SubtractDays(60);
+            var startDate = SystemClock.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             await CreateDataAsync(eventCount, false);
 
@@ -175,7 +176,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.True(fields.IsValid);
 
             var sf = new ExceptionlessSystemFilterQuery(ProjectData.GenerateSampleProject(), OrganizationData.GenerateSampleOrganization());
-            var result = await _stats.GetNumbersTermsStatsAsync("stack_id", fields.Aggregations, startDate, DateTime.UtcNow, sf);
+            var result = await _stats.GetNumbersTermsStatsAsync("stack_id", fields.Aggregations, startDate, SystemClock.UtcNow, sf);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 25);
             // TODO: Figure out why this is less than eventCount
@@ -190,14 +191,14 @@ namespace Exceptionless.Api.Tests.Stats {
         [Fact]
         public async Task CanGetEventTermStatsByProjectAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
-            var startDate = DateTime.UtcNow.SubtractDays(60);
+            var startDate = SystemClock.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             await CreateDataAsync(eventCount);
 
             var fields = FieldAggregationProcessor.Process("term:is_first_occurrence:-F", false);
             Assert.True(fields.IsValid);
             
-            var result = await _stats.GetNumbersTermsStatsAsync("project_id", fields.Aggregations, startDate, DateTime.UtcNow, null);
+            var result = await _stats.GetNumbersTermsStatsAsync("project_id", fields.Aggregations, startDate, SystemClock.UtcNow, null);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 3); // 3 sample projects
             Assert.InRange(result.Terms.Sum(t => t.Numbers[0]), 1, 25 * 3); // new
@@ -208,14 +209,14 @@ namespace Exceptionless.Api.Tests.Stats {
         public async Task CanGetSessionStatsAsync() {
             await CreateDataAsync();
 
-            var startDate = DateTime.UtcNow.SubtractHours(1);
+            var startDate = SystemClock.UtcNow.SubtractHours(1);
             await CreateSessionEventsAsync();
             
             var fields = FieldAggregationProcessor.Process("avg:value:0,distinct:user.raw", false);
             Assert.True(fields.IsValid);
             Assert.Equal(2, fields.Aggregations.Count);
 
-            var result = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, DateTime.UtcNow, null, "type:session");
+            var result = await _stats.GetNumbersTimelineStatsAsync(fields.Aggregations, startDate, SystemClock.UtcNow, null, "type:session");
             Assert.Equal(3, result.Total);
             Assert.Equal(3, result.Timeline.Sum(t => t.Total));
             Assert.Equal(3, result.Numbers[1]);

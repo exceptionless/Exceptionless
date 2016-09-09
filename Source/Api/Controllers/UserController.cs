@@ -19,6 +19,7 @@ using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/users")]
@@ -134,7 +135,7 @@ namespace Exceptionless.Api.Controllers {
 
             // Only allow 3 email address updates per hour period by a single user.
             string updateEmailAddressAttemptsCacheKey = $"{ExceptionlessUser.Id}:attempts";
-            long attempts = await _cacheClient.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+            long attempts = await _cacheClient.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
             if (attempts > 3)
                 return BadRequest("Update email address rate limit reached. Please try updating later.");
 

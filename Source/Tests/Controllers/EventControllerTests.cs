@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Results;
 using Exceptionless.Api.Controllers;
-using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -21,10 +20,12 @@ using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Utility;
 using Microsoft.Owin;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
+using Run = Exceptionless.Api.Tests.Utility.Run;
 
 namespace Exceptionless.Api.Tests.Controllers {
     public class EventControllerTests : ElasticTestBase {
@@ -165,7 +166,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         private Core.Models.Token GetClientToken() {
             var token = new Core.Models.Token();
             token.Id = StringExtensions.GetNewToken();
-            token.CreatedUtc = token.ModifiedUtc = DateTime.UtcNow;
+            token.CreatedUtc = token.ModifiedUtc = SystemClock.UtcNow;
             token.Type = TokenType.Access;
             token.CreatedBy = TestConstants.UserId;
             token.OrganizationId = TestConstants.OrganizationId;
