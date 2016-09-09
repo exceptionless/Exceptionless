@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Utility;
 
 namespace Exceptionless.Helpers {
     public class RandomEventGenerator {
@@ -22,7 +23,7 @@ namespace Exceptionless.Helpers {
                 OrganizationId = "1ecd0826e447ad1e78877555",
                 ProjectId = "1ecd0826e447ad1e78877ab2",
                 StackId = "1ecd0826e447a44e78877ab1",
-                Date = DateTime.UtcNow
+                Date = SystemClock.UtcNow
             };
 
             PopulateEvent(ev);

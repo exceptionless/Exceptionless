@@ -12,6 +12,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
+using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -28,7 +29,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Fact (Skip = "https://github.com/elastic/elasticsearch-net/issues/2242")]
         public async Task GetAsync() {
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-            var ev = await _repository.AddAsync(new PersistentEvent { CreatedUtc = DateTime.UtcNow, Date = new DateTimeOffset(DateTime.UtcNow.Date, TimeSpan.Zero)});
+            var ev = await _repository.AddAsync(new PersistentEvent { CreatedUtc = SystemClock.UtcNow, Date = new DateTimeOffset(SystemClock.UtcNow.Date, TimeSpan.Zero)});
             Assert.Equal(ev, await _repository.GetByIdAsync(ev.Id));
         }
 
@@ -52,7 +53,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public async Task GetPagedAsync() {
             var events = new List<PersistentEvent>();
             for (int i = 0; i < 6; i++)
-                events.Add(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now.Subtract(TimeSpan.FromMinutes(i))));
+                events.Add(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: SystemClock.UtcNow.Subtract(TimeSpan.FromMinutes(i))));
 
             await _repository.AddAsync(events);
             await _configuration.Client.RefreshAsync();
@@ -180,7 +181,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.AddAsync(events);
 
             await _configuration.Client.RefreshAsync();
-            var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
+            var results = await _repository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(30));
             Assert.Equal(3, results.Total);
         }
 
@@ -212,7 +213,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             const string _clientIpAddress = "123.123.12.256";
 
             const int NUMBER_OF_EVENTS_TO_CREATE = 50;
-            var events = EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, isFixed: true, startDate: DateTime.Now.SubtractDays(2), endDate: DateTime.Now).ToList();
+            var events = EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, isFixed: true, startDate: SystemClock.UtcNow.SubtractDays(2), endDate: SystemClock.UtcNow).ToList();
             events.ForEach(e => e.AddRequestInfo(new RequestInfo { ClientIpAddress = _clientIpAddress }));
             await _repository.AddAsync(events);
 
@@ -226,7 +227,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
             });
 
-            await _repository.HideAllByClientIpAndDateAsync(TestConstants.OrganizationId, _clientIpAddress, DateTime.UtcNow.SubtractDays(3), DateTime.UtcNow.AddDays(2));
+            await _repository.HideAllByClientIpAndDateAsync(TestConstants.OrganizationId, _clientIpAddress, SystemClock.UtcNow.SubtractDays(3), SystemClock.UtcNow.AddDays(2));
 
             await _configuration.Client.RefreshAsync();
             events = (await _repository.GetByStackIdAsync(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
@@ -237,7 +238,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly List<Tuple<string, DateTime>> _ids = new List<Tuple<string, DateTime>>();
 
         private async Task CreateDataAsync() {
-            var baseDate = DateTime.UtcNow;
+            var baseDate = SystemClock.UtcNow;
             var occurrenceDateStart = baseDate.AddMinutes(-30);
             var occurrenceDateMid = baseDate;
             var occurrenceDateEnd = baseDate.AddMinutes(30);

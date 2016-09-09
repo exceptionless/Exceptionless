@@ -9,6 +9,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Metrics;
+using Foundatio.Utility;
 
 namespace Exceptionless.Api.Utility {
     public sealed class ThrottlingHandler : DelegatingHandler {
@@ -39,7 +40,7 @@ namespace Exceptionless.Api.Utility {
                 string cacheKey = GetCacheKey(identifier);
                 requestCount = await _cacheClient.IncrementAsync(cacheKey, 1);
                 if (requestCount == 1)
-                    await _cacheClient.SetExpirationAsync(cacheKey, DateTime.UtcNow.Ceiling(_period));
+                    await _cacheClient.SetExpirationAsync(cacheKey, SystemClock.UtcNow.Ceiling(_period));
             } catch {}
 
             HttpResponseMessage response;
@@ -88,7 +89,7 @@ namespace Exceptionless.Api.Utility {
         }
 
         private string GetCacheKey(string userIdentifier) {
-            return String.Concat("api", ":", userIdentifier, ":", DateTime.UtcNow.Floor(_period).Ticks);
+            return String.Concat("api", ":", userIdentifier, ":", SystemClock.UtcNow.Floor(_period).Ticks);
         }
 
         private bool IsUnthrottledRoute(HttpRequestMessage request) {

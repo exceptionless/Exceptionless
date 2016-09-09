@@ -13,6 +13,7 @@ using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX)]
@@ -50,8 +51,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("status")]
         public async Task<IHttpActionResult> IndexAsync() {
-            if (_lastHealthCheckResult == null || _nextHealthCheckTimeUtc < DateTime.UtcNow) {
-                _nextHealthCheckTimeUtc = DateTime.UtcNow.AddSeconds(5);
+            if (_lastHealthCheckResult == null || _nextHealthCheckTimeUtc < SystemClock.UtcNow) {
+                _nextHealthCheckTimeUtc = SystemClock.UtcNow.AddSeconds(5);
                 _lastHealthCheckResult = await _healthChecker.CheckAllAsync();
             }
 
@@ -145,7 +146,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(message))
                 return NotFound();
 
-            var notification = new SystemNotification { Date = DateTimeOffset.UtcNow, Message = message };
+            var notification = new SystemNotification { Date = SystemClock.UtcNow, Message = message };
             await _cacheClient.SetAsync("system-notification", notification);
             await _messagePublisher.PublishAsync(notification);
 
@@ -157,7 +158,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public async Task<IHttpActionResult> RemoveSystemNotificationAsync() {
             await _cacheClient.RemoveAsync("system-notification");
-            await _messagePublisher.PublishAsync(new SystemNotification { Date = DateTimeOffset.UtcNow });
+            await _messagePublisher.PublishAsync(new SystemNotification { Date = SystemClock.UtcNow });
             return Ok();
         }
     }

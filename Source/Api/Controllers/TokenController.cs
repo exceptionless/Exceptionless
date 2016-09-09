@@ -14,6 +14,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/tokens")]
@@ -270,7 +271,7 @@ namespace Exceptionless.App.Controllers.API {
 
         protected override Task<Token> AddModelAsync(Token value) {
             value.Id = StringExtensions.GetNewToken();
-            value.CreatedUtc = value.ModifiedUtc = DateTime.UtcNow;
+            value.CreatedUtc = value.ModifiedUtc = SystemClock.UtcNow;
             value.Type = TokenType.Access;
             value.CreatedBy = Request.GetUser().Id;
 

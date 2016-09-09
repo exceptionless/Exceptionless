@@ -6,6 +6,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Caching;
 using Foundatio.Logging;
 using Foundatio.Storage;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Utility {
     public class SystemHealthChecker {
@@ -58,7 +59,7 @@ namespace Exceptionless.Core.Utility {
             var sw = Stopwatch.StartNew();
             try {
                 if (!await _storage.ExistsAsync(path).AnyContext())
-                    await _storage.SaveFileAsync(path, DateTime.UtcNow.ToString()).AnyContext();
+                    await _storage.SaveFileAsync(path, SystemClock.UtcNow.ToString()).AnyContext();
 
                 await _storage.DeleteFileAsync(path).AnyContext();
             } catch (Exception ex) {

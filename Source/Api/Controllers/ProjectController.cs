@@ -22,6 +22,7 @@ using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]
@@ -501,7 +502,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected override Task<Project> AddModelAsync(Project value) {
             value.IsConfigured = false;
-            value.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            value.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             value.AddDefaultOwnerNotificationSettings(ExceptionlessUser.Id);
             value.SetDefaultUserAgentBotPatterns();
             value.Configuration.IncrementVersion();

@@ -12,6 +12,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Utility;
 using RazorSharpEmail;
 using Xunit;
 using Xunit.Abstractions;
@@ -131,7 +132,7 @@ namespace Exceptionless.Api.Tests.Mail {
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
             await _mailer.SendInviteAsync(user, organization, new Invite {
-                DateAdded = DateTime.Now,
+                DateAdded = SystemClock.UtcNow,
                 EmailAddress = Settings.Current.TestEmailAddress,
                 Token = "1"
             });
@@ -173,8 +174,8 @@ namespace Exceptionless.Api.Tests.Mail {
             await _mailer.SendDailySummaryAsync(Settings.Current.TestEmailAddress, new DailySummaryModel {
                 ProjectId = "1",
                 BaseUrl = "http://be.exceptionless.io",
-                StartDate = DateTime.Now.Date,
-                EndDate = DateTime.Now.EndOfDay(),
+                StartDate = SystemClock.UtcNow.Date,
+                EndDate = SystemClock.UtcNow.EndOfDay(),
                 NewTotal = 1,
                 PerHourAverage = 0.4,
                 ProjectName = "Blah",

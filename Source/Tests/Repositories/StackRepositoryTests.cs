@@ -5,6 +5,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -18,7 +19,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         
         [Fact]
         public async Task CanMarkAsRegressedAsync() {
-            await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: DateTime.Now.SubtractMonths(1)));
+            await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)));
             
             var stack = await _repository.GetByIdAsync(TestConstants.StackId);
             Assert.NotNull(stack);
@@ -44,7 +45,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(DateTime.MinValue, stack.FirstOccurrence);
             Assert.Equal(DateTime.MinValue, stack.LastOccurrence);
 
-            var utcNow = DateTime.UtcNow;
+            var utcNow = SystemClock.UtcNow;
             await _configuration.Client.RefreshAsync();
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId, utcNow, utcNow, 1);
 

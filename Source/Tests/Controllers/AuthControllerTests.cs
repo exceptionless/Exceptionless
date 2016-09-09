@@ -14,6 +14,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
+using Foundatio.Utility;
 using Microsoft.Owin;
 using Xunit;
 using Xunit.Abstractions;
@@ -114,7 +115,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             var invite = new Invite {
                 Token = StringExtensions.GetNewToken(),
                 EmailAddress = email.ToLowerInvariant(),
-                DateAdded = DateTime.UtcNow
+                DateAdded = SystemClock.UtcNow
             };
             organization.Invites.Add(invite);
 
@@ -153,7 +154,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             var invite = new Invite {
                 Token = StringExtensions.GetNewToken(),
                 EmailAddress = email.ToLowerInvariant(),
-                DateAdded = DateTime.UtcNow
+                DateAdded = SystemClock.UtcNow
             };
 
             organization.Invites.Add(invite);
@@ -252,7 +253,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             var invite = new Invite {
                 Token = StringExtensions.GetNewToken(),
                 EmailAddress = email.ToLowerInvariant(),
-                DateAdded = DateTime.UtcNow
+                DateAdded = SystemClock.UtcNow
             };
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization);
@@ -290,7 +291,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             var invite = new Invite {
                 Token = StringExtensions.GetNewToken(),
                 EmailAddress = email.ToLowerInvariant(),
-                DateAdded = DateTime.UtcNow
+                DateAdded = SystemClock.UtcNow
             };
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization);
@@ -327,7 +328,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             var invite = new Invite {
                 Token = StringExtensions.GetNewToken(),
                 EmailAddress = email.ToLowerInvariant(),
-                DateAdded = DateTime.UtcNow
+                DateAdded = SystemClock.UtcNow
             };
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization);

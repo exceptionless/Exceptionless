@@ -11,6 +11,7 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
+using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -59,7 +60,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             Assert.Equal(0, sessionStart.Value);
             Assert.False(sessionStart.HasSessionEndTime());
 
-            var utcNow = DateTime.UtcNow;
+            var utcNow = SystemClock.UtcNow;
             if (sessionHeartbeatUpdatedAgoInSeconds.HasValue) {
                 await _cacheClient.SetAsync($"project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value));
                 if (heartbeatClosesSession)
@@ -92,12 +93,12 @@ namespace Exceptionless.Api.Tests.Jobs {
 
                 organization.StripeCustomerId = Guid.NewGuid().ToString("N");
                 organization.CardLast4 = "1234";
-                organization.SubscribeDate = DateTime.Now;
+                organization.SubscribeDate = SystemClock.UtcNow;
 
                 if (organization.IsSuspended) {
                     organization.SuspendedByUserId = TestConstants.UserId;
                     organization.SuspensionCode = SuspensionCode.Billing;
-                    organization.SuspensionDate = DateTime.UtcNow;
+                    organization.SuspensionDate = SystemClock.UtcNow;
                 }
 
                 await _organizationRepository.AddAsync(organization, true);

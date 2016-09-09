@@ -29,6 +29,7 @@ using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 using Stripe;
 
 #pragma warning disable 1998
@@ -372,7 +373,7 @@ namespace Exceptionless.Api.Controllers {
                     if (String.IsNullOrEmpty(stripeToken))
                         return Ok(ChangePlanResult.FailWithMessage("Billing information was not set."));
 
-                    organization.SubscribeDate = DateTime.Now;
+                    organization.SubscribeDate = SystemClock.UtcNow;
 
                     var createCustomer = new StripeCustomerCreateOptions {
                         SourceToken = stripeToken,
@@ -471,7 +472,7 @@ namespace Exceptionless.Api.Controllers {
                     invite = new Invite {
                         Token = StringExtensions.GetNewToken(),
                         EmailAddress = email.ToLowerInvariant(),
-                        DateAdded = DateTime.UtcNow
+                        DateAdded = SystemClock.UtcNow
                     };
                     organization.Invites.Add(invite);
                     await _repository.SaveAsync(organization, true);
@@ -543,7 +544,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             organization.IsSuspended = true;
-            organization.SuspensionDate = DateTime.UtcNow;
+            organization.SuspensionDate = SystemClock.UtcNow;
             organization.SuspendedByUserId = ExceptionlessUser.Id;
             organization.SuspensionCode = code;
             organization.SuspensionNotes = notes;
@@ -702,7 +703,7 @@ namespace Exceptionless.Api.Controllers {
 
             var viewOrganizations = models.OfType<ViewOrganization>().ToList();
             foreach (var viewOrganization in viewOrganizations) {
-                DateTime usageRetention = DateTime.UtcNow.SubtractYears(1).StartOfMonth();
+                DateTime usageRetention = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
                 viewOrganization.Usage = viewOrganization.Usage.Where(u => u.Date > usageRetention).ToList();
                 viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > usageRetention).ToList();
                 viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, Settings.Current.ApiThrottleLimit);

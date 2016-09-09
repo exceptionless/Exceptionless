@@ -17,6 +17,7 @@ using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Storage;
+using Foundatio.Utility;
 using Newtonsoft.Json;
 
 #pragma warning disable 1998
@@ -62,11 +63,11 @@ namespace Exceptionless.Core.Jobs {
             var project = await _projectRepository.GetByIdAsync(eventPostInfo.ProjectId, true).AnyContext();
             if (project == null) {
                 _logger.Error().Project(eventPostInfo.ProjectId).Message("Unable to process EventPost \"{0}\": Unable to load project: {1}", queueEntry.Value.FilePath, eventPostInfo.ProjectId).WriteIf(!isInternalProject);
-                await CompleteEntryAsync(queueEntry, eventPostInfo, DateTime.UtcNow).AnyContext();
+                await CompleteEntryAsync(queueEntry, eventPostInfo, SystemClock.UtcNow).AnyContext();
                 return JobResult.Success;
             }
 
-            var createdUtc = DateTime.UtcNow;
+            var createdUtc = SystemClock.UtcNow;
             var events = await ParseEventPostAsync(eventPostInfo, createdUtc, queueEntry.Id, isInternalProject).AnyContext();
             if (events == null || events.Count == 0) {
                 await CompleteEntryAsync(queueEntry, eventPostInfo, createdUtc).AnyContext();

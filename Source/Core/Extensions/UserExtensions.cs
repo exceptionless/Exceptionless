@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Exceptionless.Core.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Extensions {
     public static class UserExtensions {
@@ -17,14 +18,14 @@ namespace Exceptionless.Core.Extensions {
                 return;
 
             user.VerifyEmailAddressToken = StringExtensions.GetNewToken();
-            user.VerifyEmailAddressTokenExpiration = DateTime.UtcNow.AddMinutes(1440);
+            user.VerifyEmailAddressTokenExpiration = SystemClock.UtcNow.AddMinutes(1440);
         }
 
         public static bool HasValidVerifyEmailAddressTokenExpiration(this User user) {
             if (user == null)
                 return false;
 
-            return user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration >= DateTime.UtcNow;
+            return user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration >= SystemClock.UtcNow;
         }
 
         public static void MarkEmailAddressVerified(this User user) {
@@ -49,14 +50,14 @@ namespace Exceptionless.Core.Extensions {
                 return;
 
             user.PasswordResetToken = StringExtensions.GetNewToken();
-            user.PasswordResetTokenExpiration = DateTime.UtcNow.AddMinutes(1440);
+            user.PasswordResetTokenExpiration = SystemClock.UtcNow.AddMinutes(1440);
         }
 
         public static bool HasValidPasswordResetTokenExpiration(this User user) {
             if (user == null)
                 return false;
 
-            return user.PasswordResetTokenExpiration != DateTime.MinValue && user.PasswordResetTokenExpiration >= DateTime.UtcNow;
+            return user.PasswordResetTokenExpiration != DateTime.MinValue && user.PasswordResetTokenExpiration >= SystemClock.UtcNow;
         }
 
         public static void AddOAuthAccount(this User user, string providerName, string providerUserId, string username, SettingsDictionary data = null) {

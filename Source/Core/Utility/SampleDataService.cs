@@ -5,6 +5,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Utility {
     public class SampleDataService {
@@ -60,7 +61,7 @@ namespace Exceptionless.Core.Utility {
             organization = await _organizationRepository.AddAsync(organization, true).AnyContext();
 
             var project = new Project { Id = TEST_PROJECT_ID, Name = "Disintegrating Pistol", OrganizationId = organization.Id };
-            project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            project.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultOwnerNotificationSettings(userId);
             project = await _projectRepository.AddAsync(project, true).AnyContext();
@@ -69,16 +70,16 @@ namespace Exceptionless.Core.Utility {
                 Id = TEST_API_KEY,
                 OrganizationId = organization.Id,
                 ProjectId = project.Id,
-                CreatedUtc = DateTime.UtcNow,
-                ModifiedUtc = DateTime.UtcNow,
+                CreatedUtc = SystemClock.UtcNow,
+                ModifiedUtc = SystemClock.UtcNow,
                 Type = TokenType.Access
             }).AnyContext();
 
             await _tokenRepository.AddAsync(new Token {
                 Id = TEST_USER_API_KEY,
                 UserId = user.Id,
-                CreatedUtc = DateTime.UtcNow,
-                ModifiedUtc = DateTime.UtcNow,
+                CreatedUtc = SystemClock.UtcNow,
+                ModifiedUtc = SystemClock.UtcNow,
                 Type = TokenType.Access
             }).AnyContext();
 
@@ -96,7 +97,7 @@ namespace Exceptionless.Core.Utility {
             organization = await _organizationRepository.AddAsync(organization, true).AnyContext();
 
             var project = new Project { Id = INTERNAL_PROJECT_ID, Name = "API", OrganizationId = organization.Id };
-            project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            project.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             project.AddDefaultOwnerNotificationSettings(userId);
             project = await _projectRepository.AddAsync(project, true).AnyContext();
 
@@ -104,8 +105,8 @@ namespace Exceptionless.Core.Utility {
                 Id = INTERNAL_API_KEY,
                 OrganizationId = organization.Id,
                 ProjectId = project.Id,
-                CreatedUtc = DateTime.UtcNow,
-                ModifiedUtc = DateTime.UtcNow,
+                CreatedUtc = SystemClock.UtcNow,
+                ModifiedUtc = SystemClock.UtcNow,
                 Type = TokenType.Access
             }).AnyContext();
 

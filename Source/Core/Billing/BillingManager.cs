@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Billing {
     public class BillingManager {
@@ -87,7 +88,7 @@ namespace Exceptionless.Core.Billing {
             organization.PlanId = plan.Id;
             organization.PlanName = plan.Name;
             organization.PlanDescription = plan.Description;
-            organization.BillingChangeDate = DateTime.Now;
+            organization.BillingChangeDate = SystemClock.UtcNow;
 
             if (updateBillingPrice)
                 organization.BillingPrice = plan.Price;
