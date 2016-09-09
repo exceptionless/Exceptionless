@@ -9,6 +9,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Stats;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Logging;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Elasticsearch.Queries;
@@ -26,7 +27,7 @@ namespace Exceptionless.Core.Utility {
             _logger = logger;
         }
  
-        public async Task<NumbersStatsResult> GetNumbersStatsAsync(IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, IRepositoryQuery systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null) {
+        public async Task<NumbersStatsResult> GetNumbersStatsAsync(IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, IExceptionlessSystemFilterQuery systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null) {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
@@ -68,7 +69,7 @@ namespace Exceptionless.Core.Utility {
             };
         }
         
-        public async Task<NumbersTermStatsResult> GetNumbersTermsStatsAsync(string term, IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, IRepositoryQuery systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25) {
+        public async Task<NumbersTermStatsResult> GetNumbersTermsStatsAsync(string term, IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, IExceptionlessSystemFilterQuery systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25) {
             var allowedTerms = new[] { "organization_id", "project_id", "stack_id", "tags", "version" };
             if (!allowedTerms.Contains(term))
                 throw new ArgumentException("Must be a valid term.", nameof(term));
@@ -146,7 +147,7 @@ namespace Exceptionless.Core.Utility {
             return stats;
         }
         
-        public async Task<NumbersTimelineStatsResult> GetNumbersTimelineStatsAsync(IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, IRepositoryQuery systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
+        public async Task<NumbersTimelineStatsResult> GetNumbersTimelineStatsAsync(IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, IExceptionlessSystemFilterQuery systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
