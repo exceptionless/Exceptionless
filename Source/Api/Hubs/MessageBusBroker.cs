@@ -14,6 +14,7 @@ using Microsoft.AspNet.SignalR.Infrastructure;
 
 namespace Exceptionless.Api.Hubs {
     public sealed class MessageBusBroker {
+        private static readonly string UserTypeName = typeof(User).Name;
         private readonly IConnectionManager _connectionManager;
         private readonly IConnectionMapping _connectionMapping;
         private readonly IMessageSubscriber _subscriber;
@@ -52,9 +53,9 @@ namespace Exceptionless.Api.Hubs {
             if (entityChanged == null)
                 return;
 
-            if (entityChanged.Type == typeof(User).Name) {
-                foreach (var connectionId in await _connectionMapping.GetConnectionsAsync(entityChanged.Id))
-                    await GroupSendAsync(connectionId, entityChanged);
+            if (entityChanged.Type == UserTypeName) {
+                foreach (var connectionId in await _connectionMapping.GetUserIdConnectionsAsync(entityChanged.Id))
+                    await Context.Connection.TypedSendAsync(connectionId, entityChanged);
 
                 return;
             }
@@ -86,7 +87,10 @@ namespace Exceptionless.Api.Hubs {
         }
 
         private async Task GroupSendAsync(string group, object value) {
-            var connectionIds = await _connectionMapping.GetGroupConnectionsAsync(group).AnyContext();
+            var connectionIds = await _connectionMapping.GetGroupConnectionsAsync(group);
+            if (connectionIds.Count == 0)
+                return;
+
             await Context.Connection.TypedSendAsync(connectionIds.ToList(), value);
         }
 

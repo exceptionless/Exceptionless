@@ -15,6 +15,7 @@ using Foundatio.Repositories.Models;
 namespace Exceptionless.Core.Pipeline {
     [Priority(10)]
     public class AssignToStackAction : EventPipelineActionBase {
+        private static readonly string StackTypeName = typeof(Stack).Name;
         private readonly IStackRepository _stackRepository;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IMessagePublisher _publisher;
@@ -116,8 +117,14 @@ namespace Exceptionless.Core.Pipeline {
             var stacksToAdd = stacks.Where(kvp => kvp.Value.Item1 && String.IsNullOrEmpty(kvp.Value.Item2.Id)).Select(kvp => kvp.Value.Item2).ToList();
             if (stacksToAdd.Count > 0) {
                 await _stackRepository.AddAsync(stacksToAdd, true, sendNotification: stacksToAdd.Count == 1).AnyContext();
-                if (stacksToAdd.Count > 1)
-                    await _publisher.PublishAsync(new ExtendedEntityChanged { ChangeType = ChangeType.Added, Type = typeof(Stack).Name, OrganizationId = contexts.First().Organization.Id, ProjectId = contexts.First().Project.Id }).AnyContext();
+                if (stacksToAdd.Count > 1) {
+                    await _publisher.PublishAsync(new ExtendedEntityChanged {
+                        ChangeType = ChangeType.Added,
+                        Type = StackTypeName,
+                        OrganizationId = contexts.First().Organization.Id,
+                        ProjectId = contexts.First().Project.Id
+                    }).AnyContext();
+                }
             }
 
             var stacksToSave = stacks.Where(kvp => kvp.Value.Item1 && !String.IsNullOrEmpty(kvp.Value.Item2.Id)).Select(kvp => kvp.Value.Item2).ToList();

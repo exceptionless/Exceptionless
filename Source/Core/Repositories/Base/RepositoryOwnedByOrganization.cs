@@ -70,7 +70,7 @@ namespace Exceptionless.Core.Repositories {
                 await PublishMessageAsync(new ExtendedEntityChanged {
                     ChangeType = ChangeType.Saved,
                     OrganizationId = organizationId,
-                    Type = ElasticType.Name
+                    Type = EntityTypeName
                 }, TimeSpan.FromSeconds(1.5)).AnyContext();
             }
 
