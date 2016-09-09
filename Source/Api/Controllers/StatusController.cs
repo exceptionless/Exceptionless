@@ -120,7 +120,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("notifications/release")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public async Task<IHttpActionResult> PostReleaseNotificationAsync([NakedBody]string message = null, bool critical = false) {
-            var notification = new ReleaseNotification { Critical = critical, Date = DateTimeOffset.UtcNow, Message = message };
+            var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message };
             await _messagePublisher.PublishAsync(notification);
             return Ok(notification);
         }
