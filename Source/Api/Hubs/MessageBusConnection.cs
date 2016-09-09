@@ -18,9 +18,9 @@ namespace Exceptionless.Api.Hubs {
         protected override async Task OnConnected(IRequest request, string connectionId) {
             try {
                 foreach (var organizationId in request.User.GetOrganizationIds())
-                    await _connectionMapping.GroupAddAsync(organizationId, connectionId).AnyContext();
+                    await _connectionMapping.GroupAddAsync(organizationId, connectionId);
 
-                await _connectionMapping.UserIdAddAsync(request.User.GetUserId(), connectionId).AnyContext();
+                await _connectionMapping.UserIdAddAsync(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
                 _logger.Error(ex, "OnReconnected Error: {0}", ex.Message);
                 throw;
@@ -30,9 +30,9 @@ namespace Exceptionless.Api.Hubs {
         protected override async Task OnDisconnected(IRequest request, string connectionId, bool stopCalled) {
             try {
                 foreach (var organizationId in request.User.GetOrganizationIds())
-                    await _connectionMapping.GroupRemoveAsync(organizationId, connectionId).AnyContext();
+                    await _connectionMapping.GroupRemoveAsync(organizationId, connectionId);
 
-                await _connectionMapping.UserIdRemoveAsync(request.User.GetUserId(), connectionId).AnyContext();
+                await _connectionMapping.UserIdRemoveAsync(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
                 _logger.Error(ex, "OnDisconnected Error: {0}", ex.Message);
                 throw;

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,7 +19,6 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
@@ -106,14 +104,14 @@ namespace Exceptionless.Core.Jobs {
             }
 
             _logger.Info("Sending daily summary: users={0} project={1}", users.Count, project.Id);
-            
+
             var fields = new List<FieldAggregation> {
                 new FieldAggregation { Type = FieldAggregationType.Distinct, Field = "stack_id" },
                 new TermFieldAggregation { Field = "is_first_occurrence", ExcludePattern = "F" }
             };
 
-            var query = new ExceptionlessQuery().WithProjectId(data.Id).WithFieldEquals(EventIndexType.Fields.Type, Event.KnownTypes.Error);
-            var result = await _stats.GetNumbersStatsAsync(fields, data.UtcStartTime, data.UtcEndTime, query).AnyContext();
+            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            var result = await _stats.GetNumbersStatsAsync(fields, data.UtcStartTime, data.UtcEndTime, sf, $"{EventIndexType.Fields.Type}:{Event.KnownTypes.Error}").AnyContext();
             bool hasSubmittedEvents = result.Total > 0;
             if (!hasSubmittedEvents)
                 hasSubmittedEvents = await _eventRepository.GetCountByProjectIdAsync(project.Id).AnyContext() > 0;
