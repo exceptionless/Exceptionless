@@ -167,3 +167,4 @@ App_Data
 *.DS_Store
 *.orig
 Source/Api/Logs/*.txt
+*.nugetreferenceswitcher

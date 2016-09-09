@@ -123,39 +123,38 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = (await GetAssociatedOrganizationsAsync(_organizationRepository)).Where(o => !o.IsSuspended).ToList();
+            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
             if (organizations.Count == 0)
-                return Ok(Enumerable.Empty<PersistentEvent>());
+                return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
-        private async Task<IHttpActionResult> GetInternalAsync(IExceptionlessSystemFilterQuery sf, TimeInfo ti, string userFilter = null, string sort = null, string mode = null, int page = 1, int limit = 10, bool usesPremiumFeatures = false) {
+        private async Task<IHttpActionResult> GetInternalAsync(IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10, bool usesPremiumFeatures = false) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page, limit);
             if (skip > MAXIMUM_SKIP)
-                return Ok(Enumerable.Empty<PersistentEvent>());
+                return Ok(EmptyModels);
 
             var sortBy = GetSort(sort);
             var options = new PagingOptions { Page = page, Limit = limit };
 
-            var pr = QueryProcessor.Process(userFilter);
+            var pr = QueryProcessor.Process(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
-            
+
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
-            sf.IsGlobalAdmin = Request.IsGlobalAdmin();
-            
+
             IFindResults<PersistentEvent> events;
             try {
-                events = await _repository.GetByFilterAsync(sf, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
+                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(filter) ? sf : null, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your search filter.")
-                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = userFilter, Sort = sort, Time = ti, Page = page, Limit = limit })
+                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Sort = sort, Time = ti, Page = page, Limit = limit })
                     .Tag("Search")
                     .Identity(ExceptionlessUser.EmailAddress)
                     .Property("User", ExceptionlessUser)
@@ -290,9 +289,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("by-ref/{referenceId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = (await GetAssociatedOrganizationsAsync(_organizationRepository)).Where(o => !o.IsSuspended).ToList();
+            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
             if (organizations.Count == 0)
-                return Ok(Enumerable.Empty<PersistentEvent>());
+                return Ok(EmptyModels);
 
             var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations);
@@ -347,9 +346,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("sessions/{sessionId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = (await GetAssociatedOrganizationsAsync(_organizationRepository)).Where(o => !o.IsSuspended).ToList();
+            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
             if (organizations.Count == 0)
-                return Ok(Enumerable.Empty<PersistentEvent>());
+                return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations);
@@ -406,9 +405,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("sessions")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = (await GetAssociatedOrganizationsAsync(_organizationRepository)).Where(o => !o.IsSuspended).ToList();
+            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
             if (organizations.Count == 0)
-                return Ok(Enumerable.Empty<PersistentEvent>());
+                return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations);

@@ -128,15 +128,24 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public async Task<IReadOnlyCollection<Organization>> GetAssociatedOrganizationsAsync(IOrganizationRepository repository) {
+        private static readonly IReadOnlyCollection<Organization> EmptyOrganizations = new List<Organization>(0).AsReadOnly();
+        public async Task<IReadOnlyCollection<Organization>> GetAssociatedActiveOrganizationsAsync(IOrganizationRepository repository) {
             if (repository == null)
-                return null;
+                throw new ArgumentNullException(nameof(repository));
 
             var ids = GetAssociatedOrganizationIds();
             if (ids.Count == 0)
-                return null;
+                return EmptyOrganizations;
 
-            return await repository.GetByIdsAsync(ids, true);
+            var organizations = await repository.GetByIdsAsync(ids, true);
+            return organizations.Where(o => !o.IsSuspended).ToList().AsReadOnly();
+        }
+
+        protected bool ShouldApplySystemFilter(string filter) {
+            if (String.IsNullOrEmpty(filter))
+                return true;
+
+            return !(Request.IsGlobalAdmin() && (filter.Contains("organization:") || filter.Contains("project:") || filter.Contains("stack:")));
         }
 
         protected StatusCodeActionResult StatusCodeWithMessage(HttpStatusCode statusCode, string message, string reason = null) {
