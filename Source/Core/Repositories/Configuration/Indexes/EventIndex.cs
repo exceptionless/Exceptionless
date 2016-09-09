@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Repositories.Elasticsearch.Configuration;

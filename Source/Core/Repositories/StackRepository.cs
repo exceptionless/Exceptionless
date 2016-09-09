@@ -90,7 +90,7 @@ namespace Exceptionless.Core.Repositories {
                     Id = stackId,
                     OrganizationId = organizationId,
                     ProjectId = projectId,
-                    Type = ElasticType.Name
+                    Type = EntityTypeName
                 }, TimeSpan.FromSeconds(1.5)).AnyContext();
             }
         }
@@ -103,7 +103,7 @@ namespace Exceptionless.Core.Repositories {
             return hit?.Document;
         }
 
-        public Task<IFindResults<Stack>> GetByFilterAsync(IRepositoryQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+        public Task<IFindResults<Stack>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (sorting.Fields.Count == 0)
                 sorting.Fields.Add(new FieldSort { Field = StackIndexType.Fields.LastOccurrence, Order = SortOrder.Descending });
 
