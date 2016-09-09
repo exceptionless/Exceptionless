@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Utility {
                 .Type(_configuration.Events.Event.Name)
                 .Aggregations(agg => BuildAggregations(agg, fields));
 
-            ElasticQueryBuilder.Default.ConfigureSearch(filter, null, descriptor);
+            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
             var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 
@@ -105,7 +105,7 @@ namespace Exceptionless.Core.Utility {
                     ), fields)
                 );
 
-            ElasticQueryBuilder.Default.ConfigureSearch(filter, null, descriptor);
+            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
             var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 
@@ -181,7 +181,7 @@ namespace Exceptionless.Core.Utility {
                     .Max("last_occurrence", t => t.Field(ev => ev.Date)), fields)
                 );
 
-            ElasticQueryBuilder.Default.ConfigureSearch(filter, null, descriptor);
+            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
             var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 
@@ -318,7 +318,7 @@ namespace Exceptionless.Core.Utility {
                 .SortAscending(ev => ev.Date)
                 .Take(1);
 
-            ElasticQueryBuilder.Default.ConfigureSearch(filter, null, descriptor);
+            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
             var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 

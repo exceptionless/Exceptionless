@@ -172,14 +172,14 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override async Task<IReadOnlyCollection<WebHook>> GetModelsAsync(string[] ids, bool useCache = true) {
-            var results = new List<WebHook>();
             if (ids == null || ids.Length == 0)
-                return results;
+                return EmptyModels;
 
             var webHooks = await _repository.GetByIdsAsync(ids, useCache);
-            if (webHooks == null)
-                return results;
+            if (webHooks.Count == 0)
+                return EmptyModels;
 
+            var results = new List<WebHook>();
             foreach (var webHook in webHooks) {
                 if ((!String.IsNullOrEmpty(webHook.OrganizationId) && IsInOrganization(webHook.OrganizationId))
                     || (!String.IsNullOrEmpty(webHook.ProjectId) && (await IsInProjectAsync(webHook.ProjectId))))

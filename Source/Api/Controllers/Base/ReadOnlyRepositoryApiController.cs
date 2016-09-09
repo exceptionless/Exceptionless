@@ -14,6 +14,7 @@ namespace Exceptionless.Api.Controllers {
         protected readonly TRepository _repository;
         protected static readonly bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
         protected static readonly bool _isOrganization = typeof(TModel) == typeof(Organization);
+        protected static readonly IReadOnlyCollection<TModel> EmptyModels = new List<TModel>(0).AsReadOnly();
         protected readonly IMapper _mapper;
 
         public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper) {
@@ -46,7 +47,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected virtual async Task<IReadOnlyCollection<TModel>> GetModelsAsync(string[] ids, bool useCache = true) {
             if (ids == null || ids.Length == 0)
-                return new List<TModel>();
+                return EmptyModels;
 
             var models = await _repository.GetByIdsAsync(ids, useCache);
             if (!_isOwnedByOrganization)

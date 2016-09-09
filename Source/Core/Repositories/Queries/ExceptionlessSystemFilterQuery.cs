@@ -48,7 +48,6 @@ namespace Exceptionless.Core.Repositories.Queries {
         public IReadOnlyCollection<Project> Projects { get; }
         public Stack Stack { get; }
         public bool UsesPremiumFeatures { get; set; }
-        public bool IsGlobalAdmin { get; set; }
     }
 
     public interface IExceptionlessSystemFilterQuery : IRepositoryQuery {
@@ -56,7 +55,6 @@ namespace Exceptionless.Core.Repositories.Queries {
         IReadOnlyCollection<Project> Projects { get; }
         Stack Stack { get; }
         bool UsesPremiumFeatures { get; set; }
-        bool IsGlobalAdmin { get; set; }
     }
 
     public class ExceptionlessSystemFilterQueryBuilder : IElasticQueryBuilder {
@@ -64,9 +62,6 @@ namespace Exceptionless.Core.Repositories.Queries {
             var sfq = ctx.GetSourceAs<IExceptionlessSystemFilterQuery>();
             if (sfq == null)
                 return;
-
-            //    if (HasOrganizationOrProjectOrStackFilter(filter) && Request.IsGlobalAdmin())
-            //        return null;
 
             var allowedOrganizations = sfq.Organizations.Where(o => o.HasPremiumFeatures || (!o.HasPremiumFeatures && !sfq.UsesPremiumFeatures)).ToList();
             if (allowedOrganizations.Count == 0) {
@@ -113,12 +108,5 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             return EventIndexType.Fields.Date;
         }
-        
-        //private bool HasOrganizationOrProjectOrStackFilter(string filter) {
-        //    if (String.IsNullOrEmpty(filter))
-        //        return false;
-
-        //    return filter.Contains("organization:") || filter.Contains("project:") || filter.Contains("stack:");
-        //}
     }
 }
