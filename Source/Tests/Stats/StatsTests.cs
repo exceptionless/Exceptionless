@@ -238,7 +238,7 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         private async Task CreateEventsAsync(int eventCount, string[] projectIds, decimal? value = -1) {
-            var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow, value: value);
+            var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: SystemClock.OffsetUtcNow.SubtractDays(60), endDate: SystemClock.OffsetUtcNow, value: value);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
                 await _pipeline.RunAsync(eventGroup);
 
@@ -246,7 +246,7 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         private async Task<List<PersistentEvent>> CreateSessionEventsAsync() {
-            var startDate = DateTimeOffset.UtcNow.SubtractHours(1);
+            var startDate = SystemClock.OffsetUtcNow.SubtractHours(1);
             var events = new List<PersistentEvent> {
                 EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "1"),
                 EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(10), userIdentity: "1"),

@@ -2,6 +2,7 @@
 using System.Linq;
 using Exceptionless.Core.Validation;
 using Exceptionless.Core.Models;
+using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -19,7 +20,7 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData("1", true)]
         [InlineData("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456", false)]
          public void ValidateTag(string tag, bool isValid) {
-             var ev = new PersistentEvent { Type = Event.KnownTypes.Error, Date = DateTimeOffset.Now, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" };
+             var ev = new PersistentEvent { Type = Event.KnownTypes.Error, Date = SystemClock.OffsetNow, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" };
             ev.Tags.Add(tag);
 
             var result = _validator.Validate(ev);
@@ -33,7 +34,7 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData("1234567890123456", true)]
         [InlineData("123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123", false)]
         public void ValidateReferenceId(string referenceId, bool isValid) {
-            var result = _validator.Validate(new PersistentEvent { Type = Event.KnownTypes.Error, ReferenceId = referenceId, Date = DateTimeOffset.Now, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" });
+            var result = _validator.Validate(new PersistentEvent { Type = Event.KnownTypes.Error, ReferenceId = referenceId, Date = SystemClock.OffsetNow, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" });
             Assert.Equal(isValid, result.IsValid);
         }
 
@@ -44,7 +45,7 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData(60d, true)]
         [InlineData(61d, false)]
         public void ValidateDate(double? minutes, bool isValid) {
-            var date = minutes.HasValue ? DateTimeOffset.Now.AddMinutes(minutes.Value) : DateTimeOffset.MinValue;
+            var date = minutes.HasValue ? SystemClock.OffsetNow.AddMinutes(minutes.Value) : DateTimeOffset.MinValue;
             var result = _validator.Validate(new PersistentEvent { Type = Event.KnownTypes.Error, Date = date, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" });
             Console.WriteLine(date + " " + result.IsValid + " " + String.Join(" ", result.Errors.Select(e => e.ErrorMessage)));
             Assert.Equal(isValid, result.IsValid);
@@ -59,7 +60,7 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData(Event.KnownTypes.Session, true)]
         [InlineData("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901", false)]
         public void ValidateType(string type, bool isValid) {
-            var result = _validator.Validate(new PersistentEvent { Type = type, Date = DateTimeOffset.Now, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" });
+            var result = _validator.Validate(new PersistentEvent { Type = type, Date = SystemClock.OffsetNow, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" });
             Assert.Equal(isValid, result.IsValid);
         }
     }

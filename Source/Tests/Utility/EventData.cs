@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Utility;
 
 namespace Exceptionless.Tests.Utility {
     internal static class EventData {
@@ -44,10 +45,10 @@ namespace Exceptionless.Tests.Utility {
         }
 
         public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null, string type = null, string sessionId = null,  string userIdentity = null, decimal? value = -1, string semver = null) {
-            if (!startDate.HasValue || startDate > DateTimeOffset.Now.AddHours(1))
-                startDate = DateTimeOffset.Now.AddDays(-30);
-            if (!endDate.HasValue || endDate > DateTimeOffset.Now.AddHours(1))
-                endDate = DateTimeOffset.Now;
+            if (!startDate.HasValue || startDate > SystemClock.OffsetNow.AddHours(1))
+                startDate = SystemClock.OffsetNow.AddDays(-30);
+            if (!endDate.HasValue || endDate > SystemClock.OffsetNow.AddHours(1))
+                endDate = SystemClock.OffsetNow;
 
             var ev = new PersistentEvent {
                 OrganizationId = organizationIds.Random(TestConstants.OrganizationId),

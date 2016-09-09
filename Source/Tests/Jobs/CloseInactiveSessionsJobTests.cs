@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Tests.Jobs {
         [InlineData(60, false, null, false)]
         public async Task CloseInactiveSessions(int defaultInactivePeriodInMinutes, bool willCloseSession, int? sessionHeartbeatUpdatedAgoInSeconds, bool heartbeatClosesSession) {
             const string userId = "blake@exceptionless.io";
-            var ev = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
+            var ev = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
 
             var context = await _pipeline.RunAsync(ev);
             Assert.False(context.HasError, context.ErrorMessage);
@@ -123,7 +123,7 @@ namespace Exceptionless.Api.Tests.Jobs {
 
         private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
             if (!occurrenceDate.HasValue)
-                occurrenceDate = DateTimeOffset.Now;
+                occurrenceDate = SystemClock.OffsetNow;
 
             return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
         }

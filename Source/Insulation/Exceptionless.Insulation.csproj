@@ -42,20 +42,20 @@
       <HintPath>..\..\packages\Exceptionless.WebApi.4.0.1902\lib\net45\Exceptionless.WebApi.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio, Version=4.2.1179.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.4.2.1179\lib\net46\Foundatio.dll</HintPath>
+    <Reference Include="Foundatio, Version=4.2.1183.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.4.2.1183\lib\net46\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.AzureStorage, Version=4.2.1179.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.AzureStorage.4.2.1179\lib\net46\Foundatio.AzureStorage.dll</HintPath>
+    <Reference Include="Foundatio.AzureStorage, Version=4.2.1183.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.AzureStorage.4.2.1183\lib\net46\Foundatio.AzureStorage.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Logging.NLog, Version=4.2.1179.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Logging.NLog.4.2.1179\lib\net46\Foundatio.Logging.NLog.dll</HintPath>
+    <Reference Include="Foundatio.Logging.NLog, Version=4.2.1183.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Logging.NLog.4.2.1183\lib\net46\Foundatio.Logging.NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Redis, Version=4.2.1179.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Redis.4.2.1179\lib\net46\Foundatio.Redis.dll</HintPath>
+    <Reference Include="Foundatio.Redis, Version=4.2.1183.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Redis.4.2.1183\lib\net46\Foundatio.Redis.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Geocoding, Version=3.4.0.0, Culture=neutral, PublicKeyToken=7c714700b88674c7, processorArchitecture=MSIL">

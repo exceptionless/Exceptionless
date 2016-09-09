@@ -62,7 +62,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CreateAutoSessionAsync() {
-            await CreateAutoSessionInternalAsync(DateTimeOffset.Now);
+            await CreateAutoSessionInternalAsync(SystemClock.OffsetNow);
         }
 
         private async Task CreateAutoSessionInternalAsync(DateTimeOffset date) {
@@ -84,7 +84,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CanUpdateExistingAutoSessionAsync() {
-            var startDate = DateTimeOffset.Now.SubtractMinutes(5);
+            var startDate = SystemClock.OffsetNow.SubtractMinutes(5);
             await CreateAutoSessionInternalAsync(startDate);
 
             var ev = GenerateEvent(startDate.AddMinutes(4), "blake@exceptionless.io");
@@ -106,7 +106,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task IgnoreAutoSessionsWithoutIdentityAsync() {
-            var ev = GenerateEvent(DateTimeOffset.Now);
+            var ev = GenerateEvent(SystemClock.OffsetNow);
             var context = await _pipeline.RunAsync(ev);
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
@@ -121,7 +121,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         
         [Fact]
         public async Task CreateAutoSessionStartEventsAsync() {
-            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io"),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
@@ -150,7 +150,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task UpdateAutoMultipleSessionStartEventDurationsAsync() {
-            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.Session),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.Session),
@@ -174,7 +174,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task UpdateAutoSessionLastActivityAsync() {
-            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var lastEventDate = firstEventDate.Add(TimeSpan.FromMinutes(1));
 
             var events = new List<PersistentEvent> {
@@ -216,7 +216,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CloseExistingAutoSessionAsync() {
-            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io"),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
@@ -251,7 +251,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task IgnoreDuplicateAutoEndSessionsAsync() {
-            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionEnd)
@@ -269,7 +269,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task WillMarkAutoSessionHeartbeatStackHidden() {
-            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
             };
@@ -299,7 +299,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CreateManualSessionAsync() {
-            await CreateManualSessionInternalAsync(DateTimeOffset.Now);
+            await CreateManualSessionInternalAsync(SystemClock.OffsetNow);
         }
 
         private async Task CreateManualSessionInternalAsync(DateTimeOffset start) {
@@ -322,7 +322,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CanUpdateExistingManualSessionAsync() {
-            var startDate = DateTimeOffset.Now.SubtractMinutes(5);
+            var startDate = SystemClock.OffsetNow.SubtractMinutes(5);
             await CreateManualSessionInternalAsync(startDate);
 
             var ev = GenerateEvent(startDate.AddMinutes(4), sessionId: "12345678");
@@ -344,7 +344,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CreateManualSingleSessionStartEventAsync() {
-            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.Session, sessionId: "12345678"),
@@ -370,7 +370,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         
         [Fact]
         public async Task CreateManualSessionStartEventAsync() {
-            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, sessionId: "12345678"),
                 // This event will be deduplicated as part of the manual session plugin.
@@ -398,7 +398,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task UpdateManualSessionLastActivityAsync() {
-            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var lastEventDate = firstEventDate.Add(TimeSpan.FromMinutes(1));
 
             var events = new List<PersistentEvent> {
@@ -423,7 +423,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         
         [Fact]
         public async Task CloseExistingManualSessionAsync() {
-            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
@@ -461,7 +461,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task IgnoreDuplicateManualEndSessionsAsync() {
-            DateTimeOffset firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
@@ -479,7 +479,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task WillMarkManualSessionHeartbeatStackHidden() {
-            var firstEventDate = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
             };
@@ -745,7 +745,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         public async Task PipelinePerformance() {
             var parserPluginManager = GetService<EventParserPluginManager>();
             var pipeline = GetService<EventPipeline>();
-            var startDate = DateTimeOffset.Now.SubtractHours(1);
+            var startDate = SystemClock.OffsetNow.SubtractHours(1);
             var totalBatches = 0;
             var totalEvents = 0;
 
@@ -913,7 +913,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
             if (!occurrenceDate.HasValue)
-                occurrenceDate = DateTimeOffset.Now;
+                occurrenceDate = SystemClock.OffsetNow;
 
             return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
         }
