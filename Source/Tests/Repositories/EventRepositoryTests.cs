@@ -161,7 +161,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task GetOpenSessionsAsync() {
-            var firstEvent = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(35));
+            var firstEvent = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(35));
 
             var sessionLastActive35MinAgo = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
             var sessionLastActive34MinAgo = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession2", generateData: false);

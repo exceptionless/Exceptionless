@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Pipeline {
 
             // If the date is in the future, set it to now using the same offset.
             if (SystemClock.UtcNow < ctx.Event.Date.UtcDateTime)
-                ctx.Event.Date = ctx.Event.Date.Subtract(ctx.Event.Date.UtcDateTime - DateTimeOffset.UtcNow);
+                ctx.Event.Date = ctx.Event.Date.Subtract(ctx.Event.Date.UtcDateTime - SystemClock.OffsetUtcNow);
 
             // Discard events that are being submitted outside of the plan retention limit.
             if (SystemClock.UtcNow.Subtract(ctx.Event.Date.UtcDateTime).Days <= ctx.Organization.RetentionDays)
