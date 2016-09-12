@@ -129,8 +129,8 @@
       <HintPath>..\..\packages\SimpleInjector.3.2.2\lib\net45\SimpleInjector.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Stripe.net, Version=6.5.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Stripe.net.6.5.0\lib\net45\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net, Version=6.6.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Stripe.net.6.6.0\lib\net45\Stripe.net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
