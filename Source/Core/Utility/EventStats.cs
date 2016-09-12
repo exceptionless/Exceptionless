@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Utility {
             var descriptor = new SearchDescriptor<PersistentEvent>()
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _configuration.Events.Name)
+                .Indices(_configuration.Events.Event.GetIndexesByQuery(filter))
                 .Type(_configuration.Events.Event.Name)
                 .Aggregations(agg => BuildAggregations(agg, fields));
 
@@ -89,11 +89,11 @@ namespace Exceptionless.Core.Utility {
 
             utcStart = filter.DateRanges.First().GetStartDate();
             utcEnd = filter.DateRanges.First().GetEndDate();
-            
+
             var descriptor = new SearchDescriptor<PersistentEvent>()
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _configuration.Events.Name)
+                .Indices(_configuration.Events.Event.GetIndexesByQuery(filter))
                 .Type(_configuration.Events.Event.Name)
                 .Aggregations(agg => BuildAggregations(agg
                     .Terms("terms", t => BuildTermSort(t
@@ -168,7 +168,7 @@ namespace Exceptionless.Core.Utility {
             var descriptor = new SearchDescriptor<PersistentEvent>()
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _configuration.Events.Name)
+                .Indices(_configuration.Events.Event.GetIndexesByQuery(filter))
                 .Type(_configuration.Events.Event.Name)
                 .Aggregations(agg => BuildAggregations(agg
                     .DateHistogram("timelime", t => t
@@ -314,7 +314,7 @@ namespace Exceptionless.Core.Utility {
             // TODO: Cache this to save an extra search request when a date range isn't filtered.
             var descriptor = new SearchDescriptor<PersistentEvent>()
                 .IgnoreUnavailable()
-                .Index(filter.Indexes.Count > 0 ? String.Join(",", filter.Indexes) : _configuration.Events.Name)
+                .Indices(_configuration.Events.Event.GetIndexesByQuery(filter))
                 .Type(_configuration.Events.Event.Name)
                 .SortAscending(ev => ev.Date)
                 .Take(1);
