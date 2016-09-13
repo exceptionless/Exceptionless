@@ -110,6 +110,7 @@ namespace Exceptionless.Api.Controllers {
             foreach (var stack in stacks)
                 workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
                     OrganizationId = stack.OrganizationId,
+                    ProjectId = stack.ProjectId,
                     StackId = stack.Id,
                     UpdateIsFixed = true,
                     IsFixed = true
@@ -343,6 +344,7 @@ namespace Exceptionless.Api.Controllers {
             foreach (var stack in stacks)
                 workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
                     OrganizationId = stack.OrganizationId,
+                    ProjectId = stack.ProjectId,
                     StackId = stack.Id,
                     UpdateIsFixed = true,
                     IsFixed = false
@@ -375,6 +377,7 @@ namespace Exceptionless.Api.Controllers {
             foreach (var stack in stacks)
                 workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
                     OrganizationId = stack.OrganizationId,
+                    ProjectId = stack.ProjectId,
                     StackId = stack.Id,
                     UpdateIsHidden = true,
                     IsHidden = true
@@ -408,6 +411,7 @@ namespace Exceptionless.Api.Controllers {
             foreach (var stack in stacks)
                 workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
                     OrganizationId = stack.OrganizationId,
+                    ProjectId = stack.ProjectId,
                     StackId = stack.Id,
                     UpdateIsHidden = true,
                     IsHidden = false

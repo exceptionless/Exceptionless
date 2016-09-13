@@ -194,12 +194,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, await _repository.CountAsync());
 
             var sw = Stopwatch.StartNew();
-            await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.StackId2, false, sendNotifications: false);
+            await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, false, sendNotifications: false);
             _logger.Info(() => $"Time to mark not fixed events as not fixed: {sw.ElapsedMilliseconds}ms");
             await _configuration.Client.RefreshAsync();
             sw.Restart();
 
-            await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.StackId2, true, sendNotifications: false);
+            await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, true, sendNotifications: false);
             _logger.Info(() => $"Time to mark not fixed events as fixed: {sw.ElapsedMilliseconds}ms");
             await _configuration.Client.RefreshAsync();
             sw.Stop();

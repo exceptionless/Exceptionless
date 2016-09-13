@@ -74,12 +74,12 @@
       <HintPath>..\..\packages\Foundatio.4.2.1183\lib\net46\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=2.0.234.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.2.0.234-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
+    <Reference Include="Foundatio.Repositories, Version=2.0.235.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.2.0.235-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=2.0.234.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.2.0.234-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=2.0.235.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.2.0.235-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="McSherry.SemanticVersioning, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
