@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
@@ -44,7 +45,7 @@ namespace Exceptionless.Core.Repositories {
             return true;
         }
         
-        public Task UpdateFixedByStackAsync(string organizationId, string stackId, bool isFixed, bool sendNotifications = true) {
+        public async Task UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
 
@@ -54,10 +55,20 @@ namespace Exceptionless.Core.Repositories {
                 .WithFieldEquals(EventIndexType.Fields.IsFixed, !isFixed);
 
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(organizationId, query, new { is_fixed = isFixed }, sendNotifications);
+            long recordsAffected = await PatchAllAsync(organizationId, query, new { is_fixed = isFixed }, false).AnyContext();
+            if (recordsAffected == 0 || !sendNotifications)
+                return;
+
+            await PublishMessageAsync(new ExtendedEntityChanged {
+                ChangeType = ChangeType.Saved,
+                OrganizationId = organizationId,
+                ProjectId = projectId,
+                StackId = stackId,
+                Type = EntityTypeName
+            }, TimeSpan.FromSeconds(1.5)).AnyContext();
         }
 
-        public Task UpdateHiddenByStackAsync(string organizationId, string stackId, bool isHidden, bool sendNotifications = true) {
+        public async Task UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
             
@@ -67,7 +78,17 @@ namespace Exceptionless.Core.Repositories {
                 .WithFieldEquals(EventIndexType.Fields.IsHidden, !isHidden);
 
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(organizationId, query, new { is_hidden = isHidden }, sendNotifications);
+            long recordsAffected = await PatchAllAsync(organizationId, query, new { is_hidden = isHidden }, false).AnyContext();
+            if (recordsAffected == 0 || !sendNotifications)
+                return;
+
+            await PublishMessageAsync(new ExtendedEntityChanged {
+                ChangeType = ChangeType.Saved,
+                OrganizationId = organizationId,
+                ProjectId = projectId,
+                StackId = stackId,
+                Type = EntityTypeName
+            }, TimeSpan.FromSeconds(1.5)).AnyContext();
         }
 
         public Task RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {

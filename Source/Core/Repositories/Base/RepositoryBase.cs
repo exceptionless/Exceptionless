@@ -20,6 +20,7 @@ namespace Exceptionless.Core.Repositories {
                 Id = document?.Id,
                 OrganizationId = (document as IOwnedByOrganization)?.OrganizationId,
                 ProjectId = (document as IOwnedByProject)?.ProjectId,
+                StackId = (document as IOwnedByStack)?.StackId,
                 Type = EntityTypeName,
                 Data = new DataDictionary(data ?? new Dictionary<string, object>())
             }, delay);
