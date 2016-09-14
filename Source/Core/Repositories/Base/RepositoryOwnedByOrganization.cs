@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 
@@ -55,26 +53,6 @@ namespace Exceptionless.Core.Repositories {
                 .Distinct()).AnyContext();
 
             await base.InvalidateCacheAsync(documents).AnyContext();
-        }
-
-        protected Task<long> PatchAllAsync<TQuery>(string organizationId, TQuery query, object update, bool sendNotifications = true) where TQuery : IPagableQuery, ISelectedFieldsQuery {
-            return PatchAllAsync(new[] { organizationId }, query, update, sendNotifications);
-        }
-
-        protected async Task<long> PatchAllAsync<TQuery>(string[] organizationIds, TQuery query, object update, bool sendNotifications = true) where TQuery : IPagableQuery, ISelectedFieldsQuery {
-            var recordsAffected = await PatchAllAsync(query, update, false).AnyContext();
-            if (recordsAffected <= 0 || !sendNotifications)
-                return recordsAffected;
-
-            foreach (var organizationId in organizationIds) {
-                await PublishMessageAsync(new ExtendedEntityChanged {
-                    ChangeType = ChangeType.Saved,
-                    OrganizationId = organizationId,
-                    Type = EntityTypeName
-                }, TimeSpan.FromSeconds(1.5)).AnyContext();
-            }
-
-            return recordsAffected;
         }
     }
 }
