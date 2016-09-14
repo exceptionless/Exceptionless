@@ -44,8 +44,8 @@ namespace Exceptionless.Core.Repositories {
             await SaveAsync(ev, sendNotifications: sendNotifications).AnyContext();
             return true;
         }
-        
-        public Task UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true) {
+
+        public Task<long> UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
 
@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Repositories {
             return PatchAllAsync(query, new { is_fixed = isFixed });
         }
 
-        public Task UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
+        public Task<long> UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
             
@@ -70,15 +70,15 @@ namespace Exceptionless.Core.Repositories {
                 .WithFieldEquals(EventIndexType.Fields.IsHidden, !isHidden);
 
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(query, new { is_hidden = isHidden }, false);
+            return PatchAllAsync(query, new { is_hidden = isHidden });
         }
 
-        public Task RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
+        public Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
             var filter = Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).Lower(utcCutoffDate));
             return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithElasticFilter(filter), false);
         }
 
-        public Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
+        public Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
             var query = new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
                 .WithElasticFilter(Filter<PersistentEvent>.Term("client_ip_address", clientIp))
@@ -142,15 +142,20 @@ namespace Exceptionless.Core.Repositories {
                 .WithLimit(10));
         }
 
-        public async Task RemoveOldestEventsAsync(string stackId, int maxEventsPerStack) {
+        public async Task<long> RemoveOldestEventsAsync(string stackId, int maxEventsPerStack) {
             var options = new PagingOptions { Limit = maxEventsPerStack, Page = 2 };
             var results = await GetOldestEventsAsync(stackId, options).AnyContext();
+
+            long recordsAffected = 0;
             while (results.Documents.Count > 0) {
+                recordsAffected += results.Documents.Count;
                 await RemoveAsync(results.Documents).AnyContext();
 
                 if (!await results.NextPageAsync().AnyContext())
                     break;
             }
+
+            return recordsAffected;
         }
 
         private Task<IFindResults<PersistentEvent>> GetOldestEventsAsync(string stackId, PagingOptions options) {

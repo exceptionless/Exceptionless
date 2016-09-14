@@ -447,8 +447,9 @@ namespace Exceptionless.Api.Controllers {
             foreach (WebHook hook in promotedProjectHooks) {
                 var context = new WebHookDataContext(hook.Version, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.IsRegressed);
                 await _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
-                    OrganizationId = hook.OrganizationId,
-                    ProjectId = hook.ProjectId,
+                    OrganizationId = stack.OrganizationId,
+                    ProjectId = stack.ProjectId,
+                    WebHookId = hook.Id,
                     Url = hook.Url,
                     Data = await _webHookDataPluginManager.CreateFromStackAsync(context)
                 });
@@ -475,6 +476,8 @@ namespace Exceptionless.Api.Controllers {
             var workItems = new List<string>();
             foreach (var stack in stacks) {
                 workItems.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                    OrganizationId = stack.OrganizationId,
+                    ProjectId = stack.ProjectId,
                     StackId = stack.Id,
                     Delete = true
                 }));

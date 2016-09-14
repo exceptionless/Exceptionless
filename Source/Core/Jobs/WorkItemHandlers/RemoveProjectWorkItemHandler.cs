@@ -46,15 +46,15 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
             if (!workItem.Reset) {
                 await context.ReportProgressAsync(20, "Removing tokens").AnyContext();
-                await _tokenRepository.RemoveAllByOrganizationIdsAsync(new[] { project.Id }).AnyContext();
+                await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
 
                 await context.ReportProgressAsync(40, "Removing web hooks").AnyContext();
-                await _webHookRepository.RemoveAllByOrganizationIdsAsync(new[] { project.Id }).AnyContext();
+                await _webHookRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
             }
 
             await context.ReportProgressAsync(60, "Resetting project data").AnyContext();
-            await _eventRepository.RemoveAllByProjectIdsAsync(new[] { project.Id }).AnyContext();
-            await _stackRepository.RemoveAllByProjectIdsAsync(new[] { project.Id }).AnyContext();
+            await _eventRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
+            await _stackRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
 
             if (!workItem.Reset) {
                 await context.ReportProgressAsync(80, "Removing project").AnyContext();

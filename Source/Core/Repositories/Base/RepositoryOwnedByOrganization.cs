@@ -37,8 +37,8 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public Task RemoveAllByOrganizationIdsAsync(string[] organizationIds) {
-            return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationIds(organizationIds));
+        public Task<long> RemoveAllByOrganizationIdAsync(string organizationId) {
+            return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId));
         }
         
         protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<T>> documents) {

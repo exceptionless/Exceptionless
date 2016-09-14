@@ -10,6 +10,6 @@ namespace Exceptionless.Core.Repositories {
         Task<CountResult> CountByOrganizationIdAsync(string organizationId);
         Task<IFindResults<T>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         Task<IFindResults<T>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
-        Task RemoveAllByOrganizationIdsAsync(string[] organizationIds);
+        Task<long> RemoveAllByOrganizationIdAsync(string organizationId);
     }
 }

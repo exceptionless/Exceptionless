@@ -49,6 +49,7 @@ namespace Exceptionless.Core.Pipeline {
                 var notification = new WebHookNotification {
                     OrganizationId = ctx.Event.OrganizationId,
                     ProjectId = ctx.Event.ProjectId,
+                    WebHookId = hook.Id,
                     Url = hook.Url,
                     Data = await _webHookDataPluginManager.CreateFromEventAsync(context).AnyContext()
                 };

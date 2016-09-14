@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
@@ -133,7 +134,16 @@ namespace Exceptionless.App.Controllers.API {
             if (!targetUrl.Contains("zapier"))
                 return NotFound();
 
-            await _repository.RemoveByUrlAsync(targetUrl);
+            var results = await _repository.GetByUrlAsync(targetUrl);
+            if (results.Documents.Count > 0) {
+                string organizationId = results.Documents.First().OrganizationId;
+                if (results.Documents.Any(h => h.OrganizationId != organizationId))
+                    throw new ArgumentException("All OrganizationIds must be the same.");
+
+                _logger.Info(() => $"Removing {results.Documents.Count} zapier urls matching: {targetUrl}");
+                await _repository.RemoveAsync(results.Documents);
+            }
+
             return Ok();
         }
 
