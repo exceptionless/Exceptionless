@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
@@ -21,9 +20,10 @@ namespace Exceptionless.Core.Repositories {
             : base(configuration.Events.Event, validator) {
             DisableCache();
             BatchNotifications = true;
-            DefaultExcludes.Add("idx");
+            DefaultExcludes.Add(EventIndexType.Fields.IDX);
+            FieldsRequiredForRemove.Add(EventIndexType.Fields.Date);
         }
-        
+
         // TODO: We need to index and search by the created time.
         public Task<IFindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null) {
             var filter = Filter<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && Filter<PersistentEvent>.Missing(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]);
@@ -45,50 +45,32 @@ namespace Exceptionless.Core.Repositories {
             return true;
         }
         
-        public async Task UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true) {
+        public Task UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
 
             var query = new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
+                .WithProjectId(projectId)
                 .WithStackId(stackId)
                 .WithFieldEquals(EventIndexType.Fields.IsFixed, !isFixed);
 
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            long recordsAffected = await PatchAllAsync(organizationId, query, new { is_fixed = isFixed }, false).AnyContext();
-            if (recordsAffected == 0 || !sendNotifications)
-                return;
-
-            await PublishMessageAsync(new ExtendedEntityChanged {
-                ChangeType = ChangeType.Saved,
-                OrganizationId = organizationId,
-                ProjectId = projectId,
-                StackId = stackId,
-                Type = EntityTypeName
-            }, TimeSpan.FromSeconds(1.5)).AnyContext();
+            return PatchAllAsync(query, new { is_fixed = isFixed });
         }
 
-        public async Task UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
+        public Task UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
             
             var query = new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
+                .WithProjectId(projectId)
                 .WithStackId(stackId)
                 .WithFieldEquals(EventIndexType.Fields.IsHidden, !isHidden);
 
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            long recordsAffected = await PatchAllAsync(organizationId, query, new { is_hidden = isHidden }, false).AnyContext();
-            if (recordsAffected == 0 || !sendNotifications)
-                return;
-
-            await PublishMessageAsync(new ExtendedEntityChanged {
-                ChangeType = ChangeType.Saved,
-                OrganizationId = organizationId,
-                ProjectId = projectId,
-                StackId = stackId,
-                Type = EntityTypeName
-            }, TimeSpan.FromSeconds(1.5)).AnyContext();
+            return PatchAllAsync(query, new { is_hidden = isHidden }, false);
         }
 
         public Task RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
@@ -98,11 +80,12 @@ namespace Exceptionless.Core.Repositories {
 
         public Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
             var query = new ExceptionlessQuery()
+                .WithOrganizationId(organizationId)
                 .WithElasticFilter(Filter<PersistentEvent>.Term("client_ip_address", clientIp))
                 .WithDateRange(utcStart, utcEnd, EventIndexType.Fields.Date)
                 .WithIndexes(utcStart, utcEnd);
 
-            return PatchAllAsync(organizationId, query, new { is_hidden = true });
+            return PatchAllAsync(query, new { is_hidden = true });
         }
 
         public Task<IFindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {

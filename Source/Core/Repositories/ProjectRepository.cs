@@ -31,11 +31,14 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public async Task<CountResult> IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects) {
-            if (projects == null || !projects.Any())
+            if (projects == null)
                 throw new ArgumentNullException(nameof(projects));
-            
+
+            if (projects.Count == 0)
+                return new CountResult();
+
             string script = $"ctx._source.next_summary_end_of_day_ticks += {TimeSpan.TicksPerDay};";
-            var recordsAffected = await PatchAllAsync((string)null, new ExceptionlessQuery().WithIds(projects.Select(p => p.Id)), script, false).AnyContext();
+            var recordsAffected = await PatchAllAsync(new ExceptionlessQuery().WithIds(projects.Select(p => p.Id)), script, false).AnyContext();
             if (recordsAffected > 0)
                 await InvalidateCacheAsync(projects).AnyContext();
             
