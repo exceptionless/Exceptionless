@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Extensions;
-using Exceptionless.LuceneQueryParser;
-using Exceptionless.LuceneQueryParser.Nodes;
-using Exceptionless.LuceneQueryParser.Visitor;
+using Foundatio.Parsers.LuceneQueries;
+using Foundatio.Parsers.LuceneQueries.Nodes;
+using Foundatio.Parsers.LuceneQueries.Visitors;
 
 namespace Exceptionless.Core.Filter {
     public class QueryProcessor {
@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Filter {
 
             GroupNode result;
             try {
-                var parser = new QueryParser();
+                var parser = new LuceneQueryParser();
                 result = parser.Parse(query);
             } catch (Exception ex) {
                 return new QueryProcessResult { Message = ex.Message };
@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Filter {
 
             GroupNode result;
             try {
-                var parser = new QueryParser();
+                var parser = new LuceneQueryParser();
                 result = parser.Parse(query);
             } catch (Exception ex) {
                 return new QueryProcessResult { Message = ex.Message };
