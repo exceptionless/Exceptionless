@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         public override async Task HandleItemAsync(WorkItemContext context) {
             var wi = context.GetData<StackWorkItem>();
             if (wi.Delete) {
-                await _eventRepository.RemoveAllByStackIdsAsync(new[] { wi.StackId }).AnyContext();
+                await _eventRepository.RemoveAllByStackIdAsync(wi.OrganizationId, wi.ProjectId, wi.StackId).AnyContext();
                 await _stackRepository.RemoveAsync(wi.StackId).AnyContext();
                 return;
             }

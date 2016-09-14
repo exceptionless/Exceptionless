@@ -7,7 +7,7 @@ using Foundatio.Repositories.Models;
 namespace Exceptionless.Core.Repositories {
     public interface IRepositoryOwnedByStack<T> : IRepository<T> where T : class, IOwnedByStack, IIdentity, new() {
         Task<IFindResults<T>> GetByStackIdAsync(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
-        Task RemoveAllByStackIdsAsync(string[] stackIds);
+        Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId);
     }
 
     public interface IRepositoryOwnedByProjectAndStack<T> : IRepositoryOwnedByProject<T>, IRepositoryOwnedByStack<T> where T : class, IOwnedByProject, IIdentity, IOwnedByStack, new() { }

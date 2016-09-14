@@ -62,19 +62,19 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Parsers.ElasticQueries, Version=1.0.82.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.1.0.82\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Parsers.LuceneQueries, Version=1.0.82.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.1.0.82\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
+    </Reference>
+    <Reference Include="Foundatio.Repositories, Version=2.0.239.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.2.0.239-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=2.0.238.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.2.0.238-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=2.0.238.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.2.0.238-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=2.0.239.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.2.0.239-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">

@@ -23,8 +23,8 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public Task RemoveAllByStackIdsAsync(string[] stackIds) {
-            return RemoveAllAsync(new ExceptionlessQuery().WithStackIds(stackIds));
+        public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
+            return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithProjectId(projectId).WithStackId(stackId));
         }
 
         protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<T>> documents) {

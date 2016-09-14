@@ -17,11 +17,11 @@ namespace Exceptionless.Core.Repositories {
         Task<IFindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null);
         Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true);
 
-        Task UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true);
-        Task UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true);
-        Task RemoveOldestEventsAsync(string stackId, int maxEventsPerStack);
-        Task RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate);
-        Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd);
+        Task<long> UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true);
+        Task<long> UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true);
+        Task<long> RemoveOldestEventsAsync(string stackId, int maxEventsPerStack);
+        Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate);
+        Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd);
 
         Task<IFindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, string filter = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         Task<CountResult> GetCountByProjectIdAsync(string projectId);

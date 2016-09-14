@@ -71,9 +71,6 @@ namespace Exceptionless.Core.Filter {
         }
 
         public void Visit(GroupNode node) {
-            if (String.IsNullOrEmpty(node.Field))
-                return;
-
             var childTerms = new List<string>();
             var leftTermNode = node.Left as TermNode;
             if (leftTermNode != null && leftTermNode.Field == null)
@@ -96,6 +93,8 @@ namespace Exceptionless.Core.Filter {
             }
 
             node.Field = GetCustomFieldName(node.Field, childTerms.ToArray()) ?? node.Field;
+            foreach (var child in node.Children)
+                child.Accept(this);
         }
 
         public void Visit(TermNode node) {
