@@ -48,19 +48,16 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithLimit(limit).WithSort(EventIndexType.Fields.OrganizationId));
         }
 
-        public async Task<CountResult> IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects) {
+        public async Task IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects) {
             if (projects == null)
                 throw new ArgumentNullException(nameof(projects));
 
             if (projects.Count == 0)
-                return new CountResult();
+                return;
 
             string script = $"ctx._source.next_summary_end_of_day_ticks += {TimeSpan.TicksPerDay};";
-            var recordsAffected = await PatchAllAsync(new ExceptionlessQuery().WithIds(projects.Select(p => p.Id)), script, false).AnyContext();
-            if (recordsAffected > 0)
-                await InvalidateCacheAsync(projects).AnyContext();
-
-            return new CountResult(recordsAffected);
+            await PatchAsync(projects.Select(p => p.Id), script, false).AnyContext();
+            await InvalidateCacheAsync(projects).AnyContext();
         }
 
         protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<Project> documents) {

@@ -80,8 +80,12 @@ namespace Exceptionless.Core.Jobs {
                     }
                 }
 
-                if (projectsToBulkUpdate.Count > 0)
+                if (projectsToBulkUpdate.Count > 0) {
                     await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projectsToBulkUpdate).AnyContext();
+
+                    // Sleep so we are not hammering the backend
+                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(1)).AnyContext();
+                }
 
                 if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
                     break;
