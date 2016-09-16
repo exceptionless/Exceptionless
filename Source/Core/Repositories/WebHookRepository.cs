@@ -25,8 +25,7 @@ namespace Exceptionless.Core.Repositories {
             var filter = (Filter<WebHook>.Term(e => e.OrganizationId, organizationId) && Filter<WebHook>.Missing(e => e.ProjectId)) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
-                .WithCacheKey(String.Concat("Organization:", organizationId, ":Project:", projectId))
-                .WithExpiresIn(TimeSpan.FromMinutes(5)));
+                .WithCacheKey(String.Concat("Organization:", organizationId, ":Project:", projectId)));
         }
 
         public static class EventTypes {

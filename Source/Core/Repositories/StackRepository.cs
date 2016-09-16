@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Repositories {
 
             await base.AddToCacheAsync(documents, expiresIn).AnyContext();
             foreach (var stack in documents)
-                await Cache.SetAsync(GetStackSignatureCacheKey(stack), stack, expiresIn ?? TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS)).AnyContext();
+                await Cache.SetAsync(GetStackSignatureCacheKey(stack), stack, expiresIn ?? TimeSpan.FromSeconds(ElasticType.DefaultCacheExpirationSeconds)).AnyContext();
         }
 
         private string GetStackSignatureCacheKey(Stack stack) {

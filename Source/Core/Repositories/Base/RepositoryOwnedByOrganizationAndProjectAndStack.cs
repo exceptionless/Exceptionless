@@ -13,7 +13,9 @@ using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganizationAndProjectAndStack<T> : RepositoryOwnedByOrganizationAndProject<T>, IRepositoryOwnedByStack<T> where T : class, IOwnedByProject, IIdentity, IOwnedByStack, IOwnedByOrganization, new() {
-        public RepositoryOwnedByOrganizationAndProjectAndStack(IIndexType<T> indexType, IValidator<T> validator) : base(indexType, validator) {}
+        public RepositoryOwnedByOrganizationAndProjectAndStack(IIndexType<T> indexType, IValidator<T> validator) : base(indexType, validator) {
+            FieldsRequiredForRemove.Add("stack_id");
+        }
 
         public virtual Task<IFindResults<T>> GetByStackIdAsync(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return FindAsync(new ExceptionlessQuery()

@@ -30,20 +30,18 @@ namespace Exceptionless.Core.Repositories {
                 .WithCacheKey(String.Concat("Organization:", organizationId)));
         }
 
-        public Task<IFindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan ? expiresIn = null) {
+        public Task<IFindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null) {
             if (organizationIds == null)
                 throw new ArgumentNullException(nameof(organizationIds));
 
             if (organizationIds.Count == 0)
                 return Task.FromResult<IFindResults<Project>>(new FindResults<Project>());
 
-            // NOTE: There is no way to currently invalidate this.. If you try and cache this result, you should expect it to be dirty.
-            string cacheKey = String.Concat("Organization:", String.Join("", organizationIds).GetHashCode().ToString());
+            string cacheKey = organizationIds.Count == 1 ?  String.Concat("paged:Organization:", organizationIds.Single()) : null;
             return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationIds(organizationIds)
                 .WithPaging(paging)
-                .WithCacheKey(useCache ? cacheKey : null)
-                .WithExpiresIn(expiresIn));
+                .WithCacheKey(cacheKey));
         }
 
         public Task<IFindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
@@ -70,21 +68,29 @@ namespace Exceptionless.Core.Repositories {
             if (!IsCacheEnabled)
                 return;
 
-            await InvalidateCountCacheAsync(documents.Select(d => d.Value.OrganizationId)).AnyContext();
-            await base.InvalidateCacheAsync(documents).AnyContext();
+            var organizations = documents.Select(d => d.Value.OrganizationId).Distinct().ToList();
+            await InvalidateCountCacheAsync(organizations).AnyContext();
+            await InvalidatePagedCacheAsync(organizations).AnyContext();
         }
 
         private async Task OnDocumentsAdded(object sender, DocumentsEventArgs<Project> documents) {
             if (!IsCacheEnabled)
                 return;
 
-            await InvalidateCountCacheAsync(documents.Documents.Select(d => d.OrganizationId)).AnyContext();
+            var organizations = documents.Documents.Select(d => d.OrganizationId).Distinct().ToList();
+            await InvalidateCountCacheAsync(organizations).AnyContext();
+            await InvalidatePagedCacheAsync(organizations).AnyContext();
         }
 
-        private async Task InvalidateCountCacheAsync(IEnumerable<string> organizationIds) {
-            var keys = organizationIds.Where(id => !String.IsNullOrEmpty(id)).Select(id => $"count:Organization:{id}").Distinct().ToList();
+        private async Task InvalidateCountCacheAsync(IReadOnlyCollection<string> organizationIds) {
+            var keys = organizationIds.Where(id => !String.IsNullOrEmpty(id)).Select(id => $"count:Organization:{id}").ToList();
             if (keys.Count > 0)
                 await Cache.RemoveAllAsync(keys).AnyContext();
+        }
+
+        private async Task InvalidatePagedCacheAsync(IReadOnlyCollection<string> organizationIds) {
+            foreach (var organizationId in organizationIds.Where(id => !String.IsNullOrEmpty(id)))
+                await Cache.RemoveByPrefixAsync($"paged:Organization:{organizationId}:*").AnyContext();
         }
     }
 }
