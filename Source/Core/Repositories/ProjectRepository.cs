@@ -43,9 +43,9 @@ namespace Exceptionless.Core.Repositories {
                 .WithCacheKey(cacheKey));
         }
 
-        public Task<IFindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
+        public Task<IFindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50) {
             var filter = Filter<Project>.Range(r => r.OnField(o => o.NextSummaryEndOfDayTicks).Lower(SystemClock.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
-            return FindAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithSelectedFields("id", "next_summary_end_of_day_ticks").WithLimit(limit));
+            return FindAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithLimit(limit).WithSort(EventIndexType.Fields.OrganizationId));
         }
 
         public async Task<CountResult> IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects) {
@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Repositories {
             var recordsAffected = await PatchAllAsync(new ExceptionlessQuery().WithIds(projects.Select(p => p.Id)), script, false).AnyContext();
             if (recordsAffected > 0)
                 await InvalidateCacheAsync(projects).AnyContext();
-            
+
             return new CountResult(recordsAffected);
         }
 

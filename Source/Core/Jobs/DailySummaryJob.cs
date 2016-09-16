@@ -46,41 +46,46 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
-            if (!Settings.Current.EnableDailySummary)
+            if (!Settings.Current.EnableDailySummary || _mailer == null)
                 return JobResult.SuccessWithMessage("Summary notifications are disabled.");
 
-            if (_mailer == null)
-                return JobResult.SuccessWithMessage("Summary notifications are disabled due to null mailer.");
-
-            const int BATCH_SIZE = 25;
-            var results = await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9, BATCH_SIZE).AnyContext();
+            var results = await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 _logger.Info("Got {0} projects to process. ", results.Documents.Count);
 
+                var projectsToBulkUpdate = new List<Project>(results.Documents.Count);
+                long processSummariesNewerThan = SystemClock.UtcNow.Date.SubtractDays(2).Ticks;
                 foreach (var project in results.Documents) {
-                    var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks);
-                    if (utcStartTime < SystemClock.UtcNow.Date.SubtractDays(2)) {
-                        _logger.Info("Skipping daily summary older than two days for project \"{0}\" with a start time of \"{1}\".", project.Id, utcStartTime);
-                        await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }).AnyContext();
+                    if (project.NextSummaryEndOfDayTicks < processSummariesNewerThan) {
+                        _logger.Info().Project(project.Id).Message("Skipping daily summary older than two days for project: {0}", project.Name).Write();
+                        projectsToBulkUpdate.Add(project);
                         continue;
                     }
 
+                    var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks);
                     var notification = new SummaryNotification {
                         Id = project.Id,
                         UtcStartTime = utcStartTime,
                         UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
                     };
 
-                    await ProcessSummaryNotificationAsync(notification).AnyContext();
-                    await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }).AnyContext();
+                    var summarySent = await SendSummaryNotificationAsync(project, notification).AnyContext();
+                    if (summarySent) {
+                        await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }).AnyContext();
 
-                    // Sleep so we are not hammering the backend.
-                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(1)).AnyContext();
+                        // Sleep so we are not hammering the backend as we just generated a report.
+                        await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
+                    } else {
+                        projectsToBulkUpdate.Add(project);
+                    }
                 }
-                
+
+                if (projectsToBulkUpdate.Count > 0)
+                    await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projectsToBulkUpdate).AnyContext();
+
                 if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
                     break;
-                
+
                 if (results.Documents.Count > 0)
                     await context.RenewLockAsync().AnyContext();
             }
@@ -88,23 +93,28 @@ namespace Exceptionless.Core.Jobs {
             return JobResult.SuccessWithMessage("Successfully sent summary notifications.");
         }
 
-        private async Task ProcessSummaryNotificationAsync(SummaryNotification data) {
-            var project = await _projectRepository.GetByIdAsync(data.Id, true).AnyContext();
-            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
+        private async Task<bool> SendSummaryNotificationAsync(Project project, SummaryNotification data) {
             var userIds = project.NotificationSettings.Where(n => n.Value.SendDailySummary).Select(n => n.Key).ToList();
             if (userIds.Count == 0) {
-                _logger.Info("Project \"{0}\" has no users to send summary to.", project.Id);
-                return;
+                _logger.Info().Project(project.Id).Message("Project \"{0}\" has no users to send summary to.", project.Name).Write();
+                return false;
             }
 
-            var users = (await _userRepository.GetByIdsAsync(userIds).AnyContext()).Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(organization.Id)).ToList();
+            var results = await _userRepository.GetByIdsAsync(userIds, true).AnyContext();
+            var users = results.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(project.OrganizationId)).ToList();
             if (users.Count == 0) {
-                _logger.Info("Project \"{0}\" has no users to send summary to.", project.Id);
-                return;
+                _logger.Info().Project(project.Id).Message("Project \"{0}\" has no users to send summary to.", project.Name);
+                return false;
+            }
+
+            // TODO: What should we do about suspended organizations.
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
+            if (organization == null) {
+                _logger.Info().Project(project.Id).Message("The organization \"{0}\" for project \"{1}\" may have been deleted. No summaries will be sent.", project.OrganizationId, project.Name);
+                return false;
             }
 
             _logger.Info("Sending daily summary: users={0} project={1}", users.Count, project.Id);
-
             var fields = new List<FieldAggregation> {
                 new FieldAggregation { Type = FieldAggregationType.Distinct, Field = "stack_id" },
                 new TermFieldAggregation { Field = "is_first_occurrence", ExcludePattern = "F" }
@@ -132,7 +142,8 @@ namespace Exceptionless.Core.Jobs {
             foreach (var user in users)
                 await _mailer.SendDailySummaryAsync(user.EmailAddress, notification).AnyContext();
 
-            _logger.Info("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Id, notification.Total);
+            _logger.Info().Project(project.Id).Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Name, notification.Total);
+            return true;
         }
     }
 }
