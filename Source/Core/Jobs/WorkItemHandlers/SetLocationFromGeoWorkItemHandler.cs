@@ -16,14 +16,14 @@ using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase {
-        private readonly ICacheClient _cacheClient;
+        private readonly ICacheClient _cache;
         private readonly IEventRepository _eventRepository;
         private readonly IGeocodeService _geocodeService;
         private readonly IMetricsClient _metricsClient;
         private readonly ILockProvider _lockProvider;
 
         public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMetricsClient metricsClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
-            _cacheClient = new ScopedCacheClient(cacheClient, "geo");
+            _cache = new ScopedCacheClient(cacheClient, "Geo");
             _eventRepository = eventRepository;
             _geocodeService = geocodeService;
             _metricsClient = metricsClient;
@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             if (!GeoResult.TryParse(workItem.Geo, out result))
                 return;
             
-            var location = await _cacheClient.GetAsync<Location>(workItem.Geo, null).AnyContext();
+            var location = await _cache.GetAsync<Location>(workItem.Geo, null).AnyContext();
             if (location == null) {
                 try {
                     result = await _geocodeService.ReverseGeocodeAsync(result.Latitude.GetValueOrDefault(), result.Longitude.GetValueOrDefault()).AnyContext();
@@ -56,7 +56,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             if (location == null)
                 return;
             
-            await _cacheClient.SetAsync(workItem.Geo, location, TimeSpan.FromDays(3)).AnyContext();
+            await _cache.SetAsync(workItem.Geo, location, TimeSpan.FromDays(3)).AnyContext();
 
             var ev = await _eventRepository.GetByIdAsync(workItem.EventId).AnyContext();
             if (ev == null)

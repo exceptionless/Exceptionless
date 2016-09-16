@@ -7,6 +7,7 @@ using StackExchange.Redis;
 
 namespace Exceptionless.Insulation.Redis {
     public class RedisConnectionMapping : IConnectionMapping {
+        private const string KeyPrefix = "Hub:";
         private readonly ConnectionMultiplexer _muxer;
 
         public RedisConnectionMapping(ConnectionMultiplexer muxer) {
@@ -17,7 +18,7 @@ namespace Exceptionless.Insulation.Redis {
             if (key == null)
                 return;
 
-            await Database.SetAddAsync(key, connectionId);
+            await Database.SetAddAsync(String.Concat(KeyPrefix, key), connectionId);
         }
 
         private IDatabase Database => _muxer.GetDatabase();
@@ -26,7 +27,7 @@ namespace Exceptionless.Insulation.Redis {
             if (key == null)
                 return new List<string>();
 
-            var values = await Database.SetMembersAsync(key);
+            var values = await Database.SetMembersAsync(String.Concat(KeyPrefix, key));
             return values.Select(v => v.ToString()).ToList();
         }
 
@@ -34,7 +35,7 @@ namespace Exceptionless.Insulation.Redis {
             if (key == null)
                 return;
 
-            await Database.SetRemoveAsync(key, connectionId);
+            await Database.SetRemoveAsync(String.Concat(KeyPrefix, key), connectionId);
         }
     }
 }

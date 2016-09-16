@@ -10,7 +10,6 @@ using FluentValidation;
 using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
 using DataDictionary = Foundatio.Utility.DataDictionary;
 
 namespace Exceptionless.Core.Repositories {

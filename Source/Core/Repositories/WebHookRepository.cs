@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Repositories {
             var filter = (Filter<WebHook>.Term(e => e.OrganizationId, organizationId) && Filter<WebHook>.Missing(e => e.ProjectId)) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
-                .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))
+                .WithCacheKey(String.Concat("Organization:", organizationId, ":Project:", projectId))
                 .WithExpiresIn(TimeSpan.FromMinutes(5)));
         }
 
@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Repositories {
 
             await Cache.RemoveAllAsync(documents.Select(d => d.Value)
                 .Union(documents.Select(d => d.Original).Where(d => d != null))
-                .Select(h => String.Concat("org:", h.OrganizationId, "-project:", h.ProjectId))
+                .Select(h => String.Concat("Organization:", h.OrganizationId, ":Project:", h.ProjectId))
                 .Distinct()).AnyContext();
 
             await base.InvalidateCacheAsync(documents).AnyContext();

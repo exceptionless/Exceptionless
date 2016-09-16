@@ -14,14 +14,14 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(70)]
     public sealed class SessionPlugin : EventProcessorPluginBase {
         private static readonly TimeSpan _sessionTimeout = TimeSpan.FromMinutes(15);
-        private readonly ICacheClient _cacheClient;
+        private readonly ICacheClient _cache;
         private readonly IEventRepository _eventRepository;
         private readonly UpdateStatsAction _updateStats;
         private readonly AssignToStackAction _assignToStack;
         private readonly LocationPlugin _locationPlugin;
 
         public SessionPlugin(ICacheClient cacheClient, IEventRepository eventRepository, AssignToStackAction assignToStack, UpdateStatsAction updateStats, LocationPlugin locationPlugin, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
-            _cacheClient = new ScopedCacheClient(cacheClient, "session");
+            _cache = new ScopedCacheClient(cacheClient, "session");
             _eventRepository = eventRepository;
             _assignToStack = assignToStack;
             _updateStats = updateStats;
@@ -203,15 +203,15 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
         private async Task<string> GetSessionStartEventIdAsync(string projectId, string sessionId) {
             string cacheKey = GetSessionStartEventIdCacheKey(projectId, sessionId);
-            string eventId = await _cacheClient.GetAsync<string>(cacheKey, null).AnyContext();
+            string eventId = await _cache.GetAsync<string>(cacheKey, null).AnyContext();
             if (!String.IsNullOrEmpty(eventId))
-                await _cacheClient.SetExpirationAsync(cacheKey, TimeSpan.FromDays(1)).AnyContext();
+                await _cache.SetExpirationAsync(cacheKey, TimeSpan.FromDays(1)).AnyContext();
 
             return eventId;
         }
 
         private async Task SetSessionStartEventIdAsync(string projectId, string sessionId, string eventId) {
-            await _cacheClient.SetAsync<string>(GetSessionStartEventIdCacheKey(projectId, sessionId), eventId, TimeSpan.FromDays(1)).AnyContext();
+            await _cache.SetAsync<string>(GetSessionStartEventIdCacheKey(projectId, sessionId), eventId, TimeSpan.FromDays(1)).AnyContext();
         }
 
         private string GetIdentitySessionIdCacheKey(string projectId, string identity) {
@@ -220,17 +220,17 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
         private async Task<string> GetIdentitySessionIdAsync(string projectId, string identity) {
             string cacheKey = GetIdentitySessionIdCacheKey(projectId, identity);
-            string sessionId = await _cacheClient.GetAsync<string>(cacheKey, null).AnyContext();
+            string sessionId = await _cache.GetAsync<string>(cacheKey, null).AnyContext();
             if (!String.IsNullOrEmpty(sessionId)) {
-                await _cacheClient.SetExpirationAsync(cacheKey, _sessionTimeout).AnyContext();
-                await _cacheClient.SetExpirationAsync(GetSessionStartEventIdCacheKey(projectId, sessionId), TimeSpan.FromDays(1)).AnyContext();
+                await _cache.SetExpirationAsync(cacheKey, _sessionTimeout).AnyContext();
+                await _cache.SetExpirationAsync(GetSessionStartEventIdCacheKey(projectId, sessionId), TimeSpan.FromDays(1)).AnyContext();
             }
 
             return sessionId;
         }
 
         private async Task SetIdentitySessionIdAsync(string projectId, string identity, string sessionId) {
-            await _cacheClient.SetAsync<string>(GetIdentitySessionIdCacheKey(projectId, identity), sessionId, _sessionTimeout).AnyContext();
+            await _cache.SetAsync<string>(GetIdentitySessionIdCacheKey(projectId, identity), sessionId, _sessionTimeout).AnyContext();
         }
 
         private async Task<PersistentEvent> CreateSessionStartEventAsync(EventContext startContext, DateTime? lastActivityUtc, bool? isSessionEnd) {
@@ -256,7 +256,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, lastActivityUtc, isSessionEnd, hasError).AnyContext();
 
                 if (isSessionEnd)
-                    await _cacheClient.RemoveAsync(GetSessionStartEventIdCacheKey(projectId, sessionId)).AnyContext();
+                    await _cache.RemoveAsync(GetSessionStartEventIdCacheKey(projectId, sessionId)).AnyContext();
             }
 
             return sessionStartEventId;

@@ -71,28 +71,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task GetByQueryAsync() {
-            await CreateDataAsync();
-
-            _logger.Debug("Sorted order:");
-            List<Tuple<string, DateTime>> sortedIds = _ids.OrderByDescending(t => t.Item2.Ticks).ThenByDescending(t => t.Item1).ToList();
-            foreach (var t in sortedIds)
-                _logger.Debug("{0}: {1}", t.Item1, t.Item2.ToLongTimeString());
-            
-            _logger.Debug("");
-            _logger.Debug("Before {0}: {1}", sortedIds[2].Item1, sortedIds[2].Item2.ToLongTimeString());
-            await _configuration.Client.RefreshAsync();
-            string query = $"stack:{TestConstants.StackId} project:{TestConstants.ProjectId} date:[now-1h TO now+1h]";
-            var results = (await _repository.GetByOrganizationIdsAsync(new[] { TestConstants.OrganizationId }, query, new PagingOptions().WithLimit(20))).Documents.ToArray();
-            Assert.Equal(sortedIds.Count, results.Length);
-
-            for (int i = 0; i < sortedIds.Count; i++) {
-                _logger.Debug("{0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
-                Assert.Equal(sortedIds[i].Item1, results[i].Id);
-            }
-        }
-       
-        [Fact]
         public async Task GetPreviousEventIdInStackTestAsync() {
             await CreateDataAsync();
 

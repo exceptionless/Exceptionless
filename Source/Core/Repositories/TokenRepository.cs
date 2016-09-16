@@ -7,7 +7,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
-using Foundatio.Caching;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
@@ -20,16 +19,6 @@ namespace Exceptionless.Core.Repositories {
         public TokenRepository(ExceptionlessElasticConfiguration configuration, IValidator<Token> validator) 
             : base(configuration.Organizations.Token, validator) {}
 
-        public Task<IFindResults<Token>> GetApiTokensAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var filter = Filter<Token>.Term(e => e.Type, TokenType.Access) && Filter<Token>.Missing(e => e.UserId);
-            return FindAsync(new ExceptionlessQuery()
-                .WithOrganizationId(organizationId)
-                .WithElasticFilter(filter)
-                .WithPaging(paging)
-                .WithCacheKey(useCache ? String.Concat("api-org:", organizationId) : null)
-                .WithExpiresIn(expiresIn));
-        }
-
         public Task<IFindResults<Token>> GetByUserIdAsync(string userId) {
             var filter = Filter<Token>.Term(e => e.UserId, userId);
             return FindAsync(new ExceptionlessQuery().WithElasticFilter(filter));
@@ -40,20 +29,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithOrganizationId(organizationId)
                 .WithElasticFilter(Filter<Token>.Term(t => t.Type, type))
                 .WithPaging(paging)
-                .WithCacheKey(useCache ? String.Concat("type:", type, "-org:", organizationId) : null)
-                .WithExpiresIn(expiresIn));
-        }
-
-        public Task<IFindResults<Token>> GetByTypeAndOrganizationIdsAsync(TokenType type, ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            if (organizationIds == null || organizationIds.Count == 0)
-                return Task.FromResult<IFindResults<Token>>(new FindResults<Token>());
-
-            string cacheKey = String.Concat("type:", type, "-org:", String.Join("", organizationIds).GetHashCode().ToString());
-            return FindAsync(new ExceptionlessQuery()
-                .WithOrganizationIds(organizationIds)
-                .WithElasticFilter(Filter<Token>.Term(t => t.Type, type))
-                .WithPaging(paging)
-                .WithCacheKey(useCache ? cacheKey : null)
+                .WithCacheKey(useCache ? String.Concat("Type:", type, ":Organization:", organizationId) : null)
                 .WithExpiresIn(expiresIn));
         }
 
@@ -65,28 +41,8 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithPaging(paging)
-                .WithCacheKey(useCache ? String.Concat("type:", type, "-project:", projectId) : null)
+                .WithCacheKey(useCache ? String.Concat("Type:", type, ":Project:", projectId) : null)
                 .WithExpiresIn(expiresIn));
-        }
-
-        public Task<IFindResults<Token>> GetByTypeAndOrganizationIdOrProjectIdAsync(TokenType type, string organizationId, string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var filter = Filter<Token>.And(and => (
-                    Filter<Token>.Term(t => t.OrganizationId, organizationId) || Filter<Token>.Term(t => t.ProjectId, projectId) || Filter<Token>.Term(t => t.DefaultProjectId, projectId)
-                ) && Filter<Token>.Term(t => t.Type, type));
-
-            return FindAsync(new ExceptionlessQuery()
-                .WithElasticFilter(filter)
-                .WithPaging(paging)
-                .WithCacheKey(String.Concat("type:", type, "-org:", organizationId, "-project:", projectId))
-                .WithExpiresIn(expiresIn));
-        }
-
-        public async Task<Token> GetByRefreshTokenAsync(string refreshToken) {
-            if (String.IsNullOrEmpty(refreshToken))
-                throw new ArgumentNullException(nameof(refreshToken));
-
-            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(Filter<Token>.Term(t => t.Refresh, refreshToken))).AnyContext();
-            return hit?.Document;
         }
 
         public override Task<IFindResults<Token>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
@@ -95,7 +51,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithPaging(paging)
-                .WithCacheKey(useCache ? String.Concat("project:", projectId) : null)
+                .WithCacheKey(useCache ? String.Concat("Project:", projectId) : null)
                 .WithExpiresIn(expiresIn));
         }
 
@@ -103,12 +59,25 @@ namespace Exceptionless.Core.Repositories {
             if (!IsCacheEnabled)
                 return;
 
-            foreach (var token in documents.Select(d => d.Value)) {
-                await Cache.RemoveAsync(String.Concat("type:", token.Type, "-org:", token.OrganizationId)).AnyContext();
-                await Cache.RemoveAsync(String.Concat("type:", token.Type, "-project:", token.ProjectId ?? token.DefaultProjectId)).AnyContext();
-                await Cache.RemoveAsync(String.Concat("type:", token.Type, "-org:", token.OrganizationId, "-project:", token.ProjectId ?? token.DefaultProjectId)).AnyContext();
-            }
+            var keys = documents.SelectMany(d => {
+                var list = new List<string>(5);
+                if (!String.IsNullOrEmpty(d.Value.OrganizationId))
+                    list.Add(String.Concat("Type:", d.Value.Type, ":Organization:", d.Value.OrganizationId));
 
+                if (!String.IsNullOrEmpty(d.Value.ProjectId)) {
+                    list.Add(String.Concat("Project:", d.Value.ProjectId));
+                    list.Add(String.Concat("Type:", d.Value.Type, ":Project:", d.Value.ProjectId));
+                }
+
+                if (!String.IsNullOrEmpty(d.Value.DefaultProjectId)) {
+                    list.Add(String.Concat("Project:", d.Value.DefaultProjectId));
+                    list.Add(String.Concat("Type:", d.Value.Type, ":Project:", d.Value.DefaultProjectId));
+                }
+
+                return list;
+            }).ToList();
+
+            await Cache.RemoveAllAsync(keys).AnyContext();
             await base.InvalidateCacheAsync(documents).AnyContext();
         }
     }

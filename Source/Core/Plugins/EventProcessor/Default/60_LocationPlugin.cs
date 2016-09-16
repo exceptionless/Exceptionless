@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         private readonly IQueue<WorkItemData> _workItemQueue;
 
         public LocationPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
-            _cacheClient = new ScopedCacheClient(cacheClient, "geo");
+            _cacheClient = new ScopedCacheClient(cacheClient, "Geo");
             _workItemQueue = workItemQueue;
         }
 

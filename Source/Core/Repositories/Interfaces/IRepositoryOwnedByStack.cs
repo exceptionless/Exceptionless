@@ -10,7 +10,5 @@ namespace Exceptionless.Core.Repositories {
         Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId);
     }
 
-    public interface IRepositoryOwnedByProjectAndStack<T> : IRepositoryOwnedByProject<T>, IRepositoryOwnedByStack<T> where T : class, IOwnedByProject, IIdentity, IOwnedByStack, new() { }
-
     public interface IRepositoryOwnedByOrganizationAndProjectAndStack<T> : IRepositoryOwnedByOrganization<T>, IRepositoryOwnedByProject<T>, IRepositoryOwnedByStack<T> where T : class, IOwnedByOrganization, IOwnedByProject, IIdentity, IOwnedByStack, new() { }
 }

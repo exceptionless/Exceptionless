@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithPaging(paging)
-                .WithCacheKey(useCache ? String.Concat("project:", projectId) : null)
+                .WithCacheKey(useCache ? String.Concat("Project:", projectId) : null)
                 .WithExpiresIn(expiresIn));
         }
 
@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Repositories {
                 .Union(documents.Select(d => d.Original))
                 .OfType<IOwnedByProject>()
                 .Where(d => !String.IsNullOrEmpty(d.ProjectId))
-                .Select(d => "project:" + d.ProjectId)
+                .Select(d => "Project:" + d.ProjectId)
                 .Distinct()).AnyContext();
 
             await base.InvalidateCacheAsync(documents).AnyContext();

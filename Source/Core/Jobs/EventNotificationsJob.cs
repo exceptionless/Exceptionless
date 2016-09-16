@@ -26,7 +26,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IStackRepository _stackRepository;
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
-        private readonly ICacheClient _cacheClient;
+        private readonly ICacheClient _cache;
         private readonly UserAgentParser _parser;
 
         public EventNotificationsJob(IQueue<EventNotificationWorkItem> queue, IMailer mailer, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Jobs {
             _stackRepository = stackRepository;
             _userRepository = userRepository;
             _eventRepository = eventRepository;
-            _cacheClient = cacheClient;
+            _cache = cacheClient;
             _parser = parser;
         }
 
@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Jobs {
             int totalOccurrences = stack.TotalOccurrences;
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
-            var lastTimeSentUtc = await _cacheClient.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), DateTime.MinValue).AnyContext();
+            var lastTimeSentUtc = await _cache.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), DateTime.MinValue).AnyContext();
             if (totalOccurrences > 2
                 && !eventNotification.IsRegression
                 && lastTimeSentUtc != DateTime.MinValue
@@ -94,7 +94,7 @@ namespace Exceptionless.Core.Jobs {
             // don't send more than 10 notifications for a given project every 30 minutes
             var projectTimeWindow = TimeSpan.FromMinutes(30);
             string cacheKey = String.Concat("notify:project-throttle:", eventNotification.Event.ProjectId, "-", SystemClock.UtcNow.Floor(projectTimeWindow).Ticks);
-            double notificationCount = await _cacheClient.IncrementAsync(cacheKey, 1, projectTimeWindow).AnyContext();
+            double notificationCount = await _cache.IncrementAsync(cacheKey, 1, projectTimeWindow).AnyContext();
             if (notificationCount > 10 && !eventNotification.IsRegression) {
                 _logger.Info().Project(eventNotification.Event.ProjectId).Message("Skipping message because of project throttling: count={0}", notificationCount).WriteIf(shouldLog);
                 return JobResult.Success;
@@ -177,7 +177,7 @@ namespace Exceptionless.Core.Jobs {
 
             // if we sent any emails, mark the last time a notification for this stack was sent.
             if (emailsSent > 0) {
-                await _cacheClient.SetAsync(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), SystemClock.UtcNow, SystemClock.UtcNow.AddMinutes(15)).AnyContext();
+                await _cache.SetAsync(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), SystemClock.UtcNow, SystemClock.UtcNow.AddMinutes(15)).AnyContext();
                 _logger.Info().Message("Notifications sent: event={0} stack={1} count={2}", eventNotification.Event.Id, eventNotification.Event.StackId, emailsSent).WriteIf(shouldLog);
             }
 

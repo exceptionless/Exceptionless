@@ -117,30 +117,6 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(search);
         }
 
-        public Task<IFindResults<Stack>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
-            var filterContainer = Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).GreaterOrEquals(utcStart)) && Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).LowerOrEquals(utcEnd));
-            var query = new ExceptionlessQuery()
-                .WithProjectId(projectId)
-                .WithElasticFilter(filterContainer)
-                .WithFilter(filter)
-                .WithSort(StackIndexType.Fields.LastOccurrence, SortOrder.Descending)
-                .WithPaging(paging);
-
-            return FindAsync(query);
-        }
-
-        public Task<IFindResults<Stack>> GetNewAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string filter) {
-            var filterContainer = Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart)) && Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
-            var query = new ExceptionlessQuery()
-                .WithProjectId(projectId)
-                .WithElasticFilter(filterContainer)
-                .WithFilter(filter)
-                .WithSort(StackIndexType.Fields.FirstOccurrence, SortOrder.Descending)
-                .WithPaging(paging);
-
-            return FindAsync(query);
-        }
-
         public async Task MarkAsRegressedAsync(string stackId) {
             var stack = await GetByIdAsync(stackId).AnyContext();
             stack.IsRegressed = true;

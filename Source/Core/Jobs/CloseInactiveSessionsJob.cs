@@ -17,12 +17,12 @@ using Foundatio.Utility;
 namespace Exceptionless.Core.Jobs {
     public class CloseInactiveSessionsJob : JobWithLockBase {
         private readonly IEventRepository _eventRepository;
-        private readonly ICacheClient _cacheClient;
+        private readonly ICacheClient _cache;
         private readonly ILockProvider _lockProvider;
 
         public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _eventRepository = eventRepository;
-            _cacheClient = cacheClient;
+            _cache = cacheClient;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(1));
         }
 
@@ -64,7 +64,7 @@ namespace Exceptionless.Core.Jobs {
                     await _eventRepository.SaveAsync(sessionsToUpdate).AnyContext();
 
                 if (cacheKeysToRemove.Count > 0)
-                    await _cacheClient.RemoveAllAsync(cacheKeysToRemove).AnyContext();
+                    await _cache.RemoveAllAsync(cacheKeysToRemove).AnyContext();
 
                 // Sleep so we are not hammering the backend.
                 await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Jobs {
         private async Task<HeartbeatResult> GetHeartbeatAsync(PersistentEvent sessionStart) {
             string sessionId = sessionStart.GetSessionId();
             if (!String.IsNullOrWhiteSpace(sessionId)) {
-                var result = await GetLastHeartbeatActivityUtcAsync($"project:{sessionStart.ProjectId}:heartbeat:{sessionId.ToSHA1()}").AnyContext();
+                var result = await GetLastHeartbeatActivityUtcAsync($"Project:{sessionStart.ProjectId}:heartbeat:{sessionId.ToSHA1()}").AnyContext();
                 if (result != null)
                     return result;
             }
@@ -91,13 +91,13 @@ namespace Exceptionless.Core.Jobs {
             if (String.IsNullOrWhiteSpace(user?.Identity))
                 return null;
 
-            return await GetLastHeartbeatActivityUtcAsync($"project:{sessionStart.ProjectId}:heartbeat:{user.Identity.ToSHA1()}").AnyContext();
+            return await GetLastHeartbeatActivityUtcAsync($"Project:{sessionStart.ProjectId}:heartbeat:{user.Identity.ToSHA1()}").AnyContext();
         }
 
         private async Task<HeartbeatResult> GetLastHeartbeatActivityUtcAsync(string cacheKey) {
-            var cacheValue = await _cacheClient.GetAsync<DateTime>(cacheKey).AnyContext();
+            var cacheValue = await _cache.GetAsync<DateTime>(cacheKey).AnyContext();
             if (cacheValue.HasValue) {
-                var close = await _cacheClient.GetAsync(cacheKey + "-close", false).AnyContext();
+                var close = await _cache.GetAsync(cacheKey + "-close", false).AnyContext();
                 return new HeartbeatResult { ActivityUtc =  cacheValue.Value, Close = close, CacheKey = cacheKey };
             }
 
