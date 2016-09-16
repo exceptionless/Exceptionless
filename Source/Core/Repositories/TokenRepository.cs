@@ -17,7 +17,9 @@ using Token = Exceptionless.Core.Models.Token;
 namespace Exceptionless.Core.Repositories {
     public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository {
         public TokenRepository(ExceptionlessElasticConfiguration configuration, IValidator<Token> validator) 
-            : base(configuration.Organizations.Token, validator) {}
+            : base(configuration.Organizations.Token, validator) {
+            FieldsRequiredForRemove.Add("type");
+        }
 
         public Task<IFindResults<Token>> GetByUserIdAsync(string userId) {
             var filter = Filter<Token>.Term(e => e.UserId, userId);
@@ -29,7 +31,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithOrganizationId(organizationId)
                 .WithElasticFilter(Filter<Token>.Term(t => t.Type, type))
                 .WithPaging(paging)
-                .WithCacheKey(useCache ? String.Concat("Type:", type, ":Organization:", organizationId) : null)
+                .WithCacheKey(useCache ? String.Concat("paged:Type:", type, ":Organization:", organizationId) : null)
                 .WithExpiresIn(expiresIn));
         }
 
@@ -41,7 +43,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithPaging(paging)
-                .WithCacheKey(useCache ? String.Concat("Type:", type, ":Project:", projectId) : null)
+                .WithCacheKey(useCache ? String.Concat("paged:Type:", type, ":Project:", projectId) : null)
                 .WithExpiresIn(expiresIn));
         }
 
@@ -51,34 +53,31 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithPaging(paging)
-                .WithCacheKey(useCache ? String.Concat("Project:", projectId) : null)
+                .WithCacheKey(useCache ? String.Concat("paged:Project:", projectId) : null)
                 .WithExpiresIn(expiresIn));
         }
 
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Token>> documents) {
-            if (!IsCacheEnabled)
-                return;
+        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<Token> documents) {
+            var keysToRemove = documents.SelectMany(d => {
+                var list = new List<string>(3);
+                if (!String.IsNullOrEmpty(d.OrganizationId))
+                    list.Add(String.Concat("paged:Type:", d.Type, ":Organization:", d.OrganizationId, ":*"));
 
-            var keys = documents.SelectMany(d => {
-                var list = new List<string>(5);
-                if (!String.IsNullOrEmpty(d.Value.OrganizationId))
-                    list.Add(String.Concat("Type:", d.Value.Type, ":Organization:", d.Value.OrganizationId));
-
-                if (!String.IsNullOrEmpty(d.Value.ProjectId)) {
-                    list.Add(String.Concat("Project:", d.Value.ProjectId));
-                    list.Add(String.Concat("Type:", d.Value.Type, ":Project:", d.Value.ProjectId));
-                }
-
-                if (!String.IsNullOrEmpty(d.Value.DefaultProjectId)) {
-                    list.Add(String.Concat("Project:", d.Value.DefaultProjectId));
-                    list.Add(String.Concat("Type:", d.Value.Type, ":Project:", d.Value.DefaultProjectId));
+                if (!String.IsNullOrEmpty(d.ProjectId)) {
+                    list.Add(String.Concat("paged:Project:", d.ProjectId, ":*"));
+                    list.Add(String.Concat("paged:Type:", d.Type, ":Project:", d.ProjectId, ":*"));
+                } else if (!String.IsNullOrEmpty(d.DefaultProjectId)) {
+                    list.Add(String.Concat("paged:Project:", d.DefaultProjectId, ":*"));
+                    list.Add(String.Concat("paged:Type:", d.Type, ":Project:", d.DefaultProjectId, ":*"));
                 }
 
                 return list;
-            }).ToList();
+            }).Distinct().ToList();
 
-            await Cache.RemoveAllAsync(keys).AnyContext();
-            await base.InvalidateCacheAsync(documents).AnyContext();
+            foreach (var key in keysToRemove)
+                await Cache.RemoveByPrefixAsync(key).AnyContext();
+
+            await base.InvalidateCachedQueriesAsync(documents).AnyContext();
         }
     }
 }

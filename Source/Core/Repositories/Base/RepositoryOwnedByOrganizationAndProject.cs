@@ -16,12 +16,12 @@ namespace Exceptionless.Core.Repositories {
         public RepositoryOwnedByOrganizationAndProject(IIndexType<T> indexType, IValidator<T> validator) : base(indexType, validator) {
             FieldsRequiredForRemove.Add("project_id");
         }
-        
+
         public virtual Task<IFindResults<T>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithPaging(paging)
-                .WithCacheKey(useCache ? String.Concat("Project:", projectId) : null)
+                .WithCacheKey(useCache ? String.Concat("paged:Project:", projectId) : null)
                 .WithExpiresIn(expiresIn));
         }
 
@@ -29,18 +29,12 @@ namespace Exceptionless.Core.Repositories {
             return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithProjectId(projectId));
         }
 
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<T>> documents) {
-            if (!IsCacheEnabled)
-                return;
+        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<T> documents) {
+            var projects = documents.Select(d => d.ProjectId).Distinct().Where(id => !String.IsNullOrEmpty(id));
+            foreach (var projectId in projects)
+                await Cache.RemoveByPrefixAsync($"paged:Project:{projectId}:*").AnyContext();
 
-            await Cache.RemoveAllAsync(documents.Select(d => d.Value)
-                .Union(documents.Select(d => d.Original))
-                .OfType<IOwnedByProject>()
-                .Where(d => !String.IsNullOrEmpty(d.ProjectId))
-                .Select(d => "Project:" + d.ProjectId)
-                .Distinct()).AnyContext();
-
-            await base.InvalidateCacheAsync(documents).AnyContext();
+            await base.InvalidateCachedQueriesAsync(documents).AnyContext();
         }
     }
 }

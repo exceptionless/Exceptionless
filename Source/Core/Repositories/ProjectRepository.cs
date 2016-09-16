@@ -18,7 +18,6 @@ namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
         public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator) 
             : base(configuration.Organizations.Project, validator) {
-            DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
 
         public Task<CountResult> GetCountByOrganizationIdAsync(string organizationId) {
@@ -64,33 +63,10 @@ namespace Exceptionless.Core.Repositories {
             return new CountResult(recordsAffected);
         }
 
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Project>> documents) {
-            if (!IsCacheEnabled)
-                return;
-
-            var organizations = documents.Select(d => d.Value.OrganizationId).Distinct().ToList();
-            await InvalidateCountCacheAsync(organizations).AnyContext();
-            await InvalidatePagedCacheAsync(organizations).AnyContext();
-        }
-
-        private async Task OnDocumentsAdded(object sender, DocumentsEventArgs<Project> documents) {
-            if (!IsCacheEnabled)
-                return;
-
-            var organizations = documents.Documents.Select(d => d.OrganizationId).Distinct().ToList();
-            await InvalidateCountCacheAsync(organizations).AnyContext();
-            await InvalidatePagedCacheAsync(organizations).AnyContext();
-        }
-
-        private async Task InvalidateCountCacheAsync(IReadOnlyCollection<string> organizationIds) {
-            var keys = organizationIds.Where(id => !String.IsNullOrEmpty(id)).Select(id => $"count:Organization:{id}").ToList();
-            if (keys.Count > 0)
-                await Cache.RemoveAllAsync(keys).AnyContext();
-        }
-
-        private async Task InvalidatePagedCacheAsync(IReadOnlyCollection<string> organizationIds) {
-            foreach (var organizationId in organizationIds.Where(id => !String.IsNullOrEmpty(id)))
-                await Cache.RemoveByPrefixAsync($"paged:Organization:{organizationId}:*").AnyContext();
+        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<Project> documents) {
+            var organizations = documents.Select(d => d.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
+            await Cache.RemoveAllAsync(organizations.Select(id => $"count:Organization:{id}")).AnyContext();
+            await base.InvalidateCachedQueriesAsync(documents).AnyContext();
         }
     }
 }

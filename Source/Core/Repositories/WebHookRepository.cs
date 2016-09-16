@@ -23,9 +23,11 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<IFindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
             var filter = (Filter<WebHook>.Term(e => e.OrganizationId, organizationId) && Filter<WebHook>.Missing(e => e.ProjectId)) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
+
+            // TODO: This cache key may not always be cleared out if the webhook doesn't have both a org and project id.
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
-                .WithCacheKey(String.Concat("Organization:", organizationId, ":Project:", projectId)));
+                .WithCacheKey(String.Concat("paged:Organization:", organizationId, ":Project:", projectId)));
         }
 
         public static class EventTypes {
@@ -48,6 +50,14 @@ namespace Exceptionless.Core.Repositories {
                 .Distinct()).AnyContext();
 
             await base.InvalidateCacheAsync(documents).AnyContext();
+        }
+
+        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<WebHook> documents) {
+            var keysToRemove = documents.Select(d => $"paged:Organization:{d.OrganizationId}:Project:{d.ProjectId}:*").Distinct();
+            foreach (var key in keysToRemove)
+                await Cache.RemoveByPrefixAsync(key).AnyContext();
+
+            await base.InvalidateCachedQueriesAsync(documents).AnyContext();
         }
     }
 }

@@ -17,15 +17,21 @@ using SortOrder = Foundatio.Repositories.Models.SortOrder;
 namespace Exceptionless.Core.Repositories {
     public class UserRepository : RepositoryBase<User>, IUserRepository {
         public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator) 
-            : base(configuration.Organizations.User, validator) {}
+            : base(configuration.Organizations.User, validator) {
+            FieldsRequiredForRemove.AddRange(new [] { "email_address", "organization_ids" });
+            DocumentsAdded.AddHandler(OnDocumentsAdded);
+        }
 
         public async Task<User> GetByEmailAddressAsync(string emailAddress) {
             if (String.IsNullOrWhiteSpace(emailAddress))
                 return null;
 
             emailAddress = emailAddress.ToLowerInvariant().Trim();
-            var filter = Filter<User>.Term(u => u.EmailAddress, emailAddress);
-            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithCacheKey(String.Concat("Email:", emailAddress))).AnyContext();
+            var query = new ExceptionlessQuery()
+                .WithElasticFilter(Filter<User>.Term(u => u.EmailAddress, emailAddress))
+                .WithCacheKey(String.Concat("Email:", emailAddress));
+
+            var hit = await FindOneAsync(query).AnyContext();
             return hit?.Document;
         }
 
@@ -67,7 +73,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithOrganizationId(organizationId)
                 .WithPaging(paging)
                 .WithSort(UserIndexType.Fields.EmailAddress, SortOrder.Ascending)
-                .WithCacheKey(useCache ? String.Concat("Organization:", organizationId) : null)
+                .WithCacheKey(useCache ? String.Concat("paged:Organization:", organizationId) : null)
                 .WithExpiresIn(expiresIn));
         }
 
@@ -75,13 +81,25 @@ namespace Exceptionless.Core.Repositories {
             if (!IsCacheEnabled)
                 return;
 
-            var users = documents.Select(d => d.Value).Union(documents.Select(d => d.Original).Where(d => d != null)).ToList();
-            var emailKeys = users.Select(u => String.Concat("Email:", u.EmailAddress.ToLowerInvariant().Trim())).ToList();
-            await Cache.RemoveAllAsync(emailKeys).AnyContext();
+            var users = documents.UnionOriginalAndModified();
+            var keysToRemove = users.Select(u => String.Concat("Email:", u.EmailAddress.ToLowerInvariant().Trim())).Distinct().ToList();
+            await Cache.RemoveAllAsync(keysToRemove).AnyContext();
 
-            var organizationKeys = users.Select(u => String.Concat("Organization:", u.OrganizationIds)).ToList();
-            await Cache.RemoveAllAsync(organizationKeys).AnyContext();
+            await InvalidateCachedQueriesAsync(users).AnyContext();
             await base.InvalidateCacheAsync(documents).AnyContext();
+        }
+
+        private Task OnDocumentsAdded(object sender, DocumentsEventArgs<User> documents) {
+            if (!IsCacheEnabled)
+                return Task.CompletedTask;
+
+            return InvalidateCachedQueriesAsync(documents.Documents);
+        }
+
+        protected virtual async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<User> documents) {
+            var organizations = documents.SelectMany(d => d.OrganizationIds).Distinct().Where(id => !String.IsNullOrEmpty(id));
+            foreach (var organizationId in organizations)
+                await Cache.RemoveByPrefixAsync($"paged:Organization:{organizationId}:*").AnyContext();
         }
     }
 }
