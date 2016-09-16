@@ -196,7 +196,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.AddAsync(events);
 
             await _configuration.Client.RefreshAsync();
-            events = (await _repository.GetByStackIdAsync(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
+            events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
             events.ForEach(e => {
                 Assert.False(e.IsHidden);
@@ -208,7 +208,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.HideAllByClientIpAndDateAsync(TestConstants.OrganizationId, _clientIpAddress, SystemClock.UtcNow.SubtractDays(3), SystemClock.UtcNow.AddDays(2));
 
             await _configuration.Client.RefreshAsync();
-            events = (await _repository.GetByStackIdAsync(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
+            events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
             events.ForEach(e => Assert.True(e.IsHidden));
         }

@@ -393,7 +393,6 @@
     <Compile Include="Models\Queues\MailMessage.cs" />
     <Compile Include="Repositories\Base\RepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Base\RepositoryOwnedByOrganization.cs" />
-    <Compile Include="Repositories\Base\RepositoryOwnedByOrganizationAndProjectAndStack.cs" />
     <Compile Include="Repositories\EventRepository.cs" />
     <Compile Include="Serialization\DataObjectConverter.cs" />
     <Compile Include="Utility\PathHelper.cs" />
@@ -446,7 +445,6 @@
     <Compile Include="Models\Queues\SummaryNotification.cs" />
     <Compile Include="Repositories\ApplicationRepository.cs" />
     <Compile Include="Repositories\Interfaces\IRepositoryOwnedByOrganizationAndProject.cs" />
-    <Compile Include="Repositories\Interfaces\IRepositoryOwnedByStack.cs" />
     <Compile Include="Repositories\Interfaces\IRepositoryOwnedByProject.cs" />
     <Compile Include="Repositories\Interfaces\IApplicationRepository.cs" />
     <Compile Include="Repositories\Interfaces\ITokenRepository.cs" />

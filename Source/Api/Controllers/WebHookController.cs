@@ -49,7 +49,7 @@ namespace Exceptionless.App.Controllers.API {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = await _repository.GetByProjectIdAsync(projectId, options, true);
+            var results = await _repository.GetByProjectIdAsync(projectId, options);
             return OkWithResourceLinks(results.Documents, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 

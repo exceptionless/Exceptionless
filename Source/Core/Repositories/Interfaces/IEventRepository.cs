@@ -6,7 +6,7 @@ using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories {
-    public interface IEventRepository : IRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent> {
+    public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<PersistentEvent> {
         Task<IFindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId);
         Task<IFindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
         Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, IExceptionlessSystemFilterQuery systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
@@ -17,6 +17,7 @@ namespace Exceptionless.Core.Repositories {
         Task<long> UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true);
         Task<long> UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true);
         Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate);
+        Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId);
         Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd);
 
         Task<CountResult> GetCountByProjectIdAsync(string projectId);
