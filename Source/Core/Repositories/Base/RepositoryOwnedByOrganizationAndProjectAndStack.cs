@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithStackId(stackId)
                 .WithPaging(paging)
-                .WithCacheKey(useCache ? String.Concat("Stack:", stackId) : null)
+                .WithCacheKey(useCache ? String.Concat("paged:Stack:", stackId) : null)
                 .WithExpiresIn(expiresIn));
         }
 
@@ -29,18 +29,12 @@ namespace Exceptionless.Core.Repositories {
             return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithProjectId(projectId).WithStackId(stackId));
         }
 
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<T>> documents) {
-            if (!IsCacheEnabled)
-                return;
+        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<T> documents) {
+            var stacks = documents.Select(d => d.StackId).Distinct().Where(id => !String.IsNullOrEmpty(id));
+            foreach (var stackId in stacks)
+                await Cache.RemoveByPrefixAsync($"paged:Stack:{stackId}:*").AnyContext();
 
-            await Cache.RemoveAllAsync(documents.Select(d => d.Value)
-                .Union(documents.Select(d => d.Original))
-                .OfType<IOwnedByStack>()
-                .Where(d => !String.IsNullOrEmpty(d.StackId))
-                .Select(d => "Stack:" + d.StackId)
-                .Distinct()).AnyContext();
-
-            await base.InvalidateCacheAsync(documents).AnyContext();
+            await base.InvalidateCachedQueriesAsync(documents).AnyContext();
         }
     }
 }

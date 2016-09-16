@@ -15,13 +15,14 @@ namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
         public RepositoryOwnedByOrganization(IIndexType<T> indexType, IValidator<T> validator) : base(indexType, validator) {
             FieldsRequiredForRemove.Add("organization_id");
+            DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
 
         public virtual Task<IFindResults<T>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (String.IsNullOrEmpty(organizationId))
                 return Task.FromResult<IFindResults<T>>(new FindResults<T>());
 
-            string cacheKey = String.Concat("Organization:", organizationId);
+            string cacheKey = String.Concat("paged:Organization:", organizationId);
             return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
                 .WithPaging(paging)
@@ -40,13 +41,21 @@ namespace Exceptionless.Core.Repositories {
             if (!IsCacheEnabled)
                 return;
 
-            var docs = documents.Select(d => d.Value).Union(documents.Select(d => d.Original)).OfType<IOwnedByOrganization>();
-            await Cache.RemoveAllAsync(docs
-                .Where(d => !String.IsNullOrEmpty(d.OrganizationId))
-                .Select(d => "Organization:" + d.OrganizationId)
-                .Distinct()).AnyContext();
-
+            await InvalidateCachedQueriesAsync(documents.Select(d => d.Value).ToList());
             await base.InvalidateCacheAsync(documents).AnyContext();
+        }
+
+        private Task OnDocumentsAdded(object sender, DocumentsEventArgs<T> documents) {
+            if (!IsCacheEnabled)
+                return Task.CompletedTask;
+
+            return InvalidateCachedQueriesAsync(documents.Documents);
+        }
+
+        protected virtual async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<T> documents) {
+            var organizations = documents.Select(d => d.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
+            foreach (var organizationId in organizations)
+                await Cache.RemoveByPrefixAsync($"paged:Organization:{organizationId}:*").AnyContext();
         }
     }
 }

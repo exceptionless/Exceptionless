@@ -10,7 +10,6 @@ using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
-using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
@@ -27,6 +26,7 @@ namespace Exceptionless.Core.Repositories {
             : base(configuration.Stacks.Stack, validator) {
             _eventRepository = eventRepository;
             DocumentsChanging.AddHandler(OnDocumentChangingAsync);
+            FieldsRequiredForRemove.Add("signature_hash");
         }
 
         private async Task OnDocumentChangingAsync(object sender, DocumentsChangeEventArgs<Stack> args) {
@@ -127,11 +127,8 @@ namespace Exceptionless.Core.Repositories {
             if (!IsCacheEnabled)
                 return;
 
-            await Cache.RemoveAllAsync(documents.Select(d => d.Value)
-                .Union(documents.Select(d => d.Original).Where(d => d != null))
-                .Select(GetStackSignatureCacheKey)
-                .Distinct()).AnyContext();
-
+            var keys = documents.UnionOriginalAndModified().Select(GetStackSignatureCacheKey).Distinct();
+            await Cache.RemoveAllAsync(keys).AnyContext();
             await base.InvalidateCacheAsync(documents).AnyContext();
         }
     }
