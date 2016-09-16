@@ -8,8 +8,6 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IEventRepository : IRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent> {
-        Task<IFindResults<PersistentEvent>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
-        Task<IFindResults<PersistentEvent>> GetByStackIdOccurrenceDateAsync(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
         Task<IFindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId);
         Task<IFindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
         Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, IExceptionlessSystemFilterQuery systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
@@ -19,11 +17,9 @@ namespace Exceptionless.Core.Repositories {
 
         Task<long> UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true);
         Task<long> UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true);
-        Task<long> RemoveOldestEventsAsync(string stackId, int maxEventsPerStack);
         Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate);
         Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd);
 
-        Task<IFindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, string filter = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         Task<CountResult> GetCountByProjectIdAsync(string projectId);
         Task<CountResult> GetCountByStackIdAsync(string stackId);
     }

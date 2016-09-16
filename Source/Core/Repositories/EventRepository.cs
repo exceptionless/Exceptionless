@@ -103,36 +103,6 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(search);
         }
 
-        public Task<IFindResults<PersistentEvent>> GetMostRecentAsync(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            var filter = new FilterContainer();
-
-            if (!includeHidden)
-                filter &= !Filter<PersistentEvent>.Term(e => e.IsHidden, true);
-
-            if (!includeFixed)
-                filter &= !Filter<PersistentEvent>.Term(e => e.IsFixed, true);
-
-            if (!includeNotFound)
-                filter &= !Filter<PersistentEvent>.Term(e => e.Type, "404");
-
-            return FindAsync(new ExceptionlessQuery()
-                .WithProjectId(projectId)
-                .WithElasticFilter(filter)
-                .WithDateRange(utcStart, utcEnd, EventIndexType.Fields.Date)
-                .WithIndexes(utcStart, utcEnd)
-                .WithPaging(paging)
-                .WithSort(EventIndexType.Fields.Date, SortOrder.Descending));
-        }
-
-        public Task<IFindResults<PersistentEvent>> GetByStackIdOccurrenceDateAsync(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
-            return FindAsync(new ExceptionlessQuery()
-                .WithStackId(stackId)
-                .WithDateRange(utcStart, utcEnd, EventIndexType.Fields.Date)
-                .WithIndexes(utcStart, utcEnd)
-                .WithPaging(paging)
-                .WithSort(EventIndexType.Fields.Date, SortOrder.Descending));
-        }
-
         public Task<IFindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId) {
             var filter = Filter<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
             return FindAsync(new ExceptionlessQuery()
@@ -140,30 +110,6 @@ namespace Exceptionless.Core.Repositories {
                 .WithElasticFilter(filter)
                 .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
                 .WithLimit(10));
-        }
-
-        public async Task<long> RemoveOldestEventsAsync(string stackId, int maxEventsPerStack) {
-            var options = new PagingOptions { Limit = maxEventsPerStack, Page = 2 };
-            var results = await GetOldestEventsAsync(stackId, options).AnyContext();
-
-            long recordsAffected = 0;
-            while (results.Documents.Count > 0) {
-                recordsAffected += results.Documents.Count;
-                await RemoveAsync(results.Documents).AnyContext();
-
-                if (!await results.NextPageAsync().AnyContext())
-                    break;
-            }
-
-            return recordsAffected;
-        }
-
-        private Task<IFindResults<PersistentEvent>> GetOldestEventsAsync(string stackId, PagingOptions options) {
-            return FindAsync(new ExceptionlessQuery()
-                .WithStackId(stackId)
-                .WithSelectedFields("id", "organization_id", "project_id", "stack_id")
-                .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
-                .WithPaging(options));
         }
 
         public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, IExceptionlessSystemFilterQuery systemFilter, string userFilter, DateTime? utcStart, DateTime? utcEnd) {
@@ -267,36 +213,14 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public override Task<IFindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return GetByOrganizationIdsAsync(new[] { organizationId }, paging, useCache, expiresIn);
-        }
-        
-        public override Task<IFindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            if (organizationIds == null || organizationIds.Count == 0)
-                return Task.FromResult<IFindResults<PersistentEvent>>(new FindResults<PersistentEvent>());
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException(nameof(organizationId));
 
-            // NOTE: There is no way to currently invalidate this.. If you try and cache this result, you should expect it to be dirty.
-            string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
             return FindAsync(new ExceptionlessQuery()
-                .WithOrganizationIds(organizationIds)
+                .WithOrganizationId(organizationId)
                 .WithPaging(paging)
                 .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
                 .WithSort("_uid", SortOrder.Descending)
-                .WithCacheKey(useCache ? cacheKey : null)
-                .WithExpiresIn(expiresIn));
-        }
-
-        public Task<IFindResults<PersistentEvent>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, string filter = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            if (organizationIds == null || organizationIds.Count == 0)
-                return Task.FromResult<IFindResults<PersistentEvent>>(new FindResults<PersistentEvent>());
-
-            string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
-            return FindAsync(new ExceptionlessQuery()
-                .WithOrganizationIds(organizationIds)
-                .WithPaging(paging)
-                .WithFilter(filter)
-                .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
-                .WithSort("_uid", SortOrder.Descending)
-                .WithCacheKey(useCache ? cacheKey : null)
                 .WithExpiresIn(expiresIn));
         }
 
@@ -306,7 +230,6 @@ namespace Exceptionless.Core.Repositories {
                 .WithPaging(paging)
                 .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
                 .WithSort("_uid", SortOrder.Descending)
-                .WithCacheKey(useCache ? String.Concat("stack:", stackId) : null)
                 .WithExpiresIn(expiresIn));
         }
 
@@ -316,7 +239,6 @@ namespace Exceptionless.Core.Repositories {
                 .WithPaging(paging)
                 .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
                 .WithSort("_uid", SortOrder.Descending)
-                .WithCacheKey(useCache ? String.Concat("project:", projectId) : null)
                 .WithExpiresIn(expiresIn));
         }
 

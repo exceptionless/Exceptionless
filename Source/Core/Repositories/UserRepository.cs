@@ -7,7 +7,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
-using Foundatio.Caching;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
@@ -26,7 +25,7 @@ namespace Exceptionless.Core.Repositories {
 
             emailAddress = emailAddress.ToLowerInvariant().Trim();
             var filter = Filter<User>.Term(u => u.EmailAddress, emailAddress);
-            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithCacheKey(emailAddress)).AnyContext();
+            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithCacheKey(String.Concat("Email:", emailAddress))).AnyContext();
             return hit?.Document;
         }
 
@@ -60,28 +59,16 @@ namespace Exceptionless.Core.Repositories {
             return hit?.Document;
         }
 
-        public virtual Task<IFindResults<User>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return GetByOrganizationIdsAsync(new[] { organizationId }, paging, useCache, expiresIn);
-        }
-
-        public virtual Task<IFindResults<User>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            if (organizationIds == null || organizationIds.Count == 0)
+        public Task<IFindResults<User>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            if (String.IsNullOrEmpty(organizationId))
                 return Task.FromResult<IFindResults<User>>(new FindResults<User>());
 
-            string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
-            var filter = Filter<User>.Term(u => u.OrganizationIds, organizationIds);
             return FindAsync(new ExceptionlessQuery()
-                .WithElasticFilter(filter)
+                .WithOrganizationId(organizationId)
                 .WithPaging(paging)
                 .WithSort(UserIndexType.Fields.EmailAddress, SortOrder.Ascending)
-                .WithCacheKey(useCache ? cacheKey : null)
+                .WithCacheKey(useCache ? String.Concat("Organization:", organizationId) : null)
                 .WithExpiresIn(expiresIn));
-        }
-
-        public Task<CountResult> CountByOrganizationIdAsync(string organizationId) {
-            var filter = Filter<User>.Term(u => u.OrganizationIds, new[] { organizationId });
-            var options = new ExceptionlessQuery().WithElasticFilter(filter);
-            return CountAsync(options);
         }
 
         protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents) {
@@ -89,12 +76,11 @@ namespace Exceptionless.Core.Repositories {
                 return;
 
             var users = documents.Select(d => d.Value).Union(documents.Select(d => d.Original).Where(d => d != null)).ToList();
-            foreach (var emailAddress in users.Select(u => u.EmailAddress).Distinct())
-                await Cache.RemoveAsync(emailAddress).AnyContext();
+            var emailKeys = users.Select(u => String.Concat("Email:", u.EmailAddress.ToLowerInvariant().Trim())).ToList();
+            await Cache.RemoveAllAsync(emailKeys).AnyContext();
 
-            foreach (var organizationId in users.SelectMany(u => u.OrganizationIds).Distinct())
-                await Cache.RemoveAsync("org:" + organizationId).AnyContext();
-
+            var organizationKeys = users.Select(u => String.Concat("Organization:", u.OrganizationIds)).ToList();
+            await Cache.RemoveAllAsync(organizationKeys).AnyContext();
             await base.InvalidateCacheAsync(documents).AnyContext();
         }
     }

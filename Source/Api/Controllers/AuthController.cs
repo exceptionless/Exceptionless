@@ -33,7 +33,7 @@ namespace Exceptionless.Api.Controllers {
 	    private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
-        private readonly ICacheClient _cacheClient;
+        private readonly ICacheClient _cache;
         private readonly IMailer _mailer;
         private readonly ILogger _logger;
 
@@ -44,7 +44,7 @@ namespace Exceptionless.Api.Controllers {
 	        _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
-            _cacheClient = new ScopedCacheClient(cacheClient, "auth");
+            _cache = new ScopedCacheClient(cacheClient, "Auth");
             _mailer = mailer;
             _logger = logger;
         }
@@ -82,11 +82,11 @@ namespace Exceptionless.Api.Controllers {
             
             // Only allow 5 password attempts per 15 minute period.
             string userLoginAttemptsCacheKey = $"user:{model.Email}:attempts";
-            long userLoginAttempts = await _cacheClient.IncrementAsync(userLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+            long userLoginAttempts = await _cache.IncrementAsync(userLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
             // Only allow 15 login attempts per 15 minute period by a single ip.
             string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
-            long ipLoginAttempts = await _cacheClient.IncrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+            long ipLoginAttempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
             if (userLoginAttempts > 5) {
                 _logger.Error().Message("Login denied for \"{0}\" for the {1} time.", model.Email, userLoginAttempts).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
@@ -137,7 +137,7 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(model.InviteToken))
                 await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
             
-            await _cacheClient.RemoveAsync(userLoginAttemptsCacheKey);
+            await _cache.RemoveAsync(userLoginAttemptsCacheKey);
 
             _logger.Info().Message("\"{0}\" logged in.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
             return Ok(new TokenResult { Token = await GetTokenAsync(user) });
@@ -187,7 +187,7 @@ namespace Exceptionless.Api.Controllers {
             bool hasValidInviteToken = !String.IsNullOrWhiteSpace(model.InviteToken) && await _organizationRepository.GetByInviteTokenAsync(model.InviteToken) != null;
             if (!hasValidInviteToken) {
                 // Only allow 10 signups per hour period by a single ip.
-                long ipSignupAttempts = await _cacheClient.IncrementAsync(ipSignupAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+                long ipSignupAttempts = await _cache.IncrementAsync(ipSignupAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
                 if (ipSignupAttempts > 10) {
                     _logger.Error().Message("Signup denied for \"{0}\" for the {1} time.", model.Email, ipSignupAttempts).Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
                     return BadRequest();
@@ -336,7 +336,7 @@ namespace Exceptionless.Api.Controllers {
             
             // Only allow 3 checks attempts per hour period by a single ip.
             string ipEmailAddressAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:email:attempts";
-            long attempts = await _cacheClient.IncrementAsync(ipEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+            long attempts = await _cache.IncrementAsync(ipEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
 
             if (attempts > 3 || await _userRepository.GetByEmailAddressAsync(email) == null)
                 return StatusCode(HttpStatusCode.NoContent);

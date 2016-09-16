@@ -15,12 +15,12 @@ using Foundatio.Utility;
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(0)]
     public sealed class ThrottleBotsPlugin : EventProcessorPluginBase {
-        private readonly ICacheClient _cacheClient;
+        private readonly ICacheClient _cache;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
         public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
-            _cacheClient = cacheClient;
+            _cache = cacheClient;
             _workItemQueue = workItemQueue;
         }
 
@@ -41,12 +41,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 var clientIpContexts = clientIpAddressGroup.ToList();
 
                 string throttleCacheKey = String.Concat("bot:", clientIpAddressGroup.Key, ":", SystemClock.UtcNow.Floor(_throttlingPeriod).Ticks);
-                var requestCount = await _cacheClient.GetAsync<int?>(throttleCacheKey, null).AnyContext();
+                var requestCount = await _cache.GetAsync<int?>(throttleCacheKey, null).AnyContext();
                 if (requestCount.HasValue) {
-                    await _cacheClient.IncrementAsync(throttleCacheKey, clientIpContexts.Count).AnyContext();
+                    await _cache.IncrementAsync(throttleCacheKey, clientIpContexts.Count).AnyContext();
                     requestCount += clientIpContexts.Count;
                 } else {
-                    await _cacheClient.SetAsync(throttleCacheKey, clientIpContexts.Count, SystemClock.UtcNow.Ceiling(_throttlingPeriod)).AnyContext();
+                    await _cache.SetAsync(throttleCacheKey, clientIpContexts.Count, SystemClock.UtcNow.Ceiling(_throttlingPeriod)).AnyContext();
                     requestCount = clientIpContexts.Count;
                 }
 

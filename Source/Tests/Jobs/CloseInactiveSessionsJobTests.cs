@@ -18,7 +18,7 @@ using Xunit.Abstractions;
 namespace Exceptionless.Api.Tests.Jobs {
     public class CloseInactiveSessionsJobTests : ElasticTestBase {
         private readonly CloseInactiveSessionsJob _job;
-        private readonly ICacheClient _cacheClient;
+        private readonly ICacheClient _cache;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IEventRepository _eventRepository;
@@ -27,7 +27,7 @@ namespace Exceptionless.Api.Tests.Jobs {
 
         public CloseInactiveSessionsJobTests(ITestOutputHelper output) : base(output) {
             _job = GetService<CloseInactiveSessionsJob>();
-            _cacheClient = GetService<ICacheClient>();
+            _cache = GetService<ICacheClient>();
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();
             _eventRepository = GetService<IEventRepository>();
@@ -62,9 +62,9 @@ namespace Exceptionless.Api.Tests.Jobs {
 
             var utcNow = SystemClock.UtcNow;
             if (sessionHeartbeatUpdatedAgoInSeconds.HasValue) {
-                await _cacheClient.SetAsync($"project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value));
+                await _cache.SetAsync($"Project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value));
                 if (heartbeatClosesSession)
-                    await _cacheClient.SetAsync($"project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}-close", true);
+                    await _cache.SetAsync($"Project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}-close", true);
             }
 
             _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);

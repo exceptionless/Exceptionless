@@ -22,7 +22,28 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<CountResult> GetCountByOrganizationIdAsync(string organizationId) {
-            return CountAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithCacheKey(organizationId));
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException(nameof(organizationId));
+
+            return CountAsync(new ExceptionlessQuery()
+                .WithOrganizationId(organizationId)
+                .WithCacheKey(String.Concat("Organization:", organizationId)));
+        }
+
+        public Task<IFindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan ? expiresIn = null) {
+            if (organizationIds == null)
+                throw new ArgumentNullException(nameof(organizationIds));
+
+            if (organizationIds.Count == 0)
+                return Task.FromResult<IFindResults<Project>>(new FindResults<Project>());
+
+            // NOTE: There is no way to currently invalidate this.. If you try and cache this result, you should expect it to be dirty.
+            string cacheKey = String.Concat("Organization:", String.Join("", organizationIds).GetHashCode().ToString());
+            return FindAsync(new ExceptionlessQuery()
+                .WithOrganizationIds(organizationIds)
+                .WithPaging(paging)
+                .WithCacheKey(useCache ? cacheKey : null)
+                .WithExpiresIn(expiresIn));
         }
 
         public Task<IFindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
@@ -48,11 +69,11 @@ namespace Exceptionless.Core.Repositories {
         protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Project>> documents) {
             if (!IsCacheEnabled)
                 return;
-            
+
             await InvalidateCountCacheAsync(documents.Select(d => d.Value.OrganizationId)).AnyContext();
             await base.InvalidateCacheAsync(documents).AnyContext();
         }
-        
+
         private async Task OnDocumentsAdded(object sender, DocumentsEventArgs<Project> documents) {
             if (!IsCacheEnabled)
                 return;
@@ -61,7 +82,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private async Task InvalidateCountCacheAsync(IEnumerable<string> organizationIds) {
-            var keys = organizationIds.Where(id => !String.IsNullOrEmpty(id)).Select(id => $"count:{id}").Distinct().ToList();
+            var keys = organizationIds.Where(id => !String.IsNullOrEmpty(id)).Select(id => $"count:Organization:{id}").Distinct().ToList();
             if (keys.Count > 0)
                 await Cache.RemoveAllAsync(keys).AnyContext();
         }

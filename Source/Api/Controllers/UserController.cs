@@ -26,12 +26,12 @@ namespace Exceptionless.Api.Controllers {
     [Authorize(Roles = AuthorizationRoles.User)]
     public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, UpdateUser> {
         private readonly IOrganizationRepository _organizationRepository;
-        private readonly ICacheClient _cacheClient;
+        private readonly ICacheClient _cache;
         private readonly IMailer _mailer;
 
         public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, ILoggerFactory loggerFactory, IMapper mapper) : base(userRepository, loggerFactory, mapper) {
             _organizationRepository = organizationRepository;
-            _cacheClient = new ScopedCacheClient(cacheClient, "user");
+            _cache = new ScopedCacheClient(cacheClient, "User");
             _mailer = mailer;
         }
 
@@ -135,7 +135,7 @@ namespace Exceptionless.Api.Controllers {
 
             // Only allow 3 email address updates per hour period by a single user.
             string updateEmailAddressAttemptsCacheKey = $"{ExceptionlessUser.Id}:attempts";
-            long attempts = await _cacheClient.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+            long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
             if (attempts > 3)
                 return BadRequest("Update email address rate limit reached. Please try updating later.");
 
