@@ -2,15 +2,20 @@
 using System.Threading.Tasks;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
+using Foundatio.Caching;
 using Xunit;
 using Xunit.Abstractions;
+using Foundatio.Logging;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public sealed class ProjectRepositoryTests : ElasticTestBase {
+        private readonly InMemoryCacheClient _cache;
         private readonly IProjectRepository _repository;
 
         public ProjectRepositoryTests(ITestOutputHelper output) : base(output) {
+            _cache = _configuration.Cache as InMemoryCacheClient;
             _repository = GetService<IProjectRepository>();
+            Log.MinimumLevel = LogLevel.Trace;
         }
 
         [Fact]
@@ -45,6 +50,57 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _configuration.Client.RefreshAsync();
             Assert.Equal(1, await _repository.CountAsync());
             Assert.Equal(1, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
+        }
+
+        [Fact]
+        public async Task GetByOrganizationIdsAsync() {
+            var project1 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, name: "One"));
+            var project2 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.SuspendedProjectId, organizationId: TestConstants.OrganizationId, name: "Two"));
+
+            Assert.Equal(0, _cache.Count);
+            Assert.Equal(0, _cache.Hits);
+            Assert.Equal(0, _cache.Misses);
+
+            Log.SetLogLevel<ProjectRepository>(LogLevel.Trace);
+            await _configuration.Client.RefreshAsync();
+            var results = await _repository.GetByOrganizationIdsAsync(new[] { project1.OrganizationId, TestConstants.OrganizationId2 });
+            Assert.NotNull(results);
+            Assert.Equal(2, results.Documents.Count);
+            Assert.Equal(0, _cache.Count);
+            Assert.Equal(0, _cache.Hits);
+            Assert.Equal(0, _cache.Misses);
+
+            results = await _repository.GetByOrganizationIdsAsync(new[] { project1.OrganizationId });
+            Assert.NotNull(results);
+            Assert.Equal(2, results.Documents.Count);
+            Assert.Equal(1, _cache.Count);
+            Assert.Equal(0, _cache.Hits);
+            Assert.Equal(1, _cache.Misses);
+
+            results = await _repository.GetByOrganizationIdsAsync(new[] { project1.OrganizationId });
+            Assert.NotNull(results);
+            Assert.Equal(2, results.Documents.Count);
+            Assert.Equal(1, _cache.Count);
+            Assert.Equal(1, _cache.Hits);
+            Assert.Equal(1, _cache.Misses);
+
+            await _repository.RemoveAsync(project2.Id, false);
+            Assert.Equal(0, _cache.Count);
+            Assert.Equal(1, _cache.Hits);
+            Assert.Equal(2, _cache.Misses);
+
+            await _configuration.Client.RefreshAsync();
+            results = await _repository.GetByOrganizationIdsAsync(new[] { project1.OrganizationId });
+            Assert.NotNull(results);
+            Assert.Equal(1, results.Documents.Count);
+            Assert.Equal(1, _cache.Count);
+            Assert.Equal(1, _cache.Hits);
+            Assert.Equal(3, _cache.Misses);
+            
+            await _repository.RemoveAllAsync(false);
+            Assert.Equal(0, _cache.Count);
+            Assert.Equal(1, _cache.Hits);
+            Assert.Equal(3, _cache.Misses);
         }
     }
 }
