@@ -27,8 +27,8 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(project.Id);
             Assert.Equal(1, await _repository.CountAsync());
             Assert.Equal(1, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
-            
-            Assert.Equal(1, await _repository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }));
+
+            await _repository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project });
             await _configuration.Client.RefreshAsync();
 
             var updatedProject = await _repository.GetByIdAsync(project.Id);
