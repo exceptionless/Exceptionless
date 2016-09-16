@@ -14,7 +14,7 @@ using Nest;
 using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
-    public class EventRepository : RepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
+    public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
         public EventRepository(ExceptionlessElasticConfiguration configuration, IValidator<PersistentEvent> validator) 
             : base(configuration.Events.Event, validator) {
             DisableCache();
@@ -75,6 +75,10 @@ namespace Exceptionless.Core.Repositories {
         public Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
             var filter = Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).Lower(utcCutoffDate));
             return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithElasticFilter(filter), false);
+        }
+
+        public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
+            return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithProjectId(projectId).WithStackId(stackId));
         }
 
         public Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
@@ -223,22 +227,12 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public override Task<IFindResults<PersistentEvent>> GetByStackIdAsync(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return FindAsync(new ExceptionlessQuery()
-                .WithStackId(stackId)
-                .WithPaging(paging)
-                .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
-                .WithSort("_uid", SortOrder.Descending)
-                .WithExpiresIn(expiresIn));
-        }
-
-        public override Task<IFindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public override Task<IFindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, PagingOptions paging = null) {
             return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithPaging(paging)
                 .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
-                .WithSort("_uid", SortOrder.Descending)
-                .WithExpiresIn(expiresIn));
+                .WithSort("_uid", SortOrder.Descending));
         }
 
         public Task<CountResult> GetCountByProjectIdAsync(string projectId) {
