@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Repositories {
             return hit?.Document;
         }
 
-        public Task<IFindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
+        public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
             var filter = Filter<Organization>.Range(r => r.OnField(o => o.RetentionDays).Greater(0));
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
@@ -51,7 +51,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithPaging(paging));
         }
 
-        public Task<IFindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
+        public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
             var filter = Filter<Organization>.MatchAll();
             if (!String.IsNullOrWhiteSpace(criteria))
                 filter &= Filter<Organization>.Term(o => o.Name, criteria);

@@ -189,7 +189,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _configuration.Client.RefreshAsync();
         }
 
-        private Task<IFindResults<Stack>> GetByFilterAsync(string filter) {
+        private Task<FindResults<Stack>> GetByFilterAsync(string filter) {
             return _repository.GetByFilterAsync(null, filter, new SortingOptions(), null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }

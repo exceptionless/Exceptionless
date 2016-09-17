@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         // TODO: We need to index and search by the created time.
-        public Task<IFindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null) {
+        public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null) {
             var filter = Filter<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && Filter<PersistentEvent>.Missing(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]);
             if (createdBeforeUtc.Ticks > 0)
                 filter &= Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(createdBeforeUtc));
@@ -91,7 +91,7 @@ namespace Exceptionless.Core.Repositories {
             return PatchAllAsync(query, new { is_hidden = true });
         }
 
-        public Task<IFindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+        public Task<FindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (sorting.Fields.Count == 0)
                 sorting.Fields.Add(new FieldSort { Field = EventIndexType.Fields.Date, Order = SortOrder.Descending });
             
@@ -106,7 +106,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(search);
         }
 
-        public Task<IFindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId) {
+        public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId) {
             var filter = Filter<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
             return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
@@ -215,7 +215,7 @@ namespace Exceptionless.Core.Repositories {
             return index == unionResults.Count - 1 ? null : unionResults[index + 1].Id;
         }
 
-        public override Task<IFindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public override Task<FindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
@@ -227,7 +227,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public override Task<IFindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, PagingOptions paging = null) {
+        public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, PagingOptions paging = null) {
             return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithPaging(paging)

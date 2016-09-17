@@ -16,19 +16,19 @@ namespace Exceptionless.Core.Repositories {
             : base(configuration.Organizations.Token, validator) {
         }
 
-        public Task<IFindResults<Token>> GetByUserIdAsync(string userId) {
+        public Task<FindResults<Token>> GetByUserIdAsync(string userId) {
             var filter = Filter<Token>.Term(e => e.UserId, userId);
             return FindAsync(new ExceptionlessQuery().WithElasticFilter(filter));
         }
 
-        public Task<IFindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, PagingOptions paging = null) {
+        public Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, PagingOptions paging = null) {
             return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
                 .WithElasticFilter(Filter<Token>.Term(t => t.Type, type))
                 .WithPaging(paging));
         }
 
-        public Task<IFindResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, PagingOptions paging = null) {
+        public Task<FindResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, PagingOptions paging = null) {
             var filter = Filter<Token>.And(and => (
                     Filter<Token>.Term(t => t.ProjectId, projectId) || Filter<Token>.Term(t => t.DefaultProjectId, projectId)
                 ) && Filter<Token>.Term(t => t.Type, type));
@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithPaging(paging));
         }
 
-        public override Task<IFindResults<Token>> GetByProjectIdAsync(string projectId, PagingOptions paging = null) {
+        public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, PagingOptions paging = null) {
             var filter = Filter<Token>.And(and => (Filter<Token>.Term(t => t.ProjectId, projectId) || Filter<Token>.Term(t => t.DefaultProjectId, projectId)));
 
             return FindAsync(new ExceptionlessQuery()
