@@ -451,7 +451,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _configuration.Client.RefreshAsync();
         }
 
-        private Task<IFindResults<PersistentEvent>> GetByFilterAsync(string filter) {
+        private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
             var result = QueryProcessor.Process(filter);
             filter = result.ExpandedQuery;
             _logger.Info($"Expanded Filter: {filter}");

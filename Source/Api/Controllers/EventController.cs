@@ -149,7 +149,7 @@ namespace Exceptionless.Api.Controllers {
 
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
 
-            IFindResults<PersistentEvent> events;
+            FindResults<PersistentEvent> events;
             try {
                 events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(filter) ? sf : null, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
             } catch (ApplicationException ex) {

@@ -103,7 +103,7 @@ namespace Exceptionless.Core.Repositories {
             return hit?.Document;
         }
 
-        public Task<IFindResults<Stack>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+        public Task<FindResults<Stack>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (sorting.Fields.Count == 0)
                 sorting.Fields.Add(new FieldSort { Field = StackIndexType.Fields.LastOccurrence, Order = SortOrder.Descending });
 

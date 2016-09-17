@@ -18,9 +18,9 @@ namespace Exceptionless.Core.Repositories {
             DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
 
-        public virtual Task<IFindResults<T>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (String.IsNullOrEmpty(organizationId))
-                return Task.FromResult<IFindResults<T>>(new FindResults<T>());
+                return Task.FromResult<FindResults<T>>(new FindResults<T>());
 
             string cacheKey = String.Concat("paged:Organization:", organizationId);
             return FindAsync(new ExceptionlessQuery()

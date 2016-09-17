@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Repositories {
             FieldsRequiredForRemove.Add("project_id");
         }
 
-        public virtual Task<IFindResults<T>> GetByProjectIdAsync(string projectId, PagingOptions paging = null) {
+        public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, PagingOptions paging = null) {
             return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithPaging(paging));

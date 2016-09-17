@@ -9,8 +9,8 @@ namespace Exceptionless.Core.Repositories {
     public interface IOrganizationRepository : IRepository<Organization> {
         Task<Organization> GetByInviteTokenAsync(string token);
         Task<Organization> GetByStripeCustomerIdAsync(string customerId);
-        Task<IFindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging);
-        Task<IFindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
+        Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging);
+        Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
         Task<BillingPlanStats> GetBillingPlanStatsAsync();
         Task<bool> IncrementUsageAsync(string organizationId, bool tooBig, int count = 1, bool applyHourlyLimit = true);
         Task<int> GetRemainingEventLimitAsync(string organizationId);

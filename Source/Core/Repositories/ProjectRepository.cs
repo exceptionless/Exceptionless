@@ -29,12 +29,12 @@ namespace Exceptionless.Core.Repositories {
                 .WithCacheKey(String.Concat("Organization:", organizationId)));
         }
 
-        public Task<IFindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null) {
+        public Task<FindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null) {
             if (organizationIds == null)
                 throw new ArgumentNullException(nameof(organizationIds));
 
             if (organizationIds.Count == 0)
-                return Task.FromResult<IFindResults<Project>>(new FindResults<Project>());
+                return Task.FromResult<FindResults<Project>>(new FindResults<Project>());
 
             string cacheKey = organizationIds.Count == 1 ?  String.Concat("paged:Organization:", organizationIds.Single()) : null;
             return FindAsync(new ExceptionlessQuery()
@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithCacheKey(cacheKey));
         }
 
-        public Task<IFindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50) {
+        public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50) {
             var filter = Filter<Project>.Range(r => r.OnField(o => o.NextSummaryEndOfDayTicks).Lower(SystemClock.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
             return FindAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithLimit(limit).WithSort(EventIndexType.Fields.OrganizationId));
         }

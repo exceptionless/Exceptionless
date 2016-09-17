@@ -65,9 +65,9 @@ namespace Exceptionless.Core.Repositories {
             return hit?.Document;
         }
 
-        public Task<IFindResults<User>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (String.IsNullOrEmpty(organizationId))
-                return Task.FromResult<IFindResults<User>>(new FindResults<User>());
+                return Task.FromResult<FindResults<User>>(new FindResults<User>());
 
             return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
