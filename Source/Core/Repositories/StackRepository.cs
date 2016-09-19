@@ -96,10 +96,18 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public async Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
+            var key = GetStackSignatureCacheKey(projectId, signatureHash);
+            Stack stack = IsCacheEnabled ? await Cache.GetAsync(key, default(Stack)).AnyContext() : null;
+            if (stack != null)
+                return stack;
+
             var hit = await FindOneAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
-                .WithElasticFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))
-                .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash))).AnyContext();
+                .WithElasticFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
+
+            if (IsCacheEnabled && hit != null)
+                await Cache.SetAsync(key, hit.Document, TimeSpan.FromSeconds(ElasticType.DefaultCacheExpirationSeconds)).AnyContext();
+
             return hit?.Document;
         }
 

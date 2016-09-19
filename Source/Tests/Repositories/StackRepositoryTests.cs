@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Caching;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Xunit;
@@ -11,12 +13,33 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public sealed class StackRepositoryTests : ElasticTestBase {
+        private readonly InMemoryCacheClient _cache;
         private readonly IStackRepository _repository;
 
         public StackRepositoryTests(ITestOutputHelper output) : base(output) {
+            _cache = _configuration.Cache as InMemoryCacheClient;
             _repository = GetService<IStackRepository>();
         }
-        
+
+        [Fact]
+        public async Task CanGetByStackHash() {
+            Assert.Equal(0, _cache.Count);
+            Assert.Equal(0, _cache.Hits);
+            Assert.Equal(0, _cache.Misses);
+
+            var stack = await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), true);
+            Assert.NotNull(stack?.Id);
+            Assert.Equal(2, _cache.Count);
+            Assert.Equal(0, _cache.Hits);
+            Assert.Equal(0, _cache.Misses);
+
+            var result = await _repository.GetStackBySignatureHashAsync(stack.ProjectId, stack.SignatureHash);
+            Assert.Equal(stack.ToJson(), result.ToJson());
+            Assert.Equal(2, _cache.Count);
+            Assert.Equal(1, _cache.Hits);
+            Assert.Equal(0, _cache.Misses);
+        }
+
         [Fact]
         public async Task CanMarkAsRegressedAsync() {
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)));
