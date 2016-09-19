@@ -20,11 +20,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddIndex(Stacks = new StackIndex(this));
             AddIndex(Events = new EventIndex(this));
             AddIndex(Organizations = new OrganizationIndex(this));
-            
-            // TODO: REMOVE THIS
-            ConfigureIndexesAsync(beginReindexingOutdated: false).GetAwaiter().GetResult();
         }
-        
+
         public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder) {
             builder.Register(new ExceptionlessSystemFilterQueryBuilder());
             builder.Register(new OrganizationIdQueryBuilder());
