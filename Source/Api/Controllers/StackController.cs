@@ -506,7 +506,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
@@ -527,7 +527,7 @@ namespace Exceptionless.Api.Controllers {
             var options = new PagingOptions { Page = page, Limit = limit };
             
             try {
-                var results = await _repository.GetByFilterAsync(ShouldApplySystemFilter(filter) ? sf : null, filter, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
+                var results = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
 
                 var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
@@ -597,7 +597,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(String.Concat("first|", time), offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, filter, "-first", mode, page, limit);
         }
 
@@ -653,7 +653,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(String.Concat("last|", time), offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, filter, "-last", mode, page, limit);
         }
 
@@ -709,7 +709,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
             return await GetAllByTermsAsync(_distinctUsersFields, sf, ti, filter, mode, page, limit);
         }
 
@@ -765,7 +765,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
             return await GetAllByTermsAsync(_distinctUsersFieldsWithSort, sf, ti, filter, mode, page, limit);
         }
 
@@ -816,7 +816,7 @@ namespace Exceptionless.Api.Controllers {
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
 
             try {
-                var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", fields, ti.UtcRange.Start, ti.UtcRange.End, ShouldApplySystemFilter(filter) ? sf : null, filter, ti.Offset, GetSkip(page + 1, limit) + 1);
+                var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", fields, ti.UtcRange.Start, ti.UtcRange.End, ShouldApplySystemFilter(sf, filter) ? sf : null, filter, ti.Offset, GetSkip(page + 1, limit) + 1);
                 if (ntsr.Terms.Count == 0)
                     return Ok(EmptyModels);
 

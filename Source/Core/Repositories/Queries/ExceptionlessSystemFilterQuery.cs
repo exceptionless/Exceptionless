@@ -48,6 +48,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         public IReadOnlyCollection<Project> Projects { get; }
         public Stack Stack { get; }
         public bool UsesPremiumFeatures { get; set; }
+        public bool IsUserOrganizationsFilter { get; set; }
     }
 
     public interface IExceptionlessSystemFilterQuery : IRepositoryQuery {
@@ -55,6 +56,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         IReadOnlyCollection<Project> Projects { get; }
         Stack Stack { get; }
         bool UsesPremiumFeatures { get; set; }
+         bool IsUserOrganizationsFilter { get; set; }
     }
 
     public class ExceptionlessSystemFilterQueryBuilder : IElasticQueryBuilder {
