@@ -62,8 +62,10 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
 
             container.RegisterSingleton<IMetricsClient>(() => new InMemoryMetricsClient(loggerFactory: loggerFactory));
-            
+
             container.RegisterSingleton<ExceptionlessElasticConfiguration>();
+            container.AddStartupAction(() => container.GetInstance<ExceptionlessElasticConfiguration>().ConfigureIndexesAsync(beginReindexingOutdated: false));
+
             container.RegisterSingleton<ICacheClient, InMemoryCacheClient>();
 
             container.RegisterSingleton<IEnumerable<IQueueBehavior<EventPost>>>(() => new[] { new MetricsQueueBehavior<EventPost>(container.GetInstance<IMetricsClient>()) });

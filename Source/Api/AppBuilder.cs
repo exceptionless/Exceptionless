@@ -50,6 +50,7 @@ namespace Exceptionless.Api {
             config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
 
             SetupRouteConstraints(config);
+            container.RegisterSingleton(config);
             container.RegisterWebApiControllers(config);
 
             VerifyContainer(container);
@@ -76,8 +77,7 @@ namespace Exceptionless.Api {
 
             EnableCors(config, app);
 
-            container.Bootstrap(config);
-            container.Bootstrap(app);
+            container.RunStartupActionsAsync().GetAwaiter().GetResult();
 
             app.UseWebApi(config);
             SetupSignalR(app, container, loggerFactory);

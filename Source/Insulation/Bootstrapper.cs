@@ -75,7 +75,7 @@ namespace Exceptionless.Insulation {
                 client.Configuration.Enabled = false;
 
             client.Startup();
-            container.AddBootstrapper<HttpConfiguration>(config => client.RegisterWebApi(config));
+            container.AddStartupAction(() => client.RegisterWebApi(container.GetInstance<HttpConfiguration>()));
             client.Configuration.UseInMemoryStorage();
             client.Configuration.UseReferenceIds();
         }
