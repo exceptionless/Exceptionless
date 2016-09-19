@@ -50,12 +50,13 @@ namespace Exceptionless.Api.Controllers {
             
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) {
-                UsesPremiumFeatures = far.UsesPremiumFeatures || pr.UsesPremiumFeatures
+                UsesPremiumFeatures = far.UsesPremiumFeatures || pr.UsesPremiumFeatures,
+                IsUserOrganizationsFilter = true
             };
 
             NumbersStatsResult result;
             try {
-                result = await _stats.GetNumbersStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, ShouldApplySystemFilter(filter) ? sf : null, pr.ExpandedQuery, ti.Offset);
+                result = await _stats.GetNumbersStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, ShouldApplySystemFilter(sf, filter) ? sf : null, pr.ExpandedQuery, ti.Offset);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your search filter.")
@@ -96,12 +97,13 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) {
-                UsesPremiumFeatures = far.UsesPremiumFeatures || pr.UsesPremiumFeatures
+                UsesPremiumFeatures = far.UsesPremiumFeatures || pr.UsesPremiumFeatures,
+                IsUserOrganizationsFilter = true
             };
 
             NumbersTimelineStatsResult result;
             try {
-                result = await _stats.GetNumbersTimelineStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, ShouldApplySystemFilter(filter) ? sf : null, pr.ExpandedQuery, ti.Offset);
+                result = await _stats.GetNumbersTimelineStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, ShouldApplySystemFilter(sf, filter) ? sf : null, pr.ExpandedQuery, ti.Offset);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your search filter.")

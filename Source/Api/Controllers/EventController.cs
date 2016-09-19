@@ -129,7 +129,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
@@ -151,7 +151,7 @@ namespace Exceptionless.Api.Controllers {
 
             FindResults<PersistentEvent> events;
             try {
-                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(filter) ? sf : null, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
+                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your search filter.")
@@ -264,7 +264,7 @@ namespace Exceptionless.Api.Controllers {
             var stack = await GetStackAsync(stackId);
             if (stack == null)
                 return NotFound();
-            
+
             var organization = await GetOrganizationAsync(stack.OrganizationId);
             if (organization == null)
                 return NotFound();
@@ -295,7 +295,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit);
         }
 
@@ -352,7 +352,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, true);
         }
 
@@ -411,7 +411,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }
 

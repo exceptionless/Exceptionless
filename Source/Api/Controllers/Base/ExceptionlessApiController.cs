@@ -11,6 +11,7 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Api.Utility.Results;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
@@ -142,11 +143,22 @@ namespace Exceptionless.Api.Controllers {
             return organizations.Where(o => !o.IsSuspended).ToList().AsReadOnly();
         }
 
-        protected bool ShouldApplySystemFilter(string filter) {
+        protected bool ShouldApplySystemFilter(IExceptionlessSystemFilterQuery sf, string filter) {
+            // Apply filter to non admin user.
+            if (!Request.IsGlobalAdmin())
+                return true;
+
+            // Apply filter as it's scoped via a controller action.
+            if (!sf.IsUserOrganizationsFilter)
+                return true;
+
+            // Empty user filter
             if (String.IsNullOrEmpty(filter))
                 return true;
 
-            return !(Request.IsGlobalAdmin() && (filter.Contains("organization:") || filter.Contains("project:") || filter.Contains("stack:")));
+            // Used for impersonating a user. Only skip the filter if it contains an org, project or stack.
+            bool hasOrganizationOrProjectOrStackFilter = filter.Contains("organization:") || filter.Contains("project:") || filter.Contains("stack:");
+            return !hasOrganizationOrProjectOrStackFilter;
         }
 
         protected StatusCodeActionResult StatusCodeWithMessage(HttpStatusCode statusCode, string message, string reason = null) {
