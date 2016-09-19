@@ -7,6 +7,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
+using Foundatio.Repositories.Elasticsearch.Models;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
@@ -45,7 +46,12 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50) {
             var filter = Filter<Project>.Range(r => r.OnField(o => o.NextSummaryEndOfDayTicks).Lower(SystemClock.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
-            return FindAsync(new ExceptionlessQuery().WithElasticFilter(filter).WithLimit(limit).WithSort(EventIndexType.Fields.OrganizationId));
+            var query = new ExceptionlessQuery()
+                .WithElasticFilter(filter)
+                .WithPaging(new ElasticPagingOptions().UseSnapshotPaging().WithLimit(limit))
+                .WithSort(EventIndexType.Fields.OrganizationId);
+
+            return FindAsync(query);
         }
 
         public async Task IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects) {

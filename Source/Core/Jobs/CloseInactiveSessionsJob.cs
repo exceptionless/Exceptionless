@@ -11,7 +11,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
-using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Elasticsearch.Models;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
@@ -31,9 +31,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
-            const int LIMIT = 100;
-
-            var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), new PagingOptions().WithPage(1).WithLimit(LIMIT)).AnyContext();
+            var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), new ElasticPagingOptions().UseSnapshotPaging().WithLimit(100)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 var inactivePeriodUtc = SystemClock.UtcNow.Subtract(DefaultInactivePeriod);
                 var sessionsToUpdate = new List<PersistentEvent>(results.Documents.Count);
