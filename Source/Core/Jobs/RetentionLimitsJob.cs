@@ -10,7 +10,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
-using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Elasticsearch.Models;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
-            var results = await _organizationRepository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithPage(1).WithLimit(100)).AnyContext();
+            var results = await _organizationRepository.GetByRetentionDaysEnabledAsync(new ElasticPagingOptions().UseSnapshotPaging().WithLimit(100)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in results.Documents) {
                     await EnforceEventCountLimitsAsync(organization).AnyContext();
