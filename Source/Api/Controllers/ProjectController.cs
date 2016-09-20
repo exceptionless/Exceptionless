@@ -17,10 +17,12 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]
@@ -412,10 +414,10 @@ namespace Exceptionless.Api.Controllers {
                 return false;
 
             var organizationIds = IsInOrganization(organizationId) ? new List<string> { organizationId } : GetAssociatedOrganizationIds();
-            var results = await _repository.GetByOrganizationIdsAsync(organizationIds);
+            var projects = await _repository.GetByOrganizationIdsAsync(organizationIds);
 
             string decodedName = Uri.UnescapeDataString(name).Trim().ToLower();
-            return !results.Documents.Any(p => String.Equals(p.Name.Trim().ToLower(), decodedName, StringComparison.OrdinalIgnoreCase));
+            return !projects.Documents.Any(p => String.Equals(p.Name.Trim().ToLower(), decodedName, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -468,7 +470,7 @@ namespace Exceptionless.Api.Controllers {
 
             // TODO: We can optimize this by normalizing the project model to include the organization name.
             var viewProjects = models.OfType<ViewProject>().ToList();
-            var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true)).Documents;
+            var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true);
             foreach (var viewProject in viewProjects) {
                 var organization = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId);
                 if (organization != null) {
@@ -500,7 +502,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected override Task<Project> AddModelAsync(Project value) {
             value.IsConfigured = false;
-            value.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            value.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             value.AddDefaultOwnerNotificationSettings(ExceptionlessUser.Id);
             value.SetDefaultUserAgentBotPatterns();
             value.Configuration.IncrementVersion();
@@ -540,9 +542,10 @@ namespace Exceptionless.Api.Controllers {
                 new FieldAggregation { Type = FieldAggregationType.Distinct, Field = "stack_id" }
             };
 
-            var organizations = (await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true)).Documents;
-            var filter = viewProjects.Select(p => new Project { Id = p.Id, OrganizationId = p.OrganizationId }).ToList().BuildRetentionFilter(organizations);
-            var ntsr = await _stats.GetNumbersTermsStatsAsync("project_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, filter, max: viewProjects.Count);
+            var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true);
+            var projects = viewProjects.Select(p => new Project { Id = p.Id, OrganizationId = p.OrganizationId }).ToList();
+            var sf = new ExceptionlessSystemFilterQuery(projects, organizations);
+            var ntsr = await _stats.GetNumbersTermsStatsAsync("project_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, sf, max: viewProjects.Count);
             foreach (var project in viewProjects) {
                 var term = ntsr.Terms.FirstOrDefault(t => t.Term == project.Id);
                 project.EventCount = term?.Total ?? 0;

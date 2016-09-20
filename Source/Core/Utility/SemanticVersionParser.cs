@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Foundatio.Caching;
@@ -8,6 +8,7 @@ using McSherry.SemanticVersioning;
 
 namespace Exceptionless.Core.Utility {
     public class SemanticVersionParser {
+        private static readonly IReadOnlyCollection<string> EmptyIdentifiers = new List<string>(0).AsReadOnly();
         private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 250 };
         private readonly ILogger _logger;
 
@@ -43,7 +44,7 @@ namespace Exceptionless.Core.Utility {
             Version v;
             int major;
             if (version.Length >= 3 && Version.TryParse(version, out v))
-                semanticVersion = new SemanticVersion(v.Major > 0 ? v.Major : 0, v.Minor > 0 ? v.Minor : 0, v.Build > 0 ? v.Build : 0, v.Revision >= 0 ? new[] { v.Revision.ToString() } : Enumerable.Empty<string>());
+                semanticVersion = new SemanticVersion(v.Major > 0 ? v.Major : 0, v.Minor > 0 ? v.Minor : 0, v.Build > 0 ? v.Build : 0, v.Revision >= 0 ? new[] { v.Revision.ToString() } : EmptyIdentifiers);
             else if (Int32.TryParse(version, out major))
                 semanticVersion = new SemanticVersion(major, 0);
             else

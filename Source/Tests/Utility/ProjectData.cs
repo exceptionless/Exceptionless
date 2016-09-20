@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Utility;
+using Foundatio.Utility;
 
 namespace Exceptionless.Tests.Utility {
     internal static class ProjectData {
@@ -33,7 +34,7 @@ namespace Exceptionless.Tests.Utility {
             if (nextSummaryEndOfDayTicks.HasValue)
                 project.NextSummaryEndOfDayTicks = nextSummaryEndOfDayTicks.Value;
             else {
-                project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+                project.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             }
 
             for (int i = 0; i < RandomData.GetInt(0, 5); i++) {

@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Utility;
-using Foundatio.Logging.Xunit;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests {
-    public class SemanticVersionParserTests : TestWithLoggingBase {
+    public class SemanticVersionParserTests : TestBase {
         private readonly SemanticVersionParser _parser;
         public SemanticVersionParserTests(ITestOutputHelper output) : base(output) {
             _parser = new SemanticVersionParser(Log);

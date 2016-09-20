@@ -1,9 +1,12 @@
 ﻿using System;
 using Exceptionless.Core.Extensions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Extensions {
-    public class StringExtensionsTests {
+    public class StringExtensionsTests : TestBase {
+        public StringExtensionsTests(ITestOutputHelper output) : base(output) { }
+
         [Fact(Skip = "TODO: https://github.com/exceptionless/Exceptionless.Net/issues/2")]
         public void LowerUnderscoredWords() {
             Assert.Equal("enable_ssl", "EnableSSL".ToLowerUnderscoredWords());

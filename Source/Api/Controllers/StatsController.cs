@@ -8,6 +8,7 @@ using Exceptionless.Core.Filter;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models.Stats;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Logging;
 
 namespace Exceptionless.Api.Controllers {
@@ -42,14 +43,20 @@ namespace Exceptionless.Api.Controllers {
             var pr = QueryProcessor.Process(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
-
-            var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
-            var sf = BuildSystemFilter(organizations, filter, far.UsesPremiumFeatures || pr.UsesPremiumFeatures);
+            
+            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            if (organizations.Count == 0)
+                return Ok(NumbersStatsResult.Empty);
+            
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organizations) {
+                UsesPremiumFeatures = far.UsesPremiumFeatures || pr.UsesPremiumFeatures,
+                IsUserOrganizationsFilter = true
+            };
 
             NumbersStatsResult result;
             try {
-                result = await _stats.GetNumbersStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, sf, pr.ExpandedQuery, ti.Offset);
+                result = await _stats.GetNumbersStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, ShouldApplySystemFilter(sf, filter) ? sf : null, pr.ExpandedQuery, ti.Offset);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your search filter.")
@@ -84,13 +91,19 @@ namespace Exceptionless.Api.Controllers {
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 
-            var organizations = await GetAssociatedOrganizationsAsync(_organizationRepository);
-            var sf = BuildSystemFilter(organizations, filter, far.UsesPremiumFeatures || pr.UsesPremiumFeatures);
+            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            if (organizations.Count == 0)
+                return Ok(NumbersTimelineStatsResult.Empty);
+
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organizations) {
+                UsesPremiumFeatures = far.UsesPremiumFeatures || pr.UsesPremiumFeatures,
+                IsUserOrganizationsFilter = true
+            };
 
             NumbersTimelineStatsResult result;
             try {
-                result = await _stats.GetNumbersTimelineStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, sf, pr.ExpandedQuery, ti.Offset);
+                result = await _stats.GetNumbersTimelineStatsAsync(far.Aggregations, ti.UtcRange.Start, ti.UtcRange.End, ShouldApplySystemFilter(sf, filter) ? sf : null, pr.ExpandedQuery, ti.Offset);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your search filter.")

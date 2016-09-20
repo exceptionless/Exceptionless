@@ -1,11 +1,10 @@
 ﻿using System;
 using Exceptionless.Api.Utility;
-using Foundatio.Logging.Xunit;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Miscellaneous {
-    public class DeltaTests : TestWithLoggingBase {
+    public class DeltaTests : TestBase {
         public DeltaTests(ITestOutputHelper output) : base(output) {}
 
         [Fact]

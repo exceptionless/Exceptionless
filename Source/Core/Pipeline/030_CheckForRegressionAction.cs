@@ -7,7 +7,6 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
@@ -57,8 +56,14 @@ namespace Exceptionless.Core.Pipeline {
                     _logger.Trace("Marking stack and events as regressed in version: {version}", regressedVersion);
                     stack.IsRegressed = true;
                     await _stackRepository.MarkAsRegressedAsync(stack.Id).AnyContext();
-                    await _workItemQueue.EnqueueAsync(new StackWorkItem { OrganizationId = stack.OrganizationId, StackId = stack.Id, UpdateIsFixed = true, IsFixed = false }).AnyContext();
-                    
+                    await _workItemQueue.EnqueueAsync(new StackWorkItem {
+                        OrganizationId = stack.OrganizationId,
+                        ProjectId = stack.ProjectId,
+                        StackId = stack.Id,
+                        UpdateIsFixed = true,
+                        IsFixed = false
+                    }).AnyContext();
+
                     foreach (var ctx in stackGroup) {
                         ctx.Event.IsFixed = false;
                         ctx.IsRegression = ctx == regressedContext;

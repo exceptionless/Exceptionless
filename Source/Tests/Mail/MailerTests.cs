@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
@@ -11,23 +10,21 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Tests.Utility;
 using Foundatio.Logging;
-using Foundatio.Logging.Xunit;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Utility;
 using RazorSharpEmail;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Mail {
-    public class MailerTests : TestWithLoggingBase {
+    public class MailerTests : TestBase {
         private readonly IMailer _mailer;
-        private readonly InMemoryMailSender _mailSender = IoC.GetInstance<IMailSender>() as InMemoryMailSender;
-        private readonly MailMessageJob _mailJob = IoC.GetInstance<MailMessageJob>();
 
         public MailerTests(ITestOutputHelper output) : base(output) {
-            _mailer = IoC.GetInstance<IMailer>();
+            _mailer = GetService<IMailer>();
             if (_mailer is NullMailer)
-                _mailer = new Mailer(IoC.GetInstance<IEmailGenerator>(), IoC.GetInstance<IQueue<MailMessage>>(), IoC.GetInstance<FormattingPluginManager>(), IoC.GetInstance<IMetricsClient>(), Log.CreateLogger<Mailer>());
+                _mailer = new Mailer(GetService<IEmailGenerator>(), GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
@@ -135,15 +132,17 @@ namespace Exceptionless.Api.Tests.Mail {
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
             await _mailer.SendInviteAsync(user, organization, new Invite {
-                DateAdded = DateTime.Now,
+                DateAdded = SystemClock.UtcNow,
                 EmailAddress = Settings.Current.TestEmailAddress,
                 Token = "1"
             });
             
             await RunMailJobAsync();
-            if (_mailSender != null) {
-                Assert.Equal(Settings.Current.TestEmailAddress, _mailSender.LastMessage.To);
-                Assert.Contains("Join Organization", _mailSender.LastMessage.HtmlBody);
+
+            var sender = GetService<IMailSender>() as InMemoryMailSender;
+            if (sender != null) {
+                Assert.Equal(Settings.Current.TestEmailAddress, sender.LastMessage.To);
+                Assert.Contains("Join Organization", sender.LastMessage.HtmlBody);
             }
         }
 
@@ -175,8 +174,8 @@ namespace Exceptionless.Api.Tests.Mail {
             await _mailer.SendDailySummaryAsync(Settings.Current.TestEmailAddress, new DailySummaryModel {
                 ProjectId = "1",
                 BaseUrl = "http://be.exceptionless.io",
-                StartDate = DateTime.Now.Date,
-                EndDate = DateTime.Now.EndOfDay(),
+                StartDate = SystemClock.UtcNow.Date,
+                EndDate = SystemClock.UtcNow.EndOfDay(),
                 NewTotal = 1,
                 PerHourAverage = 0.4,
                 ProjectName = "Blah",
@@ -198,13 +197,16 @@ namespace Exceptionless.Api.Tests.Mail {
         }
 
         private async Task RunMailJobAsync() {
-            await _mailJob.RunAsync();
-            if (_mailSender == null)
+            var job = GetService<MailMessageJob>();
+            await job.RunAsync();
+            
+            var sender = GetService<IMailSender>() as InMemoryMailSender;
+            if (sender == null)
                 return;
 
-            _logger.Info($"To:       {_mailSender.LastMessage.To}");
-            _logger.Info($"Subject: {_mailSender.LastMessage.Subject}");
-            _logger.Info($"TextBody:\n{_mailSender.LastMessage.TextBody}");
+            _logger.Info($"To:       {sender.LastMessage.To}");
+            _logger.Info($"Subject: {sender.LastMessage.Subject}");
+            _logger.Info($"TextBody:\n{sender.LastMessage.TextBody}");
         }
     }
 }

@@ -28,18 +28,18 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         }
         
         public override async Task HandleItemAsync(WorkItemContext context) {
-            var workItem = context.GetData<StackWorkItem>();
-            if (workItem.Delete) {
-                await _eventRepository.RemoveAllByStackIdsAsync(new[] { workItem.StackId }).AnyContext();
-                await _stackRepository.RemoveAsync(workItem.StackId).AnyContext();
+            var wi = context.GetData<StackWorkItem>();
+            if (wi.Delete) {
+                await _eventRepository.RemoveAllByStackIdAsync(wi.OrganizationId, wi.ProjectId, wi.StackId).AnyContext();
+                await _stackRepository.RemoveAsync(wi.StackId).AnyContext();
                 return;
             }
 
-            if (workItem.UpdateIsFixed)
-                await _eventRepository.UpdateFixedByStackAsync(workItem.OrganizationId, workItem.StackId, workItem.IsFixed).AnyContext();
+            if (wi.UpdateIsFixed)
+                await _eventRepository.UpdateFixedByStackAsync(wi.OrganizationId, wi.ProjectId, wi.StackId, wi.IsFixed).AnyContext();
 
-            if (workItem.UpdateIsHidden)
-                await _eventRepository.UpdateHiddenByStackAsync(workItem.OrganizationId, workItem.StackId, workItem.IsHidden).AnyContext();
+            if (wi.UpdateIsHidden)
+                await _eventRepository.UpdateHiddenByStackAsync(wi.OrganizationId, wi.ProjectId, wi.StackId, wi.IsHidden).AnyContext();
         }
     }
 }

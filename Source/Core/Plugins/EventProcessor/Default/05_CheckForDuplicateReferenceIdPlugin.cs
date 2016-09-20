@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         }
         
         private string GetCacheKey(EventContext context) {
-            return String.Concat("project:", context.Project.Id, ":", context.Event.ReferenceId);
+            return String.Concat("Project:", context.Project.Id, ":", context.Event.ReferenceId);
         }
     }
 }

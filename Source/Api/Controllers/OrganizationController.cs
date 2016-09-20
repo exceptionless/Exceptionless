@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
@@ -21,6 +20,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
@@ -29,6 +29,7 @@ using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 using Stripe;
 
 #pragma warning disable 1998
@@ -372,7 +373,7 @@ namespace Exceptionless.Api.Controllers {
                     if (String.IsNullOrEmpty(stripeToken))
                         return Ok(ChangePlanResult.FailWithMessage("Billing information was not set."));
 
-                    organization.SubscribeDate = DateTime.Now;
+                    organization.SubscribeDate = SystemClock.UtcNow;
 
                     var createCustomer = new StripeCustomerCreateOptions {
                         SourceToken = stripeToken,
@@ -471,7 +472,7 @@ namespace Exceptionless.Api.Controllers {
                     invite = new Invite {
                         Token = StringExtensions.GetNewToken(),
                         EmailAddress = email.ToLowerInvariant(),
-                        DateAdded = DateTime.UtcNow
+                        DateAdded = SystemClock.UtcNow
                     };
                     organization.Invites.Add(invite);
                     await _repository.SaveAsync(organization, true);
@@ -543,7 +544,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             organization.IsSuspended = true;
-            organization.SuspensionDate = DateTime.UtcNow;
+            organization.SuspensionDate = SystemClock.UtcNow;
             organization.SuspendedByUserId = ExceptionlessUser.Id;
             organization.SuspensionCode = code;
             organization.SuspensionNotes = notes;
@@ -632,7 +633,7 @@ namespace Exceptionless.Api.Controllers {
 
             string decodedName = Uri.UnescapeDataString(name).Trim().ToLower();
             var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true);
-            return !results.Documents.Any(o => String.Equals(o.Name.Trim().ToLower(), decodedName, StringComparison.OrdinalIgnoreCase));
+            return !results.Any(o => String.Equals(o.Name.Trim().ToLower(), decodedName, StringComparison.OrdinalIgnoreCase));
         }
 
         protected override async Task<PermissionResult> CanAddAsync(Organization value) {
@@ -702,7 +703,7 @@ namespace Exceptionless.Api.Controllers {
 
             var viewOrganizations = models.OfType<ViewOrganization>().ToList();
             foreach (var viewOrganization in viewOrganizations) {
-                DateTime usageRetention = DateTime.UtcNow.SubtractYears(1).StartOfMonth();
+                DateTime usageRetention = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
                 viewOrganization.Usage = viewOrganization.Usage.Where(u => u.Date > usageRetention).ToList();
                 viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > usageRetention).ToList();
                 viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, Settings.Current.ApiThrottleLimit);
@@ -722,7 +723,8 @@ namespace Exceptionless.Api.Controllers {
             };
 
             var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, RetentionDays = o.RetentionDays }).ToList();
-            var result = await _stats.GetNumbersTermsStatsAsync("organization_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, organizations.BuildRetentionFilter(), max: viewOrganizations.Count);
+            var sf = new ExceptionlessSystemFilterQuery(organizations);
+            var result = await _stats.GetNumbersTermsStatsAsync("organization_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, sf, max: viewOrganizations.Count);
             foreach (var organization in viewOrganizations) {
                 var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
                 organization.EventCount = organizationStats?.Total ?? 0;

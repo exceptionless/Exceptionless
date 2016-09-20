@@ -2,19 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Results;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Api.Utility.Results;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
     [RequireHttpsExceptLocal]
@@ -49,7 +49,7 @@ namespace Exceptionless.Api.Controllers {
             var utcOffset = GetOffset(offset);
 
             // range parsing needs to be based on the user's local time.
-            var localRange = DateTimeRange.Parse(time, DateTime.UtcNow.Add(utcOffset));
+            var localRange = DateTimeRange.Parse(time, SystemClock.UtcNow.Add(utcOffset));
             var utcRange = localRange != DateTimeRange.Empty ? localRange.Subtract(utcOffset) : localRange;
             
             if (utcRange.UtcStart < minimumUtcStartDate.GetValueOrDefault())
@@ -130,29 +130,35 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public async Task<ICollection<Organization>> GetAssociatedOrganizationsAsync(IOrganizationRepository repository) {
+        private static readonly IReadOnlyCollection<Organization> EmptyOrganizations = new List<Organization>(0).AsReadOnly();
+        public async Task<IReadOnlyCollection<Organization>> GetAssociatedActiveOrganizationsAsync(IOrganizationRepository repository) {
             if (repository == null)
-                return null;
+                throw new ArgumentNullException(nameof(repository));
 
-            return (await repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true)).Documents;
-        }
-        
-        public string BuildSystemFilter(ICollection<Organization> organizations, string filter, bool usesPremiumFeatures, string retentionDateFieldName = "date") {
-            if (HasOrganizationOrProjectOrStackFilter(filter) && Request.IsGlobalAdmin())
-                return null;
-            
-            var allowedOrganizations = organizations.Where(o => !o.IsSuspended && (o.HasPremiumFeatures || (!o.HasPremiumFeatures && !usesPremiumFeatures))).ToList();
-            if (allowedOrganizations.Count == 0)
-                return "organization:none";
+            var ids = GetAssociatedOrganizationIds();
+            if (ids.Count == 0)
+                return EmptyOrganizations;
 
-            return allowedOrganizations.BuildRetentionFilter(retentionDateFieldName);
+            var organizations = await repository.GetByIdsAsync(ids, true);
+            return organizations.Where(o => !o.IsSuspended).ToList().AsReadOnly();
         }
-        
-        private bool HasOrganizationOrProjectOrStackFilter(string filter) {
+
+        protected bool ShouldApplySystemFilter(IExceptionlessSystemFilterQuery sf, string filter) {
+            // Apply filter to non admin user.
+            if (!Request.IsGlobalAdmin())
+                return true;
+
+            // Apply filter as it's scoped via a controller action.
+            if (!sf.IsUserOrganizationsFilter)
+                return true;
+
+            // Empty user filter
             if (String.IsNullOrEmpty(filter))
-                return false;
+                return true;
 
-            return filter.Contains("organization:") || filter.Contains("project:") || filter.Contains("stack:");
+            // Used for impersonating a user. Only skip the filter if it contains an org, project or stack.
+            bool hasOrganizationOrProjectOrStackFilter = filter.Contains("organization:") || filter.Contains("project:") || filter.Contains("stack:");
+            return !hasOrganizationOrProjectOrStackFilter;
         }
 
         protected StatusCodeActionResult StatusCodeWithMessage(HttpStatusCode statusCode, string message, string reason = null) {
@@ -195,11 +201,11 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithHeadersContentResult<T>(content, this, headers);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
             return new OkWithResourceLinks<TEntity>(content, this, hasMore, null, pagePropertyAccessor, headers, isDescending);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
             return new OkWithResourceLinks<TEntity>(content, this, hasMore, page, total);
         }
 

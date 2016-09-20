@@ -10,16 +10,17 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(0)]
     public sealed class ThrottleBotsPlugin : EventProcessorPluginBase {
-        private readonly ICacheClient _cacheClient;
+        private readonly ICacheClient _cache;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
         public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
-            _cacheClient = cacheClient;
+            _cache = cacheClient;
             _workItemQueue = workItemQueue;
         }
 
@@ -39,27 +40,27 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
                 var clientIpContexts = clientIpAddressGroup.ToList();
 
-                string throttleCacheKey = String.Concat("bot:", clientIpAddressGroup.Key, ":", DateTime.UtcNow.Floor(_throttlingPeriod).Ticks);
-                var requestCount = await _cacheClient.GetAsync<int?>(throttleCacheKey, null).AnyContext();
+                string throttleCacheKey = String.Concat("bot:", clientIpAddressGroup.Key, ":", SystemClock.UtcNow.Floor(_throttlingPeriod).Ticks);
+                var requestCount = await _cache.GetAsync<int?>(throttleCacheKey, null).AnyContext();
                 if (requestCount.HasValue) {
-                    await _cacheClient.IncrementAsync(throttleCacheKey, clientIpContexts.Count).AnyContext();
+                    await _cache.IncrementAsync(throttleCacheKey, clientIpContexts.Count).AnyContext();
                     requestCount += clientIpContexts.Count;
                 } else {
-                    await _cacheClient.SetAsync(throttleCacheKey, clientIpContexts.Count, DateTime.UtcNow.Ceiling(_throttlingPeriod)).AnyContext();
+                    await _cache.SetAsync(throttleCacheKey, clientIpContexts.Count, SystemClock.UtcNow.Ceiling(_throttlingPeriod)).AnyContext();
                     requestCount = clientIpContexts.Count;
                 }
 
                 if (requestCount < Settings.Current.BotThrottleLimit)
                     return;
 
-                _logger.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", clientIpAddressGroup.Key, DateTime.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId).Project(firstContext.Event.ProjectId).Write();
+                _logger.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", clientIpAddressGroup.Key, SystemClock.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId).Project(firstContext.Event.ProjectId).Write();
 
                 // The throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
                 await _workItemQueue.EnqueueAsync(new ThrottleBotsWorkItem {
                     OrganizationId = firstContext.Event.OrganizationId,
                     ClientIpAddress = clientIpAddressGroup.Key,
-                    UtcStartDate = DateTime.UtcNow.Floor(_throttlingPeriod),
-                    UtcEndDate = DateTime.UtcNow.Ceiling(_throttlingPeriod)
+                    UtcStartDate = SystemClock.UtcNow.Floor(_throttlingPeriod),
+                    UtcEndDate = SystemClock.UtcNow.Ceiling(_throttlingPeriod)
                 }).AnyContext();
 
                 clientIpContexts.ForEach(c => c.Event.IsHidden = true);

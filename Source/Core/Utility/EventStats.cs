@@ -9,34 +9,33 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Stats;
-using Foundatio.Elasticsearch.Repositories.Queries;
-using Foundatio.Elasticsearch.Repositories.Queries.Builders;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Logging;
+using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories.Queries;
 using Nest;
 
 namespace Exceptionless.Core.Utility {
     public class EventStats {
-        private readonly IElasticClient _elasticClient;
-        private readonly EventIndex _eventIndex;
-        private readonly QueryBuilderRegistry _queryBuilder;
+        private readonly ExceptionlessElasticConfiguration _configuration;
         private readonly ILogger _logger;
 
-        public EventStats(IElasticClient elasticClient, EventIndex eventIndex, QueryBuilderRegistry queryBuilder, ILogger<EventStats> logger) {
-            _elasticClient = elasticClient;
-            _eventIndex = eventIndex;
-            _queryBuilder = queryBuilder;
+        public EventStats(ExceptionlessElasticConfiguration configuration, ILogger<EventStats> logger) {
+            _configuration = configuration;
             _logger = logger;
         }
  
-        public async Task<NumbersStatsResult> GetNumbersStatsAsync(IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null) {
+        public async Task<NumbersStatsResult> GetNumbersStatsAsync(IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, IExceptionlessSystemFilterQuery systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null) {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
             var filter = new ElasticQuery()
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
-                .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
+                .WithDateRange(utcStart, utcEnd, EventIndexType.Fields.Date)
+                .WithIndexes(utcStart, utcEnd);
 
             // if no start date then figure out first event date
             if (!filter.DateRanges.First().UseStartDate)
@@ -44,18 +43,22 @@ namespace Exceptionless.Core.Utility {
             
             utcStart = filter.DateRanges.First().GetStartDate();
             utcEnd = filter.DateRanges.First().GetEndDate();
-
-            var response = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+            
+            var descriptor = new SearchDescriptor<PersistentEvent>()
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
-                .Aggregations(agg => BuildAggregations(agg, fields))
-            ).AnyContext();
+                .Indices(_configuration.Events.Event.GetIndexesByQuery(filter))
+                .Type(_configuration.Events.Event.Name)
+                .Aggregations(agg => BuildAggregations(agg, fields));
+
+            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
+            var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
+            _logger.Trace(() => response.GetRequest());
 
             if (!response.IsValid) {
-                _logger.Error("Retrieving stats failed: {0}", response.ServerError.Error);
-                throw new ApplicationException("Retrieving stats failed.");
+                string message = $"Retrieving stats failed: {response.GetErrorMessage()}";
+                _logger.Error().Exception(response.ConnectionStatus.OriginalException).Message(message).Property("request", response.GetRequest()).Write();
+                throw new ApplicationException(message, response.ConnectionStatus.OriginalException);
             }
 
             return new NumbersStatsResult {
@@ -66,7 +69,7 @@ namespace Exceptionless.Core.Utility {
             };
         }
         
-        public async Task<NumbersTermStatsResult> GetNumbersTermsStatsAsync(string term, IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25) {
+        public async Task<NumbersTermStatsResult> GetNumbersTermsStatsAsync(string term, IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, IExceptionlessSystemFilterQuery systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25) {
             var allowedTerms = new[] { "organization_id", "project_id", "stack_id", "tags", "version" };
             if (!allowedTerms.Contains(term))
                 throw new ArgumentException("Must be a valid term.", nameof(term));
@@ -77,8 +80,8 @@ namespace Exceptionless.Core.Utility {
             var filter = new ElasticQuery()
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
-                .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
+                .WithDateRange(utcStart, utcEnd, EventIndexType.Fields.Date)
+                .WithIndexes(utcStart, utcEnd);
 
             // if no start date then figure out first event date
             if (!filter.DateRanges.First().UseStartDate)
@@ -87,26 +90,30 @@ namespace Exceptionless.Core.Utility {
             utcStart = filter.DateRanges.First().GetStartDate();
             utcEnd = filter.DateRanges.First().GetEndDate();
 
-            var response = await _elasticClient.SearchAsync<PersistentEvent>(s => s
-                 .SearchType(SearchType.Count)
-                 .IgnoreUnavailable()
-                 .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                 .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
-                 .Aggregations(agg => BuildAggregations(agg
-                     .Terms("terms", t => BuildTermSort(t
+            var descriptor = new SearchDescriptor<PersistentEvent>()
+                .SearchType(SearchType.Count)
+                .IgnoreUnavailable()
+                .Indices(_configuration.Events.Event.GetIndexesByQuery(filter))
+                .Type(_configuration.Events.Event.Name)
+                .Aggregations(agg => BuildAggregations(agg
+                    .Terms("terms", t => BuildTermSort(t
                         .Field(term)
                         .Size(max)
                         .Aggregations(agg2 => BuildAggregations(agg2
                             .Min("first_occurrence", o => o.Field(ev => ev.Date))
                             .Max("last_occurrence", o => o.Field(ev => ev.Date)), fields)
                         ), fields)
-                     ), fields)
-                 )
-             ).AnyContext();
+                    ), fields)
+                );
+
+            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
+            var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
+            _logger.Trace(() => response.GetRequest());
 
             if (!response.IsValid) {
-                _logger.Error("Retrieving stats failed: {0}", response.ServerError.Error);
-                throw new ApplicationException("Retrieving stats failed.");
+                string message = $"Retrieving stats failed: {response.GetErrorMessage()}";
+                _logger.Error().Exception(response.ConnectionStatus.OriginalException).Message(message).Property("request", response.GetRequest()).Write();
+                throw new ApplicationException(message, response.ConnectionStatus.OriginalException);
             }
 
             var stats = new NumbersTermStatsResult {
@@ -140,15 +147,15 @@ namespace Exceptionless.Core.Utility {
             return stats;
         }
         
-        public async Task<NumbersTimelineStatsResult> GetNumbersTimelineStatsAsync(IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
+        public async Task<NumbersTimelineStatsResult> GetNumbersTimelineStatsAsync(IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, IExceptionlessSystemFilterQuery systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
             var filter = new ElasticQuery()
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
-                .WithDateRange(utcStart, utcEnd, EventIndex.Fields.PersistentEvent.Date)
-                .WithIndices(utcStart, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
+                .WithDateRange(utcStart, utcEnd, EventIndexType.Fields.Date)
+                .WithIndexes(utcStart, utcEnd);
 
             // if no start date then figure out first event date
             if (!filter.DateRanges.First().UseStartDate)
@@ -157,12 +164,12 @@ namespace Exceptionless.Core.Utility {
             utcStart = filter.DateRanges.First().GetStartDate();
             utcEnd = filter.DateRanges.First().GetEndDate();
             var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
-
-            var response = await _elasticClient.SearchAsync<PersistentEvent>(s => s
+            
+            var descriptor = new SearchDescriptor<PersistentEvent>()
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                .Query(_queryBuilder.BuildQuery<PersistentEvent>(filter))
+                .Indices(_configuration.Events.Event.GetIndexesByQuery(filter))
+                .Type(_configuration.Events.Event.Name)
                 .Aggregations(agg => BuildAggregations(agg
                     .DateHistogram("timelime", t => t
                         .Field(ev => ev.Date)
@@ -173,12 +180,16 @@ namespace Exceptionless.Core.Utility {
                     )
                     .Min("first_occurrence", t => t.Field(ev => ev.Date))
                     .Max("last_occurrence", t => t.Field(ev => ev.Date)), fields)
-                )
-            ).AnyContext();
+                );
+
+            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
+            var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
+            _logger.Trace(() => response.GetRequest());
 
             if (!response.IsValid) {
-                _logger.Error("Retrieving stats failed: {0}", response.ServerError.Error);
-                throw new ApplicationException("Retrieving stats failed.");
+                string message = $"Retrieving stats failed: {response.GetErrorMessage()}";
+                _logger.Error().Exception(response.ConnectionStatus.OriginalException).Message(message).Property("request", response.GetRequest()).Write();
+                throw new ApplicationException(message, response.ConnectionStatus.OriginalException);
             }
             
             var stats = new NumbersTimelineStatsResult { Total = response.Total, Numbers = GetNumbers(response.Aggs, fields) };
@@ -301,19 +312,29 @@ namespace Exceptionless.Core.Utility {
 
         private async Task UpdateFilterStartDateRangesAsync(ElasticQuery filter, DateTime utcEnd) {
             // TODO: Cache this to save an extra search request when a date range isn't filtered.
-            var result = await _elasticClient.SearchAsync<PersistentEvent>(s => s
-                   .IgnoreUnavailable()
-                   .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : _eventIndex.AliasName)
-                   .Query(d => _queryBuilder.BuildQuery<PersistentEvent>(filter))
-                   .SortAscending(ev => ev.Date)
-                   .Take(1)).AnyContext();
+            var descriptor = new SearchDescriptor<PersistentEvent>()
+                .IgnoreUnavailable()
+                .Indices(_configuration.Events.Event.GetIndexesByQuery(filter))
+                .Type(_configuration.Events.Event.Name)
+                .SortAscending(ev => ev.Date)
+                .Take(1);
 
-            var firstEvent = result.Hits.FirstOrDefault();
+            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
+            var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
+            _logger.Trace(() => response.GetRequest());
+
+            if (!response.IsValid) {
+                string message = $"Error getting updated start date: {response.GetErrorMessage()}";
+                _logger.Error().Exception(response.ConnectionStatus.OriginalException).Message(message).Property("request", response.GetRequest()).Write();
+                throw new ApplicationException(message, response.ConnectionStatus.OriginalException);
+            }
+            
+            var firstEvent = response.Hits.FirstOrDefault()?.Source;
             if (firstEvent != null) {
                 filter.DateRanges.Clear();
-                filter.WithDateRange(firstEvent.Source.Date.UtcDateTime, utcEnd, EventIndex.Fields.PersistentEvent.Date);
-                filter.Indices.Clear();
-                filter.WithIndices(firstEvent.Source.Date.UtcDateTime, utcEnd, $"'{_eventIndex.VersionedName}-'yyyyMM");
+                filter.WithDateRange(firstEvent.Date.UtcDateTime, utcEnd, EventIndexType.Fields.Date);
+                filter.Indexes.Clear();
+                filter.WithIndexes(firstEvent.Date.UtcDateTime, utcEnd);
             }
         }
 

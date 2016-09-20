@@ -50,6 +50,7 @@ namespace Exceptionless.Api {
             config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
 
             SetupRouteConstraints(config);
+            container.RegisterSingleton(config);
             container.RegisterWebApiControllers(config);
 
             VerifyContainer(container);
@@ -76,8 +77,7 @@ namespace Exceptionless.Api {
 
             EnableCors(config, app);
 
-            container.Bootstrap(config);
-            container.Bootstrap(app);
+            container.RunStartupActionsAsync().GetAwaiter().GetResult();
 
             app.UseWebApi(config);
             SetupSignalR(app, container, loggerFactory);
@@ -113,7 +113,7 @@ namespace Exceptionless.Api {
                 logger.Info("Jobs running out of process.");
                 return;
             }
-            
+
             new JobRunner(container.GetInstance<EventPostsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2)).RunInBackground(token);
             new JobRunner(container.GetInstance<EventUserDescriptionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(3)).RunInBackground(token);
             new JobRunner(container.GetInstance<EventNotificationsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
@@ -205,7 +205,7 @@ namespace Exceptionless.Api {
             await dataHelper.CreateDataAsync();
         }
 
-        public static Container CreateContainer(LoggerFactory loggerFactory, ILogger logger, bool includeInsulation = true) {
+        public static Container CreateContainer(ILoggerFactory loggerFactory, ILogger logger, bool includeInsulation = true) {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
             container.Options.DefaultScopedLifestyle = new WebApiRequestLifestyle();

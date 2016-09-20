@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Jobs {
                 var response = await client.PostAsJsonAsync(body.Url, body.Data.ToJson(Formatting.Indented, _jsonSerializerSettings), context.CancellationToken).AnyContext();
                 if (response.StatusCode == HttpStatusCode.Gone) {
                     _logger.Warn().Project(body.ProjectId).Message("Deleting web hook: org={0} project={1} url={2}", body.OrganizationId, body.ProjectId, body.Url).Write();
-                    await _webHookRepository.RemoveByUrlAsync(body.Url).AnyContext();
+                    await _webHookRepository.RemoveAsync(body.WebHookId).AnyContext();
                 }
                 
                 _logger.Info().Project(body.ProjectId).Message("Web hook POST complete: status={0} org={1} project={2} url={3}", response.StatusCode, body.OrganizationId, body.ProjectId, body.Url).WriteIf(shouldLog);

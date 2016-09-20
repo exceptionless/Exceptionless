@@ -5,6 +5,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Foundatio.Logging;
+using Foundatio.Utility;
 using Stripe;
 
 namespace Exceptionless.Core.Billing {
@@ -87,10 +88,10 @@ namespace Exceptionless.Core.Billing {
                 return;
 
             org.BillingStatus = status.Value;
-            org.BillingChangeDate = DateTime.Now;
+            org.BillingChangeDate = SystemClock.UtcNow;
             if (status.Value == BillingStatus.Unpaid || status.Value == BillingStatus.Canceled) {
                 org.IsSuspended = true;
-                org.SuspensionDate = DateTime.UtcNow;
+                org.SuspensionDate = SystemClock.UtcNow;
                 org.SuspensionCode = SuspensionCode.Billing;
                 org.SuspensionNotes = $"Stripe subscription status changed to \"{status.Value}\".";
                 org.SuspendedByUserId = "Stripe";
@@ -112,12 +113,12 @@ namespace Exceptionless.Core.Billing {
 
             org.BillingStatus = BillingStatus.Canceled;
             org.IsSuspended = true;
-            org.SuspensionDate = DateTime.UtcNow;
+            org.SuspensionDate = SystemClock.UtcNow;
             org.SuspensionCode = SuspensionCode.Billing;
             org.SuspensionNotes = "Stripe subscription deleted.";
             org.SuspendedByUserId = "Stripe";
 
-            org.BillingChangeDate = DateTime.Now;
+            org.BillingChangeDate = SystemClock.UtcNow;
             await _organizationRepository.SaveAsync(org, true).AnyContext();
         }
 
