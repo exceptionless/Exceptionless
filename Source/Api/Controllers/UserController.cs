@@ -19,18 +19,19 @@ using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/users")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, UpdateUser> {
         private readonly IOrganizationRepository _organizationRepository;
-        private readonly ICacheClient _cacheClient;
+        private readonly ICacheClient _cache;
         private readonly IMailer _mailer;
 
         public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, ILoggerFactory loggerFactory, IMapper mapper) : base(userRepository, loggerFactory, mapper) {
             _organizationRepository = organizationRepository;
-            _cacheClient = new ScopedCacheClient(cacheClient, "user");
+            _cache = new ScopedCacheClient(cacheClient, "User");
             _mailer = mailer;
         }
 
@@ -134,7 +135,7 @@ namespace Exceptionless.Api.Controllers {
 
             // Only allow 3 email address updates per hour period by a single user.
             string updateEmailAddressAttemptsCacheKey = $"{ExceptionlessUser.Id}:attempts";
-            long attempts = await _cacheClient.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, DateTime.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+            long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
             if (attempts > 3)
                 return BadRequest("Update email address rate limit reached. Please try updating later.");
 
@@ -266,7 +267,7 @@ namespace Exceptionless.Api.Controllers {
             return null;
         }
 
-        protected override Task<ICollection<User>> GetModelsAsync(string[] ids, bool useCache = true) {
+        protected override Task<IReadOnlyCollection<User>> GetModelsAsync(string[] ids, bool useCache = true) {
             if (Request.IsGlobalAdmin())
                 return base.GetModelsAsync(ids, useCache);
 

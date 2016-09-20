@@ -2,21 +2,20 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Caching;
 using Foundatio.Logging;
 using Foundatio.Storage;
-using Nest;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Utility {
     public class SystemHealthChecker {
-        private readonly ICacheClient _cacheClient;
-        private readonly IElasticClient _elasticClient;
+        private readonly ExceptionlessElasticConfiguration _configuration;
         private readonly IFileStorage _storage;
         private readonly ILogger _logger;
 
-        public SystemHealthChecker(ICacheClient cacheClient, IElasticClient elasticClient, IFileStorage storage, ILogger<SystemHealthChecker> logger) {
-            _cacheClient = new ScopedCacheClient(cacheClient, "health");
-            _elasticClient = elasticClient;
+        public SystemHealthChecker(ExceptionlessElasticConfiguration configuration, IFileStorage storage, ILogger<SystemHealthChecker> logger) {
+            _configuration = configuration;
             _storage = storage;
             _logger = logger;
         }
@@ -24,7 +23,8 @@ namespace Exceptionless.Core.Utility {
         public async Task<HealthCheckResult> CheckCacheAsync() {
             var sw = Stopwatch.StartNew();
             try {
-                var cacheValue = await _cacheClient.GetAsync<string>("__PING__").AnyContext();
+                var cache = new ScopedCacheClient(_configuration.Cache, "health");
+                var cacheValue = await cache.GetAsync<string>("__PING__").AnyContext();
                 if (cacheValue.HasValue)
                     return HealthCheckResult.NotHealthy("Cache Not Working");
             } catch (Exception ex) {
@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Utility {
         public async Task<HealthCheckResult> CheckElasticsearchAsync() {
             var sw = Stopwatch.StartNew();
             try {
-                var response = await _elasticClient.PingAsync().AnyContext();
+                var response = await _configuration.Client.PingAsync().AnyContext();
                 if (!response.IsValid)
                     return HealthCheckResult.NotHealthy("Elasticsearch Ping Failed");
             } catch (Exception ex) {
@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Utility {
             var sw = Stopwatch.StartNew();
             try {
                 if (!await _storage.ExistsAsync(path).AnyContext())
-                    await _storage.SaveFileAsync(path, DateTime.UtcNow.ToString()).AnyContext();
+                    await _storage.SaveFileAsync(path, SystemClock.UtcNow.ToString()).AnyContext();
 
                 await _storage.DeleteFileAsync(path).AnyContext();
             } catch (Exception ex) {

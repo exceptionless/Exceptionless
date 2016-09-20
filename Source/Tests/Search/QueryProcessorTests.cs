@@ -1,9 +1,12 @@
 ﻿using System;
 using Exceptionless.Core.Filter;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Search {
-    public class QueryProcessorTests {
+    public class QueryProcessorTests : TestBase {
+        public QueryProcessorTests(ITestOutputHelper output) : base(output) {}
+
         [Theory]
         [InlineData(null, null, true, false)]
         [InlineData("  ", null, true, false)]

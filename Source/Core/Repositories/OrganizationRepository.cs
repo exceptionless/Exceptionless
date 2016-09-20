@@ -11,32 +11,36 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Extensions;
+using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Elasticsearch.Repositories;
-using Foundatio.Elasticsearch.Repositories.Queries;
 using Foundatio.Logging;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
+using Foundatio.Utility;
 using Nest;
 using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository {
-        public OrganizationRepository(ElasticRepositoryContext<Organization> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) {}
+        public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator) 
+            : base(configuration.Organizations.Organization, validator) {}
 
-        public Task<Organization> GetByInviteTokenAsync(string token) {
+        public async Task<Organization> GetByInviteTokenAsync(string token) {
             if (String.IsNullOrEmpty(token))
                 throw new ArgumentNullException(nameof(token));
 
-            return FindOneAsync(new ExceptionlessQuery().WithFieldEquals(OrganizationIndex.Fields.Organization.InviteToken, token));
+            var hit = await FindOneAsync(new ExceptionlessQuery().WithFieldEquals(OrganizationIndexType.Fields.InviteToken, token)).AnyContext();
+            return hit?.Document;
         }
 
-        public Task<Organization> GetByStripeCustomerIdAsync(string customerId) {
+        public async Task<Organization> GetByStripeCustomerIdAsync(string customerId) {
             if (String.IsNullOrEmpty(customerId))
                 throw new ArgumentNullException(nameof(customerId));
 
             var filter = Filter<Organization>.Term(o => o.StripeCustomerId, customerId);
-            return FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter));
+            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext();
+            return hit?.Document;
         }
 
         public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
@@ -77,16 +81,16 @@ namespace Exceptionless.Core.Repositories {
             var query = new ExceptionlessQuery().WithPaging(paging).WithElasticFilter(filter);
             switch (sortBy) {
                 case OrganizationSortBy.Newest:
-                    query.WithSort(OrganizationIndex.Fields.Organization.Id, SortOrder.Descending);
+                    query.WithSort(OrganizationIndexType.Fields.Id, SortOrder.Descending);
                     break;
                 case OrganizationSortBy.Subscribed:
-                    query.WithSort(OrganizationIndex.Fields.Organization.SubscribeDate, SortOrder.Descending);
+                    query.WithSort(OrganizationIndexType.Fields.SubscribeDate, SortOrder.Descending);
                     break;
                 // case OrganizationSortBy.MostActive:
-                //    query.WithSort(OrganizationIndex.Fields.Organization.TotalEventCount, SortOrder.Descending);
+                //    query.WithSort(OrganizationIndexType.Fields.TotalEventCount, SortOrder.Descending);
                 //    break;
                 default:
-                    query.WithSort(OrganizationIndex.Fields.Organization.Name, SortOrder.Ascending);
+                    query.WithSort(OrganizationIndexType.Fields.Name, SortOrder.Ascending);
                     break;
             }
 
@@ -96,7 +100,7 @@ namespace Exceptionless.Core.Repositories {
         public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
             var query = new ExceptionlessQuery()
                 .WithSelectedFields("plan_id", "is_suspended", "billing_price", "billing_status")
-                .WithSort(OrganizationIndex.Fields.Organization.PlanId, SortOrder.Descending);
+                .WithSort(OrganizationIndexType.Fields.PlanId, SortOrder.Descending);
 
             var results = (await FindAsync(query).AnyContext()).Documents;
 
@@ -133,27 +137,27 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private string GetHourlyBlockedCacheKey(string organizationId) {
-            return String.Concat("usage-blocked", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("usage-blocked", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetHourlyTotalCacheKey(string organizationId) {
-            return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("usage-total", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetHourlyTooBigCacheKey(string organizationId) {
-            return String.Concat("usage-toobig", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("usage-toobig", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetMonthlyBlockedCacheKey(string organizationId) {
-            return String.Concat("usage-blocked", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+            return String.Concat("usage-blocked", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetMonthlyTotalCacheKey(string organizationId) {
-            return String.Concat("usage-total", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+            return String.Concat("usage-total", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetMonthlyTooBigCacheKey(string organizationId) {
-            return String.Concat("usage-toobig", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+            return String.Concat("usage-toobig", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetUsageSavedCacheKey(string organizationId) {
@@ -191,14 +195,14 @@ namespace Exceptionless.Core.Repositories {
 
             // don't save on the 1st increment, but set the last saved date so we will save in 5 minutes
             if (!lastCounterSavedDate.HasValue)
-                await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
+                await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
 
             // save usages if we just went over one of the limits
             if (justWentOverHourly || justWentOverMonthly)
                 shouldSaveUsage = true;
 
             // save usages if the last time we saved them is more than 5 minutes ago
-            if (lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes >= USAGE_SAVE_MINUTES)
+            if (lastCounterSavedDate.HasValue && SystemClock.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes >= USAGE_SAVE_MINUTES)
                 shouldSaveUsage = true;
 
             if (shouldSaveUsage) {
@@ -209,12 +213,12 @@ namespace Exceptionless.Core.Repositories {
                         org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
 
                     await SaveAsync(org, true).AnyContext();
-                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32)).AnyContext();
+                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
                 } catch (Exception ex) {
                     _logger.Error(ex, "Error while saving organization usage data.");
 
                     // Set the next document save for 5 seconds in the future.
-                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow.SubtractMinutes(4).SubtractSeconds(55), TimeSpan.FromDays(32)).AnyContext();
+                    await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), SystemClock.UtcNow.SubtractMinutes(4).SubtractSeconds(55), TimeSpan.FromDays(32)).AnyContext();
                 }
             }
 

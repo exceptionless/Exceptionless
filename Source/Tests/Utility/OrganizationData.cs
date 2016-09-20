@@ -4,6 +4,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Extensions;
 using Foundatio.Repositories.Utility;
+using Foundatio.Utility;
 
 namespace Exceptionless.Tests.Utility {
     internal static class OrganizationData {
@@ -45,7 +46,7 @@ namespace Exceptionless.Tests.Utility {
                 organization.IsSuspended = true;
                 organization.SuspensionCode = SuspensionCode.Abuse;
                 organization.SuspendedByUserId = TestConstants.UserId;
-                organization.SuspensionDate = DateTime.UtcNow;
+                organization.SuspensionDate = SystemClock.UtcNow;
             }
 
             return organization;

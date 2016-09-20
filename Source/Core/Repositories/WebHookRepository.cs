@@ -6,27 +6,28 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
-using Foundatio.Elasticsearch.Repositories;
-using Foundatio.Elasticsearch.Repositories.Queries;
-using Foundatio.Logging;
+using FluentValidation;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
-        public WebHookRepository(ElasticRepositoryContext<WebHook> context, OrganizationIndex index, ILoggerFactory loggerFactory = null) : base(context, index, loggerFactory) { }
+        public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator) 
+            : base(configuration.Organizations.WebHook, validator) {}
 
-        public Task RemoveByUrlAsync(string targetUrl) {
-            var filter = Filter<WebHook>.Term(e => e.Url, targetUrl);
-            return RemoveAllAsync(new ExceptionlessQuery().WithElasticFilter(filter));
+        public Task<FindResults<WebHook>> GetByUrlAsync(string targetUrl) {
+            return FindAsync(new ExceptionlessQuery().WithFieldEquals(WebHookIndexType.Fields.Url, targetUrl));
         }
 
         public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
             var filter = (Filter<WebHook>.Term(e => e.OrganizationId, organizationId) && Filter<WebHook>.Missing(e => e.ProjectId)) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
+
+            // TODO: This cache key may not always be cleared out if the webhook doesn't have both a org and project id.
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
-                .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))
-                .WithExpiresIn(TimeSpan.FromMinutes(5)));
+                .WithCacheKey(String.Concat("paged:Organization:", organizationId, ":Project:", projectId)));
         }
 
         public static class EventTypes {
@@ -39,16 +40,24 @@ namespace Exceptionless.Core.Repositories {
             public const string StackPromoted = "StackPromoted";
         }
 
-        protected override async Task InvalidateCacheAsync(ICollection<ModifiedDocument<WebHook>> documents) {
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents) {
             if (!IsCacheEnabled)
                 return;
 
             await Cache.RemoveAllAsync(documents.Select(d => d.Value)
                 .Union(documents.Select(d => d.Original).Where(d => d != null))
-                .Select(h => String.Concat("org:", h.OrganizationId, "-project:", h.ProjectId))
+                .Select(h => String.Concat("Organization:", h.OrganizationId, ":Project:", h.ProjectId))
                 .Distinct()).AnyContext();
 
             await base.InvalidateCacheAsync(documents).AnyContext();
+        }
+
+        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<WebHook> documents) {
+            var keysToRemove = documents.Select(d => $"paged:Organization:{d.OrganizationId}:Project:{d.ProjectId}:*").Distinct();
+            foreach (var key in keysToRemove)
+                await Cache.RemoveByPrefixAsync(key).AnyContext();
+
+            await base.InvalidateCachedQueriesAsync(documents).AnyContext();
         }
     }
 }

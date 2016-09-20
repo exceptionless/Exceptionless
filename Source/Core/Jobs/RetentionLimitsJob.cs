@@ -10,7 +10,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
-using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Elasticsearch.Models;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
-            var results = await _organizationRepository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithPage(1).WithLimit(100)).AnyContext();
+            var results = await _organizationRepository.GetByRetentionDaysEnabledAsync(new ElasticPagingOptions().UseSnapshotPaging().WithLimit(100)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in results.Documents) {
                     await EnforceEventCountLimitsAsync(organization).AnyContext();
@@ -39,7 +39,9 @@ namespace Exceptionless.Core.Jobs {
                     await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
                 }
 
-                await results.NextPageAsync().AnyContext();
+                if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
+                    break;
+
                 if (results.Documents.Count > 0)
                     await context.RenewLockAsync().AnyContext();
             }
@@ -60,7 +62,7 @@ namespace Exceptionless.Core.Jobs {
                 if (Settings.Current.MaximumRetentionDays > 0 && retentionDays > Settings.Current.MaximumRetentionDays)
                     retentionDays = Settings.Current.MaximumRetentionDays;
 
-                DateTime cutoff = DateTime.UtcNow.Date.SubtractDays(retentionDays);
+                DateTime cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
                 await _eventRepository.RemoveAllByDateAsync(organization.Id, cutoff).AnyContext();
             } catch (Exception ex) {
                 _logger.Error(ex, "Error enforcing limits: org={0} id={1} message=\"{2}\"", organization.Name, organization.Id, ex.Message);

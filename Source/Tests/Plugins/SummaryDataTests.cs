@@ -8,16 +8,21 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Plugins {
     [UseReporter(typeof(DiffReporter))]
-    public class SummaryDataTests {
-        private readonly FormattingPluginManager _formattingPluginManager = IoC.GetInstance<FormattingPluginManager>();
+    public class SummaryDataTests : TestBase {
+        private readonly FormattingPluginManager _formatter;
+
+        public SummaryDataTests(ITestOutputHelper output) : base(output) {
+            _formatter = GetService<FormattingPluginManager>();
+        }
 
         [Theory]
         [MemberData("Events")]
         public void EventSummaryData(string path) {
-            var settings = IoC.GetInstance<JsonSerializerSettings>();
+            var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
 
             var json = File.ReadAllText(path);
@@ -25,7 +30,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             var ev = json.FromJson<PersistentEvent>(settings);
             Assert.NotNull(ev);
 
-            var data = _formattingPluginManager.GetEventSummaryData(ev);
+            var data = _formatter.GetEventSummaryData(ev);
             var summary = new EventSummaryModel {
                 TemplateKey = data.TemplateKey,
                 Id = ev.Id,
@@ -39,15 +44,14 @@ namespace Exceptionless.Api.Tests.Plugins {
         [Theory]
         [MemberData("Stacks")]
         public void StackSummaryData(string path) {
-            var settings = IoC.GetInstance<JsonSerializerSettings>();
+            var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
 
             var json = File.ReadAllText(path);
-
             var stack = json.FromJson<Stack>(settings);
             Assert.NotNull(stack);
 
-            var data = _formattingPluginManager.GetStackSummaryData(stack);
+            var data = _formatter.GetStackSummaryData(stack);
             var summary = new StackSummaryModel {
                 TemplateKey = data.TemplateKey,
                 Data = data.Data,

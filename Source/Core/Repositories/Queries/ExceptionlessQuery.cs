@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Foundatio.Elasticsearch.Repositories.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries;
 
 namespace Exceptionless.Core.Repositories.Queries {
     public class ExceptionlessQuery : ElasticQuery, IOrganizationIdQuery, IProjectIdQuery, IStackIdQuery {

@@ -8,7 +8,7 @@ using UAParser;
 namespace Exceptionless.Core.Utility {
     public sealed class UserAgentParser {
         private static readonly Lazy<Parser> _parser = new Lazy<Parser>(Parser.GetDefault);
-        private readonly InMemoryCacheClient _cache = new InMemoryCacheClient { MaxItems = 250 };
+        private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 250 };
         private readonly ILogger _logger;
 
         public UserAgentParser(ILogger<UserAgentParser> logger) {
@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Utility {
             if (String.IsNullOrEmpty(userAgent))
                 return null;
 
-            var cacheValue = await _cache.GetAsync<ClientInfo>(userAgent).AnyContext();
+            var cacheValue = await _localCache.GetAsync<ClientInfo>(userAgent).AnyContext();
             if (cacheValue.HasValue)
                 return cacheValue.Value;
 
@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Utility {
                 _logger.Warn().Project(projectId).Message("Unable to parse user agent {0}. Exception: {1}", userAgent, ex.Message).Write();
             }
 
-            await _cache.SetAsync(userAgent, info).AnyContext();
+            await _localCache.SetAsync(userAgent, info).AnyContext();
             return info;
         }
     }

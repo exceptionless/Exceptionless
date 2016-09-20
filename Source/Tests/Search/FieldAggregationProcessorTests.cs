@@ -2,9 +2,12 @@
 using System.Linq;
 using Exceptionless.Core.Filter;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Search {
-    public class FieldAggregationProcessorTests {
+    public class FieldAggregationProcessorTests : TestBase {
+        public FieldAggregationProcessorTests(ITestOutputHelper output) : base(output) {}
+
         [Theory]
         [InlineData(null, true)]
         [InlineData("avg", false)]

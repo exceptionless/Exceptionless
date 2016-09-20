@@ -3,6 +3,9 @@ os: Visual Studio 2015
 configuration: Release
 clone_depth: 2
 
+pull_requests:
+  do_not_increment_build_number: true
+
 environment:
   JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
   ES_VERSION: 1.7.5

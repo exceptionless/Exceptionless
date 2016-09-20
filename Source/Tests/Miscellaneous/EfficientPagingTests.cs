@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Api.Utility.Results;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Miscellaneous {
-    public class EfficientPagingTests {
+    public class EfficientPagingTests : TestBase {
+        public EfficientPagingTests(ITestOutputHelper output) : base(output) {}
+
         [Theory]
         [InlineData("http://localhost", false, false, false)]
         [InlineData("http://localhost", true, false, true)]

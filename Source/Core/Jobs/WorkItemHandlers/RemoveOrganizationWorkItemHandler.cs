@@ -76,10 +76,10 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             }
 
             await context.ReportProgressAsync(30, "Removing tokens").AnyContext();
-            await _tokenRepository.RemoveAllByOrganizationIdsAsync(new[] { organization.Id }).AnyContext();
+            await _tokenRepository.RemoveAllByOrganizationIdAsync(organization.Id).AnyContext();
 
             await context.ReportProgressAsync(40, "Removing web hooks").AnyContext();
-            await _webHookRepository.RemoveAllByOrganizationIdsAsync(new[] { organization.Id }).AnyContext();
+            await _webHookRepository.RemoveAllByOrganizationIdAsync(organization.Id).AnyContext();
 
             await context.ReportProgressAsync(50, "Removing projects").AnyContext();
             var projects = await _projectRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
@@ -87,8 +87,8 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 var completed = 1;
                 foreach (Project project in projects.Documents) {
                     Log.Info("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id);
-                    await _eventRepository.RemoveAllByProjectIdsAsync(new[] { project.Id }).AnyContext();
-                    await _stackRepository.RemoveAllByProjectIdsAsync(new[] { project.Id }).AnyContext();
+                    await _eventRepository.RemoveAllByProjectIdAsync(organization.Id, project.Id).AnyContext();
+                    await _stackRepository.RemoveAllByProjectIdAsync(organization.Id, project.Id).AnyContext();
                     await context.ReportProgressAsync(CalculateProgress(projects.Total, completed++, 51, 89), "Removing projects...").AnyContext();
                 }
 

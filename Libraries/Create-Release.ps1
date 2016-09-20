@@ -54,7 +54,6 @@ $apiConfig = [xml](Get-Content $webConfig)
 $apiConfig.SelectSingleNode('//appSettings/add[@key="BaseURL"]/@value').'#text' = 'http://localhost:50000/#'
 $apiConfig.SelectSingleNode('//appSettings/add[@key="EnableDailySummary"]/@value').'#text' = 'true'
 $apiConfig.SelectSingleNode('//system.web/compilation/@debug').'#text' = 'false'
-$apiConfig.SelectSingleNode('//system.web/customErrors/@mode').'#text' = 'RemoteOnly'
 
 # Copy settings from app web.config
 $appConfig = [xml](Get-Content "$releaseArtifactsDir\app\web.config")

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
@@ -48,7 +49,7 @@ namespace Exceptionless.App.Controllers.API {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = await _repository.GetByProjectIdAsync(projectId, options, true);
+            var results = await _repository.GetByProjectIdAsync(projectId, options);
             return OkWithResourceLinks(results.Documents, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
@@ -133,7 +134,16 @@ namespace Exceptionless.App.Controllers.API {
             if (!targetUrl.Contains("zapier"))
                 return NotFound();
 
-            await _repository.RemoveByUrlAsync(targetUrl);
+            var results = await _repository.GetByUrlAsync(targetUrl);
+            if (results.Documents.Count > 0) {
+                string organizationId = results.Documents.First().OrganizationId;
+                if (results.Documents.Any(h => h.OrganizationId != organizationId))
+                    throw new ArgumentException("All OrganizationIds must be the same.");
+
+                _logger.Info(() => $"Removing {results.Documents.Count} zapier urls matching: {targetUrl}");
+                await _repository.RemoveAsync(results.Documents);
+            }
+
             return Ok();
         }
 
@@ -171,15 +181,15 @@ namespace Exceptionless.App.Controllers.API {
             return webHook;
         }
 
-        protected override async Task<ICollection<WebHook>> GetModelsAsync(string[] ids, bool useCache = true) {
-            var results = new List<WebHook>();
+        protected override async Task<IReadOnlyCollection<WebHook>> GetModelsAsync(string[] ids, bool useCache = true) {
             if (ids == null || ids.Length == 0)
-                return results;
+                return EmptyModels;
 
-            var webHooks = (await _repository.GetByIdsAsync(ids, useCache)).Documents;
-            if (webHooks == null)
-                return results;
+            var webHooks = await _repository.GetByIdsAsync(ids, useCache);
+            if (webHooks.Count == 0)
+                return EmptyModels;
 
+            var results = new List<WebHook>();
             foreach (var webHook in webHooks) {
                 if ((!String.IsNullOrEmpty(webHook.OrganizationId) && IsInOrganization(webHook.OrganizationId))
                     || (!String.IsNullOrEmpty(webHook.ProjectId) && (await IsInProjectAsync(webHook.ProjectId))))

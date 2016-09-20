@@ -1,0 +1,34 @@
+# multi node configuration
+cluster.name: exceptionless
+script.disable_dynamic: false
+index.number_of_shards: 3
+index.number_of_replicas: 1
+action.destructive_requires_name: true
+action.auto_create_index: +.marvel-*
+bootstrap.mlockall: true
+
+#path.data: /mnt/data/db
+#path.work: /path/to/work
+#path.logs: /mnt/data/log
+
+gateway.expected_nodes: 3
+discovery.zen.ping.multicast.enabled: false
+discovery.zen.minimum_master_nodes: 2
+discovery.zen.ping.unicast.hosts: [ '10.2.0.4', '10.2.0.5', '10.2.0.6' ]
+
+#transport.tcp.compress: true
+transport.tcp.port: 9300
+http.port: 9200
+http.jsonp.enable: true
+http.cors.enabled: true
+http.cors.allow-origin: http://dashboards.localhost.com
+
+# non-ssd configuration
+#index.merge.scheduler.max_thread_count: 1
+#index.translog.flush_threshold_size: 1gb
+
+#cloud:
+#    azure:
+#        storage:
+#            account: your_azure_storage_account
+#            key: your_azure_storage_key

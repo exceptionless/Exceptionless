@@ -4,9 +4,12 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Plugins {
-    public class ManualStackingTests {
+    public class ManualStackingTests : TestBase {
+        public ManualStackingTests(ITestOutputHelper output) : base(output) {}
+
         [Theory]
         [MemberData("StackingData")]
         public async Task AddManualStackSignatureData(string stackingKey, bool willAddManualStackSignature) {

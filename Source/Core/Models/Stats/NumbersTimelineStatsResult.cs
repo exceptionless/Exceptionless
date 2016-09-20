@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 namespace Exceptionless.Core.Models.Stats {
     public class NumbersTimelineStatsResult : NumbersStatsResult {
+        public new static NumbersTimelineStatsResult Empty { get; } = new NumbersTimelineStatsResult();
+
         public NumbersTimelineStatsResult() {
             Timeline = new List<NumbersTimelineItem>();
         }

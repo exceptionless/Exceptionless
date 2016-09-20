@@ -4,6 +4,7 @@ using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Foundatio.Utility;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Core.Mail {
@@ -15,7 +16,7 @@ namespace Exceptionless.Core.Mail {
         public async Task SendAsync(MailMessage model) {
             var message = model.ToMailMessage();
             message.Headers.Add("X-Mailer-Machine", Environment.MachineName);
-            message.Headers.Add("X-Mailer-Date", DateTime.UtcNow.ToString());
+            message.Headers.Add("X-Mailer-Date", SystemClock.UtcNow.ToString());
 
             var client = new SmtpClient();
             if (!String.IsNullOrEmpty(Settings.Current.SmtpHost)) {

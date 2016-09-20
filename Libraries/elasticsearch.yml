@@ -1,25 +1,15 @@
+# single node configuration
 cluster.name: exceptionless
-node.name: ex-es01
-#action.destructive_requires_name: true
-index.merge.scheduler.max_thread_count: 1
-index.translog.flush_threshold_size: 1gb
-#path.data: /mnt/data/db
-#path.work: /path/to/work
-#path.logs: /mnt/data/log
-bootstrap.mlockall: true
 script.disable_dynamic: false
-#gateway.expected_nodes: 3
+index.number_of_shards: 1
+index.number_of_replicas: 0
+action.auto_create_index: +.marvel-*
+node.local: true
+http.port: 9200
+transport.tcp.port: 9300
+bootstrap.mlockall: true
 discovery.zen.ping.multicast.enabled: false
-#discovery.zen.minimum_master_nodes: 2
-#discovery.zen.ping.unicast.hosts: [ '10.2.0.4', '10.2.0.5', '10.2.0.6' ]
 
-#transport.tcp.compress: true
-http.jsonp.enable: true
-http.cors.enabled: true
-http.cors.allow-origin: http://dashboards.localhost.com
-
-#cloud:
-#    azure:
-#        storage:
-#            account: your_azure_storage_account
-#            key: your_azure_storage_key
+# non-ssd configuration
+#index.merge.scheduler.max_thread_count: 1
+#index.translog.flush_threshold_size: 1gb
