@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Repositories {
 
         public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (String.IsNullOrEmpty(organizationId))
-                return Task.FromResult<FindResults<T>>(new FindResults<T>());
+                throw new ArgumentNullException(nameof(organizationId));
 
             string cacheKey = String.Concat("paged:Organization:", organizationId);
             return FindAsync(new ExceptionlessQuery()
@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<long> RemoveAllByOrganizationIdAsync(string organizationId) {
             if (String.IsNullOrEmpty(organizationId))
-                return Task.FromResult<long>(0);
+                throw new ArgumentNullException(nameof(organizationId));
 
             return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId));
         }

@@ -76,19 +76,13 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
         [ResponseType(typeof(List<ViewProject>))]
         public async Task<IHttpActionResult> GetByOrganizationAsync(string organization, int page = 1, int limit = 10, string mode = null) {
-            if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
+            if (String.IsNullOrEmpty(organization) || !CanAccessOrganization(organization))
                 return NotFound();
-
-            var organizationIds = new List<string>();
-            if (!String.IsNullOrEmpty(organization) && CanAccessOrganization(organization))
-                organizationIds.Add(organization);
-            else
-                organizationIds.AddRange(GetAssociatedOrganizationIds());
 
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = await _repository.GetByOrganizationIdsAsync(organizationIds, options);
+            var projects = await _repository.GetByOrganizationIdAsync(organization, options, true);
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
