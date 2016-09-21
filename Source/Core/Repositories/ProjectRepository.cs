@@ -35,13 +35,12 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(organizationIds));
 
             if (organizationIds.Count == 0)
-                return Task.FromResult<FindResults<Project>>(new FindResults<Project>());
+                return Task.FromResult(new FindResults<Project>());
 
-            string cacheKey = organizationIds.Count == 1 ?  String.Concat("paged:Organization:", organizationIds.Single()) : null;
-            return FindAsync(new ExceptionlessQuery()
-                .WithOrganizationIds(organizationIds)
-                .WithPaging(paging)
-                .WithCacheKey(cacheKey));
+            if (organizationIds.Count == 1)
+                return GetByOrganizationIdAsync(organizationIds.First(), paging, true);
+
+            return FindAsync(new ExceptionlessQuery().WithOrganizationIds(organizationIds).WithPaging(paging));
         }
 
         public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50) {
