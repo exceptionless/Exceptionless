@@ -36,13 +36,18 @@ namespace Exceptionless.Core.Jobs {
                 var inactivePeriodUtc = SystemClock.UtcNow.Subtract(DefaultInactivePeriod);
                 var sessionsToUpdate = new List<PersistentEvent>(results.Documents.Count);
                 var cacheKeysToRemove = new List<string>(results.Documents.Count * 2);
+                var existingSessionHeartbeatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var sessionStart in results.Documents) {
                     var lastActivityUtc = sessionStart.Date.UtcDateTime.AddSeconds((double)sessionStart.Value.GetValueOrDefault());
                     var heartbeatResult = await GetHeartbeatAsync(sessionStart).AnyContext();
 
-                    if (heartbeatResult != null && (heartbeatResult.Close || heartbeatResult.ActivityUtc > lastActivityUtc))
-                        sessionStart.UpdateSessionStart(heartbeatResult.ActivityUtc, isSessionEnd: heartbeatResult.Close || heartbeatResult.ActivityUtc <= inactivePeriodUtc);
+                    bool closeDuplicate = heartbeatResult?.CacheKey != null && existingSessionHeartbeatIds.Contains(heartbeatResult.CacheKey);
+                    if (heartbeatResult?.CacheKey != null && !closeDuplicate)
+                        existingSessionHeartbeatIds.Add(heartbeatResult.CacheKey);
+
+                    if (heartbeatResult != null && (closeDuplicate || heartbeatResult.Close || heartbeatResult.ActivityUtc > lastActivityUtc))
+                        sessionStart.UpdateSessionStart(heartbeatResult.ActivityUtc, isSessionEnd: closeDuplicate || heartbeatResult.Close || heartbeatResult.ActivityUtc <= inactivePeriodUtc);
                     else if (lastActivityUtc <= inactivePeriodUtc)
                         sessionStart.UpdateSessionStart(lastActivityUtc, isSessionEnd: true);
                     else

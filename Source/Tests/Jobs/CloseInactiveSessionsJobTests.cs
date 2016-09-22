@@ -37,6 +37,76 @@ namespace Exceptionless.Api.Tests.Jobs {
             CreateDataAsync().GetAwaiter().GetResult();
         }
 
+        [Fact]
+        public async Task CloseDuplicateIdentitySessions() {
+            const string userId = "blake@exceptionless.io";
+            var event1 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
+            var event2 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId, sessionId: "123456789");
+
+            var contexts = await _pipeline.RunAsync(new []{ event1, event2 });
+            Assert.True(contexts.All(c => !c.HasError));
+            Assert.True(contexts.All(c => !c.IsCancelled));
+            Assert.True(contexts.All(c => c.IsProcessed));
+
+            await _configuration.Client.RefreshAsync();
+            var events = await _eventRepository.GetAllAsync();
+            Assert.Equal(4, events.Total);
+            Assert.Equal(2, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+            var sessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
+            Assert.Equal(0, sessionStarts.Sum(e => e.Value));
+            Assert.False(sessionStarts.Any(e => e.HasSessionEndTime()));
+
+            var utcNow = SystemClock.UtcNow;
+            await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractMinutes(1));
+
+            _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+            Assert.Equal(JobResult.Success, await _job.RunAsync());
+            await _configuration.Client.RefreshAsync();
+            events = await _eventRepository.GetAllAsync();
+            Assert.Equal(4, events.Total);
+
+            sessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
+            Assert.Equal(2, sessionStarts.Count);
+            Assert.Equal(1, sessionStarts.Count(e => !e.HasSessionEndTime()));
+            Assert.Equal(1, sessionStarts.Count(e => e.HasSessionEndTime()));
+        }
+
+        [Fact]
+        public async Task WillNotCloseDuplicateIdentitySessionsWithSessionIdHeartbeat() {
+            const string userId = "blake@exceptionless.io";
+            const string sessionId = "123456789";
+            var event1 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
+            var event2 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId, sessionId: sessionId);
+
+            var contexts = await _pipeline.RunAsync(new[] { event1, event2 });
+            Assert.True(contexts.All(c => !c.HasError));
+            Assert.True(contexts.All(c => !c.IsCancelled));
+            Assert.True(contexts.All(c => c.IsProcessed));
+
+            await _configuration.Client.RefreshAsync();
+            var events = await _eventRepository.GetAllAsync();
+            Assert.Equal(4, events.Total);
+            Assert.Equal(2, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+            var sessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
+            Assert.Equal(0, sessionStarts.Sum(e => e.Value));
+            Assert.False(sessionStarts.Any(e => e.HasSessionEndTime()));
+
+            var utcNow = SystemClock.UtcNow;
+            await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractMinutes(1));
+            await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{sessionId.ToSHA1()}", utcNow.SubtractMinutes(1));
+
+            _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+            Assert.Equal(JobResult.Success, await _job.RunAsync());
+            await _configuration.Client.RefreshAsync();
+            events = await _eventRepository.GetAllAsync();
+            Assert.Equal(4, events.Total);
+
+            sessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
+            Assert.Equal(2, sessionStarts.Count);
+            Assert.Equal(2, sessionStarts.Count(e => !e.HasSessionEndTime()));
+            Assert.Equal(0, sessionStarts.Count(e => e.HasSessionEndTime()));
+        }
+
         [Theory]
         [InlineData(1, true, null, false)]
         [InlineData(1, true, 70, false)]
