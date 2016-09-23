@@ -7,6 +7,7 @@ using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Tests.Utility;
 using Foundatio.Logging;
@@ -37,6 +38,42 @@ namespace Exceptionless.Api.Tests.Mail {
                     StackId = "1",
                     Message = "Happy days are here again...",
                     Type = Event.KnownTypes.Log
+                },
+                IsNew = true,
+                IsCritical = true,
+                IsRegression = false,
+                TotalOccurrences = 1,
+                ProjectName = "Testing"
+            });
+
+            await RunMailJobAsync();
+        }
+
+        [Fact(Skip = "Used for testing html formatting.")]
+        //[Fact]
+        public async Task SendLogNotificationWithExtrasAsync() {
+            await _mailer.SendEventNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
+                Event = new PersistentEvent {
+                    Id = "1",
+                    OrganizationId = "1",
+                    ProjectId = "1",
+                    StackId = "1",
+                    Message = "Happy days are here again...",
+                    Type = Event.KnownTypes.Log,
+                    Tags = new TagSet { "important", "web" },
+                    Data = new DataDictionary {
+                        {
+                            Event.KnownDataKeys.UserInfo, new UserInfo {
+                                Name = "First Last",
+                                Identity = "firstylaster"
+                            }
+                        }, {
+                            Event.KnownDataKeys.UserDescription, new UserDescription {
+                                Description = "A person",
+                                EmailAddress = "useremail@domain.com"
+                            }
+                        }
+                    }
                 },
                 IsNew = true,
                 IsCritical = true,
