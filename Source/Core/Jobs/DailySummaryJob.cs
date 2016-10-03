@@ -54,15 +54,15 @@ namespace Exceptionless.Core.Jobs {
                 _logger.Info("Got {0} projects to process. ", results.Documents.Count);
 
                 var projectsToBulkUpdate = new List<Project>(results.Documents.Count);
-                long processSummariesNewerThan = SystemClock.UtcNow.Date.SubtractDays(2).Ticks;
+                var processSummariesNewerThan = SystemClock.UtcNow.Date.SubtractDays(2);
                 foreach (var project in results.Documents) {
-                    if (project.NextSummaryEndOfDayTicks < processSummariesNewerThan) {
+                    var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
+                    if (utcStartTime < processSummariesNewerThan) {
                         _logger.Info().Project(project.Id).Message("Skipping daily summary older than two days for project: {0}", project.Name).Write();
                         projectsToBulkUpdate.Add(project);
                         continue;
                     }
 
-                    var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks);
                     var notification = new SummaryNotification {
                         Id = project.Id,
                         UtcStartTime = utcStartTime,
