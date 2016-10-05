@@ -54,6 +54,15 @@ namespace Exceptionless.Core {
             return Int32.TryParse(value, out number) ? number : defaultValue;
         }
 
+        protected static long GetInt64(string name, long defaultValue = 0) {
+            string value = GetEnvironmentVariable(name) ?? GetConfigVariable(name);
+            if (String.IsNullOrEmpty(value))
+                return ConfigurationManager.AppSettings.GetInt64(name, defaultValue);
+
+            long number;
+            return Int64.TryParse(value, out number) ? number : defaultValue;
+        }
+
         protected static string GetString(string name, string defaultValue = null) {
             return GetEnvironmentVariable(name) ?? GetConfigVariable(name) ?? ConfigurationManager.AppSettings[name] ?? defaultValue;
         }

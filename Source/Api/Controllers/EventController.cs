@@ -769,18 +769,6 @@ namespace Exceptionless.Api.Controllers {
             // Set the project for the configuration response filter.
             Request.SetProject(project);
 
-            if (data.LongLength > Settings.Current.MaximumEventPostSize) {
-                _logger.Error().Critical()
-                    .Message("Attempting to enqueue events greater than the maxiumum queue size")
-                    .Project(projectId)
-                    .Identity(ExceptionlessUser?.EmailAddress)
-                    .Property("User", ExceptionlessUser)
-                    .Property("Headers", Request.Content.Headers)
-                    .Property("Size", data.LongLength)
-                    .Property("MaximumEventPostSize", Settings.Current.MaximumEventPostSize)
-                    .SetActionContext(ActionContext);
-            }
-
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
             bool isCompressed = contentEncoding == "gzip" || contentEncoding == "deflate";
             if (!isCompressed && data.Length > 1000) {

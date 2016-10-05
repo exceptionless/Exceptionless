@@ -26,7 +26,7 @@ namespace Exceptionless.Api.Utility {
             _period = period;
             _message = message;
         }
-        
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             if (IsUnthrottledRoute(request))
                 return await base.SendAsync(request, cancellationToken);
@@ -96,9 +96,13 @@ namespace Exceptionless.Api.Utility {
             if (request.Method != HttpMethod.Get)
                 return false;
 
-            return request.RequestUri.AbsolutePath.EndsWith("/events/session/heartbeat", StringComparison.OrdinalIgnoreCase) 
-                || request.RequestUri.AbsolutePath.EndsWith("/projects/config", StringComparison.OrdinalIgnoreCase)
-                || request.RequestUri.AbsolutePath.StartsWith("/api/v2/push", StringComparison.OrdinalIgnoreCase);
+            string absolutePath = request.RequestUri.AbsolutePath;
+            if (absolutePath.EndsWith("/"))
+                absolutePath = absolutePath.Substring(0, absolutePath.Length - 1);
+
+            return absolutePath.EndsWith("/events/session/heartbeat", StringComparison.OrdinalIgnoreCase)
+                || absolutePath.EndsWith("/projects/config", StringComparison.OrdinalIgnoreCase)
+                || absolutePath.StartsWith("/api/v2/push", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

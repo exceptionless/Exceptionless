@@ -27,6 +27,22 @@ namespace Exceptionless.Core.Extensions {
             return GetInt(collection, name) ?? defaultValue;
         }
 
+        public static long GetInt64(this NameValueCollection collection, string name, long defaultValue) {
+            return GetInt64(collection, name) ?? defaultValue;
+        }
+
+        public static long? GetInt64(this NameValueCollection collection, string name) {
+            var value = collection[name];
+            if (value == null)
+                return null;
+
+            long number;
+            if (Int64.TryParse(value, out number))
+                return number;
+
+            return null;
+        }
+
         public static bool? GetBool(this NameValueCollection collection, string name) {
             string value = collection[name];
             if (value == null)

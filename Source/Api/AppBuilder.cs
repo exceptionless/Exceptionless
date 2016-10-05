@@ -85,7 +85,7 @@ namespace Exceptionless.Api {
 
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
                 Task.Run(async () => await CreateSampleDataAsync(container));
-            
+
             var context = new OwinContext(app.Properties);
             var token = context.Get<CancellationToken>("host.OnAppDisposing");
             RunMessageBusBroker(container, logger, token);
@@ -97,7 +97,7 @@ namespace Exceptionless.Api {
         private static void RunMessageBusBroker(Container container, ILogger logger, CancellationToken token = default(CancellationToken)) {
             var workItemQueue = container.GetInstance<IQueue<WorkItemData>>();
             var subscriber = container.GetInstance<IMessageSubscriber>();
-            
+
             subscriber.Subscribe<PlanOverage>(async overage => {
                 logger.Info("Enqueueing plan overage work item for organization: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
                 await workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
@@ -212,7 +212,7 @@ namespace Exceptionless.Api {
 
             Core.Bootstrapper.RegisterServices(container, loggerFactory);
             Bootstrapper.RegisterServices(container, loggerFactory);
-            
+
             if (!includeInsulation)
                 return container;
 
