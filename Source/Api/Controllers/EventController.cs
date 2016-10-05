@@ -92,7 +92,7 @@ namespace Exceptionless.Api.Controllers {
             var organization = await GetOrganizationAsync(model.OrganizationId);
             if (organization == null)
                 return NotFound();
-            
+
             if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < SystemClock.UtcNow.SubtractDays(organization.RetentionDays))
                 return PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
@@ -318,7 +318,7 @@ namespace Exceptionless.Api.Controllers {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
-            
+
             var organization = await GetOrganizationAsync(project.OrganizationId);
             if (organization == null)
                 return NotFound();
@@ -378,7 +378,7 @@ namespace Exceptionless.Api.Controllers {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
-            
+
             var organization = await GetOrganizationAsync(project.OrganizationId);
             if (organization == null)
                 return NotFound();
@@ -448,7 +448,7 @@ namespace Exceptionless.Api.Controllers {
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }
-        
+
         /// <summary>
         /// Set user description
         /// </summary>
@@ -566,12 +566,12 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <remarks>
         /// You can create an event using query string parameters.
-        /// 
+        ///
         /// Feature usage named build with a duration of 10:
         /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10]]></code>
         /// OR
         /// <code><![CDATA[/events/submit/usage?access_token=YOUR_API_KEY&source=build&value=10]]></code>
-        /// 
+        ///
         /// Log with message, geo and extended data
         /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
         /// OR
@@ -769,6 +769,18 @@ namespace Exceptionless.Api.Controllers {
             // Set the project for the configuration response filter.
             Request.SetProject(project);
 
+            if (data.LongLength > Settings.Current.MaximumEventPostSize) {
+                _logger.Error().Critical()
+                    .Message("Attempting to enqueue events greater than the maxiumum queue size")
+                    .Project(projectId)
+                    .Identity(ExceptionlessUser?.EmailAddress)
+                    .Property("User", ExceptionlessUser)
+                    .Property("Headers", Request.Content.Headers)
+                    .Property("Size", data.LongLength)
+                    .Property("MaximumEventPostSize", Settings.Current.MaximumEventPostSize)
+                    .SetActionContext(ActionContext);
+            }
+
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
             bool isCompressed = contentEncoding == "gzip" || contentEncoding == "deflate";
             if (!isCompressed && data.Length > 1000) {
@@ -819,7 +831,7 @@ namespace Exceptionless.Api.Controllers {
         private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return null;
-            
+
             return _organizationRepository.GetByIdAsync(organizationId, useCache);
         }
 
@@ -833,7 +845,7 @@ namespace Exceptionless.Api.Controllers {
 
             return project;
         }
-        
+
         private async Task<Stack> GetStackAsync(string stackId, bool useCache = true) {
             if (String.IsNullOrEmpty(stackId))
                 return null;

@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Utility {
             if (request.Method != HttpMethod.Post)
                 return false;
 
-            return request.RequestUri.AbsolutePath.EndsWith("/events", StringComparison.OrdinalIgnoreCase) 
+            return request.RequestUri.AbsolutePath.EndsWith("/events", StringComparison.OrdinalIgnoreCase)
                 || String.Equals(request.RequestUri.AbsolutePath, "/api/v1/error", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -41,7 +41,7 @@ namespace Exceptionless.Api.Utility {
                 return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
 
             bool tooBig = false;
-            if (request.Content?.Headers != null) {
+            if (request.Method == HttpMethod.Post && request.Content?.Headers != null) {
                 long size = request.Content.Headers.ContentLength.GetValueOrDefault();
                 await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
                 if (size > Settings.Current.MaximumEventPostSize) {
@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Utility {
 
             return await base.SendAsync(request, cancellationToken);
         }
-        
+
         private HttpResponseMessage CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
             HttpResponseMessage response = request.CreateResponse(statusCode);
             response.ReasonPhrase = message;
