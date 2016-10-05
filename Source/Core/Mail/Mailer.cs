@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "Invite");
             msg.To.Add(invite.EmailAddress);
-            
+
             return QueueMessageAsync(msg, "invite");
         }
 
@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "PaymentFailed");
             msg.To.Add(owner.EmailAddress);
-            
+
             return QueueMessageAsync(msg, "paymentfailed");
         }
 
@@ -83,7 +83,7 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "AddedToOrganization");
             msg.To.Add(user.EmailAddress);
-            
+
             return QueueMessageAsync(msg, "addedtoorganization");
         }
 
@@ -97,13 +97,13 @@ namespace Exceptionless.Core.Mail {
             msg.To = emailAddress;
             return QueueMessageAsync(msg.ToMailMessage(), "eventnotice");
         }
-        
+
         public Task SendOrganizationNoticeAsync(string emailAddress, OrganizationNotificationModel model) {
             model.BaseUrl = Settings.Current.BaseURL;
 
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(model, "OrganizationNotice");
             msg.To.Add(emailAddress);
-            
+
             return QueueMessageAsync(msg, "organizationnotice");
         }
 
@@ -111,7 +111,7 @@ namespace Exceptionless.Core.Mail {
             notification.BaseUrl = Settings.Current.BaseURL;
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(notification, "DailySummary");
             msg.To.Add(emailAddress);
-            
+
             return QueueMessageAsync(msg, "dailysummary");
         }
 

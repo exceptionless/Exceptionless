@@ -29,8 +29,12 @@ namespace Exceptionless.Api.Utility {
             if (request.Method != HttpMethod.Post)
                 return false;
 
-            return request.RequestUri.AbsolutePath.EndsWith("/events", StringComparison.OrdinalIgnoreCase)
-                || String.Equals(request.RequestUri.AbsolutePath, "/api/v1/error", StringComparison.OrdinalIgnoreCase);
+            string absolutePath = request.RequestUri.AbsolutePath;
+            if (absolutePath.EndsWith("/"))
+                absolutePath = absolutePath.Substring(0, absolutePath.Length - 1);
+
+            return absolutePath.EndsWith("/events", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(absolutePath, "/api/v1/error", StringComparison.OrdinalIgnoreCase);
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
