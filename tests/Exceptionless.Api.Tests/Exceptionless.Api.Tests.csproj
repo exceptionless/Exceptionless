@@ -246,11 +246,11 @@
     <Compile Include="Plugins\WebHookDataTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Exceptionless.Api\Exceptionless.Api.csproj">
+    <ProjectReference Include="..\..\src\Exceptionless.Api\Exceptionless.Api.csproj">
       <Project>{50717168-44e5-4e69-95ec-eed839630323}</Project>
       <Name>Exceptionless.Api</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj">
+    <ProjectReference Include="..\..\src\Exceptionless.Core\Exceptionless.Core.csproj">
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
       <Name>Exceptionless.Core</Name>
     </ProjectReference>
@@ -315,7 +315,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>robocopy "$(ProjectDir)..\Exceptionless.Insulation\bin\$(ConfigurationName)" "$(TargetDir)." /S /NFL /NDL /NJH /NJS /nc /ns /np 
+    <PostBuildEvent>robocopy "$(ProjectDir)..\..\src\Exceptionless.Insulation\bin\$(ConfigurationName)" "$(TargetDir)." /S /NFL /NDL /NJH /NJS /nc /ns /np 
 IF %25ERRORLEVEL%25 GEQ 8 exit 1
 exit 0</PostBuildEvent>
   </PropertyGroup>
@@ -327,11 +327,4 @@ exit 0</PostBuildEvent>
     <Error Condition="!Exists('..\..\packages\Pegasus.3.1.2\build\Pegasus.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Pegasus.3.1.2\build\Pegasus.targets'))" />
   </Target>
   <Import Project="..\..\packages\Pegasus.3.1.2\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.3.1.2\build\Pegasus.targets')" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>
