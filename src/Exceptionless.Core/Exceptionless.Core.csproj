@@ -49,8 +49,8 @@
       <HintPath>..\..\packages\Elasticsearch.Net.1.9.1\lib\net45\Elasticsearch.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.2.53.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.2.53\lib\net45\Exceptionless.DateTimeExtensions.dll</HintPath>
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.2.55.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.2.55\lib\net45\Exceptionless.DateTimeExtensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FluentValidation, Version=6.2.1.0, Culture=neutral, processorArchitecture=MSIL">
@@ -61,20 +61,20 @@
       <HintPath>..\..\packages\Foundatio.4.2.1183\lib\net46\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=1.0.87.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.1.0.87\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=1.0.108.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.1.0.108\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=1.0.87.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.1.0.87\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=1.0.108.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.1.0.108\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=2.0.257.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.2.0.257\lib\net46\Foundatio.Repositories.dll</HintPath>
+    <Reference Include="Foundatio.Repositories, Version=2.0.282.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.2.0.282\lib\net46\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=2.0.257.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.2.0.257\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=2.0.282.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.2.0.282\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -129,8 +129,8 @@
       <HintPath>..\..\packages\SimpleInjector.3.2.2\lib\net45\SimpleInjector.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Stripe.net, Version=6.6.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Stripe.net.6.6.0\lib\net45\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net, Version=6.8.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Stripe.net.6.8.0\lib\net45\Stripe.net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
