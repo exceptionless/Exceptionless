@@ -1,1 +1,1 @@
-PowerShell .\Libraries\Start-Elasticsearch.ps1
+PowerShell .\build\Start-Elasticsearch.ps1

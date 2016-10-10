@@ -7,7 +7,7 @@ pull_requests:
   do_not_increment_build_number: true
 
 environment:
-  JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
+  JAVA_HOME: C:\Progra~1\Java\jdk1.8.0
   ES_VERSION: 1.7.5
   API_URL: https://#{api.hostheader}
   BUILD_REPO_URL:
@@ -23,14 +23,14 @@ init:
 
 assembly_info:
   patch: true
-  file: Source\GlobalAssemblyInfo.cs
+  file: src\GlobalAssemblyInfo.cs
   assembly_version: "{version}.0"
   assembly_file_version: "{version}.0"
   assembly_informational_version: "{version} $(GIT_HASH)"
 
 before_build:
   - nuget restore -verbosity quiet
-  - ps: .\Libraries\Start-ElasticSearch.ps1
+  - ps: .\build\Start-ElasticSearch.ps1
   - SET PATH="C:\Program Files (x86)\MSBuild\14.0\Bin";%PATH%"
 
 build:
@@ -45,14 +45,14 @@ test:
     - '**\*.Tests.dll'
 
 after_test:
-  - ps: .\Libraries\Push-Artifacts.ps1
+  - ps: .\build\Push-Artifacts.ps1
 
 artifacts:
   - path: release\*.zip
     name: ReleaseArtifacts
 
 before_deploy:
-  - ps: .\Libraries\Create-Release.ps1
+  - ps: .\build\Create-Release.ps1
 
 deploy:
   provider: GitHub

@@ -1,6 +1,6 @@
 $base_dir = Resolve-Path ".\"   
 $artifactsDir = "$base_dir\artifacts"
-$sourceDir = "$base_dir\Source"
+$sourceDir = "$base_dir\src"
 
 If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
     Write-Host "Artifacts will not be created for pull requests."
@@ -36,7 +36,7 @@ Write-Host "Removing existing files..."
 git rm -r * -q 2>&1 | %{ "$_" }
 
 Write-Host "Copying build artifacts..."
-ROBOCOPY "$sourceDir\Api" "$artifactsDir" /XD "$sourceDir\Api\obj" "$sourceDir\Api\App_Data" /S /XF "*.nuspec" "*.settings" "*.cs" "packages.config" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Api" "$artifactsDir" /XD "$sourceDir\Exceptionless.Api\obj" "$sourceDir\Exceptionless.Api\App_Data" /S /XF "*.nuspec" "*.settings" "*.cs" "packages.config" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" /NFL /NDL /NJH /NJS /nc /ns /np
 
 Write-Host "Copying CloseInactiveSession job..."
 ROBOCOPY "$sourceDir\Jobs\CloseInactiveSession\bin\Release" "$artifactsDir\App_Data\jobs\continuous\CloseInactiveSession" /XD "$sourceDir\Jobs\CloseInactiveSession\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
