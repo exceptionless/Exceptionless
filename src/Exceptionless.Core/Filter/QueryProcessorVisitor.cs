@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Extensions;
+using Foundatio.Parsers.ElasticQueries.Visitors;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
@@ -31,7 +32,8 @@ namespace Exceptionless.Core.Filter {
             }
 
             var validator = new QueryProcessorVisitor(_freeFields);
-            result.Accept(validator);
+            var context = new ElasticQueryVisitorContext();
+            result.Accept(validator, context);
 
             var expandedQuery = validator.UsesDataFields ? GenerateQueryVisitor.Run(result) : query;
             return new QueryProcessResult {
@@ -54,7 +56,8 @@ namespace Exceptionless.Core.Filter {
             }
 
             var validator = new QueryProcessorVisitor(_freeFields);
-            result.Accept(validator);
+            var context = new ElasticQueryVisitorContext();
+            result.Accept(validator, context);
 
             return new QueryProcessResult {
                 IsValid = true,
@@ -70,7 +73,7 @@ namespace Exceptionless.Core.Filter {
             _freeFields = freeFields ?? new HashSet<string>();
         }
 
-        public void Visit(GroupNode node) {
+        public void Visit(GroupNode node, IQueryVisitorContext context) {
             var childTerms = new List<string>();
             var leftTermNode = node.Left as TermNode;
             if (leftTermNode != null && leftTermNode.Field == null)
@@ -94,10 +97,10 @@ namespace Exceptionless.Core.Filter {
 
             node.Field = GetCustomFieldName(node.Field, childTerms.ToArray()) ?? node.Field;
             foreach (var child in node.Children)
-                child.Accept(this);
+                child.Accept(this, context);
         }
 
-        public void Visit(TermNode node) {
+        public void Visit(TermNode node, IQueryVisitorContext context) {
             // using all fields search
             if (String.IsNullOrEmpty(node.Field)) {
                 UsesPremiumFeatures = true;
@@ -107,15 +110,15 @@ namespace Exceptionless.Core.Filter {
             node.Field = GetCustomFieldName(node.Field, node.Term) ?? node.Field;
         }
 
-        public void Visit(TermRangeNode node) {
+        public void Visit(TermRangeNode node, IQueryVisitorContext context) {
             node.Field = GetCustomFieldName(node.Field, node.Min, node.Max) ?? node.Field;
         }
 
-        public void Visit(ExistsNode node) {
+        public void Visit(ExistsNode node, IQueryVisitorContext context) {
             node.Field = GetCustomFieldName(node.Field) ?? node.Field;
         }
 
-        public void Visit(MissingNode node) {
+        public void Visit(MissingNode node, IQueryVisitorContext context) {
             node.Field = GetCustomFieldName(node.Field) ?? node.Field;
         }
 
