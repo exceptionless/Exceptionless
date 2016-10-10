@@ -97,7 +97,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\Exceptionless.Core.csproj">
+    <ProjectReference Include="..\..\Exceptionless.Core\Exceptionless.Core.csproj">
       <Project>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</Project>
       <Name>Exceptionless.Core</Name>
     </ProjectReference>
@@ -106,7 +106,7 @@
   <PropertyGroup>
     <PostBuildEvent>@echo off
 
-robocopy "$(SolutionDir)Source\Insulation\bin\$(ConfigurationName)" "$(TargetDir)bin\." /S /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy "$(SolutionDir)src\Exceptionless.Insulation\bin\$(ConfigurationName)" "$(TargetDir)bin\." /S /NFL /NDL /NJH /NJS /nc /ns /np
 IF %25ERRORLEVEL%25 GEQ 8 exit 1
 
 robocopy "$(TargetDir)." "$(TargetDir)bin\." /MOV /XD bin /XF EventPostsJob.* run.bat NLog.config /S /is /NFL /NDL /NJH /NJS /nc /ns /np

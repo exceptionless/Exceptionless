@@ -174,7 +174,7 @@
     <Compile Include="Redis\RedisConnectionMap.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
+    <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj">
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
       <Name>Exceptionless.Core</Name>
     </ProjectReference>

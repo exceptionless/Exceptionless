@@ -41,11 +41,11 @@ If (Test-Path -Path $releaseTempDir) {
     
 ROBOCOPY "$releaseArtifactsDir\api" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\api\.git" /XF "exceptionless.png" "favicon.ico" /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$releaseArtifactsDir\app" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\app\.git" /S /XF "web.config" /NFL /NDL /NJH /NJS /nc /ns /np
-Copy-Item -Path "$base_dir\Libraries\Start-ElasticSearch.ps1" -Destination $releaseTempDir
-Copy-Item -Path "$base_dir\Libraries\elasticsearch.yml" -Destination $releaseTempDir
-Copy-Item -Path "$base_dir\Libraries\Start-Website.ps1" -Destination $releaseTempDir
+Copy-Item -Path "$base_dir\build\Start-ElasticSearch.ps1" -Destination $releaseTempDir
+Copy-Item -Path "$base_dir\build\elasticsearch.yml" -Destination $releaseTempDir
+Copy-Item -Path "$base_dir\build\Start-Website.ps1" -Destination $releaseTempDir
 "PowerShell .\Start-Elasticsearch.ps1`r`nPowerShell .\Start-Website.ps1" | Out-File "$releaseTempDir\Start.bat" -Encoding "ascii"
-Copy-Item -Path "$base_dir\Libraries\readme.txt" -Destination $releaseTempDir
+Copy-Item -Path "$base_dir\build\readme.txt" -Destination $releaseTempDir
 
 Write-Host "Merging configuration"
 $webConfig = "$releaseTempDir\wwwroot\web.config"

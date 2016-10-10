@@ -316,7 +316,7 @@
     <Compile Include="Utility\Handlers\XHttpMethodOverrideMessageHandler.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
+    <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj">
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
       <Name>Exceptionless.Core</Name>
     </ProjectReference>
@@ -356,7 +356,7 @@
     </VisualStudio>
   </ProjectExtensions>
   <PropertyGroup>
-    <PostBuildEvent>robocopy "$(ProjectDir)..\Insulation\bin\$(ConfigurationName)" "$(TargetDir)." /S /NFL /NDL /NJH /NJS /nc /ns /np 
+    <PostBuildEvent>robocopy "$(ProjectDir)..\Exceptionless.Insulation\bin\$(ConfigurationName)" "$(TargetDir)." /S /NFL /NDL /NJH /NJS /nc /ns /np 
 IF %25ERRORLEVEL%25 GEQ 8 exit 1
 exit 0</PostBuildEvent>
   </PropertyGroup>

@@ -35,9 +35,9 @@ Function Expand-GZip ([string]$source, [string]$output_path = ($source -Replace 
 }
 
 $base_dir = Resolve-Path "."
-$MaxMindDBPath = "$base_dir\Source\Api\App_Data"
+$MaxMindDBPath = "$base_dir\src\Exceptionless.Api\App_Data"
 
-if (!(Test-Path -Path "$base_dir\Source\Api")) {
+if (!(Test-Path -Path "$base_dir\src\Exceptionless.Api")) {
 	$MaxMindDBPath = "$base_dir\App_Data"
 }
 
