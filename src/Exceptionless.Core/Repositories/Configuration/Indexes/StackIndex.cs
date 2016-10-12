@@ -3,6 +3,7 @@ using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Nest;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class StackIndex : VersionedIndex {
@@ -17,56 +18,42 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public StackIndexType(StackIndex index) : base(index, "stacks") { }
 
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
-            return base.Configure(idx)
+            return base.Configure(idx).Settings(s => s
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas));
         }
 
-        public override PutMappingDescriptor<Stack> BuildMapping(PutMappingDescriptor<Stack> map) {
+        public override TypeMappingDescriptor<Stack> BuildMapping(TypeMappingDescriptor<Stack> map) {
             const string SET_FIXED_SCRIPT = @"ctx._source['fixed'] = !!ctx._source['date_fixed']";
 
-            return map
-                .Type(Name)
-                .Dynamic(DynamicMappingOption.Ignore)
-                .Transform(t => t.Script(SET_FIXED_SCRIPT).Language(ScriptLang.Groovy))
-                .IncludeInAll(false)
+            return base.BuildMapping(map)
+                .Dynamic(DynamicMapping.Ignore)
+                //.Transform(t => t.Script(SET_FIXED_SCRIPT).Language(ScriptLang.Groovy)) // TODO: This needs to use an ingest pipeline
+                .AllField(a => a.Enabled(false))
                 .Properties(p => p
                     .SetupDefaults()
-                    .String(f => f.Name(s => s.OrganizationId).IndexName(Fields.OrganizationId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(s => s.ProjectId).IndexName(Fields.ProjectId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(s => s.SignatureHash).IndexName(Fields.SignatureHash).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.Type).IndexName(Fields.Type).Index(FieldIndexOption.NotAnalyzed))
-                    .Date(f => f.Name(s => s.FirstOccurrence).IndexName(Fields.FirstOccurrence))
-                    .Date(f => f.Name(s => s.LastOccurrence).IndexName(Fields.LastOccurrence))
-                    .String(f => f.Name(s => s.Title).IndexName(Fields.Title).Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))
-                    .String(f => f.Name(s => s.Description).IndexName(Fields.Description).Index(FieldIndexOption.Analyzed).IncludeInAll())
-                    .String(f => f.Name(s => s.Tags).IndexName(Fields.Tags).Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.2))
-                    .String(f => f.Name(s => s.References).IndexName(Fields.References).Index(FieldIndexOption.Analyzed).IncludeInAll())
-                    .Date(f => f.Name(s => s.DateFixed).IndexName(Fields.DateFixed))
-                    .Boolean(f => f.Name(Fields.IsFixed))
-                    .Boolean(f => f.Name(s => s.IsHidden).IndexName(Fields.IsHidden))
-                    .Boolean(f => f.Name(s => s.IsRegressed).IndexName(Fields.IsRegressed))
-                    .Boolean(f => f.Name(s => s.OccurrencesAreCritical).IndexName(Fields.OccurrencesAreCritical))
-                    .Number(f => f.Name(s => s.TotalOccurrences).IndexName(Fields.TotalOccurrences))
+                    .Keyword(f => f.Name(s => s.OrganizationId).Alias(Alias.OrganizationId))
+                    .Keyword(f => f.Name(s => s.ProjectId).Alias(Alias.ProjectId))
+                    .Keyword(f => f.Name(s => s.SignatureHash).Alias(Alias.SignatureHash))
+                    .Keyword(f => f.Name(e => e.Type).Alias(Alias.Type))
+                    .Date(f => f.Name(s => s.FirstOccurrence).Alias(Alias.FirstOccurrence))
+                    .Date(f => f.Name(s => s.LastOccurrence).Alias(Alias.LastOccurrence))
+                    .Text(f => f.Name(s => s.Title).Alias(Alias.Title).IncludeInAll().Boost(1.1))
+                    .Text(f => f.Name(s => s.Description).Alias(Alias.Description).IncludeInAll())
+                    .Text(f => f.Name(s => s.Tags).Alias(Alias.Tags).IncludeInAll().Boost(1.2))
+                    .Text(f => f.Name(s => s.References).Alias(Alias.References).IncludeInAll())
+                    .Date(f => f.Name(s => s.DateFixed).Alias(Alias.DateFixed))
+                    .Boolean(f => f.Name(Alias.IsFixed))
+                    .Boolean(f => f.Name(s => s.IsHidden).Alias(Alias.IsHidden))
+                    .Boolean(f => f.Name(s => s.IsRegressed).Alias(Alias.IsRegressed))
+                    .Boolean(f => f.Name(s => s.OccurrencesAreCritical).Alias(Alias.OccurrencesAreCritical))
+                    .Number(f => f.Name(s => s.TotalOccurrences).Alias(Alias.TotalOccurrences))
                 );
         }
 
-        // TODO: Let the query parser know about our analyzed fields for smarter query generation.
-        //private readonly List<string> _analyzedFields = new List<string> {
-        //    Fields.Title,
-        //    Fields.Description,
-        //    Fields.Tags,
-        //    Fields.References
-        //};
-
-        //public bool IsAnalyzedField(string field) {
-        //    return _analyzedFields.Contains(field);
-        //}
-
-        public class Fields {
+        public class Alias {
             public const string OrganizationId = "organization";
             public const string ProjectId = "project";
-            public const string Id = "id";
             public const string SignatureHash = "signature";
             public const string Type = "type";
             public const string FirstOccurrence = "first";

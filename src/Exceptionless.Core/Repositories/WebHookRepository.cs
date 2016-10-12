@@ -14,15 +14,15 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
-        public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator) 
+        public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator)
             : base(configuration.Organizations.WebHook, validator) {}
 
         public Task<FindResults<WebHook>> GetByUrlAsync(string targetUrl) {
-            return FindAsync(new ExceptionlessQuery().WithFieldEquals(WebHookIndexType.Fields.Url, targetUrl));
+            return FindAsync(new ExceptionlessQuery().WithFieldEquals(GetPropertyName(nameof(WebHook.Url)), targetUrl));
         }
 
         public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
-            var filter = (Filter<WebHook>.Term(e => e.OrganizationId, organizationId) && Filter<WebHook>.Missing(e => e.ProjectId)) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
+            var filter = (Query<WebHook>.Term(e => e.OrganizationId, organizationId) && !Query<WebHook>.Exists(e => e.Field(f => f.ProjectId))) || Query<WebHook>.Term(e => e.ProjectId, projectId);
 
             // TODO: This cache key may not always be cleared out if the webhook doesn't have both a org and project id.
             return FindAsync(new ExceptionlessQuery()

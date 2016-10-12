@@ -1,4 +1,5 @@
 using System;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Repositories.Elasticsearch.Configuration;
@@ -21,7 +22,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public EventIndexType Event { get; }
     }
-    
+
     public class EventIndexType : MonthlyIndexType<PersistentEvent> {
         private const string COMMA_WHITESPACE_ANALYZER = "comma_whitespace";
         private const string EMAIL_ANALYZER = "email";
@@ -40,153 +41,117 @@ namespace Exceptionless.Core.Repositories.Configuration {
         const string VERSION_PAD4_TOKEN_FILTER = "version_pad4";
 
         public EventIndexType(EventIndex index) : base(index, "events", document => document.Date.UtcDateTime) {}
-        
+
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
-            return idx
-                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)
-                .Analysis(BuildAnalysis)
-                .AddMapping<PersistentEvent>(BuildMapping);
+            return base.Configure(idx)
+                .Settings(s => s
+                    .Analysis(BuildAnalysis)
+                    .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                    .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas));
         }
 
         private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad) {
-            return ad.Analyzers(bases => {
-                bases.Add(COMMA_WHITESPACE_ANALYZER, new PatternAnalyzer { Pattern = @"[,\s]+" });
-                bases.Add(EMAIL_ANALYZER, new CustomAnalyzer { Tokenizer = "keyword", Filter = new[] { EMAIL_TOKEN_FILTER, "lowercase", "unique" } });
-                bases.Add(VERSION_INDEX_ANALYZER, new CustomAnalyzer { Tokenizer = "whitespace", Filter = new[] { VERSION_PAD1_TOKEN_FILTER, VERSION_PAD2_TOKEN_FILTER, VERSION_PAD3_TOKEN_FILTER, VERSION_PAD4_TOKEN_FILTER, VERSION_TOKEN_FILTER, "lowercase", "unique" } });
-                bases.Add(VERSION_SEARCH_ANALYZER, new CustomAnalyzer { Tokenizer = "whitespace", Filter = new[] { VERSION_PAD1_TOKEN_FILTER, VERSION_PAD2_TOKEN_FILTER, VERSION_PAD3_TOKEN_FILTER, VERSION_PAD4_TOKEN_FILTER, "lowercase" } });
-                bases.Add(WHITESPACE_LOWERCASE_ANALYZER, new CustomAnalyzer { Tokenizer = "whitespace", Filter = new[] { "lowercase" } });
-                bases.Add(TYPENAME_ANALYZER, new CustomAnalyzer { Tokenizer = "whitespace", Filter = new[] { TYPENAME_TOKEN_FILTER, "lowercase", "unique" } });
-                bases.Add(STANDARDPLUS_ANALYZER, new CustomAnalyzer { Tokenizer = "whitespace", Filter = new[] { "standard", TYPENAME_TOKEN_FILTER, "lowercase", "stop", "unique" } });
-                return bases;
-            }).TokenFilters(bases => {
-                bases.Add(EMAIL_TOKEN_FILTER, new PatternCaptureTokenFilter { Patterns = new[] { @"(\w+)", @"(\p{L}+)", @"(\d+)", @"(.+)@", @"@(.+)" } });
-                bases.Add(TYPENAME_TOKEN_FILTER, new PatternCaptureTokenFilter { Patterns = new[] { @"\.(\w+)" } });
-                bases.Add(VERSION_TOKEN_FILTER, new PatternCaptureTokenFilter { Patterns = new[] { @"^(\d+)\.", @"^(\d+\.\d+)", @"^(\d+\.\d+\.\d+)" } });
-                bases.Add(VERSION_PAD1_TOKEN_FILTER, new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{1})(?=\.|-|$)", Replacement = @"$10000$2" });
-                bases.Add(VERSION_PAD2_TOKEN_FILTER, new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{2})(?=\.|-|$)", Replacement = @"$1000$2" });
-                bases.Add(VERSION_PAD3_TOKEN_FILTER, new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{3})(?=\.|-|$)", Replacement = @"$100$2" });
-                bases.Add(VERSION_PAD4_TOKEN_FILTER, new PatternReplaceTokenFilter { Pattern = @"(\.|^)(\d{4})(?=\.|-|$)", Replacement = @"$10$2" });
-                return bases;
-            });
+            return ad
+            .Analyzers(a => a
+                .Pattern(COMMA_WHITESPACE_ANALYZER, p => p.Pattern(@"[,\s]+"))
+                .Custom(EMAIL_ANALYZER, c => c.Filters(EMAIL_TOKEN_FILTER, "lowercase", "unique").Tokenizer("keyword"))
+                .Custom(VERSION_INDEX_ANALYZER, c => c.Filters(VERSION_PAD1_TOKEN_FILTER, VERSION_PAD2_TOKEN_FILTER, VERSION_PAD3_TOKEN_FILTER, VERSION_PAD4_TOKEN_FILTER, VERSION_TOKEN_FILTER, "lowercase", "unique").Tokenizer("whitespace"))
+                .Custom(VERSION_SEARCH_ANALYZER, c => c.Filters(VERSION_PAD1_TOKEN_FILTER, VERSION_PAD2_TOKEN_FILTER, VERSION_PAD3_TOKEN_FILTER, VERSION_PAD4_TOKEN_FILTER, "lowercase").Tokenizer("whitespace"))
+                .Custom(WHITESPACE_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("whitespace"))
+                .Custom(TYPENAME_ANALYZER, c => c.Filters(TYPENAME_TOKEN_FILTER, "lowercase", "unique").Tokenizer("whitespace"))
+                .Custom(STANDARDPLUS_ANALYZER, c => c.Filters("standard", TYPENAME_TOKEN_FILTER, "lowercase", "stop", "unique").Tokenizer("whitespace")))
+            .TokenFilters(f => f
+                .PatternCapture(EMAIL_TOKEN_FILTER, p => p.Patterns(@"(\w+)", @"(\p{L}+)", @"(\d+)", "(.+)@", "@(.+)"))
+                .PatternCapture(TYPENAME_TOKEN_FILTER, p => p.Patterns(@"\.(\w+)"))
+                .PatternCapture(VERSION_TOKEN_FILTER, p => p.Patterns(@"^(\d+)\.", @"^(\d+\.\d+)", @"^(\d+\.\d+\.\d+)"))
+                .PatternReplace(VERSION_PAD1_TOKEN_FILTER, p => p.Pattern(@"(\.|^)(\d{1})(?=\.|-|$)").Replacement("$10000$2"))
+                .PatternReplace(VERSION_PAD2_TOKEN_FILTER, p => p.Pattern(@"(\.|^)(\d{2})(?=\.|-|$)").Replacement("$1000$2"))
+                .PatternReplace(VERSION_PAD3_TOKEN_FILTER, p => p.Pattern(@"(\.|^)(\d{3})(?=\.|-|$)").Replacement("$100$2"))
+                .PatternReplace(VERSION_PAD4_TOKEN_FILTER, p => p.Pattern(@"(\.|^)(\d{4})(?=\.|-|$)").Replacement("$10$2")));
         }
 
-        public override PutMappingDescriptor<PersistentEvent> BuildMapping(PutMappingDescriptor<PersistentEvent> map) {
-            return map
-                .Type(Name)
-                .Dynamic(DynamicMappingOption.Ignore)
-                .DynamicTemplates(dt => dt.Add(t => t.Name("idx_reference").Match("*-r").Mapping(m => m.Generic(f => f.Type("string").Index("not_analyzed")))))
-                .IncludeInAll(false)
+        public override TypeMappingDescriptor<PersistentEvent> BuildMapping(TypeMappingDescriptor<PersistentEvent> map) {
+            return base.BuildMapping(map)
+                .Dynamic(DynamicMapping.Ignore)
+                .DynamicTemplates(dt => dt.DynamicTemplate("idx_reference", t => t.Match("*-r").Mapping(m => m.Keyword(s => s))))
                 .DisableSizeField(false) // Change to Size Field
-                .Transform(t => t.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy))
-                .AllField(a => a.IndexAnalyzer(STANDARDPLUS_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER))
+                //.Transform(t => t.Add(a => a.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy)))
+                .AllField(a => a.Enabled(false).Analyzer(STANDARDPLUS_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER))
                 .Properties(p => p
-                    .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.CreatedUtc))
-                    .String(f => f.Name(e => e.Id).IndexName(Fields.Id).Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
-                    .String(f => f.Name(e => e.OrganizationId).IndexName(Fields.OrganizationId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.ProjectId).IndexName(Fields.ProjectId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.StackId).IndexName(Fields.StackId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.ReferenceId).IndexName(Fields.ReferenceId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.Type).IndexName(Fields.Type).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.Source).IndexName(Fields.Source).Index(FieldIndexOption.Analyzed).IncludeInAll())
-                    .Date(f => f.Name(e => e.Date).IndexName(Fields.Date))
-                    .String(f => f.Name(e => e.Message).IndexName(Fields.Message).Index(FieldIndexOption.Analyzed).IncludeInAll())
-                    .String(f => f.Name(e => e.Tags).IndexName(Fields.Tags).Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.2))
-                    .GeoPoint(f => f.Name(e => e.Geo).Name(Fields.Geo).IndexLatLon())
-                    .Number(f => f.Name(e => e.Value).IndexName(Fields.Value))
-                    .Number(f => f.Name(e => e.Count).IndexName(Fields.Count))
-                    .Boolean(f => f.Name(e => e.IsFirstOccurrence).IndexName(Fields.IsFirstOccurrence))
-                    .Boolean(f => f.Name(e => e.IsFixed).IndexName(Fields.IsFixed))
-                    .Boolean(f => f.Name(e => e.IsHidden).IndexName(Fields.IsHidden))
-                    .Object<object>(f => f.Name(Fields.IDX).Dynamic())
-                    .Object<DataDictionary>(f => f.Name(e => e.Data).Path("just_name").Properties(p2 => p2
-                        .String(f2 => f2.Name(Event.KnownDataKeys.Version).IndexName(Fields.Version).Index(FieldIndexOption.Analyzed).Analyzer(VERSION_INDEX_ANALYZER).SearchAnalyzer(VERSION_SEARCH_ANALYZER))
-                        .String(f2 => f2.Name(Event.KnownDataKeys.Level).IndexName(Fields.Level).Index(FieldIndexOption.Analyzed))
-                        .String(f2 => f2.Name(Event.KnownDataKeys.SubmissionMethod).IndexName(Fields.SubmissionMethod).Index(FieldIndexOption.Analyzed))
-                            .Object<Location>(f2 => f2.Name(Event.KnownDataKeys.Location).Path("just_name").Properties(p3 => p3
-                            .String(f3 => f3.Name(r => r.Country).IndexName(Fields.LocationCountry).Index(FieldIndexOption.NotAnalyzed))
-                            .String(f3 => f3.Name(r => r.Level1).IndexName(Fields.LocationLevel1).Index(FieldIndexOption.NotAnalyzed))
-                            .String(f3 => f3.Name(r => r.Level2).IndexName(Fields.LocationLevel2).Index(FieldIndexOption.NotAnalyzed))
-                            .String(f3 => f3.Name(r => r.Locality).IndexName(Fields.LocationLocality).Index(FieldIndexOption.NotAnalyzed))))
-                        .Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Path("just_name").Properties(p3 => p3
-                            .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName(Fields.IpAddress).Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer(COMMA_WHITESPACE_ANALYZER))
-                            .String(f3 => f3.Name(r => r.UserAgent).IndexName(Fields.RequestUserAgent).Index(FieldIndexOption.Analyzed))
-                            .String(f3 => f3.Name(r => r.Path).IndexName(Fields.RequestPath).Index(FieldIndexOption.Analyzed).IncludeInAll())
-                            .Object<DataDictionary>(f3 => f3.Name(e => e.Data).Path("just_name").Properties(p4 => p4
-                                .String(f4 => f4.Name(RequestInfo.KnownDataKeys.Browser).IndexName(Fields.Browser).Index(FieldIndexOption.Analyzed)
-                                    .Fields(fields => fields.String(ss => ss.Name(Fields.BrowserRaw).Index(FieldIndexOption.NotAnalyzed))))
-                                .String(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserVersion).IndexName(Fields.BrowserVersion).Index(FieldIndexOption.Analyzed)
-                                    .Fields(fields => fields.String(ss => ss.Name(Fields.BrowserVersionRaw).Index(FieldIndexOption.NotAnalyzed))))
-                                .String(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserMajorVersion).IndexName(Fields.BrowserMajorVersion).Index(FieldIndexOption.NotAnalyzed))
-                                .String(f4 => f4.Name(RequestInfo.KnownDataKeys.Device).IndexName(Fields.Device).Index(FieldIndexOption.Analyzed)
-                                    .Fields(fields => fields.String(ss => ss.Name(Fields.DeviceRaw).Index(FieldIndexOption.NotAnalyzed))))
-                                .String(f4 => f4.Name(RequestInfo.KnownDataKeys.OS).IndexName(Fields.OperatingSystem).Index(FieldIndexOption.Analyzed)
-                                    .Fields(fields => fields.String(ss => ss.Name(Fields.OperatingSystemRaw).Index(FieldIndexOption.NotAnalyzed))))
-                                .String(f4 => f4.Name(RequestInfo.KnownDataKeys.OSVersion).IndexName(Fields.OperatingSystemVersion).Index(FieldIndexOption.Analyzed)
-                                    .Fields(fields => fields.String(ss => ss.Name(Fields.OperatingSystemVersionRaw).Index(FieldIndexOption.NotAnalyzed))))
-                                .String(f4 => f4.Name(RequestInfo.KnownDataKeys.OSMajorVersion).IndexName(Fields.OperatingSystemMajorVersion).Index(FieldIndexOption.NotAnalyzed))
-                                .Boolean(f4 => f4.Name(RequestInfo.KnownDataKeys.IsBot).IndexName(Fields.RequestIsBot))))))
-                        .Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Path("just_name").Properties(p3 => p3
-                            .String(f3 => f3.Name("all_codes").IndexName(Fields.ErrorCode).Index(FieldIndexOption.NotAnalyzed).Analyzer("whitespace").IncludeInAll().Boost(1.1))
-                            .String(f3 => f3.Name("all_messages").IndexName(Fields.ErrorMessage).Index(FieldIndexOption.Analyzed).IncludeInAll())
-                            .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Path("just_name").Properties(p4 => p4
-                                .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Path("just_name").Properties(p5 => p5
-                                    .String(f6 => f6.Name("ExceptionType").IndexName(Fields.ErrorTargetType).Index(FieldIndexOption.Analyzed).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2)
-                                        .Fields(fields => fields.String(ss => ss.Name(Fields.ErrorTargetTypeRaw).Index(FieldIndexOption.NotAnalyzed))))
-                                    .String(f6 => f6.Name("Method").IndexName(Fields.ErrorTargetMethod).Index(FieldIndexOption.Analyzed).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2))))))
-                            .String(f3 => f3.Name("all_types").IndexName(Fields.ErrorType).Index(FieldIndexOption.Analyzed).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1))))
-                        .Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Path("just_name").Properties(p3 => p3
-                            .String(f3 => f3.Name("all_messages").IndexName(Fields.ErrorMessage).Index(FieldIndexOption.Analyzed).IncludeInAll())
-                            .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Path("just_name").Properties(p4 => p4
-                                .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Path("just_name").Properties(p5 => p5
-                                    .String(f6 => f6.Name("ExceptionType").IndexName(Fields.ErrorTargetType).Index(FieldIndexOption.Analyzed).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2))))))
-                            .String(f3 => f3.Name("all_types").IndexName(Fields.ErrorType).Index(FieldIndexOption.Analyzed).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1))))
-                        .Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Path("just_name").Properties(p3 => p3
-                            .String(f3 => f3.Name(r => r.IpAddress).IndexName(Fields.IpAddress).Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer(COMMA_WHITESPACE_ANALYZER))
-                            .String(f3 => f3.Name(r => r.MachineName).IndexName(Fields.MachineName).Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))
-                            .String(f3 => f3.Name(r => r.OSName).IndexName(Fields.OperatingSystem).Index(FieldIndexOption.Analyzed))
-                            .String(f3 => f3.Name(r => r.Architecture).IndexName(Fields.MachineArchitecture).Index(FieldIndexOption.NotAnalyzed))))
-                        .Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Path("just_name").Properties(p3 => p3
-                            .String(f3 => f3.Name(r => r.Description).IndexName(Fields.UserDescription).Index(FieldIndexOption.Analyzed).IncludeInAll())
-                            .String(f3 => f3.Name(r => r.EmailAddress).IndexName(Fields.UserEmail).Index(FieldIndexOption.Analyzed).Analyzer(EMAIL_ANALYZER).SearchAnalyzer("simple").IncludeInAll().Boost(1.1))))
-                        .Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Path("just_name").Properties(p3 => p3
-                            .String(f3 => f3.Name(r => r.Identity).IndexName(Fields.User).Index(FieldIndexOption.Analyzed).Analyzer(EMAIL_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1)
-                                .Fields(fields => fields.String(ss => ss.Name(Fields.UserRaw).Index(FieldIndexOption.NotAnalyzed))))
-                            .String(f3 => f3.Name(r => r.Name).IndexName(Fields.UserName).Index(FieldIndexOption.Analyzed).IncludeInAll())))))
+                    .Date(f => f.Name(e => e.CreatedUtc).Alias(Alias.CreatedUtc))
+                    .Keyword(f => f.Name(e => e.Id).Alias(Alias.Id).IncludeInAll())
+                    .Keyword(f => f.Name(e => e.OrganizationId).Alias(Alias.OrganizationId))
+                    .Keyword(f => f.Name(e => e.ProjectId).Alias(Alias.ProjectId))
+                    .Keyword(f => f.Name(e => e.StackId).Alias(Alias.StackId))
+                    .Keyword(f => f.Name(e => e.ReferenceId).Alias(Alias.ReferenceId))
+                    .Keyword(f => f.Name(e => e.Type).Alias(Alias.Type))
+                    .Text(f => f.Name(e => e.Source).Alias(Alias.Source).IncludeInAll())
+                    .Date(f => f.Name(e => e.Date).Alias(Alias.Date))
+                    .Text(f => f.Name(e => e.Message).Alias(Alias.Message).IncludeInAll())
+                    .Text(f => f.Name(e => e.Tags).Alias(Alias.Tags).IncludeInAll().Boost(1.2))
+                    .GeoPoint(f => f.Name(e => e.Geo).Name(Alias.Geo))
+                    .Number(f => f.Name(e => e.Value).Alias(Alias.Value))
+                    .Number(f => f.Name(e => e.Count).Alias(Alias.Count))
+                    .Boolean(f => f.Name(e => e.IsFirstOccurrence).Alias(Alias.IsFirstOccurrence))
+                    .Boolean(f => f.Name(e => e.IsFixed).Alias(Alias.IsFixed))
+                    .Boolean(f => f.Name(e => e.IsHidden).Alias(Alias.IsHidden))
+                    .Object<object>(f => f.Name(Alias.IDX).Dynamic())
+                    .Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
+                        .Text(f2 => f2.Name(Event.KnownDataKeys.Version).Alias(Alias.Version).Analyzer(VERSION_INDEX_ANALYZER).SearchAnalyzer(VERSION_SEARCH_ANALYZER))
+                        .Text(f2 => f2.Name(Event.KnownDataKeys.Level).Alias(Alias.Level))
+                        .Text(f2 => f2.Name(Event.KnownDataKeys.SubmissionMethod).Alias(Alias.SubmissionMethod))
+                            .Object<Location>(f2 => f2.Name(Event.KnownDataKeys.Location).Properties(p3 => p3
+                            .Keyword(f3 => f3.Name(r => r.Country).Alias(Alias.LocationCountry))
+                            .Keyword(f3 => f3.Name(r => r.Level1).Alias(Alias.LocationLevel1))
+                            .Keyword(f3 => f3.Name(r => r.Level2).Alias(Alias.LocationLevel2))
+                            .Keyword(f3 => f3.Name(r => r.Locality).Alias(Alias.LocationLocality))))
+                        .Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Properties(p3 => p3
+                            .Text(f3 => f3.Name(r => r.ClientIpAddress).Alias(Alias.IpAddress).IncludeInAll().Analyzer(COMMA_WHITESPACE_ANALYZER))
+                            .Text(f3 => f3.Name(r => r.UserAgent).Alias(Alias.RequestUserAgent))
+                            .Text(f3 => f3.Name(r => r.Path).Alias(Alias.RequestPath).IncludeInAll())
+                            .Object<DataDictionary>(f3 => f3.Name(e => e.Data).Properties(p4 => p4
+                                .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.Browser).Alias(Alias.Browser)
+                                    .Fields(fields => fields.Keyword(ss => ss.Name(Alias.BrowserRaw))))
+                                .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserVersion).Alias(Alias.BrowserVersion)
+                                    .Fields(fields => fields.Keyword(ss => ss.Name(Alias.BrowserVersionRaw))))
+                                .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserMajorVersion).Alias(Alias.BrowserMajorVersion))
+                                .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.Device).Alias(Alias.Device)
+                                    .Fields(fields => fields.Keyword(ss => ss.Name(Alias.DeviceRaw))))
+                                .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OS).Alias(Alias.OperatingSystem)
+                                    .Fields(fields => fields.Keyword(ss => ss.Name(Alias.OperatingSystemRaw))))
+                                .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OSVersion).Alias(Alias.OperatingSystemVersion)
+                                    .Fields(fields => fields.Keyword(ss => ss.Name(Alias.OperatingSystemVersionRaw))))
+                                .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OSMajorVersion).Alias(Alias.OperatingSystemMajorVersion))
+                                .Boolean(f4 => f4.Name(RequestInfo.KnownDataKeys.IsBot).Alias(Alias.RequestIsBot))))))
+                        .Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Properties(p3 => p3
+                            .Keyword(f3 => f3.Name("all_codes").Alias(Alias.ErrorCode).IncludeInAll().Boost(1.1))
+                            .Text(f3 => f3.Name("all_messages").Alias(Alias.ErrorMessage).IncludeInAll())
+                            .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Properties(p4 => p4
+                                .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Properties(p5 => p5
+                                    .Text(f6 => f6.Name("ExceptionType").Alias(Alias.ErrorTargetType).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2)
+                                        .Fields(fields => fields.Keyword(ss => ss.Name(Alias.ErrorTargetTypeRaw))))
+                                    .Text(f6 => f6.Name("Method").Alias(Alias.ErrorTargetMethod).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2))))))
+                            .Text(f3 => f3.Name("all_types").Alias(Alias.ErrorType).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1))))
+                        .Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Properties(p3 => p3
+                            .Text(f3 => f3.Name("all_messages").Alias(Alias.ErrorMessage).IncludeInAll())
+                            .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Properties(p4 => p4
+                                .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Properties(p5 => p5
+                                    .Text(f6 => f6.Name("ExceptionType").Alias(Alias.ErrorTargetType).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2))))))
+                            .Text(f3 => f3.Name("all_types").Alias(Alias.ErrorType).Analyzer(TYPENAME_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1))))
+                        .Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Properties(p3 => p3
+                            .Text(f3 => f3.Name(r => r.IpAddress).Alias(Alias.IpAddress).IncludeInAll().Analyzer(COMMA_WHITESPACE_ANALYZER))
+                            .Text(f3 => f3.Name(r => r.MachineName).Alias(Alias.MachineName).IncludeInAll().Boost(1.1))
+                            .Text(f3 => f3.Name(r => r.OSName).Alias(Alias.OperatingSystem))
+                            .Keyword(f3 => f3.Name(r => r.Architecture).Alias(Alias.MachineArchitecture))))
+                        .Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Properties(p3 => p3
+                            .Text(f3 => f3.Name(r => r.Description).Alias(Alias.UserDescription).IncludeInAll())
+                            .Text(f3 => f3.Name(r => r.EmailAddress).Alias(Alias.UserEmail).Analyzer(EMAIL_ANALYZER).SearchAnalyzer("simple").IncludeInAll().Boost(1.1))))
+                        .Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Properties(p3 => p3
+                            .Text(f3 => f3.Name(r => r.Identity).Alias(Alias.User).Analyzer(EMAIL_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1)
+                                .Fields(fields => fields.Keyword(ss => ss.Name(Alias.UserRaw))))
+                            .Text(f3 => f3.Name(r => r.Name).Alias(Alias.UserName).IncludeInAll())))))
                 );
         }
-
-        // TODO: Let the query parser know about our analyzed fields for smarter query generation.
-        //private readonly List<string> _analyzedFields = new List<string> {
-        //        Fields.Source,
-        //        Fields.Message,
-        //        Fields.Tags,
-        //        Fields.Version,
-        //        Fields.Level,
-        //        Fields.SubmissionMethod,
-        //        Fields.IpAddress,
-        //        Fields.RequestUserAgent,
-        //        Fields.RequestPath,
-        //        Fields.Browser,
-        //        Fields.BrowserVersion,
-        //        Fields.Device,
-        //        Fields.OperatingSystem,
-        //        Fields.OperatingSystemVersion,
-        //        Fields.ErrorMessage,
-        //        Fields.ErrorTargetType,
-        //        Fields.ErrorTargetMethod,
-        //        Fields.ErrorType,
-        //        Fields.ErrorMessage,
-        //        Fields.MachineName,
-        //        Fields.UserDescription,
-        //        Fields.UserEmail,
-        //        Fields.User,
-        //        Fields.UserName
-        //};
-
-        //public bool IsAnalyzedField(string field) {
-        //    return _analyzedFields.Contains(field);
-        //}
 
         const string FLATTEN_ERRORS_SCRIPT = @"
 if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))
@@ -211,7 +176,7 @@ err['all_types'] = types.join(' ')
 err['all_messages'] = messages.join(' ')
 err['all_codes'] = codes.join(' ')";
 
-        public class Fields {
+        public class Alias {
             public const string CreatedUtc = "created";
             public const string OrganizationId = "organization";
             public const string ProjectId = "project";

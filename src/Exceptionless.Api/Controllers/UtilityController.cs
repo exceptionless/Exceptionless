@@ -2,7 +2,7 @@
 using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Filter;
+using Exceptionless.Core.Processors;
 
 namespace Exceptionless.Api.Controllers {
     [ApiExplorerSettings(IgnoreApi = true)]

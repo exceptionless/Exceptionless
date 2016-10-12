@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddType(User = new UserIndexType(this));
             AddType(WebHook = new WebHookIndexType(this));
         }
-        
+
         public ApplicationIndexType Application { get; }
         public OrganizationIndexType Organization { get; }
         public ProjectIndexType Project { get; }

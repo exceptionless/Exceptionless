@@ -22,11 +22,11 @@ namespace Exceptionless.Core.Repositories {
         private const string STACKING_VERSION = "v2";
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, IValidator<Stack> validator) 
+        public StackRepository(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, IValidator<Stack> validator)
             : base(configuration.Stacks.Stack, validator) {
             _eventRepository = eventRepository;
             DocumentsChanging.AddHandler(OnDocumentChangingAsync);
-            FieldsRequiredForRemove.Add("signature_hash");
+            FieldsRequiredForRemove.Add(GetPropertyName(nameof(Stack.SignatureHash)));
         }
 
         private async Task OnDocumentChangingAsync(object sender, DocumentsChangeEventArgs<Stack> args) {
@@ -59,23 +59,24 @@ namespace Exceptionless.Core.Repositories {
         public async Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
-            var result = await _client.UpdateAsync<Stack>(s => s
-                .Id(stackId)
-                .Index(GetIndexById(stackId))
-                .RetryOnConflict(3)
-                .Lang("groovy")
-                .Script(@"if (ctx._source.total_occurrences == 0 || ctx._source.first_occurrence > minOccurrenceDateUtc) {
+            var request = new UpdateRequest<Stack, Stack>(GetIndexById(stackId), ElasticType.Type, stackId) {
+                RetryOnConflict = 3,
+                Lang = "groovy",
+                Script = @"if (ctx._source.total_occurrences == 0 || ctx._source.first_occurrence > minOccurrenceDateUtc) {
                             ctx._source.first_occurrence = minOccurrenceDateUtc;
                           }
                           if (ctx._source.last_occurrence < maxOccurrenceDateUtc) {
                             ctx._source.last_occurrence = maxOccurrenceDateUtc;
                           }
-                          ctx._source.total_occurrences += count;")
-                .Params(p => p
-                    .Add("minOccurrenceDateUtc", minOccurrenceDateUtc)
-                    .Add("maxOccurrenceDateUtc", maxOccurrenceDateUtc)
-                    .Add("count", count))).AnyContext();
+                          ctx._source.total_occurrences += count;",
+                Params = new Dictionary<string, object>(3) {
+                    { "minOccurrenceDateUtc", minOccurrenceDateUtc },
+                    { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },
+                    { "count", count }
+                }
+            };
 
+            var result = await _client.UpdateAsync<Stack>(request).AnyContext();
             if (!result.IsValid) {
                 _logger.Error("Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError.Error);
                 return;
@@ -103,7 +104,7 @@ namespace Exceptionless.Core.Repositories {
 
             var hit = await FindOneAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
-                .WithElasticFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
+                .WithElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
 
             if (IsCacheEnabled && hit != null)
                 await Cache.SetAsync(key, hit.Document, TimeSpan.FromSeconds(ElasticType.DefaultCacheExpirationSeconds)).AnyContext();
@@ -113,10 +114,10 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<FindResults<Stack>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (sorting.Fields.Count == 0)
-                sorting.Fields.Add(new FieldSort { Field = StackIndexType.Fields.LastOccurrence, Order = SortOrder.Descending });
+                sorting.Fields.Add(new FieldSort { Field = GetPropertyName(nameof(Stack.LastOccurrence)), Order = SortOrder.Descending });
 
             var search = new ExceptionlessQuery()
-                .WithDateRange(utcStart, utcEnd, field ?? StackIndexType.Fields.LastOccurrence)
+                .WithDateRange(utcStart, utcEnd, field ?? GetPropertyName(nameof(Stack.LastOccurrence)))
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
                 .WithPaging(paging)

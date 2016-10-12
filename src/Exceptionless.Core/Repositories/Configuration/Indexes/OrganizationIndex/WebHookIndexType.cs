@@ -9,31 +9,21 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public WebHookIndexType(OrganizationIndex index) : base(index, "webhook") { }
 
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
-            return base.Configure(idx)
+            return base.Configure(idx).Settings(s => s
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas));
         }
 
-        public override PutMappingDescriptor<WebHook> BuildMapping(PutMappingDescriptor<WebHook> map) {
-            return map
-                .Type(Name)
+        public override TypeMappingDescriptor<WebHook> BuildMapping(TypeMappingDescriptor<WebHook> map) {
+            return base.BuildMapping(map)
                 .Dynamic()
                 .Properties(p => p
                     .SetupDefaults()
-                    .String(f => f.Name(e => e.OrganizationId).IndexName(Fields.OrganizationId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.ProjectId).IndexName(Fields.ProjectId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.Url).IndexName(Fields.Url).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.EventTypes).IndexName(Fields.EventTypes).Index(FieldIndexOption.NotAnalyzed))
+                    .Keyword(f => f.Name(e => e.OrganizationId))
+                    .Keyword(f => f.Name(e => e.ProjectId))
+                    .Keyword(f => f.Name(e => e.Url))
+                    .Keyword(f => f.Name(e => e.EventTypes))
                 );
-        }
-
-        public class Fields {
-            public const string CreatedUtc = "created";
-            public const string OrganizationId = "organization";
-            public const string ProjectId = "project";
-            public const string Id = "id";
-            public const string Url = "url";
-            public const string EventTypes = "types";
         }
     }
 }

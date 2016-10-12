@@ -22,10 +22,12 @@ using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Microsoft.Owin;
+using Nest;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using Run = Exceptionless.Api.Tests.Utility.Run;
+using User = Exceptionless.Core.Models.User;
 
 namespace Exceptionless.Api.Tests.Controllers {
     public class EventControllerTests : ElasticTestBase {
@@ -98,7 +100,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Completed);
             Assert.Equal(1, await EventCountAsync());
         }
-        
+
         [Fact]
         public async Task CanPostUserDescriptionAsync() {
             _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(GetClientToken().ToIdentity()), true, false);
@@ -121,7 +123,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         public async Task CanPostManyEventsAsync() {
             const int batchSize = 250;
             const int batchCount = 10;
-            
+
             await Run.InParallelAsync(batchCount, async i => {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(GetClientToken().ToIdentity()), true, false);
                 var events = new RandomEventGenerator().Generate(batchSize);
@@ -130,7 +132,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.IsType<StatusCodeResult>(actionResult);
             });
 
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
             Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
 
@@ -140,7 +142,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             sw.Stop();
             _logger.Info(sw.Elapsed.ToString());
 
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
             var stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(batchCount, stats.Completed);
             var minimum = batchSize * batchCount;
@@ -173,16 +175,16 @@ namespace Exceptionless.Api.Tests.Controllers {
             token.ProjectId = TestConstants.ProjectId;
             return token;
         }
-        
+
         public async Task<long> EventCountAsync() {
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
             return await _eventRepository.CountAsync();
         }
 
         public async Task CreateOrganizationAndProjectsAsync() {
             await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations());
             await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects());
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
         }
     }
 }

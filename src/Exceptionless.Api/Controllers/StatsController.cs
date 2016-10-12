@@ -4,7 +4,7 @@ using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Filter;
+using Exceptionless.Core.Processors;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models.Stats;

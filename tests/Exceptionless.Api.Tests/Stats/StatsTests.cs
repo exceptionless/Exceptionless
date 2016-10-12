@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Filter;
+using Exceptionless.Core.Processors;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
@@ -14,6 +14,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Nest;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Foundatio.Logging.LogLevel;
@@ -44,7 +45,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = SystemClock.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             await CreateDataAsync(eventCount, false);
-            
+
             var fields = FieldAggregationProcessor.Process("distinct:stack_id,term:is_first_occurrence:-F", false);
             Assert.True(fields.IsValid);
             Assert.Equal(2, fields.Aggregations.Count);
@@ -55,7 +56,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(2, result.Numbers.Length);
             Assert.Equal(await _stackRepository.CountAsync(), result.Numbers[0]);
             Assert.Equal(await _stackRepository.CountAsync(), result.Timeline.Sum(t => t.Numbers[1]));
-            
+
             var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
             foreach (var stack in stacks.Documents) {
                 var nsr = await _stats.GetNumbersStatsAsync(fields.Aggregations, startDate, SystemClock.UtcNow, null, userFilter: "stack:" + stack.Id);
@@ -72,7 +73,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var  values = new decimal?[] { null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
             foreach (var value in values)
                 await CreateEventsAsync(1, null, value);
-            
+
             var fields = FieldAggregationProcessor.Process("avg:value:0,distinct:value:0,sum:value,min:value:0,max:value", false);
             Assert.True(fields.IsValid);
             Assert.Equal(5, fields.Aggregations.Count);
@@ -96,14 +97,14 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(0, nsr.Numbers[3]); // min
             Assert.Equal(100, nsr.Numbers[4]); // max
         }
-        
+
         [Fact]
         public async Task CanGetEventStatsWithoutDateRangeAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = SystemClock.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             await CreateDataAsync(eventCount, false);
-            
+
             var fields = FieldAggregationProcessor.Process("distinct:stack_id,term:is_first_occurrence:-F", false);
             Assert.True(fields.IsValid);
             Assert.Equal(2, fields.Aggregations.Count);
@@ -129,7 +130,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = SystemClock.UtcNow.SubtractDays(60);
             const int eventCount = 1;
             await CreateDataAsync(eventCount);
-            
+
             var fields = FieldAggregationProcessor.Process("distinct:stack_id", false);
             Assert.True(fields.IsValid);
             Assert.Equal(1, fields.Aggregations.Count);
@@ -197,21 +198,21 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var fields = FieldAggregationProcessor.Process("term:is_first_occurrence:-F", false);
             Assert.True(fields.IsValid);
-            
+
             var result = await _stats.GetNumbersTermsStatsAsync("project_id", fields.Aggregations, startDate, SystemClock.UtcNow, null);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 3); // 3 sample projects
             Assert.InRange(result.Terms.Sum(t => t.Numbers[0]), 1, 25 * 3); // new
             Assert.Equal(eventCount, result.Terms.Sum(t => t.Total));
         }
-        
+
         [Fact]
         public async Task CanGetSessionStatsAsync() {
             await CreateDataAsync();
 
             var startDate = SystemClock.UtcNow.SubtractHours(1);
             await CreateSessionEventsAsync();
-            
+
             var fields = FieldAggregationProcessor.Process("avg:value:0,distinct:user.raw", false);
             Assert.True(fields.IsValid);
             Assert.Equal(2, fields.Aggregations.Count);
@@ -231,7 +232,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var projects = ProjectData.GenerateSampleProjects();
             await _projectRepository.AddAsync(projects, true);
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             if (eventCount > 0)
                 await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId });
@@ -242,7 +243,7 @@ namespace Exceptionless.Api.Tests.Stats {
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
                 await _pipeline.RunAsync(eventGroup);
 
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
         }
 
         private async Task<List<PersistentEvent>> CreateSessionEventsAsync() {
@@ -255,11 +256,11 @@ namespace Exceptionless.Api.Tests.Stats {
                 EventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(20), userIdentity: "3"),
                 EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(50), userIdentity: "3")
             };
-            
+
             await _pipeline.RunAsync(events);
 
-            await _configuration.Client.RefreshAsync();
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Fields.Date));
+            await _configuration.Client.RefreshAsync(Indices.All);
+            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
             Assert.Equal(6, results.Total);
             Assert.Equal(3, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 

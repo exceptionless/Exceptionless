@@ -13,7 +13,7 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Filter;
+using Exceptionless.Core.Processors;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;

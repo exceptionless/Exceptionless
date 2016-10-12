@@ -8,44 +8,27 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public TokenIndexType(OrganizationIndex index) : base(index, "token") { }
 
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
-            return base.Configure(idx)
+            return base.Configure(idx).Settings(s => s
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas));
         }
 
-        public override PutMappingDescriptor<Models.Token> BuildMapping(PutMappingDescriptor<Models.Token> map) {
-            return map
-                .Type(Name)
+        public override TypeMappingDescriptor<Models.Token> BuildMapping(TypeMappingDescriptor<Models.Token> map) {
+            return base.BuildMapping(map)
                 .Dynamic()
-                .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
                     .SetupDefaults()
-                    .String(f => f.Name(e => e.CreatedBy).IndexName(Fields.CreatedBy).Index(FieldIndexOption.NotAnalyzed))
-                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.ModifiedUtc))
-                    .String(f => f.Name(e => e.ApplicationId).IndexName(Fields.ApplicationId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.OrganizationId).IndexName(Fields.OrganizationId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.ProjectId).IndexName(Fields.ProjectId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.DefaultProjectId).IndexName(Fields.DefaultProjectId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.UserId).IndexName(Fields.UserId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.Refresh).IndexName(Fields.Refresh).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(e => e.Scopes).IndexName(Fields.Scopes).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.Notes).IndexName(Fields.Notes).Index(FieldIndexOption.No))
+                    .Keyword(f => f.Name(e => e.CreatedBy))
+                    .Date(f => f.Name(e => e.ModifiedUtc))
+                    .Keyword(f => f.Name(e => e.ApplicationId))
+                    .Keyword(f => f.Name(e => e.OrganizationId))
+                    .Keyword(f => f.Name(e => e.ProjectId))
+                    .Keyword(f => f.Name(e => e.DefaultProjectId))
+                    .Keyword(f => f.Name(e => e.UserId))
+                    .Keyword(f => f.Name(e => e.Refresh))
+                    .Keyword(f => f.Name(e => e.Scopes))
+                    .Text(f => f.Name(u => u.Notes).Index(false))
                 );
-        }
-        
-        public class Fields {
-            public const string CreatedBy = "createdby";
-            public const string CreatedUtc = "created";
-            public const string ModifiedUtc = "modified";
-            public const string ApplicationId = "application";
-            public const string OrganizationId = "organization";
-            public const string ProjectId = "project";
-            public const string DefaultProjectId = "default_project";
-            public const string Id = "id";
-            public const string UserId = "user";
-            public const string Refresh = "refresh";
-            public const string Scopes = "scopes";
-            public const string Notes = "notes";
         }
     }
 }

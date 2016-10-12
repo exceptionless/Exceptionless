@@ -16,9 +16,9 @@ namespace Exceptionless.Core.Repositories.Queries {
                 return;
 
             if (organizationIdQuery.OrganizationIds.Count == 1)
-                ctx.Filter &= Filter<T>.Term("organization", organizationIdQuery.OrganizationIds.First());
+                ctx.Query &= Query<T>.Term("organization", organizationIdQuery.OrganizationIds.First());
             else
-                ctx.Filter &= Filter<T>.Terms("organization", organizationIdQuery.OrganizationIds.ToArray());
+                ctx.Query &= Query<T>.Terms(t => t.Field("organization").Terms(organizationIdQuery.OrganizationIds));
         }
     }
 

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using Exceptionless.Core.Filter;
+using Exceptionless.Core.Processors;
 using Xunit;
 using Xunit.Abstractions;
 

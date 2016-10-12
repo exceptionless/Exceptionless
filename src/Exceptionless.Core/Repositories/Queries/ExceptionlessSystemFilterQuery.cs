@@ -67,48 +67,48 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             var allowedOrganizations = sfq.Organizations.Where(o => o.HasPremiumFeatures || (!o.HasPremiumFeatures && !sfq.UsesPremiumFeatures)).ToList();
             if (allowedOrganizations.Count == 0) {
-                ctx.Filter &= Filter<T>.Term("organization", "none");
+                ctx.Query &= Query<T>.Term("organization", "none");
                 return;
             }
 
             string field = GetDateField(ctx.GetOptionsAs<IElasticQueryOptions>());
             if (sfq.Stack != null) {
                 var organization = sfq.Organizations.Single(o => o.Id == sfq.Stack.OrganizationId);
-                ctx.Filter &= (Filter<T>.Term("stack", sfq.Stack.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
+                ctx.Query &= (Query<T>.Term("stack", sfq.Stack.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
                 return;
             }
 
-            FilterContainer container = null;
+            QueryContainer container = null;
             if (sfq.Projects?.Count > 0) {
                 foreach (var project in sfq.Projects) {
                     var organization = sfq.Organizations.Single(o => o.Id == project.OrganizationId);
-                    container |= (Filter<T>.Term("project", project.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
+                    container |= (Query<T>.Term("project", project.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
                 }
 
-                ctx.Filter &= container;
+                ctx.Query &= container;
                 return;
             }
 
             if (sfq.Organizations?.Count > 0) {
                 foreach (var organization in sfq.Organizations)
-                    container |= (Filter<T>.Term("organization", organization.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
+                    container |= (Query<T>.Term("organization", organization.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
 
-                ctx.Filter &= container;
+                ctx.Query &= container;
             }
         }
 
-        private static FilterContainer GetRetentionFilter<T>(string field, int retentionDays) where T : class, new() {
+        private static QueryContainer GetRetentionFilter<T>(string field, int retentionDays) where T : class, new() {
             if (retentionDays > 0)
-                return Filter<T>.Range(r => r.OnField(field).GreaterOrEquals($"now/d-{retentionDays}d").LowerOrEquals("now/d+1d"));
+                return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{retentionDays}d").LessThanOrEquals("now/d+1d"));
 
             return null;
         }
 
         private string GetDateField(IElasticQueryOptions options) {
             if (options != null && options.IndexType.GetType() == typeof(StackIndexType))
-                return StackIndexType.Fields.LastOccurrence;
+                return StackIndexType.Alias.LastOccurrence;
 
-            return EventIndexType.Fields.Date;
+            return EventIndexType.Alias.Date;
         }
     }
 }

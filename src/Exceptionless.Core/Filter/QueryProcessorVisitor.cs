@@ -7,7 +7,7 @@ using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 
-namespace Exceptionless.Core.Filter {
+namespace Exceptionless.Core.Processors {
     public class QueryProcessor {
         private static readonly HashSet<string> _freeFields = new HashSet<string> {
             "hidden",

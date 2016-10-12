@@ -1,15 +1,17 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using Exceptionless.Core.Filter;
+using Exceptionless.Core.Processors;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Nest;
 using Xunit;
 using Xunit.Abstractions;
+using LogLevel = Foundatio.Logging.LogLevel;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public sealed class EventIndexTests : ElasticTestBase {
@@ -67,7 +69,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("log", 1)]
         [InlineData("error", 2)]
@@ -432,7 +434,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         private async Task CreateEventsAsync() {
             var parserPluginManager = GetService<EventParserPluginManager>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories)) {
@@ -448,7 +450,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 await _repository.AddAsync(events);
             }
 
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
         }
 
         private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {

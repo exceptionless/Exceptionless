@@ -10,93 +10,49 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public OrganizationIndexType(OrganizationIndex index) : base(index, "organization") { }
 
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
-            return base.Configure(idx)
+            return base.Configure(idx).Settings(s => s
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas));
         }
 
-        public override PutMappingDescriptor<Organization> BuildMapping(PutMappingDescriptor<Organization> map) {
-            return map
-                .Type(Name)
+        public override TypeMappingDescriptor<Organization> BuildMapping(TypeMappingDescriptor<Organization> map) {
+            return base.BuildMapping(map)
                 .Dynamic()
-                .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
                     .SetupDefaults()
-                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.ModifiedUtc))
-                    .String(f => f.Name(e => e.Name).IndexName(Fields.Name).Index(FieldIndexOption.Analyzed))
-                    .String(f => f.Name(u => u.StripeCustomerId).IndexName(Fields.StripeCustomerId).Index(FieldIndexOption.NotAnalyzed))
-                    .Boolean(f => f.Name(u => u.HasPremiumFeatures).IndexName(Fields.HasPremiumFeatures))
-                    .String(f => f.Name(u => u.PlanId).IndexName(Fields.PlanId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.PlanName).IndexName(Fields.PlanName).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.PlanDescription).IndexName(Fields.PlanDescription).Index(FieldIndexOption.No))
-                    .String(f => f.Name(u => u.CardLast4).IndexName(Fields.CardLast4).Index(FieldIndexOption.NotAnalyzed))
-                    .Date(f => f.Name(u => u.SubscribeDate).IndexName(Fields.SubscribeDate))
-                    .Number(f => f.Name(u => u.BillingStatus).IndexName(Fields.BillingStatus))
-                    .String(f => f.Name(u => u.BillingChangedByUserId).IndexName(Fields.BillingChangedByUserId).Index(FieldIndexOption.NotAnalyzed))
-                    .Number(f => f.Name(u => u.BillingPrice).IndexName(Fields.BillingPrice))
-                    .Boolean(f => f.Name(u => u.IsSuspended).IndexName(Fields.IsSuspended))
-                    .String(f => f.Name(u => u.SuspendedByUserId).IndexName(Fields.SuspendedByUserId).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.SuspensionNotes).IndexName(Fields.SuspensionNotes).Index(FieldIndexOption.NotAnalyzed))
-                    .Number(f => f.Name(u => u.RetentionDays).IndexName(Fields.RetentionDays))
+                    .Date(f => f.Name(e => e.ModifiedUtc))
+                    .Text(f => f.Name(e => e.Name))
+                    .Keyword(f => f.Name(u => u.StripeCustomerId))
+                    .Boolean(f => f.Name(u => u.HasPremiumFeatures))
+                    .Keyword(f => f.Name(u => u.PlanId))
+                    .Keyword(f => f.Name(u => u.PlanName))
+                    .Text(f => f.Name(u => u.PlanDescription).Index(false))
+                    .Keyword(f => f.Name(u => u.CardLast4))
+                    .Date(f => f.Name(u => u.SubscribeDate))
+                    .Number(f => f.Name(u => u.BillingStatus))
+                    .Keyword(f => f.Name(u => u.BillingChangedByUserId))
+                    .Number(f => f.Name(u => u.BillingPrice))
+                    .Boolean(f => f.Name(u => u.IsSuspended))
+                    .Keyword(f => f.Name(u => u.SuspendedByUserId))
+                    .Keyword(f => f.Name(u => u.SuspensionNotes))
+                    .Number(f => f.Name(u => u.RetentionDays))
                     .Object<DataDictionary>(f => f.Name(u => u.Data).Dynamic(false))
-                    .Object<Invite>(f => f.Name(o => o.Invites.First()).Path("just_name").Properties(ip => ip
-                        .String(fu => fu.Name(i => i.Token).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.InviteToken))
-                        .String(fu => fu.Name(i => i.EmailAddress).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.InviteEmail))))
-                    .Object<UsageInfo>(ui => ui.Name(o => o.Usage.First()).Path("just_name").Properties(ip => ip
-                        .Date(fu => fu.Name(i => i.Date).IndexName(Fields.UsageDate))
-                        .Number(fu => fu.Name(i => i.Total).IndexName(Fields.UsageTotal))
-                        .Number(fu => fu.Name(i => i.Blocked).IndexName(Fields.UsageBlocked))
-                        .Number(fu => fu.Name(i => i.Limit).IndexName(Fields.UsageLimit))
-                        .Number(fu => fu.Name(i => i.TooBig).IndexName(Fields.UsageTooBig))))
-                    .Object<UsageInfo>(ui => ui.Name(o => o.OverageHours.First()).Path("just_name").Properties(ip => ip
-                        .Date(fu => fu.Name(i => i.Date).IndexName(Fields.OverageHoursDate))
-                        .Number(fu => fu.Name(i => i.Total).IndexName(Fields.OverageHoursTotal))
-                        .Number(fu => fu.Name(i => i.Blocked).IndexName(Fields.OverageHoursBlocked))
-                        .Number(fu => fu.Name(i => i.Limit).IndexName(Fields.OverageHoursLimit))
-                        .Number(fu => fu.Name(i => i.TooBig).IndexName(Fields.OverageHoursTooBig))))
+                    .Object<Invite>(f => f.Name(o => o.Invites.First()).Properties(ip => ip
+                        .Keyword(fu => fu.Name(i => i.Token))
+                        .Keyword(fu => fu.Name(i => i.EmailAddress))))
+                    .Object<UsageInfo>(ui => ui.Name(o => o.Usage.First()).Properties(ip => ip
+                        .Date(fu => fu.Name(i => i.Date))
+                        .Number(fu => fu.Name(i => i.Total))
+                        .Number(fu => fu.Name(i => i.Blocked))
+                        .Number(fu => fu.Name(i => i.Limit))
+                        .Number(fu => fu.Name(i => i.TooBig))))
+                    .Object<UsageInfo>(ui => ui.Name(o => o.OverageHours.First()).Properties(ip => ip
+                        .Date(fu => fu.Name(i => i.Date))
+                        .Number(fu => fu.Name(i => i.Total))
+                        .Number(fu => fu.Name(i => i.Blocked))
+                        .Number(fu => fu.Name(i => i.Limit))
+                        .Number(fu => fu.Name(i => i.TooBig))))
                 );
-        }
-
-        // TODO: Let the query parser know about our analyzed fields for smarter query generation.
-        //public bool IsAnalyzedField(string field) {
-        //    return field == Fields.Name;
-        //}
-
-        public class Fields {
-            public const string CreatedUtc = "created";
-            public const string ModifiedUtc = "modified";
-            public const string Id = "id";
-            public const string Name = "name";
-            public const string SubscribeDate = "subscribed";
-
-            public const string PlanId = "plan";
-            public const string PlanName = "plan_name";
-            public const string PlanDescription = "plan_description";
-            public const string HasPremiumFeatures = "premium";
-            public const string RetentionDays = "retention";
-            public const string StripeCustomerId = "stripe";
-            public const string BillingPrice = "price";
-            public const string BillingStatus = "status";
-            public const string BillingChangedByUserId = "billing_changed_by_user_id";
-            public const string CardLast4 = "card_last_4";
-            public const string IsSuspended = "suspended";
-            public const string SuspendedByUserId = "suspended_by_user_id";
-            public const string SuspensionNotes = "suspension_notes";
-
-            public const string InviteToken = "invite.token";
-            public const string InviteEmail = "invite.email";
-
-            public const string UsageDate = "usage.date";
-            public const string UsageTotal = "usage.total";
-            public const string UsageBlocked = "usage.blocked";
-            public const string UsageLimit = "usage.limit";
-            public const string UsageTooBig = "usage.toobig";
-
-            public const string OverageHoursDate = "overage.date";
-            public const string OverageHoursTotal = "overage.total";
-            public const string OverageHoursBlocked = "overage.blocked";
-            public const string OverageHoursLimit = "overage.limit";
-            public const string OverageHoursTooBig = "overage.toobig";
         }
     }
 }
