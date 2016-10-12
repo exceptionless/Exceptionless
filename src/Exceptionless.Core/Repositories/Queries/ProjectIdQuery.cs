@@ -16,9 +16,9 @@ namespace Exceptionless.Core.Repositories.Queries {
                 return;
 
             if (projectIdQuery.ProjectIds.Count == 1)
-                ctx.Filter &= Filter<T>.Term("project", projectIdQuery.ProjectIds.First());
+                ctx.Query &= Query<T>.Term("project", projectIdQuery.ProjectIds.First());
             else
-                ctx.Filter &= Filter<T>.Terms("project", projectIdQuery.ProjectIds.ToArray());
+                ctx.Query &= Query<T>.Terms(t => t.Field("project").Terms(projectIdQuery.ProjectIds));
         }
     }
 

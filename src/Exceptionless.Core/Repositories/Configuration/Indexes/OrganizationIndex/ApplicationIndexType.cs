@@ -9,18 +9,17 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public ApplicationIndexType(OrganizationIndex index) : base(index, "application") { }
 
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
-            return base.Configure(idx)
+            return base.Configure(idx).Settings(s => s
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas);
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas));
         }
 
-        public override PutMappingDescriptor<Application> BuildMapping(PutMappingDescriptor<Application> map) {
-            return map
+        public override TypeMappingDescriptor<Application> BuildMapping(TypeMappingDescriptor<Application> map) {
+            return base.BuildMapping(map)
                 .Dynamic()
-                .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
                     .SetupDefaults()
-                    .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
+                    .Keyword(f => f.Name(e => e.OrganizationId).IndexName("organization"))
                 );
         }
     }

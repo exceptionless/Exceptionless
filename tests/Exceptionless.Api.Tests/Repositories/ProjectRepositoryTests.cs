@@ -6,6 +6,8 @@ using Foundatio.Caching;
 using Xunit;
 using Xunit.Abstractions;
 using Foundatio.Logging;
+using Nest;
+using LogLevel = Foundatio.Logging.LogLevel;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public sealed class ProjectRepositoryTests : ElasticTestBase {
@@ -23,13 +25,13 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(0, await _repository.CountAsync());
 
             var project = await _repository.AddAsync(ProjectData.GenerateSampleProject());
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
             Assert.NotNull(project.Id);
             Assert.Equal(1, await _repository.CountAsync());
             Assert.Equal(1, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
 
             await _repository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project });
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             var updatedProject = await _repository.GetByIdAsync(project.Id);
             // TODO: Modified date isn't currently updated in the update scripts.
@@ -42,12 +44,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             var project2 = await _repository.AddAsync(ProjectData.GenerateProject(organizationId: project.OrganizationId));
             Assert.NotNull(project2.Id);
 
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(2, await _repository.CountAsync());
             Assert.Equal(2, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
 
             await _repository.RemoveAsync(project2, false);
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(1, await _repository.CountAsync());
             Assert.Equal(1, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
         }
@@ -62,7 +64,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(0, _cache.Misses);
 
             Log.SetLogLevel<ProjectRepository>(LogLevel.Trace);
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
             var results = await _repository.GetByOrganizationIdsAsync(new[] { project1.OrganizationId, TestConstants.OrganizationId2 });
             Assert.NotNull(results);
             Assert.Equal(2, results.Documents.Count);
@@ -89,14 +91,14 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, _cache.Hits);
             Assert.Equal(2, _cache.Misses);
 
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
             results = await _repository.GetByOrganizationIdsAsync(new[] { project1.OrganizationId });
             Assert.NotNull(results);
             Assert.Equal(1, results.Documents.Count);
             Assert.Equal(1, _cache.Count);
             Assert.Equal(1, _cache.Hits);
             Assert.Equal(3, _cache.Misses);
-            
+
             await _repository.RemoveAllAsync(false);
             Assert.Equal(0, _cache.Count);
             Assert.Equal(1, _cache.Hits);

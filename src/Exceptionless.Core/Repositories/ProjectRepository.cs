@@ -17,7 +17,7 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
-        public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator) 
+        public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator)
             : base(configuration.Organizations.Project, validator) {
         }
 
@@ -44,11 +44,11 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50) {
-            var filter = Filter<Project>.Range(r => r.OnField(o => o.NextSummaryEndOfDayTicks).Lower(SystemClock.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
+            var filter = Query<Project>.Range(r => r.Field(o => o.NextSummaryEndOfDayTicks).LessThan(SystemClock.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
             var query = new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithPaging(new ElasticPagingOptions().UseSnapshotPaging().WithLimit(limit))
-                .WithSort(EventIndexType.Fields.OrganizationId);
+                .WithSort(GetPropertyName(nameof(Project.OrganizationId)));
 
             return FindAsync(query);
         }

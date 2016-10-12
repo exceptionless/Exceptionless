@@ -16,8 +16,10 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Utility;
 using Microsoft.Owin;
+using Nest;
 using Xunit;
 using Xunit.Abstractions;
+using User = Exceptionless.Core.Models.User;
 
 namespace Exceptionless.Api.Tests.Controllers {
     public class AuthControllerTests : ElasticTestBase {
@@ -120,7 +122,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             organization.Invites.Add(invite);
 
             organization = await _organizationRepository.SaveAsync(organization);
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -159,7 +161,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization);
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -257,7 +259,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization);
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -295,7 +297,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization);
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -332,7 +334,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization);
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             Assert.NotNull(organization.GetInvite(invite.Token));
 
@@ -367,7 +369,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             await _userRepository.AddAsync(user);
 
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             // create model
             var loginModel = new LoginModel {
@@ -405,7 +407,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
 
             await _userRepository.AddAsync(user);
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             // create model
             var loginModel = new LoginModel {
@@ -437,7 +439,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             await _userRepository.AddAsync(user);
 
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             // create model
             var loginModel = new LoginModel {
@@ -465,7 +467,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
 
             await _userRepository.AddAsync(user);
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             // create model
             var loginModel = new LoginModel {
@@ -515,7 +517,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             var actionResult = await _authController.LoginAsync(loginModel);
             var result = await actionResult.ExecuteAsync(new CancellationToken());
             Assert.Equal(System.Net.HttpStatusCode.Unauthorized, result.StatusCode);
-            
+
             // Verify that a user account was not added
             var provider = new TestDomainLoginProvider();
             string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
@@ -537,7 +539,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 FullName = "User 6"
             };
             await _userRepository.AddAsync(user);
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
 
             // create model
             var loginModel = new LoginModel {
@@ -578,11 +580,11 @@ namespace Exceptionless.Api.Tests.Controllers {
             var result = content?.Value as T;
             return result;
         }
-        
+
         public async Task CreateOrganizationAndProjectsAsync() {
             await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations());
             await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects());
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
         }
     }
 }

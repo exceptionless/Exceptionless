@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Filter;
+using Exceptionless.Core.Processors;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
@@ -125,7 +125,7 @@ namespace Exceptionless.Core.Jobs {
             };
 
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            var result = await _stats.GetNumbersStatsAsync(fields, data.UtcStartTime, data.UtcEndTime, sf, $"{EventIndexType.Fields.Type}:{Event.KnownTypes.Error}").AnyContext();
+            var result = await _stats.GetNumbersStatsAsync(fields, data.UtcStartTime, data.UtcEndTime, sf, $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error}").AnyContext();
             bool hasSubmittedEvents = result.Total > 0;
             if (!hasSubmittedEvents)
                 hasSubmittedEvents = await _eventRepository.GetCountByProjectIdAsync(project.Id).AnyContext() > 0;

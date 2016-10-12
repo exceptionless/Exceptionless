@@ -15,23 +15,23 @@ using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
-        public EventRepository(ExceptionlessElasticConfiguration configuration, IValidator<PersistentEvent> validator) 
+        public EventRepository(ExceptionlessElasticConfiguration configuration, IValidator<PersistentEvent> validator)
             : base(configuration.Events.Event, validator) {
             DisableCache();
             BatchNotifications = true;
-            DefaultExcludes.Add(EventIndexType.Fields.IDX);
-            FieldsRequiredForRemove.Add(EventIndexType.Fields.Date);
+            DefaultExcludes.Add(GetPropertyName(nameof(PersistentEvent.Idx)));
+            FieldsRequiredForRemove.Add(GetPropertyName(nameof(PersistentEvent.Date)));
         }
 
         // TODO: We need to index and search by the created time.
         public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null) {
-            var filter = Filter<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && Filter<PersistentEvent>.Missing(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]);
+            var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && !Query<PersistentEvent>.Exists(f => f.Field(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]));
             if (createdBeforeUtc.Ticks > 0)
-                filter &= Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(createdBeforeUtc));
+                filter &= Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThanOrEquals(createdBeforeUtc));
 
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
-                .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
+                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Descending)
                 .WithPaging(paging));
         }
 
@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithOrganizationId(organizationId)
                 .WithProjectId(projectId)
                 .WithStackId(stackId)
-                .WithFieldEquals(EventIndexType.Fields.IsFixed, !isFixed);
+                .WithFieldEquals(GetPropertyName(nameof(PersistentEvent.IsFixed)), !isFixed);
 
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
             return PatchAllAsync(query, new { is_fixed = isFixed });
@@ -61,19 +61,19 @@ namespace Exceptionless.Core.Repositories {
         public Task<long> UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
-            
+
             var query = new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
                 .WithProjectId(projectId)
                 .WithStackId(stackId)
-                .WithFieldEquals(EventIndexType.Fields.IsHidden, !isHidden);
+                .WithFieldEquals(GetPropertyName(nameof(PersistentEvent.IsHidden)), !isHidden);
 
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
             return PatchAllAsync(query, new { is_hidden = isHidden });
         }
 
         public Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
-            var filter = Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).Lower(utcCutoffDate));
+            var filter = Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcCutoffDate));
             return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithElasticFilter(filter), false);
         }
 
@@ -84,8 +84,8 @@ namespace Exceptionless.Core.Repositories {
         public Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
             var query = new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
-                .WithElasticFilter(Filter<PersistentEvent>.Term("client_ip_address", clientIp))
-                .WithDateRange(utcStart, utcEnd, EventIndexType.Fields.Date)
+                .WithElasticFilter(Query<PersistentEvent>.Term("ip", clientIp))
+                .WithDateRange(utcStart, utcEnd, GetPropertyName(nameof(PersistentEvent.Date)))
                 .WithIndexes(utcStart, utcEnd);
 
             return PatchAllAsync(query, new { is_hidden = true });
@@ -93,10 +93,10 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<FindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (sorting.Fields.Count == 0)
-                sorting.Fields.Add(new FieldSort { Field = EventIndexType.Fields.Date, Order = SortOrder.Descending });
-            
+                sorting.Fields.Add(new FieldSort { Field = GetPropertyName(nameof(PersistentEvent.Date)), Order = SortOrder.Descending });
+
             var search = new ExceptionlessQuery()
-                .WithDateRange(utcStart, utcEnd, field ?? EventIndexType.Fields.Date)
+                .WithDateRange(utcStart, utcEnd, field ?? GetPropertyName(nameof(PersistentEvent.Date)))
                 .WithIndexes(utcStart, utcEnd)
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
@@ -107,11 +107,11 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId) {
-            var filter = Filter<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
+            var filter = Query<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
             return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithElasticFilter(filter)
-                .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
+                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Descending)
                 .WithLimit(10));
         }
 
@@ -144,13 +144,13 @@ namespace Exceptionless.Core.Repositories {
                 userFilter = "stack:" + ev.StackId;
 
             var results = await FindAsync(new ExceptionlessQuery()
-                .WithDateRange(utcStart, utcEventDate, EventIndexType.Fields.Date)
+                .WithDateRange(utcStart, utcEventDate, GetPropertyName(nameof(PersistentEvent.Date)))
                 .WithIndexes(utcStart, utcEventDate)
-                .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
+                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Descending)
                 .WithLimit(10)
-                .WithSelectedFields("id", "date")
+                .WithSelectedFields(GetPropertyName(nameof(PersistentEvent.Id)), GetPropertyName(nameof(PersistentEvent.Date)))
                 .WithSystemFilter(systemFilter)
-                .WithElasticFilter(!Filter<PersistentEvent>.Ids(new[] { ev.Id }))
+                .WithElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
                 .WithFilter(userFilter)).AnyContext();
 
             if (results.Total == 0)
@@ -189,13 +189,13 @@ namespace Exceptionless.Core.Repositories {
                 userFilter = "stack:" + ev.StackId;
 
             var results = await FindAsync(new ExceptionlessQuery()
-                .WithDateRange(utcEventDate, utcEnd, EventIndexType.Fields.Date)
+                .WithDateRange(utcEventDate, utcEnd, GetPropertyName(nameof(PersistentEvent.Date)))
                 .WithIndexes(utcStart, utcEventDate)
-                .WithSort(EventIndexType.Fields.Date, SortOrder.Ascending)
+                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Ascending)
                 .WithLimit(10)
                 .WithSelectedFields("id", "date")
                 .WithSystemFilter(systemFilter)
-                .WithElasticFilter(!Filter<PersistentEvent>.Ids(new[] { ev.Id }))
+                .WithElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
                 .WithFilter(userFilter)).AnyContext();
 
             if (results.Total == 0)
@@ -222,7 +222,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
                 .WithPaging(paging)
-                .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
+                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Descending)
                 .WithSort("_uid", SortOrder.Descending)
                 .WithExpiresIn(expiresIn));
         }
@@ -231,7 +231,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithPaging(paging)
-                .WithSort(EventIndexType.Fields.Date, SortOrder.Descending)
+                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Descending)
                 .WithSort("_uid", SortOrder.Descending));
         }
 
