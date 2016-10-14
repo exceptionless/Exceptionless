@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Processors;
 using Exceptionless.Core.Repositories.Configuration;
@@ -125,9 +124,9 @@ namespace Exceptionless.Core.Utility {
 
             var terms = response.Aggs.Terms("terms");
             if (terms != null) {
-                stats.Terms.AddRange(terms.Items.Select(i => {
+                stats.Terms.AddRange(terms.Buckets.Select(i => {
                     var item = new NumbersTermStatsItem {
-                        Total = i.DocCount,
+                        Total = i.DocCount ?? 0,
                         Term = i.Key,
                         Numbers = GetNumbers(i, fields)
                     };
@@ -195,7 +194,7 @@ namespace Exceptionless.Core.Utility {
             var stats = new NumbersTimelineStatsResult { Total = response.Total, Numbers = GetNumbers(response.Aggs, fields) };
             var timeline = response.Aggs.DateHistogram("timelime");
             if (timeline != null) {
-                stats.Timeline.AddRange(timeline.Items.Select(i => new NumbersTimelineItem {
+                stats.Timeline.AddRange(timeline.Buckets.Select(i => new NumbersTimelineItem {
                     Date = i.Date,
                     Total = i.DocCount,
                     Numbers = GetNumbers(i, fields)
@@ -223,7 +222,7 @@ namespace Exceptionless.Core.Utility {
             return stats;
         }
 
-        private AggregationDescriptor<PersistentEvent> BuildAggregations(AggregationDescriptor<PersistentEvent> aggregation, IEnumerable<FieldAggregation> fields) {
+        private AggregationContainerDescriptor<PersistentEvent> BuildAggregations(AggregationContainerDescriptor<PersistentEvent> aggregation, IEnumerable<FieldAggregation> fields) {
             foreach (var field in fields) {
                 switch (field.Type) {
                     case FieldAggregationType.Average:
@@ -300,7 +299,7 @@ namespace Exceptionless.Core.Utility {
                         break;
                     case FieldAggregationType.Term:
                         var termResult = aggregations.Terms(field.Key);
-                        results.Add(termResult?.Items.Count > 0 ? termResult.Items[0].DocCount : 0);
+                        results.Add(termResult?.Buckets.Count > 0 ? termResult.Buckets[0].DocCount ?? 0 : 0);
                         break;
                     default:
                         throw new InvalidOperationException($"Unknown FieldAggregation type: {field.Type}");
