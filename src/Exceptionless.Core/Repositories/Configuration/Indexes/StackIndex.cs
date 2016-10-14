@@ -44,6 +44,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Text(f => f.Name(s => s.References).Alias(Alias.References).IncludeInAll())
                     .Date(f => f.Name(s => s.DateFixed).Alias(Alias.DateFixed))
                     .Boolean(f => f.Name(Alias.IsFixed))
+                    .Keyword(f => f.Name(s => s.FixedInVersion).Alias(Alias.FixedInVersion))
                     .Boolean(f => f.Name(s => s.IsHidden).Alias(Alias.IsHidden))
                     .Boolean(f => f.Name(s => s.IsRegressed).Alias(Alias.IsRegressed))
                     .Boolean(f => f.Name(s => s.OccurrencesAreCritical).Alias(Alias.OccurrencesAreCritical))
@@ -64,6 +65,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             public const string References = "links";
             public const string DateFixed = "fixedon";
             public const string IsFixed = "fixed";
+            public const string FixedInVersion = "version_fixed";
             public const string IsHidden = "hidden";
             public const string IsRegressed = "regressed";
             public const string OccurrencesAreCritical = "critical";
