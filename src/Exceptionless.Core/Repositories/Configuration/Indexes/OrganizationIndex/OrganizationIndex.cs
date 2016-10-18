@@ -1,10 +1,12 @@
 ﻿using System;
 using Foundatio.Repositories.Elasticsearch.Configuration;
+using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class OrganizationIndex : VersionedIndex {
+        internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
+
         public OrganizationIndex(IElasticConfiguration configuration) : base(configuration, Settings.Current.AppScopePrefix + "organizations", 1) {
-            AddType(Application = new ApplicationIndexType(this));
             AddType(Organization = new OrganizationIndexType(this));
             AddType(Project = new ProjectIndexType(this));
             AddType(Token = new TokenIndexType(this));
@@ -12,7 +14,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddType(WebHook = new WebHookIndexType(this));
         }
 
-        public ApplicationIndexType Application { get; }
+        public override CreateIndexDescriptor ConfigureDescriptor(CreateIndexDescriptor idx) {
+            return base.ConfigureDescriptor(idx).Settings(s => s
+                .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
+                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas));
+        }
+
         public OrganizationIndexType Organization { get; }
         public ProjectIndexType Project { get; }
         public TokenIndexType Token { get; }

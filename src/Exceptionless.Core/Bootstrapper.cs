@@ -80,7 +80,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new InMemoryQueue<EventNotificationWorkItem>(behaviors: container.GetAllInstances<IQueueBehavior<EventNotificationWorkItem>>()));
             container.RegisterSingleton<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(behaviors: container.GetAllInstances<IQueueBehavior<WebHookNotification>>()));
             container.RegisterSingleton<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(behaviors: container.GetAllInstances<IQueueBehavior<MailMessage>>()));
-            
+
             var workItemHandlers = new WorkItemHandlers();
             workItemHandlers.Register<ReindexWorkItem>(container.GetInstance<ReindexWorkItemHandler>);
             workItemHandlers.Register<RemoveOrganizationWorkItem>(container.GetInstance<RemoveOrganizationWorkItemHandler>);
@@ -111,7 +111,6 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IUserRepository, UserRepository>();
             container.RegisterSingleton<IWebHookRepository, WebHookRepository>();
             container.RegisterSingleton<ITokenRepository, TokenRepository>();
-            container.RegisterSingleton<IApplicationRepository, ApplicationRepository>();
 
             container.RegisterSingleton<IGeoIpService, MaxMindGeoIpService>();
             container.RegisterSingleton<IGeocodeService, NullGeocodeService>();
@@ -140,7 +139,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
             container.Register<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
-            
+
             container.RegisterSingleton<IMapper>(() => {
                 var profiles = container.GetAllInstances<Profile>();
                 var config = new MapperConfiguration(cfg => {
