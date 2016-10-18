@@ -203,7 +203,6 @@
     <Compile Include="Mail\Engine\StringExtensions.cs" />
     <Compile Include="Mail\Engine\TemplatedEmail.cs" />
     <Compile Include="Mail\Models\OrganizationNotificationModel.cs" />
-    <Compile Include="Models\Application.cs" />
     <Compile Include="Models\Billing\ChangePlanResult.cs" />
     <Compile Include="Models\ClientConfiguration.cs" />
     <Compile Include="Models\Collections\DataDictionary.cs" />
@@ -279,7 +278,6 @@
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ExceptionlessElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\ApplicationIndexType.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\OrganizationIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\OrganizationIndexType.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\ProjectIndexType.cs" />
@@ -407,7 +405,6 @@
     <Compile Include="Utility\SystemHealthChecker.cs" />
     <Compile Include="Utility\TypeHelper.cs" />
     <Compile Include="Utility\UserAgentParser.cs" />
-    <Compile Include="Validation\ApplicationValidator.cs" />
     <Compile Include="Validation\IsObjectIdValidator.cs" />
     <Compile Include="Validation\OrganizationValidator.cs" />
     <Compile Include="Validation\PersistentEventValidator.cs" />
@@ -444,10 +441,8 @@
     </Compile>
     <Compile Include="Models\Queues\WebHookNotification.cs" />
     <Compile Include="Models\Queues\SummaryNotification.cs" />
-    <Compile Include="Repositories\ApplicationRepository.cs" />
     <Compile Include="Repositories\Interfaces\IRepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Interfaces\IRepositoryOwnedByProject.cs" />
-    <Compile Include="Repositories\Interfaces\IApplicationRepository.cs" />
     <Compile Include="Repositories\Interfaces\ITokenRepository.cs" />
     <Compile Include="Repositories\Interfaces\IWebHookRepository.cs" />
     <Compile Include="Repositories\TokenRepository.cs" />

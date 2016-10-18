@@ -74,12 +74,12 @@ namespace Exceptionless.Api.Controllers {
                 _logger.Error().Message("Login failed: Email Address is required.").Tag("Login").SetActionContext(ActionContext).Write();
                 return BadRequest("Email Address is required.");
             }
-            
+
             if (String.IsNullOrWhiteSpace(model.Password)) {
                 _logger.Error().Message("Login failed for \"{0}\": Password is required.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
                 return BadRequest("Password is required.");
             }
-            
+
             // Only allow 5 password attempts per 15 minute period.
             string userLoginAttemptsCacheKey = $"user:{model.Email}:attempts";
             long userLoginAttempts = await _cache.IncrementAsync(userLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
@@ -136,7 +136,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!String.IsNullOrEmpty(model.InviteToken))
                 await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
-            
+
             await _cache.RemoveAsync(userLoginAttemptsCacheKey);
 
             _logger.Info().Message("\"{0}\" logged in.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
@@ -214,7 +214,7 @@ namespace Exceptionless.Api.Controllers {
 				user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
 				user.Password = model.Password.ToSaltedHash(user.Salt);
 			}
-            
+
             try {
                 user = await _userRepository.AddAsync(user, true);
             } catch (ValidationException ex) {
@@ -225,7 +225,7 @@ namespace Exceptionless.Api.Controllers {
                 _logger.Error().Exception(ex).Critical().Message("Signup failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Signup").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 return BadRequest("An error occurred.");
             }
-            
+
             if (hasValidInviteToken)
                 await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
 
@@ -333,7 +333,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return StatusCode(HttpStatusCode.Created);
-            
+
             // Only allow 3 checks attempts per hour period by a single ip.
             string ipEmailAddressAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:email:attempts";
             long attempts = await _cache.IncrementAsync(ipEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
@@ -552,7 +552,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (String.IsNullOrEmpty(token))
                 return false;
-            
+
             var organization = await _organizationRepository.GetByInviteTokenAsync(token);
             return organization != null;
         }
@@ -603,7 +603,7 @@ namespace Exceptionless.Api.Controllers {
                 Id = Core.Extensions.StringExtensions.GetNewToken(),
                 UserId = user.Id,
                 CreatedUtc = SystemClock.UtcNow,
-                ModifiedUtc = SystemClock.UtcNow,
+                UpdatedUtc = SystemClock.UtcNow,
                 CreatedBy = user.Id,
                 Type = TokenType.Access
             });
@@ -611,10 +611,10 @@ namespace Exceptionless.Api.Controllers {
             return token.Id;
         }
 
-	    private bool IsValidActiveDirectoryLogin(string email, string password) {
-			string domainUsername = _domainLoginProvider.GetUsernameFromEmailAddress(email);
-		    return domainUsername != null && _domainLoginProvider.Login(domainUsername, password);
-	    }
+        private bool IsValidActiveDirectoryLogin(string email, string password) {
+            string domainUsername = _domainLoginProvider.GetUsernameFromEmailAddress(email);
+            return domainUsername != null && _domainLoginProvider.Login(domainUsername, password);
+        }
 
         private static bool IsValidPassword(string password) {
             if (String.IsNullOrWhiteSpace(password))

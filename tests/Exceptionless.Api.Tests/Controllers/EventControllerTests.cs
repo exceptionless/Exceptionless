@@ -168,7 +168,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         private Core.Models.Token GetClientToken() {
             var token = new Core.Models.Token();
             token.Id = StringExtensions.GetNewToken();
-            token.CreatedUtc = token.ModifiedUtc = SystemClock.UtcNow;
+            token.CreatedUtc = token.UpdatedUtc = SystemClock.UtcNow;
             token.Type = TokenType.Access;
             token.CreatedBy = TestConstants.UserId;
             token.OrganizationId = TestConstants.OrganizationId;

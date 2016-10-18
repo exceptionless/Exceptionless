@@ -14,6 +14,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public StackIndexType Stack { get; }
     }
 
+    // TODO: Split this out into two files in a folder.
     public class StackIndexType : IndexTypeBase<Stack> {
         public StackIndexType(StackIndex index) : base(index, "stacks") { }
 
@@ -27,7 +28,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             const string SET_FIXED_SCRIPT = @"ctx._source['fixed'] = !!ctx._source['date_fixed']";
 
             return base.BuildMapping(map)
-                .Dynamic(DynamicMapping.Ignore)
+                .Dynamic(false)
                 //.Transform(t => t.Script(SET_FIXED_SCRIPT).Language(ScriptLang.Groovy)) // TODO: This needs to use an ingest pipeline
                 .AllField(a => a.Enabled(false))
                 .Properties(p => p
@@ -40,7 +41,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Date(f => f.Name(s => s.LastOccurrence).Alias(Alias.LastOccurrence))
                     .Text(f => f.Name(s => s.Title).Alias(Alias.Title).IncludeInAll().Boost(1.1))
                     .Text(f => f.Name(s => s.Description).Alias(Alias.Description).IncludeInAll())
-                    .Text(f => f.Name(s => s.Tags).Alias(Alias.Tags).IncludeInAll().Boost(1.2))
+                    .Text(f => f.Name(s => s.Tags).Alias(Alias.Tags).IncludeInAll().Boost(1.2).AddKeywordField())
                     .Text(f => f.Name(s => s.References).Alias(Alias.References).IncludeInAll())
                     .Date(f => f.Name(s => s.DateFixed).Alias(Alias.DateFixed))
                     .Boolean(f => f.Name(Alias.IsFixed))

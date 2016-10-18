@@ -20,11 +20,9 @@ namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/tokens")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, Token> {
-        private readonly IApplicationRepository _applicationRepository;
         private readonly IProjectRepository _projectRepository;
 
-        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
-            _applicationRepository = applicationRepository;
+        public TokenController(ITokenRepository repository, IProjectRepository projectRepository, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
             _projectRepository = projectRepository;
         }
 
@@ -260,18 +258,12 @@ namespace Exceptionless.App.Controllers.API {
                     return PermissionResult.Deny;
             }
 
-            if (!String.IsNullOrEmpty(value.ApplicationId)) {
-                var application = await _applicationRepository.GetByIdAsync(value.ApplicationId, true);
-                if (application == null || !IsInOrganization(application.OrganizationId))
-                    return PermissionResult.Deny;
-            }
-
             return await base.CanAddAsync(value);
         }
 
         protected override Task<Token> AddModelAsync(Token value) {
             value.Id = StringExtensions.GetNewToken();
-            value.CreatedUtc = value.ModifiedUtc = SystemClock.UtcNow;
+            value.CreatedUtc = value.UpdatedUtc = SystemClock.UtcNow;
             value.Type = TokenType.Access;
             value.CreatedBy = Request.GetUser().Id;
 
