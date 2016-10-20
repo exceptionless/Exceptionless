@@ -75,12 +75,12 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories, Version=5.0.286.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Foundatio.Repositories.5.0.286-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.286.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.286-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="McSherry.SemanticVersioning, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\McSherry.SemanticVersioning.1.2.0\lib\net45\McSherry.SemanticVersioning.dll</HintPath>

@@ -57,7 +57,7 @@
         <PropertyValue name="NewLines_ObjectInitializer_EachMember">1</PropertyValue>
         <PropertyValue name="NewLines_QueryExpression_EachClause">1</PropertyValue>
         <PropertyValue name="RenameTrackingPreview">1</PropertyValue>
-        <PropertyValue name="SortUsings_PlaceSystemFirst">0</PropertyValue>
+        <PropertyValue name="SortUsings_PlaceSystemFirst">1</PropertyValue>
         <PropertyValue name="Space_AfterBasesColon">1</PropertyValue>
         <PropertyValue name="Space_AfterCast">0</PropertyValue>
         <PropertyValue name="Space_AfterComma">1</PropertyValue>
