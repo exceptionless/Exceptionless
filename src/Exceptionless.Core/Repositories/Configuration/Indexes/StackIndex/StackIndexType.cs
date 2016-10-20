@@ -1,28 +1,13 @@
 using System;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Nest;
-using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public sealed class StackIndex : VersionedIndex {
-        public StackIndex(IElasticConfiguration configuration) : base(configuration, Settings.Current.AppScopePrefix + "stacks", 1) {
-            AddType(Stack = new StackIndexType(this));
-        }
-
-        public StackIndexType Stack { get; }
-    }
-
-    // TODO: Split this out into two files in a folder.
     public class StackIndexType : IndexTypeBase<Stack> {
         public StackIndexType(StackIndex index) : base(index, "stacks") { }
-
-        public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
-            return base.Configure(idx).Settings(s => s
-                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas));
-        }
 
         public override TypeMappingDescriptor<Stack> BuildMapping(TypeMappingDescriptor<Stack> map) {
             const string SET_FIXED_SCRIPT = @"ctx._source['fixed'] = !!ctx._source['date_fixed']";

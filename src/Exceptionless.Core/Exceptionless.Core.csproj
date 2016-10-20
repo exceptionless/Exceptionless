@@ -70,12 +70,12 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories, Version=5.0.286.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Foundatio.Repositories.5.0.286-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.286.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.286-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
       <HintPath>..\..\packages\MaxMind.Db.2.1.2\lib\net45\MaxMind.Db.dll</HintPath>
@@ -277,14 +277,16 @@
     <Compile Include="Plugins\Formatting\Default\05_ManualStackingFormattingPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ExceptionlessElasticConfiguration.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
+    <Compile Include="Repositories\Configuration\Indexes\EventIndex\EventIndex.cs" />
+    <Compile Include="Repositories\Configuration\Indexes\EventIndex\EventIndexType.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\OrganizationIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\OrganizationIndexType.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\ProjectIndexType.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\TokenIndexType.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\UserIndexType.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\WebHookIndexType.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\StackIndex.cs" />
+    <Compile Include="Repositories\Configuration\Indexes\StackIndex\StackIndex.cs" />
+    <Compile Include="Repositories\Configuration\Indexes\StackIndex\StackIndexType.cs" />
     <Compile Include="Repositories\Queries\ProjectIdQuery.cs" />
     <Compile Include="Repositories\Queries\ExceptionlessQuery.cs" />
     <Compile Include="Repositories\Queries\StackIdQuery.cs" />
