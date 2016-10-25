@@ -105,6 +105,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         private string GetDateField(IElasticQueryOptions options) {
+            // TODO: These need to be inferred.
             if (options != null && options.IndexType.GetType() == typeof(StackIndexType))
                 return StackIndexType.Alias.LastOccurrence;
 

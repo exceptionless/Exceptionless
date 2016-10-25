@@ -58,8 +58,8 @@ namespace Exceptionless.Api {
             config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
 
             var contractResolver = container.GetInstance<IContractResolver>();
-            var exceptionlessContractResolver = contractResolver as ExceptionlessContractResolver;
-            exceptionlessContractResolver?.UseDefaultResolverFor(typeof(Connection).Assembly);
+            var dynamicTypeContractResolver = contractResolver as DynamicTypeContractResolver;
+            dynamicTypeContractResolver?.UseDefaultResolverFor(typeof(Connection).Assembly);
             config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
             config.Services.Add(typeof(IExceptionLogger), new FoundatioExceptionLogger(loggerFactory.CreateLogger<FoundatioExceptionLogger>()));

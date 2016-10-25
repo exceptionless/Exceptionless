@@ -213,7 +213,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = SystemClock.UtcNow.SubtractHours(1);
             await CreateSessionEventsAsync();
 
-            var fields = FieldAggregationProcessor.Process("avg:value:0,distinct:user.raw", false);
+            var fields = FieldAggregationProcessor.Process("avg:value:0,distinct:user.keyword", false);
             Assert.True(fields.IsValid);
             Assert.Equal(2, fields.Aggregations.Count);
 

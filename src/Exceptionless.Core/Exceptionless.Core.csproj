@@ -292,6 +292,9 @@
     <Compile Include="Repositories\Queries\StackIdQuery.cs" />
     <Compile Include="Repositories\Queries\OrganizationIdQuery.cs" />
     <Compile Include="Repositories\Queries\ExceptionlessSystemFilterQuery.cs" />
+    <Compile Include="Serialization\DynamicTypeContractResolver.cs" />
+    <Compile Include="Serialization\ElasticDynamicTypeContractResolver.cs" />
+    <Compile Include="Serialization\ElasticLowerCaseUnderscorePropertyNamesContractResolver.cs" />
     <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Utility\IConnectionMapping.cs" />
     <Compile Include="Utility\SemanticVersionParser.cs" />
@@ -333,7 +336,6 @@
     <Compile Include="Mail\SmtpMailSender.cs" />
     <Compile Include="Plugins\EventProcessor\Default\40_RequestInfoPlugin.cs" />
     <Compile Include="Repositories\Exceptions\DocumentNotFoundException.cs" />
-    <Compile Include="Serialization\EmptyCollectionElasticContractResolver.cs" />
     <Compile Include="Extensions\MailerExtensions.cs" />
     <Compile Include="Extensions\ValidationExtensions.cs" />
     <Compile Include="Jobs\EventUserDescriptionsJob.cs" />
@@ -449,7 +451,6 @@
     <Compile Include="Repositories\Interfaces\IWebHookRepository.cs" />
     <Compile Include="Repositories\TokenRepository.cs" />
     <Compile Include="Repositories\WebHookRepository.cs" />
-    <Compile Include="Serialization\ExceptionlessContractResolver.cs" />
     <Compile Include="Serialization\LowerCaseUnderscorePropertyNamesContractResolver.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Plugins\EventProcessor\Default\20_ErrorPlugin.cs" />

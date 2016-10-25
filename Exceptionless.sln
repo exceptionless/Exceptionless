@@ -9,10 +9,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		appveyor.yml = appveyor.yml
 		CONTRIBUTING.md = CONTRIBUTING.md
-		Libraries\elasticsearch.prod.yml = Libraries\elasticsearch.prod.yml
-		Libraries\elasticsearch.yml = Libraries\elasticsearch.yml
+		build\elasticsearch.prod.yml = build\elasticsearch.prod.yml
+		build\elasticsearch.yml = build\elasticsearch.yml
 		LICENSE.txt = LICENSE.txt
 		README.md = README.md
+		build\Start-ElasticSearch.ps1 = build\Start-ElasticSearch.ps1
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Api", "src\Exceptionless.Api\Exceptionless.Api.csproj", "{50717168-44E5-4E69-95EC-EED839630323}"

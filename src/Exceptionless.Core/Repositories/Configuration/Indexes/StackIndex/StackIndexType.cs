@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public StackIndexType(StackIndex index) : base(index, "stacks") { }
 
         public override TypeMappingDescriptor<Stack> BuildMapping(TypeMappingDescriptor<Stack> map) {
-            const string SET_FIXED_SCRIPT = @"ctx._source['fixed'] = !!ctx._source['date_fixed']";
+            const string SET_FIXED_SCRIPT = "ctx._source['fixed'] = !!ctx._source['date_fixed']";
 
             return base.BuildMapping(map)
                 .Dynamic(false)

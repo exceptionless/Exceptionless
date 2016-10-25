@@ -9,6 +9,7 @@ http.port: 9200
 transport.tcp.port: 9300
 bootstrap.mlockall: true
 discovery.zen.ping.multicast.enabled: false
+plugin.mandatory: mapper-size
 
 # non-ssd configuration
 #index.merge.scheduler.max_thread_count: 1

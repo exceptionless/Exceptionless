@@ -42,6 +42,35 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
+        public async Task CanGetByFixed() {
+            var stack = await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
+
+            var results = await _repository.GetByFilterAsync(null, "fixed:true", SortingOptions.Empty, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            Assert.NotNull(results);
+            Assert.Equal(0, results.Total);
+
+            results = await _repository.GetByFilterAsync(null, "fixed:false", SortingOptions.Empty, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            Assert.NotNull(results);
+            Assert.Equal(1, results.Total);
+            Assert.False(results.Documents.Single().IsRegressed);
+            Assert.NotNull(results.Documents.Single().DateFixed);
+
+            stack.MarkFixed();
+            await _repository.SaveAsync(stack);
+            await _configuration.Client.RefreshAsync(Indices.All);
+
+            results = await _repository.GetByFilterAsync(null, "fixed:true", SortingOptions.Empty, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            Assert.NotNull(results);
+            Assert.Equal(1, results.Total);
+            Assert.False(results.Documents.Single().IsRegressed);
+            Assert.NotNull(results.Documents.Single().DateFixed);
+
+            results = await _repository.GetByFilterAsync(null, "fixed:false", SortingOptions.Empty, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            Assert.NotNull(results);
+            Assert.Equal(0, results.Total);
+        }
+
+        [Fact]
         public async Task CanMarkAsRegressedAsync() {
             await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)));
 

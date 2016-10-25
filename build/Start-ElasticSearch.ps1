@@ -19,6 +19,7 @@ If ((Test-Path -Path "elasticsearch.zip") -And !(Test-Path -Path "elasticsearch-
     [io.compression.zipfile]::ExtractToDirectory("$PSScriptRoot\elasticsearch.zip", $PSScriptRoot)
     cp .\elasticsearch.yml .\elasticsearch-$es_version\config -Force
     rm elasticsearch.zip
+    & ".\elasticsearch-$es_version\bin\plugin.bat" install mapper-size
 }
 
 Start-Process -NoNewWindow "$(Get-Location)\elasticsearch-$es_version\bin\elasticsearch.bat"

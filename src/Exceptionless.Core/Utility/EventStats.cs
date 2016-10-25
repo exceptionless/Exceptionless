@@ -19,10 +19,12 @@ using Nest;
 namespace Exceptionless.Core.Utility {
     public class EventStats {
         private readonly ExceptionlessElasticConfiguration _configuration;
+        private readonly string _dateField;
         private readonly ILogger _logger;
 
         public EventStats(ExceptionlessElasticConfiguration configuration, ILogger<EventStats> logger) {
             _configuration = configuration;
+            _dateField = _configuration.Client.Infer.PropertyName(Infer.Property<PersistentEvent>(f => f.Date));
             _logger = logger;
         }
 
@@ -33,7 +35,7 @@ namespace Exceptionless.Core.Utility {
             var filter = new ElasticQuery()
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
-                .WithDateRange(utcStart, utcEnd, EventIndexType.Alias.Date)
+                .WithDateRange(utcStart, utcEnd, _dateField)
                 .WithIndexes(utcStart, utcEnd);
 
             // if no start date then figure out first event date
@@ -79,7 +81,7 @@ namespace Exceptionless.Core.Utility {
             var filter = new ElasticQuery()
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
-                .WithDateRange(utcStart, utcEnd, EventIndexType.Alias.Date)
+                .WithDateRange(utcStart, utcEnd, _dateField)
                 .WithIndexes(utcStart, utcEnd);
 
             // if no start date then figure out first event date
@@ -153,7 +155,7 @@ namespace Exceptionless.Core.Utility {
             var filter = new ElasticQuery()
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
-                .WithDateRange(utcStart, utcEnd, EventIndexType.Alias.Date)
+                .WithDateRange(utcStart, utcEnd, _dateField)
                 .WithIndexes(utcStart, utcEnd);
 
             // if no start date then figure out first event date
@@ -331,7 +333,7 @@ namespace Exceptionless.Core.Utility {
             var firstEvent = response.Hits.FirstOrDefault()?.Source;
             if (firstEvent != null) {
                 filter.DateRanges.Clear();
-                filter.WithDateRange(firstEvent.Date.UtcDateTime, utcEnd, EventIndexType.Alias.Date);
+                filter.WithDateRange(firstEvent.Date.UtcDateTime, utcEnd, _dateField);
                 filter.Indexes.Clear();
                 filter.WithIndexes(firstEvent.Date.UtcDateTime, utcEnd);
             }
