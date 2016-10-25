@@ -289,6 +289,7 @@
     <Compile Include="Repositories\Configuration\Indexes\StackIndex\StackIndexType.cs" />
     <Compile Include="Repositories\Queries\ProjectIdQuery.cs" />
     <Compile Include="Repositories\Queries\ExceptionlessQuery.cs" />
+    <Compile Include="Repositories\Queries\StackDateFixedQueryVisitor.cs" />
     <Compile Include="Repositories\Queries\StackIdQuery.cs" />
     <Compile Include="Repositories\Queries\OrganizationIdQuery.cs" />
     <Compile Include="Repositories\Queries\ExceptionlessSystemFilterQuery.cs" />

@@ -1,8 +1,10 @@
 using System;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
@@ -10,11 +12,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public StackIndexType(StackIndex index) : base(index, "stacks") { }
 
         public override TypeMappingDescriptor<Stack> BuildMapping(TypeMappingDescriptor<Stack> map) {
-            const string SET_FIXED_SCRIPT = "ctx._source['fixed'] = !!ctx._source['date_fixed']";
-
             return base.BuildMapping(map)
                 .Dynamic(false)
-                //.Transform(t => t.Script(SET_FIXED_SCRIPT).Language(ScriptLang.Groovy)) // TODO: This needs to use an ingest pipeline
                 .AllField(a => a.Enabled(false))
                 .Properties(p => p
                     .SetupDefaults()
@@ -36,6 +35,11 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Boolean(f => f.Name(s => s.OccurrencesAreCritical).Alias(Alias.OccurrencesAreCritical))
                     .Number(f => f.Name(s => s.TotalOccurrences).Alias(Alias.TotalOccurrences))
                 );
+        }
+
+        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
+            string dateFixedFieldName = Configuration.Client.Infer.PropertyName(Infer.Property<Stack>(f => f.DateFixed));
+            builder.UseQueryParser(this, c => c.AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName)));
         }
 
         public class Alias {

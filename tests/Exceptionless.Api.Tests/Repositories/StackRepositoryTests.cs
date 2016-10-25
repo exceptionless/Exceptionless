@@ -45,6 +45,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public async Task CanGetByFixed() {
             var stack = await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
 
+            await _configuration.Client.RefreshAsync(Indices.All);
             var results = await _repository.GetByFilterAsync(null, "fixed:true", SortingOptions.Empty, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
             Assert.NotNull(results);
             Assert.Equal(0, results.Total);
@@ -53,7 +54,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(results);
             Assert.Equal(1, results.Total);
             Assert.False(results.Documents.Single().IsRegressed);
-            Assert.NotNull(results.Documents.Single().DateFixed);
+            Assert.Null(results.Documents.Single().DateFixed);
 
             stack.MarkFixed();
             await _repository.SaveAsync(stack);
