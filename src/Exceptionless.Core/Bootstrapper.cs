@@ -17,6 +17,7 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using FluentValidation;
@@ -45,18 +46,18 @@ namespace Exceptionless.Core {
                 DateParseHandling = DateParseHandling.DateTimeOffset
             };
 
-            var contractResolver = new ExceptionlessContractResolver();
-            contractResolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOne.VersionOneWebHookStack), typeof(VersionOne.VersionOneWebHookEvent));
+            var resolver = new DynamicTypeContractResolver(new LowerCaseUnderscorePropertyNamesContractResolver());
+            resolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOne.VersionOneWebHookStack), typeof(VersionOne.VersionOneWebHookEvent));
 
             var settings = new JsonSerializerSettings {
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 DateParseHandling = DateParseHandling.DateTimeOffset,
-                ContractResolver = contractResolver
+                ContractResolver = resolver
             };
 
             settings.AddModelConverters(loggerFactory.CreateLogger(nameof(Bootstrapper)));
 
-            container.RegisterSingleton<IContractResolver>(() => contractResolver);
+            container.RegisterSingleton<IContractResolver>(() => resolver);
             container.RegisterSingleton<JsonSerializerSettings>(settings);
             container.RegisterSingleton<JsonSerializer>(JsonSerializer.Create(settings));
             container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));

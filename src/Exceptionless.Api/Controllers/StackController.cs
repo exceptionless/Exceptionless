@@ -44,8 +44,8 @@ namespace Exceptionless.Api.Controllers {
         private readonly EventStats _eventStats;
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
-        private readonly List<FieldAggregation> _distinctUsersFields = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct } };
-        private readonly List<FieldAggregation> _distinctUsersFieldsWithSort = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct, SortOrder = SortOrder.Descending } };
+        private readonly List<FieldAggregation> _distinctUsersFields = new List<FieldAggregation> { new FieldAggregation { Field = "user.keyword", Type = FieldAggregationType.Distinct } };
+        private readonly List<FieldAggregation> _distinctUsersFieldsWithSort = new List<FieldAggregation> { new FieldAggregation { Field = "user.keyword", Type = FieldAggregationType.Distinct, SortOrder = SortOrder.Descending } };
 
         public StackController(IStackRepository stackRepository,  IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, ICacheClient cacheClient, EventStats eventStats, BillingManager billingManager, FormattingPluginManager formattingPluginManager, ILoggerFactory loggerFactory, IMapper mapper) : base(stackRepository, loggerFactory, mapper) {
             _stackRepository = stackRepository;
@@ -162,7 +162,7 @@ namespace Exceptionless.Api.Controllers {
             var stack = await GetModelAsync(id, false);
             if (stack == null)
                 return NotFound();
-            
+
             if (!stack.References.Contains(url.Trim())) {
                 stack.References.Add(url.Trim());
                 await _stackRepository.SaveAsync(stack);
@@ -216,7 +216,7 @@ namespace Exceptionless.Api.Controllers {
             var stack = await GetModelAsync(id, false);
             if (stack == null)
                 return NotFound();
-            
+
             if (stack.References.Contains(url.Trim())) {
                 stack.References.Remove(url.Trim());
                 await _stackRepository.SaveAsync(stack);
@@ -522,10 +522,10 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(pr.Message);
 
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
-            
+
             var sortBy = GetSort(sort);
             var options = new PagingOptions { Page = page, Limit = limit };
-            
+
             try {
                 var results = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
 
@@ -864,7 +864,7 @@ namespace Exceptionless.Api.Controllers {
         private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, IExceptionlessSystemFilterQuery eventSystemFilter, TimeInfo ti) {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
-            
+
             var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", _distinctUsersFields, ti.UtcRange.Start, ti.UtcRange.End, eventSystemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), ti.Offset, stacks.Count);
             return await GetStackSummariesAsync(stacks, ntsr, eventSystemFilter, ti);
         }
@@ -892,7 +892,7 @@ namespace Exceptionless.Api.Controllers {
                 return summary;
             }).ToList();
         }
-        
+
         private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, IExceptionlessSystemFilterQuery sf, DateTime utcStart, DateTime utcEnd) {
             var scopedCacheClient = new ScopedCacheClient(_cache, $"Project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}");
             var projectIds = stacks.Select(s => s.ProjectId).Distinct().ToList();

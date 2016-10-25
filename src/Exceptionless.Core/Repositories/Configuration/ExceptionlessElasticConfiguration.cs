@@ -5,6 +5,7 @@ using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Serialization;
+using Exceptionless.Serializer;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
@@ -50,7 +51,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override void ConfigureSettings(ConnectionSettings settings) {
-            settings
+            settings.DisableDirectStreaming()
                 .EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2))
                 .DefaultTypeNameInferrer(p => p.Name.ToLowerUnderscoredWords())
                 .DefaultFieldNameInferrer(p => p.ToLowerUnderscoredWords())
@@ -61,7 +62,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public class ElasticsearchJsonNetSerializer : JsonNetSerializer {
         public ElasticsearchJsonNetSerializer(IConnectionSettingsValues settings, ILogger logger)
             : base(settings, (serializerSettings, values) => {
-                serializerSettings.ContractResolver = new EmptyCollectionElasticContractResolver(values, new List<Func<Type, JsonConverter>>());
+                var resolver = new ElasticDynamicTypeContractResolver(values, new List<Func<Type, JsonConverter>>());
+                serializerSettings.ContractResolver = resolver;
                 serializerSettings.AddModelConverters(logger);
             }) {
         }

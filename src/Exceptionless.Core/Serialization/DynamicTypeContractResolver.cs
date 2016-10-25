@@ -2,19 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Serialization;
 using Newtonsoft.Json.Serialization;
 
 namespace Exceptionless.Serializer {
-    public class ExceptionlessContractResolver : DefaultContractResolver {
+    public class DynamicTypeContractResolver : IContractResolver {
         private readonly HashSet<Assembly> _assemblies = new HashSet<Assembly>();
         private readonly HashSet<Type> _types = new HashSet<Type>();
 
-        private readonly IContractResolver _defaultContractSerializer = new DefaultContractResolver();
-        private readonly IContractResolver _camelCaseContractResolver;
+        private readonly IContractResolver _defaultResolver;
+        private readonly IContractResolver _resolver;
 
-        public ExceptionlessContractResolver() {
-            _camelCaseContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver();
+        public DynamicTypeContractResolver(IContractResolver resolver, IContractResolver defaultResolver = null) {
+            if (resolver == null)
+                throw new ArgumentNullException(nameof(resolver));
+
+            _resolver = resolver;
+            _defaultResolver = defaultResolver ?? new DefaultContractResolver();
         }
 
         public void UseDefaultResolverFor(params Assembly[] assemblies) {
@@ -25,11 +28,11 @@ namespace Exceptionless.Serializer {
             _types.AddRange(types);
         }
 
-        public override JsonContract ResolveContract(Type type) {
+        public JsonContract ResolveContract(Type type) {
             if (_types.Contains(type) || _assemblies.Contains(type.Assembly))
-                return _defaultContractSerializer.ResolveContract(type);
+                return _defaultResolver.ResolveContract(type);
 
-            return _camelCaseContractResolver.ResolveContract(type);
+            return _resolver.ResolveContract(type);
         }
     }
 }
