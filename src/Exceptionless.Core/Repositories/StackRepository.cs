@@ -10,7 +10,6 @@ using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
-using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
@@ -59,16 +58,27 @@ namespace Exceptionless.Core.Repositories {
         public async Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
+            const string script = @"
+Instant parseDate(def dt) {
+  if (dt != null) {
+    try {
+      return Instant.parse(dt);
+    } catch(DateTimeParseException e) {}
+  }
+  return Instant.MIN;
+}
+
+if (ctx._source.total_occurrences == 0 || parseDate(ctx._source.first_occurrence).isAfter(parseDate(params.minOccurrenceDateUtc))) {
+  ctx._source.first_occurrence = params.minOccurrenceDateUtc;
+}
+if (parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.maxOccurrenceDateUtc))) {
+  ctx._source.last_occurrence = params.maxOccurrenceDateUtc;
+}
+ctx._source.total_occurrences += params.count;";
+
             var request = new UpdateRequest<Stack, Stack>(GetIndexById(stackId), ElasticType.Type, stackId) {
                 RetryOnConflict = 3,
-                Lang = "groovy",
-                Script = @"if (ctx._source.total_occurrences == 0 || ctx._source.first_occurrence > minOccurrenceDateUtc) {
-                            ctx._source.first_occurrence = minOccurrenceDateUtc;
-                          }
-                          if (ctx._source.last_occurrence < maxOccurrenceDateUtc) {
-                            ctx._source.last_occurrence = maxOccurrenceDateUtc;
-                          }
-                          ctx._source.total_occurrences += count;",
+                Script = script,
                 Params = new Dictionary<string, object>(3) {
                     { "minOccurrenceDateUtc", minOccurrenceDateUtc },
                     { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },

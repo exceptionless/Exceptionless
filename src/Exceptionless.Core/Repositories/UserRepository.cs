@@ -67,7 +67,7 @@ namespace Exceptionless.Core.Repositories {
                 return Task.FromResult<FindResults<User>>(new FindResults<User>());
 
             return FindAsync(new ExceptionlessQuery()
-                .WithOrganizationId(organizationId)
+                .WithElasticFilter(Query<User>.Term(u => u.OrganizationIds, organizationId))
                 .WithPaging(paging)
                 .WithSort(GetPropertyName(nameof(User.EmailAddress)), SortOrder.Ascending)
                 .WithCacheKey(useCache ? String.Concat("paged:Organization:", organizationId) : null)

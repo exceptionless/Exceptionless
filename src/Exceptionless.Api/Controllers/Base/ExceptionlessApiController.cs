@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Controllers {
             // range parsing needs to be based on the user's local time.
             var localRange = DateTimeRange.Parse(time, SystemClock.UtcNow.Add(utcOffset));
             var utcRange = localRange != DateTimeRange.Empty ? localRange.Subtract(utcOffset) : localRange;
-            
+
             if (utcRange.UtcStart < minimumUtcStartDate.GetValueOrDefault())
                 utcRange = new DateTimeRange(minimumUtcStartDate.GetValueOrDefault(), utcRange.End);
 
@@ -61,7 +61,7 @@ namespace Exceptionless.Api.Controllers {
 
             return timeInfo;
         }
-        
+
         protected virtual SortingOptions GetSort(string sort) {
             var sortingOptions = new SortingOptions();
 
@@ -114,7 +114,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         public User ExceptionlessUser => Request.GetUser();
-        
+
         public bool CanAccessOrganization(string organizationId) {
             return Request.CanAccessOrganization(organizationId);
         }

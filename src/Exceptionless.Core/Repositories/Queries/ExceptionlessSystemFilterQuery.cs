@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
@@ -60,6 +61,20 @@ namespace Exceptionless.Core.Repositories.Queries {
     }
 
     public class ExceptionlessSystemFilterQueryBuilder : IElasticQueryBuilder {
+        private readonly string _organizationIdFieldName;
+        private readonly string _projectIdFieldName;
+        private readonly string _stackIdFieldName;
+        private readonly string _stackLastOccurrenceFieldName;
+        private readonly string _eventDateFieldName;
+
+        public ExceptionlessSystemFilterQueryBuilder() {
+            _organizationIdFieldName = nameof(IOwnedByOrganization.OrganizationId).ToLowerUnderscoredWords();
+            _projectIdFieldName = nameof(IOwnedByProject.ProjectId).ToLowerUnderscoredWords();
+            _stackIdFieldName = nameof(IOwnedByStack.StackId).ToLowerUnderscoredWords();
+            _stackLastOccurrenceFieldName = nameof(Stack.LastOccurrence).ToLowerUnderscoredWords();
+            _eventDateFieldName = nameof(Event.Date).ToLowerUnderscoredWords();
+        }
+
         public void Build<T>(QueryBuilderContext<T> ctx) where T : class, new() {
             var sfq = ctx.GetSourceAs<IExceptionlessSystemFilterQuery>();
             if (sfq == null)
@@ -67,14 +82,14 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             var allowedOrganizations = sfq.Organizations.Where(o => o.HasPremiumFeatures || (!o.HasPremiumFeatures && !sfq.UsesPremiumFeatures)).ToList();
             if (allowedOrganizations.Count == 0) {
-                ctx.Query &= Query<T>.Term("organization", "none");
+                ctx.Query &= Query<T>.Term(_organizationIdFieldName, "none");
                 return;
             }
 
             string field = GetDateField(ctx.GetOptionsAs<IElasticQueryOptions>());
             if (sfq.Stack != null) {
                 var organization = sfq.Organizations.Single(o => o.Id == sfq.Stack.OrganizationId);
-                ctx.Query &= (Query<T>.Term("stack", sfq.Stack.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
+                ctx.Query &= (Query<T>.Term(_stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
                 return;
             }
 
@@ -82,7 +97,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (sfq.Projects?.Count > 0) {
                 foreach (var project in sfq.Projects) {
                     var organization = sfq.Organizations.Single(o => o.Id == project.OrganizationId);
-                    container |= (Query<T>.Term("project", project.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
+                    container |= (Query<T>.Term(_projectIdFieldName, project.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
                 }
 
                 ctx.Query &= container;
@@ -91,7 +106,7 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             if (sfq.Organizations?.Count > 0) {
                 foreach (var organization in sfq.Organizations)
-                    container |= (Query<T>.Term("organization", organization.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
+                    container |= (Query<T>.Term(_organizationIdFieldName, organization.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
 
                 ctx.Query &= container;
             }
@@ -105,11 +120,10 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         private string GetDateField(IElasticQueryOptions options) {
-            // TODO: These need to be inferred.
             if (options != null && options.IndexType.GetType() == typeof(StackIndexType))
-                return StackIndexType.Alias.LastOccurrence;
+                return _stackLastOccurrenceFieldName;
 
-            return EventIndexType.Alias.Date;
+            return _eventDateFieldName;
         }
     }
 }
