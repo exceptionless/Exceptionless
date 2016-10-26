@@ -4,7 +4,6 @@ using System.Linq;
 using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
-using Exceptionless.Core.Serialization;
 using Exceptionless.Serializer;
 using Foundatio.Caching;
 using Foundatio.Jobs;
