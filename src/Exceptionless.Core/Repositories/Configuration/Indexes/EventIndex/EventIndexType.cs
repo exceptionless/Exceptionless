@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Boolean(f => f.Name(e => e.IsFirstOccurrence).Alias(Alias.IsFirstOccurrence))
                     .Boolean(f => f.Name(e => e.IsFixed).Alias(Alias.IsFixed))
                     .Boolean(f => f.Name(e => e.IsHidden).Alias(Alias.IsHidden))
-                    .Object<object>(f => f.Name(e => e.Idx).Alias(Alias.IDX).Dynamic())
+                    .Object<object>(f => f.Name(e => e.Idx).Alias(Alias.IDX).Dynamic(true))
                     .AddDataDictionaryMappings()
             );
         }
