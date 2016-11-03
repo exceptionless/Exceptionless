@@ -10,8 +10,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public StackIndexType Stack { get; }
 
-        public override CreateIndexDescriptor ConfigureDescriptor(CreateIndexDescriptor idx) {
-            return base.ConfigureDescriptor(idx.Settings(s => s
+        public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+            return base.ConfigureIndex(idx.Settings(s => s
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
                 .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)));
         }

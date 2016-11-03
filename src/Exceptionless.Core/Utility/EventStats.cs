@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Utility {
         }
 
         public async Task<NumbersTermStatsResult> GetNumbersTermsStatsAsync(string term, IEnumerable<FieldAggregation> fields, DateTime utcStart, DateTime utcEnd, IExceptionlessSystemFilterQuery systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25) {
-            var allowedTerms = new[] { "organization_id", "project_id", "stack_id", "tags", "version" };
+            var allowedTerms = new[] { "organization_id", "project_id", "stack_id", "tags.keyword", "version.keyword" };
             if (!allowedTerms.Contains(term))
                 throw new ArgumentException("Must be a valid term.", nameof(term));
 
@@ -340,7 +340,7 @@ namespace Exceptionless.Core.Utility {
         }
 
         private string HoursAndMinutes(TimeSpan ts) {
-            return (ts < TimeSpan.Zero ? "-" : "") + ts.ToString("hh\\:mm");
+            return (ts < TimeSpan.Zero ? "-" : "+") + ts.ToString("hh\\:mm");
         }
 
         private Tuple<string, TimeSpan> GetInterval(DateTime utcStart, DateTime utcEnd, int desiredDataPoints = 100) {

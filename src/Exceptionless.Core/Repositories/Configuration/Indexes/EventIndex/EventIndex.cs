@@ -35,8 +35,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public EventIndexType Event { get; }
 
-        public override CreateIndexDescriptor ConfigureDescriptor(CreateIndexDescriptor idx) {
-            return base.ConfigureDescriptor(idx.Settings(s => s
+        public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+            return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(BuildAnalysis)
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
                 .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)));
