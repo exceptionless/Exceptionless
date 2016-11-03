@@ -156,7 +156,29 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.True(fields.IsValid);
 
             var sf = new ExceptionlessSystemFilterQuery(ProjectData.GenerateSampleProject(), OrganizationData.GenerateSampleOrganization());
-            var result = await _stats.GetNumbersTermsStatsAsync("tags", fields.Aggregations, startDate, SystemClock.UtcNow, sf, "fixed:false");
+            var result = await _stats.GetNumbersTermsStatsAsync("tags.keyword", fields.Aggregations, startDate, SystemClock.UtcNow, sf, "fixed:false");
+            Assert.Equal(eventCount, result.Total);
+            // each event can be in multiple tag buckets since an event can have up to 3 sample tags
+            Assert.InRange(result.Terms.Sum(t => t.Total), eventCount, eventCount * 3);
+            Assert.InRange(result.Terms.Sum(t => t.Numbers[0]), 1, 25 * TestConstants.EventTags.Count); // new
+            Assert.InRange(result.Terms.Count, 1, TestConstants.EventTags.Count);
+            foreach (var term in result.Terms)
+                Assert.InRange(term.Numbers[0], 1, 25); // new
+        }
+
+        [Fact]
+        public async Task CanGetEventTermStatsByVersionAsync() {
+            // capture start date before generating data to make sure that our time range for stats includes all items
+            var startDate = SystemClock.UtcNow.SubtractDays(60);
+            const int eventCount = 100;
+            await CreateDataAsync(eventCount, false);
+
+            Log.MinimumLevel = LogLevel.Trace;
+            var fields = FieldAggregationProcessor.Process("term:is_first_occurrence:-F", false);
+            Assert.True(fields.IsValid);
+
+            var sf = new ExceptionlessSystemFilterQuery(ProjectData.GenerateSampleProject(), OrganizationData.GenerateSampleOrganization());
+            var result = await _stats.GetNumbersTermsStatsAsync("version.keyword", fields.Aggregations, startDate, SystemClock.UtcNow, sf, "fixed:false");
             Assert.Equal(eventCount, result.Total);
             // each event can be in multiple tag buckets since an event can have up to 3 sample tags
             Assert.InRange(result.Terms.Sum(t => t.Total), eventCount, eventCount * 3);

@@ -14,8 +14,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddType(WebHook = new WebHookIndexType(this));
         }
 
-        public override CreateIndexDescriptor ConfigureDescriptor(CreateIndexDescriptor idx) {
-            return base.ConfigureDescriptor(idx.Settings(s => s
+        public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+            return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
                 .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)));
