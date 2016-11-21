@@ -14,7 +14,6 @@ using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
-using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
@@ -122,16 +121,16 @@ ctx._source.total_occurrences += params.count;";
             return hit?.Document;
         }
 
-        public Task<FindResults<Stack>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
-            if (sorting.Fields.Count == 0)
-                sorting.Fields.Add(new FieldSort { Field = GetPropertyName(nameof(Stack.LastOccurrence)), Order = SortOrder.Descending });
+        public Task<FindResults<Stack>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+            if (String.IsNullOrEmpty(sort))
+                sort = $"-{GetPropertyName(nameof(Stack.LastOccurrence))}";
 
             var search = new ExceptionlessQuery()
                 .WithDateRange(utcStart, utcEnd, field ?? GetPropertyName(nameof(Stack.LastOccurrence)))
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
                 .WithPaging(paging)
-                .WithSort(sorting);
+                .WithSort(sort);
 
             return FindAsync(search);
         }

@@ -74,7 +74,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(context.IsProcessed);
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var events = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var events = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(2, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 
@@ -96,7 +96,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(context.IsProcessed);
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var events = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var events = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(3, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 
@@ -114,7 +114,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(context.IsProcessed);
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var events = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var events = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(1, events.Total);
             Assert.Equal(0, events.Documents.Count(e => e.IsSessionStart()));
             Assert.Equal(0, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -136,7 +136,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(contexts.Any(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(6, results.Total);
             Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             Assert.Equal(2, results.Documents.Count(e => e.IsSessionEnd()));
@@ -163,7 +163,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(contexts.Any(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(1, results.Total);
             Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             Assert.Equal(0, results.Documents.Count(e => e.IsSessionEnd()));
@@ -240,7 +240,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(1, contexts.Count(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(4, results.Total);
             Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
@@ -264,7 +264,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(contexts.All(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(0, results.Total);
         }
 
@@ -281,7 +281,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(1, contexts.Count(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(2, results.Total);
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
 
@@ -311,7 +311,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(context.IsProcessed);
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var events = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var events = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(2, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 
@@ -334,7 +334,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(context.IsProcessed);
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var events = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var events = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(3, events.Total);
             Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 
@@ -359,7 +359,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(contexts.Any(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(4, results.Total);
             Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 
@@ -386,7 +386,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(3, contexts.Count(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(4, results.Total);
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
@@ -414,7 +414,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(contexts.Any(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(3, results.Total);
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
             Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -447,7 +447,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(contexts.Any(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(4, results.Total);
             Assert.Equal(1, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
@@ -474,7 +474,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.False(contexts.All(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(0, results.Total);
         }
 
@@ -491,7 +491,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(1, contexts.Count(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(new SortingOptions().WithField(EventIndexType.Alias.Date));
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(2, results.Total);
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
 

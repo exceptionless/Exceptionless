@@ -99,7 +99,7 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(filter))
                 filter = filter.ReplaceFirst("stack:current", $"stack:{model.StackId}");
 
-            var pr = QueryProcessor.Process(filter);
+            var pr = await QueryProcessor.ProcessAsync(filter);
             if (!pr.IsValid)
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
@@ -140,18 +140,16 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(EmptyModels);
 
-            var sortBy = GetSort(sort);
-            var options = new PagingOptions { Page = page, Limit = limit };
-
-            var pr = QueryProcessor.Process(filter);
+            var pr = await QueryProcessor.ProcessAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
+            var options = new PagingOptions { Page = page, Limit = limit };
 
             FindResults<PersistentEvent> events;
             try {
-                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, pr.ExpandedQuery, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
+                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, pr.ExpandedQuery, sort, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your search filter.")

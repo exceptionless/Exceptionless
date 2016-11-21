@@ -19,7 +19,6 @@ using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
 using Nest;
-using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository {
@@ -81,16 +80,16 @@ namespace Exceptionless.Core.Repositories {
             var query = new ExceptionlessQuery().WithPaging(paging).WithElasticFilter(filter);
             switch (sortBy) {
                 case OrganizationSortBy.Newest:
-                    query.WithSort(GetPropertyName(nameof(Organization.Id)), SortOrder.Descending);
+                    query.WithSort($"-{GetPropertyName(nameof(Organization.Id))}");
                     break;
                 case OrganizationSortBy.Subscribed:
-                    query.WithSort(GetPropertyName(nameof(Organization.SubscribeDate)), SortOrder.Descending);
+                    query.WithSort($"-{GetPropertyName(nameof(Organization.SubscribeDate))}");
                     break;
                 // case OrganizationSortBy.MostActive:
                 //    query.WithSort(GetPropertyName(nameof(Organization.TotalEventCount)), SortOrder.Descending);
                 //    break;
                 default:
-                    query.WithSort(GetPropertyName(nameof(Organization.Name)), SortOrder.Ascending);
+                    query.WithSort(GetPropertyName(nameof(Organization.Name)));
                     break;
             }
 
@@ -100,7 +99,7 @@ namespace Exceptionless.Core.Repositories {
         public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
             var query = new ExceptionlessQuery()
                 .WithSelectedFields(GetPropertyName(nameof(Organization.PlanId)), GetPropertyName(nameof(Organization.IsSuspended)), GetPropertyName(nameof(Organization.BillingPrice)), GetPropertyName(nameof(Organization.BillingStatus)))
-                .WithSort(GetPropertyName(nameof(Organization.PlanId)), SortOrder.Descending);
+                .WithSort($"-{GetPropertyName(nameof(Organization.PlanId))}");
 
             var results = (await FindAsync(query).AnyContext()).Documents;
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
@@ -18,15 +19,17 @@ namespace Exceptionless.Core.Repositories.Queries {
             _projectIdFieldName = nameof(IOwnedByProject.ProjectId).ToLowerUnderscoredWords();
         }
 
-        public void Build<T>(QueryBuilderContext<T> ctx) where T : class, new() {
+        public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
             var projectIdQuery = ctx.GetSourceAs<IProjectIdQuery>();
             if (projectIdQuery?.ProjectIds == null || projectIdQuery.ProjectIds.Count <= 0)
-                return;
+                return Task.CompletedTask;
 
             if (projectIdQuery.ProjectIds.Count == 1)
                 ctx.Query &= Query<T>.Term(_projectIdFieldName, projectIdQuery.ProjectIds.First());
             else
                 ctx.Query &= Query<T>.Terms(t => t.Field(_projectIdFieldName).Terms(projectIdQuery.ProjectIds));
+
+            return Task.CompletedTask;
         }
     }
 

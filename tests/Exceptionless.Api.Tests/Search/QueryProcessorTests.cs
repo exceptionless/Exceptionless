@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Core.Processors;
 using Xunit;
 using Xunit.Abstractions;
@@ -30,8 +31,8 @@ namespace Exceptionless.Api.Tests.Search {
         [InlineData("fixed:true", "fixed:true", true, false)]
         [InlineData("type:404", "type:404", true, false)]
         [InlineData("ref.session:12345678", "idx.session-r:12345678", true, true)]
-        public void CanProcessQuery(string query, string expected, bool isValid, bool usesPremiumFeatures) {
-            var result = QueryProcessor.Process(query);
+        public async Task CanProcessQueryAsync(string query, string expected, bool isValid, bool usesPremiumFeatures) {
+            var result = await QueryProcessor.ProcessAsync(query);
             Assert.Equal(expected, result.ExpandedQuery);
             Assert.Equal(isValid, result.IsValid);
             Assert.Equal(usesPremiumFeatures, result.UsesPremiumFeatures);
