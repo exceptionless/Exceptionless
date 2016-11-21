@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
@@ -19,8 +20,8 @@ namespace Exceptionless.Api.Controllers {
         [Route("search/validate")]
         [Authorize(Roles = AuthorizationRoles.User)]
         [ResponseType(typeof(QueryProcessResult))]
-        public IHttpActionResult Validate(string query) {
-            return Ok(QueryProcessor.Validate(query));
+        public async Task<IHttpActionResult> ValidateAsync(string query) {
+            return Ok(await QueryProcessor.ValidateAsync(query));
         }
 
         [Route("notfound")]

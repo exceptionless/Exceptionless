@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly List<FieldAggregation> _distinctUsersFields = new List<FieldAggregation> { new FieldAggregation { Field = "user.keyword", Type = FieldAggregationType.Distinct } };
-        private readonly List<FieldAggregation> _distinctUsersFieldsWithSort = new List<FieldAggregation> { new FieldAggregation { Field = "user.keyword", Type = FieldAggregationType.Distinct, SortOrder = SortOrder.Descending } };
+        private readonly List<FieldAggregation> _distinctUsersFieldsWithSort = new List<FieldAggregation> { new FieldAggregation { Field = "user.keyword", Type = FieldAggregationType.Distinct, SortOrder = "-" } };
 
         public StackController(IStackRepository stackRepository,  IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, ICacheClient cacheClient, EventStats eventStats, BillingManager billingManager, FormattingPluginManager formattingPluginManager, ILoggerFactory loggerFactory, IMapper mapper) : base(stackRepository, loggerFactory, mapper) {
             _stackRepository = stackRepository;
@@ -517,17 +517,15 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(EmptyModels);
 
-            var pr = QueryProcessor.Process(filter);
+            var pr = await QueryProcessor.ProcessAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
-
-            var sortBy = GetSort(sort);
             var options = new PagingOptions { Page = page, Limit = limit };
 
             try {
-                var results = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
+                var results = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
 
                 var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
@@ -809,7 +807,7 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(EmptyModels);
 
-            var pr = QueryProcessor.Process(filter);
+            var pr = await QueryProcessor.ProcessAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 

@@ -62,30 +62,6 @@ namespace Exceptionless.Api.Controllers {
             return timeInfo;
         }
 
-        protected virtual SortingOptions GetSort(string sort) {
-            var sortingOptions = new SortingOptions();
-
-            if (!String.IsNullOrEmpty(sort)) {
-                var fields = sort.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var field in fields) {
-                    string name = field.Trim();
-                    if (String.IsNullOrEmpty(name))
-                        continue;
-
-                    var order = SortOrder.Ascending;
-                    if (!String.IsNullOrEmpty(sort) && sort.StartsWith("-")) {
-                        name = name.Substring(1);
-                        order = SortOrder.Descending;
-                    }
-
-                    if (AllowedFields.Contains(name))
-                        sortingOptions.Fields.Add(new FieldSort { Field = name, Order = order });
-                }
-            }
-
-            return sortingOptions;
-        }
-
         protected int GetLimit(int limit) {
             if (limit < 1)
                 limit = DEFAULT_LIMIT;

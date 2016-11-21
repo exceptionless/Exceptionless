@@ -8,7 +8,7 @@ using Foundatio.Repositories.Models;
 namespace Exceptionless.Core.Repositories {
     public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<PersistentEvent> {
         Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId);
-        Task<FindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
+        Task<FindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
         Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, IExceptionlessSystemFilterQuery systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
 
         Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null);

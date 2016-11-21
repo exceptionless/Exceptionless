@@ -8,6 +8,7 @@ using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Elasticsearch.Queries.Options;
 using Foundatio.Repositories.Queries;
 using Nest;
+using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Repositories.Queries {
     public class ExceptionlessSystemFilterQuery : IExceptionlessSystemFilterQuery {
@@ -75,22 +76,22 @@ namespace Exceptionless.Core.Repositories.Queries {
             _eventDateFieldName = nameof(Event.Date).ToLowerUnderscoredWords();
         }
 
-        public void Build<T>(QueryBuilderContext<T> ctx) where T : class, new() {
+        public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
             var sfq = ctx.GetSourceAs<IExceptionlessSystemFilterQuery>();
             if (sfq == null)
-                return;
+                return Task.CompletedTask;
 
             var allowedOrganizations = sfq.Organizations.Where(o => o.HasPremiumFeatures || (!o.HasPremiumFeatures && !sfq.UsesPremiumFeatures)).ToList();
             if (allowedOrganizations.Count == 0) {
                 ctx.Query &= Query<T>.Term(_organizationIdFieldName, "none");
-                return;
+                return Task.CompletedTask;
             }
 
             string field = GetDateField(ctx.GetOptionsAs<IElasticQueryOptions>());
             if (sfq.Stack != null) {
                 var organization = sfq.Organizations.Single(o => o.Id == sfq.Stack.OrganizationId);
                 ctx.Query &= (Query<T>.Term(_stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization.RetentionDays));
-                return;
+                return Task.CompletedTask;
             }
 
             QueryContainer container = null;
@@ -101,7 +102,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 }
 
                 ctx.Query &= container;
-                return;
+                return Task.CompletedTask;
             }
 
             if (sfq.Organizations?.Count > 0) {
@@ -110,6 +111,8 @@ namespace Exceptionless.Core.Repositories.Queries {
 
                 ctx.Query &= container;
             }
+
+            return Task.CompletedTask;
         }
 
         private static QueryContainer GetRetentionFilter<T>(string field, int retentionDays) where T : class, new() {

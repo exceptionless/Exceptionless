@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Controllers {
             if (!far.IsValid)
                 return BadRequest(far.Message);
             
-            var pr = QueryProcessor.Process(filter);
+            var pr = await QueryProcessor.ProcessAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
             
@@ -86,8 +86,8 @@ namespace Exceptionless.Api.Controllers {
             var far = FieldAggregationProcessor.Process(fields);
             if (!far.IsValid)
                 return BadRequest(far.Message);
-            
-            var pr = QueryProcessor.Process(filter);
+
+            var pr = await QueryProcessor.ProcessAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 

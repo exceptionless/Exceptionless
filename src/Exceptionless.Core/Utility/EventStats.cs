@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Utility {
                 .Type(_configuration.Events.Event.Name)
                 .Aggregations(agg => BuildAggregations(agg, fields));
 
-            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
+            await _configuration.Events.Event.QueryBuilder.ConfigureSearchAsync(filter, null, descriptor).AnyContext();
             var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 
@@ -107,7 +107,7 @@ namespace Exceptionless.Core.Utility {
                     ), fields)
                 );
 
-            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
+            await _configuration.Events.Event.QueryBuilder.ConfigureSearchAsync(filter, null, descriptor).AnyContext();
             var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 
@@ -183,7 +183,7 @@ namespace Exceptionless.Core.Utility {
                     .Max("last_occurrence", t => t.Field(ev => ev.Date)), fields)
                 );
 
-            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
+            await _configuration.Events.Event.QueryBuilder.ConfigureSearchAsync(filter, null, descriptor).AnyContext();
             var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 
@@ -270,11 +270,11 @@ namespace Exceptionless.Core.Utility {
         }
 
         private TermsAggregationDescriptor<PersistentEvent> BuildTermSort(TermsAggregationDescriptor<PersistentEvent> aggregations, IEnumerable<FieldAggregation> fields) {
-            var field = fields.FirstOrDefault(f => f.SortOrder.HasValue);
+            var field = fields.FirstOrDefault(f => !String.IsNullOrEmpty(f.SortOrder));
             if (field?.SortOrder == null)
                 return aggregations;
 
-            return field.SortOrder.Value == Foundatio.Repositories.Models.SortOrder.Ascending ? aggregations.OrderAscending(field.Key) : aggregations.OrderDescending(field.Key);
+            return String.Equals(field.SortOrder, "-") ? aggregations.OrderDescending(field.Key) : aggregations.OrderAscending(field.Key);
         }
 
         private double[] GetNumbers(AggregationsHelper aggregations, IEnumerable<FieldAggregation> fields) {
@@ -320,7 +320,7 @@ namespace Exceptionless.Core.Utility {
                 .Sort(s => s.Ascending(ev => ev.Date))
                 .Take(1);
 
-            _configuration.Events.Event.QueryBuilder.ConfigureSearch(filter, null, descriptor);
+            await _configuration.Events.Event.QueryBuilder.ConfigureSearchAsync(filter, null, descriptor).AnyContext();
             var response = await _configuration.Client.SearchAsync<PersistentEvent>(descriptor).AnyContext();
             _logger.Trace(() => response.GetRequest());
 

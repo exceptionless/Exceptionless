@@ -11,7 +11,6 @@ using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
-using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
@@ -31,7 +30,7 @@ namespace Exceptionless.Core.Repositories {
 
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
-                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Descending)
+                .WithSort($"-{GetPropertyName(nameof(PersistentEvent.Date))}")
                 .WithPaging(paging));
         }
 
@@ -91,9 +90,9 @@ namespace Exceptionless.Core.Repositories {
             return PatchAllAsync(query, new { is_hidden = true });
         }
 
-        public Task<FindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
-            if (sorting.Fields.Count == 0)
-                sorting.Fields.Add(new FieldSort { Field = GetPropertyName(nameof(PersistentEvent.Date)), Order = SortOrder.Descending });
+        public Task<FindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+            if (String.IsNullOrEmpty(sort))
+                sort = $"-{GetPropertyName(nameof(PersistentEvent.Date))}";
 
             var search = new ExceptionlessQuery()
                 .WithDateRange(utcStart, utcEnd, field ?? GetPropertyName(nameof(PersistentEvent.Date)))
@@ -101,7 +100,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
                 .WithPaging(paging)
-                .WithSort(sorting);
+                .WithSort(sort);
 
             return FindAsync(search);
         }
@@ -111,7 +110,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithElasticFilter(filter)
-                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Descending)
+                .WithSort($"-{GetPropertyName(nameof(PersistentEvent.Date))}")
                 .WithLimit(10));
         }
 
@@ -146,7 +145,7 @@ namespace Exceptionless.Core.Repositories {
             var results = await FindAsync(new ExceptionlessQuery()
                 .WithDateRange(utcStart, utcEventDate, GetPropertyName(nameof(PersistentEvent.Date)))
                 .WithIndexes(utcStart, utcEventDate)
-                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Descending)
+                .WithSort($"-{GetPropertyName(nameof(PersistentEvent.Date))}")
                 .WithLimit(10)
                 .WithSelectedFields(GetPropertyName(nameof(PersistentEvent.Id)), GetPropertyName(nameof(PersistentEvent.Date)))
                 .WithSystemFilter(systemFilter)
@@ -191,7 +190,7 @@ namespace Exceptionless.Core.Repositories {
             var results = await FindAsync(new ExceptionlessQuery()
                 .WithDateRange(utcEventDate, utcEnd, GetPropertyName(nameof(PersistentEvent.Date)))
                 .WithIndexes(utcStart, utcEventDate)
-                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Ascending)
+                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)))
                 .WithLimit(10)
                 .WithSelectedFields("id", "date")
                 .WithSystemFilter(systemFilter)
@@ -222,8 +221,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
                 .WithPaging(paging)
-                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Descending)
-                .WithSort("_uid", SortOrder.Descending)
+                .WithSort($"-{GetPropertyName(nameof(PersistentEvent.Date))} -_uid")
                 .WithExpiresIn(expiresIn));
         }
 
@@ -231,8 +229,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
                 .WithPaging(paging)
-                .WithSort(GetPropertyName(nameof(PersistentEvent.Date)), SortOrder.Descending)
-                .WithSort("_uid", SortOrder.Descending));
+                .WithSort($"-{GetPropertyName(nameof(PersistentEvent.Date))} -_uid"));
         }
 
         public Task<CountResult> GetCountByProjectIdAsync(string projectId) {

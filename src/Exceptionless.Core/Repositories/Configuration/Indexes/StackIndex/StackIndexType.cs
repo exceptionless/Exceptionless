@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
@@ -17,23 +18,23 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .AllField(a => a.Enabled(false))
                 .Properties(p => p
                     .SetupDefaults()
-                    .Keyword(f => f.Name(s => s.OrganizationId).Alias(Alias.OrganizationId))
-                    .Keyword(f => f.Name(s => s.ProjectId).Alias(Alias.ProjectId))
-                    .Keyword(f => f.Name(s => s.SignatureHash).Alias(Alias.SignatureHash))
-                    .Keyword(f => f.Name(e => e.Type).Alias(Alias.Type))
-                    .Date(f => f.Name(s => s.FirstOccurrence).Alias(Alias.FirstOccurrence))
-                    .Date(f => f.Name(s => s.LastOccurrence).Alias(Alias.LastOccurrence))
-                    .Text(f => f.Name(s => s.Title).Alias(Alias.Title).IncludeInAll().Boost(1.1))
-                    .Text(f => f.Name(s => s.Description).Alias(Alias.Description).IncludeInAll())
-                    .Text(f => f.Name(s => s.Tags).Alias(Alias.Tags).IncludeInAll().Boost(1.2).AddKeywordField())
-                    .Text(f => f.Name(s => s.References).Alias(Alias.References).IncludeInAll())
-                    .Date(f => f.Name(s => s.DateFixed).Alias(Alias.DateFixed))
+                    .Keyword(f => f.Name(s => s.OrganizationId).RootAlias(Alias.OrganizationId))
+                    .Keyword(f => f.Name(s => s.ProjectId).RootAlias(Alias.ProjectId))
+                    .Keyword(f => f.Name(s => s.SignatureHash).RootAlias(Alias.SignatureHash))
+                    .Keyword(f => f.Name(e => e.Type).RootAlias(Alias.Type))
+                    .Date(f => f.Name(s => s.FirstOccurrence).RootAlias(Alias.FirstOccurrence))
+                    .Date(f => f.Name(s => s.LastOccurrence).RootAlias(Alias.LastOccurrence))
+                    .Text(f => f.Name(s => s.Title).RootAlias(Alias.Title).IncludeInAll().Boost(1.1))
+                    .Text(f => f.Name(s => s.Description).RootAlias(Alias.Description).IncludeInAll())
+                    .Text(f => f.Name(s => s.Tags).RootAlias(Alias.Tags).IncludeInAll().Boost(1.2).AddKeywordField())
+                    .Text(f => f.Name(s => s.References).RootAlias(Alias.References).IncludeInAll())
+                    .Date(f => f.Name(s => s.DateFixed).RootAlias(Alias.DateFixed))
                     .Boolean(f => f.Name(Alias.IsFixed))
-                    .Keyword(f => f.Name(s => s.FixedInVersion).Alias(Alias.FixedInVersion))
-                    .Boolean(f => f.Name(s => s.IsHidden).Alias(Alias.IsHidden))
-                    .Boolean(f => f.Name(s => s.IsRegressed).Alias(Alias.IsRegressed))
-                    .Boolean(f => f.Name(s => s.OccurrencesAreCritical).Alias(Alias.OccurrencesAreCritical))
-                    .Number(f => f.Name(s => s.TotalOccurrences).Alias(Alias.TotalOccurrences))
+                    .Keyword(f => f.Name(s => s.FixedInVersion).RootAlias(Alias.FixedInVersion))
+                    .Boolean(f => f.Name(s => s.IsHidden).RootAlias(Alias.IsHidden))
+                    .Boolean(f => f.Name(s => s.IsRegressed).RootAlias(Alias.IsRegressed))
+                    .Boolean(f => f.Name(s => s.OccurrencesAreCritical).RootAlias(Alias.OccurrencesAreCritical))
+                    .Number(f => f.Name(s => s.TotalOccurrences).RootAlias(Alias.TotalOccurrences))
                 );
         }
 

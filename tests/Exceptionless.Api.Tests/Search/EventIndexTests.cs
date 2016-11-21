@@ -453,13 +453,13 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _configuration.Client.RefreshAsync(Indices.All);
         }
 
-        private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
-            var result = QueryProcessor.Process(filter);
+        private async Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
+            var result = await QueryProcessor.ProcessAsync(filter);
             filter = result.ExpandedQuery;
             _logger.Info($"Expanded Filter: {filter}");
 
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-            return _repository.GetByFilterAsync(null, filter, new SortingOptions(), null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            return await _repository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }
 }

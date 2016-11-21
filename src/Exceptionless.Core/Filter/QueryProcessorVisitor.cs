@@ -6,6 +6,7 @@ using Foundatio.Parsers.ElasticQueries.Visitors;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
+using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Processors {
     public class QueryProcessor {
@@ -19,7 +20,7 @@ namespace Exceptionless.Core.Processors {
             "stack"
         };
 
-        public static QueryProcessResult Process(string query) {
+        public static async Task<QueryProcessResult> ProcessAsync(string query) {
             if (String.IsNullOrWhiteSpace(query))
                 return new QueryProcessResult { IsValid = true };
 
@@ -33,7 +34,7 @@ namespace Exceptionless.Core.Processors {
 
             var validator = new QueryProcessorVisitor(_freeFields);
             var context = new ElasticQueryVisitorContext();
-            result.Accept(validator, context);
+            await result.AcceptAsync(validator, context).AnyContext();
 
             var expandedQuery = validator.UsesDataFields ? GenerateQueryVisitor.Run(result) : query;
             return new QueryProcessResult {
@@ -43,7 +44,7 @@ namespace Exceptionless.Core.Processors {
             };
         }
 
-        public static QueryProcessResult Validate(string query) {
+        public static async Task<QueryProcessResult> ValidateAsync(string query) {
             if (String.IsNullOrEmpty(query))
                 return new QueryProcessResult { IsValid = true };
 
@@ -57,7 +58,7 @@ namespace Exceptionless.Core.Processors {
 
             var validator = new QueryProcessorVisitor(_freeFields);
             var context = new ElasticQueryVisitorContext();
-            result.Accept(validator, context);
+            await result.AcceptAsync(validator, context).AnyContext();
 
             return new QueryProcessResult {
                 IsValid = true,
@@ -73,7 +74,7 @@ namespace Exceptionless.Core.Processors {
             _freeFields = freeFields ?? new HashSet<string>();
         }
 
-        public void Visit(GroupNode node, IQueryVisitorContext context) {
+        public async Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
             var childTerms = new List<string>();
             var leftTermNode = node.Left as TermNode;
             if (leftTermNode != null && leftTermNode.Field == null)
@@ -97,29 +98,33 @@ namespace Exceptionless.Core.Processors {
 
             node.Field = GetCustomFieldName(node.Field, childTerms.ToArray()) ?? node.Field;
             foreach (var child in node.Children)
-                child.Accept(this, context);
+                await child.AcceptAsync(this, context).AnyContext();
         }
 
-        public void Visit(TermNode node, IQueryVisitorContext context) {
+        public Task VisitAsync(TermNode node, IQueryVisitorContext context) {
             // using all fields search
             if (String.IsNullOrEmpty(node.Field)) {
                 UsesPremiumFeatures = true;
-                return;
+                return Task.CompletedTask;
             }
 
             node.Field = GetCustomFieldName(node.Field, node.Term) ?? node.Field;
+            return Task.CompletedTask;
         }
 
-        public void Visit(TermRangeNode node, IQueryVisitorContext context) {
+        public Task VisitAsync(TermRangeNode node, IQueryVisitorContext context) {
             node.Field = GetCustomFieldName(node.Field, node.Min, node.Max) ?? node.Field;
+            return Task.CompletedTask;
         }
 
-        public void Visit(ExistsNode node, IQueryVisitorContext context) {
+        public Task VisitAsync(ExistsNode node, IQueryVisitorContext context) {
             node.Field = GetCustomFieldName(node.Field) ?? node.Field;
+            return Task.CompletedTask;
         }
 
-        public void Visit(MissingNode node, IQueryVisitorContext context) {
+        public Task VisitAsync(MissingNode node, IQueryVisitorContext context) {
             node.Field = GetCustomFieldName(node.Field) ?? node.Field;
+            return Task.CompletedTask;
         }
 
         private string GetCustomFieldName(string field, params string[] terms) {
