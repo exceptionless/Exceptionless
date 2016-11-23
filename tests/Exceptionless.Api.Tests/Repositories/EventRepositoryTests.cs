@@ -28,10 +28,21 @@ namespace Exceptionless.Api.Tests.Repositories {
             _stackRepository = GetService<IStackRepository>();
         }
 
-        [Fact (Skip = "https://github.com/elastic/elasticsearch-net/issues/2242")]
+        [Fact]
         public async Task GetAsync() {
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-            var ev = await _repository.AddAsync(new PersistentEvent { CreatedUtc = SystemClock.UtcNow, Date = new DateTimeOffset(SystemClock.UtcNow.Date, TimeSpan.Zero)});
+            var ev = await _repository.AddAsync(new PersistentEvent {
+                CreatedUtc = SystemClock.UtcNow,
+                Date = new DateTimeOffset(SystemClock.UtcNow.Date, TimeSpan.Zero),
+                OrganizationId = TestConstants.OrganizationId,
+                ProjectId = TestConstants.ProjectId,
+                StackId = TestConstants.StackId,
+                Type = Event.KnownTypes.Log,
+                Count = Int32.MaxValue,
+                Value = Decimal.MaxValue,
+                Geo = "40,-70"
+            });
+
             Assert.Equal(ev, await _repository.GetByIdAsync(ev.Id));
         }
 
