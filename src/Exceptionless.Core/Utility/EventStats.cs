@@ -301,7 +301,7 @@ namespace Exceptionless.Core.Utility {
                         break;
                     case FieldAggregationType.Term:
                         var termResult = aggregations.Terms(field.Key);
-                        results.Add(termResult?.Buckets.Count > 0 ? termResult.Buckets[0].DocCount ?? 0 : 0);
+                        results.Add(termResult?.Buckets.Count > 0 ? termResult.Buckets.First().DocCount ?? 0 : 0);
                         break;
                     default:
                         throw new InvalidOperationException($"Unknown FieldAggregation type: {field.Type}");

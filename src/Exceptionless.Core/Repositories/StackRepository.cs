@@ -77,11 +77,12 @@ ctx._source.total_occurrences += params.count;";
 
             var request = new UpdateRequest<Stack, Stack>(GetIndexById(stackId), ElasticType.Type, stackId) {
                 RetryOnConflict = 3,
-                Script = script,
-                Params = new Dictionary<string, object>(3) {
-                    { "minOccurrenceDateUtc", minOccurrenceDateUtc },
-                    { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },
-                    { "count", count }
+                Script = new InlineScript(script) {
+                    Params = new Dictionary<string, object>(3) {
+                        { "minOccurrenceDateUtc", minOccurrenceDateUtc },
+                        { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },
+                        { "count", count }
+                    }
                 }
             };
 

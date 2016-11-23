@@ -23,7 +23,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task CanGetByStackHash() {
+        public async Task CanGetByStackHashAsync() {
             Assert.Equal(0, _cache.Count);
             Assert.Equal(0, _cache.Hits);
             Assert.Equal(0, _cache.Misses);
@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task CanGetByFixed() {
+        public async Task CanGetByFixedAsync() {
             var stack = await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
 
             await _configuration.Client.RefreshAsync(Indices.All);
