@@ -269,7 +269,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task WillMarkAutoSessionHeartbeatStackHidden() {
+        public async Task WillMarkAutoSessionHeartbeatStackHiddenAsync() {
             var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
@@ -479,7 +479,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task WillMarkManualSessionHeartbeatStackHidden() {
+        public async Task WillMarkManualSessionHeartbeatStackHiddenAsync() {
             var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
@@ -743,7 +743,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task PipelinePerformance() {
+        public async Task PipelinePerformanceAsync() {
             var parserPluginManager = GetService<EventParserPluginManager>();
             var pipeline = GetService<EventPipeline>();
             var startDate = SystemClock.OffsetNow.SubtractHours(1);
@@ -779,7 +779,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact(Skip = "Used to create performance data from the queue directory")]
-        public async Task GeneratePerformanceData() {
+        public async Task GeneratePerformanceDataAsync() {
             var currentBatchCount = 0;
             var parserPluginManager = GetService<EventParserPluginManager>();
             var dataDirectory = Path.GetFullPath(@"..\..\Pipeline\Data\");

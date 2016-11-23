@@ -36,7 +36,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact(Skip="Performance Testing")]
-        public async Task GetAsyncPerformance() {
+        public async Task GetAsyncPerformanceAsync() {
             var ev = await _repository.AddAsync(new RandomEventGenerator().GeneratePersistent());
             await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(1, await _repository.CountAsync());
