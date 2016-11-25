@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using FluentValidation;
@@ -28,7 +30,9 @@ namespace Exceptionless.Core.Validation {
             if (ev.Date.UtcDateTime > SystemClock.UtcNow.AddHours(1))
                 result.Errors.Add(new ValidationFailure("Date", "Date cannot be in the future."));
 
-            if (String.IsNullOrEmpty(ev.Type) || ev.Type.Length > 100)
+            if (String.IsNullOrEmpty(ev.Type))
+                result.Errors.Add(new ValidationFailure("Type", "Type must be specified"));
+            else if (ev.Type.Length > 100)
                 result.Errors.Add(new ValidationFailure("Type", "Type cannot be longer than 100 characters."));
 
             if (ev.Message != null && (ev.Message.Length < 1 || ev.Message.Length > 2000))
@@ -39,7 +43,7 @@ namespace Exceptionless.Core.Validation {
 
             if (!IsValidIdentifier(ev.ReferenceId))
                 result.Errors.Add(new ValidationFailure("ReferenceId", "ReferenceId must contain between 8 and 100 alphanumeric or '-' characters."));
-            
+
             foreach (var tag in ev.Tags) {
                 if (String.IsNullOrEmpty(tag))
                     result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));
@@ -48,6 +52,10 @@ namespace Exceptionless.Core.Validation {
             }
 
             return result;
+        }
+
+        public override Task<ValidationResult> ValidateAsync(ValidationContext<PersistentEvent> context, CancellationToken cancellation = new CancellationToken()) {
+            return Task.FromResult(Validate(context.InstanceToValidate));
         }
 
         private bool IsValidIdentifier(string value) {

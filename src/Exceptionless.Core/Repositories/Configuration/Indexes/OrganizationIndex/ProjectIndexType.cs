@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .SetupDefaults()
                     .Keyword(f => f.Name(e => e.OrganizationId))
                     .Text(f => f.Name(e => e.Name))
-                    .Number(f => f.Name(e => e.NextSummaryEndOfDayTicks))
+                    .Number(f => f.Name(e => e.NextSummaryEndOfDayTicks).Type(NumberType.Long))
                 );
         }
     }
