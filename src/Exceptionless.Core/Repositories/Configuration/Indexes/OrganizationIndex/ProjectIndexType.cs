@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .SetupDefaults()
                     .Keyword(f => f.Name(e => e.OrganizationId))
                     .Text(f => f.Name(e => e.Name))
-                    .Number(f => f.Name(e => e.NextSummaryEndOfDayTicks).Type(NumberType.Long))
+                    .Scalar(f => f.NextSummaryEndOfDayTicks, f => f)
                 );
         }
     }
