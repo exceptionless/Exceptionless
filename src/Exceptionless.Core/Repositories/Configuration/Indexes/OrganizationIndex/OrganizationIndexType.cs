@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
@@ -21,9 +21,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(u => u.PlanName).IgnoreAbove(256))
                     .Date(f => f.Name(u => u.SubscribeDate))
                     .Number(f => f.Name(u => u.BillingStatus))
-                    .Number(f => f.Name(u => u.BillingPrice))
+                    .Scalar(f => f.BillingPrice, f => f)
                     .Boolean(f => f.Name(u => u.IsSuspended))
-                    .Number(f => f.Name(u => u.RetentionDays))
+                    .Scalar(f => f.RetentionDays, f => f)
                     .Object<Invite>(f => f.Name(o => o.Invites.First()).Properties(ip => ip
                         .Keyword(fu => fu.Name(i => i.Token))
                         .Text(fu => fu.Name(i => i.EmailAddress).Analyzer(OrganizationIndex.KEYWORD_LOWERCASE_ANALYZER)))));

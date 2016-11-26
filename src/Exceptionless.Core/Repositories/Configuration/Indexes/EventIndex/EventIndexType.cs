@@ -19,24 +19,26 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 //.Transform(t => t.Add(a => a.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy)))
                 .AllField(a => a.Enabled(false).Analyzer(EventIndex.STANDARDPLUS_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER))
                 .Properties(p => p
-                    .Date(f => f.Name(e => e.CreatedUtc).RootAlias(Alias.CreatedUtc))
-                    .Keyword(f => f.Name(e => e.Id).RootAlias(Alias.Id).IncludeInAll())
-                    .Keyword(f => f.Name(e => e.OrganizationId).RootAlias(Alias.OrganizationId))
-                    .Keyword(f => f.Name(e => e.ProjectId).RootAlias(Alias.ProjectId))
-                    .Keyword(f => f.Name(e => e.StackId).RootAlias(Alias.StackId))
-                    .Keyword(f => f.Name(e => e.ReferenceId).RootAlias(Alias.ReferenceId))
-                    .Keyword(f => f.Name(e => e.Type).RootAlias(Alias.Type))
-                    .Text(f => f.Name(e => e.Source).RootAlias(Alias.Source).IncludeInAll().AddKeywordField())
-                    .Date(f => f.Name(e => e.Date).RootAlias(Alias.Date))
-                    .Text(f => f.Name(e => e.Message).RootAlias(Alias.Message).IncludeInAll())
-                    .Text(f => f.Name(e => e.Tags).RootAlias(Alias.Tags).IncludeInAll().Boost(1.2).AddKeywordField())
-                    .GeoPoint(f => f.Name(e => e.Geo).RootAlias(Alias.Geo))
-                    .Number(f => f.Name(e => e.Value).RootAlias(Alias.Value))
-                    .Number(f => f.Name(e => e.Count).RootAlias(Alias.Count))
-                    .Boolean(f => f.Name(e => e.IsFirstOccurrence).RootAlias(Alias.IsFirstOccurrence))
-                    .Boolean(f => f.Name(e => e.IsFixed).RootAlias(Alias.IsFixed))
-                    .Boolean(f => f.Name(e => e.IsHidden).RootAlias(Alias.IsHidden))
-                    .Object<object>(f => f.Name(e => e.Idx).RootAlias(Alias.IDX).Dynamic(true))
+                    .Date(f => f.Name(e => e.CreatedUtc).Alias(Alias.CreatedUtc))
+                    .Keyword(f => f.Name(e => e.Id).Alias(Alias.Id).IncludeInAll())
+                    .Keyword(f => f.Name(e => e.OrganizationId).Alias(Alias.OrganizationId))
+                    .Keyword(f => f.Name(e => e.ProjectId).Alias(Alias.ProjectId))
+                    .Keyword(f => f.Name(e => e.StackId).Alias(Alias.StackId))
+                    .Keyword(f => f.Name(e => e.ReferenceId).Alias(Alias.ReferenceId))
+                    .Keyword(f => f.Name(e => e.Type).Alias(Alias.Type))
+                    .Text(f => f.Name(e => e.Source).Alias(Alias.Source).IncludeInAll().AddKeywordField())
+                    .Date(f => f.Name(e => e.Date).Alias(Alias.Date))
+                    .Text(f => f.Name(e => e.Message).Alias(Alias.Message).IncludeInAll())
+                    .Text(f => f.Name(e => e.Tags).Alias(Alias.Tags).IncludeInAll().Boost(1.2).AddKeywordField())
+                    .GeoPoint(f => f.Name(e => e.Geo).Alias(Alias.Geo))
+                    .Scalar(f => f.Value, f => f.Alias(Alias.Value))
+                    .Scalar(f => f.Count, f => f.Alias(Alias.Count))
+                    .Boolean(f => f.Name(e => e.IsFirstOccurrence).Alias(Alias.IsFirstOccurrence))
+                    .Boolean(f => f.Name(e => e.IsFixed).Alias(Alias.IsFixed))
+                    .Boolean(f => f.Name(e => e.IsHidden).Alias(Alias.IsHidden))
+                    .Object<object>(f => f.Name(e => e.Idx).Alias(Alias.IDX).Dynamic(true))
+                    .Ip(f => f.Name(Alias.IpAddress).IncludeInAll())
+                    .Text(f => f.Name(Alias.OperatingSystem))
                     .AddDataDictionaryMappings()
             );
         }
@@ -141,7 +143,8 @@ err['all_codes'] = codes.join(' ')";
                 .AddSimpleErrorMapping()
                 .AddEnvironmentInfoMapping()
                 .AddUserDescriptionMapping()
-                .AddUserInfoMapping()));
+                .AddUserInfoMapping())
+                );
         }
 
         public static PropertiesDescriptor<DataDictionary> AddVersionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
@@ -166,7 +169,7 @@ err['all_codes'] = codes.join(' ')";
 
         public static PropertiesDescriptor<DataDictionary> AddRequestInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Properties(p3 => p3
-                .Text(f3 => f3.Name(r => r.ClientIpAddress).RootAlias(EventIndexType.Alias.IpAddress).IncludeInAll().Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).AddKeywordField())
+                //.Ip(f3 => f3.Name(r => r.ClientIpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false))
                 .Text(f3 => f3.Name(r => r.UserAgent).RootAlias(EventIndexType.Alias.RequestUserAgent).AddKeywordField())
                 .Text(f3 => f3.Name(r => r.Path).RootAlias(EventIndexType.Alias.RequestPath).IncludeInAll().AddKeywordField())
                 .Object<DataDictionary>(f3 => f3.Name(e => e.Data).Properties(p4 => p4
@@ -174,7 +177,7 @@ err['all_codes'] = codes.join(' ')";
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserVersion).RootAlias(EventIndexType.Alias.BrowserVersion).AddKeywordField())
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserMajorVersion).RootAlias(EventIndexType.Alias.BrowserMajorVersion))
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.Device).RootAlias(EventIndexType.Alias.Device).AddKeywordField())
-                    .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OS).RootAlias(EventIndexType.Alias.OperatingSystem).AddKeywordField())
+                    //.Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OS).CopyTo(fd => fd.Field(EventIndexType.Alias.OperatingSystem)).Index(false))
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OSVersion).RootAlias(EventIndexType.Alias.OperatingSystemVersion).AddKeywordField())
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OSMajorVersion).RootAlias(EventIndexType.Alias.OperatingSystemMajorVersion))
                     .Boolean(f4 => f4.Name(RequestInfo.KnownDataKeys.IsBot).RootAlias(EventIndexType.Alias.RequestIsBot))))));
@@ -193,19 +196,20 @@ err['all_codes'] = codes.join(' ')";
 
         public static PropertiesDescriptor<DataDictionary> AddSimpleErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Properties(p3 => p3
-                .Text(f3 => f3.Name("all_messages").RootAlias(EventIndexType.Alias.ErrorMessage).IncludeInAll().AddKeywordField())
+                .Text(f3 => f3.Name("all_messages").RootAlias(EventIndexType.Alias.ErrorMessage + "s").IncludeInAll().AddKeywordField())
                 .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Properties(p4 => p4
                     .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Properties(p5 => p5
-                        .Text(f6 => f6.Name("ExceptionType").RootAlias(EventIndexType.Alias.ErrorTargetType).Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2).AddKeywordField())))))
-                .Text(f3 => f3.Name("all_types").RootAlias(EventIndexType.Alias.ErrorType).Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1).AddKeywordField())));
+                        .Text(f6 => f6.Name("ExceptionType").RootAlias(EventIndexType.Alias.ErrorTargetType + "s").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2).AddKeywordField())))))
+                .Text(f3 => f3.Name("all_types").RootAlias(EventIndexType.Alias.ErrorType + "s").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1).AddKeywordField())));
         }
 
         public static PropertiesDescriptor<DataDictionary> AddEnvironmentInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Properties(p3 => p3
-                .Text(f3 => f3.Name(r => r.IpAddress).RootAlias(EventIndexType.Alias.IpAddress).IncludeInAll().Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).AddKeywordField())
+                .Ip(f3 => f3.Name(r => r.IpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false))
                 .Text(f3 => f3.Name(r => r.MachineName).RootAlias(EventIndexType.Alias.MachineName).IncludeInAll().Boost(1.1).AddKeywordField())
-                .Text(f3 => f3.Name(r => r.OSName).RootAlias(EventIndexType.Alias.OperatingSystem).AddKeywordField())
-                .Keyword(f3 => f3.Name(r => r.Architecture).RootAlias(EventIndexType.Alias.MachineArchitecture))));
+                .Text(f3 => f3.Name(r => r.OSName).CopyTo(fd => fd.Field(EventIndexType.Alias.OperatingSystem)))
+                .Keyword(f3 => f3.Name(r => r.Architecture).RootAlias(EventIndexType.Alias.MachineArchitecture))
+                ));
         }
 
         public static PropertiesDescriptor<DataDictionary> AddUserDescriptionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {

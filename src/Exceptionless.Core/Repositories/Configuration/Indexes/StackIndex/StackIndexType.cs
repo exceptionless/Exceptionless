@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Boolean(f => f.Name(s => s.IsHidden).Alias(Alias.IsHidden))
                     .Boolean(f => f.Name(s => s.IsRegressed).Alias(Alias.IsRegressed))
                     .Boolean(f => f.Name(s => s.OccurrencesAreCritical).Alias(Alias.OccurrencesAreCritical))
-                    .Number(f => f.Name(s => s.TotalOccurrences).Alias(Alias.TotalOccurrences))
+                    .Scalar(f => f.TotalOccurrences, f => f.Alias(Alias.TotalOccurrences))
                 );
         }
 
