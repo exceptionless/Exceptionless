@@ -36,10 +36,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Boolean(f => f.Name(e => e.IsFirstOccurrence).Alias(Alias.IsFirstOccurrence))
                     .Boolean(f => f.Name(e => e.IsFixed).Alias(Alias.IsFixed))
                     .Boolean(f => f.Name(e => e.IsHidden).Alias(Alias.IsHidden))
-                    .Object<object>(f => f.Name(e => e.Idx).Alias(Alias.IDX).Dynamic(true))
+                    .Object<object>(f => f.Name(e => e.Idx).Alias(Alias.IDX).Dynamic())
+                    .AddDataDictionaryMappings()
                     .Ip(f => f.Name(Alias.IpAddress).IncludeInAll())
                     .Text(f => f.Name(Alias.OperatingSystem))
-                    .AddDataDictionaryMappings()
             );
         }
 
@@ -70,7 +70,7 @@ err['all_types'] = types.join(' ')
 err['all_messages'] = messages.join(' ')
 err['all_codes'] = codes.join(' ')";
 
-        public class Alias {
+        public sealed class Alias {
             public const string CreatedUtc = "created";
             public const string OrganizationId = "organization";
             public const string ProjectId = "project";
@@ -143,8 +143,7 @@ err['all_codes'] = codes.join(' ')";
                 .AddSimpleErrorMapping()
                 .AddEnvironmentInfoMapping()
                 .AddUserDescriptionMapping()
-                .AddUserInfoMapping())
-                );
+                .AddUserInfoMapping()));
         }
 
         public static PropertiesDescriptor<DataDictionary> AddVersionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
@@ -169,7 +168,7 @@ err['all_codes'] = codes.join(' ')";
 
         public static PropertiesDescriptor<DataDictionary> AddRequestInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Properties(p3 => p3
-                //.Ip(f3 => f3.Name(r => r.ClientIpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false))
+                .Ip(f3 => f3.Name(r => r.ClientIpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false))
                 .Text(f3 => f3.Name(r => r.UserAgent).RootAlias(EventIndexType.Alias.RequestUserAgent).AddKeywordField())
                 .Text(f3 => f3.Name(r => r.Path).RootAlias(EventIndexType.Alias.RequestPath).IncludeInAll().AddKeywordField())
                 .Object<DataDictionary>(f3 => f3.Name(e => e.Data).Properties(p4 => p4
@@ -177,7 +176,7 @@ err['all_codes'] = codes.join(' ')";
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserVersion).RootAlias(EventIndexType.Alias.BrowserVersion).AddKeywordField())
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserMajorVersion).RootAlias(EventIndexType.Alias.BrowserMajorVersion))
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.Device).RootAlias(EventIndexType.Alias.Device).AddKeywordField())
-                    //.Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OS).CopyTo(fd => fd.Field(EventIndexType.Alias.OperatingSystem)).Index(false))
+                    .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OS).CopyTo(fd => fd.Field(EventIndexType.Alias.OperatingSystem)).Index(false))
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OSVersion).RootAlias(EventIndexType.Alias.OperatingSystemVersion).AddKeywordField())
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OSMajorVersion).RootAlias(EventIndexType.Alias.OperatingSystemMajorVersion))
                     .Boolean(f4 => f4.Name(RequestInfo.KnownDataKeys.IsBot).RootAlias(EventIndexType.Alias.RequestIsBot))))));
@@ -208,8 +207,7 @@ err['all_codes'] = codes.join(' ')";
                 .Ip(f3 => f3.Name(r => r.IpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false))
                 .Text(f3 => f3.Name(r => r.MachineName).RootAlias(EventIndexType.Alias.MachineName).IncludeInAll().Boost(1.1).AddKeywordField())
                 .Text(f3 => f3.Name(r => r.OSName).CopyTo(fd => fd.Field(EventIndexType.Alias.OperatingSystem)))
-                .Keyword(f3 => f3.Name(r => r.Architecture).RootAlias(EventIndexType.Alias.MachineArchitecture))
-                ));
+                .Keyword(f3 => f3.Name(r => r.Architecture).RootAlias(EventIndexType.Alias.MachineArchitecture))));
         }
 
         public static PropertiesDescriptor<DataDictionary> AddUserDescriptionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
