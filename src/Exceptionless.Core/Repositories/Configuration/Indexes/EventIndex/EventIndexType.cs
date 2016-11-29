@@ -1,23 +1,28 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Logging;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class EventIndexType : MonthlyIndexType<PersistentEvent> {
+    public class EventIndexType : MonthlyIndexType<PersistentEvent>, IHavePipelinedIndexType {
         public EventIndexType(EventIndex index) : base(index, "events", document => document.Date.UtcDateTime) {}
+
+        public string Pipeline { get; } = "events-pipeline";
 
         public override TypeMappingDescriptor<PersistentEvent> BuildMapping(TypeMappingDescriptor<PersistentEvent> map) {
             return base.BuildMapping(map)
                 .Dynamic(false)
                 .DynamicTemplates(dt => dt.DynamicTemplate("idx_reference", t => t.Match("*-r").Mapping(m => m.Keyword(s => s.IgnoreAbove(256)))))
                 .SizeField(s => s.Enabled())
-                //.Transform(t => t.Add(a => a.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy)))
-                .AllField(a => a.Enabled(false).Analyzer(EventIndex.STANDARDPLUS_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER))
+                //.IncludeInAll(false)
+                .AllField(a => a.Analyzer(EventIndex.STANDARDPLUS_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER))
                 .Properties(p => p
                     .Date(f => f.Name(e => e.CreatedUtc).Alias(Alias.CreatedUtc))
                     .Keyword(f => f.Name(e => e.Id).Alias(Alias.Id).IncludeInAll())
@@ -38,37 +43,54 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Boolean(f => f.Name(e => e.IsHidden).Alias(Alias.IsHidden))
                     .Object<object>(f => f.Name(e => e.Idx).Alias(Alias.IDX).Dynamic())
                     .AddDataDictionaryMappings()
+
+                    // CopyTo Fields
                     .Ip(f => f.Name(Alias.IpAddress).IncludeInAll())
-                    .Text(f => f.Name(Alias.OperatingSystem))
+                    .Text(f => f.Name(Alias.OperatingSystem).AddKeywordField())
+                    .Object<object>(f => f.Name("error"))
             );
+        }
+
+        public override async Task ConfigureAsync() {
+            const string FLATTEN_ERRORS_SCRIPT = @"
+if (!ctx.containsKey('data') || !(ctx.data.containsKey('@error') || ctx.data.containsKey('@simple_error')))
+    return null;
+
+def types = [];
+def messages = [];
+def codes = [];
+def err = ctx.data.containsKey('@error') ? ctx.data['@error'] : ctx.data['@simple_error'];
+def curr = err;
+while (curr != null) {
+    if (curr.containsKey('type'))
+        types.add(curr.type);
+    if (curr.containsKey('message'))
+        messages.add(curr.message);
+    if (curr.containsKey('code'))
+        codes.add(curr.code);
+    curr = curr.inner;
+}
+
+err['all_types'] = types.join(' ');
+err['all_messages'] = messages.join(' ');
+err['all_codes'] = codes.join(' ');";
+
+            var response = await Configuration.Client.PutPipelineAsync(Pipeline, d => d.Processors(p => p
+                .Script(s => new ScriptProcessor { Inline = FLATTEN_ERRORS_SCRIPT })));
+
+            var logger = Configuration.LoggerFactory.CreateLogger(typeof(PersistentEvent));
+            logger.Trace(() => response.GetRequest());
+            if (response.IsValid)
+                return;
+
+            string message = $"Error creating the pipeline {Pipeline}: {response.GetErrorMessage()}";
+            logger.Error().Exception(response.OriginalException).Message(message).Property("request", response.GetRequest()).Write();
+            throw new ApplicationException(message, response.OriginalException);
         }
 
         protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
             builder.UseQueryParser(this);
         }
-
-        const string FLATTEN_ERRORS_SCRIPT = @"
-if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))
-    return
-
-def types = []
-def messages = []
-def codes = []
-def err = ctx._source.data.containsKey('@error') ? ctx._source.data['@error'] : ctx._source.data['@simple_error']
-def curr = err
-while (curr != null) {
-    if (curr.containsKey('type'))
-        types.add(curr.type)
-    if (curr.containsKey('message'))
-        messages.add(curr.message)
-    if (curr.containsKey('code'))
-        codes.add(curr.code)
-    curr = curr.inner
-}
-
-err['all_types'] = types.join(' ')
-err['all_messages'] = messages.join(' ')
-err['all_codes'] = codes.join(' ')";
 
         public sealed class Alias {
             public const string CreatedUtc = "created";
@@ -212,7 +234,7 @@ err['all_codes'] = codes.join(' ')";
 
         public static PropertiesDescriptor<DataDictionary> AddUserDescriptionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Properties(p3 => p3
-                .Text(f3 => f3.Name(r => r.Description).RootAlias(EventIndexType.Alias.UserDescription).IncludeInAll()) // TODO: Why is one simple and other lowercase.
+                .Text(f3 => f3.Name(r => r.Description).RootAlias(EventIndexType.Alias.UserDescription).IncludeInAll())
                 .Text(f3 => f3.Name(r => r.EmailAddress).RootAlias(EventIndexType.Alias.UserEmail).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer("simple").IncludeInAll().Boost(1.1).AddKeywordField())));
         }
 
