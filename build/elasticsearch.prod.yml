@@ -1,4 +1,4 @@
-# multi node configuration
+﻿# multi node configuration
 cluster.name: exceptionless
 script.disable_dynamic: false
 index.number_of_shards: 3
@@ -6,6 +6,7 @@ index.number_of_replicas: 1
 action.destructive_requires_name: true
 action.auto_create_index: +.marvel-*
 bootstrap.mlockall: true
+plugin.mandatory: mapper-size
 
 #path.data: /mnt/data/db
 #path.work: /path/to/work

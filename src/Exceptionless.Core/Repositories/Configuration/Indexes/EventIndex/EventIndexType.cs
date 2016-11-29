@@ -43,11 +43,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Boolean(f => f.Name(e => e.IsHidden).Alias(Alias.IsHidden))
                     .Object<object>(f => f.Name(e => e.Idx).Alias(Alias.IDX).Dynamic())
                     .AddDataDictionaryMappings()
-
-                    // CopyTo Fields
-                    .Ip(f => f.Name(Alias.IpAddress).IncludeInAll())
-                    .Text(f => f.Name(Alias.OperatingSystem).AddKeywordField())
-                    .Object<object>(f => f.Name("error"))
+                    .AddCopyToMappings()
             );
         }
 
@@ -71,12 +67,15 @@ while (curr != null) {
     curr = curr.inner;
 }
 
-err['all_types'] = types.join(' ');
-err['all_messages'] = messages.join(' ');
-err['all_codes'] = codes.join(' ');";
+if (ctx.error == null)
+    ctx.error = new HashMap();
+
+ctx.error.type = types.join(' ');
+ctx.error.message = messages.join(' ');
+ctx.error.code = codes.join(' ');";
 
             var response = await Configuration.Client.PutPipelineAsync(Pipeline, d => d.Processors(p => p
-                .Script(s => new ScriptProcessor { Inline = FLATTEN_ERRORS_SCRIPT })));
+                .Script(s => new ScriptProcessor { Inline = FLATTEN_ERRORS_SCRIPT.Replace("\r\n", String.Empty).Replace("    ", " ") })));
 
             var logger = Configuration.LoggerFactory.CreateLogger(typeof(PersistentEvent));
             logger.Trace(() => response.GetRequest());
@@ -154,6 +153,18 @@ err['all_codes'] = codes.join(' ');";
     }
 
     internal static class EventIndexTypeExtensions {
+        public static PropertiesDescriptor<PersistentEvent> AddCopyToMappings(this PropertiesDescriptor<PersistentEvent> descriptor) {
+            return descriptor
+                .Ip(f => f.Name(EventIndexType.Alias.IpAddress).IncludeInAll())
+                .Text(f => f.Name(EventIndexType.Alias.OperatingSystem).AddKeywordField())
+                .Object<object>(f => f.Name("error").IncludeInAll().Properties(p1 => p1
+                    .Keyword(f3 => f3.Name("code").Boost(1.1))
+                    .Text(f3 => f3.Name("message").AddKeywordField())
+                    .Text(f3 => f3.Name("type").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.1).AddKeywordField())
+                    .Text(f6 => f6.Name("targettype").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.2).AddKeywordField())
+                    .Text(f6 => f6.Name("targetmethod").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.2).AddKeywordField())));
+        }
+
         public static PropertiesDescriptor<PersistentEvent> AddDataDictionaryMappings(this PropertiesDescriptor<PersistentEvent> descriptor) {
             return descriptor.Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
                 .AddVersionMapping()
@@ -168,19 +179,19 @@ err['all_codes'] = codes.join(' ');";
                 .AddUserInfoMapping()));
         }
 
-        public static PropertiesDescriptor<DataDictionary> AddVersionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        private static PropertiesDescriptor<DataDictionary> AddVersionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.Version).RootAlias(EventIndexType.Alias.Version).Analyzer(EventIndex.VERSION_INDEX_ANALYZER).SearchAnalyzer(EventIndex.VERSION_SEARCH_ANALYZER).AddKeywordField());
         }
 
-        public static PropertiesDescriptor<DataDictionary> AddLevelMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        private static PropertiesDescriptor<DataDictionary> AddLevelMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.Level).RootAlias(EventIndexType.Alias.Level).AddKeywordField());
         }
 
-        public static PropertiesDescriptor<DataDictionary> AddSubmissionMethodMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        private static PropertiesDescriptor<DataDictionary> AddSubmissionMethodMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.SubmissionMethod).RootAlias(EventIndexType.Alias.SubmissionMethod).AddKeywordField());
         }
 
-        public static PropertiesDescriptor<DataDictionary> AddLocationMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        private static PropertiesDescriptor<DataDictionary> AddLocationMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<Location>(f2 => f2.Name(Event.KnownDataKeys.Location).Properties(p3 => p3
                 .Keyword(f3 => f3.Name(r => r.Country).RootAlias(EventIndexType.Alias.LocationCountry))
                 .Keyword(f3 => f3.Name(r => r.Level1).RootAlias(EventIndexType.Alias.LocationLevel1))
@@ -188,7 +199,7 @@ err['all_codes'] = codes.join(' ');";
                 .Keyword(f3 => f3.Name(r => r.Locality).RootAlias(EventIndexType.Alias.LocationLocality))));
         }
 
-        public static PropertiesDescriptor<DataDictionary> AddRequestInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        private static PropertiesDescriptor<DataDictionary> AddRequestInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Properties(p3 => p3
                 .Ip(f3 => f3.Name(r => r.ClientIpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false))
                 .Text(f3 => f3.Name(r => r.UserAgent).RootAlias(EventIndexType.Alias.RequestUserAgent).AddKeywordField())
@@ -204,27 +215,22 @@ err['all_codes'] = codes.join(' ');";
                     .Boolean(f4 => f4.Name(RequestInfo.KnownDataKeys.IsBot).RootAlias(EventIndexType.Alias.RequestIsBot))))));
         }
 
-        public static PropertiesDescriptor<DataDictionary> AddErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        private static PropertiesDescriptor<DataDictionary> AddErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Properties(p3 => p3
-                .Keyword(f3 => f3.Name("all_codes").RootAlias(EventIndexType.Alias.ErrorCode).IncludeInAll().Boost(1.1))
-                .Text(f3 => f3.Name("all_messages").RootAlias(EventIndexType.Alias.ErrorMessage).IncludeInAll().AddKeywordField())
                 .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Properties(p4 => p4
                     .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Properties(p5 => p5
-                        .Text(f6 => f6.Name("ExceptionType").RootAlias(EventIndexType.Alias.ErrorTargetType).Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2).AddKeywordField())
-                        .Text(f6 => f6.Name("Method").RootAlias(EventIndexType.Alias.ErrorTargetMethod).Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2).AddKeywordField())))))
-                .Text(f3 => f3.Name("all_types").RootAlias(EventIndexType.Alias.ErrorType).Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1).AddKeywordField())));
+                        .Text(f6 => f6.Name("ExceptionType").CopyTo(fd => fd.Field(EventIndexType.Alias.ErrorTargetType)).Index(false))
+                        .Text(f6 => f6.Name("Method").CopyTo(fd => fd.Field(EventIndexType.Alias.ErrorTargetMethod)).Index(false))))))));
         }
 
-        public static PropertiesDescriptor<DataDictionary> AddSimpleErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        private static PropertiesDescriptor<DataDictionary> AddSimpleErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Properties(p3 => p3
-                .Text(f3 => f3.Name("all_messages").RootAlias(EventIndexType.Alias.ErrorMessage + "s").IncludeInAll().AddKeywordField())
                 .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Properties(p4 => p4
                     .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Properties(p5 => p5
-                        .Text(f6 => f6.Name("ExceptionType").RootAlias(EventIndexType.Alias.ErrorTargetType + "s").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.2).AddKeywordField())))))
-                .Text(f3 => f3.Name("all_types").RootAlias(EventIndexType.Alias.ErrorType + "s").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1).AddKeywordField())));
+                        .Text(f6 => f6.Name("ExceptionType").CopyTo(fd => fd.Field(EventIndexType.Alias.ErrorTargetType)).Index(false))))))));
         }
 
-        public static PropertiesDescriptor<DataDictionary> AddEnvironmentInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        private static PropertiesDescriptor<DataDictionary> AddEnvironmentInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Properties(p3 => p3
                 .Ip(f3 => f3.Name(r => r.IpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false))
                 .Text(f3 => f3.Name(r => r.MachineName).RootAlias(EventIndexType.Alias.MachineName).IncludeInAll().Boost(1.1).AddKeywordField())
@@ -232,13 +238,13 @@ err['all_codes'] = codes.join(' ');";
                 .Keyword(f3 => f3.Name(r => r.Architecture).RootAlias(EventIndexType.Alias.MachineArchitecture))));
         }
 
-        public static PropertiesDescriptor<DataDictionary> AddUserDescriptionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        private static PropertiesDescriptor<DataDictionary> AddUserDescriptionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Properties(p3 => p3
                 .Text(f3 => f3.Name(r => r.Description).RootAlias(EventIndexType.Alias.UserDescription).IncludeInAll())
                 .Text(f3 => f3.Name(r => r.EmailAddress).RootAlias(EventIndexType.Alias.UserEmail).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer("simple").IncludeInAll().Boost(1.1).AddKeywordField())));
         }
 
-        public static PropertiesDescriptor<DataDictionary> AddUserInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        private static PropertiesDescriptor<DataDictionary> AddUserInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Properties(p3 => p3
                 .Text(f3 => f3.Name(r => r.Identity).RootAlias(EventIndexType.Alias.User).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).IncludeInAll().Boost(1.1).AddKeywordField())
                 .Text(f3 => f3.Name(r => r.Name).RootAlias(EventIndexType.Alias.UserName).IncludeInAll().AddKeywordField())));
