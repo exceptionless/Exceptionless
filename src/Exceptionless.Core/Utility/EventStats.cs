@@ -10,7 +10,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Stats;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Logging;
-using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Queries;
