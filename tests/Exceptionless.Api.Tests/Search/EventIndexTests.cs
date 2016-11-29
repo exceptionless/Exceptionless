@@ -251,7 +251,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Theory]
         [InlineData("browser:Chrome", 2)]
         [InlineData("browser:\"Chrome Mobile\"", 1)]
-        [InlineData("browser.keyword:\"Chrome Mobile\"", 1)]
         public async Task GetByBrowserAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
@@ -261,7 +260,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Theory]
         [InlineData("browser.version:39.0.2171", 1)]
         [InlineData("browser.version:26.0.1410", 1)]
-        [InlineData("browser.version.keyword:26.0.1410", 1)]
+        [InlineData("browser.version:\"26.0.1410\"", 1)]
         public async Task GetByBrowserVersionAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
@@ -280,7 +279,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Theory]
         [InlineData("device:Huawei", 1)]
         [InlineData("device:\"Huawei U8686\"", 1)]
-        [InlineData("device.keyword:\"Huawei U8686\"", 1)]
         public async Task GetByDeviceAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
@@ -291,7 +289,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("os:Android", 1)]
         [InlineData("os:Mac", 1)]
         [InlineData("os:\"Mac OS X\"", 1)]
-        [InlineData("os.keyword:\"Mac OS X\"", 1)]
         [InlineData("os:\"Microsoft Windows Server\"", 1)]
         [InlineData("os:\"Microsoft Windows Server 2012 R2 Standard\"", 1)]
         public async Task GetByOSAsync(string filter, int count) {
@@ -303,8 +300,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Theory]
         [InlineData("os.version:4.1.1", 1)]
         [InlineData("os.version:10.10.1", 1)]
-        [InlineData("os.version.keyword:10.10", 0)]
-        [InlineData("os.version.keyword:10.10.1", 1)]
+        [InlineData("os.version:\"10.10\"", 0)]
+        [InlineData("os.version:\"10.10.1\"", 1)]
         public async Task GetByOSVersionAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
@@ -363,7 +360,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Theory]
         [InlineData("Exception", 2)]
         [InlineData("error.targettype:Exception", 1)]
-        [InlineData("error.targettype.keyword:System.Exception", 1)]
+        [InlineData("error.targettype:\"System.Exception\"", 1)]
         public async Task GetByErrorTargetTypeAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
