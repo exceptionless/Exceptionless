@@ -1,13 +1,9 @@
 using System;
 using System.Threading.Tasks;
-using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
-using Foundatio.Logging;
 using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
-using LogLevel = Foundatio.Logging.LogLevel;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public sealed class IndexTests : TestBase {
