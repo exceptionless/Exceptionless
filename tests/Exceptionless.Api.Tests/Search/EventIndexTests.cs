@@ -350,7 +350,13 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Theory]
         [InlineData("AssociateWithCurrentThread", 1)]
+        [InlineData("System.Web.ThreadContext.AssociateWithCurrentThread", 1)]
+        [InlineData("error.targetmethod:System", 1)]
+        [InlineData("error.targetmethod:System.Web", 1)]
+        [InlineData("error.targetmethod:System.Web.ThreadContext", 1)]
+        [InlineData("error.targetmethod:ThreadContext", 1)]
         [InlineData("error.targetmethod:AssociateWithCurrentThread", 1)]
+        [InlineData("error.targetmethod:System.Web.ThreadContext.AssociateWithCurrentThread", 1)]
         public async Task GetByErrorTargetMethodAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
