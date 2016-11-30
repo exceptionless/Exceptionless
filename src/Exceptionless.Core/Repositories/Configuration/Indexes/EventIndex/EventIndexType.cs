@@ -6,12 +6,11 @@ using Exceptionless.Core.Models.Data;
 using Foundatio.Logging;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
-using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class EventIndexType : MonthlyIndexType<PersistentEvent>, IHavePipelinedIndexType {
+    public class EventIndexType : DailyIndexType<PersistentEvent>, IHavePipelinedIndexType {
         public EventIndexType(EventIndex index) : base(index, "events", document => document.Date.UtcDateTime) {}
 
         public string Pipeline { get; } = "events-pipeline";

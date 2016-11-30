@@ -70,20 +70,20 @@
       <HintPath>..\..\packages\Foundatio.Logging.Xunit.4.2.1183\lib\net46\Foundatio.Logging.Xunit.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.189.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.189-pre\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.196.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.196-pre\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.189.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.189-pre\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.196.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.196-pre\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=5.0.332.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.5.0.332-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
+    <Reference Include="Foundatio.Repositories, Version=5.0.336.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.5.0.336-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.332.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.332-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.336.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.336-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">

@@ -1,26 +1,22 @@
 ﻿# multi node configuration
 cluster.name: exceptionless
-script.disable_dynamic: false
-index.number_of_shards: 3
-index.number_of_replicas: 1
 action.destructive_requires_name: true
 action.auto_create_index: +.marvel-*
-bootstrap.mlockall: true
+bootstrap.memory_lock: true
 plugin.mandatory: mapper-size
 
 #path.data: /mnt/data/db
 #path.work: /path/to/work
 #path.logs: /mnt/data/log
 
+node.max_local_storage_nodes: 1
 gateway.expected_nodes: 3
-discovery.zen.ping.multicast.enabled: false
 discovery.zen.minimum_master_nodes: 2
 discovery.zen.ping.unicast.hosts: [ '10.2.0.4', '10.2.0.5', '10.2.0.6' ]
 
 #transport.tcp.compress: true
 transport.tcp.port: 9300
 http.port: 9200
-http.jsonp.enable: true
 http.cors.enabled: true
 http.cors.allow-origin: http://dashboards.localhost.com
 
