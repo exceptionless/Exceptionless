@@ -6,20 +6,29 @@ using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Processors;
+using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Logging;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Api.Controllers {
-    public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> : ExceptionlessApiController where TRepository : IReadOnlyRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() {
+    public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> : ExceptionlessApiController where TRepository : ISearchableReadOnlyRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() {
         protected readonly TRepository _repository;
         protected static readonly bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
         protected static readonly bool _isOrganization = typeof(TModel) == typeof(Organization);
         protected static readonly IReadOnlyCollection<TModel> EmptyModels = new List<TModel>(0).AsReadOnly();
         protected readonly IMapper _mapper;
+        protected readonly ILogger _logger;
 
-        public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper) {
+
+        public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper, ILoggerFactory loggerFactory) {
             _repository = repository;
             _mapper = mapper;
+            _logger = loggerFactory.CreateLogger(GetType());
         }
 
         public virtual async Task<IHttpActionResult> GetByIdAsync(string id) {
@@ -28,6 +37,40 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             return await OkModelAsync(model);
+        }
+
+        protected virtual async Task<IHttpActionResult> GetCountAsync(IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string aggregations = null) {
+            var pr = await QueryProcessor.ProcessAsync(filter);
+            if (!pr.IsValid)
+                return BadRequest(pr.Message);
+
+            var far = FieldAggregationProcessor.Process(aggregations);
+            if (!far.IsValid)
+                return BadRequest(far.Message);
+
+            sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
+            IRepositoryQuery query = new ExceptionlessQuery()
+                .WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
+                .WithDateRange(ti.UtcRange.Start, ti.UtcRange.End, ti.Field)
+                .WithIndexes(ti.UtcRange.Start, ti.UtcRange.End);
+
+            CountResult result;
+            try {
+                result = await _repository.CountBySearchAsync(query, pr.ExpandedQuery, aggregations);
+            } catch (Exception ex) {
+                _logger.Error().Exception(ex)
+                    .Message("An error has occurred. Please check your filter or aggregations.")
+                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = time, Offset = offset, Aggregations = aggregations })
+                    .Tag("Search")
+                    .Identity(CurrentUser.EmailAddress)
+                    .Property("User", CurrentUser)
+                    .SetActionContext(ActionContext)
+                    .Write();
+
+                return BadRequest("An error has occurred. Please check your search filter.");
+            }
+
+            return Ok(result);
         }
 
         protected async Task<IHttpActionResult> OkModelAsync(TModel model) {

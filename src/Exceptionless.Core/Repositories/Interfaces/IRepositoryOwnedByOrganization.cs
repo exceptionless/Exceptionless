@@ -5,7 +5,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories {
-    public interface IRepositoryOwnedByOrganization<T> : IRepository<T> where T : class, IOwnedByOrganization, IIdentity, new() {
+    public interface IRepositoryOwnedByOrganization<T> : ISearchableRepository<T> where T : class, IOwnedByOrganization, IIdentity, new() {
         Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         Task<long> RemoveAllByOrganizationIdAsync(string organizationId);
     }

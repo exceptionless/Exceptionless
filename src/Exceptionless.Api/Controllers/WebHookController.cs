@@ -24,7 +24,7 @@ namespace Exceptionless.App.Controllers.API {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
 
-        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
+        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, IMapper mapper, ILoggerFactory loggerFactory) : base(repository, mapper, loggerFactory) {
             _projectRepository = projectRepository;
             _billingManager = billingManager;
         }

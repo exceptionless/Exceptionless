@@ -74,9 +74,8 @@
       <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.196-pre\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=5.0.336.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Foundatio.Repositories">
       <HintPath>..\..\packages\Foundatio.Repositories.5.0.336-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.336.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.336-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
@@ -241,7 +240,6 @@
     <Compile Include="Controllers\OrganizationController.cs" />
     <Compile Include="Controllers\ProjectController.cs" />
     <Compile Include="Controllers\StackController.cs" />
-    <Compile Include="Controllers\StatsController.cs" />
     <Compile Include="Controllers\StatusController.cs" />
     <Compile Include="Controllers\StripeController.cs" />
     <Compile Include="Controllers\TokenController.cs" />

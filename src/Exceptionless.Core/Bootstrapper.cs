@@ -129,7 +129,6 @@ namespace Exceptionless.Core {
             container.Register<StripeEventHandler>();
             container.RegisterSingleton<BillingManager>();
             container.RegisterSingleton<SampleDataService>();
-            container.RegisterSingleton<EventStats>();
             container.RegisterSingleton<EventPipeline>();
             container.RegisterSingleton<EventPluginManager>();
             container.RegisterSingleton<FormattingPluginManager>();
