@@ -89,7 +89,7 @@ namespace Exceptionless.Api.Controllers {
             return skip;
         }
 
-        public User ExceptionlessUser => Request.GetUser();
+        protected User CurrentUser => Request.GetUser();
 
         public bool CanAccessOrganization(string organizationId) {
             return Request.CanAccessOrganization(organizationId);

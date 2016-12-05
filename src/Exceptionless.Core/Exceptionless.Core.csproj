@@ -252,11 +252,6 @@
     <Compile Include="Models\SessionInfo.cs" />
     <Compile Include="Models\Stack.cs" />
     <Compile Include="Models\StackSummaryModel.cs" />
-    <Compile Include="Models\Stats\NumbersStatsResult.cs" />
-    <Compile Include="Models\Stats\NumbersTermStatsItem.cs" />
-    <Compile Include="Models\Stats\NumbersTermStatsResult.cs" />
-    <Compile Include="Models\Stats\NumbersTimelineItem.cs" />
-    <Compile Include="Models\Stats\NumbersTimelineStatsResult.cs" />
     <Compile Include="Models\Token.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WebHook.cs" />
@@ -296,7 +291,6 @@
     <Compile Include="Serialization\DynamicTypeContractResolver.cs" />
     <Compile Include="Serialization\ElasticDynamicTypeContractResolver.cs" />
     <Compile Include="Serialization\ElasticLowerCaseUnderscorePropertyNamesContractResolver.cs" />
-    <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Utility\IConnectionMapping.cs" />
     <Compile Include="Utility\SemanticVersionParser.cs" />
     <Compile Include="Utility\SettingsBase.cs" />

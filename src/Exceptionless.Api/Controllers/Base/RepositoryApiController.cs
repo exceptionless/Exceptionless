@@ -17,12 +17,8 @@ using Foundatio.Repositories.Models;
 #pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
-    public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : IRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
-        protected readonly ILogger _logger;
-
-        public RepositoryApiController(TRepository repository, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, mapper) {
-            _logger = loggerFactory.CreateLogger(GetType());
-        }
+    public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : ISearchableRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
+        public RepositoryApiController(TRepository repository, IMapper mapper, ILoggerFactory loggerFactory) : base(repository, mapper, loggerFactory) {}
 
         public virtual async Task<IHttpActionResult> PostAsync(TNewModel value) {
             if (value == null)
@@ -201,7 +197,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 workIds = await DeleteModelsAsync(list) ?? new List<string>();
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).SetActionContext(ActionContext).Write();
+                _logger.Error().Exception(ex).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 

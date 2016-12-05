@@ -22,7 +22,7 @@ namespace Exceptionless.App.Controllers.API {
     public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, Token> {
         private readonly IProjectRepository _projectRepository;
 
-        public TokenController(ITokenRepository repository, IProjectRepository projectRepository, ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
+        public TokenController(ITokenRepository repository, IProjectRepository projectRepository, IMapper mapper, ILoggerFactory loggerFactory) : base(repository, mapper, loggerFactory) {
             _projectRepository = projectRepository;
         }
 
@@ -201,7 +201,7 @@ namespace Exceptionless.App.Controllers.API {
             if (!String.IsNullOrEmpty(model.OrganizationId) && !IsInOrganization(model.OrganizationId))
                 return null;
 
-            if (!String.IsNullOrEmpty(model.UserId) && model.UserId != ExceptionlessUser.Id)
+            if (!String.IsNullOrEmpty(model.UserId) && model.UserId != CurrentUser.Id)
                 return null;
 
             if (model.Type != TokenType.Access)

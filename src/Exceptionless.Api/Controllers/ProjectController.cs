@@ -21,7 +21,10 @@ using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
@@ -29,15 +32,15 @@ namespace Exceptionless.Api.Controllers {
     [Authorize(Roles = AuthorizationRoles.User)]
     public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly IEventRepository _eventRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
-        private readonly EventStats _stats;
 
-        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, EventStats stats, ILoggerFactory loggerFactory, IMapper mapper) : base(projectRepository, loggerFactory, mapper) {
+        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IEventRepository eventRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMapper mapper, ILoggerFactory loggerFactory) : base(projectRepository, mapper, loggerFactory) {
             _organizationRepository = organizationRepository;
+            _eventRepository = eventRepository;
             _workItemQueue = workItemQueue;
             _billingManager = billingManager;
-            _stats = stats;
         }
 
         #region CRUD
@@ -279,7 +282,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
+            if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
                 return NotFound();
 
             NotificationSettings settings;
@@ -301,7 +304,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
+            if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
                 return NotFound();
 
             if (settings == null)
@@ -326,7 +329,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
+            if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
                 return NotFound();
 
             if (project.NotificationSettings.ContainsKey(userId)) {
@@ -497,7 +500,7 @@ namespace Exceptionless.Api.Controllers {
         protected override Task<Project> AddModelAsync(Project value) {
             value.IsConfigured = false;
             value.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
-            value.AddDefaultOwnerNotificationSettings(ExceptionlessUser.Id);
+            value.AddDefaultOwnerNotificationSettings(CurrentUser.Id);
             value.SetDefaultUserAgentBotPatterns();
             value.Configuration.IncrementVersion();
 
@@ -531,19 +534,16 @@ namespace Exceptionless.Api.Controllers {
         private async Task<List<ViewProject>> PopulateProjectStatsAsync(List<ViewProject> viewProjects) {
             if (viewProjects.Count <= 0)
                 return viewProjects;
-            
-            var fields = new List<FieldAggregation> {
-                new FieldAggregation { Type = FieldAggregationType.Distinct, Field = "stack_id" }
-            };
 
             var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true);
             var projects = viewProjects.Select(p => new Project { Id = p.Id, OrganizationId = p.OrganizationId }).ToList();
             var sf = new ExceptionlessSystemFilterQuery(projects, organizations);
-            var ntsr = await _stats.GetNumbersTermsStatsAsync("project_id", fields, organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, sf, max: viewProjects.Count);
+            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, "date").WithIndexes(organizations.GetRetentionUtcCutoff(), DateTime.MaxValue);
+            var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(project_id~{viewProjects.Count} cardinality:stack_id)");
             foreach (var project in viewProjects) {
-                var term = ntsr.Terms.FirstOrDefault(t => t.Term == project.Id);
+                var term = result.Aggregations["terms_project_id"].Buckets.FirstOrDefault(t => t.Key == project.Id);
                 project.EventCount = term?.Total ?? 0;
-                project.StackCount = (long)(term?.Numbers[0] ?? 0);
+                project.StackCount = (long)(term?.Aggregations["cardinality_stack_id"].Value ?? 0);
             }
 
             return viewProjects;

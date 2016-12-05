@@ -166,14 +166,16 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         private Core.Models.Token GetClientToken() {
-            var token = new Core.Models.Token();
-            token.Id = StringExtensions.GetNewToken();
-            token.CreatedUtc = token.UpdatedUtc = SystemClock.UtcNow;
-            token.Type = TokenType.Access;
-            token.CreatedBy = TestConstants.UserId;
-            token.OrganizationId = TestConstants.OrganizationId;
-            token.ProjectId = TestConstants.ProjectId;
-            return token;
+            var utcNow = SystemClock.UtcNow;
+            return new Core.Models.Token {
+                Id = StringExtensions.GetNewToken(),
+                Type = TokenType.Access,
+                CreatedBy = TestConstants.UserId,
+                CreatedUtc = utcNow,
+                UpdatedUtc = utcNow,
+                OrganizationId = TestConstants.OrganizationId,
+                ProjectId = TestConstants.ProjectId
+            };
         }
 
         public async Task<long> EventCountAsync() {

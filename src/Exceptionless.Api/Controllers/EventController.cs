@@ -57,7 +57,8 @@ namespace Exceptionless.Api.Controllers {
             IFileStorage storage,
             ICacheClient cacheClient,
             JsonSerializerSettings jsonSerializerSettings,
-            ILoggerFactory loggerFactory, IMapper mapper) : base(repository, loggerFactory, mapper) {
+            IMapper mapper,
+            ILoggerFactory loggerFactory) : base(repository, mapper, loggerFactory) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
@@ -70,6 +71,30 @@ namespace Exceptionless.Api.Controllers {
             _jsonSerializerSettings = jsonSerializerSettings;
 
             AllowedFields.Add("date");
+        }
+
+        /// <summary>
+        /// Count
+        /// </summary>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        [HttpGet]
+        [Route("count")]
+        [ResponseType(typeof(List<PersistentEvent>))]
+        public async Task<IHttpActionResult> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null) {
+            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            if (organizations.Count == 0)
+                return Ok(EmptyModels);
+
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            return await base.GetCountAsync(sf, ti, filter, aggregations);
         }
 
         /// <summary>
@@ -155,8 +180,8 @@ namespace Exceptionless.Api.Controllers {
                     .Message("An error has occurred. Please check your search filter.")
                     .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Sort = sort, Time = ti, Page = page, Limit = limit })
                     .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
+                    .Identity(CurrentUser.EmailAddress)
+                    .Property("User", CurrentUser)
                     .SetActionContext(ActionContext)
                     .Write();
 
@@ -690,8 +715,8 @@ namespace Exceptionless.Api.Controllers {
                 _logger.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
                     .Project(projectId)
-                    .Identity(ExceptionlessUser?.EmailAddress)
-                    .Property("User", ExceptionlessUser)
+                    .Identity(CurrentUser?.EmailAddress)
+                    .Property("User", CurrentUser)
                     .SetActionContext(ActionContext)
                     .WriteIf(projectId != Settings.Current.InternalProjectId);
 
@@ -789,8 +814,8 @@ namespace Exceptionless.Api.Controllers {
                 _logger.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
                     .Project(projectId)
-                    .Identity(ExceptionlessUser?.EmailAddress)
-                    .Property("User", ExceptionlessUser)
+                    .Identity(CurrentUser?.EmailAddress)
+                    .Property("User", CurrentUser)
                     .SetActionContext(ActionContext)
                     .WriteIf(projectId != Settings.Current.InternalProjectId);
 

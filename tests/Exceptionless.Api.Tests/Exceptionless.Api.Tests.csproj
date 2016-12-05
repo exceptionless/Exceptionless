@@ -232,7 +232,7 @@
     <Compile Include="Search\EventIndexTests.cs" />
     <Compile Include="SemanticVersionParserTests.cs" />
     <Compile Include="SerializerTests.cs" />
-    <Compile Include="Stats\StatsTests.cs" />
+    <Compile Include="Stats\AggregationTests.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="Utility\Approvals.cs" />
     <Compile Include="Utility\RandomEventGenerator.cs" />

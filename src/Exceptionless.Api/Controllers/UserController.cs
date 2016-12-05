@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly ICacheClient _cache;
         private readonly IMailer _mailer;
 
-        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, ILoggerFactory loggerFactory, IMapper mapper) : base(userRepository, loggerFactory, mapper) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, ILoggerFactory loggerFactory) : base(userRepository, mapper, loggerFactory) {
             _organizationRepository = organizationRepository;
             _cache = new ScopedCacheClient(cacheClient, "User");
             _mailer = mailer;
@@ -43,7 +43,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("me")]
         [ResponseType(typeof(ViewCurrentUser))]
         public async Task<IHttpActionResult> GetCurrentUserAsync() {
-            var currentUser = await GetModelAsync(ExceptionlessUser.Id);
+            var currentUser = await GetModelAsync(CurrentUser.Id);
             if (currentUser == null)
                 return NotFound();
 
@@ -130,11 +130,11 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             email = email.ToLower();
-            if (String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
+            if (String.Equals(CurrentUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
 
             // Only allow 3 email address updates per hour period by a single user.
-            string updateEmailAddressAttemptsCacheKey = $"{ExceptionlessUser.Id}:attempts";
+            string updateEmailAddressAttemptsCacheKey = $"{CurrentUser.Id}:attempts";
             long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
             if (attempts > 3)
                 return BadRequest("Update email address rate limit reached. Please try updating later.");
@@ -177,7 +177,7 @@ namespace Exceptionless.Api.Controllers {
             var user = await _repository.GetByVerifyEmailAddressTokenAsync(token);
             if (user == null) {
                 // The user may already be logged in and verified.
-                if (ExceptionlessUser != null && ExceptionlessUser.IsEmailAddressVerified)
+                if (CurrentUser != null && CurrentUser.IsEmailAddressVerified)
                     return Ok();
 
                 return NotFound();
@@ -254,14 +254,14 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(email))
                 return false;
 
-            if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
+            if (CurrentUser != null && String.Equals(CurrentUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             return await _repository.GetByEmailAddressAsync(email) == null;
         }
 
         protected override async Task<User> GetModelAsync(string id, bool useCache = true) {
-            if (Request.IsGlobalAdmin() || String.Equals(ExceptionlessUser.Id, id))
+            if (Request.IsGlobalAdmin() || String.Equals(CurrentUser.Id, id))
                 return await base.GetModelAsync(id, useCache);
 
             return null;
@@ -271,7 +271,7 @@ namespace Exceptionless.Api.Controllers {
             if (Request.IsGlobalAdmin())
                 return base.GetModelsAsync(ids, useCache);
 
-            return base.GetModelsAsync(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
+            return base.GetModelsAsync(ids.Where(id => String.Equals(CurrentUser.Id, id)).ToArray(), useCache);
         }
     }
 }

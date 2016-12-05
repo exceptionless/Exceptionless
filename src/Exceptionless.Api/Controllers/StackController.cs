@@ -16,8 +16,6 @@ using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Utility;
-using Exceptionless.Core.Models.Stats;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
@@ -25,7 +23,10 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 using McSherry.SemanticVersioning;
 using Newtonsoft.Json.Linq;
 
@@ -36,27 +37,25 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
+        private readonly IEventRepository _eventRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
         private readonly ICacheClient _cache;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
-        private readonly EventStats _eventStats;
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
-        private readonly List<FieldAggregation> _distinctUsersFields = new List<FieldAggregation> { new FieldAggregation { Field = "user.keyword", Type = FieldAggregationType.Distinct } };
-        private readonly List<FieldAggregation> _distinctUsersFieldsWithSort = new List<FieldAggregation> { new FieldAggregation { Field = "user.keyword", Type = FieldAggregationType.Distinct, SortOrder = "-" } };
 
-        public StackController(IStackRepository stackRepository,  IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, ICacheClient cacheClient, EventStats eventStats, BillingManager billingManager, FormattingPluginManager formattingPluginManager, ILoggerFactory loggerFactory, IMapper mapper) : base(stackRepository, loggerFactory, mapper) {
+        public StackController(IStackRepository stackRepository,  IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, ICacheClient cacheClient, BillingManager billingManager, FormattingPluginManager formattingPluginManager, IMapper mapper, ILoggerFactory loggerFactory) : base(stackRepository, mapper, loggerFactory) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
+            _eventRepository = eventRepository;
             _workItemQueue = workItemQueue;
             _webHookRepository = webHookRepository;
             _webHookDataPluginManager = webHookDataPluginManager;
             _webHookNotificationQueue = webHookNotificationQueue;
             _cache = cacheClient;
-            _eventStats = eventStats;
             _billingManager = billingManager;
             _formattingPluginManager = formattingPluginManager;
 
@@ -537,8 +536,8 @@ namespace Exceptionless.Api.Controllers {
                     .Message("An error has occurred. Please check your search filter.")
                     .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Sort = sort, Time = ti, Page = page, Limit = limit })
                     .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
+                    .Identity(CurrentUser.EmailAddress)
+                    .Property("User", CurrentUser)
                     .SetActionContext(ActionContext)
                     .Write();
 
@@ -708,7 +707,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
-            return await GetAllByTermsAsync(_distinctUsersFields, sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -741,7 +740,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            return await GetAllByTermsAsync(_distinctUsersFields, sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -764,7 +763,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
-            return await GetAllByTermsAsync(_distinctUsersFieldsWithSort, sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("cardinality:-user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -797,10 +796,10 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            return await GetAllByTermsAsync(_distinctUsersFieldsWithSort, sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("cardinality:-user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
-        private async Task<IHttpActionResult> GetAllByTermsAsync(ICollection<FieldAggregation> fields, IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string mode = null, int page = 1, int limit = 10) {
+        private async Task<IHttpActionResult> GetAllByTermsAsync(string aggregations, IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page, limit);
@@ -814,15 +813,16 @@ namespace Exceptionless.Api.Controllers {
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
 
             try {
-                var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", fields, ti.UtcRange.Start, ti.UtcRange.End, ShouldApplySystemFilter(sf, filter) ? sf : null, filter, ti.Offset, GetSkip(page + 1, limit) + 1);
-                if (ntsr.Terms.Count == 0)
+                var systemFilter = new ElasticQuery().WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).WithDateRange(ti.UtcRange.Start, ti.UtcRange.End, "date").WithIndexes(ti.UtcRange.Start, ti.UtcRange.End);
+                var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, pr.ExpandedQuery, $"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {aggregations})");
+                if (stackTerms.Aggregations["terms_stack_id"].Buckets.Count == 0)
                     return Ok(EmptyModels);
 
-                var stackIds = ntsr.Terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
+                var stackIds = stackTerms.Aggregations["terms_stack_id"].Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
                 var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
 
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase)) {
-                    var summaries = await GetStackSummariesAsync(stacks, ntsr, sf, ti);
+                    var summaries = await GetStackSummariesAsync(stacks, stackTerms.Aggregations["terms_stack_id"].Buckets, sf, ti);
                     return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, page);
                 }
 
@@ -832,8 +832,8 @@ namespace Exceptionless.Api.Controllers {
                     .Message("An error has occurred. Please check your search filter.")
                     .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit })
                     .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
+                    .Identity(CurrentUser.EmailAddress)
+                    .Property("User", CurrentUser)
                     .SetActionContext(ActionContext)
                     .Write();
 
@@ -863,27 +863,28 @@ namespace Exceptionless.Api.Controllers {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
 
-            var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", _distinctUsersFields, ti.UtcRange.Start, ti.UtcRange.End, eventSystemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), ti.Offset, stacks.Count);
-            return await GetStackSummariesAsync(stacks, ntsr, eventSystemFilter, ti);
+            var systemFilter = new ElasticQuery().WithSystemFilter(eventSystemFilter).WithDateRange(ti.UtcRange.Start, ti.UtcRange.End, "date").WithIndexes(ti.UtcRange.Start, ti.UtcRange.End);
+            var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), $"terms:(stack_id~{stacks.Count} cardinality:user min:date max:date)");
+            return await GetStackSummariesAsync(stacks, stackTerms.Aggregations["terms_stack_id"].Buckets, eventSystemFilter, ti);
         }
 
-        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, NumbersTermStatsResult stackTerms, IExceptionlessSystemFilterQuery sf, TimeInfo ti) {
+        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, ICollection<BucketResult> stackTerms, IExceptionlessSystemFilterQuery sf, TimeInfo ti) {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>(0);
 
             var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.UtcRange.Start, ti.UtcRange.End);
-            return stacks.Join(stackTerms.Terms, s => s.Id, tk => tk.Term, (stack, term) => {
+            return stacks.Join(stackTerms, s => s.Id, tk => tk.Key, (stack, term) => {
                 var data = _formattingPluginManager.GetStackSummaryData(stack);
                 var summary = new StackSummaryModel {
                     TemplateKey = data.TemplateKey,
                     Data = data.Data,
                     Id = stack.Id,
                     Title = stack.Title,
-                    FirstOccurrence = term.FirstOccurrence,
-                    LastOccurrence = term.LastOccurrence,
-                    Total = term.Total,
+                    //FirstOccurrence = term.Aggregations["min_date"].Value,
+                    //LastOccurrence = term.Aggregations["max_date"].Value,
+                    Total = term.Total.GetValueOrDefault(),
 
-                    Users = term.Numbers[0],
+                    Users = term.Aggregations["cardinality_user"].Total.GetValueOrDefault(),
                     TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
                 };
 
@@ -900,12 +901,14 @@ namespace Exceptionless.Api.Controllers {
             if (totals.Count == projectIds.Count)
                 return totals;
 
+            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(utcStart, utcEnd, "date").WithIndexes(utcStart, utcEnd);
             var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
-            var projectTerms = await _eventStats.GetNumbersTermsStatsAsync("project_id", _distinctUsersFields, utcStart, utcEnd, sf, projects.BuildFilter());
+            var result = await _eventRepository.CountBySearchAsync(systemFilter, projects.BuildFilter(), "terms:(project_id cardinality:user)");
 
             // Cache all projects that have more than 10 users for 5 minutes.
-            await scopedCacheClient.SetAllAsync(projectTerms.Terms.Where(t => t.Numbers[0] >= 10).ToDictionary(t => t.Term, t => t.Numbers[0]), TimeSpan.FromMinutes(5));
-            totals.AddRange(projectTerms.Terms.ToDictionary(kvp => kvp.Term, kvp => kvp.Numbers[0]));
+            var projectTerms = result.Aggregations["terms_project_id"].Buckets;
+            await scopedCacheClient.SetAllAsync(projectTerms.Where(t => t.Value.GetValueOrDefault() >= 10).ToDictionary(t => t.Key, t => t.Value.GetValueOrDefault()), TimeSpan.FromMinutes(5));
+            totals.AddRange(projectTerms.ToDictionary(t => t.Key, t => t.Value.GetValueOrDefault()));
 
             return totals;
         }
