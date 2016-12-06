@@ -763,7 +763,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
-            return await GetAllByTermsAsync("cardinality:-user min:date max:date", sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("-cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -796,7 +796,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            return await GetAllByTermsAsync("cardinality:-user min:date max:date", sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("-cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         private async Task<IHttpActionResult> GetAllByTermsAsync(string aggregations, IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string mode = null, int page = 1, int limit = 10) {
@@ -815,14 +815,14 @@ namespace Exceptionless.Api.Controllers {
             try {
                 var systemFilter = new ElasticQuery().WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).WithDateRange(ti.UtcRange.Start, ti.UtcRange.End, "date").WithIndexes(ti.UtcRange.Start, ti.UtcRange.End);
                 var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, pr.ExpandedQuery, $"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {aggregations})");
-                if (stackTerms.Aggregations["terms_stack_id"].Buckets.Count == 0)
+                if (stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets.Count == 0)
                     return Ok(EmptyModels);
 
-                var stackIds = stackTerms.Aggregations["terms_stack_id"].Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
+                var stackIds = stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
                 var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
 
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase)) {
-                    var summaries = await GetStackSummariesAsync(stacks, stackTerms.Aggregations["terms_stack_id"].Buckets, sf, ti);
+                    var summaries = await GetStackSummariesAsync(stacks, stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets, sf, ti);
                     return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, page);
                 }
 
@@ -865,10 +865,10 @@ namespace Exceptionless.Api.Controllers {
 
             var systemFilter = new ElasticQuery().WithSystemFilter(eventSystemFilter).WithDateRange(ti.UtcRange.Start, ti.UtcRange.End, "date").WithIndexes(ti.UtcRange.Start, ti.UtcRange.End);
             var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), $"terms:(stack_id~{stacks.Count} cardinality:user min:date max:date)");
-            return await GetStackSummariesAsync(stacks, stackTerms.Aggregations["terms_stack_id"].Buckets, eventSystemFilter, ti);
+            return await GetStackSummariesAsync(stacks, stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets, eventSystemFilter, ti);
         }
 
-        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, ICollection<BucketResult> stackTerms, IExceptionlessSystemFilterQuery sf, TimeInfo ti) {
+        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, IExceptionlessSystemFilterQuery sf, TimeInfo ti) {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>(0);
 
@@ -880,11 +880,11 @@ namespace Exceptionless.Api.Controllers {
                     Data = data.Data,
                     Id = stack.Id,
                     Title = stack.Title,
-                    //FirstOccurrence = term.Aggregations["min_date"].Value,
-                    //LastOccurrence = term.Aggregations["max_date"].Value,
-                    Total = term.Total.GetValueOrDefault(),
+                    //FirstOccurrence = term.Aggregations.Min("min_date").Value.GetValueOrDefault(),
+                    //astOccurrence = term.Aggregations.Max("max_date").Value.GetValueOrDefault(),
+                    Total = term.DocCount.GetValueOrDefault(),
 
-                    Users = term.Aggregations["cardinality_user"].Total.GetValueOrDefault(),
+                    Users = term.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault(),
                     TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
                 };
 
@@ -906,9 +906,9 @@ namespace Exceptionless.Api.Controllers {
             var result = await _eventRepository.CountBySearchAsync(systemFilter, projects.BuildFilter(), "terms:(project_id cardinality:user)");
 
             // Cache all projects that have more than 10 users for 5 minutes.
-            var projectTerms = result.Aggregations["terms_project_id"].Buckets;
-            await scopedCacheClient.SetAllAsync(projectTerms.Where(t => t.Value.GetValueOrDefault() >= 10).ToDictionary(t => t.Key, t => t.Value.GetValueOrDefault()), TimeSpan.FromMinutes(5));
-            totals.AddRange(projectTerms.ToDictionary(t => t.Key, t => t.Value.GetValueOrDefault()));
+            var projectTerms = result.Aggregations.Terms<string>("terms_project_id").Buckets;
+            await scopedCacheClient.SetAllAsync(projectTerms.Where(t => t.DocCount.GetValueOrDefault() >= 10).ToDictionary(t => t.Key, t => t.DocCount.GetValueOrDefault()), TimeSpan.FromMinutes(5));
+            totals.AddRange(projectTerms.ToDictionary(t => t.Key, t => (double)t.DocCount.GetValueOrDefault()));
 
             return totals;
         }

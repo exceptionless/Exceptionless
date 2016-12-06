@@ -77,12 +77,9 @@ namespace Exceptionless.Api.Controllers {
         /// Count
         /// </summary>
         /// <param name="filter">A filter that controls what data is returned from the server.</param>
-        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="aggregations">A comma delimited list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
-        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
-        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route("count")]
