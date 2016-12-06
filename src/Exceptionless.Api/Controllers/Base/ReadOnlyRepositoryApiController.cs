@@ -60,7 +60,7 @@ namespace Exceptionless.Api.Controllers {
             } catch (Exception ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your filter or aggregations.")
-                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = time, Offset = offset, Aggregations = aggregations })
+                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations })
                     .Tag("Search")
                     .Identity(CurrentUser.EmailAddress)
                     .Property("User", CurrentUser)

@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public override TypeMappingDescriptor<Stack> BuildMapping(TypeMappingDescriptor<Stack> map) {
             return base.BuildMapping(map)
                 .Dynamic(false)
-                .AllField(a => a.Enabled(false))
+                .IncludeInAll(false)
                 .Properties(p => p
                     .SetupDefaults()
                     .Keyword(f => f.Name(s => s.OrganizationId).Alias(Alias.OrganizationId))

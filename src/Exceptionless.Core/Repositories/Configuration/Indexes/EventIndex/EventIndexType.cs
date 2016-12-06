@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Dynamic(false)
                 .DynamicTemplates(dt => dt.DynamicTemplate("idx_reference", t => t.Match("*-r").Mapping(m => m.Keyword(s => s.IgnoreAbove(256)))))
                 .SizeField(s => s.Enabled())
-                //.IncludeInAll(false)
+                .IncludeInAll(false)
                 .AllField(a => a.Analyzer(EventIndex.STANDARDPLUS_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER))
                 .Properties(p => p
                     .Date(f => f.Name(e => e.CreatedUtc).Alias(Alias.CreatedUtc))

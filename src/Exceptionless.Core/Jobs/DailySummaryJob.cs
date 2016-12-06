@@ -21,6 +21,7 @@ using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
 
@@ -122,7 +123,7 @@ namespace Exceptionless.Core.Jobs {
             _logger.Info("Sending daily summary: users={0} project={1}", users.Count, project.Id);
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(data.UtcStartTime, data.UtcEndTime, "date").WithIndexes(data.UtcStartTime, data.UtcEndTime);
-            var result = await _eventRepository.CountBySearchAsync(systemFilter, $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error}", "terms:is_first_occurrence:-F cardinality:stack_id").AnyContext(); //TODO Support term excludes on is_first_occurrence.
+            var result = await _eventRepository.CountBySearchAsync(systemFilter, $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error}", "terms:(is_first_occurrence @missing:F) cardinality:stack_id").AnyContext();
             bool hasSubmittedEvents = result.Total > 0;
             if (!hasSubmittedEvents)
                 hasSubmittedEvents = await _eventRepository.GetCountByProjectIdAsync(project.Id).AnyContext() > 0;
@@ -134,8 +135,8 @@ namespace Exceptionless.Core.Jobs {
                 EndDate = data.UtcEndTime,
                 Total = result.Total,
                 PerHourAverage = result.Total / data.UtcEndTime.Subtract(data.UtcStartTime).TotalHours,
-                NewTotal = result.Aggregations["terms_is_first_occurrence"].Value.GetValueOrDefault(),
-                UniqueTotal = result.Aggregations["cardinality_stack_id"].Value.GetValueOrDefault(),
+                NewTotal = result.Aggregations.Terms<double>("terms_is_first_occurrence").Buckets.First().DocCount.GetValueOrDefault(),
+                UniqueTotal = result.Aggregations.Cardinality("cardinality_stack_id").Value.GetValueOrDefault(),
                 HasSubmittedEvents = hasSubmittedEvents,
                 IsFreePlan = organization.PlanId == BillingManager.FreePlan.Id
             };
