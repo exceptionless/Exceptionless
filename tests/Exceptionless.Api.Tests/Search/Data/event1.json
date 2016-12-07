@@ -24,7 +24,7 @@
       "host": "app.exceptionless.com",
       "port": 443,
       "path": "/apple-touch-icon.png",
-      "client_ip_address": "192.168.0.243",
+      "client_ip_address": "192.168.0.243,172.10.0.30",
       "data": {
         "@browser": "Chrome Mobile",
         "@browser_version": "26.0.1410",

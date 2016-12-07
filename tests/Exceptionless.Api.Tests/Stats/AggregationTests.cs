@@ -74,7 +74,7 @@ namespace Exceptionless.Api.Tests.Stats {
             await CreateDataAsync(eventCount, false);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var result = await _eventRepository.CountBySearchAsync(null, $"project:{TestConstants.ProjectId}", "terms:(is_first_occurrence @missing:F)");
+            var result = await _eventRepository.CountBySearchAsync(null, $"project:{TestConstants.ProjectId}", "terms:(is_first_occurrence @missing:false)");
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(await _stackRepository.CountAsync(), result.Aggregations.Terms<string>("terms_is_first_occurrence").Buckets.Sum(b => b.DocCount.GetValueOrDefault()));
         }
@@ -134,7 +134,7 @@ namespace Exceptionless.Api.Tests.Stats {
             await CreateDataAsync(eventCount, false);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var result = await _eventRepository.CountBySearchAsync(null, null, "terms:(stack_id terms:(is_first_occurrence @missing:F))");
+            var result = await _eventRepository.CountBySearchAsync(null, null, "terms:(stack_id terms:(is_first_occurrence @missing:false))");
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Aggregations.Terms<string>("terms_stack_id").Buckets.Count, 1, 25);
             foreach (var term in result.Aggregations.Terms<string>("terms_stack_id").Buckets) {
