@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Processors;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
@@ -13,7 +12,6 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
-using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -135,7 +133,7 @@ namespace Exceptionless.Core.Jobs {
                 EndDate = data.UtcEndTime,
                 Total = result.Total,
                 PerHourAverage = result.Total / data.UtcEndTime.Subtract(data.UtcStartTime).TotalHours,
-                NewTotal = result.Aggregations.Terms<double>("terms_is_first_occurrence").Buckets.First().DocCount.GetValueOrDefault(),
+                NewTotal = result.Aggregations.Terms<double>("terms_is_first_occurrence").Buckets.First().Total.GetValueOrDefault(),
                 UniqueTotal = result.Aggregations.Cardinality("cardinality_stack_id").Value.GetValueOrDefault(),
                 HasSubmittedEvents = hasSubmittedEvents,
                 IsFreePlan = organization.PlanId == BillingManager.FreePlan.Id
