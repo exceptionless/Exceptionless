@@ -55,7 +55,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var result = await _eventRepository.CountBySearchAsync(null, $"project:{TestConstants.ProjectId}", "date:(date cardinality:id) cardinality:id");
             Assert.Equal(eventCount, result.Total);
-            Assert.Equal(eventCount, result.Aggregations.DateHistogram("date_date").Buckets.Sum(t => t.DocCount));
+            Assert.Equal(eventCount, result.Aggregations.DateHistogram("date_date").Buckets.Sum(t => t.Total));
             Assert.Equal(1, result.Aggregations.DateHistogram("date_date").Buckets.First().Aggregations.Count);
             Assert.Equal(eventCount, result.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault());
             Assert.Equal(eventCount, result.Aggregations.DateHistogram("date_date").Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault()));
@@ -76,7 +76,7 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var result = await _eventRepository.CountBySearchAsync(null, $"project:{TestConstants.ProjectId}", "terms:(is_first_occurrence @include:true)");
             Assert.Equal(eventCount, result.Total);
-            Assert.Equal(await _stackRepository.CountAsync(), result.Aggregations.Terms<string>("terms_is_first_occurrence").Buckets.Sum(b => b.DocCount.GetValueOrDefault()));
+            Assert.Equal(await _stackRepository.CountAsync(), result.Aggregations.Terms<string>("terms_is_first_occurrence").Buckets.First(b => b.KeyAsString == Boolean.TrueString.ToLower()).Total.GetValueOrDefault());
         }
 
         [Fact]
@@ -110,10 +110,10 @@ namespace Exceptionless.Api.Tests.Stats {
             var result = await _eventRepository.CountBySearchAsync(null, null, "terms:tags");
             Assert.Equal(eventCount, result.Total);
             // each event can be in multiple tag buckets since an event can have up to 3 sample tags
-            Assert.InRange(result.Aggregations.Terms<string>("terms_tags").Buckets.Sum(t => t.DocCount.GetValueOrDefault()), eventCount, eventCount * 3);
+            Assert.InRange(result.Aggregations.Terms<string>("terms_tags").Buckets.Sum(t => t.Total.GetValueOrDefault()), eventCount, eventCount * 3);
             Assert.InRange(result.Aggregations.Terms<string>("terms_tags").Buckets.Count, 1, TestConstants.EventTags.Count);
             foreach (var term in result.Aggregations.Terms<string>("terms_tags").Buckets)
-                Assert.InRange(term.DocCount.GetValueOrDefault(), 1, eventCount);
+                Assert.InRange(term.Total.GetValueOrDefault(), 1, eventCount);
         }
 
         [Fact]
@@ -134,12 +134,14 @@ namespace Exceptionless.Api.Tests.Stats {
             await CreateDataAsync(eventCount, false);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var result = await _eventRepository.CountBySearchAsync(null, null, "terms:(stack_id terms:(is_first_occurrence @include:true))");
+            var stackSize = await _stackRepository.CountAsync();
+            var result = await _eventRepository.CountBySearchAsync(null, null, $"terms:(stack_id terms:(is_first_occurrence~{stackSize} @include:true))");
             Assert.Equal(eventCount, result.Total);
-            Assert.InRange(result.Aggregations.Terms<string>("terms_stack_id").Buckets.Count, 1, 25);
-            foreach (var term in result.Aggregations.Terms<string>("terms_stack_id").Buckets) {
-                Assert.Equal(1, term.DocCount.GetValueOrDefault()); //unique
-                Assert.Equal(1, term.Aggregations.Terms<string>("terms_is_first_occurrence").Buckets.First().DocCount.GetValueOrDefault()); // new
+
+            var termsAggregation = result.Aggregations.Terms<string>("terms_stack_id");
+            Assert.Equal(eventCount, termsAggregation.Buckets.Sum(b1 => b1.Total.GetValueOrDefault()) + (long)termsAggregation.Data["SumOtherDocCount"]);
+            foreach (var term in termsAggregation.Buckets) {
+                Assert.Equal(1, term.Aggregations.Terms<string>("terms_is_first_occurrence").Buckets.Sum(b => b.Total.GetValueOrDefault()));
             }
         }
 
@@ -152,7 +154,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var result = await _eventRepository.CountBySearchAsync(null, null, "terms:project_id");
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Aggregations.Terms<string>("terms_project_id").Buckets.Count, 1, 3); // 3 sample projects
-            Assert.Equal(eventCount, result.Aggregations.Terms<string>("terms_project_id").Buckets.Sum(t => t.DocCount.GetValueOrDefault()));
+            Assert.Equal(eventCount, result.Aggregations.Terms<string>("terms_project_id").Buckets.Sum(t => t.Total.GetValueOrDefault()));
         }
 
         [Fact]

@@ -6,4 +6,4 @@ bootstrap.memory_lock: true
 plugin.mandatory: mapper-size
 
 transport.tcp.port: 9300
-http.port: 9200a
+http.port: 9200

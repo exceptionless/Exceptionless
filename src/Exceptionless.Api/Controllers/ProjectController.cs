@@ -542,7 +542,7 @@ namespace Exceptionless.Api.Controllers {
             var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(project_id~{viewProjects.Count} cardinality:stack_id)");
             foreach (var project in viewProjects) {
                 var term = result.Aggregations.Terms<string>("terms_project_id").Buckets.FirstOrDefault(t => t.Key == project.Id);
-                project.EventCount = term?.DocCount ?? 0;
+                project.EventCount = term?.Total ?? 0;
                 project.StackCount = (long)(term?.Aggregations.Cardinality("cardinality_stack_id").Value ?? 0);
             }
 

@@ -881,8 +881,8 @@ namespace Exceptionless.Api.Controllers {
                     Id = stack.Id,
                     Title = stack.Title,
                     //FirstOccurrence = term.Aggregations.Min("min_date").Value.GetValueOrDefault(),
-                    //astOccurrence = term.Aggregations.Max("max_date").Value.GetValueOrDefault(),
-                    Total = term.DocCount.GetValueOrDefault(),
+                    //LastOccurrence = term.Aggregations.Max("max_date").Value.GetValueOrDefault(),
+                    Total = term.Total.GetValueOrDefault(),
 
                     Users = term.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault(),
                     TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
@@ -907,8 +907,8 @@ namespace Exceptionless.Api.Controllers {
 
             // Cache all projects that have more than 10 users for 5 minutes.
             var projectTerms = result.Aggregations.Terms<string>("terms_project_id").Buckets;
-            await scopedCacheClient.SetAllAsync(projectTerms.Where(t => t.DocCount.GetValueOrDefault() >= 10).ToDictionary(t => t.Key, t => t.DocCount.GetValueOrDefault()), TimeSpan.FromMinutes(5));
-            totals.AddRange(projectTerms.ToDictionary(t => t.Key, t => (double)t.DocCount.GetValueOrDefault()));
+            await scopedCacheClient.SetAllAsync(projectTerms.Where(t => t.Total.GetValueOrDefault() >= 10).ToDictionary(t => t.Key, t => t.Total.GetValueOrDefault()), TimeSpan.FromMinutes(5));
+            totals.AddRange(projectTerms.ToDictionary(t => t.Key, t => (double)t.Total.GetValueOrDefault()));
 
             return totals;
         }
