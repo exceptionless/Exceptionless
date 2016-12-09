@@ -19,6 +19,8 @@ namespace Exceptionless.Core.Repositories {
             DisableCache();
             BatchNotifications = true;
             DefaultExcludes.Add(GetPropertyName(nameof(PersistentEvent.Idx)));
+            DefaultExcludes.Add("ip");
+            DefaultExcludes.Add("error");
             FieldsRequiredForRemove.Add(GetPropertyName(nameof(PersistentEvent.Date)));
         }
 

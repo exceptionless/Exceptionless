@@ -211,6 +211,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Theory]
         [InlineData("\"2001:0:4137:9e76:cfd:33a0:5198:3a66\"", 1)]
         [InlineData("ip:\"2001:0:4137:9e76:cfd:33a0:5198:3a66\"", 1)]
+        [InlineData("192.168.0.243", 1)]
+        [InlineData("ip:192.168.0.243", 1)]
         [InlineData("192.168.0.88", 1)]
         [InlineData("ip:192.168.0.88", 1)]
         [InlineData("10.0.0.208", 1)]
@@ -359,7 +361,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("error.targetmethod:ThreadContext", 1)]
         [InlineData("error.targetmethod:AssociateWithCurrentThread", 1)]
         [InlineData("error.targetmethod:System.Web.ThreadContext.AssociateWithCurrentThread", 1)]
-        [InlineData("error.targetmethod:System.Web.ThreadContext.AssociateWithCurrentThread()", 1)]
+        [InlineData("error.targetmethod:\"System.Web.ThreadContext.AssociateWithCurrentThread()\"", 1)]
         public async Task GetByErrorTargetMethodAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);

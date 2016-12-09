@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Nest;
 
@@ -20,6 +20,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         internal const string TYPENAME_ANALYZER = "typename";
         internal const string STANDARDPLUS_ANALYZER = "standardplus";
 
+        internal const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
         internal const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
 
         public EventIndex(IElasticConfiguration configuration) : base(configuration, Settings.Current.AppScopePrefix + "events", 1) {
@@ -52,7 +53,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Custom(VERSION_SEARCH_ANALYZER, c => c.Filters(VERSION_PAD1_TOKEN_FILTER, VERSION_PAD2_TOKEN_FILTER, VERSION_PAD3_TOKEN_FILTER, VERSION_PAD4_TOKEN_FILTER, "lowercase").Tokenizer("whitespace"))
                 .Custom(WHITESPACE_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("whitespace"))
                 .Custom(TYPENAME_ANALYZER, c => c.Filters(TYPENAME_TOKEN_FILTER, "lowercase", "unique").Tokenizer(TYPENAME_HIERARCHY_TOKENIZER))
-                .Custom(STANDARDPLUS_ANALYZER, c => c.Filters("standard", EMAIL_TOKEN_FILTER, TYPENAME_TOKEN_FILTER, "lowercase", "stop", "unique").Tokenizer("whitespace")))
+                .Custom(STANDARDPLUS_ANALYZER, c => c.Filters("standard", TYPENAME_TOKEN_FILTER, "lowercase", "stop", "unique").Tokenizer(COMMA_WHITESPACE_TOKENIZER)))
             .TokenFilters(f => f
                 .PatternCapture(EMAIL_TOKEN_FILTER, p => p.Patterns(@"(\w+)", @"(\p{L}+)", @"(\d+)", "(.+)@", "@(.+)"))
                 .PatternCapture(TYPENAME_TOKEN_FILTER, p => p.Patterns(@"\.(\w+)", @"([^\()]+)"))
@@ -62,6 +63,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .PatternReplace(VERSION_PAD3_TOKEN_FILTER, p => p.Pattern(@"(\.|^)(\d{3})(?=\.|-|$)").Replacement("$100$2"))
                 .PatternReplace(VERSION_PAD4_TOKEN_FILTER, p => p.Pattern(@"(\.|^)(\d{4})(?=\.|-|$)").Replacement("$10$2")))
             .Tokenizers(t => t
+                .Pattern(COMMA_WHITESPACE_TOKENIZER, p => p.Pattern(@"[,\s]+"))
                 .PathHierarchy(TYPENAME_HIERARCHY_TOKENIZER, p => p.Delimiter('.')));
         }
     }
