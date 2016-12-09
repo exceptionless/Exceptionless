@@ -1,15 +1,9 @@
-# single node configuration
+﻿# development configuration
 cluster.name: exceptionless
-action.destructive_requires_name: true
+action.destructive_requires_name: false
 action.auto_create_index: +.marvel-*
 bootstrap.memory_lock: true
 plugin.mandatory: mapper-size
 
-discovery.type: local
-transport.type: local
 transport.tcp.port: 9300
-http.port: 9200
-
-# non-ssd configuration
-#index.merge.scheduler.max_thread_count: 1
-#index.translog.flush_threshold_size: 1gb
+http.port: 9200a

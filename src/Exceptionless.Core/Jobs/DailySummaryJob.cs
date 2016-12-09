@@ -123,7 +123,7 @@ namespace Exceptionless.Core.Jobs {
             _logger.Info("Sending daily summary: users={0} project={1}", users.Count, project.Id);
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(data.UtcStartTime, data.UtcEndTime, "date").WithIndexes(data.UtcStartTime, data.UtcEndTime);
-            var result = await _eventRepository.CountBySearchAsync(systemFilter, $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error}", "terms:(is_first_occurrence @missing:F) cardinality:stack_id").AnyContext();
+            var result = await _eventRepository.CountBySearchAsync(systemFilter, $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error}", "terms:(is_first_occurrence @include:true) cardinality:stack_id").AnyContext();
             bool hasSubmittedEvents = result.Total > 0;
             if (!hasSubmittedEvents)
                 hasSubmittedEvents = await _eventRepository.GetCountByProjectIdAsync(project.Id).AnyContext() > 0;
