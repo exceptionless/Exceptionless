@@ -69,9 +69,9 @@ while (curr != null) {
 if (ctx.error == null)
     ctx.error = new HashMap();
 
-ctx.error.type = types.join(' ');
-ctx.error.message = messages.join(' ');
-ctx.error.code = codes.join(' ');";
+ctx.error.type = types;
+ctx.error.message = messages;
+ctx.error.code = codes;";
 
             var response = await Configuration.Client.PutPipelineAsync(Pipeline, d => d.Processors(p => p
                 .Script(s => new ScriptProcessor { Inline = FLATTEN_ERRORS_SCRIPT.Replace("\r\n", String.Empty).Replace("    ", " ") })));
@@ -154,7 +154,7 @@ ctx.error.code = codes.join(' ');";
     internal static class EventIndexTypeExtensions {
         public static PropertiesDescriptor<PersistentEvent> AddCopyToMappings(this PropertiesDescriptor<PersistentEvent> descriptor) {
             return descriptor
-                .Text(f => f.Name(EventIndexType.Alias.IpAddress).IncludeInAll().Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
+                .Text(f => f.Name(EventIndexType.Alias.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
                 .Text(f => f.Name(EventIndexType.Alias.OperatingSystem).AddKeywordField())
                 .Object<object>(f => f.Name("error").IncludeInAll().Properties(p1 => p1
                     .Keyword(f3 => f3.Name("code").Boost(1.1))
@@ -200,7 +200,7 @@ ctx.error.code = codes.join(' ');";
 
         private static PropertiesDescriptor<DataDictionary> AddRequestInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Properties(p3 => p3
-                .Text(f3 => f3.Name(r => r.ClientIpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false))
+                .Text(f3 => f3.Name(r => r.ClientIpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false).IncludeInAll())
                 .Text(f3 => f3.Name(r => r.UserAgent).RootAlias(EventIndexType.Alias.RequestUserAgent).AddKeywordField())
                 .Text(f3 => f3.Name(r => r.Path).RootAlias(EventIndexType.Alias.RequestPath).IncludeInAll().AddKeywordField())
                 .Object<DataDictionary>(f3 => f3.Name(e => e.Data).Properties(p4 => p4
@@ -218,20 +218,20 @@ ctx.error.code = codes.join(' ');";
             return descriptor.Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Properties(p3 => p3
                 .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Properties(p4 => p4
                     .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Properties(p5 => p5
-                        .Text(f6 => f6.Name("ExceptionType").CopyTo(fd => fd.Field(EventIndexType.Alias.ErrorTargetType)).Index(false))
-                        .Text(f6 => f6.Name("Method").CopyTo(fd => fd.Field(EventIndexType.Alias.ErrorTargetMethod)).Index(false))))))));
+                        .Text(f6 => f6.Name("ExceptionType").CopyTo(fd => fd.Field(EventIndexType.Alias.ErrorTargetType)).Index(false).IncludeInAll())
+                        .Text(f6 => f6.Name("Method").CopyTo(fd => fd.Field(EventIndexType.Alias.ErrorTargetMethod)).Index(false).IncludeInAll())))))));
         }
 
         private static PropertiesDescriptor<DataDictionary> AddSimpleErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Properties(p3 => p3
                 .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Properties(p4 => p4
                     .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Properties(p5 => p5
-                        .Text(f6 => f6.Name("ExceptionType").CopyTo(fd => fd.Field(EventIndexType.Alias.ErrorTargetType)).Index(false))))))));
+                        .Text(f6 => f6.Name("ExceptionType").CopyTo(fd => fd.Field(EventIndexType.Alias.ErrorTargetType)).Index(false).IncludeInAll())))))));
         }
 
         private static PropertiesDescriptor<DataDictionary> AddEnvironmentInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Properties(p3 => p3
-                .Text(f3 => f3.Name(r => r.IpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false))
+                .Text(f3 => f3.Name(r => r.IpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false).IncludeInAll())
                 .Text(f3 => f3.Name(r => r.MachineName).RootAlias(EventIndexType.Alias.MachineName).IncludeInAll().Boost(1.1).AddKeywordField())
                 .Text(f3 => f3.Name(r => r.OSName).CopyTo(fd => fd.Field(EventIndexType.Alias.OperatingSystem)))
                 .Keyword(f3 => f3.Name(r => r.Architecture).RootAlias(EventIndexType.Alias.MachineArchitecture))));
