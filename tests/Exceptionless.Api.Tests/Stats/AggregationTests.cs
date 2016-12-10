@@ -146,6 +146,31 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
+        public async Task CanGetStackIdTermMinMaxAggregationsAsync() {
+            const int eventCount = 100;
+            await CreateDataAsync(eventCount, false);
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+
+            var stackSize = await _stackRepository.CountAsync();
+            var result = await _eventRepository.CountBySearchAsync(null, null, $"terms:(stack_id~{stackSize} min:date max:date)");
+            Assert.Equal(eventCount, result.Total);
+
+            var termsAggregation = result.Aggregations.Terms<string>("terms_stack_id");
+            var largestStackBucket = termsAggregation.Buckets.First();
+
+            var events = await _eventRepository.GetByFilterAsync(null, $"stack:{largestStackBucket.Key}", null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            Assert.Equal(largestStackBucket.Total.GetValueOrDefault(), events.Total);
+
+            var oldestEvent = events.Documents.OrderBy(e => e.Date).First();
+            var minDate = DateTime.SpecifyKind(new DateTime(1970, 1, 1).AddMilliseconds(0 + largestStackBucket.Aggregations.Min("min_date").Value.GetValueOrDefault()), DateTimeKind.Unspecified);
+            Assert.Equal(oldestEvent.Date, minDate);
+
+            var newestEvent= events.Documents.OrderByDescending(e => e.Date).First();
+            var maxDate = DateTime.SpecifyKind(new DateTime(1970, 1, 1).AddMilliseconds(0 + largestStackBucket.Aggregations.Min("max_date").Value.GetValueOrDefault()), DateTimeKind.Unspecified);
+            Assert.Equal(newestEvent.Date, maxDate);
+        }
+
+        [Fact]
         public async Task CanGetProjectTermAggregationsAsync() {
             const int eventCount = 100;
             await CreateDataAsync(eventCount);
