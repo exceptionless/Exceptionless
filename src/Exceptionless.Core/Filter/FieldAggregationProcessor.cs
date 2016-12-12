@@ -21,55 +21,57 @@ namespace Exceptionless.Core.Processors {
         };
 
         public static FieldAggregationsResult Process(string query, bool applyRules = true) {
-            if (String.IsNullOrEmpty(query))
-                return new FieldAggregationsResult { IsValid = true };
+            return new FieldAggregationsResult { IsValid = true };
 
-            var result = new FieldAggregationsResult { IsValid = true };
-            string[] aggregations = query.Split(new [] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (string aggregation in aggregations) {
-                string[] parts = aggregation.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length < 2 || parts.Length > 3)
-                    return new FieldAggregationsResult { Message = $"Invalid aggregation: {aggregation}"};
+            //if (String.IsNullOrEmpty(query))
+            //    return new FieldAggregationsResult { IsValid = true };
 
-                string type = parts[0]?.ToLower().Trim();
-                string field = parts[1]?.ToLower().Trim();
-                if (String.IsNullOrEmpty(type) || String.IsNullOrEmpty(field))
-                    return new FieldAggregationsResult { Message = $"Invalid type: {type} or field: {field}" };
+            //var result = new FieldAggregationsResult { IsValid = true };
+            //string[] aggregations = query.Split(new [] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            //foreach (string aggregation in aggregations) {
+            //    string[] parts = aggregation.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
+            //    if (parts.Length < 2 || parts.Length > 3)
+            //        return new FieldAggregationsResult { Message = $"Invalid aggregation: {aggregation}"};
+
+            //    string type = parts[0]?.ToLower().Trim();
+            //    string field = parts[1]?.ToLower().Trim();
+            //    if (String.IsNullOrEmpty(type) || String.IsNullOrEmpty(field))
+            //        return new FieldAggregationsResult { Message = $"Invalid type: {type} or field: {field}" };
                 
-                // TODO: This doesn't handle dates.
-                if (field.StartsWith("data."))
-                    field = $"idx.{field.Substring(5).ToLower()}-n";
-                else if (field.StartsWith("ref."))
-                    field = $"idx.{field.Substring(4).ToLower()}-r";
+            //    // TODO: This doesn't handle dates.
+            //    if (field.StartsWith("data."))
+            //        field = $"idx.{field.Substring(5).ToLower()}-n";
+            //    else if (field.StartsWith("ref."))
+            //        field = $"idx.{field.Substring(4).ToLower()}-r";
 
-                var fieldType = GetFieldAggregationTypet(type);
-                if (fieldType == null)
-                    return new FieldAggregationsResult { Message = $"Invalid type: {type}" };
+            //    var fieldType = GetFieldAggregationType(type);
+            //    if (fieldType == null)
+            //        return new FieldAggregationsResult { Message = $"Invalid type: {type}" };
                 
-                string defaultValueOrIncludeExclude = parts.Length > 2 && !String.IsNullOrWhiteSpace(parts[2]) ? parts[2]?.Trim() : null;
-                if (fieldType == FieldAggregationType.Term) {
-                    var term = new TermFieldAggregation { Field = field };
-                    if (defaultValueOrIncludeExclude != null) {
-                        if (defaultValueOrIncludeExclude.StartsWith("-"))
-                            term.ExcludePattern = defaultValueOrIncludeExclude.Substring(1).Trim();
-                        else
-                            term.IncludePattern = defaultValueOrIncludeExclude;
-                    }
+            //    string defaultValueOrIncludeExclude = parts.Length > 2 && !String.IsNullOrWhiteSpace(parts[2]) ? parts[2]?.Trim() : null;
+            //    if (fieldType == FieldAggregationType.Term) {
+            //        var term = new TermFieldAggregation { Field = field };
+            //        if (defaultValueOrIncludeExclude != null) {
+            //            if (defaultValueOrIncludeExclude.StartsWith("-"))
+            //                term.ExcludePattern = defaultValueOrIncludeExclude.Substring(1).Trim();
+            //            else
+            //                term.IncludePattern = defaultValueOrIncludeExclude;
+            //        }
 
-                    result.Aggregations.Add(term);
-                } else {
-                    result.Aggregations.Add(new FieldAggregation {
-                        Type = fieldType.Value,
-                        Field = field,
-                        DefaultValue = ParseDefaultValue(defaultValueOrIncludeExclude)
-                    });
-                }
-            }
+            //        result.Aggregations.Add(term);
+            //    } else {
+            //        result.Aggregations.Add(new FieldAggregation {
+            //            Type = fieldType.Value,
+            //            Field = field,
+            //            DefaultValue = ParseDefaultValue(defaultValueOrIncludeExclude)
+            //        });
+            //    }
+            //}
             
-            if (result.Aggregations.Any(a => !_freeFields.Contains(a.Field)))
-                result.UsesPremiumFeatures = true;
+            //if (result.Aggregations.Any(a => !_freeFields.Contains(a.Field)))
+            //    result.UsesPremiumFeatures = true;
             
-            return applyRules ? ApplyRules(result, aggregations) : result;
+            //return applyRules ? ApplyRules(result, aggregations) : result;
         }
 
         private static FieldAggregationsResult ApplyRules(FieldAggregationsResult result, string[] aggregations) {
@@ -99,7 +101,7 @@ namespace Exceptionless.Core.Processors {
             return result;
         }
 
-        private static FieldAggregationType? GetFieldAggregationTypet(string type) {
+        private static FieldAggregationType? GetFieldAggregationType(string type) {
             switch (type) {
                 case "avg":
                     return FieldAggregationType.Average;
