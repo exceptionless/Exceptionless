@@ -83,7 +83,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route("count")]
-        [ResponseType(typeof(List<PersistentEvent>))]
+        [ResponseType(typeof(List<CountResult>))]
         public async Task<IHttpActionResult> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null) {
             var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
             if (organizations.Count == 0)

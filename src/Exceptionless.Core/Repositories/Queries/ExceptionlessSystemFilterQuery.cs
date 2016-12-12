@@ -117,9 +117,9 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         private static QueryContainer GetRetentionFilter<T>(string field, Organization organization) where T : class, new() {
-            double oldestPossibleEventAge = SystemClock.UtcNow.Subtract(organization.CreatedUtc).Subtract(TimeSpan.FromDays(3)).TotalDays;
+            double oldestPossibleEventAge = Math.Round(Math.Abs(SystemClock.UtcNow.Subtract(organization.CreatedUtc).Subtract(TimeSpan.FromDays(3)).TotalDays), MidpointRounding.AwayFromZero);
             double retentionDays = organization.RetentionDays > 0 ? Math.Min(organization.RetentionDays, oldestPossibleEventAge) : oldestPossibleEventAge;
-            return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{retentionDays}d").LessThanOrEquals("now/d+1d"));
+            return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
         }
 
         private string GetDateField(IElasticQueryOptions options) {
