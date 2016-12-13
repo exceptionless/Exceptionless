@@ -16,7 +16,6 @@ namespace Exceptionless.Insulation.Jobs {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
             container.Options.DefaultScopedLifestyle = new ExecutionContextScopeLifestyle();
-            container.Options.ResolveUnregisteredCollections = true;
 
             Core.Bootstrapper.RegisterServices(container, loggerFactory);
             Bootstrapper.RegisterServices(container, loggerFactory);

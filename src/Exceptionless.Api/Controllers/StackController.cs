@@ -880,8 +880,8 @@ namespace Exceptionless.Api.Controllers {
                     Data = data.Data,
                     Id = stack.Id,
                     Title = stack.Title,
-                    //FirstOccurrence = term.Aggregations.Min("min_date").Value.GetValueOrDefault(),
-                    //LastOccurrence = term.Aggregations.Max("max_date").Value.GetValueOrDefault(),
+                    FirstOccurrence = term.Aggregations.Min<DateTime>("min_date").Value,
+                    LastOccurrence = term.Aggregations.Max<DateTime>("max_date").Value,
                     Total = term.Total.GetValueOrDefault(),
 
                     Users = term.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault(),
