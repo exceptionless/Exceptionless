@@ -13,7 +13,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
@@ -29,9 +28,9 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected TimeSpan GetOffset(string offset) {
-            double offsetInMinutes;
-            if (!String.IsNullOrEmpty(offset) && Double.TryParse(offset, out offsetInMinutes))
-                return TimeSpan.FromMinutes(offsetInMinutes);
+            TimeSpan? value;
+            if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out value) && value.HasValue)
+                return value.Value;
 
             return TimeSpan.Zero;
         }
