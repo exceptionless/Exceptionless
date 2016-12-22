@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
@@ -43,6 +45,20 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithPaging(paging));
+        }
+
+        protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token document, IDictionary<string, object> data = null, TimeSpan? delay = null) {
+            return PublishMessageAsync(new ExtendedEntityChanged {
+                ChangeType = changeType,
+                Id = document?.Id,
+                OrganizationId = document?.OrganizationId,
+                ProjectId = document?.ProjectId ?? document?.DefaultProjectId,
+                Type = EntityTypeName,
+                Data = new Foundatio.Utility.DataDictionary(data ?? new Dictionary<string, object>()) {
+                    { "IsAuthenticationToken", TokenType.Authentication == document?.Type  },
+                    { "UserId", document?.UserId }
+                }
+            }, delay);
         }
     }
 }

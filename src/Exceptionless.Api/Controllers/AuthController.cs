@@ -29,8 +29,8 @@ using OAuth2.Models;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/auth")]
     public class AuthController : ExceptionlessApiController {
-	    private readonly IDomainLoginProvider _domainLoginProvider;
-	    private readonly IOrganizationRepository _organizationRepository;
+        private readonly IDomainLoginProvider _domainLoginProvider;
+        private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly ICacheClient _cache;
@@ -40,8 +40,8 @@ namespace Exceptionless.Api.Controllers {
         private static bool _isFirstUserChecked;
 
         public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider) {
-	        _domainLoginProvider = domainLoginProvider;
-	        _organizationRepository = organizationRepository;
+            _domainLoginProvider = domainLoginProvider;
+            _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
             _cache = new ScopedCacheClient(cacheClient, "Auth");
@@ -98,7 +98,7 @@ namespace Exceptionless.Api.Controllers {
                 return Unauthorized();
             }
 
-	        User user;
+            User user;
             try {
                 user = await _userRepository.GetByEmailAddressAsync(model.Email);
             } catch (Exception ex) {
@@ -194,8 +194,8 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
-	        if (Settings.Current.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(model.Email, model.Password)) {
-				_logger.Error().Message("Signup failed for \"{0}\": Active Directory authentication failed.", model.Email).Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
+            if (Settings.Current.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(model.Email, model.Password)) {
+                _logger.Error().Message("Signup failed for \"{0}\": Active Directory authentication failed.", model.Email).Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
                 return BadRequest();
             }
 
@@ -210,10 +210,10 @@ namespace Exceptionless.Api.Controllers {
             user.Roles.Add(AuthorizationRoles.User);
             await AddGlobalAdminRoleIfFirstUserAsync(user);
 
-	        if (!Settings.Current.EnableActiveDirectoryAuth) {
-				user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
-				user.Password = model.Password.ToSaltedHash(user.Salt);
-			}
+            if (!Settings.Current.EnableActiveDirectoryAuth) {
+                user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
+                user.Password = model.Password.ToSaltedHash(user.Salt);
+            }
 
             try {
                 user = await _userRepository.AddAsync(user, true);
