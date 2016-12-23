@@ -59,7 +59,8 @@ namespace Exceptionless.Api.Controllers {
             _billingManager = billingManager;
             _formattingPluginManager = formattingPluginManager;
 
-            AllowedFields.AddRange(new[] { "first", "last" });
+            AllowedDateFields.AddRange(new[] { "first", "last" });
+            DefaultDateField = "last";
         }
 
         /// <summary>

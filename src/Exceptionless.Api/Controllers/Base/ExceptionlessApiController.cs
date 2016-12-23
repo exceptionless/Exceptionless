@@ -24,7 +24,7 @@ namespace Exceptionless.Api.Controllers {
         protected const int MAXIMUM_SKIP = 1000;
 
         public ExceptionlessApiController() {
-            AllowedFields = new List<string>();
+            AllowedDateFields = new List<string>();
         }
 
         protected TimeSpan GetOffset(string offset) {
@@ -35,13 +35,14 @@ namespace Exceptionless.Api.Controllers {
             return TimeSpan.Zero;
         }
 
-        protected ICollection<string> AllowedFields { get; private set; }
+        protected ICollection<string> AllowedDateFields { get; private set; }
+        protected string DefaultDateField { get; set; } = "created_utc";
 
         protected virtual TimeInfo GetTimeInfo(string time, string offset, DateTime? minimumUtcStartDate = null) {
-            string field = null;
+            string field = DefaultDateField;
             if (!String.IsNullOrEmpty(time) && time.Contains("|")) {
                 var parts = time.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-                field = parts.Length > 0 && AllowedFields.Contains(parts[0]) ? parts[0] : null;
+                field = parts.Length > 0 && AllowedDateFields.Contains(parts[0]) ? parts[0] : DefaultDateField;
                 time = parts.Length > 1 ? parts[1] : null;
             }
 
