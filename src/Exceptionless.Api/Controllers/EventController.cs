@@ -70,7 +70,8 @@ namespace Exceptionless.Api.Controllers {
             _cache = cacheClient;
             _jsonSerializerSettings = jsonSerializerSettings;
 
-            AllowedFields.Add("date");
+            AllowedDateFields.Add("date");
+            DefaultDateField = "date";
         }
 
         /// <summary>
