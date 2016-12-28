@@ -158,7 +158,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var termsAggregation = result.Aggregations.Terms<string>("terms_stack_id");
             var largestStackBucket = termsAggregation.Buckets.First();
 
-            var events = await _eventRepository.GetByFilterAsync(null, $"stack:{largestStackBucket.Key}", null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            var events = await _eventRepository.GetByFilterAsync(null, $"stack:{largestStackBucket.Key}", null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions().WithLimit(eventCount));
             Assert.Equal(largestStackBucket.Total.GetValueOrDefault(), events.Total);
 
             var oldestEvent = events.Documents.OrderBy(e => e.Date).First();
