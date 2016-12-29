@@ -49,12 +49,8 @@ namespace Exceptionless.Api.Controllers {
             var utcOffset = GetOffset(offset);
 
             // range parsing needs to be based on the user's local time.
-            var localRange = DateTimeRange.Parse(time, SystemClock.UtcNow.Add(utcOffset));
+            var localRange = DateTimeRange.Parse(time, SystemClock.OffsetUtcNow.ToOffset(utcOffset));
             var utcRange = localRange != DateTimeRange.Empty ? localRange.Subtract(utcOffset) : localRange;
-
-            if (utcRange.UtcStart < minimumUtcStartDate.GetValueOrDefault())
-                utcRange = new DateTimeRange(minimumUtcStartDate.GetValueOrDefault(), utcRange.End);
-
             var timeInfo = new TimeInfo { Field = field, Offset = utcOffset,  UtcRange = utcRange };
             if (minimumUtcStartDate.HasValue)
                 timeInfo.ApplyMinimumUtcStartDate(minimumUtcStartDate.Value);

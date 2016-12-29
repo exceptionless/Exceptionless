@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Extensions {
         public static int GetHourlyEventLimit(this Organization organization) {
             if (organization.MaxEventsPerMonth <= 0)
                 return Int32.MaxValue;
-            
+
             int eventsLeftInMonth = organization.GetMaxEventsPerMonthWithBonus() - (organization.GetCurrentMonthlyTotal() - organization.GetCurrentMonthlyBlocked());
             if (eventsLeftInMonth < 0)
                 return 0;
@@ -54,8 +54,8 @@ namespace Exceptionless.Core.Extensions {
 
             int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > SystemClock.UtcNow ? organization.BonusEventsPerMonth : 0;
             return organization.MaxEventsPerMonth + bonusEvents;
-        } 
-        
+        }
+
         public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit) {
             var cacheKey = String.Concat("api", ":", organizationId, ":", SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
             var limit = await cacheClient.GetAsync<long>(cacheKey).AnyContext();
@@ -65,7 +65,7 @@ namespace Exceptionless.Core.Extensions {
         public static bool IsOverMonthlyLimit(this Organization organization) {
             if (organization.MaxEventsPerMonth < 0)
                 return false;
-            
+
             var date = new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
             return usageInfo != null && (usageInfo.Total - usageInfo.Blocked) >= organization.GetMaxEventsPerMonthWithBonus();
@@ -77,13 +77,13 @@ namespace Exceptionless.Core.Extensions {
             return usageInfo != null && usageInfo.Total > organization.GetHourlyEventLimit();
         }
 
-       public static int GetCurrentHourlyTotal(this Organization organization) { 
+       public static int GetCurrentHourlyTotal(this Organization organization) {
             var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
             return usageInfo?.Total ?? 0;
         }
 
-        public static int GetCurrentHourlyBlocked(this Organization organization) { 
+        public static int GetCurrentHourlyBlocked(this Organization organization) {
             var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
             return usageInfo?.Blocked ?? 0;

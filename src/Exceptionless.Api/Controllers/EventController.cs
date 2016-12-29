@@ -88,7 +88,7 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null) {
             var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
             if (organizations.Count == 0)
-                return Ok(EmptyModels);
+                return Ok(CountResult.Empty);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
@@ -128,7 +128,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organization);
-            var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, pr.ExpandedQuery, ti.UtcRange.Start, ti.UtcRange.End);
+            var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, pr.ExpandedQuery, ti.UtcRange.UtcStart, ti.UtcRange.UtcEnd);
             return OkWithLinks(model, GetEntityResourceLink(result.Previous, "previous"), GetEntityResourceLink(result.Next, "next"), GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
 
@@ -172,7 +172,7 @@ namespace Exceptionless.Api.Controllers {
 
             FindResults<PersistentEvent> events;
             try {
-                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, pr.ExpandedQuery, sort, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
+                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, pr.ExpandedQuery, sort, ti.Field, ti.UtcRange.UtcStart, ti.UtcRange.UtcEnd, options);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your search filter.")
