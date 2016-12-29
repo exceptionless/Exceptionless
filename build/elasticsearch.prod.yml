@@ -5,9 +5,9 @@ action.auto_create_index: +.marvel-*
 bootstrap.memory_lock: true
 plugin.mandatory: mapper-size
 
-#path.data: /mnt/data/db
-#path.work: /path/to/work
-#path.logs: /mnt/data/log
+#path:
+#  data: /mnt/data/db
+#  logs: /mnt/data/log
 
 node.max_local_storage_nodes: 1
 gateway.expected_nodes: 3
@@ -20,12 +20,9 @@ http.port: 9200
 http.cors.enabled: true
 http.cors.allow-origin: http://dashboards.localhost.com
 
-# non-ssd configuration
-#index.merge.scheduler.max_thread_count: 1
-#index.translog.flush_threshold_size: 1gb
-
 #cloud:
 #    azure:
 #        storage:
-#            account: your_azure_storage_account
-#            key: your_azure_storage_key
+#            default:
+#                account: your_azure_storage_account
+#                key: your_azure_storage_key
