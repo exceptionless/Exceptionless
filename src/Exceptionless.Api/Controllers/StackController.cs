@@ -525,7 +525,7 @@ namespace Exceptionless.Api.Controllers {
             var options = new PagingOptions { Page = page, Limit = limit };
 
             try {
-                var results = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.UtcRange.UtcStart, ti.UtcRange.UtcEnd, options);
+                var results = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.Range.UtcStart, ti.Range.UtcEnd, options);
 
                 var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
@@ -814,7 +814,7 @@ namespace Exceptionless.Api.Controllers {
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
 
             try {
-                var systemFilter = new ElasticQuery().WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).WithDateRange(ti.UtcRange.UtcStart, ti.UtcRange.UtcEnd, "date").WithIndexes(ti.UtcRange.UtcStart, ti.UtcRange.UtcEnd);
+                var systemFilter = new ElasticQuery().WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, "date").WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
                 var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, pr.ExpandedQuery, $"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {aggregations})");
                 if (stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets.Count == 0)
                     return Ok(EmptyModels);
@@ -864,7 +864,7 @@ namespace Exceptionless.Api.Controllers {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
 
-            var systemFilter = new ElasticQuery().WithSystemFilter(eventSystemFilter).WithDateRange(ti.UtcRange.UtcStart, ti.UtcRange.UtcEnd, "date").WithIndexes(ti.UtcRange.UtcStart, ti.UtcRange.UtcEnd);
+            var systemFilter = new ElasticQuery().WithSystemFilter(eventSystemFilter).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, "date").WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
             var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), $"terms:(stack_id~{stacks.Count} cardinality:user min:date max:date)");
             return await GetStackSummariesAsync(stacks, stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets, eventSystemFilter, ti);
         }
@@ -873,7 +873,7 @@ namespace Exceptionless.Api.Controllers {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>(0);
 
-            var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.UtcRange.UtcStart, ti.UtcRange.UtcEnd);
+            var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
             return stacks.Join(stackTerms, s => s.Id, tk => tk.Key, (stack, term) => {
                 var data = _formattingPluginManager.GetStackSummaryData(stack);
                 var summary = new StackSummaryModel {
