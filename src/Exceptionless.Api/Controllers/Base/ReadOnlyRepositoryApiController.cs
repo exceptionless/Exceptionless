@@ -51,8 +51,8 @@ namespace Exceptionless.Api.Controllers {
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
             IRepositoryQuery query = new ExceptionlessQuery()
                 .WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
-                .WithDateRange(ti.UtcRange.UtcStart, ti.UtcRange.UtcEnd, ti.Field)
-                .WithIndexes(ti.UtcRange.UtcStart, ti.UtcRange.UtcEnd);
+                .WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
+                .WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
 
             CountResult result;
             try {
