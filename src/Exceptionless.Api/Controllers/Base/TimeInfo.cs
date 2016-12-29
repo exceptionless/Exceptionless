@@ -11,11 +11,11 @@ namespace Exceptionless.Api.Controllers {
     }
 
     public static class TimeInfoExtensions {
-        public static TimeInfo ApplyMinimumUtcStartDate(this TimeInfo timeInfo, DateTime minimumUtcStartDate) {
-            if (timeInfo.UtcRange.UtcStart < minimumUtcStartDate)
-                timeInfo.UtcRange = new DateTimeRange(minimumUtcStartDate.SafeAdd(timeInfo.Offset), timeInfo.UtcRange.End);
-            
-            return timeInfo;
+        public static TimeInfo ApplyMinimumUtcStartDate(this TimeInfo ti, DateTime minimumUtcStartDate) {
+            if (ti.UtcRange.UtcStart < minimumUtcStartDate)
+                ti.UtcRange = new DateTimeRange(new DateTimeOffset(minimumUtcStartDate.Ticks + ti.Offset.Ticks, ti.Offset), new DateTimeOffset(ti.UtcRange.End, ti.Offset));
+
+            return ti;
         }
-    } 
+    }
 }
