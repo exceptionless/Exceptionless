@@ -129,7 +129,7 @@ namespace Exceptionless.Api.Controllers {
             if (user == null)
                 return NotFound();
 
-            email = email.ToLower();
+            email = email.ToLowerInvariant();
             if (String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
 

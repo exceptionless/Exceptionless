@@ -56,7 +56,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 notificationType = "Regression 404";
 
             if (model.IsCritical)
-                notificationType = String.Concat("Critical ", notificationType.ToLower());
+                notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
            var requestInfo = model.Event.GetRequestInfo();
             var mailerModel = new EventNotificationModel(model) {
