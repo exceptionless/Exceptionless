@@ -1,7 +1,9 @@
 ﻿using System;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
@@ -14,9 +16,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Properties(p => p
                     .SetupDefaults()
                     .Keyword(f => f.Name(e => e.OrganizationId))
-                    .Text(f => f.Name(e => e.Name))
+                    .Text(f => f.Name(e => e.Name).AddKeywordField())
                     .Scalar(f => f.NextSummaryEndOfDayTicks, f => f)
                 );
+        }
+
+        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
+            builder.UseQueryParser(this);
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
@@ -19,6 +20,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(e => e.UserId))
                     .Keyword(f => f.Name(e => e.Refresh))
                     .Keyword(f => f.Name(e => e.Scopes)));
+        }
+
+        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
+            builder.UseQueryParser(this);
         }
     }
 }

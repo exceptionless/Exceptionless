@@ -2,6 +2,7 @@ using System;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
@@ -18,6 +19,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(e => e.Url))
                     .Keyword(f => f.Name(e => e.EventTypes))
                 );
+        }
+
+        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
+            builder.UseQueryParser(this);
         }
     }
 }
