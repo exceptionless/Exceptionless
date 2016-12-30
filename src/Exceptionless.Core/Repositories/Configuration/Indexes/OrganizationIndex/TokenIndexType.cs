@@ -19,7 +19,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(e => e.DefaultProjectId))
                     .Keyword(f => f.Name(e => e.UserId))
                     .Keyword(f => f.Name(e => e.Refresh))
-                    .Keyword(f => f.Name(e => e.Scopes)));
+                    .Keyword(f => f.Name(e => e.Scopes))
+                    .Number(f => f.Name(e => e.Type).Type(NumberType.Byte)));
         }
 
         protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {

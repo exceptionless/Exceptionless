@@ -815,15 +815,15 @@ namespace Exceptionless.Api.Controllers {
 
             try {
                 var systemFilter = new ElasticQuery().WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, "date").WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
-                var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, pr.ExpandedQuery, $"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {aggregations})");
-                if (stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets.Count == 0)
+                var stackTerms = (await _eventRepository.CountBySearchAsync(systemFilter, pr.ExpandedQuery, $"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {aggregations})")).Aggregations.Terms<string>("terms_stack_id");
+                if (stackTerms == null || stackTerms.Buckets.Count == 0)
                     return Ok(EmptyModels);
 
-                var stackIds = stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
+                var stackIds = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
                 var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
 
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase)) {
-                    var summaries = await GetStackSummariesAsync(stacks, stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets, sf, ti);
+                    var summaries = await GetStackSummariesAsync(stacks, stackTerms.Buckets, sf, ti);
                     return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, page);
                 }
 
