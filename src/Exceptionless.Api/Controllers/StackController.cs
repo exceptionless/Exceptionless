@@ -17,6 +17,7 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
@@ -59,8 +60,8 @@ namespace Exceptionless.Api.Controllers {
             _billingManager = billingManager;
             _formattingPluginManager = formattingPluginManager;
 
-            AllowedDateFields.AddRange(new[] { "first", "last" });
-            DefaultDateField = "last";
+            AllowedDateFields.AddRange(new[] { StackIndexType.Alias.FirstOccurrence, StackIndexType.Alias.LastOccurrence });
+            DefaultDateField = StackIndexType.Alias.LastOccurrence;
         }
 
         /// <summary>
@@ -650,9 +651,9 @@ namespace Exceptionless.Api.Controllers {
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
-            var ti = GetTimeInfo(String.Concat("last|", time), offset, organizations.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(String.Concat(StackIndexType.Alias.LastOccurrence, "|", time), offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
-            return await GetInternalAsync(sf, ti, filter, "-last", mode, page, limit);
+            return await GetInternalAsync(sf, ti, filter, String.Concat("-", StackIndexType.Alias.LastOccurrence), mode, page, limit);
         }
 
         /// <summary>
@@ -683,9 +684,9 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(String.Concat("last|", time), offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(String.Concat(StackIndexType.Alias.LastOccurrence, "|", time), offset, organization.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            return await GetInternalAsync(sf, ti, filter, "-last", mode, page, limit);
+            return await GetInternalAsync(sf, ti, filter, String.Concat("-", StackIndexType.Alias.LastOccurrence), mode, page, limit);
         }
 
         /// <summary>
