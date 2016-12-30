@@ -1,8 +1,10 @@
 using System;
 using System.Linq;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
@@ -15,8 +17,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Properties(p => p
                     .SetupDefaults()
                     .Keyword(f => f.Name(e => e.OrganizationIds))
-                    .Text(f => f.Name(u => u.FullName))
-                    .Text(f => f.Name(u => u.EmailAddress).Analyzer(OrganizationIndex.KEYWORD_LOWERCASE_ANALYZER))
+                    .Text(f => f.Name(u => u.FullName).AddKeywordField())
+                    .Text(f => f.Name(u => u.EmailAddress).Analyzer(OrganizationIndex.KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
                     .Keyword(f => f.Name(u => u.VerifyEmailAddressToken))
                     .Keyword(f => f.Name(u => u.PasswordResetToken))
                     .Keyword(f => f.Name(u => u.Roles))
@@ -25,6 +27,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
                         .Keyword(fu => fu.Name(m => m.ProviderUserId))
                         .Keyword(fu => fu.Name(m => m.Username))))
                 );
+        }
+
+        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
+            builder.UseQueryParser(this);
         }
     }
 }

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
@@ -14,7 +16,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Dynamic(false)
                 .Properties(p => p
                     .SetupDefaults()
-                    .Text(f => f.Name(e => e.Name))
+                    .Text(f => f.Name(e => e.Name).AddKeywordField())
                     .Keyword(f => f.Name(u => u.StripeCustomerId))
                     .Boolean(f => f.Name(u => u.HasPremiumFeatures))
                     .Keyword(f => f.Name(u => u.PlanId))
@@ -27,6 +29,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Object<Invite>(f => f.Name(o => o.Invites.First()).Properties(ip => ip
                         .Keyword(fu => fu.Name(i => i.Token))
                         .Text(fu => fu.Name(i => i.EmailAddress).Analyzer(OrganizationIndex.KEYWORD_LOWERCASE_ANALYZER)))));
+        }
+
+        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
+            builder.UseQueryParser(this);
         }
     }
 }
