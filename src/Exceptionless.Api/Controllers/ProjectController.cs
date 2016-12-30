@@ -541,9 +541,9 @@ namespace Exceptionless.Api.Controllers {
             var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, "date").WithIndexes(organizations.GetRetentionUtcCutoff(), DateTime.MaxValue);
             var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(project_id~{viewProjects.Count} cardinality:stack_id)");
             foreach (var project in viewProjects) {
-                var term = result.Aggregations.Terms<string>("terms_project_id").Buckets.FirstOrDefault(t => t.Key == project.Id);
+                var term = result.Aggregations.Terms<string>("terms_project_id")?.Buckets.FirstOrDefault(t => t.Key == project.Id);
                 project.EventCount = term?.Total ?? 0;
-                project.StackCount = (long)(term?.Aggregations.Cardinality("cardinality_stack_id").Value ?? 0);
+                project.StackCount = (long)(term?.Aggregations.Cardinality("cardinality_stack_id")?.Value ?? 0);
             }
 
             return viewProjects;
