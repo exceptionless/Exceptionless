@@ -55,6 +55,10 @@ namespace Exceptionless.Core {
 
         public bool EnableRedis { get; private set; }
 
+        public bool DisableSnapshotJobs { get; set; }
+
+        public bool DisableIndexConfiguration { get; set; }
+
         public string ElasticSearchConnectionString { get; private set; }
 
         public int ElasticSearchNumberOfShards { get; private set; }
@@ -176,6 +180,8 @@ namespace Exceptionless.Core {
             AzureStorageConnectionString = GetConnectionString(nameof(AzureStorageConnectionString));
             EnableAzureStorage = GetBool(nameof(EnableAzureStorage), !String.IsNullOrEmpty(AzureStorageConnectionString));
 
+            DisableIndexConfiguration = GetBool(nameof(DisableIndexConfiguration));
+            DisableSnapshotJobs = GetBool(nameof(DisableSnapshotJobs), !String.IsNullOrEmpty(AppScopePrefix));
             ElasticSearchConnectionString = GetConnectionString(nameof(ElasticSearchConnectionString));
             ElasticSearchNumberOfShards = GetInt(nameof(ElasticSearchNumberOfShards), 1);
             ElasticSearchNumberOfReplicas = GetInt(nameof(ElasticSearchNumberOfReplicas), 0);

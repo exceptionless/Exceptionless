@@ -8,7 +8,6 @@ pull_requests:
 
 environment:
   JAVA_HOME: C:\Progra~1\Java\jdk1.8.0
-  ES_VERSION: 5.1.1
   API_URL: https://#{api.hostheader}
   BUILD_REPO_URL:
     secure: vuYBT6D5arel88+Py/H3nnMPd4hInIXvr2cwhJaZSSSvJnmg+9sX1P5+bTWaJskYpGztHVMg0Iq7hgUCMKjh23w8WBrutLiUsixRE0LBjroIVJaRsYG1okSko0fNKVOCUMQAue0lh2sYqQ/TQlDbwg==
@@ -30,7 +29,7 @@ assembly_info:
 
 before_build:
   - nuget restore -verbosity quiet
-  - ps: .\build\Start-ElasticSearch.ps1
+  - ps: .\build\Start-ElasticSearch.ps1 -NodeCount 1 -StartKibana $false -Version 5.1.1
   - SET PATH="C:\Program Files (x86)\MSBuild\14.0\Bin";%PATH%"
 
 build:
