@@ -65,7 +65,8 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IMetricsClient>(() => new InMemoryMetricsClient(loggerFactory: loggerFactory));
 
             container.RegisterSingleton<ExceptionlessElasticConfiguration>();
-            container.AddStartupAction(() => container.GetInstance<ExceptionlessElasticConfiguration>().ConfigureIndexesAsync(beginReindexingOutdated: false));
+            if (!Settings.Current.DisableIndexConfiguration)
+                container.AddStartupAction(() => container.GetInstance<ExceptionlessElasticConfiguration>().ConfigureIndexesAsync(beginReindexingOutdated: false));
 
             container.RegisterSingleton<ICacheClient, InMemoryCacheClient>();
 

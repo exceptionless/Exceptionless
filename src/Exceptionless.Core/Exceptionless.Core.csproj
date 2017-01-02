@@ -187,6 +187,11 @@
     <Compile Include="Geo\NullGeocodeService.cs" />
     <Compile Include="Jobs\CloseInactiveSessionsJob.cs" />
     <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
+    <Compile Include="Jobs\Elastic\CleanupSnapshotJob.cs" />
+    <Compile Include="Jobs\Elastic\EventSnapshotJob.cs" />
+    <Compile Include="Jobs\Elastic\MaintainIndexesJob.cs" />
+    <Compile Include="Jobs\Elastic\OrganizationSnapshotJob.cs" />
+    <Compile Include="Jobs\Elastic\StackSnapshotJob.cs" />
     <Compile Include="Jobs\WorkItemHandlers\OrganizationNotificationWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\SetProjectIsConfiguredWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\RemoveProjectWorkItemHandler.cs" />

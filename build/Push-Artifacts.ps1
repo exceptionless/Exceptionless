@@ -1,4 +1,4 @@
-$base_dir = Resolve-Path ".\"   
+﻿$base_dir = Resolve-Path ".\"   
 $artifactsDir = "$base_dir\artifacts"
 $sourceDir = "$base_dir\src"
 
@@ -38,6 +38,8 @@ git rm -r * -q 2>&1 | %{ "$_" }
 Write-Host "Copying build artifacts..."
 ROBOCOPY "$sourceDir\Exceptionless.Api" "$artifactsDir" /XD "$sourceDir\Exceptionless.Api\obj" "$sourceDir\Exceptionless.Api\App_Data" /S /XF "*.nuspec" "*.settings" "*.cs" "packages.config" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" /NFL /NDL /NJH /NJS /nc /ns /np
 
+Write-Host "Copying CleanupSnapshot job..."
+ROBOCOPY "$sourceDir\Jobs\CleanupSnapshot\bin\Release" "$artifactsDir\App_Data\jobs\triggered\CleanupSnapshot" /XD "$sourceDir\Jobs\CleanupSnapshot\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying CloseInactiveSession job..."
 ROBOCOPY "$sourceDir\Jobs\CloseInactiveSession\bin\Release" "$artifactsDir\App_Data\jobs\continuous\CloseInactiveSession" /XD "$sourceDir\Jobs\CloseInactiveSession\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying DailySummary job..."
@@ -48,12 +50,20 @@ Write-Host "Copying EventNotification job..."
 ROBOCOPY "$sourceDir\Jobs\EventNotification\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventNotification" /XD "$sourceDir\Jobs\EventNotification\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventPost job..."
 ROBOCOPY "$sourceDir\Jobs\EventPost\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventPost" /XD "$sourceDir\Jobs\EventPost\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying EventSnapshot job..."
+ROBOCOPY "$sourceDir\Jobs\EventSnapshot\bin\Release" "$artifactsDir\App_Data\jobs\triggered\EventSnapshot" /XD "$sourceDir\Jobs\EventSnapshot\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventUserDescription job..."
 ROBOCOPY "$sourceDir\Jobs\EventUserDescription\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventUserDescription" /XD "$sourceDir\Jobs\EventUserDescription\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying MailMessage job..."
 ROBOCOPY "$sourceDir\Jobs\MailMessage\bin\Release" "$artifactsDir\App_Data\jobs\continuous\MailMessage" /XD "$sourceDir\Jobs\MailMessage\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying MaintainIndexes job..."
+ROBOCOPY "$sourceDir\Jobs\MaintainIndexes\bin\Release" "$artifactsDir\App_Data\jobs\triggered\MaintainIndexes" /XD "$sourceDir\Jobs\MaintainIndexes\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying OrganizationSnapshot job..."
+ROBOCOPY "$sourceDir\Jobs\OrganizationSnapshot\bin\Release" "$artifactsDir\App_Data\jobs\triggered\OrganizationSnapshot" /XD "$sourceDir\Jobs\OrganizationSnapshot\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying RetentionLimit job..."
 ROBOCOPY "$sourceDir\Jobs\RetentionLimit\bin\Release" "$artifactsDir\App_Data\jobs\continuous\RetentionLimit" /XD "$sourceDir\Jobs\RetentionLimit\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying StackSnapshot job..."
+ROBOCOPY "$sourceDir\Jobs\StackSnapshot\bin\Release" "$artifactsDir\App_Data\jobs\triggered\StackSnapshot" /XD "$sourceDir\Jobs\StackSnapshot\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying WebHook job..."
 ROBOCOPY "$sourceDir\Jobs\WebHook\bin\Release" "$artifactsDir\App_Data\jobs\continuous\WebHook" /XD "$sourceDir\Jobs\WebHook\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying WorkItem job..."
