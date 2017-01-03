@@ -112,7 +112,7 @@ namespace Exceptionless.Api.Extensions {
         public static AuthInfo GetBasicAuth(this HttpRequestMessage request) {
             var authHeader = request?.Headers.Authorization;
 
-            if (authHeader == null || authHeader.Scheme.ToLower() != "basic")
+            if (authHeader == null || authHeader.Scheme.ToLowerInvariant() != "basic")
                 return null;
 
             string data = Encoding.UTF8.GetString(Convert.FromBase64String(authHeader.Parameter));

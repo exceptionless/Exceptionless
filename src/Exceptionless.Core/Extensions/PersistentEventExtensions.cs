@@ -11,7 +11,7 @@ namespace Exceptionless {
             keysToCopy = keysToCopy?.Length > 0 ? keysToCopy : ev.Data.Keys.ToArray();
 
             foreach (string key in keysToCopy.Where(k => !String.IsNullOrEmpty(k) && ev.Data.ContainsKey(k))) {
-                string field = key.Trim().ToLower();
+                string field = key.Trim().ToLowerInvariant();
 
                 if (field.StartsWith("@ref:")) {
                     field = field.Substring(5);

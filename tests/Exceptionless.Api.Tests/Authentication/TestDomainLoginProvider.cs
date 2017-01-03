@@ -15,7 +15,7 @@ namespace Exceptionless.Api.Tests.Authentication {
         }
 
         public string GetUserFullName(string username) {
-            return $"{username} {username.ToUpper()}";
+            return $"{username} {username.ToUpperInvariant()}";
         }
 
         public string GetUsernameFromEmailAddress(string email) {
