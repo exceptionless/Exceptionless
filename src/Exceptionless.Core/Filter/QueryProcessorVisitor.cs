@@ -133,12 +133,12 @@ namespace Exceptionless.Core.Filter {
             if (field.StartsWith("data.")) {
                 UsesDataFields = true;
                 string termType = GetTermType(terms);
-                return $"idx.{field.Substring(5).ToLower()}-{termType}";
+                return $"idx.{field.Substring(5).ToLowerInvariant()}-{termType}";
             }
 
             if (field.StartsWith("ref.")) {
                 UsesDataFields = true;
-                return $"idx.{field.Substring(4).ToLower()}-r";
+                return $"idx.{field.Substring(4).ToLowerInvariant()}-r";
             }
 
             return null;

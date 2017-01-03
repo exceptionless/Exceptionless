@@ -32,16 +32,16 @@ namespace Exceptionless.Core.Filter {
                 if (parts.Length < 2 || parts.Length > 3)
                     return new FieldAggregationsResult { Message = $"Invalid aggregation: {aggregation}"};
 
-                string type = parts[0]?.ToLower().Trim();
-                string field = parts[1]?.ToLower().Trim();
+                string type = parts[0]?.ToLowerInvariant().Trim();
+                string field = parts[1]?.ToLowerInvariant().Trim();
                 if (String.IsNullOrEmpty(type) || String.IsNullOrEmpty(field))
                     return new FieldAggregationsResult { Message = $"Invalid type: {type} or field: {field}" };
                 
                 // TODO: This doesn't handle dates.
                 if (field.StartsWith("data."))
-                    field = $"idx.{field.Substring(5).ToLower()}-n";
+                    field = $"idx.{field.Substring(5).ToLowerInvariant()}-n";
                 else if (field.StartsWith("ref."))
-                    field = $"idx.{field.Substring(4).ToLower()}-r";
+                    field = $"idx.{field.Substring(4).ToLowerInvariant()}-r";
 
                 var fieldType = GetFieldAggregationTypet(type);
                 if (fieldType == null)

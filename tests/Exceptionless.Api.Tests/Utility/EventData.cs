@@ -91,7 +91,7 @@ namespace Exceptionless.Tests.Utility {
 
                 ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
             } else {
-                ev.Type = type.ToLower();
+                ev.Type = type.ToLowerInvariant();
             }
 
             if (!String.IsNullOrEmpty(sessionId))

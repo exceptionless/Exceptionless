@@ -95,7 +95,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("maintenance/{name:minlength(1)}")]
         public async Task<IHttpActionResult> RunJobAsync(string name) {
-            switch (name.ToLower()) {
+            switch (name.ToLowerInvariant()) {
                 case "indexes":
                     await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);
                     break;
