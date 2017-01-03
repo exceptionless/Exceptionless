@@ -30,16 +30,16 @@ namespace Exceptionless.Api.Security {
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             var authHeader = request.Headers.Authorization;
-            string scheme = authHeader?.Scheme.ToLower();
+            string scheme = authHeader?.Scheme.ToLowerInvariant();
             string token = null;
             if (authHeader != null && (scheme == BearerScheme || scheme == TokenScheme)) {
                 token = authHeader.Parameter;
             } else if (authHeader != null && scheme == BasicScheme) {
                 var authInfo = request.GetBasicAuth();
                 if (authInfo != null) {
-                    if (authInfo.Username.ToLower() == "client")
+                    if (authInfo.Username.ToLowerInvariant() == "client")
                         token = authInfo.Password;
-                    else if (authInfo.Password.ToLower() == "x-oauth-basic" || String.IsNullOrEmpty(authInfo.Password))
+                    else if (authInfo.Password.ToLowerInvariant() == "x-oauth-basic" || String.IsNullOrEmpty(authInfo.Password))
                         token = authInfo.Username;
                     else {
                         User user;
