@@ -641,7 +641,7 @@ namespace Exceptionless.Api.Controllers {
 
             var exclusions = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions).ToList();
             foreach (var kvp in parameters.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty))) {
-                switch (kvp.Key.ToLower()) {
+                switch (kvp.Key.ToLowerInvariant()) {
                     case "type":
                         ev.Type = kvp.Value.FirstOrDefault();
                         break;

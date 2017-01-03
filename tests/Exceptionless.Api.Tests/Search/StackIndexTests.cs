@@ -121,7 +121,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData(false, 1)]
         [InlineData(true, 2)]
         public async Task GetByFixedAsync(bool @fixed, int count) {
-            var result = await GetByFilterAsync("fixed:" + @fixed.ToString().ToLower());
+            var result = await GetByFilterAsync("fixed:" + @fixed.ToString().ToLowerInvariant());
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
@@ -130,7 +130,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData(false, 2)]
         [InlineData(true, 1)]
         public async Task GetByHiddenAsync(bool hidden, int count) {
-            var result = await GetByFilterAsync("hidden:" + hidden.ToString().ToLower());
+            var result = await GetByFilterAsync("hidden:" + hidden.ToString().ToLowerInvariant());
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
@@ -139,7 +139,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData(false, 2)]
         [InlineData(true, 1)]
         public async Task GetByRegressedAsync(bool regressed, int count) {
-            var result = await GetByFilterAsync("regressed:" + regressed.ToString().ToLower());
+            var result = await GetByFilterAsync("regressed:" + regressed.ToString().ToLowerInvariant());
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
@@ -148,7 +148,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData(false, 2)]
         [InlineData(true, 1)]
         public async Task GetByCriticalAsync(bool critical, int count) {
-            var result = await GetByFilterAsync("critical:" + critical.ToString().ToLower());
+            var result = await GetByFilterAsync("critical:" + critical.ToString().ToLowerInvariant());
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }

@@ -222,12 +222,12 @@ namespace Exceptionless.App.Controllers.API {
                 return PermissionResult.DenyWithMessage("Token can't be associated to both user and project.");
 
             foreach (string scope in value.Scopes.ToList()) {
-                if (scope != scope.ToLower()) {
+                if (scope != scope.ToLowerInvariant()) {
                     value.Scopes.Remove(scope);
-                    value.Scopes.Add(scope.ToLower());
+                    value.Scopes.Add(scope.ToLowerInvariant());
                 }
 
-                if (!AuthorizationRoles.AllScopes.Contains(scope.ToLower()))
+                if (!AuthorizationRoles.AllScopes.Contains(scope.ToLowerInvariant()))
                     return PermissionResult.DenyWithMessage("Invalid token scope requested.");
             }
 

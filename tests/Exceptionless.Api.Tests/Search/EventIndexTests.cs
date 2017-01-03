@@ -120,7 +120,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData(false, 2)]
         [InlineData(true, 1)]
         public async Task GetByFirstAsync(bool first, int count) {
-            var result = await GetByFilterAsync("first:" + first.ToString().ToLower());
+            var result = await GetByFilterAsync("first:" + first.ToString().ToLowerInvariant());
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
@@ -162,7 +162,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData(false, 2)]
         [InlineData(true, 1)]
         public async Task GetByFixedAsync(bool @fixed, int count) {
-            var result = await GetByFilterAsync("fixed:" + @fixed.ToString().ToLower());
+            var result = await GetByFilterAsync("fixed:" + @fixed.ToString().ToLowerInvariant());
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
@@ -171,7 +171,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData(false, 2)]
         [InlineData(true, 1)]
         public async Task GetByHiddenAsync(bool hidden, int count) {
-            var result = await GetByFilterAsync("hidden:" + hidden.ToString().ToLower());
+            var result = await GetByFilterAsync("hidden:" + hidden.ToString().ToLowerInvariant());
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
