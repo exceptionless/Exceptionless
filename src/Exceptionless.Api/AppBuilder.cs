@@ -128,15 +128,7 @@ namespace Exceptionless.Api {
             new JobRunner(container.GetInstance<DownloadGeoIPDatabaseJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.FromHours(1)).RunInBackground(token);
             new JobRunner(container.GetInstance<RetentionLimitsJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromHours(1)).RunInBackground(token);
             new JobRunner(container.GetInstance<WorkItemJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2).RunInBackground(token);
-
-            var startOfHour = SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1));
-            new JobRunner(container.GetInstance<MaintainIndexesJob>(), loggerFactory, initialDelay: startOfHour - SystemClock.UtcNow, interval: TimeSpan.FromHours(1)).RunInBackground(token);
-            if (!Settings.Current.DisableSnapshotJobs) {
-                new JobRunner(container.GetInstance<CleanupSnapshotJob>(), loggerFactory, initialDelay: startOfHour.AddMinutes(5) - SystemClock.UtcNow, interval: TimeSpan.FromHours(12)).RunInBackground(token);
-                new JobRunner(container.GetInstance<OrganizationSnapshotJob>(), loggerFactory, initialDelay: startOfHour.AddMinutes(30) - SystemClock.UtcNow, interval: TimeSpan.FromHours(1)).RunInBackground(token);
-                new JobRunner(container.GetInstance<StackSnapshotJob>(), loggerFactory, initialDelay: startOfHour.AddMinutes(40) - SystemClock.UtcNow, interval: TimeSpan.FromHours(1)).RunInBackground(token);
-                new JobRunner(container.GetInstance<EventSnapshotJob>(), loggerFactory, initialDelay: SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(12)) - SystemClock.UtcNow, interval: TimeSpan.FromHours(12)).RunInBackground(token);
-            }
+            new JobRunner(container.GetInstance<MaintainIndexesJob>(), loggerFactory, initialDelay: SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)) - SystemClock.UtcNow, interval: TimeSpan.FromHours(1)).RunInBackground(token);
 
             logger.Warn("Jobs running in process.");
         }
