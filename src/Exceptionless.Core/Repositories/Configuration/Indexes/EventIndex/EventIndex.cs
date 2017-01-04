@@ -3,7 +3,7 @@ using Foundatio.Repositories.Elasticsearch.Configuration;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public sealed class EventIndex : MonthlyIndex {
+    public sealed class EventIndex : DailyIndex {
         private const string EMAIL_TOKEN_FILTER = "email";
         private const string TYPENAME_TOKEN_FILTER = "typename";
         private const string VERSION_TOKEN_FILTER = "version";
@@ -24,7 +24,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
         internal const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
 
         public EventIndex(IElasticConfiguration configuration) : base(configuration, Settings.Current.AppScopePrefix + "events", 1) {
-            DateFormat = "yyyyMM";
             MaxIndexAge = TimeSpan.FromDays(180);
             DiscardExpiredIndexes = false;
 
