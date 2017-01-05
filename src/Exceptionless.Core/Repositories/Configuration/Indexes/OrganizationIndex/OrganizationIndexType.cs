@@ -28,11 +28,30 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Scalar(f => f.RetentionDays, f => f)
                     .Object<Invite>(f => f.Name(o => o.Invites.First()).Properties(ip => ip
                         .Keyword(fu => fu.Name(i => i.Token))
-                        .Text(fu => fu.Name(i => i.EmailAddress).Analyzer(OrganizationIndex.KEYWORD_LOWERCASE_ANALYZER)))));
+                        .Text(fu => fu.Name(i => i.EmailAddress).Analyzer(OrganizationIndex.KEYWORD_LOWERCASE_ANALYZER))))
+                    .AddUsageMappings());
         }
 
         protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
             builder.UseQueryParser(this);
+        }
+    }
+
+    internal static class OrganizationIndexTypeExtensions {
+        public static PropertiesDescriptor<Organization> AddUsageMappings(this PropertiesDescriptor<Organization> descriptor) {
+            return descriptor
+                .Object<UsageInfo>(ui => ui.Name(o => o.Usage.First()).Properties(p => p
+                    .Date(fu => fu.Name(i => i.Date))
+                    .Number(fu => fu.Name(i => i.Total))
+                    .Number(fu => fu.Name(i => i.Blocked))
+                    .Number(fu => fu.Name(i => i.Limit))
+                    .Number(fu => fu.Name(i => i.TooBig))))
+                .Object<UsageInfo>(ui => ui.Name(o => o.OverageHours.First()).Properties(p => p
+                    .Date(fu => fu.Name(i => i.Date))
+                    .Number(fu => fu.Name(i => i.Total))
+                    .Number(fu => fu.Name(i => i.Blocked))
+                    .Number(fu => fu.Name(i => i.Limit))
+                    .Number(fu => fu.Name(i => i.TooBig))));
         }
     }
 }
