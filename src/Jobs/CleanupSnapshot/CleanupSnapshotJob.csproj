@@ -46,11 +46,13 @@
       <HintPath>..\..\..\packages\Foundatio.4.2.1183\lib\net46\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.223.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.223-pre\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.226.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.226-pre\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.223.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.223-pre\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.226.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.226-pre\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Repositories, Version=5.0.375.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\Foundatio.Repositories.5.0.375-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
@@ -75,6 +77,10 @@
     </Reference>
     <Reference Include="Nito.AsyncEx.Enlightenment, Version=3.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\Nito.AsyncEx.3.0.1\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Pegasus.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=28c69b6c6d100f4a, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Pegasus.4.0.0\lib\net40\Pegasus.Common.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -135,4 +141,11 @@ IF %25ERRORLEVEL%25 GEQ 8 exit 1
 
 exit 0</PostBuildEvent>
   </PropertyGroup>
+  <Import Project="..\..\..\packages\Pegasus.4.0.0\build\Pegasus.targets" Condition="Exists('..\..\..\packages\Pegasus.4.0.0\build\Pegasus.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\..\packages\Pegasus.4.0.0\build\Pegasus.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\Pegasus.4.0.0\build\Pegasus.targets'))" />
+  </Target>
 </Project>
