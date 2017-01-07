@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Repositories {
             : base(configuration.Organizations.WebHook, validator) {}
 
         public Task<FindResults<WebHook>> GetByUrlAsync(string targetUrl) {
-            return FindAsync(new ExceptionlessQuery().WithFieldEquals(GetPropertyName(nameof(WebHook.Url)), targetUrl));
+            return FindAsync(new ExceptionlessQuery().WithFieldEquals(ElasticType.GetFieldName(w => w.Url), targetUrl));
         }
 
         public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {

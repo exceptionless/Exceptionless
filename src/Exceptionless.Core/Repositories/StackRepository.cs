@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
             : base(configuration.Stacks.Stack, validator) {
             _eventRepository = eventRepository;
             DocumentsChanging.AddHandler(OnDocumentChangingAsync);
-            FieldsRequiredForRemove.Add(GetPropertyName(nameof(Stack.SignatureHash)));
+            FieldsRequiredForRemove.Add(ElasticType.GetFieldName(s => s.SignatureHash));
         }
 
         private async Task OnDocumentChangingAsync(object sender, DocumentsChangeEventArgs<Stack> args) {
@@ -124,10 +124,10 @@ ctx._source.total_occurrences += params.count;";
 
         public Task<FindResults<Stack>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (String.IsNullOrEmpty(sort))
-                sort = $"-{GetPropertyName(nameof(Stack.LastOccurrence))}";
+                sort = $"-{ElasticType.GetFieldName(s => s.LastOccurrence)}";
 
             var search = new ExceptionlessQuery()
-                .WithDateRange(utcStart, utcEnd, field ?? GetPropertyName(nameof(Stack.LastOccurrence)))
+                .WithDateRange(utcStart, utcEnd, field ?? ElasticType.GetFieldName(s => s.LastOccurrence))
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
                 .WithPaging(paging)

@@ -21,6 +21,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
@@ -70,8 +71,8 @@ namespace Exceptionless.Api.Controllers {
             _cache = cacheClient;
             _jsonSerializerSettings = jsonSerializerSettings;
 
-            AllowedDateFields.Add("date");
-            DefaultDateField = "date";
+            AllowedDateFields.Add(EventIndexType.Alias.Date);
+            DefaultDateField = EventIndexType.Alias.Date;
         }
 
         /// <summary>
