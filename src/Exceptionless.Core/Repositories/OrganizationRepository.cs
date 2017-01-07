@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Repositories {
             var filter = Query<Organization>.Range(f => f.Field(o => o.RetentionDays).GreaterThan(0));
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
-                .WithSelectedFields(GetPropertyName(nameof(Organization.Id)), GetPropertyName(nameof(Organization.Name)), GetPropertyName(nameof(Organization.RetentionDays)))
+                .IncludeFields((Organization o) => o.Id, o => o.Name, o => o.RetentionDays)
                 .WithPaging(paging));
         }
 
@@ -80,16 +80,16 @@ namespace Exceptionless.Core.Repositories {
             var query = new ExceptionlessQuery().WithPaging(paging).WithElasticFilter(filter);
             switch (sortBy) {
                 case OrganizationSortBy.Newest:
-                    query.WithSort($"-{GetPropertyName(nameof(Organization.Id))}");
+                    query.WithSort($"-{ElasticType.GetFieldName(o => o.Id)}");
                     break;
                 case OrganizationSortBy.Subscribed:
-                    query.WithSort($"-{GetPropertyName(nameof(Organization.SubscribeDate))}");
+                    query.WithSort($"-{ElasticType.GetFieldName(o => o.SubscribeDate)}");
                     break;
                 // case OrganizationSortBy.MostActive:
                 //    query.WithSort(GetPropertyName(nameof(Organization.TotalEventCount)), SortOrder.Descending);
                 //    break;
                 default:
-                    query.WithSort(GetPropertyName(nameof(Organization.Name)));
+                    query.WithSort(ElasticType.GetFieldName(o => o.Name));
                     break;
             }
 
@@ -98,8 +98,8 @@ namespace Exceptionless.Core.Repositories {
 
         public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
             var query = new ExceptionlessQuery()
-                .WithSelectedFields(GetPropertyName(nameof(Organization.PlanId)), GetPropertyName(nameof(Organization.IsSuspended)), GetPropertyName(nameof(Organization.BillingPrice)), GetPropertyName(nameof(Organization.BillingStatus)))
-                .WithSort($"-{GetPropertyName(nameof(Organization.PlanId))}");
+                .IncludeFields((Organization o) => o.PlanId, o => o.IsSuspended, o => o.BillingPrice, o => o.BillingStatus)
+                .WithSort($"-{ElasticType.GetFieldName(o => o.PlanId)}");
 
             var results = (await FindAsync(query).AnyContext()).Documents;
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();

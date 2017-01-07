@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Repositories {
     public class UserRepository : RepositoryBase<User>, IUserRepository {
         public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator)
             : base(configuration.Organizations.User, validator) {
-            FieldsRequiredForRemove.AddRange(new [] { GetPropertyName(nameof(User.EmailAddress)), GetPropertyName(nameof(User.OrganizationIds)) });
+            FieldsRequiredForRemove.AddRange(new [] { ElasticType.GetFieldName(u => u.EmailAddress), ElasticType.GetFieldName(u => u.OrganizationIds) });
             DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
 
@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(Query<User>.Term(u => u.OrganizationIds, organizationId))
                 .WithPaging(paging)
-                .WithSort(GetPropertyName(nameof(User.EmailAddress)))
+                .WithSort(ElasticType.GetFieldName(u => u.EmailAddress))
                 .WithCacheKey(useCache ? String.Concat("paged:Organization:", organizationId) : null)
                 .WithExpiresIn(expiresIn));
         }
