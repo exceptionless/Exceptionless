@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Repositories {
             var query = new ExceptionlessQuery()
                 .WithElasticFilter(filter)
                 .WithPaging(new ElasticPagingOptions().UseSnapshotPaging().WithLimit(limit))
-                .WithSort(ElasticType.GetFieldName(p => p.OrganizationId));
+                .WithSortAscending((Project p) => p.OrganizationId);
 
             return FindAsync(query);
         }

@@ -123,9 +123,6 @@ ctx._source.total_occurrences += params.count;";
         }
 
         public Task<FindResults<Stack>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
-            if (String.IsNullOrEmpty(sort))
-                sort = $"-{ElasticType.GetFieldName(s => s.LastOccurrence)}";
-
             var search = new ExceptionlessQuery()
                 .WithDateRange(utcStart, utcEnd, field ?? ElasticType.GetFieldName(s => s.LastOccurrence))
                 .WithSystemFilter(systemFilter)
@@ -133,6 +130,7 @@ ctx._source.total_occurrences += params.count;";
                 .WithPaging(paging)
                 .WithSort(sort);
 
+            search = !String.IsNullOrEmpty(sort) ? search.WithSort(sort) : search.WithSortDescending((Stack s) => s.LastOccurrence);
             return FindAsync(search);
         }
 
