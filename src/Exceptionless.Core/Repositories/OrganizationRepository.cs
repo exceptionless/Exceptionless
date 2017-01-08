@@ -80,16 +80,16 @@ namespace Exceptionless.Core.Repositories {
             var query = new ExceptionlessQuery().WithPaging(paging).WithElasticFilter(filter);
             switch (sortBy) {
                 case OrganizationSortBy.Newest:
-                    query.WithSort($"-{ElasticType.GetFieldName(o => o.Id)}");
+                    query.WithSortDescending((Organization o) => o.Id);
                     break;
                 case OrganizationSortBy.Subscribed:
-                    query.WithSort($"-{ElasticType.GetFieldName(o => o.SubscribeDate)}");
+                    query.WithSortDescending((Organization o) => o.SubscribeDate);
                     break;
                 // case OrganizationSortBy.MostActive:
-                //    query.WithSort(GetPropertyName(nameof(Organization.TotalEventCount)), SortOrder.Descending);
+                //    query.WithSortDescending((Organization o) => o.TotalEventCount);
                 //    break;
                 default:
-                    query.WithSort(ElasticType.GetFieldName(o => o.Name));
+                    query.WithSortAscending((Organization o) => o.Name);
                     break;
             }
 
@@ -99,7 +99,7 @@ namespace Exceptionless.Core.Repositories {
         public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
             var query = new ExceptionlessQuery()
                 .IncludeFields((Organization o) => o.PlanId, o => o.IsSuspended, o => o.BillingPrice, o => o.BillingStatus)
-                .WithSort($"-{ElasticType.GetFieldName(o => o.PlanId)}");
+                .WithSortDescending((Organization o) => o.PlanId);
 
             var results = (await FindAsync(query).AnyContext()).Documents;
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
