@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Models {
             return Equals((Event)obj);
         }
 
-        private static readonly List<string> _exclusions = new List<string> { KnownDataKeys.TraceLog }; 
+        private static readonly List<string> _exclusions = new List<string> { KnownDataKeys.TraceLog };
         public override int GetHashCode() {
             unchecked {
                 var hashCode = Type?.GetHashCode() ?? 0;

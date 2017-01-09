@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
-    public class Stack : IOwnedByOrganizationAndProjectWithIdentity {
+    public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates {
         public Stack() {
             Tags = new TagSet();
             References = new Collection<string>();
@@ -104,6 +105,9 @@ namespace Exceptionless.Core.Models {
         /// A list of tags used to categorize this stack.
         /// </summary>
         public TagSet Tags { get; set; }
+
+        public DateTime CreatedUtc { get; set; }
+        public DateTime UpdatedUtc { get; set; }
 
         public static class KnownTypes {
             public const string Error = "error";
