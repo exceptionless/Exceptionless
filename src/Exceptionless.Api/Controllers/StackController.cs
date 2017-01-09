@@ -905,12 +905,13 @@ namespace Exceptionless.Api.Controllers {
 
             var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(utcStart, utcEnd, "date").WithIndexes(utcStart, utcEnd);
             var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
-            var result = await _eventRepository.CountBySearchAsync(systemFilter, projects.BuildFilter(), "terms:(project_id cardinality:user)");
+            var countResult = await _eventRepository.CountBySearchAsync(systemFilter, projects.BuildFilter(), "terms:(project_id cardinality:user)");
 
             // Cache all projects that have more than 10 users for 5 minutes.
-            var projectTerms = result.Aggregations.Terms<string>("terms_project_id").Buckets;
-            await scopedCacheClient.SetAllAsync(projectTerms.Where(t => t.Total.GetValueOrDefault() >= 10).ToDictionary(t => t.Key, t => t.Total.GetValueOrDefault()), TimeSpan.FromMinutes(5));
-            totals.AddRange(projectTerms.ToDictionary(t => t.Key, t => (double)t.Total.GetValueOrDefault()));
+            var projectTerms = countResult.Aggregations.Terms<string>("terms_project_id").Buckets;
+            var aggregations = projectTerms.ToDictionary(t => t.Key, t => t.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault());
+            await scopedCacheClient.SetAllAsync(aggregations.Where(t => t.Value >= 10).ToDictionary(k => k.Key, v => v.Value), TimeSpan.FromMinutes(5));
+            totals.AddRange(aggregations);
 
             return totals;
         }
