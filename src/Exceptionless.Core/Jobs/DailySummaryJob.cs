@@ -128,7 +128,7 @@ namespace Exceptionless.Core.Jobs {
             var result = await _stats.GetNumbersStatsAsync(fields, data.UtcStartTime, data.UtcEndTime, sf, $"{EventIndexType.Fields.Type}:{Event.KnownTypes.Error}").AnyContext();
             bool hasSubmittedEvents = result.Total > 0;
             if (!hasSubmittedEvents)
-                hasSubmittedEvents = await _eventRepository.GetCountByProjectIdAsync(project.Id).AnyContext() > 0;
+                hasSubmittedEvents = await _eventRepository.GetCountByProjectIdAsync(project.Id, true).AnyContext() > 0;
 
             var notification = new DailySummaryModel {
                 ProjectId = project.Id,

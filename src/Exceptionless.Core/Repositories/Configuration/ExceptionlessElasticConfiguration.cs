@@ -23,6 +23,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder) {
+            builder.Unregister<SoftDeletesQueryBuilder>();
+            builder.Register(new CustomSoftDeletesQueryBuilder());
             builder.Register(new ExceptionlessSystemFilterQueryBuilder());
             builder.Register(new OrganizationIdQueryBuilder());
             builder.Register(new ProjectIdQueryBuilder());
