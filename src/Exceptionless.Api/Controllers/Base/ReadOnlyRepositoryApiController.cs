@@ -14,6 +14,7 @@ namespace Exceptionless.Api.Controllers {
         protected readonly TRepository _repository;
         protected static readonly bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
         protected static readonly bool _isOrganization = typeof(TModel) == typeof(Organization);
+        protected static readonly bool _supportsSoftDeletes = typeof(ISupportSoftDeletes).IsAssignableFrom(typeof(TModel));
         protected static readonly IReadOnlyCollection<TModel> EmptyModels = new List<TModel>(0).AsReadOnly();
         protected readonly IMapper _mapper;
 
@@ -39,7 +40,13 @@ namespace Exceptionless.Api.Controllers {
                 return null;
 
             TModel model = await _repository.GetByIdAsync(id, useCache);
-            if (_isOwnedByOrganization && model != null && !CanAccessOrganization(((IOwnedByOrganization)model).OrganizationId))
+            if (model == null)
+                return null;
+
+            if (_supportsSoftDeletes && ((ISupportSoftDeletes)model).IsDeleted)
+                return null;
+
+            if (_isOwnedByOrganization && !CanAccessOrganization(((IOwnedByOrganization)model).OrganizationId))
                 return null;
 
             return model;
@@ -50,16 +57,13 @@ namespace Exceptionless.Api.Controllers {
                 return EmptyModels;
 
             var models = await _repository.GetByIdsAsync(ids, useCache);
-            if (!_isOwnedByOrganization)
-                return models;
+            if (_supportsSoftDeletes)
+                models = models.Where(m => !((ISupportSoftDeletes)m).IsDeleted).ToList();
 
-            var results = new List<TModel>();
-            foreach (var model in models) {
-                if (CanAccessOrganization(((IOwnedByOrganization)model).OrganizationId))
-                    results.Add(model);
-            }
+            if (_isOwnedByOrganization)
+                models = models.Where(m => CanAccessOrganization(((IOwnedByOrganization)m).OrganizationId)).ToList();
 
-            return results;
+            return models;
         }
 
         #region Mapping

@@ -239,7 +239,6 @@
     <Compile Include="Models\Interfaces\IOwnedByOrganizationWithIdentity.cs" />
     <Compile Include="Models\Interfaces\IOwnedByProject.cs" />
     <Compile Include="Models\Interfaces\IOwnedByStack.cs" />
-    <Compile Include="Models\Interfaces\ISupportSoftDeletes.cs" />
     <Compile Include="Models\Invite.cs" />
     <Compile Include="Models\Messaging\ReleaseNotification.cs" />
     <Compile Include="Models\Messaging\SystemNotification.cs" />
@@ -288,6 +287,7 @@
     <Compile Include="Repositories\Configuration\Indexes\StackIndex.cs" />
     <Compile Include="Repositories\Queries\ProjectIdQuery.cs" />
     <Compile Include="Repositories\Queries\ExceptionlessQuery.cs" />
+    <Compile Include="Repositories\Queries\CustomSoftDeletesQueryBuilder.cs" />
     <Compile Include="Repositories\Queries\StackIdQuery.cs" />
     <Compile Include="Repositories\Queries\OrganizationIdQuery.cs" />
     <Compile Include="Repositories\Queries\ExceptionlessSystemFilterQuery.cs" />

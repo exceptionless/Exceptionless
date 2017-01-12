@@ -10,12 +10,13 @@ using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
+using Foundatio.Utility;
 using Nest;
 using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
-        public EventRepository(ExceptionlessElasticConfiguration configuration, IValidator<PersistentEvent> validator) 
+        public EventRepository(ExceptionlessElasticConfiguration configuration, IValidator<PersistentEvent> validator)
             : base(configuration.Events.Event, validator) {
             DisableCache();
             BatchNotifications = true;
@@ -55,13 +56,13 @@ namespace Exceptionless.Core.Repositories {
                 .WithFieldEquals(EventIndexType.Fields.IsFixed, !isFixed);
 
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(query, new { is_fixed = isFixed });
+            return PatchAllAsync(query, new { is_fixed = isFixed, updated_utc = SystemClock.UtcNow });
         }
 
         public Task<long> UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
-            
+
             var query = new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
                 .WithProjectId(projectId)
@@ -69,16 +70,36 @@ namespace Exceptionless.Core.Repositories {
                 .WithFieldEquals(EventIndexType.Fields.IsHidden, !isHidden);
 
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(query, new { is_hidden = isHidden });
+            return PatchAllAsync(query, new { is_hidden = isHidden, updated_utc = SystemClock.UtcNow });
         }
 
         public Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
             var filter = Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).Lower(utcCutoffDate));
-            return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithElasticFilter(filter), false);
+            return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithElasticFilter(filter).IncludeDeleted(), false);
+        }
+
+        public override Task<long> RemoveAllByOrganizationIdAsync(string organizationId) {
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException(nameof(organizationId));
+
+            var query = new ExceptionlessQuery().WithOrganizationId(organizationId);
+            return PatchAllAsync(query, new { is_deleted = true, updated_utc = SystemClock.UtcNow });
+        }
+
+        public override Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId) {
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException(nameof(organizationId));
+
+            if (String.IsNullOrEmpty(projectId))
+                throw new ArgumentNullException(nameof(projectId));
+
+            var query = new ExceptionlessQuery().WithOrganizationId(organizationId).WithProjectId(projectId);
+            return PatchAllAsync(query, new { is_deleted = true, updated_utc = SystemClock.UtcNow });
         }
 
         public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
-            return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithProjectId(projectId).WithStackId(stackId));
+            var query = new ExceptionlessQuery().WithOrganizationId(organizationId).WithProjectId(projectId).WithStackId(stackId);
+            return PatchAllAsync(query, new { is_deleted = true, updated_utc = SystemClock.UtcNow });
         }
 
         public Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
@@ -88,13 +109,13 @@ namespace Exceptionless.Core.Repositories {
                 .WithDateRange(utcStart, utcEnd, EventIndexType.Fields.Date)
                 .WithIndexes(utcStart, utcEnd);
 
-            return PatchAllAsync(query, new { is_hidden = true });
+            return PatchAllAsync(query, new { is_hidden = true, updated_utc = SystemClock.UtcNow });
         }
 
         public Task<FindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (sorting.Fields.Count == 0)
                 sorting.Fields.Add(new FieldSort { Field = EventIndexType.Fields.Date, Order = SortOrder.Descending });
-            
+
             var search = new ExceptionlessQuery()
                 .WithDateRange(utcStart, utcEnd, field ?? EventIndexType.Fields.Date)
                 .WithIndexes(utcStart, utcEnd)
@@ -235,12 +256,12 @@ namespace Exceptionless.Core.Repositories {
                 .WithSort("_uid", SortOrder.Descending));
         }
 
-        public Task<CountResult> GetCountByProjectIdAsync(string projectId) {
-            return CountAsync(new ExceptionlessQuery().WithProjectId(projectId));
+        public Task<CountResult> GetCountByProjectIdAsync(string projectId, bool includeDeleted = false) {
+            return CountAsync(new ExceptionlessQuery().WithProjectId(projectId).IncludeDeleted(includeDeleted));
         }
 
-        public Task<CountResult> GetCountByStackIdAsync(string stackId) {
-            return CountAsync(new ExceptionlessQuery().WithStackId(stackId));
+        public Task<CountResult> GetCountByStackIdAsync(string stackId, bool includeDeleted = false) {
+            return CountAsync(new ExceptionlessQuery().WithStackId(stackId).IncludeDeleted(includeDeleted));
         }
     }
 }
