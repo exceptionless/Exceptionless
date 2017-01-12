@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public EventIndexType Event { get; }
     }
-    
+
     public class EventIndexType : MonthlyIndexType<PersistentEvent> {
         private const string COMMA_WHITESPACE_ANALYZER = "comma_whitespace";
         private const string EMAIL_ANALYZER = "email";
@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         const string VERSION_PAD4_TOKEN_FILTER = "version_pad4";
 
         public EventIndexType(EventIndex index) : base(index, "events", document => document.Date.UtcDateTime) {}
-        
+
         public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
             return idx
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
@@ -82,6 +82,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .AllField(a => a.IndexAnalyzer(STANDARDPLUS_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER))
                 .Properties(p => p
                     .Date(f => f.Name(e => e.CreatedUtc).IndexName(Fields.CreatedUtc))
+                    .Date(f => f.Name(e => e.UpdatedUtc).IndexName(Fields.UpdatedUtc))
                     .String(f => f.Name(e => e.Id).IndexName(Fields.Id).Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
                     .String(f => f.Name(e => e.OrganizationId).IndexName(Fields.OrganizationId).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.ProjectId).IndexName(Fields.ProjectId).Index(FieldIndexOption.NotAnalyzed))
@@ -98,6 +99,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Boolean(f => f.Name(e => e.IsFirstOccurrence).IndexName(Fields.IsFirstOccurrence))
                     .Boolean(f => f.Name(e => e.IsFixed).IndexName(Fields.IsFixed))
                     .Boolean(f => f.Name(e => e.IsHidden).IndexName(Fields.IsHidden))
+                    .Boolean(f => f.Name(e => e.IsDeleted).IndexName(Fields.IsDeleted))
                     .Object<object>(f => f.Name(Fields.IDX).Dynamic())
                     .Object<DataDictionary>(f => f.Name(e => e.Data).Path("just_name").Properties(p2 => p2
                         .String(f2 => f2.Name(Event.KnownDataKeys.Version).IndexName(Fields.Version).Index(FieldIndexOption.Analyzed).Analyzer(VERSION_INDEX_ANALYZER).SearchAnalyzer(VERSION_SEARCH_ANALYZER))
@@ -213,6 +215,7 @@ err['all_codes'] = codes.join(' ')";
 
         public class Fields {
             public const string CreatedUtc = "created";
+            public const string UpdatedUtc = "updated";
             public const string OrganizationId = "organization";
             public const string ProjectId = "project";
             public const string StackId = "stack";
@@ -229,6 +232,7 @@ err['all_codes'] = codes.join(' ')";
             public const string IsFirstOccurrence = "first";
             public const string IsFixed = "fixed";
             public const string IsHidden = "hidden";
+            public const string IsDeleted = "deleted";
             public const string IDX = "idx";
 
             public const string Version = "version";
