@@ -538,7 +538,7 @@ namespace Exceptionless.Api.Controllers {
             var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true);
             var projects = viewProjects.Select(p => new Project { Id = p.Id, OrganizationId = p.OrganizationId }).ToList();
             var sf = new ExceptionlessSystemFilterQuery(projects, organizations);
-            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, "date").WithIndexes(organizations.GetRetentionUtcCutoff(), DateTime.MaxValue);
+            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, (PersistentEvent e) => e.Date).WithIndexes(organizations.GetRetentionUtcCutoff(), DateTime.MaxValue);
             var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(project_id~{viewProjects.Count} cardinality:stack_id)");
             foreach (var project in viewProjects) {
                 var term = result.Aggregations.Terms<string>("terms_project_id")?.Buckets.FirstOrDefault(t => t.Key == project.Id);

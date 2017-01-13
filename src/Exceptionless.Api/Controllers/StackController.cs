@@ -815,7 +815,7 @@ namespace Exceptionless.Api.Controllers {
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
 
             try {
-                var systemFilter = new ElasticQuery().WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, "date").WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
+                var systemFilter = new ElasticQuery().WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
                 var stackTerms = (await _eventRepository.CountBySearchAsync(systemFilter, pr.ExpandedQuery, $"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {aggregations})")).Aggregations.Terms<string>("terms_stack_id");
                 if (stackTerms == null || stackTerms.Buckets.Count == 0)
                     return Ok(EmptyModels);
@@ -865,7 +865,7 @@ namespace Exceptionless.Api.Controllers {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
 
-            var systemFilter = new ElasticQuery().WithSystemFilter(eventSystemFilter).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, "date").WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
+            var systemFilter = new ElasticQuery().WithSystemFilter(eventSystemFilter).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
             var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), $"terms:(stack_id~{stacks.Count} cardinality:user min:date max:date)");
             return await GetStackSummariesAsync(stacks, stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets, eventSystemFilter, ti);
         }
@@ -903,7 +903,7 @@ namespace Exceptionless.Api.Controllers {
             if (totals.Count == projectIds.Count)
                 return totals;
 
-            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(utcStart, utcEnd, "date").WithIndexes(utcStart, utcEnd);
+            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).WithIndexes(utcStart, utcEnd);
             var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
             var countResult = await _eventRepository.CountBySearchAsync(systemFilter, projects.BuildFilter(), "terms:(project_id cardinality:user)");
 
