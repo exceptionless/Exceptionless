@@ -107,7 +107,7 @@ namespace Exceptionless.Core.Repositories {
             var query = new ExceptionlessQuery()
                 .WithOrganizationId(organizationId)
                 .WithElasticFilter(Query<PersistentEvent>.Term(EventIndexType.Alias.IpAddress, clientIp))
-                .WithDateRange(utcStart, utcEnd, ElasticType.GetFieldName(e => e.Date))
+                .WithDateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date)
                 .WithIndexes(utcStart, utcEnd);
 
             return PatchAllAsync(query, new { is_hidden = true, updated_utc = SystemClock.UtcNow });
@@ -163,7 +163,7 @@ namespace Exceptionless.Core.Repositories {
                 userFilter = String.Concat(EventIndexType.Alias.StackId, ":", ev.StackId);
 
             var results = await FindAsync(new ExceptionlessQuery()
-                .WithDateRange(utcStart, utcEventDate, ElasticType.GetFieldName(e => e.Date))
+                .WithDateRange(utcStart, utcEventDate, (PersistentEvent e) => e.Date)
                 .WithIndexes(utcStart, utcEventDate)
                 .WithSortDescending((PersistentEvent e) => e.Date)
                 .WithLimit(10)
@@ -208,7 +208,7 @@ namespace Exceptionless.Core.Repositories {
                 userFilter = String.Concat(EventIndexType.Alias.StackId, ":", ev.StackId);
 
             var results = await FindAsync(new ExceptionlessQuery()
-                .WithDateRange(utcEventDate, utcEnd, ElasticType.GetFieldName(e => e.Date))
+                .WithDateRange(utcEventDate, utcEnd, (PersistentEvent e) => e.Date)
                 .WithIndexes(utcStart, utcEventDate)
                 .WithSortAscending((PersistentEvent e) => e.Date)
                 .WithLimit(10)
