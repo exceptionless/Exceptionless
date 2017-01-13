@@ -7,6 +7,8 @@
   "is_fixed": true,
   "is_hidden": false,
   "created_utc": "2015-02-11T20:54:04.4082284",
+  "updated_utc": "0001-01-01T00:00:00",
+  "is_deleted": false,
   "type": "log",
   "source": "GET /Print",
   "date": "2015-02-11T20:54:04.3457274+00:00",

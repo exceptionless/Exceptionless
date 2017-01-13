@@ -20,8 +20,8 @@ namespace Exceptionless.Core.Repositories {
         Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId);
         Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd);
 
-        Task<CountResult> GetCountByProjectIdAsync(string projectId);
-        Task<CountResult> GetCountByStackIdAsync(string stackId);
+        Task<CountResult> GetCountByProjectIdAsync(string projectId, bool includeDeleted = false);
+        Task<CountResult> GetCountByStackIdAsync(string stackId, bool includeDeleted = false);
     }
 
     public static class EventRepositoryExtensions {

@@ -218,7 +218,13 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected virtual async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<TModel> values) {
-            await _repository.RemoveAsync(values);
+            if (_supportsSoftDeletes) {
+                values.Cast<ISupportSoftDeletes>().ForEach(v => v.IsDeleted = true);
+                await _repository.SaveAsync(values);
+            } else {
+                await _repository.RemoveAsync(values);
+            }
+
             return new List<string>();
         }
     }
