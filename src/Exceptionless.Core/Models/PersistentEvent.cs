@@ -4,7 +4,7 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
     [DebuggerDisplay("Id: {Id}, Type: {Type}, Date: {Date}, Value: {Value}")]
-    public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveDates {
+    public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveDates, ISupportSoftDeletes {
         public PersistentEvent() {
             Idx = new DataDictionary();
         }
@@ -54,5 +54,7 @@ namespace Exceptionless.Core.Models {
         /// Used to store primitive data type custom data values for searching the event.
         /// </summary>
         public DataDictionary Idx { get; set; }
+
+        public bool IsDeleted { get; set; }
     }
 }
