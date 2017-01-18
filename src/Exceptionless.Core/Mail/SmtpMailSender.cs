@@ -17,6 +17,8 @@ namespace Exceptionless.Core.Mail {
             var message = model.ToMailMessage();
             message.Headers.Add("X-Mailer-Machine", Environment.MachineName);
             message.Headers.Add("X-Mailer-Date", SystemClock.UtcNow.ToString());
+            message.Headers.Add("X-Auto-Response-Suppress", "All");
+            message.Headers.Add("Auto-Submitted", "auto-generated");
 
             var client = new SmtpClient();
             if (!String.IsNullOrEmpty(Settings.Current.SmtpHost)) {
