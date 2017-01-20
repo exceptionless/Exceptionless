@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static DateTime GetRetentionUtcCutoff(this Organization organization) {
             // NOTE: We allow you to submit events 3 days before your creation date.
-            var earliestPossibleEventDate = organization.CreatedUtc.Date.SubtractDays(3);
+            var earliestPossibleEventDate = organization.CreatedUtc.Date.SafeSubtract(TimeSpan.FromDays(3));
             int retentionDays = organization.RetentionDays > 0 ? organization.RetentionDays : Settings.Current.MaximumRetentionDays;
             var retentionDate = retentionDays <= 0 ? earliestPossibleEventDate : SystemClock.UtcNow.Date.AddDays(-retentionDays);
             return retentionDate.IsAfter(earliestPossibleEventDate) ? retentionDate : earliestPossibleEventDate;
