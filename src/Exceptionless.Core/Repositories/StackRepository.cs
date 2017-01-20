@@ -88,7 +88,7 @@ ctx._source.total_occurrences += params.count;";
 
             var result = await _client.UpdateAsync<Stack>(request).AnyContext();
             if (!result.IsValid) {
-                _logger.Error("Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError.Error);
+                _logger.Error(result.OriginalException, "Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError?.Error);
                 return;
             }
 
