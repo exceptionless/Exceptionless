@@ -54,6 +54,7 @@ namespace Exceptionless.Api.Controllers {
             if (minimumUtcStartDate.HasValue)
                 timeInfo.ApplyMinimumUtcStartDate(minimumUtcStartDate.Value);
 
+            timeInfo.AdjustEndTimeIfMaxValue();
             return timeInfo;
         }
 

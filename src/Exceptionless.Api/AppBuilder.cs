@@ -38,7 +38,6 @@ using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
 using Swashbuckle.Application;
-using CleanupSnapshotJob = Exceptionless.Core.Jobs.Elastic.CleanupSnapshotJob;
 
 namespace Exceptionless.Api {
     public static class AppBuilder {
