@@ -60,7 +60,7 @@ namespace Exceptionless.Tests.Utility {
                 IsHidden = isHidden,
                 StackId = stackIds.Random()
             };
-            
+
             if (!String.IsNullOrEmpty(userIdentity))
                 ev.SetUserIdentity(userIdentity);
 
@@ -104,7 +104,7 @@ namespace Exceptionless.Tests.Utility {
             return ev;
         }
 
-        private static List<Error> _randomErrors; 
+        private static List<Error> _randomErrors;
 
         private static Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
             var error = new Error();

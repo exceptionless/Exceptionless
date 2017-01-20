@@ -162,10 +162,10 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(largestStackBucket.Total.GetValueOrDefault(), events.Total);
 
             var oldestEvent = events.Documents.OrderBy(e => e.Date).First();
-            Assert.Equal(oldestEvent.Date.ToUniversalTime().Floor(TimeSpan.FromMilliseconds(1)), largestStackBucket.Aggregations.Min<DateTime>("min_date").Value.Floor(TimeSpan.FromMilliseconds(1)));
+            Assert.Equal(oldestEvent.Date.UtcDateTime.Floor(TimeSpan.FromMilliseconds(1)), largestStackBucket.Aggregations.Min<DateTime>("min_date").Value.Floor(TimeSpan.FromMilliseconds(1)));
 
             var newestEvent= events.Documents.OrderByDescending(e => e.Date).First();
-            Assert.Equal(newestEvent.Date.ToUniversalTime().Floor(TimeSpan.FromMilliseconds(1)), largestStackBucket.Aggregations.Min<DateTime>("max_date").Value.Floor(TimeSpan.FromMilliseconds(1)));
+            Assert.Equal(newestEvent.Date.UtcDateTime.Floor(TimeSpan.FromMilliseconds(1)), largestStackBucket.Aggregations.Min<DateTime>("max_date").Value.Floor(TimeSpan.FromMilliseconds(1)));
         }
 
         [Fact]

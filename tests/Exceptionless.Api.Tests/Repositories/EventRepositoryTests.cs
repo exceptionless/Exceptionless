@@ -229,7 +229,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly List<Tuple<string, DateTime>> _ids = new List<Tuple<string, DateTime>>();
 
         private async Task CreateDataAsync() {
-            var baseDate = SystemClock.UtcNow;
+            var baseDate = SystemClock.UtcNow.SubtractHours(1);
             var occurrenceDateStart = baseDate.AddMinutes(-30);
             var occurrenceDateMid = baseDate;
             var occurrenceDateEnd = baseDate.AddMinutes(30);
