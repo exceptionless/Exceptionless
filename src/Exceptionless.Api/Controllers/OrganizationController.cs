@@ -719,7 +719,7 @@ namespace Exceptionless.Api.Controllers {
             if (viewOrganizations.Count <= 0)
                 return viewOrganizations;
 
-            var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, RetentionDays = o.RetentionDays }).ToList();
+            var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, CreatedUtc = o.CreatedUtc, RetentionDays = o.RetentionDays }).ToList();
             var sf = new ExceptionlessSystemFilterQuery(organizations);
             var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(organizations.GetRetentionUtcCutoff(), DateTime.MaxValue, (PersistentEvent e) => e.Date).WithIndexes(organizations.GetRetentionUtcCutoff(), DateTime.MaxValue);
             var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)");
