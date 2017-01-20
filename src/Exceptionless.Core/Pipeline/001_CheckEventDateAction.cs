@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Logging;
 using Foundatio.Utility;
 
@@ -13,7 +14,7 @@ namespace Exceptionless.Core.Pipeline {
 
         public override Task ProcessAsync(EventContext ctx) {
             // If the date is in the future, set it to now using the same offset.
-            if (SystemClock.UtcNow < ctx.Event.Date.UtcDateTime)
+            if (SystemClock.UtcNow.IsBefore(ctx.Event.Date.UtcDateTime))
                 ctx.Event.Date = ctx.Event.Date.Subtract(ctx.Event.Date.UtcDateTime - SystemClock.OffsetUtcNow);
 
             // Discard events that are being submitted outside of the plan retention limit.

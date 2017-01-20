@@ -52,9 +52,9 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         public static IEnumerable<object[]> WebHookData => new List<object[]> {
-            new object[] { new Version(0, 0), false }, 
-            new object[] { new Version(1, 0), true }, 
-            new object[] { new Version(2, 0), true }, 
+            new object[] { new Version(0, 0), false },
+            new object[] { new Version(1, 0), true },
+            new object[] { new Version(2, 0), true },
             new object[] { new Version(3, 0), false }
         }.ToArray();
 
@@ -73,7 +73,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             var context = new WebHookDataContext(version, ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             context.Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: _formatter.GetStackTitle(ev), signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc");
             context.Stack.Tags = new TagSet { "Test" };
-            context.Stack.FirstOccurrence = context.Stack.LastOccurrence = ev.Date.DateTime;
+            context.Stack.FirstOccurrence = context.Stack.LastOccurrence = ev.Date.UtcDateTime;
 
             return context;
         }
