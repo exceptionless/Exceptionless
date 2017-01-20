@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.DateTimeExtensions;
 using FluentValidation;
 using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
@@ -149,10 +150,10 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             if (!utcStart.HasValue)
-                utcStart = DateTime.MinValue;
+                utcStart = Settings.Current.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(Settings.Current.MaximumRetentionDays) : DateTime.MinValue;
 
             if (!utcEnd.HasValue)
-                utcEnd = DateTime.MaxValue;
+                utcEnd = SystemClock.UtcNow;
 
             var utcEventDate = ev.Date.ToUniversalTime().DateTime;
             // utcEnd is before the current event date.
@@ -194,10 +195,10 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             if (!utcStart.HasValue)
-                utcStart = DateTime.MinValue;
+                utcStart = Settings.Current.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(Settings.Current.MaximumRetentionDays) : DateTime.MinValue;
 
             if (!utcEnd.HasValue)
-                utcEnd = DateTime.MaxValue;
+                utcEnd = SystemClock.UtcNow;
 
             var utcEventDate = ev.Date.ToUniversalTime().DateTime;
             // utcEnd is before the current event date.

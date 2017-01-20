@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Elasticsearch.Queries.Options;
 using Foundatio.Repositories.Queries;
@@ -78,7 +79,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
-            var sfq = ctx.GetSourceAs<IExceptionlessSystemFilterQuery>();
+            var sfq = ctx.GetSourceAs<IExceptionlessSystemFilterQuery>() ?? ctx.GetSourceAs<ISystemFilterQuery>()?.SystemFilter as IExceptionlessSystemFilterQuery;
             if (sfq == null)
                 return Task.CompletedTask;
 
@@ -91,7 +92,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             string field = GetDateField(ctx.GetOptionsAs<IElasticQueryOptions>());
             if (sfq.Stack != null) {
                 var organization = sfq.Organizations.Single(o => o.Id == sfq.Stack.OrganizationId);
-                ctx.Query &= (Query<T>.Term(_stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization));
+                ctx.Query &= (Query<T>.Term(_stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization, sfq.Stack.FirstOccurrence));
                 return Task.CompletedTask;
             }
 
@@ -99,7 +100,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (sfq.Projects?.Count > 0) {
                 foreach (var project in sfq.Projects) {
                     var organization = sfq.Organizations.Single(o => o.Id == project.OrganizationId);
-                    container |= (Query<T>.Term(_projectIdFieldName, project.Id) && GetRetentionFilter<T>(field, organization));
+                    container |= (Query<T>.Term(_projectIdFieldName, project.Id) && GetRetentionFilter<T>(field, organization, project.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3))));
                 }
 
                 ctx.Query &= container;
@@ -116,9 +117,12 @@ namespace Exceptionless.Core.Repositories.Queries {
             return Task.CompletedTask;
         }
 
-        private static QueryContainer GetRetentionFilter<T>(string field, Organization organization) where T : class, new() {
-            double oldestPossibleEventAge = Math.Round(Math.Abs(SystemClock.UtcNow.Subtract(organization.CreatedUtc).Subtract(TimeSpan.FromDays(3)).TotalDays), MidpointRounding.AwayFromZero);
-            double retentionDays = organization.RetentionDays > 0 ? Math.Min(organization.RetentionDays, oldestPossibleEventAge) : oldestPossibleEventAge;
+        private static QueryContainer GetRetentionFilter<T>(string field, Organization organization, DateTime? oldestPossibleEventAge = null) where T : class, new() {
+            var retentionDate = organization.GetRetentionUtcCutoff();
+            if (oldestPossibleEventAge.HasValue && oldestPossibleEventAge.Value.IsAfter(retentionDate))
+                retentionDate = oldestPossibleEventAge.Value;
+
+            double retentionDays = Math.Round(Math.Abs(SystemClock.UtcNow.Subtract(retentionDate).TotalDays), MidpointRounding.AwayFromZero);
             return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
         }
 
