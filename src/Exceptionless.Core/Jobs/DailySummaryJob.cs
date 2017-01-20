@@ -133,7 +133,7 @@ namespace Exceptionless.Core.Jobs {
                 EndDate = data.UtcEndTime,
                 Total = result.Total,
                 PerHourAverage = result.Total / data.UtcEndTime.Subtract(data.UtcStartTime).TotalHours,
-                NewTotal = result.Aggregations.Terms<double>("terms_is_first_occurrence")?.Buckets.First().Total ?? 0,
+                NewTotal = result.Aggregations.Terms<double>("terms_is_first_occurrence")?.Buckets.FirstOrDefault()?.Total ?? 0,
                 UniqueTotal = result.Aggregations.Cardinality("cardinality_stack_id")?.Value ?? 0,
                 HasSubmittedEvents = hasSubmittedEvents,
                 IsFreePlan = organization.PlanId == BillingManager.FreePlan.Id
