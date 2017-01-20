@@ -149,13 +149,14 @@ namespace Exceptionless.Core.Repositories {
             if (ev == null)
                 return null;
 
-            if (!utcStart.HasValue)
-                utcStart = Settings.Current.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(Settings.Current.MaximumRetentionDays) : DateTime.MinValue;
+            var retentionDate = Settings.Current.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(Settings.Current.MaximumRetentionDays) : DateTime.MinValue;
+            if (!utcStart.HasValue || utcStart.Value.IsBefore(retentionDate))
+                utcStart = retentionDate;
 
-            if (!utcEnd.HasValue)
-                utcEnd = SystemClock.UtcNow;
+            if (!utcEnd.HasValue || utcEnd.Value.IsAfter(ev.Date.UtcDateTime))
+                utcEnd = ev.Date.UtcDateTime;
 
-            var utcEventDate = ev.Date.ToUniversalTime().DateTime;
+            var utcEventDate = ev.Date.UtcDateTime;
             // utcEnd is before the current event date.
             if (utcStart > utcEventDate || utcEnd < utcEventDate)
                 return null;
@@ -194,13 +195,13 @@ namespace Exceptionless.Core.Repositories {
             if (ev == null)
                 return null;
 
-            if (!utcStart.HasValue)
-                utcStart = Settings.Current.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(Settings.Current.MaximumRetentionDays) : DateTime.MinValue;
+            if (!utcStart.HasValue || utcStart.Value.IsBefore(ev.Date.UtcDateTime))
+                utcStart = ev.Date.UtcDateTime;
 
-            if (!utcEnd.HasValue)
+            if (!utcEnd.HasValue || utcEnd.Value.IsAfter(SystemClock.UtcNow))
                 utcEnd = SystemClock.UtcNow;
 
-            var utcEventDate = ev.Date.ToUniversalTime().DateTime;
+            var utcEventDate = ev.Date.UtcDateTime;
             // utcEnd is before the current event date.
             if (utcStart > utcEventDate || utcEnd < utcEventDate)
                 return null;
