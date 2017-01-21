@@ -18,7 +18,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
             return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)));
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)
+                .Priority(10)));
         }
 
         public OrganizationIndexType Organization { get; }
