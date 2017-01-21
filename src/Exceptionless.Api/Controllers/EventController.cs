@@ -88,7 +88,7 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(List<CountResult>))]
         public async Task<IHttpActionResult> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count == 0)
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(CountResult.Empty);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
@@ -149,7 +149,7 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count == 0)
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
@@ -313,7 +313,7 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository);
-            if (organizations.Count == 0)
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff());
@@ -370,7 +370,7 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count == 0)
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
@@ -429,7 +429,7 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count == 0)
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
