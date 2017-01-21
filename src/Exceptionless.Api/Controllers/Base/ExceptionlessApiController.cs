@@ -104,32 +104,36 @@ namespace Exceptionless.Api.Controllers {
 
         private static readonly IReadOnlyCollection<Organization> EmptyOrganizations = new List<Organization>(0).AsReadOnly();
         public async Task<IReadOnlyCollection<Organization>> GetSelectedOrganizationsAsync(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, string filter = null) {
+            var associatedOrganizationIds = GetAssociatedOrganizationIds();
+            if (associatedOrganizationIds.Count == 0)
+                return EmptyOrganizations;
+
             if (!String.IsNullOrEmpty(filter)) {
                 var scope = GetFilterScopeVisitor.Run(filter);
                 if (scope.IsScopable) {
-                    Organization org = null;
+                    Organization organization = null;
                     if (scope.OrganizationId != null) {
-                        org = await organizationRepository.GetByIdAsync(scope.OrganizationId, true);
+                        organization = await organizationRepository.GetByIdAsync(scope.OrganizationId, true);
                     } else if (scope.ProjectId != null) {
                         var project = await projectRepository.GetByIdAsync(scope.ProjectId, true);
                         if (project != null)
-                            org = await organizationRepository.GetByIdAsync(project.OrganizationId, true);
+                            organization = await organizationRepository.GetByIdAsync(project.OrganizationId, true);
                     } else if (scope.StackId != null) {
                         var stack = await stackRepository.GetByIdAsync(scope.StackId, true);
                         if (stack != null)
-                            org = await organizationRepository.GetByIdAsync(stack.OrganizationId, true);
+                            organization = await organizationRepository.GetByIdAsync(stack.OrganizationId, true);
                     }
 
-                    if (org != null)
-                        return new[] { org }.ToList().AsReadOnly();
+                    if (organization != null) {
+                        if (associatedOrganizationIds.Contains(organization.Id))
+                            return new[] { organization }.ToList().AsReadOnly();
+
+                        return EmptyOrganizations;
+                    }
                 }
             }
 
-            var ids = GetAssociatedOrganizationIds();
-            if (ids.Count == 0)
-                return EmptyOrganizations;
-
-            var organizations = await organizationRepository.GetByIdsAsync(ids, true);
+            var organizations = await organizationRepository.GetByIdsAsync(associatedOrganizationIds, true);
             return organizations.ToList().AsReadOnly();
         }
 
