@@ -103,16 +103,34 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private static readonly IReadOnlyCollection<Organization> EmptyOrganizations = new List<Organization>(0).AsReadOnly();
-        public async Task<IReadOnlyCollection<Organization>> GetAssociatedActiveOrganizationsAsync(IOrganizationRepository repository) {
-            if (repository == null)
-                throw new ArgumentNullException(nameof(repository));
+        public async Task<IReadOnlyCollection<Organization>> GetSelectedOrganizationsAsync(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, string filter = null) {
+            if (!String.IsNullOrEmpty(filter)) {
+                var scope = GetFilterScopeVisitor.Run(filter);
+                if (scope.IsScopable) {
+                    Organization org = null;
+                    if (scope.OrganizationId != null) {
+                        org = await organizationRepository.GetByIdAsync(scope.OrganizationId, true);
+                    } else if (scope.ProjectId != null) {
+                        var project = await projectRepository.GetByIdAsync(scope.ProjectId, true);
+                        if (project != null)
+                            org = await organizationRepository.GetByIdAsync(project.OrganizationId, true);
+                    } else if (scope.StackId != null) {
+                        var stack = await stackRepository.GetByIdAsync(scope.StackId, true);
+                        if (stack != null)
+                            org = await organizationRepository.GetByIdAsync(stack.OrganizationId, true);
+                    }
+
+                    if (org != null)
+                        return new[] { org }.ToList().AsReadOnly();
+                }
+            }
 
             var ids = GetAssociatedOrganizationIds();
             if (ids.Count == 0)
                 return EmptyOrganizations;
 
-            var organizations = await repository.GetByIdsAsync(ids, true);
-            return organizations.Where(o => !o.IsSuspended).ToList().AsReadOnly();
+            var organizations = await organizationRepository.GetByIdsAsync(ids, true);
+            return organizations.ToList().AsReadOnly();
         }
 
         protected bool ShouldApplySystemFilter(IExceptionlessSystemFilterQuery sf, string filter) {
