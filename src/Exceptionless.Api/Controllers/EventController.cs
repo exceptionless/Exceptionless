@@ -97,6 +97,60 @@ namespace Exceptionless.Api.Controllers {
         }
 
         /// <summary>
+        /// Count by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="aggregations">A comma delimited list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <response code="400">Invalid filter.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/count")]
+        [ResponseType(typeof(List<CountResult>))]
+        public async Task<IHttpActionResult> GetCountByOrganizationAsync(string organizationId, string filter = null, string aggregations = null, string time = null, string offset = null) {
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
+            return await base.GetCountAsync(sf, ti, filter, aggregations);
+        }
+
+        /// <summary>
+        /// Count by project
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="aggregations">A comma delimited list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <response code="400">Invalid filter.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/count")]
+        [ResponseType(typeof(List<CountResult>))]
+        public async Task<IHttpActionResult> GetCountByProjectAsync(string projectId, string filter = null, string aggregations = null, string time = null, string offset = null) {
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
+                return NotFound();
+
+            var organization = await GetOrganizationAsync(project.OrganizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
+            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            return await base.GetCountAsync(sf, ti, filter, aggregations);
+        }
+
+        /// <summary>
         /// Get by id
         /// </summary>
         /// <param name="id">The identifier of the event.</param>
@@ -260,7 +314,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
@@ -294,7 +348,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(stack));
             var sf = new ExceptionlessSystemFilterQuery(stack, organization);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
@@ -348,7 +402,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null,  mode, page, limit);
         }
@@ -396,7 +450,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -408,7 +462,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, true);
         }
@@ -427,13 +481,43 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("sessions")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetBySessionAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetSessionsAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
+        }
+
+        /// <summary>
+        /// Get a list of all sessions
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/sessions")]
+        [ResponseType(typeof(List<PersistentEvent>))]
+        public async Task<IHttpActionResult> GetSessionByOrganizationAsync(string organizationId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }
 
@@ -454,7 +538,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions")]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetBySessionAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetSessionByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -466,7 +550,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }

@@ -16,12 +16,24 @@ namespace Exceptionless.Core.Extensions {
             return organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
         }
 
-        public static DateTime GetRetentionUtcCutoff(this Organization organization) {
+        public static DateTime GetRetentionUtcCutoff(this Organization organization, Project project) {
+            return organization.GetRetentionUtcCutoff(project.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3)));
+        }
+
+
+        public static DateTime GetRetentionUtcCutoff(this Organization organization, Stack stack) {
+            return organization.GetRetentionUtcCutoff(stack.FirstOccurrence);
+        }
+
+        public static DateTime GetRetentionUtcCutoff(this Organization organization, DateTime? oldestPossibleEventAge = null) {
             // NOTE: We allow you to submit events 3 days before your creation date.
-            var oldestPossibleEventAge = organization.CreatedUtc.Date.SafeSubtract(TimeSpan.FromDays(3));
+            var oldestPossibleOrganizationEventAge = organization.CreatedUtc.Date.SafeSubtract(TimeSpan.FromDays(3));
+            if (!oldestPossibleEventAge.HasValue || oldestPossibleEventAge.Value.IsBefore(oldestPossibleOrganizationEventAge))
+                oldestPossibleEventAge = oldestPossibleOrganizationEventAge;
+
             int retentionDays = organization.RetentionDays > 0 ? organization.RetentionDays : Settings.Current.MaximumRetentionDays;
-            var retentionDate = retentionDays <= 0 ? oldestPossibleEventAge : SystemClock.UtcNow.Date.AddDays(-retentionDays);
-            return retentionDate.IsAfter(oldestPossibleEventAge) ? retentionDate : oldestPossibleEventAge;
+            var retentionDate = retentionDays <= 0 ? oldestPossibleEventAge.Value : SystemClock.UtcNow.Date.AddDays(-retentionDays);
+            return retentionDate.IsAfter(oldestPossibleEventAge.Value) ? retentionDate : oldestPossibleEventAge.Value;
         }
 
         public static DateTime GetRetentionUtcCutoff(this IReadOnlyCollection<Organization> organizations) {
