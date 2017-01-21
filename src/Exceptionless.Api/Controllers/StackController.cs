@@ -804,7 +804,6 @@ namespace Exceptionless.Api.Controllers {
             return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
-
         /// <summary>
         /// Gets most frequent by organization
         /// </summary>

@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Repositories {
 
             emailAddress = emailAddress.ToLowerInvariant().Trim();
             var query = new ExceptionlessQuery()
-                .WithElasticFilter(Query<User>.Term(u => u.EmailAddress, emailAddress))
+                .WithElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress))
                 .WithCacheKey(String.Concat("Email:", emailAddress));
 
             var hit = await FindOneAsync(query).AnyContext();
@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(Query<User>.Term(u => u.OrganizationIds, organizationId))
                 .WithPaging(paging)
-                .WithSortAscending((User u) => u.EmailAddress)
+                .WithSortAscending((User u) => u.EmailAddress.Suffix("keyword"))
                 .WithCacheKey(useCache ? String.Concat("paged:Organization:", organizationId) : null)
                 .WithExpiresIn(expiresIn));
         }

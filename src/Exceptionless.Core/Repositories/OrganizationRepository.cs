@@ -89,7 +89,7 @@ namespace Exceptionless.Core.Repositories {
                 //    query.WithSortDescending((Organization o) => o.TotalEventCount);
                 //    break;
                 default:
-                    query.WithSortAscending((Organization o) => o.Name);
+                    query.WithSortAscending((Organization o) => o.Name.Suffix("keyword"));
                     break;
             }
 
