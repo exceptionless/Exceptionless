@@ -503,7 +503,7 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count == 0)
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
@@ -592,7 +592,7 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> NewAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count == 0)
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(String.Concat("first|", time), offset, organizations.GetRetentionUtcCutoff());
@@ -648,7 +648,7 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> RecentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count == 0)
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(String.Concat(StackIndexType.Alias.LastOccurrence, "|", time), offset, organizations.GetRetentionUtcCutoff());
@@ -704,7 +704,7 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> FrequentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count == 0)
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
@@ -760,7 +760,7 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> UsersAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count == 0)
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
