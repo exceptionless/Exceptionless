@@ -88,35 +88,40 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             var allowedOrganizations = sfq.Organizations.Where(o => o.HasPremiumFeatures || (!o.HasPremiumFeatures && !sfq.UsesPremiumFeatures)).ToList();
             if (allowedOrganizations.Count == 0) {
-                ctx.Query &= Query<T>.Term(_organizationIdFieldName, "none");
+                ctx.Filter &= Query<T>.Term(_organizationIdFieldName, "none");
                 return Task.CompletedTask;
             }
 
             string field = GetDateField(ctx.GetOptionsAs<IElasticQueryOptions>());
             if (sfq.Stack != null) {
-                var organization = sfq.Organizations.Single(o => o.Id == sfq.Stack.OrganizationId);
-                ctx.Query &= (Query<T>.Term(_stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization, sfq.Stack.FirstOccurrence));
+                var organization = allowedOrganizations.SingleOrDefault(o => o.Id == sfq.Stack.OrganizationId);
+                if (organization != null)
+                    ctx.Filter &= (Query<T>.Term(_stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization, sfq.Stack.FirstOccurrence));
+                else
+                    ctx.Filter &= Query<T>.Term(_stackIdFieldName, "none");
+
                 return Task.CompletedTask;
             }
 
             QueryContainer container = null;
             if (sfq.Projects?.Count > 0) {
-                foreach (var project in sfq.Projects) {
-                    var organization = sfq.Organizations.Single(o => o.Id == project.OrganizationId);
-                    container |= (Query<T>.Term(_projectIdFieldName, project.Id) && GetRetentionFilter<T>(field, organization, project.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3))));
+                var allowedProjects = sfq.Projects.ToDictionary(p => p, p => allowedOrganizations.SingleOrDefault(o => o.Id == p.OrganizationId)).Where(kvp => kvp.Value != null).ToList();
+                if (allowedProjects.Count > 0) {
+                    foreach (var project in allowedProjects)
+                        container |= (Query<T>.Term(_projectIdFieldName, project.Key.Id) && GetRetentionFilter<T>(field, project.Value, project.Key.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3))));
+
+                    ctx.Filter &= container;
+                    return Task.CompletedTask;
                 }
 
-                ctx.Query &= container;
+                ctx.Filter &= (Query<T>.Term(_projectIdFieldName, "none"));
                 return Task.CompletedTask;
             }
 
-            if (sfq.Organizations?.Count > 0) {
-                foreach (var organization in sfq.Organizations)
-                    container |= (Query<T>.Term(_organizationIdFieldName, organization.Id) && GetRetentionFilter<T>(field, organization));
+            foreach (var organization in allowedOrganizations)
+                container |= (Query<T>.Term(_organizationIdFieldName, organization.Id) && GetRetentionFilter<T>(field, organization));
 
-                ctx.Query &= container;
-            }
-
+            ctx.Filter &= container;
             return Task.CompletedTask;
         }
 
