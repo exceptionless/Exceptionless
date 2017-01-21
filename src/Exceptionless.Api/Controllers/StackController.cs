@@ -578,6 +578,40 @@ namespace Exceptionless.Api.Controllers {
         }
 
         /// <summary>
+        /// Get by project
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The organization could not be found.</response>
+        /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> GetByProjectAsync(string projectId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
+                return NotFound();
+
+            var organization = await GetOrganizationAsync(project.OrganizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
+            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
+        }
+
+        /// <summary>
         /// Get newest
         /// </summary>
         /// <param name="filter">A filter that controls what data is returned from the server.</param>
@@ -590,13 +624,42 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("new")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> NewAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetNewAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(String.Concat("first|", time), offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            return await GetInternalAsync(sf, ti, filter, "-first", mode, page, limit);
+        }
+
+        /// <summary>
+        /// Get newest by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/new")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> GetNewByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(String.Concat("first|", time), offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
             return await GetInternalAsync(sf, ti, filter, "-first", mode, page, limit);
         }
 
@@ -616,7 +679,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> NewByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetNewByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -628,7 +691,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(String.Concat("first|", time), offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(String.Concat("first|", time), offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             return await GetInternalAsync(sf, ti, filter, "-first", mode, page, limit);
         }
@@ -646,13 +709,42 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("recent")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> RecentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetRecentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(String.Concat(StackIndexType.Alias.LastOccurrence, "|", time), offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            return await GetInternalAsync(sf, ti, filter, String.Concat("-", StackIndexType.Alias.LastOccurrence), mode, page, limit);
+        }
+
+        /// <summary>
+        /// Get most recent by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/recent")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> GetRecentByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(String.Concat(StackIndexType.Alias.LastOccurrence, "|", time), offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
             return await GetInternalAsync(sf, ti, filter, String.Concat("-", StackIndexType.Alias.LastOccurrence), mode, page, limit);
         }
 
@@ -672,7 +764,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> RecentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetRecentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -684,7 +776,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(String.Concat(StackIndexType.Alias.LastOccurrence, "|", time), offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(String.Concat(StackIndexType.Alias.LastOccurrence, "|", time), offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             return await GetInternalAsync(sf, ti, filter, String.Concat("-", StackIndexType.Alias.LastOccurrence), mode, page, limit);
         }
@@ -702,13 +794,43 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("frequent")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> FrequentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetFrequentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
+        }
+
+
+        /// <summary>
+        /// Gets most frequent by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/frequent")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> GetFrequentByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
             return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
@@ -728,7 +850,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> FrequentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetFrequentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -740,7 +862,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
@@ -758,13 +880,42 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("users")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> UsersAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetUsersAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            return await GetAllByTermsAsync("-cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
+        }
+
+        /// <summary>
+        /// Gets most users by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/users")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> GetUsersByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
             return await GetAllByTermsAsync("-cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
@@ -784,7 +935,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/users")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> UsersByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetUsersByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -796,7 +947,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             return await GetAllByTermsAsync("-cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
