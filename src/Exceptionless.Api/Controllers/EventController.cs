@@ -87,7 +87,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("count")]
         [ResponseType(typeof(List<CountResult>))]
         public async Task<IHttpActionResult> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count == 0)
                 return Ok(CountResult.Empty);
 
@@ -148,7 +148,7 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
@@ -312,7 +312,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("by-ref/{referenceId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
@@ -369,7 +369,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("sessions/{sessionId:identifier}")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
@@ -428,7 +428,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("sessions")]
         [ResponseType(typeof(List<PersistentEvent>))]
         public async Task<IHttpActionResult> GetBySessionAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
