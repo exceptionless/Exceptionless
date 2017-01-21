@@ -25,7 +25,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public EventIndex(IElasticConfiguration configuration) : base(configuration, Settings.Current.AppScopePrefix + "events", 1) {
             MaxIndexAge = TimeSpan.FromDays(180);
-            DiscardExpiredIndexes = false;
 
             AddType(Event = new EventIndexType(this));
             AddAlias($"{Name}-today", TimeSpan.FromDays(1));
