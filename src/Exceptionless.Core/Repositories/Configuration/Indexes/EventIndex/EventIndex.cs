@@ -41,7 +41,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
             return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(BuildAnalysis)
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)));
+                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)
+                .Priority(1)));
         }
 
         private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad) {
