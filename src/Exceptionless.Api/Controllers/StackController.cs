@@ -502,7 +502,7 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
@@ -591,7 +591,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("new")]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> NewAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
@@ -647,7 +647,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("recent")]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> RecentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
@@ -703,7 +703,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("frequent")]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> FrequentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
@@ -759,7 +759,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("users")]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> UsersAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);
 
