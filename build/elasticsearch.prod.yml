@@ -1,7 +1,7 @@
 ﻿# multi node configuration
 cluster.name: exceptionless
 action.destructive_requires_name: true
-action.auto_create_index: +.marvel-*
+action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*
 bootstrap.memory_lock: true
 plugin.mandatory: mapper-size
 
@@ -12,17 +12,9 @@ plugin.mandatory: mapper-size
 node.max_local_storage_nodes: 1
 gateway.expected_nodes: 3
 discovery.zen.minimum_master_nodes: 2
-discovery.zen.ping.unicast.hosts: [ '10.2.0.4', '10.2.0.5', '10.2.0.6' ]
+discovery.zen.ping.unicast.hosts: [ 'node1', 'node2', 'node3' ]
 network.bind_host: [ '_site_', '_local_' ]
 network.publish_host: '_site_'
 
-#transport.tcp.compress: true
-transport.tcp.port: 9300
-http.port: 9200
-
-#cloud:
-#    azure:
-#        storage:
-#            default:
-#                account: your_azure_storage_account
-#                key: your_azure_storage_key
+#cloud.azure.storage.default.account: your_azure_storage_account
+#cloud.azure.storage.default.key: your_azure_storage_key
