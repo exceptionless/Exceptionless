@@ -45,7 +45,7 @@ ROBOCOPY "$sourceDir\Jobs\CloseInactiveSession\bin\Release" "$artifactsDir\App_D
 Write-Host "Copying DailySummary job..."
 ROBOCOPY "$sourceDir\Jobs\DailySummary\bin\Release" "$artifactsDir\App_Data\jobs\continuous\DailySummary" /XD "$sourceDir\Jobs\DailySummary\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying DownloadGeoIPDatabase job..."
-ROBOCOPY "$sourceDir\Jobs\DownloadGeoIPDatabase\bin\Release" "$artifactsDir\App_Data\jobs\continuous\DownloadGeoIPDatabase" /XD "$sourceDir\Jobs\DownloadGeoIPDatabase\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\DownloadGeoIPDatabase\bin\Release" "$artifactsDir\App_Data\jobs\triggered\DownloadGeoIPDatabase" /XD "$sourceDir\Jobs\DownloadGeoIPDatabase\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventNotification job..."
 ROBOCOPY "$sourceDir\Jobs\EventNotification\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventNotification" /XD "$sourceDir\Jobs\EventNotification\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventPost job..."
