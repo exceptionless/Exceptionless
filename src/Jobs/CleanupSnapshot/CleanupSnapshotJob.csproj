@@ -148,7 +148,7 @@
 robocopy "$(SolutionDir)src\Exceptionless.Insulation\bin\$(ConfigurationName)" "$(TargetDir)bin\." /S /NFL /NDL /NJH /NJS /nc /ns /np
 IF %25ERRORLEVEL%25 GEQ 8 exit 1
 
-robocopy "$(TargetDir)." "$(TargetDir)bin\." /MOV /XD bin /XF CleanupSnapshotJob.* run.bat NLog.config /S /is /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy "$(TargetDir)." "$(TargetDir)bin\." /MOV /XD bin /XF CleanupSnapshotJob.* run.bat NLog.config settings.job /S /is /NFL /NDL /NJH /NJS /nc /ns /np
 IF %25ERRORLEVEL%25 GEQ 8 exit 1
 
 exit 0</PostBuildEvent>
