@@ -1,4 +1,4 @@
 {
     "is_singleton": true,
-    "schedule": "40 * * * *"
+    "schedule": "40 * * * * *"
 }
