@@ -660,9 +660,23 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null || organization.IsSuspended)
                 return Ok();
 
-            await _cache.SetAsync($"Project:{project.Id}:heartbeat:{id.ToSHA1()}", SystemClock.UtcNow, TimeSpan.FromHours(2));
-            if (close)
-                await _cache.SetAsync($"Project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
+            try {
+                await _cache.SetAsync($"Project:{project.Id}:heartbeat:{id.ToSHA1()}", SystemClock.UtcNow, TimeSpan.FromHours(2));
+                if (close)
+                    await _cache.SetAsync($"Project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
+            } catch (Exception ex) {
+                _logger.Error().Exception(ex)
+                    .Message("Error enqueuing session heartbeat.")
+                    .Project(projectId)
+                    .Identity(CurrentUser?.EmailAddress)
+                    .Property("User", CurrentUser)
+                    .Property("Id", id)
+                    .Property("Close", close)
+                    .SetActionContext(ActionContext)
+                    .WriteIf(projectId != Settings.Current.InternalProjectId);
+
+                return StatusCode(HttpStatusCode.InternalServerError);
+            }
 
             return Ok();
         }
