@@ -28,9 +28,13 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         /// </summary>
         public async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
             foreach (var plugin in Plugins.Values) {
+                var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
+                if (contextsToProcess.Count == 0)
+                    break;
+
                 try {
-                    await plugin.EventBatchProcessingAsync(contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList()).AnyContext();
-                    if (contexts.All(c => c.IsCancelled || c.HasError))
+                    await plugin.EventBatchProcessingAsync(contextsToProcess).AnyContext();
+                    if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
                     _logger.Error(ex, "Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message);
@@ -43,9 +47,13 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         /// </summary>
         public async Task EventBatchProcessedAsync(ICollection<EventContext> contexts) {
             foreach (var plugin in Plugins.Values) {
+                var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
+                if (contextsToProcess.Count == 0)
+                    break;
+
                 try {
-                    await plugin.EventBatchProcessedAsync(contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList()).AnyContext();
-                    if (contexts.All(c => c.IsCancelled || c.HasError))
+                    await plugin.EventBatchProcessedAsync(contextsToProcess).AnyContext();
+                    if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
                     _logger.Error(ex, "Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message);

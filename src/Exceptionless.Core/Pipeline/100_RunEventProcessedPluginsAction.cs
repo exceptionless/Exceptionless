@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Pipeline {
             _pluginManager = pluginManager;
             ContinueOnError = true;
         }
-        
+
         public override Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             return _pluginManager.EventBatchProcessedAsync(contexts);
         }
