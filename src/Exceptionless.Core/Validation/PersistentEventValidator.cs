@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Validation {
             if (ev.Source != null && (ev.Source.Length < 1 || ev.Source.Length > 2000))
                 result.Errors.Add(new ValidationFailure("Source", "Source cannot be longer than 2000 characters."));
 
-            if (!IsValidIdentifier(ev.ReferenceId))
+            if (!ev.HasValidReferenceId())
                 result.Errors.Add(new ValidationFailure("ReferenceId", "ReferenceId must contain between 8 and 100 alphanumeric or '-' characters."));
 
             foreach (var tag in ev.Tags) {
@@ -56,16 +56,6 @@ namespace Exceptionless.Core.Validation {
 
         public override Task<ValidationResult> ValidateAsync(ValidationContext<PersistentEvent> context, CancellationToken cancellation = new CancellationToken()) {
             return Task.FromResult(Validate(context.InstanceToValidate));
-        }
-
-        private bool IsValidIdentifier(string value) {
-            if (value == null)
-                return true;
-
-            if (value.Length < 8 || value.Length > 100)
-                return false;
-
-            return value.IsValidIdentifier();
         }
 
         private bool IsObjectId(string value) {
