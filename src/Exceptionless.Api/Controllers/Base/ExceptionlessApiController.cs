@@ -125,7 +125,7 @@ namespace Exceptionless.Api.Controllers {
                     }
 
                     if (organization != null) {
-                        if (associatedOrganizationIds.Contains(organization.Id))
+                        if (associatedOrganizationIds.Contains(organization.Id) || Request.IsGlobalAdmin())
                             return new[] { organization }.ToList().AsReadOnly();
 
                         return EmptyOrganizations;
@@ -216,13 +216,6 @@ namespace Exceptionless.Api.Controllers {
 
         protected bool NextPageExceedsSkipLimit(int page, int limit) {
             return (page + 1) * limit >= MAXIMUM_SKIP;
-        }
-
-        public string GetSystemFilter(bool filterUsesPremiumFeatures, bool hasOrganizationFilter) {
-            if (hasOrganizationFilter && Request.IsGlobalAdmin())
-                return null;
-
-            return null;
         }
     }
 }
