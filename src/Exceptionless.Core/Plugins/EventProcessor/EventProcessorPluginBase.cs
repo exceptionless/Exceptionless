@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         public virtual Task EventProcessedAsync(EventContext context) {
             return Task.CompletedTask;
         }
-        
+
         public virtual bool HandleError(Exception exception, EventContext context) {
             return ContinueOnError;
         }

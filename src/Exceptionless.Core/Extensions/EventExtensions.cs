@@ -155,7 +155,7 @@ namespace Exceptionless {
             object value;
             return ev.Data.TryGetValue(Event.KnownDataKeys.Location, out value) ? value as Location : null;
         }
-        
+
         public static void SetLocation(this Event ev, Location location) {
             if (location == null)
                 return;
@@ -169,7 +169,7 @@ namespace Exceptionless {
 
             ev.Data[Event.KnownDataKeys.EnvironmentInfo] = environmentInfo;
         }
-        
+
         /// <summary>
         /// Gets the stacking info from extended data.
         /// </summary>
@@ -177,7 +177,7 @@ namespace Exceptionless {
             object value;
             return ev.Data.TryGetValue(Event.KnownDataKeys.ManualStackingInfo, out value) ? value as ManualStackingInfo : null;
         }
-        
+
         /// <summary>
         /// Changes default stacking behavior
         /// </summary>
