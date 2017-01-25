@@ -35,6 +35,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
 using SimpleInjector;
+using SimpleInjector.Advanced;
 
 namespace Exceptionless.Core {
     public class Bootstrapper {
@@ -141,6 +142,7 @@ namespace Exceptionless.Core {
 
             container.Register<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
 
+            container.AppendToCollection(typeof(Profile), typeof(CoreMappings));
             container.RegisterSingleton<IMapper>(() => {
                 var profiles = container.GetAllInstances<Profile>();
                 var config = new MapperConfiguration(cfg => {
