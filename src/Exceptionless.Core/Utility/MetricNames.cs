@@ -8,7 +8,7 @@ namespace Exceptionless.Core.AppStats {
         public const string EventsPaidProcessed = "events.paid.processed";
         public const string EventsProcessErrors = "events.processing.errors";
         public const string EventsProcessCancelled = "events.processing.cancelled";
-        
+
         public const string PostsParsed = "posts.parsed";
         public const string PostsEventCount = "posts.eventcount";
         public const string PostsSize = "posts.size";
