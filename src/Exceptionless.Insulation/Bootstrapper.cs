@@ -7,6 +7,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
 using Exceptionless.Insulation.Redis;
+using Exceptionless.NLog;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
@@ -27,7 +28,7 @@ namespace Exceptionless.Insulation {
 
             if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
                 container.RegisterSingleton<IGeocodeService>(() => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
-            
+
             if (Settings.Current.EnableMetricsReporting)
                 container.RegisterSingleton<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.MetricsServerName, Settings.Current.MetricsServerPort, "ex"));
             else
@@ -71,6 +72,7 @@ namespace Exceptionless.Insulation {
 
             client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
             client.Configuration.SetVersion(Settings.Current.Version);
+            client.Configuration.UseLogger(new NLogExceptionlessLog(Exceptionless.Logging.LogLevel.Warn));
             if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
                 client.Configuration.Enabled = false;
 
