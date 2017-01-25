@@ -220,6 +220,7 @@
     <Compile Include="Models\Collections\SettingsDictionary.cs" />
     <Compile Include="Models\Collections\StackFrameCollection.cs" />
     <Compile Include="Models\Collections\TagSet.cs" />
+    <Compile Include="Models\CoreMappings.cs" />
     <Compile Include="Models\Data\EnvironmentInfo.cs" />
     <Compile Include="Models\Data\Error.cs" />
     <Compile Include="Models\Data\InnerError.cs" />
