@@ -10,7 +10,7 @@ namespace OrganizationSnapshotJob {
     public class Program {
         public static int Main() {
             AppDomain.CurrentDomain.SetDataDirectory();
-            
+
             var loggerFactory = Settings.Current.GetLoggerFactory();
             if (Settings.Current.DisableSnapshotJobs) {
                 var logger = loggerFactory.CreateLogger(nameof(OrganizationSnapshotJob));
