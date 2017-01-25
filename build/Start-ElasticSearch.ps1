@@ -1,5 +1,5 @@
 ﻿Param(
-  [string]$Version = "5.1.1",
+  [string]$Version = "5.1.2",
   [int]$NodeCount = 1,
   [bool]$StartKibana = $true,
   [int]$StartPort = 9200,
@@ -26,7 +26,7 @@ If ((Test-Path -Path "elasticsearch-$Version.zip") -And !(Test-Path -Path "elast
     [io.compression.zipfile]::ExtractToDirectory("$PSScriptRoot\elasticsearch-$Version.zip", $PSScriptRoot)
     rm elasticsearch-$Version.zip
 
-    & ".\elasticsearch-$Version\bin\elasticsearch-plugin.bat" install mapper-size 
+    & ".\elasticsearch-$Version\bin\elasticsearch-plugin.bat" install mapper-size
 } Else {
     Write-Output "Using already downloaded and extracted Elasticsearch $Version..."
 }
@@ -46,7 +46,7 @@ For ($i = 1; $i -le $NodeCount; $i++) {
     Do {
         Write-Host "Waiting for Elasticsearch $Version node $i to respond..."
         $res = $null
-        
+
         Try {
             $res = Invoke-WebRequest http://localhost:$nodePort -UseBasicParsing
         } Catch {
@@ -80,7 +80,7 @@ If ($StartKibana -eq $true) {
     Do {
         Write-Host "Waiting for Kibana $Version to respond..."
         $res = $null
-        
+
         Try {
             $res = Invoke-WebRequest http://localhost:5601 -UseBasicParsing
         } Catch {
