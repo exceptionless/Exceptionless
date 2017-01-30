@@ -13,7 +13,7 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Processors;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -59,7 +59,8 @@ namespace Exceptionless.Api.Controllers {
             ICacheClient cacheClient,
             JsonSerializerSettings jsonSerializerSettings,
             IMapper mapper,
-            ILoggerFactory loggerFactory) : base(repository, mapper, loggerFactory) {
+            PersistentEventQueryValidator validator,
+            ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
@@ -177,13 +178,13 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(filter))
                 filter = filter.ReplaceFirst("stack:current", $"stack:{model.StackId}");
 
-            var pr = await QueryProcessor.ProcessAsync(filter);
+            var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organization);
-            var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, pr.ExpandedQuery, ti.Range.UtcStart, ti.Range.UtcEnd);
+            var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, filter, ti.Range.UtcStart, ti.Range.UtcEnd);
             return OkWithLinks(model, GetEntityResourceLink(result.Previous, "previous"), GetEntityResourceLink(result.Next, "next"), GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
 
@@ -218,7 +219,7 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(EmptyModels);
 
-            var pr = await QueryProcessor.ProcessAsync(filter);
+            var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 
@@ -227,7 +228,7 @@ namespace Exceptionless.Api.Controllers {
 
             FindResults<PersistentEvent> events;
             try {
-                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, pr.ExpandedQuery, sort, ti.Field, ti.Range.UtcStart, ti.Range.UtcEnd, options);
+                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.Range.UtcStart, ti.Range.UtcEnd, options);
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your search filter.")

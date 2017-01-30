@@ -2,6 +2,7 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
@@ -38,9 +39,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 );
         }
 
-        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
+        protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {
             string dateFixedFieldName = Configuration.Client.Infer.PropertyName(Infer.Property<Stack>(f => f.DateFixed));
-            builder.UseQueryParser(this, c => c.AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName)));
+            config.AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName));
         }
 
         public class Alias {

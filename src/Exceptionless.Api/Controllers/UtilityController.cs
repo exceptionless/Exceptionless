@@ -3,12 +3,18 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Processors;
+using Exceptionless.Core.Queries.Validation;
 
 namespace Exceptionless.Api.Controllers {
     [ApiExplorerSettings(IgnoreApi = true)]
     [RoutePrefix(API_PREFIX)]
     public class UtilityController : ExceptionlessApiController {
+        private readonly PersistentEventQueryValidator _validator;
+
+        public UtilityController(PersistentEventQueryValidator validator) {
+            _validator = validator;
+        }
+
         /// <summary>
         /// Validate search query
         /// </summary>
@@ -19,9 +25,9 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("search/validate")]
         [Authorize(Roles = AuthorizationRoles.User)]
-        [ResponseType(typeof(QueryProcessResult))]
+        [ResponseType(typeof(QueryValidator.QueryProcessResult))]
         public async Task<IHttpActionResult> ValidateAsync(string query) {
-            return Ok(await QueryProcessor.ValidateAsync(query));
+            return Ok(await _validator.ValidateQueryAsync(query));
         }
 
         [Route("notfound")]

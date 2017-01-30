@@ -13,6 +13,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Queries.Validation;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Newtonsoft.Json.Linq;
@@ -24,7 +25,7 @@ namespace Exceptionless.App.Controllers.API {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
 
-        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, IMapper mapper, ILoggerFactory loggerFactory) : base(repository, mapper, loggerFactory) {
+        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
             _projectRepository = projectRepository;
             _billingManager = billingManager;
         }

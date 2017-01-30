@@ -31,10 +31,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
                         .Text(fu => fu.Name(i => i.EmailAddress).Analyzer(OrganizationIndex.KEYWORD_LOWERCASE_ANALYZER))))
                     .AddUsageMappings());
         }
-
-        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
-            builder.UseQueryParser(this);
-        }
     }
 
     internal static class OrganizationIndexTypeExtensions {

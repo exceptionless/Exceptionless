@@ -12,6 +12,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Queries.Validation;
 using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
@@ -22,7 +23,7 @@ namespace Exceptionless.App.Controllers.API {
     public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, Token> {
         private readonly IProjectRepository _projectRepository;
 
-        public TokenController(ITokenRepository repository, IProjectRepository projectRepository, IMapper mapper, ILoggerFactory loggerFactory) : base(repository, mapper, loggerFactory) {
+        public TokenController(ITokenRepository repository, IProjectRepository projectRepository, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
             _projectRepository = projectRepository;
         }
 

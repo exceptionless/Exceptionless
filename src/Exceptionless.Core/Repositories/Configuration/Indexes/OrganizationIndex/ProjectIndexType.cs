@@ -20,9 +20,5 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Scalar(f => f.NextSummaryEndOfDayTicks, f => f)
                 );
         }
-
-        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
-            builder.UseQueryParser(this);
-        }
     }
 }
