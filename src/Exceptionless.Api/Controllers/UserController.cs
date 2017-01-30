@@ -14,6 +14,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.DateTimeExtensions;
 using FluentValidation;
 using Foundatio.Caching;
@@ -29,7 +30,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly ICacheClient _cache;
         private readonly IMailer _mailer;
 
-        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, ILoggerFactory loggerFactory) : base(userRepository, mapper, loggerFactory) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
             _cache = new ScopedCacheClient(cacheClient, "User");
             _mailer = mailer;
@@ -141,7 +142,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!await IsEmailAddressAvailableInternalAsync(email))
                 return BadRequest("A user with this email address already exists.");
-            
+
             user.ResetPasswordResetToken();
             user.EmailAddress = email;
             user.IsEmailAddressVerified = user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.OrdinalIgnoreCase)) > 0;

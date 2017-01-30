@@ -18,6 +18,7 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
@@ -48,7 +49,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IMailer _mailer;
         private readonly IMessagePublisher _messagePublisher;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IEventRepository eventRepository, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, IMapper mapper, ILoggerFactory loggerFactory) : base(organizationRepository, mapper, loggerFactory) {
+        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IEventRepository eventRepository, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(organizationRepository, mapper, validator, loggerFactory) {
             _cacheClient = cacheClient;
             _eventRepository = eventRepository;
             _userRepository = userRepository;

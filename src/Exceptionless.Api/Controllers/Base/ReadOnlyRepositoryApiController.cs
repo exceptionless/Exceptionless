@@ -6,7 +6,7 @@ using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Processors;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Logging;
 using Foundatio.Repositories;
@@ -23,12 +23,14 @@ namespace Exceptionless.Api.Controllers {
         protected static readonly bool _supportsSoftDeletes = typeof(ISupportSoftDeletes).IsAssignableFrom(typeof(TModel));
         protected static readonly IReadOnlyCollection<TModel> EmptyModels = new List<TModel>(0).AsReadOnly();
         protected readonly IMapper _mapper;
+        protected readonly IQueryValidator _validator;
         protected readonly ILogger _logger;
 
 
-        public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper, ILoggerFactory loggerFactory) {
+        public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) {
             _repository = repository;
             _mapper = mapper;
+            _validator = validator;
             _logger = loggerFactory.CreateLogger(GetType());
         }
 
@@ -41,11 +43,11 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected virtual async Task<IHttpActionResult> GetCountAsync(IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string aggregations = null) {
-            var pr = await QueryProcessor.ProcessAsync(filter);
+            var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 
-            var far = FieldAggregationProcessor.Process(aggregations);
+            var far = await _validator.ValidateAggregationsAsync(aggregations);
             if (!far.IsValid)
                 return BadRequest(far.Message);
 
@@ -57,7 +59,7 @@ namespace Exceptionless.Api.Controllers {
 
             CountResult result;
             try {
-                result = await _repository.CountBySearchAsync(query, pr.ExpandedQuery, aggregations);
+                result = await _repository.CountBySearchAsync(query, filter, aggregations);
             } catch (Exception ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your filter or aggregations.")

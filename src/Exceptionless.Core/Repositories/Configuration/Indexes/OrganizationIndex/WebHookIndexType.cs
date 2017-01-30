@@ -20,9 +20,5 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(e => e.EventTypes))
                 );
         }
-
-        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
-            builder.UseQueryParser(this);
-        }
     }
 }

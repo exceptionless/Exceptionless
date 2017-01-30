@@ -22,9 +22,5 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(e => e.Scopes))
                     .Number(f => f.Name(e => e.Type).Type(NumberType.Byte)));
         }
-
-        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
-            builder.UseQueryParser(this);
-        }
     }
 }

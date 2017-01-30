@@ -10,7 +10,7 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Processors;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
@@ -47,7 +47,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
 
-        public StackController(IStackRepository stackRepository,  IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, ICacheClient cacheClient, BillingManager billingManager, FormattingPluginManager formattingPluginManager, IMapper mapper, ILoggerFactory loggerFactory) : base(stackRepository, mapper, loggerFactory) {
+        public StackController(IStackRepository stackRepository,  IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, ICacheClient cacheClient, BillingManager billingManager, FormattingPluginManager formattingPluginManager, IMapper mapper, StackQueryValidator validator, ILoggerFactory loggerFactory) : base(stackRepository, mapper, validator, loggerFactory) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -518,7 +518,7 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(EmptyModels);
 
-            var pr = await QueryProcessor.ProcessAsync(filter);
+            var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 
@@ -958,7 +958,7 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(EmptyModels);
 
-            var pr = await QueryProcessor.ProcessAsync(filter);
+            var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 
@@ -966,7 +966,7 @@ namespace Exceptionless.Api.Controllers {
 
             try {
                 var systemFilter = new ElasticQuery().WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
-                var stackTerms = (await _eventRepository.CountBySearchAsync(systemFilter, pr.ExpandedQuery, $"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {aggregations})")).Aggregations.Terms<string>("terms_stack_id");
+                var stackTerms = (await _eventRepository.CountBySearchAsync(systemFilter, filter, $"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {aggregations})")).Aggregations.Terms<string>("terms_stack_id");
                 if (stackTerms == null || stackTerms.Buckets.Count == 0)
                     return Ok(EmptyModels);
 

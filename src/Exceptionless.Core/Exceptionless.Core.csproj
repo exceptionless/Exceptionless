@@ -61,20 +61,20 @@
       <HintPath>..\..\packages\Foundatio.4.2.1183\lib\net46\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.241.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.241-pre\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.246.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.246-pre\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.241.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.241-pre\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.246.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.246-pre\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=5.0.408.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.5.0.408-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
+    <Reference Include="Foundatio.Repositories, Version=5.0.414.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.5.0.414-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.408.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.408-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.414.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.414-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
@@ -181,8 +181,6 @@
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\NumericExtensions.cs" />
     <Compile Include="Extensions\PersistentEventExtensions.cs" />
-    <Compile Include="Filter\FieldAggregationProcessor.cs" />
-    <Compile Include="Filter\QueryProcessorVisitor.cs" />
     <Compile Include="Geo\IGeocodeService.cs" />
     <Compile Include="Geo\NullGeocodeService.cs" />
     <Compile Include="Jobs\CloseInactiveSessionsJob.cs" />
@@ -289,12 +287,16 @@
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\WebHookIndexType.cs" />
     <Compile Include="Repositories\Configuration\Indexes\StackIndex\StackIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\StackIndex\StackIndexType.cs" />
+    <Compile Include="Repositories\Queries\EventFieldsQueryVisitor.cs" />
     <Compile Include="Repositories\Queries\ProjectIdQuery.cs" />
     <Compile Include="Repositories\Queries\ExceptionlessQuery.cs" />
     <Compile Include="Repositories\Queries\StackDateFixedQueryVisitor.cs" />
     <Compile Include="Repositories\Queries\StackIdQuery.cs" />
     <Compile Include="Repositories\Queries\OrganizationIdQuery.cs" />
     <Compile Include="Repositories\Queries\ExceptionlessSystemFilterQuery.cs" />
+    <Compile Include="Repositories\Queries\Validation\PersistentEventQueryValidator.cs" />
+    <Compile Include="Repositories\Queries\Validation\QueryValidator.cs" />
+    <Compile Include="Repositories\Queries\Validation\StackQueryValidator.cs" />
     <Compile Include="Serialization\DynamicTypeContractResolver.cs" />
     <Compile Include="Serialization\ElasticDynamicTypeContractResolver.cs" />
     <Compile Include="Serialization\ElasticLowerCaseUnderscorePropertyNamesContractResolver.cs" />

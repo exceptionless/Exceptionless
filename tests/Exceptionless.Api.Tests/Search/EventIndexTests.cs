@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using Exceptionless.Core.Processors;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
@@ -16,10 +16,12 @@ using LogLevel = Foundatio.Logging.LogLevel;
 namespace Exceptionless.Api.Tests.Repositories {
     public sealed class EventIndexTests : ElasticTestBase {
         private readonly IEventRepository _repository;
+        private readonly PersistentEventQueryValidator _validator;
 
         public EventIndexTests(ITestOutputHelper output) : base(output) {
             SystemClock.UtcNowFunc = () => new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc);
             _repository = GetService<IEventRepository>();
+            _validator = GetService<PersistentEventQueryValidator>();
             CreateEventsAsync().GetAwaiter().GetResult();
         }
 
@@ -462,10 +464,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private async Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
-            var result = await QueryProcessor.ProcessAsync(filter);
-            filter = result.ExpandedQuery;
-            _logger.Info($"Expanded Filter: {filter}");
-
+            var result = await _validator.ValidateQueryAsync(filter);
+            Assert.True(result.IsValid);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
             return await _repository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }

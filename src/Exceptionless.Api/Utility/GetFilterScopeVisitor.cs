@@ -7,7 +7,7 @@ using Foundatio.Parsers.LuceneQueries.Nodes;
 namespace Exceptionless.Api.Utility {
     public class GetFilterScopeVisitor : QueryNodeVisitorWithResultBase<FilterScope> {
         private readonly FilterScope _scope = new FilterScope();
-        private static LuceneQueryParser _parser = new LuceneQueryParser();
+        private static readonly LuceneQueryParser _parser = new LuceneQueryParser();
 
         public override void Visit(TermNode node, IQueryVisitorContext context) {
             if (String.IsNullOrEmpty(node.Field) || !_scope.IsScopable)

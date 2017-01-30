@@ -27,6 +27,8 @@ using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
+using Foundatio.Parsers.ElasticQueries;
+using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch.Jobs;
 using Foundatio.Serializer;
@@ -118,6 +120,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IGeoIpService, MaxMindGeoIpService>();
             container.RegisterSingleton<IGeocodeService, NullGeocodeService>();
 
+            container.RegisterSingleton<IQueryParser>(() => new ElasticQueryParser());
             container.Register(typeof(IValidator<>), new[] { typeof(Bootstrapper).Assembly }, Lifestyle.Singleton);
 
             container.RegisterSingleton<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
