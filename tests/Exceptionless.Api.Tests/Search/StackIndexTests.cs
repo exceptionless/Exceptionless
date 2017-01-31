@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Models;
+using Nest;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -35,7 +36,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("000000000000000000000000", 0)]
         [InlineData("1ecd0826e447ad1e78877ab2", 3)]
@@ -64,7 +65,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("\"2015-02-03T16:52:41.982Z\"", 1)]
         [InlineData("\"2015-02-11T20:54:04.3457274Z\"", 1)]
@@ -84,7 +85,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("\"GET /Print\"", 1)]
         [InlineData("title:\"GET /Print\"", 1)]
@@ -107,7 +108,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("\"2015-02-11T20:54:04.3457274Z\"", 1)]
         public async Task GetByFixedOnAsync(string fixedOn, int count) {
@@ -124,7 +125,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData(false, 2)]
         [InlineData(true, 1)]
@@ -142,7 +143,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData(false, 2)]
         [InlineData(true, 1)]
@@ -151,7 +152,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("\"http://exceptionless.io\"", 1)]
         [InlineData("links:\"http://exceptionless.io\"", 1)]
@@ -170,12 +171,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         private async Task CreateDataAsync() {
             var serializer = GetService<JsonSerializer>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "stack*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
-                    continue;    
+                    continue;
 
                 using (var stream = new FileStream(file, FileMode.Open)) {
                     using (var streamReader = new StreamReader(stream)) {
@@ -186,11 +187,11 @@ namespace Exceptionless.Api.Tests.Repositories {
                 }
             }
 
-            await _configuration.Client.RefreshAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
         }
 
         private Task<FindResults<Stack>> GetByFilterAsync(string filter) {
-            return _repository.GetByFilterAsync(null, filter, new SortingOptions(), null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            return _repository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -53,7 +54,7 @@ namespace Exceptionless.Api.Controllers {
 
             organization.BillingStatus = !String.Equals(plan.Id, BillingManager.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
             organization.RemoveSuspension();
-            BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
+            BillingManager.ApplyBillingPlan(organization, plan, CurrentUser, false);
 
             await _organizationRepository.SaveAsync(organization);
             await _messagePublisher.PublishAsync(new PlanChanged {
@@ -97,7 +98,8 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> RunJobAsync(string name) {
             switch (name.ToLowerInvariant()) {
                 case "indexes":
-                    await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);
+                    if (!Settings.Current.DisableIndexConfiguration)
+                        await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);
                     break;
                 case "update-organization-plans":
                     await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { UpgradePlans = true });

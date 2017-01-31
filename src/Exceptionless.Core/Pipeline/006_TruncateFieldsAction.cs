@@ -24,6 +24,11 @@ namespace Exceptionless.Core.Pipeline {
             else if (String.IsNullOrEmpty(ctx.Event.Source))
                 ctx.Event.Source = null;
 
+            if (!ctx.Event.HasValidReferenceId()) {
+                ctx.Event.Data["InvalidReferenceId"] = ctx.Event.ReferenceId;
+                ctx.Event.ReferenceId = "invalid-reference-id";
+            }
+
             return Task.CompletedTask;
         }
     }

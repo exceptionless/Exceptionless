@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
@@ -10,15 +13,23 @@ namespace Exceptionless.Core.Repositories.Queries {
     }
 
     public class ProjectIdQueryBuilder : IElasticQueryBuilder {
-        public void Build<T>(QueryBuilderContext<T> ctx) where T : class, new() {
+        private readonly string _projectIdFieldName;
+
+        public ProjectIdQueryBuilder() {
+            _projectIdFieldName = nameof(IOwnedByProject.ProjectId).ToLowerUnderscoredWords();
+        }
+
+        public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
             var projectIdQuery = ctx.GetSourceAs<IProjectIdQuery>();
             if (projectIdQuery?.ProjectIds == null || projectIdQuery.ProjectIds.Count <= 0)
-                return;
+                return Task.CompletedTask;
 
             if (projectIdQuery.ProjectIds.Count == 1)
-                ctx.Filter &= Filter<T>.Term("project", projectIdQuery.ProjectIds.First());
+                ctx.Query &= Query<T>.Term(_projectIdFieldName, projectIdQuery.ProjectIds.First());
             else
-                ctx.Filter &= Filter<T>.Terms("project", projectIdQuery.ProjectIds.ToArray());
+                ctx.Query &= Query<T>.Terms(t => t.Field(_projectIdFieldName).Terms(projectIdQuery.ProjectIds));
+
+            return Task.CompletedTask;
         }
     }
 

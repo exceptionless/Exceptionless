@@ -15,15 +15,18 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Serializer;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
+using Foundatio.Utility;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
@@ -58,8 +61,8 @@ namespace Exceptionless.Api {
             config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
 
             var contractResolver = container.GetInstance<IContractResolver>();
-            var exceptionlessContractResolver = contractResolver as ExceptionlessContractResolver;
-            exceptionlessContractResolver?.UseDefaultResolverFor(typeof(Connection).Assembly);
+            var dynamicTypeContractResolver = contractResolver as DynamicTypeContractResolver;
+            dynamicTypeContractResolver?.UseDefaultResolverFor(typeof(Connection).Assembly);
             config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
             config.Services.Add(typeof(IExceptionLogger), new FoundatioExceptionLogger(loggerFactory.CreateLogger<FoundatioExceptionLogger>()));
@@ -121,9 +124,10 @@ namespace Exceptionless.Api {
             new JobRunner(container.GetInstance<WebHooksJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
             new JobRunner(container.GetInstance<CloseInactiveSessionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(30), interval: TimeSpan.FromSeconds(30)).RunInBackground(token);
             new JobRunner(container.GetInstance<DailySummaryJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(1), interval: TimeSpan.FromHours(1)).RunInBackground(token);
-            new JobRunner(container.GetInstance<DownloadGeoIPDatabaseJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.FromHours(1)).RunInBackground(token);
+            new JobRunner(container.GetInstance<DownloadGeoIPDatabaseJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.FromDays(1)).RunInBackground(token);
             new JobRunner(container.GetInstance<RetentionLimitsJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromHours(1)).RunInBackground(token);
             new JobRunner(container.GetInstance<WorkItemJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2).RunInBackground(token);
+            new JobRunner(container.GetInstance<MaintainIndexesJob>(), loggerFactory, initialDelay: SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)) - SystemClock.UtcNow, interval: TimeSpan.FromHours(1)).RunInBackground(token);
 
             logger.Warn("Jobs running in process.");
         }

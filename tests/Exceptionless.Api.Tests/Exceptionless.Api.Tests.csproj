@@ -46,16 +46,16 @@
       <HintPath>..\..\packages\ApprovalUtilities.3.0.13\lib\net45\ApprovalUtilities.Net45.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Elasticsearch.Net.1.9.1\lib\net45\Elasticsearch.Net.dll</HintPath>
+    <Reference Include="Elasticsearch.Net, Version=5.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Elasticsearch.Net.5.0.1\lib\net46\Elasticsearch.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.2.55.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.2.55\lib\net45\Exceptionless.DateTimeExtensions.dll</HintPath>
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.2.65.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.2.65\lib\net45\Exceptionless.DateTimeExtensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.RandomData, Version=1.1.26.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.RandomData.1.1.26\lib\net45\Exceptionless.RandomData.dll</HintPath>
+    <Reference Include="Exceptionless.RandomData, Version=1.1.27.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.RandomData.1.1.27\lib\net45\Exceptionless.RandomData.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FluentValidation, Version=6.2.1.0, Culture=neutral, processorArchitecture=MSIL">
@@ -70,28 +70,28 @@
       <HintPath>..\..\packages\Foundatio.Logging.Xunit.4.2.1183\lib\net46\Foundatio.Logging.Xunit.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=1.0.108.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.1.0.108\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.246.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.246-pre\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=1.0.108.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.1.0.108\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.246.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.246-pre\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=2.0.282.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.2.0.282\lib\net46\Foundatio.Repositories.dll</HintPath>
+    <Reference Include="Foundatio.Repositories, Version=5.0.420.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.5.0.420-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=2.0.282.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.2.0.282\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.420.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.420-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\MaxMind.Db.2.1.2\lib\net45\MaxMind.Db.dll</HintPath>
+      <HintPath>..\..\packages\MaxMind.Db.2.1.3\lib\net45\MaxMind.Db.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.GeoIP2, Version=2.6.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\MaxMind.GeoIP2.2.7.1\lib\net45\MaxMind.GeoIP2.dll</HintPath>
+      <HintPath>..\..\packages\MaxMind.GeoIP2.2.7.2\lib\net45\MaxMind.GeoIP2.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="McSherry.SemanticVersioning, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -102,8 +102,8 @@
       <HintPath>..\..\packages\Microsoft.Owin.3.0.1\lib\net45\Microsoft.Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NEST.1.9.1\lib\net45\Nest.dll</HintPath>
+    <Reference Include="Nest, Version=5.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NEST.5.0.1\lib\net46\Nest.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -126,24 +126,24 @@
       <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Pegasus.Common, Version=3.1.2.0, Culture=neutral, PublicKeyToken=28c69b6c6d100f4a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Pegasus.3.1.2\lib\net40\Pegasus.Common.dll</HintPath>
+    <Reference Include="Pegasus.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=28c69b6c6d100f4a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Pegasus.4.0.0\lib\net40\Pegasus.Common.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="RestSharp, Version=105.2.3.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\RestSharp.105.2.3\lib\net46\RestSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SimpleInjector, Version=3.2.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.3.2.2\lib\net45\SimpleInjector.dll</HintPath>
+    <Reference Include="SimpleInjector, Version=3.3.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.3.3.2\lib\net45\SimpleInjector.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SimpleInjector.Extensions.ExecutionContextScoping, Version=3.2.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.Extensions.ExecutionContextScoping.3.2.2\lib\net45\SimpleInjector.Extensions.ExecutionContextScoping.dll</HintPath>
+    <Reference Include="SimpleInjector.Extensions.ExecutionContextScoping, Version=3.3.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.Extensions.ExecutionContextScoping.3.3.2\lib\net45\SimpleInjector.Extensions.ExecutionContextScoping.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SimpleInjector.Integration.WebApi, Version=3.2.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.Integration.WebApi.3.2.2\lib\net45\SimpleInjector.Integration.WebApi.dll</HintPath>
+    <Reference Include="SimpleInjector.Integration.WebApi, Version=3.3.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.Integration.WebApi.3.3.2\lib\net45\SimpleInjector.Integration.WebApi.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -219,19 +219,19 @@
     <Compile Include="Plugins\EventParserTests.cs" />
     <Compile Include="Plugins\SummaryDataTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repositories\IndexTests.cs" />
     <Compile Include="Repositories\ProjectRepositoryTests.cs" />
     <Compile Include="Repositories\StackRepositoryTests.cs" />
     <Compile Include="Repositories\TokenRepositoryTests.cs" />
     <Compile Include="Repositories\WebHookRepositoryTests.cs" />
     <Compile Include="Repositories\EventRepositoryTests.cs" />
     <Compile Include="Repositories\OrganizationRepositoryTests.cs" />
-    <Compile Include="Search\FieldAggregationProcessorTests.cs" />
-    <Compile Include="Search\QueryProcessorTests.cs" />
+    <Compile Include="Search\PersistentEventQueryValidatorTests.cs" />
     <Compile Include="Search\StackIndexTests.cs" />
     <Compile Include="Search\EventIndexTests.cs" />
     <Compile Include="SemanticVersionParserTests.cs" />
     <Compile Include="SerializerTests.cs" />
-    <Compile Include="Stats\StatsTests.cs" />
+    <Compile Include="Stats\AggregationTests.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="Utility\Approvals.cs" />
     <Compile Include="Utility\RandomEventGenerator.cs" />
@@ -256,7 +256,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="ErrorData\1477.expected.json" />
     <None Include="ErrorData\1477.json" />
     <None Include="ErrorData\1858.expected.json" />
@@ -324,7 +326,7 @@ exit 0</PostBuildEvent>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\..\packages\xunit.runner.visualstudio.2.1.0\build\net20\xunit.runner.visualstudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.runner.visualstudio.2.1.0\build\net20\xunit.runner.visualstudio.props'))" />
-    <Error Condition="!Exists('..\..\packages\Pegasus.3.1.2\build\Pegasus.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Pegasus.3.1.2\build\Pegasus.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Pegasus.4.0.0\build\Pegasus.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Pegasus.4.0.0\build\Pegasus.targets'))" />
   </Target>
-  <Import Project="..\..\packages\Pegasus.3.1.2\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.3.1.2\build\Pegasus.targets')" />
+  <Import Project="..\..\packages\Pegasus.4.0.0\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.4.0.0\build\Pegasus.targets')" />
 </Project>

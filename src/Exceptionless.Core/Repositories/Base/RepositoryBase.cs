@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : class, IIdentity, new() {
 
         public RepositoryBase(IIndexType<T> indexType, IValidator<T> validator) : base(indexType, validator) {}
-        
+
         protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null, TimeSpan? delay = null) {
           return PublishMessageAsync(new ExtendedEntityChanged {
                 ChangeType = changeType,

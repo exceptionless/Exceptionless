@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Pipeline {
             _metricsClient = metricsClient;
             ContinueOnError = true;
         }
-        
+
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {
                 await _metricsClient.CounterAsync(MetricNames.EventsProcessed, contexts.Count).AnyContext();

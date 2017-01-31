@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     group.ForEach(c => UpdateGeoAndlocation(c.Event, result));
                     continue;
                 }
-                
+
                 // Each event could be a different user;
                 foreach (var context in group) {
                     var ips = context.Event.GetIpAddresses().Union(new[] { context.EventPostInfo?.IpAddress });
@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
         private void UpdateGeoAndlocation(PersistentEvent ev, GeoResult result, bool isValidLocation = true) {
             ev.Geo = result?.ToString();
-            
+
             if (result != null && isValidLocation)
                 ev.SetLocation(result.ToLocation());
             else
@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     await _localCache.SetAsync<GeoResult>(ip, null).AnyContext();
                     continue;
                 }
-                
+
                 await _localCache.SetAsync(ip, result).AnyContext();
                 return result;
             }

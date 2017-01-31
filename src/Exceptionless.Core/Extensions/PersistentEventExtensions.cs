@@ -67,7 +67,7 @@ namespace Exceptionless {
         public static string GetEventReference(this PersistentEvent ev, string name) {
             if (ev == null || String.IsNullOrEmpty(name))
                 return null;
-            
+
             return ev.Data.GetString($"@ref:{name}");
         }
 
@@ -85,7 +85,7 @@ namespace Exceptionless {
 
             ev.Data[$"@ref:{name}"] = id;
         }
-        
+
         public static string GetSessionId(this PersistentEvent ev) {
             if (ev == null)
                 return null;
@@ -96,7 +96,7 @@ namespace Exceptionless {
         public static void SetSessionId(this PersistentEvent ev, string sessionId) {
             if (ev == null)
                 return;
-            
+
             if (!IsValidIdentifier(sessionId) || String.IsNullOrEmpty(sessionId))
                 throw new ArgumentException("Session Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(sessionId));
 
@@ -123,7 +123,7 @@ namespace Exceptionless {
 
             return null;
         }
-        
+
         public static bool UpdateSessionStart(this PersistentEvent ev, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false) {
             if (ev == null || !ev.IsSessionStart())
                 return false;
@@ -131,7 +131,7 @@ namespace Exceptionless {
             decimal duration = ev.Value.GetValueOrDefault();
             if (duration < 0)
                 duration = 0;
-            
+
             decimal newDuration = (decimal)(lastActivityUtc - ev.Date.UtcDateTime).TotalSeconds;
             if (duration >= newDuration)
                 lastActivityUtc = ev.Date.UtcDateTime.AddSeconds((double)duration);
@@ -159,7 +159,7 @@ namespace Exceptionless {
                 Type = Event.KnownTypes.Session,
                 Value = 0
             };
-            
+
             startEvent.SetSessionId(source.GetSessionId());
             startEvent.SetUserIdentity(source.GetUserIdentity());
             startEvent.SetLocation(source.GetLocation());
@@ -198,16 +198,16 @@ namespace Exceptionless {
                     UserAgent = ri.UserAgent
                 });
             }
-            
+
             if (lastActivityUtc.HasValue)
                 startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
 
             if (hasPremiumFeatures)
                 startEvent.CopyDataToIndex();
-            
+
             return startEvent;
         }
-       
+
         public static IEnumerable<string> GetIpAddresses(this PersistentEvent ev) {
             if (ev == null)
                 yield break;
@@ -227,7 +227,11 @@ namespace Exceptionless {
                     yield return ip.Trim();
             }
         }
-        
+
+        public static bool HasValidReferenceId(this PersistentEvent ev) {
+            return IsValidIdentifier(ev.ReferenceId);
+        }
+
         private static bool IsValidIdentifier(string value) {
             if (value == null)
                 return true;

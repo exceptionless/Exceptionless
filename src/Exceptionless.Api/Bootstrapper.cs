@@ -33,14 +33,14 @@ namespace Exceptionless.Api {
 
             container.RegisterSingleton<OverageHandler>();
             container.RegisterSingleton<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), container.GetInstance<IMetricsClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
-            
+
             container.AppendToCollection(typeof(Profile), typeof(ApiMappings));
         }
 
         public class ApiMappings : Profile {
             public ApiMappings() {
                 CreateMap<UserDescription, EventUserDescription>();
-                
+
                 CreateMap<NewOrganization, Organization>();
                 CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
                     vo.IsOverHourlyLimit = o.IsOverHourlyLimit();
@@ -54,7 +54,7 @@ namespace Exceptionless.Api {
 
                 CreateMap<NewToken, Token>().ForMember(m => m.Type, m => m.Ignore());
                 CreateMap<Token, ViewToken>();
-                
+
                 CreateMap<User, ViewUser>();
 
                 CreateMap<NewWebHook, WebHook>();

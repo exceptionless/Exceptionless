@@ -26,7 +26,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             var cacheKey = $"{nameof(StackWorkItemHandler)}:{((StackWorkItem)workItem).StackId}";
             return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
-        
+
         public override async Task HandleItemAsync(WorkItemContext context) {
             var wi = context.GetData<StackWorkItem>();
             if (wi.Delete) {

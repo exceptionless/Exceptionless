@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
@@ -12,13 +11,13 @@ using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
-using SortOrder = Foundatio.Repositories.Models.SortOrder;
+using User = Exceptionless.Core.Models.User;
 
 namespace Exceptionless.Core.Repositories {
     public class UserRepository : RepositoryBase<User>, IUserRepository {
-        public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator) 
+        public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator)
             : base(configuration.Organizations.User, validator) {
-            FieldsRequiredForRemove.AddRange(new [] { "email_address", "organization_ids" });
+            FieldsRequiredForRemove.AddRange(new [] { ElasticType.GetFieldName(u => u.EmailAddress), ElasticType.GetFieldName(u => u.OrganizationIds) });
             DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
 
@@ -28,7 +27,7 @@ namespace Exceptionless.Core.Repositories {
 
             emailAddress = emailAddress.ToLowerInvariant().Trim();
             var query = new ExceptionlessQuery()
-                .WithElasticFilter(Filter<User>.Term(u => u.EmailAddress, emailAddress))
+                .WithElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress))
                 .WithCacheKey(String.Concat("Email:", emailAddress));
 
             var hit = await FindOneAsync(query).AnyContext();
@@ -39,8 +38,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            var filter = Filter<User>.Term(u => u.PasswordResetToken, token);
-            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext();
+            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(Query<User>.Term(u => u.PasswordResetToken, token))).AnyContext();
             return hit?.Document;
         }
 
@@ -49,10 +47,8 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             provider = provider.ToLowerInvariant();
-
-            var filter = Filter<User>.Term(UserIndexType.Fields.OAuthAccountProviderUserId, new List<string>() { providerUserId });
+            var filter = Query<User>.Term(u => u.OAuthAccounts.First().ProviderUserId, providerUserId);
             var results = (await FindAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext()).Documents;
-
             return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
         }
 
@@ -60,7 +56,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            var filter = Filter<User>.Term(u => u.VerifyEmailAddressToken, token);
+            var filter = Query<User>.Term(u => u.VerifyEmailAddressToken, token);
             var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext();
             return hit?.Document;
         }
@@ -70,9 +66,9 @@ namespace Exceptionless.Core.Repositories {
                 return Task.FromResult<FindResults<User>>(new FindResults<User>());
 
             return FindAsync(new ExceptionlessQuery()
-                .WithOrganizationId(organizationId)
+                .WithElasticFilter(Query<User>.Term(u => u.OrganizationIds, organizationId))
                 .WithPaging(paging)
-                .WithSort(UserIndexType.Fields.EmailAddress, SortOrder.Ascending)
+                .WithSortAscending((User u) => u.EmailAddress.Suffix("keyword"))
                 .WithCacheKey(useCache ? String.Concat("paged:Organization:", organizationId) : null)
                 .WithExpiresIn(expiresIn));
         }

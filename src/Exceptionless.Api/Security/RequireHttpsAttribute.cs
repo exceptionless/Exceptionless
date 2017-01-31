@@ -12,7 +12,7 @@ namespace Exceptionless.Api.Security {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public class RequireHttpsAttribute : FilterAttribute, IAuthorizationFilter {
         protected virtual void HandleNonHttpsRequest(HttpActionContext context) {
-            string url = String.Concat("https://", context.Request.RequestUri.Host, context.Request.RequestUri.PathAndQuery);
+            string url = $"https://{context.Request.RequestUri.Host}{context.Request.RequestUri.PathAndQuery}";
 
             HttpResponseMessage response = context.ControllerContext.Request.CreateResponse(HttpStatusCode.Redirect);
             response.Headers.Location = new Uri(url);

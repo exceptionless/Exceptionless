@@ -6,7 +6,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories {
-    public interface IOrganizationRepository : IRepository<Organization> {
+    public interface IOrganizationRepository : ISearchableRepository<Organization> {
         Task<Organization> GetByInviteTokenAsync(string token);
         Task<Organization> GetByStripeCustomerIdAsync(string customerId);
         Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging);

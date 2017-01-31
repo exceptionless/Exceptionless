@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using FluentValidation;
 using FluentValidation.Results;
@@ -37,6 +39,10 @@ namespace Exceptionless.Core.Validation {
                 result.Errors.Add(new ValidationFailure("SignatureInfo", "Please specify a valid signature info."));
 
             return result;
+        }
+
+        public override Task<ValidationResult> ValidateAsync(ValidationContext<Stack> context, CancellationToken cancellation = new CancellationToken()) {
+            return Task.FromResult(Validate(context.InstanceToValidate));
         }
 
         private bool IsObjectId(string value) {

@@ -17,6 +17,7 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using FluentValidation;
@@ -26,6 +27,8 @@ using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
+using Foundatio.Parsers.ElasticQueries;
+using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch.Jobs;
 using Foundatio.Serializer;
@@ -34,6 +37,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
 using SimpleInjector;
+using SimpleInjector.Advanced;
 
 namespace Exceptionless.Core {
     public class Bootstrapper {
@@ -45,18 +49,18 @@ namespace Exceptionless.Core {
                 DateParseHandling = DateParseHandling.DateTimeOffset
             };
 
-            var contractResolver = new ExceptionlessContractResolver();
-            contractResolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOne.VersionOneWebHookStack), typeof(VersionOne.VersionOneWebHookEvent));
+            var resolver = new DynamicTypeContractResolver(new LowerCaseUnderscorePropertyNamesContractResolver());
+            resolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOne.VersionOneWebHookStack), typeof(VersionOne.VersionOneWebHookEvent));
 
             var settings = new JsonSerializerSettings {
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 DateParseHandling = DateParseHandling.DateTimeOffset,
-                ContractResolver = contractResolver
+                ContractResolver = resolver
             };
 
             settings.AddModelConverters(loggerFactory.CreateLogger(nameof(Bootstrapper)));
 
-            container.RegisterSingleton<IContractResolver>(() => contractResolver);
+            container.RegisterSingleton<IContractResolver>(() => resolver);
             container.RegisterSingleton<JsonSerializerSettings>(settings);
             container.RegisterSingleton<JsonSerializer>(JsonSerializer.Create(settings));
             container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
@@ -64,7 +68,8 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IMetricsClient>(() => new InMemoryMetricsClient(loggerFactory: loggerFactory));
 
             container.RegisterSingleton<ExceptionlessElasticConfiguration>();
-            container.AddStartupAction(() => container.GetInstance<ExceptionlessElasticConfiguration>().ConfigureIndexesAsync(beginReindexingOutdated: false));
+            if (!Settings.Current.DisableIndexConfiguration)
+                container.AddStartupAction(() => container.GetInstance<ExceptionlessElasticConfiguration>().ConfigureIndexesAsync(beginReindexingOutdated: false));
 
             container.RegisterSingleton<ICacheClient, InMemoryCacheClient>();
 
@@ -80,7 +85,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new InMemoryQueue<EventNotificationWorkItem>(behaviors: container.GetAllInstances<IQueueBehavior<EventNotificationWorkItem>>()));
             container.RegisterSingleton<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(behaviors: container.GetAllInstances<IQueueBehavior<WebHookNotification>>()));
             container.RegisterSingleton<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(behaviors: container.GetAllInstances<IQueueBehavior<MailMessage>>()));
-            
+
             var workItemHandlers = new WorkItemHandlers();
             workItemHandlers.Register<ReindexWorkItem>(container.GetInstance<ReindexWorkItemHandler>);
             workItemHandlers.Register<RemoveOrganizationWorkItem>(container.GetInstance<RemoveOrganizationWorkItemHandler>);
@@ -111,11 +116,11 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IUserRepository, UserRepository>();
             container.RegisterSingleton<IWebHookRepository, WebHookRepository>();
             container.RegisterSingleton<ITokenRepository, TokenRepository>();
-            container.RegisterSingleton<IApplicationRepository, ApplicationRepository>();
 
             container.RegisterSingleton<IGeoIpService, MaxMindGeoIpService>();
             container.RegisterSingleton<IGeocodeService, NullGeocodeService>();
 
+            container.RegisterSingleton<IQueryParser>(() => new ElasticQueryParser());
             container.Register(typeof(IValidator<>), new[] { typeof(Bootstrapper).Assembly }, Lifestyle.Singleton);
 
             container.RegisterSingleton<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
@@ -129,7 +134,6 @@ namespace Exceptionless.Core {
             container.Register<StripeEventHandler>();
             container.RegisterSingleton<BillingManager>();
             container.RegisterSingleton<SampleDataService>();
-            container.RegisterSingleton<EventStats>();
             container.RegisterSingleton<EventPipeline>();
             container.RegisterSingleton<EventPluginManager>();
             container.RegisterSingleton<FormattingPluginManager>();
@@ -140,7 +144,8 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
             container.Register<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
-            
+
+            container.AppendToCollection(typeof(Profile), typeof(CoreMappings));
             container.RegisterSingleton<IMapper>(() => {
                 var profiles = container.GetAllInstances<Profile>();
                 var config = new MapperConfiguration(cfg => {

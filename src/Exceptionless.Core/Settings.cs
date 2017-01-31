@@ -55,6 +55,10 @@ namespace Exceptionless.Core {
 
         public bool EnableRedis { get; private set; }
 
+        public bool DisableSnapshotJobs { get; set; }
+
+        public bool DisableIndexConfiguration { get; set; }
+
         public string ElasticSearchConnectionString { get; private set; }
 
         public int ElasticSearchNumberOfShards { get; private set; }
@@ -147,7 +151,7 @@ namespace Exceptionless.Core {
             ApiThrottleLimit = GetInt(nameof(ApiThrottleLimit), Int32.MaxValue);
             EventSubmissionDisabled = GetBool(nameof(EventSubmissionDisabled));
             MaximumEventPostSize = GetInt64(nameof(MaximumEventPostSize), Int64.MaxValue);
-            MaximumRetentionDays = GetInt(nameof(MaximumRetentionDays), -1);
+            MaximumRetentionDays = GetInt(nameof(MaximumRetentionDays), 180);
             EnableDailySummary = GetBool(nameof(EnableDailySummary));
             MetricsServerName = GetString(nameof(MetricsServerName)) ?? "127.0.0.1";
             MetricsServerPort = GetInt(nameof(MetricsServerPort), 8125);
@@ -176,6 +180,8 @@ namespace Exceptionless.Core {
             AzureStorageConnectionString = GetConnectionString(nameof(AzureStorageConnectionString));
             EnableAzureStorage = GetBool(nameof(EnableAzureStorage), !String.IsNullOrEmpty(AzureStorageConnectionString));
 
+            DisableIndexConfiguration = GetBool(nameof(DisableIndexConfiguration));
+            DisableSnapshotJobs = GetBool(nameof(DisableSnapshotJobs), !String.IsNullOrEmpty(AppScopePrefix));
             ElasticSearchConnectionString = GetConnectionString(nameof(ElasticSearchConnectionString));
             ElasticSearchNumberOfShards = GetInt(nameof(ElasticSearchNumberOfShards), 1);
             ElasticSearchNumberOfReplicas = GetInt(nameof(ElasticSearchNumberOfReplicas), 0);
