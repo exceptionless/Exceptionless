@@ -2,16 +2,16 @@
     if (!(Test-Path -Path $directory)) {
         Write-Host "Cloning repository..."
         git clone $repoUrl $directory 2>&1 | %{ "$_" }
-        
+
         If ($LastExitCode -ne 0) {
             Write-Error "An error occurred while cloning the repository."
             Return $LastExitCode
         }
-    } else { 
+    } else {
         Write-Host "Pulling latest changes..."
         Push-Location $directory
-        
-        git pull 2>&1 | %{ "$_" }    
+
+        git pull 2>&1 | %{ "$_" }
         If ($LastExitCode -ne 0) {
             Write-Error "An error occurred while pulling the latest changes."
             Return $LastExitCode
@@ -30,15 +30,15 @@ $base_dir = Resolve-Path ".\"
 $releaseDir = "$base_dir\release"
 $releaseArtifactsDir = "$releaseDir\artifacts"
 $releaseTempDir = "$releaseDir\temp"
-    
+
 Clone-Repository $env:BUILD_APP_REPO_URL "$releaseArtifactsDir\app"
 Clone-Repository $env:BUILD_REPO_URL "$releaseArtifactsDir\api"
-    
+
 Write-Host "Copying release artifacts"
 If (Test-Path -Path $releaseTempDir) {
     Remove-Item -Recurse -Force $releaseTempDir | Out-Null
 }
-    
+
 ROBOCOPY "$releaseArtifactsDir\api" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\api\.git" /XF "exceptionless.png" "favicon.ico" /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$releaseArtifactsDir\app" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\app\.git" /S /XF "web.config" /NFL /NDL /NJH /NJS /nc /ns /np
 Copy-Item -Path "$base_dir\build\Start-ElasticSearch.ps1" -Destination $releaseTempDir
