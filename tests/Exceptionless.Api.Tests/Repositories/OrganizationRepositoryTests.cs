@@ -30,7 +30,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Log.SetLogLevel<OrganizationRepository>(LogLevel.Trace);
         }
-        
+
         [Fact]
         public async Task CanCreateUpdateRemoveAsync() {
             Assert.Equal(0, await _repository.CountAsync());
@@ -137,7 +137,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 2));
             await _configuration.Client.RefreshAsync(Indices.All);
             o = await _repository.GetByIdAsync(o.Id);
-            
+
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
             Assert.Equal(1, countdown.CurrentCount);
             Assert.Equal(totalToIncrement + 2, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
@@ -184,7 +184,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             o.SuspensionDate = SystemClock.UtcNow;
             o.SuspensionCode = SuspensionCode.Billing;
             o = await _repository.SaveAsync(o, true);
-            
+
             Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 4995));
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
