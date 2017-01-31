@@ -30,16 +30,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Exceptionless, Version=4.0.1906.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.4.0.1906\lib\net45\Exceptionless.dll</HintPath>
+    <Reference Include="Exceptionless, Version=4.0.1929.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.4.0.1929\lib\net45\Exceptionless.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.NLog, Version=4.0.1906.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.NLog.4.0.1906\lib\net45\Exceptionless.NLog.dll</HintPath>
+    <Reference Include="Exceptionless.NLog, Version=4.0.1929.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.NLog.4.0.1929\lib\net45\Exceptionless.NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.WebApi, Version=4.0.1906.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.4.0.1906\lib\net45\Exceptionless.WebApi.dll</HintPath>
+    <Reference Include="Exceptionless.WebApi, Version=4.0.1929.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.4.0.1929\lib\net45\Exceptionless.WebApi.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=4.2.1183.0, Culture=neutral, processorArchitecture=MSIL">
@@ -58,8 +58,8 @@
       <HintPath>..\..\packages\Foundatio.Redis.4.2.1183\lib\net46\Foundatio.Redis.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Geocoding, Version=3.5.0.0, Culture=neutral, PublicKeyToken=7c714700b88674c7, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Geocoding.net.3.5.0\lib\net40\Geocoding.dll</HintPath>
+    <Reference Include="Geocoding, Version=3.6.0.0, Culture=neutral, PublicKeyToken=7c714700b88674c7, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Geocoding.net.3.6.0\lib\net40\Geocoding.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.KeyVault.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -103,23 +103,23 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NLog.4.3.9\lib\net45\NLog.dll</HintPath>
+      <HintPath>..\..\packages\NLog.4.4.1\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleInjector, Version=3.2.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.3.2.2\lib\net45\SimpleInjector.dll</HintPath>
+    <Reference Include="SimpleInjector, Version=3.3.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.3.3.2\lib\net45\SimpleInjector.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SimpleInjector.Extensions.ExecutionContextScoping, Version=3.2.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.Extensions.ExecutionContextScoping.3.2.2\lib\net45\SimpleInjector.Extensions.ExecutionContextScoping.dll</HintPath>
+    <Reference Include="SimpleInjector.Extensions.ExecutionContextScoping, Version=3.3.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.Extensions.ExecutionContextScoping.3.3.2\lib\net45\SimpleInjector.Extensions.ExecutionContextScoping.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="StackExchange.Redis, Version=1.1.608.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\StackExchange.Redis.1.1.608\lib\net46\StackExchange.Redis.dll</HintPath>
+    <Reference Include="StackExchange.Redis, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\StackExchange.Redis.1.2.0\lib\net46\StackExchange.Redis.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />

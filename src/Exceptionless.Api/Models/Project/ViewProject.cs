@@ -4,8 +4,9 @@ using Exceptionless.Core.Models;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Models {
-    public class ViewProject : IIdentity {
+    public class ViewProject : IIdentity, IHaveCreatedDate {
         public string Id { get; set; }
+        public DateTime CreatedUtc { get; set; }
         public string OrganizationId { get; set; }
         public string OrganizationName { get; set; }
         public string Name { get; set; }

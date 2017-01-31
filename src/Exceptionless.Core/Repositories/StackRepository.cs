@@ -10,23 +10,21 @@ using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
-using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Nest;
-using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
         private const string STACKING_VERSION = "v2";
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, IValidator<Stack> validator) 
+        public StackRepository(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, IValidator<Stack> validator)
             : base(configuration.Stacks.Stack, validator) {
             _eventRepository = eventRepository;
             DocumentsChanging.AddHandler(OnDocumentChangingAsync);
-            FieldsRequiredForRemove.Add("signature_hash");
+            FieldsRequiredForRemove.Add(ElasticType.GetFieldName(s => s.SignatureHash));
         }
 
         private async Task OnDocumentChangingAsync(object sender, DocumentsChangeEventArgs<Stack> args) {
@@ -59,25 +57,38 @@ namespace Exceptionless.Core.Repositories {
         public async Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
-            var result = await _client.UpdateAsync<Stack>(s => s
-                .Id(stackId)
-                .Index(GetIndexById(stackId))
-                .RetryOnConflict(3)
-                .Lang("groovy")
-                .Script(@"if (ctx._source.total_occurrences == 0 || ctx._source.first_occurrence > minOccurrenceDateUtc) {
-                            ctx._source.first_occurrence = minOccurrenceDateUtc;
-                          }
-                          if (ctx._source.last_occurrence < maxOccurrenceDateUtc) {
-                            ctx._source.last_occurrence = maxOccurrenceDateUtc;
-                          }
-                          ctx._source.total_occurrences += count;")
-                .Params(p => p
-                    .Add("minOccurrenceDateUtc", minOccurrenceDateUtc)
-                    .Add("maxOccurrenceDateUtc", maxOccurrenceDateUtc)
-                    .Add("count", count))).AnyContext();
+            const string script = @"
+Instant parseDate(def dt) {
+  if (dt != null) {
+    try {
+      return Instant.parse(dt);
+    } catch(DateTimeParseException e) {}
+  }
+  return Instant.MIN;
+}
 
+if (ctx._source.total_occurrences == 0 || parseDate(ctx._source.first_occurrence).isAfter(parseDate(params.minOccurrenceDateUtc))) {
+  ctx._source.first_occurrence = params.minOccurrenceDateUtc;
+}
+if (parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.maxOccurrenceDateUtc))) {
+  ctx._source.last_occurrence = params.maxOccurrenceDateUtc;
+}
+ctx._source.total_occurrences += params.count;";
+
+            var request = new UpdateRequest<Stack, Stack>(GetIndexById(stackId), ElasticType.Type, stackId) {
+                RetryOnConflict = 3,
+                Script = new InlineScript(script.Replace("\r\n", String.Empty).Replace("    ", " ")) {
+                    Params = new Dictionary<string, object>(3) {
+                        { "minOccurrenceDateUtc", minOccurrenceDateUtc },
+                        { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },
+                        { "count", count }
+                    }
+                }
+            };
+
+            var result = await _client.UpdateAsync<Stack>(request).AnyContext();
             if (!result.IsValid) {
-                _logger.Error("Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError.Error);
+                _logger.Error(result.OriginalException, "Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError?.Error);
                 return;
             }
 
@@ -103,7 +114,7 @@ namespace Exceptionless.Core.Repositories {
 
             var hit = await FindOneAsync(new ExceptionlessQuery()
                 .WithProjectId(projectId)
-                .WithElasticFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
+                .WithElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
 
             if (IsCacheEnabled && hit != null)
                 await Cache.SetAsync(key, hit.Document, TimeSpan.FromSeconds(ElasticType.DefaultCacheExpirationSeconds)).AnyContext();
@@ -111,17 +122,15 @@ namespace Exceptionless.Core.Repositories {
             return hit?.Document;
         }
 
-        public Task<FindResults<Stack>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, SortingOptions sorting, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
-            if (sorting.Fields.Count == 0)
-                sorting.Fields.Add(new FieldSort { Field = StackIndexType.Fields.LastOccurrence, Order = SortOrder.Descending });
-
+        public Task<FindResults<Stack>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             var search = new ExceptionlessQuery()
-                .WithDateRange(utcStart, utcEnd, field ?? StackIndexType.Fields.LastOccurrence)
+                .WithDateRange(utcStart, utcEnd, field ?? ElasticType.GetFieldName(s => s.LastOccurrence))
                 .WithSystemFilter(systemFilter)
                 .WithFilter(userFilter)
                 .WithPaging(paging)
-                .WithSort(sorting);
+                .WithSort(sort);
 
+            search = !String.IsNullOrEmpty(sort) ? search.WithSort(sort) : search.WithSortDescending((Stack s) => s.LastOccurrence);
             return FindAsync(search);
         }
 

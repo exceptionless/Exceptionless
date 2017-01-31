@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Filter;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
@@ -13,12 +12,15 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
-using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
@@ -27,16 +29,14 @@ namespace Exceptionless.Core.Jobs {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
-        private readonly EventStats _stats;
         private readonly IMailer _mailer;
         private readonly ILockProvider _lockProvider;
 
-        public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IEventRepository eventRepository, EventStats stats, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _eventRepository = eventRepository;
-            _stats = stats;
             _mailer = mailer;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
         }
@@ -119,13 +119,9 @@ namespace Exceptionless.Core.Jobs {
             }
 
             _logger.Info("Sending daily summary: users={0} project={1}", users.Count, project.Id);
-            var fields = new List<FieldAggregation> {
-                new FieldAggregation { Type = FieldAggregationType.Distinct, Field = "stack_id" },
-                new TermFieldAggregation { Field = "is_first_occurrence", ExcludePattern = "F" }
-            };
-
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            var result = await _stats.GetNumbersStatsAsync(fields, data.UtcStartTime, data.UtcEndTime, sf, $"{EventIndexType.Fields.Type}:{Event.KnownTypes.Error}").AnyContext();
+            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).WithIndexes(data.UtcStartTime, data.UtcEndTime);
+            var result = await _eventRepository.CountBySearchAsync(systemFilter, $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error}", "terms:(is_first_occurrence @include:true) cardinality:stack_id").AnyContext();
             bool hasSubmittedEvents = result.Total > 0;
             if (!hasSubmittedEvents)
                 hasSubmittedEvents = await _eventRepository.GetCountByProjectIdAsync(project.Id, true).AnyContext() > 0;
@@ -137,8 +133,8 @@ namespace Exceptionless.Core.Jobs {
                 EndDate = data.UtcEndTime,
                 Total = result.Total,
                 PerHourAverage = result.Total / data.UtcEndTime.Subtract(data.UtcStartTime).TotalHours,
-                NewTotal = result.Numbers[1],
-                UniqueTotal = result.Numbers[0],
+                NewTotal = result.Aggregations.Terms<double>("terms_is_first_occurrence")?.Buckets.FirstOrDefault()?.Total ?? 0,
+                UniqueTotal = result.Aggregations.Cardinality("cardinality_stack_id")?.Value ?? 0,
                 HasSubmittedEvents = hasSubmittedEvents,
                 IsFreePlan = organization.PlanId == BillingManager.FreePlan.Id
             };

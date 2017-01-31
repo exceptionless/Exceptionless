@@ -13,7 +13,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
@@ -25,65 +24,38 @@ namespace Exceptionless.Api.Controllers {
         protected const int MAXIMUM_SKIP = 1000;
 
         public ExceptionlessApiController() {
-            AllowedFields = new List<string>();
+            AllowedDateFields = new List<string>();
         }
 
         protected TimeSpan GetOffset(string offset) {
-            double offsetInMinutes;
-            if (!String.IsNullOrEmpty(offset) && Double.TryParse(offset, out offsetInMinutes))
-                return TimeSpan.FromMinutes(offsetInMinutes);
+            TimeSpan? value;
+            if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out value) && value.HasValue)
+                return value.Value;
 
             return TimeSpan.Zero;
         }
 
-        protected ICollection<string> AllowedFields { get; private set; }
+        protected ICollection<string> AllowedDateFields { get; private set; }
+        protected string DefaultDateField { get; set; } = "created_utc";
 
         protected virtual TimeInfo GetTimeInfo(string time, string offset, DateTime? minimumUtcStartDate = null) {
-            string field = null;
+            string field = DefaultDateField;
             if (!String.IsNullOrEmpty(time) && time.Contains("|")) {
                 var parts = time.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-                field = parts.Length > 0 && AllowedFields.Contains(parts[0]) ? parts[0] : null;
+                field = parts.Length > 0 && AllowedDateFields.Contains(parts[0]) ? parts[0] : DefaultDateField;
                 time = parts.Length > 1 ? parts[1] : null;
             }
 
             var utcOffset = GetOffset(offset);
 
             // range parsing needs to be based on the user's local time.
-            var localRange = DateTimeRange.Parse(time, SystemClock.UtcNow.Add(utcOffset));
-            var utcRange = localRange != DateTimeRange.Empty ? localRange.Subtract(utcOffset) : localRange;
-            
-            if (utcRange.UtcStart < minimumUtcStartDate.GetValueOrDefault())
-                utcRange = new DateTimeRange(minimumUtcStartDate.GetValueOrDefault(), utcRange.End);
-
-            var timeInfo = new TimeInfo { Field = field, Offset = utcOffset,  UtcRange = utcRange };
+            var range = DateTimeRange.Parse(time, SystemClock.OffsetUtcNow.ToOffset(utcOffset));
+            var timeInfo = new TimeInfo { Field = field, Offset = utcOffset, Range = range };
             if (minimumUtcStartDate.HasValue)
                 timeInfo.ApplyMinimumUtcStartDate(minimumUtcStartDate.Value);
 
+            timeInfo.AdjustEndTimeIfMaxValue();
             return timeInfo;
-        }
-        
-        protected virtual SortingOptions GetSort(string sort) {
-            var sortingOptions = new SortingOptions();
-
-            if (!String.IsNullOrEmpty(sort)) {
-                var fields = sort.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var field in fields) {
-                    string name = field.Trim();
-                    if (String.IsNullOrEmpty(name))
-                        continue;
-
-                    var order = SortOrder.Ascending;
-                    if (!String.IsNullOrEmpty(sort) && sort.StartsWith("-")) {
-                        name = name.Substring(1);
-                        order = SortOrder.Descending;
-                    }
-
-                    if (AllowedFields.Contains(name))
-                        sortingOptions.Fields.Add(new FieldSort { Field = name, Order = order });
-                }
-            }
-
-            return sortingOptions;
         }
 
         protected int GetLimit(int limit) {
@@ -113,8 +85,8 @@ namespace Exceptionless.Api.Controllers {
             return skip;
         }
 
-        public User ExceptionlessUser => Request.GetUser();
-        
+        protected User CurrentUser => Request.GetUser();
+
         public bool CanAccessOrganization(string organizationId) {
             return Request.CanAccessOrganization(organizationId);
         }
@@ -131,16 +103,38 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private static readonly IReadOnlyCollection<Organization> EmptyOrganizations = new List<Organization>(0).AsReadOnly();
-        public async Task<IReadOnlyCollection<Organization>> GetAssociatedActiveOrganizationsAsync(IOrganizationRepository repository) {
-            if (repository == null)
-                throw new ArgumentNullException(nameof(repository));
-
-            var ids = GetAssociatedOrganizationIds();
-            if (ids.Count == 0)
+        public async Task<IReadOnlyCollection<Organization>> GetSelectedOrganizationsAsync(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, string filter = null) {
+            var associatedOrganizationIds = GetAssociatedOrganizationIds();
+            if (associatedOrganizationIds.Count == 0)
                 return EmptyOrganizations;
 
-            var organizations = await repository.GetByIdsAsync(ids, true);
-            return organizations.Where(o => !o.IsSuspended).ToList().AsReadOnly();
+            if (!String.IsNullOrEmpty(filter)) {
+                var scope = GetFilterScopeVisitor.Run(filter);
+                if (scope.IsScopable) {
+                    Organization organization = null;
+                    if (scope.OrganizationId != null) {
+                        organization = await organizationRepository.GetByIdAsync(scope.OrganizationId, true);
+                    } else if (scope.ProjectId != null) {
+                        var project = await projectRepository.GetByIdAsync(scope.ProjectId, true);
+                        if (project != null)
+                            organization = await organizationRepository.GetByIdAsync(project.OrganizationId, true);
+                    } else if (scope.StackId != null) {
+                        var stack = await stackRepository.GetByIdAsync(scope.StackId, true);
+                        if (stack != null)
+                            organization = await organizationRepository.GetByIdAsync(stack.OrganizationId, true);
+                    }
+
+                    if (organization != null) {
+                        if (associatedOrganizationIds.Contains(organization.Id) || Request.IsGlobalAdmin())
+                            return new[] { organization }.ToList().AsReadOnly();
+
+                        return EmptyOrganizations;
+                    }
+                }
+            }
+
+            var organizations = await organizationRepository.GetByIdsAsync(associatedOrganizationIds, true);
+            return organizations.ToList().AsReadOnly();
         }
 
         protected bool ShouldApplySystemFilter(IExceptionlessSystemFilterQuery sf, string filter) {
@@ -222,13 +216,6 @@ namespace Exceptionless.Api.Controllers {
 
         protected bool NextPageExceedsSkipLimit(int page, int limit) {
             return (page + 1) * limit >= MAXIMUM_SKIP;
-        }
-
-        public string GetSystemFilter(bool filterUsesPremiumFeatures, bool hasOrganizationFilter) {
-            if (hasOrganizationFilter && Request.IsGlobalAdmin())
-                return null;
-
-            return null;
         }
     }
 }

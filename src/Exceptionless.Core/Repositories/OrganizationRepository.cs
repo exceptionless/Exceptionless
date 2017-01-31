@@ -19,18 +19,18 @@ using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
 using Nest;
-using SortOrder = Foundatio.Repositories.Models.SortOrder;
 
 namespace Exceptionless.Core.Repositories {
     public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository {
-        public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator) 
+        public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator)
             : base(configuration.Organizations.Organization, validator) {}
 
         public async Task<Organization> GetByInviteTokenAsync(string token) {
             if (String.IsNullOrEmpty(token))
                 throw new ArgumentNullException(nameof(token));
 
-            var hit = await FindOneAsync(new ExceptionlessQuery().WithFieldEquals(OrganizationIndexType.Fields.InviteToken, token)).AnyContext();
+            var filter = Query<Organization>.Term(f => f.Field(o => o.Invites.First().Token).Value(token));
+            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext();
             return hit?.Document;
         }
 
@@ -38,59 +38,58 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(customerId))
                 throw new ArgumentNullException(nameof(customerId));
 
-            var filter = Filter<Organization>.Term(o => o.StripeCustomerId, customerId);
+            var filter = Query<Organization>.Term(f => f.Field(o => o.StripeCustomerId).Value(customerId));
             var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext();
             return hit?.Document;
         }
 
         public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
-            var filter = Filter<Organization>.Range(r => r.OnField(o => o.RetentionDays).Greater(0));
+            var filter = Query<Organization>.Range(f => f.Field(o => o.RetentionDays).GreaterThan(0));
             return FindAsync(new ExceptionlessQuery()
                 .WithElasticFilter(filter)
-                .WithSelectedFields("id", "name", "retention_days")
+                .IncludeFields((Organization o) => o.Id, o => o.Name, o => o.RetentionDays)
                 .WithPaging(paging));
         }
 
         public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
-            var filter = Filter<Organization>.MatchAll();
+            var filter = Query<Organization>.MatchAll();
             if (!String.IsNullOrWhiteSpace(criteria))
-                filter &= Filter<Organization>.Term(o => o.Name, criteria);
+                filter &= Query<Organization>.Term(o => o.Name, criteria);
 
             if (paid.HasValue) {
                 if (paid.Value)
-                    filter &= !Filter<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
+                    filter &= !Query<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
                 else
-                    filter &= Filter<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
+                    filter &= Query<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
             }
 
             if (suspended.HasValue) {
                 if (suspended.Value)
-                    filter &= Filter<Organization>.And(and => ((
-                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
-                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
-                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
-                        ) || Filter<Organization>.Term(o => o.IsSuspended, true)));
+                    filter &= (!Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
+                            !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
+                            !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
+                        ) || Query<Organization>.Term(o => o.IsSuspended, true);
                 else
-                    filter &= Filter<Organization>.And(and => ((
-                            Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
-                            Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
-                            Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
-                        ) || Filter<Organization>.Term(o => o.IsSuspended, false)));
+                    filter &= (
+                            Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
+                            Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
+                            Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
+                        ) || Query<Organization>.Term(o => o.IsSuspended, false);
             }
 
             var query = new ExceptionlessQuery().WithPaging(paging).WithElasticFilter(filter);
             switch (sortBy) {
                 case OrganizationSortBy.Newest:
-                    query.WithSort(OrganizationIndexType.Fields.Id, SortOrder.Descending);
+                    query.WithSortDescending((Organization o) => o.Id);
                     break;
                 case OrganizationSortBy.Subscribed:
-                    query.WithSort(OrganizationIndexType.Fields.SubscribeDate, SortOrder.Descending);
+                    query.WithSortDescending((Organization o) => o.SubscribeDate);
                     break;
                 // case OrganizationSortBy.MostActive:
-                //    query.WithSort(OrganizationIndexType.Fields.TotalEventCount, SortOrder.Descending);
+                //    query.WithSortDescending((Organization o) => o.TotalEventCount);
                 //    break;
                 default:
-                    query.WithSort(OrganizationIndexType.Fields.Name, SortOrder.Ascending);
+                    query.WithSortAscending((Organization o) => o.Name.Suffix("keyword"));
                     break;
             }
 
@@ -99,11 +98,10 @@ namespace Exceptionless.Core.Repositories {
 
         public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
             var query = new ExceptionlessQuery()
-                .WithSelectedFields("plan_id", "is_suspended", "billing_price", "billing_status")
-                .WithSort(OrganizationIndexType.Fields.PlanId, SortOrder.Descending);
+                .IncludeFields((Organization o) => o.PlanId, o => o.IsSuspended, o => o.BillingPrice, o => o.BillingStatus)
+                .WithSortDescending((Organization o) => o.PlanId);
 
             var results = (await FindAsync(query).AnyContext()).Documents;
-
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> mediumOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> largeOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargePlan.Id) && o.BillingPrice > 0).ToList();
@@ -186,10 +184,10 @@ namespace Exceptionless.Core.Repositories {
 
             double hourlyTooBig = await Cache.IncrementIfAsync(GetHourlyTooBigCacheKey(organizationId), count, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig()).AnyContext();
             double monthlyTooBig = await Cache.IncrementIfAsync(GetMonthlyTooBigCacheKey(organizationId), count, TimeSpan.FromDays(32), tooBig, (uint)org.GetCurrentMonthlyTooBig()).AnyContext();
-            
+
             bool justWentOverHourly = hourlyTotal > org.GetHourlyEventLimit() && hourlyTotal <= org.GetHourlyEventLimit() + count;
             bool justWentOverMonthly = monthlyTotal > org.GetMaxEventsPerMonthWithBonus() && monthlyTotal <= org.GetMaxEventsPerMonthWithBonus() + count;
-            
+
             bool shouldSaveUsage = false;
             var lastCounterSavedDate = await Cache.GetAsync<DateTime>(GetUsageSavedCacheKey(organizationId)).AnyContext();
 
@@ -237,7 +235,7 @@ namespace Exceptionless.Core.Repositories {
             int hourlyEventLimit = organization.GetHourlyEventLimit();
             int monthlyEventLimit = organization.GetMaxEventsPerMonthWithBonus();
             double originalAllowedMonthlyEventTotal = monthlyTotal - monthlyBlocked - count;
-            
+
             // If the original count is less than the max events per month and original count + hourly limit is greater than the max events per month then use the monthly limit.
             if (originalAllowedMonthlyEventTotal < monthlyEventLimit && (originalAllowedMonthlyEventTotal + hourlyEventLimit) >= monthlyEventLimit)
                 return originalAllowedMonthlyEventTotal < monthlyEventLimit ? monthlyTotal - monthlyBlocked - monthlyEventLimit : count;
@@ -248,7 +246,7 @@ namespace Exceptionless.Core.Repositories {
 
             if ((monthlyTotal - monthlyBlocked) > monthlyEventLimit)
                 return originalAllowedMonthlyEventTotal < monthlyEventLimit ? monthlyTotal - monthlyBlocked - monthlyEventLimit : count;
-            
+
             return 0;
         }
 

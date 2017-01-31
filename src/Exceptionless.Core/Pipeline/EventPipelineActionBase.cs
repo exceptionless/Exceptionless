@@ -11,8 +11,8 @@ namespace Exceptionless.Core.Pipeline {
         protected virtual string ErrorMessage => null;
 
         public override bool HandleError(Exception ex, EventContext ctx) {
-            string message = ErrorMessage ?? $"Error processing action: {GetType().Name}";
-            _logger.Error().Project(ctx.Event.ProjectId).Message(message).Exception(ex).Property("data", ctx.Event).Tag(ErrorTags).Critical(IsCritical).Write();
+            string message = ErrorMessage ?? $"Error processing action: {GetType().Name} Message: {ex.Message}";
+            _logger.Error().Project(ctx.Event.ProjectId).Message(message).Exception(ex).Property("Event", ctx.Event).Tag(ErrorTags).Critical(IsCritical).Write();
 
             return ContinueOnError;
         }

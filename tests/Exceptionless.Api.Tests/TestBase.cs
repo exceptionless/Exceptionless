@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Tests {
             RegisterServices(container);
             return container;
         }
-        
+
         public virtual void Dispose() {
             _container?.Dispose();
         }

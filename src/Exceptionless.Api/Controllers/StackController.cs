@@ -10,22 +10,24 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Filter;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Utility;
-using Exceptionless.Core.Models.Stats;
 using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
+using Foundatio.Repositories.Elasticsearch.Queries;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Queries;
 using McSherry.SemanticVersioning;
 using Newtonsoft.Json.Linq;
 
@@ -36,31 +38,30 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
+        private readonly IEventRepository _eventRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
         private readonly ICacheClient _cache;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
-        private readonly EventStats _eventStats;
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
-        private readonly List<FieldAggregation> _distinctUsersFields = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct } };
-        private readonly List<FieldAggregation> _distinctUsersFieldsWithSort = new List<FieldAggregation> { new FieldAggregation { Field = "user.raw", Type = FieldAggregationType.Distinct, SortOrder = SortOrder.Descending } };
 
-        public StackController(IStackRepository stackRepository,  IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, ICacheClient cacheClient, EventStats eventStats, BillingManager billingManager, FormattingPluginManager formattingPluginManager, ILoggerFactory loggerFactory, IMapper mapper) : base(stackRepository, loggerFactory, mapper) {
+        public StackController(IStackRepository stackRepository,  IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IQueue<WorkItemData> workItemQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, ICacheClient cacheClient, BillingManager billingManager, FormattingPluginManager formattingPluginManager, IMapper mapper, StackQueryValidator validator, ILoggerFactory loggerFactory) : base(stackRepository, mapper, validator, loggerFactory) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
+            _eventRepository = eventRepository;
             _workItemQueue = workItemQueue;
             _webHookRepository = webHookRepository;
             _webHookDataPluginManager = webHookDataPluginManager;
             _webHookNotificationQueue = webHookNotificationQueue;
             _cache = cacheClient;
-            _eventStats = eventStats;
             _billingManager = billingManager;
             _formattingPluginManager = formattingPluginManager;
 
-            AllowedFields.AddRange(new[] { "first", "last" });
+            AllowedDateFields.AddRange(new[] { StackIndexType.Alias.FirstOccurrence, StackIndexType.Alias.LastOccurrence });
+            DefaultDateField = StackIndexType.Alias.LastOccurrence;
         }
 
         /// <summary>
@@ -162,7 +163,7 @@ namespace Exceptionless.Api.Controllers {
             var stack = await GetModelAsync(id, false);
             if (stack == null)
                 return NotFound();
-            
+
             if (!stack.References.Contains(url.Trim())) {
                 stack.References.Add(url.Trim());
                 await _stackRepository.SaveAsync(stack);
@@ -216,7 +217,7 @@ namespace Exceptionless.Api.Controllers {
             var stack = await GetModelAsync(id, false);
             if (stack == null)
                 return NotFound();
-            
+
             if (stack.References.Contains(url.Trim())) {
                 stack.References.Remove(url.Trim());
                 await _stackRepository.SaveAsync(stack);
@@ -501,8 +502,8 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [ResponseType(typeof(List<Stack>))]
         public async Task<IHttpActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
-            if (organizations.Count == 0)
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
@@ -517,17 +518,15 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(EmptyModels);
 
-            var pr = QueryProcessor.Process(filter);
+            var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
-            
-            var sortBy = GetSort(sort);
             var options = new PagingOptions { Page = page, Limit = limit };
-            
+
             try {
-                var results = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sortBy, ti.Field, ti.UtcRange.Start, ti.UtcRange.End, options);
+                var results = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.Range.UtcStart, ti.Range.UtcEnd, options);
 
                 var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
@@ -539,8 +538,8 @@ namespace Exceptionless.Api.Controllers {
                     .Message("An error has occurred. Please check your search filter.")
                     .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Sort = sort, Time = ti, Page = page, Limit = limit })
                     .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
+                    .Identity(CurrentUser.EmailAddress)
+                    .Property("User", CurrentUser)
                     .SetActionContext(ActionContext)
                     .Write();
 
@@ -579,6 +578,40 @@ namespace Exceptionless.Api.Controllers {
         }
 
         /// <summary>
+        /// Get by project
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The organization could not be found.</response>
+        /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> GetByProjectAsync(string projectId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var project = await GetProjectAsync(projectId);
+            if (project == null)
+                return NotFound();
+
+            var organization = await GetOrganizationAsync(project.OrganizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
+            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
+        }
+
+        /// <summary>
         /// Get newest
         /// </summary>
         /// <param name="filter">A filter that controls what data is returned from the server.</param>
@@ -591,13 +624,42 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("new")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> NewAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
-            if (organizations.Count == 0)
+        public async Task<IHttpActionResult> GetNewAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(String.Concat("first|", time), offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            return await GetInternalAsync(sf, ti, filter, "-first", mode, page, limit);
+        }
+
+        /// <summary>
+        /// Get newest by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/new")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> GetNewByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(String.Concat("first|", time), offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
             return await GetInternalAsync(sf, ti, filter, "-first", mode, page, limit);
         }
 
@@ -617,7 +679,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> NewByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetNewByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -629,7 +691,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(String.Concat("first|", time), offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(String.Concat("first|", time), offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
             return await GetInternalAsync(sf, ti, filter, "-first", mode, page, limit);
         }
@@ -647,14 +709,43 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("recent")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> RecentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
-            if (organizations.Count == 0)
+        public async Task<IHttpActionResult> GetRecentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
-            var ti = GetTimeInfo(String.Concat("last|", time), offset, organizations.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(String.Concat(StackIndexType.Alias.LastOccurrence, "|", time), offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
-            return await GetInternalAsync(sf, ti, filter, "-last", mode, page, limit);
+            return await GetInternalAsync(sf, ti, filter, String.Concat("-", StackIndexType.Alias.LastOccurrence), mode, page, limit);
+        }
+
+        /// <summary>
+        /// Get most recent by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/recent")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> GetRecentByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(String.Concat(StackIndexType.Alias.LastOccurrence, "|", time), offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
+            return await GetInternalAsync(sf, ti, filter, String.Concat("-", StackIndexType.Alias.LastOccurrence), mode, page, limit);
         }
 
         /// <summary>
@@ -673,7 +764,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> RecentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetRecentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -685,9 +776,9 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(String.Concat("last|", time), offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(String.Concat(StackIndexType.Alias.LastOccurrence, "|", time), offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            return await GetInternalAsync(sf, ti, filter, "-last", mode, page, limit);
+            return await GetInternalAsync(sf, ti, filter, String.Concat("-", StackIndexType.Alias.LastOccurrence), mode, page, limit);
         }
 
         /// <summary>
@@ -703,14 +794,43 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("frequent")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> FrequentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
-            if (organizations.Count == 0)
+        public async Task<IHttpActionResult> GetFrequentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
-            return await GetAllByTermsAsync(_distinctUsersFields, sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
+        }
+
+        /// <summary>
+        /// Gets most frequent by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/frequent")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> GetFrequentByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
+            return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -729,7 +849,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> FrequentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetFrequentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -741,9 +861,9 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            return await GetAllByTermsAsync(_distinctUsersFields, sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -759,14 +879,43 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("users")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> UsersAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            var organizations = await GetAssociatedActiveOrganizationsAsync(_organizationRepository);
-            if (organizations.Count == 0)
+        public async Task<IHttpActionResult> GetUsersAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
+            if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
-            return await GetAllByTermsAsync(_distinctUsersFieldsWithSort, sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("-cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
+        }
+
+        /// <summary>
+        /// Gets most users by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="400">Invalid filter.</response>
+        /// <response code="404">The project could not be found.</response>
+        /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/users")]
+        [ResponseType(typeof(List<Stack>))]
+        public async Task<IHttpActionResult> GetUsersByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
+                return NotFound();
+
+            if (organization.IsSuspended)
+                return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var sf = new ExceptionlessSystemFilterQuery(organization);
+            return await GetAllByTermsAsync("-cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -785,7 +934,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/users")]
         [ResponseType(typeof(List<Stack>))]
-        public async Task<IHttpActionResult> UsersByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public async Task<IHttpActionResult> GetUsersByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -797,34 +946,35 @@ namespace Exceptionless.Api.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            return await GetAllByTermsAsync(_distinctUsersFieldsWithSort, sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("-cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
-        private async Task<IHttpActionResult> GetAllByTermsAsync(ICollection<FieldAggregation> fields, IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string mode = null, int page = 1, int limit = 10) {
+        private async Task<IHttpActionResult> GetAllByTermsAsync(string aggregations, IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page, limit);
             if (skip > MAXIMUM_SKIP)
                 return Ok(EmptyModels);
 
-            var pr = QueryProcessor.Process(filter);
+            var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
 
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
 
             try {
-                var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", fields, ti.UtcRange.Start, ti.UtcRange.End, ShouldApplySystemFilter(sf, filter) ? sf : null, filter, ti.Offset, GetSkip(page + 1, limit) + 1);
-                if (ntsr.Terms.Count == 0)
+                var systemFilter = new ElasticQuery().WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
+                var stackTerms = (await _eventRepository.CountBySearchAsync(systemFilter, filter, $"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {aggregations})")).Aggregations.Terms<string>("terms_stack_id");
+                if (stackTerms == null || stackTerms.Buckets.Count == 0)
                     return Ok(EmptyModels);
 
-                var stackIds = ntsr.Terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
+                var stackIds = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
                 var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
 
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase)) {
-                    var summaries = await GetStackSummariesAsync(stacks, ntsr, sf, ti);
+                    var summaries = await GetStackSummariesAsync(stacks, stackTerms.Buckets, sf, ti);
                     return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, page);
                 }
 
@@ -834,8 +984,8 @@ namespace Exceptionless.Api.Controllers {
                     .Message("An error has occurred. Please check your search filter.")
                     .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit })
                     .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
+                    .Identity(CurrentUser.EmailAddress)
+                    .Property("User", CurrentUser)
                     .SetActionContext(ActionContext)
                     .Write();
 
@@ -864,35 +1014,36 @@ namespace Exceptionless.Api.Controllers {
         private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, IExceptionlessSystemFilterQuery eventSystemFilter, TimeInfo ti) {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
-            
-            var ntsr = await _eventStats.GetNumbersTermsStatsAsync("stack_id", _distinctUsersFields, ti.UtcRange.Start, ti.UtcRange.End, eventSystemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), ti.Offset, stacks.Count);
-            return await GetStackSummariesAsync(stacks, ntsr, eventSystemFilter, ti);
+
+            var systemFilter = new ElasticQuery().WithSystemFilter(eventSystemFilter).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
+            var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), $"terms:(stack_id~{stacks.Count} cardinality:user min:date max:date)");
+            return await GetStackSummariesAsync(stacks, stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets, eventSystemFilter, ti);
         }
 
-        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, NumbersTermStatsResult stackTerms, IExceptionlessSystemFilterQuery sf, TimeInfo ti) {
+        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, IExceptionlessSystemFilterQuery sf, TimeInfo ti) {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>(0);
 
-            var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.UtcRange.Start, ti.UtcRange.End);
-            return stacks.Join(stackTerms.Terms, s => s.Id, tk => tk.Term, (stack, term) => {
+            var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
+            return stacks.Join(stackTerms, s => s.Id, tk => tk.Key, (stack, term) => {
                 var data = _formattingPluginManager.GetStackSummaryData(stack);
                 var summary = new StackSummaryModel {
                     TemplateKey = data.TemplateKey,
                     Data = data.Data,
                     Id = stack.Id,
                     Title = stack.Title,
-                    FirstOccurrence = term.FirstOccurrence,
-                    LastOccurrence = term.LastOccurrence,
-                    Total = term.Total,
+                    FirstOccurrence = term.Aggregations.Min<DateTime>("min_date").Value,
+                    LastOccurrence = term.Aggregations.Max<DateTime>("max_date").Value,
+                    Total = term.Total.GetValueOrDefault(),
 
-                    Users = term.Numbers[0],
+                    Users = term.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault(),
                     TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
                 };
 
                 return summary;
             }).ToList();
         }
-        
+
         private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, IExceptionlessSystemFilterQuery sf, DateTime utcStart, DateTime utcEnd) {
             var scopedCacheClient = new ScopedCacheClient(_cache, $"Project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}");
             var projectIds = stacks.Select(s => s.ProjectId).Distinct().ToList();
@@ -902,12 +1053,15 @@ namespace Exceptionless.Api.Controllers {
             if (totals.Count == projectIds.Count)
                 return totals;
 
+            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).WithIndexes(utcStart, utcEnd);
             var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
-            var projectTerms = await _eventStats.GetNumbersTermsStatsAsync("project_id", _distinctUsersFields, utcStart, utcEnd, sf, projects.BuildFilter());
+            var countResult = await _eventRepository.CountBySearchAsync(systemFilter, projects.BuildFilter(), "terms:(project_id cardinality:user)");
 
             // Cache all projects that have more than 10 users for 5 minutes.
-            await scopedCacheClient.SetAllAsync(projectTerms.Terms.Where(t => t.Numbers[0] >= 10).ToDictionary(t => t.Term, t => t.Numbers[0]), TimeSpan.FromMinutes(5));
-            totals.AddRange(projectTerms.Terms.ToDictionary(kvp => kvp.Term, kvp => kvp.Numbers[0]));
+            var projectTerms = countResult.Aggregations.Terms<string>("terms_project_id").Buckets;
+            var aggregations = projectTerms.ToDictionary(t => t.Key, t => t.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault());
+            await scopedCacheClient.SetAllAsync(aggregations.Where(t => t.Value >= 10).ToDictionary(k => k.Key, v => v.Value), TimeSpan.FromMinutes(5));
+            totals.AddRange(aggregations);
 
             return totals;
         }

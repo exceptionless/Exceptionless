@@ -1,65 +1,32 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class UserIndexType : IndexTypeBase<User> {
-        private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
-
+    public class UserIndexType : IndexTypeBase<Models.User> {
         public UserIndexType(OrganizationIndex index) : base(index, "user") { }
-        
-        public override CreateIndexDescriptor Configure(CreateIndexDescriptor idx) {
-            var keywordLowercaseAnalyzer = new CustomAnalyzer { Filter = new List<string> { "lowercase" }, Tokenizer = "keyword" };
-            return idx
-                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)
-                .Analysis(descriptor => descriptor.Analyzers(bases => bases.Add(KEYWORD_LOWERCASE_ANALYZER, keywordLowercaseAnalyzer)))
-                .AddMapping<User>(BuildMapping);
-        }
 
-        public override PutMappingDescriptor<User> BuildMapping(PutMappingDescriptor<User> map) {
-            return map
-                .Type(Name)
-                .Dynamic()
-                .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
+        public override TypeMappingDescriptor<Models.User> BuildMapping(TypeMappingDescriptor<Models.User> map) {
+            return base.BuildMapping(map)
+                .Dynamic(false)
                 .Properties(p => p
                     .SetupDefaults()
-                    .Date(f => f.Name(e => e.ModifiedUtc).IndexName(Fields.ModifiedUtc))
-                    .String(f => f.Name(e => e.OrganizationIds).IndexName(Fields.OrganizationIds).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.FullName).IndexName(Fields.FullName))
-                    .String(f => f.Name(u => u.EmailAddress).IndexName(Fields.EmailAddress).Analyzer(KEYWORD_LOWERCASE_ANALYZER))
-                    .String(f => f.Name(u => u.VerifyEmailAddressToken).IndexName(Fields.VerifyEmailAddressToken).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.Password).IndexName(Fields.Password).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.PasswordResetToken).IndexName(Fields.PasswordResetToken).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.Salt).IndexName(Fields.Salt).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.Roles).IndexName(Fields.Roles).Index(FieldIndexOption.NotAnalyzed))
-                    .Object<OAuthAccount>(f => f.Name(o => o.OAuthAccounts.First()).Path("just_name").Properties(mp => mp
-                        .String(fu => fu.Name(m => m.Provider).IndexName(Fields.OAuthAccountProvider).Index(FieldIndexOption.NotAnalyzed))
-                        .String(fu => fu.Name(m => m.ProviderUserId).IndexName(Fields.OAuthAccountProviderUserId).Index(FieldIndexOption.NotAnalyzed))
-                        .String(fu => fu.Name(m => m.Username).IndexName(Fields.OAuthAccountUsername).Index(FieldIndexOption.NotAnalyzed))))
+                    .Keyword(f => f.Name(e => e.OrganizationIds))
+                    .Text(f => f.Name(u => u.FullName).AddKeywordField())
+                    .Text(f => f.Name(u => u.EmailAddress).Analyzer(OrganizationIndex.KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
+                    .Keyword(f => f.Name(u => u.VerifyEmailAddressToken))
+                    .Keyword(f => f.Name(u => u.PasswordResetToken))
+                    .Keyword(f => f.Name(u => u.Roles))
+                    .Object<OAuthAccount>(f => f.Name(o => o.OAuthAccounts.First()).Properties(mp => mp
+                        .Keyword(fu => fu.Name(m => m.Provider))
+                        .Keyword(fu => fu.Name(m => m.ProviderUserId))
+                        .Keyword(fu => fu.Name(m => m.Username))))
                 );
-        }
-        
-        public class Fields {
-            public const string CreatedUtc = "created";
-            public const string ModifiedUtc = "modified";
-            public const string OrganizationIds = "organization";
-            public const string Id = "id";
-            public const string FullName = "name";
-            public const string EmailAddress = "email";
-            public const string VerifyEmailAddressToken = "verify_email_address_token";
-            public const string Password = "password";
-            public const string PasswordResetToken = "password_reset_token";
-            public const string Salt = "salt";
-            public const string Roles = "roles";
-
-            public const string OAuthAccountUsername = "oauthaccount.username";
-            public const string OAuthAccountProvider = "oauthaccount.provider";
-            public const string OAuthAccountProviderUserId = "oauthaccount.provideruserid";
         }
     }
 }

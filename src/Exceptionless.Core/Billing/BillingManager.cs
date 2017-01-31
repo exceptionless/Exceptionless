@@ -72,7 +72,7 @@ namespace Exceptionless.Core.Billing {
             // Ensure the user can't be apart of more than one free plan.
             if (String.Equals(plan.Id, FreePlan.Id) && user != null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds).AnyContext()).Any(o => String.Equals(o.PlanId, FreePlan.Id)))
                 return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
-            
+
             return new ChangePlanResult { Success = true };
         }
 
@@ -81,7 +81,7 @@ namespace Exceptionless.Core.Billing {
         }
 
         public static BillingPlan GetBillingPlanByUpsellingRetentionPeriod(int retentionDays) {
-            return Plans.Where(p => p.RetentionDays > retentionDays).OrderBy(p => p.RetentionDays).ThenBy(p => p.Price).FirstOrDefault();
+            return Plans.Where(p => p.RetentionDays > retentionDays && p.Price > 0).OrderBy(p => p.RetentionDays).ThenBy(p => p.Price).FirstOrDefault();
         }
 
         public static void ApplyBillingPlan(Organization organization, BillingPlan plan, User user = null, bool updateBillingPrice = true) {

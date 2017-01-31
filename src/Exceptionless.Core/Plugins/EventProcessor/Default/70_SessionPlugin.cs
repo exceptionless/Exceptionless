@@ -30,12 +30,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
             var autoSessionEvents = contexts
-                .Where(c => c.Event.GetUserIdentity()?.Identity != null
+                .Where(c => !String.IsNullOrWhiteSpace(c.Event.GetUserIdentity()?.Identity)
                     && String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
 
             var manualSessionsEvents = contexts
                 .Where(c => !String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
-            
+
             await ProcessAutoSessionsAsync(autoSessionEvents).AnyContext();
             await ProcessManualSessionsAsync(manualSessionsEvents).AnyContext();
         }
@@ -50,14 +50,14 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                 var firstSessionEvent = session.First();
                 var lastSessionEvent = session.Last();
-                
+
                 // cancel duplicate start events (1 per session id)
                 session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => {
                     _logger.Warn().Project(projectId).Message("Discarding duplicate session start events.").Write();
                     ev.IsCancelled = true;
                 });
                 var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
-                
+
                 // sync the session start event with the first session event.
                 if (sessionStartEvent != null)
                     sessionStartEvent.Event.Date = firstSessionEvent.Event.Date;
@@ -106,7 +106,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         private async Task ProcessAutoSessionsAsync(ICollection<EventContext> contexts) {
             var identityGroups = contexts
                 .OrderBy(c => c.Event.Date)
-                .GroupBy(c => c.Event.GetUserIdentity()?.Identity);
+                .GroupBy(c => c.Event.GetUserIdentity().Identity);
 
             foreach (var identityGroup in identityGroups) {
                 string projectId = identityGroup.First().Project.Id;
@@ -123,11 +123,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                         ev.IsCancelled = true;
                     });
                     var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
-                    
+
                     // sync the session start event with the first session event.
                     if (sessionStartEvent != null)
                         sessionStartEvent.Event.Date = firstSessionEvent.Event.Date;
-                    
+
                     // mark the heart beat events as hidden. This will cause new stacks to be marked as hidden, otherwise this value will be reset by the stack.
                     session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ctx => ctx.Event.IsHidden = true);
 
@@ -235,7 +235,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
         private async Task<PersistentEvent> CreateSessionStartEventAsync(EventContext startContext, DateTime? lastActivityUtc, bool? isSessionEnd) {
             var startEvent = startContext.Event.ToSessionStartEvent(lastActivityUtc, isSessionEnd, startContext.Organization.HasPremiumFeatures);
-            
+
             var startEventContexts = new List<EventContext> {
                 new EventContext(startEvent) { Project = startContext.Project, Organization = startContext.Organization }
             };
@@ -249,7 +249,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
             return startEvent;
         }
-        
+
         private async Task<string> UpdateSessionStartEventAsync(string projectId, string sessionId, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false) {
             string sessionStartEventId = await GetSessionStartEventIdAsync(projectId, sessionId).AnyContext();
             if (!String.IsNullOrEmpty(sessionStartEventId)) {

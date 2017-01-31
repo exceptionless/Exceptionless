@@ -16,18 +16,18 @@ namespace Exceptionless.Api.Tests.Billing {
         public void GetBillingPlanByUpsellingRetentionPeriod() {
             var plan = BillingManager.GetBillingPlanByUpsellingRetentionPeriod(BillingManager.FreePlan.RetentionDays);
             Assert.NotNull(plan);
-            Assert.Equal(plan.Id, BillingManager.SmallPlan.Id);
-            Assert.Equal(plan.RetentionDays, BillingManager.SmallPlan.RetentionDays);
+            Assert.Equal(BillingManager.SmallPlan.Id, plan.Id);
+            Assert.Equal(BillingManager.SmallPlan.RetentionDays, plan.RetentionDays);
 
             plan = BillingManager.GetBillingPlanByUpsellingRetentionPeriod(BillingManager.SmallPlan.RetentionDays);
             Assert.NotNull(plan);
-            Assert.Equal(plan.Id, BillingManager.MediumPlan.Id);
-            Assert.Equal(plan.RetentionDays, BillingManager.MediumPlan.RetentionDays);
+            Assert.Equal(BillingManager.MediumPlan.Id, plan.Id);
+            Assert.Equal(BillingManager.MediumPlan.RetentionDays, plan.RetentionDays);
 
             plan = BillingManager.GetBillingPlanByUpsellingRetentionPeriod(BillingManager.MediumPlan.RetentionDays);
             Assert.NotNull(plan);
-            Assert.Equal(plan.Id, BillingManager.LargePlan.Id);
-            Assert.Equal(plan.RetentionDays, BillingManager.LargePlan.RetentionDays);
+            Assert.Equal(BillingManager.LargePlan.Id, plan.Id);
+            Assert.Equal(BillingManager.LargePlan.RetentionDays, plan.RetentionDays);
 
             plan = BillingManager.GetBillingPlanByUpsellingRetentionPeriod(BillingManager.LargePlan.RetentionDays);
             Assert.Null(plan);

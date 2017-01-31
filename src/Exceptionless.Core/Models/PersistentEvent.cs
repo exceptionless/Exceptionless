@@ -48,7 +48,6 @@ namespace Exceptionless.Core.Models {
         /// The date that the event was created in the system.
         /// </summary>
         public DateTime CreatedUtc { get; set; }
-
         public DateTime UpdatedUtc { get; set; }
 
         /// <summary>

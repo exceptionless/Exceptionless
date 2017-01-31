@@ -1,17 +1,39 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Validation;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.EventParser;
+using Foundatio.Logging;
 using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests.Validation {
     public class EventValidatorTests : TestBase {
+        private readonly PersistentEvent _benchmarkEvent;
         private readonly PersistentEventValidator _validator;
 
         public EventValidatorTests(ITestOutputHelper output) : base(output) {
             _validator = new PersistentEventValidator();
+
+            var parserPluginManager = GetService<EventParserPluginManager>();
+            var events = parserPluginManager.ParseEvents(File.ReadAllText(@"..\..\Search\Data\event1.json"), 2, "exceptionless/2.0.0.0");
+            _benchmarkEvent = events.First();
+        }
+
+        [Fact]
+        public void RunBenchmark() {
+            var sw = Stopwatch.StartNew();
+            for (int i = 0; i < 10000; i++) {
+                var result = _validator.Validate(_benchmarkEvent);
+                Assert.Equal(true, result.IsValid);
+            }
+            sw.Stop();
+
+            _logger.Info($"Time: {sw.ElapsedTicks} ticks, Avg: {sw.ElapsedTicks / 10000} ticks");
         }
 
         [Theory]
@@ -20,13 +42,25 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData("1", true)]
         [InlineData("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456", false)]
          public void ValidateTag(string tag, bool isValid) {
-             var ev = new PersistentEvent { Type = Event.KnownTypes.Error, Date = SystemClock.OffsetNow, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" };
+            var ev = new PersistentEvent { Type = Event.KnownTypes.Error, Date = SystemClock.OffsetNow, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" };
             ev.Tags.Add(tag);
 
             var result = _validator.Validate(ev);
             Assert.Equal(isValid, result.IsValid);
         }
 
+        [Theory]
+        [InlineData(null, false)]
+        [InlineData("", false)]
+        [InlineData("1", true)]
+        [InlineData("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456", false)]
+        public async Task ValidateTagAsync(string tag, bool isValid) {
+            var ev = new PersistentEvent { Type = Event.KnownTypes.Error, Date = SystemClock.OffsetNow, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" };
+            ev.Tags.Add(tag);
+
+            var result = await _validator.ValidateAsync(ev);
+            Assert.Equal(isValid, result.IsValid);
+        }
         [Theory]
         [InlineData(null, true)]
         [InlineData("1234567", false)]
