@@ -58,7 +58,7 @@ namespace Exceptionless.Core.Extensions {
 
             var utcNow = SystemClock.UtcNow;
             var hoursLeftInMonth = (utcNow.EndOfMonth() - utcNow).TotalHours;
-            if (hoursLeftInMonth < 1.0)
+            if (hoursLeftInMonth < 10.0)
                 return eventsLeftInMonth;
 
             return (int)Math.Ceiling(eventsLeftInMonth / hoursLeftInMonth * 10d);
