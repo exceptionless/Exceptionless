@@ -83,9 +83,10 @@ namespace Exceptionless.Api.Tests.Search {
         [InlineData("avg:", false, false)]
         [InlineData("avg:val", false, true)]
         [InlineData("avg:value", true, false)]
-        [InlineData("date:(date cardinality:stack_id) cardinality:stack_id terms:(is_first_occurrence @include:true)", true, false)] // dashboards
+        [InlineData("date:(date cardinality:stack) cardinality:stack terms:(first @include:true)", true, false)] // dashboards
         [InlineData("date:(date cardinality:user sum:value avg:value) min:date max:date cardinality:user", true, false)] // stack dashboard
         [InlineData("avg:value cardinality:user date:(date cardinality:user)", true, false)] // session dashboard
+        [InlineData("date:(date~30d terms:(project cardinality:stack terms:(first @include:true)) cardinality:stack terms:(first @include:true))", true, true)] // Breakdown of total events, new events and unique events per month by project
         public async Task CanProcessAggregationsAsync(string query, bool isValid, bool usesPremiumFeatures) {
             var info = await _validator.ValidateAggregationsAsync(query);
             _logger.Info(() => $"UsesPremiumFeatures: {info.UsesPremiumFeatures} IsValid: {info.IsValid} Message: {info.Message}");

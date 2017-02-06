@@ -18,9 +18,6 @@ using LogLevel = Foundatio.Logging.LogLevel;
 
 namespace Exceptionless.Api.Tests.Stats {
     public sealed class AggregationTests : ElasticTestBase {
-        // TODO: Apply Offsets to returned date metrics.
-        // TODO: VALIDATE AGGREGATION FEILDS.
-        // TODO: MIGHT BE NICE TO HAVE TERM AGG TOTOAL AND VALUES BE A ROLL UP OF THE BUCKET TOTALS
         private readonly EventPipeline _pipeline;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
