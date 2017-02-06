@@ -29,14 +29,35 @@ namespace Exceptionless.Core.Queries.Validation {
 
         private static readonly HashSet<string> _allowedAggregationFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "date",
+            "source",
+            "tags",
             "type",
             "value",
+            "count",
+            "geo",
             "is_fixed",
             "is_hidden",
             "is_first_occurrence",
             "organization_id",
             "project_id",
             "stack_id",
+            "os.keyword",
+            "error.code",
+            "error.type.keyword",
+            "error.targettype.keyword",
+            "error.targetmethod.keyword",
+            "data.@environment.machine_name.keyword",
+            "data.@environment.architecture",
+            "data.@location.country",
+            "data.@location.level1",
+            "data.@location.level2",
+            "data.@location.locality",
+            "data.@request.data.@browser.keyword",
+            "data.@request.data.@browser_major_version.keyword",
+            "data.@request.data.@device.keyword",
+            "data.@request.data.@os_version.keyword",
+            "data.@request.data.@os_major_version.keyword",
+            "data.@request.data.@is_bot",
             "data.@version",
             "data.@user.identity"
         };
@@ -54,7 +75,7 @@ namespace Exceptionless.Core.Queries.Validation {
             if (!info.IsValid)
                 return new QueryProcessResult { Message = "Invalid aggregation" };
 
-            if (info.MaxNodeDepth > 3)
+            if (info.MaxNodeDepth > 6)
                 return new QueryProcessResult { Message = "Aggregation max depth exceeded" };
 
             if (info.Operations.Values.Sum(o => o.Count) > 10)
@@ -66,11 +87,11 @@ namespace Exceptionless.Core.Queries.Validation {
 
             // Distinct queries are expensive.
             ICollection<string> values;
-            if (info.Operations.TryGetValue(AggregationType.Cardinality, out values) && values.Count > 1)
+            if (info.Operations.TryGetValue(AggregationType.Cardinality, out values) && values.Count > 3)
                 return new QueryProcessResult { Message = "Cardinality aggregation count exceeded" };
 
             // Term queries are expensive.
-            if (info.Operations.TryGetValue(AggregationType.Terms, out values) && (values.Count > 1 || values.Any(t => !_allowedAggregationFields.Contains(t))))
+            if (info.Operations.TryGetValue(AggregationType.Terms, out values) && (values.Count > 3))
                 return new QueryProcessResult { Message = "Terms aggregation count exceeded" };
 
             bool usesPremiumFeatures = !info.ReferencedFields.All(_freeAggregationFields.Contains);

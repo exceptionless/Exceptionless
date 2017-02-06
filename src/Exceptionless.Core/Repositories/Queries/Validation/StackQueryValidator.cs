@@ -58,7 +58,7 @@ namespace Exceptionless.Core.Queries.Validation {
             if (!info.IsValid)
                 return new QueryProcessResult { Message = "Invalid aggregation" };
 
-            if (info.MaxNodeDepth > 3)
+            if (info.MaxNodeDepth > 6)
                 return new QueryProcessResult { Message = "Aggregation max depth exceeded" };
 
             if (info.Operations.Values.Sum(o => o.Count) > 10)
@@ -70,11 +70,11 @@ namespace Exceptionless.Core.Queries.Validation {
 
             // Distinct queries are expensive.
             ICollection<string> values;
-            if (info.Operations.TryGetValue(AggregationType.Cardinality, out values) && values.Count > 1)
+            if (info.Operations.TryGetValue(AggregationType.Cardinality, out values) && values.Count > 3)
                 return new QueryProcessResult { Message = "Cardinality aggregation count exceeded" };
 
             // Term queries are expensive.
-            if (info.Operations.TryGetValue(AggregationType.Terms, out values) && (values.Count > 1 || values.Any(t => !_allowedAggregationFields.Contains(t))))
+            if (info.Operations.TryGetValue(AggregationType.Terms, out values) && values.Count > 3)
                 return new QueryProcessResult { Message = "Terms aggregation count exceeded" };
 
             bool usesPremiumFeatures = !info.ReferencedFields.All(_freeAggregationFields.Contains);
