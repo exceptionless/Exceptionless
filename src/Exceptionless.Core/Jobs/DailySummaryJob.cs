@@ -51,7 +51,7 @@ namespace Exceptionless.Core.Jobs {
 
             var results = await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
-                _logger.Info("Got {0} projects to process. ", results.Documents.Count);
+                _logger.Trace("Got {0} projects to process. ", results.Documents.Count);
 
                 var projectsToBulkUpdate = new List<Project>(results.Documents.Count);
                 var processSummariesNewerThan = SystemClock.UtcNow.Date.SubtractDays(2);
@@ -139,8 +139,10 @@ namespace Exceptionless.Core.Jobs {
                 IsFreePlan = organization.PlanId == BillingManager.FreePlan.Id
             };
 
-            foreach (var user in users)
+            foreach (var user in users) {
+                _logger.Info().Project(project.Id).Message("Queueing \"{0}\" daily summary email ({1}-{2}) for user {3}.", project.Name, notification.StartDate, notification.EndDate, user.EmailAddress);
                 await _mailer.SendDailySummaryAsync(user.EmailAddress, notification).AnyContext();
+            }
 
             _logger.Info().Project(project.Id).Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Name, notification.Total);
             return true;
