@@ -90,7 +90,7 @@ namespace Exceptionless.Core.Jobs {
 
                 // Discard any events over there limit.
                 events = events.Take(eventsToProcess).ToList();
-                
+
                 // Increment the count if greater than 1, since we already incremented it by 1 in the OverageHandler.
                 if (events.Count > 1)
                     await _organizationRepository.IncrementUsageAsync(project.OrganizationId, false, events.Count - 1, applyHourlyLimit: false).AnyContext();
@@ -149,7 +149,7 @@ namespace Exceptionless.Core.Jobs {
                     UserAgent = eventPostInfo.UserAgent
                 }, _storage, false, context.CancellationToken).AnyContext();
             }
-            
+
             if (isSingleEvent && errorCount > 0)
                 await AbandonEntryAsync(queueEntry).AnyContext();
             else
@@ -170,12 +170,12 @@ namespace Exceptionless.Core.Jobs {
 
         private async Task<List<PersistentEvent>> ParseEventPostAsync(EventPostInfo ep, DateTime createdUtc, string queueEntryId, bool isInternalProject) {
             List<PersistentEvent> events = null;
-            
+
             try {
                 await _metricsClient.TimeAsync(async () => {
                     byte[] data = ep.Data;
                     if (!String.IsNullOrEmpty(ep.ContentEncoding))
-                        data = data.Decompress(ep.ContentEncoding);
+                        data = await data.DecompressAsync(ep.ContentEncoding).AnyContext();
 
                     var encoding = Encoding.UTF8;
                     if (!String.IsNullOrEmpty(ep.CharSet))
@@ -207,7 +207,7 @@ namespace Exceptionless.Core.Jobs {
 
             return events;
         }
-        
+
         protected override void LogProcessingQueueEntry(IQueueEntry<EventPost> queueEntry) {
             _logger.Debug().Message(() => $"Processing {_queueEntryName} queue entry ({queueEntry.Id}).").Write();
         }
