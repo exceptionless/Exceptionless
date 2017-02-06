@@ -559,7 +559,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.NotNull(ev.StackId);
 
             var stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
-            Assert.Equal(new TagSet { Tag1 }, stack.Tags);
+            Assert.Equal(new [] { Tag1 }, stack.Tags.ToArray());
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
             ev.Tags.Add(Tag2);
@@ -567,7 +567,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _configuration.Client.RefreshAsync(Indices.All);
             await _pipeline.RunAsync(ev);
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
-            Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
+            Assert.Equal(new [] { Tag1, Tag2 }, stack.Tags.ToArray());
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
             ev.Tags.Add(Tag2_Lowercase);
@@ -575,7 +575,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _configuration.Client.RefreshAsync(Indices.All);
             await _pipeline.RunAsync(ev);
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
-            Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
+            Assert.Equal(new [] { Tag1, Tag2}, stack.Tags.ToArray());
         }
 
         [Fact]
