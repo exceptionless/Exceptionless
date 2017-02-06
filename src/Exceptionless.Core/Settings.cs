@@ -150,7 +150,7 @@ namespace Exceptionless.Core {
             BotThrottleLimit = GetInt(nameof(BotThrottleLimit), 25);
             ApiThrottleLimit = GetInt(nameof(ApiThrottleLimit), Int32.MaxValue);
             EventSubmissionDisabled = GetBool(nameof(EventSubmissionDisabled));
-            MaximumEventPostSize = GetInt64(nameof(MaximumEventPostSize), Int64.MaxValue);
+            MaximumEventPostSize = GetInt64(nameof(MaximumEventPostSize), 1000000);
             MaximumRetentionDays = GetInt(nameof(MaximumRetentionDays), 180);
             EnableDailySummary = GetBool(nameof(EnableDailySummary));
             MetricsServerName = GetString(nameof(MetricsServerName)) ?? "127.0.0.1";

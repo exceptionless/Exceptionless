@@ -62,8 +62,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task CreateAutoSessionAsync() {
-            await CreateAutoSessionInternalAsync(SystemClock.OffsetNow);
+        public Task CreateAutoSessionAsync() {
+            return CreateAutoSessionInternalAsync(SystemClock.OffsetNow);
         }
 
         private async Task CreateAutoSessionInternalAsync(DateTimeOffset date) {
@@ -299,8 +299,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
-        public async Task CreateManualSessionAsync() {
-            await CreateManualSessionInternalAsync(SystemClock.OffsetNow);
+        public Task CreateManualSessionAsync() {
+            return CreateManualSessionInternalAsync(SystemClock.OffsetNow);
         }
 
         private async Task CreateManualSessionInternalAsync(DateTimeOffset start) {
@@ -795,7 +795,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 var eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(file.Path);
                 byte[] data = eventPostInfo.Data;
                 if (!String.IsNullOrEmpty(eventPostInfo.ContentEncoding))
-                    data = data.Decompress(eventPostInfo.ContentEncoding);
+                    data = await data.DecompressAsync(eventPostInfo.ContentEncoding);
 
                 var encoding = Encoding.UTF8;
                 if (!String.IsNullOrEmpty(eventPostInfo.CharSet))

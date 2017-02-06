@@ -6,17 +6,17 @@ using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Extensions {
     public static class ByteArrayExtensions {
-        public static byte[] Decompress(this byte[] data, string encoding) {
+        public async static Task<byte[]> DecompressAsync(this byte[] data, string encoding) {
             byte[] decompressedData = null;
             using (var outputStream = new MemoryStream()) {
                 using (var inputStream = new MemoryStream(data)) {
                     if (encoding == "gzip")
                         using (var zip = new GZipStream(inputStream, CompressionMode.Decompress)) {
-                            zip.CopyTo(outputStream);
+                            await zip.CopyToAsync(outputStream).AnyContext();
                         }
                     else if (encoding == "deflate")
                         using (var zip = new DeflateStream(inputStream, CompressionMode.Decompress)) {
-                            zip.CopyTo(outputStream);
+                            await zip.CopyToAsync(outputStream).AnyContext();
                         }
                     else
                         throw new ArgumentException($"Unsupported encoding type \"{encoding}\".", nameof(encoding));
