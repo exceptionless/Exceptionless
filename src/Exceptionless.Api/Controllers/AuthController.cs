@@ -497,8 +497,10 @@ namespace Exceptionless.Api.Controllers {
                 if (existingUser != null) {
                     if (existingUser.Id != CurrentUser.Id) {
                         // Existing user account is not the current user. Remove it and we'll add it to the current user below.
-                        if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id))
+                        if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id)) {
+                            _logger.Error().Message("Unable to remove existing oauth account for existing user \"{0}\"", existingUser.EmailAddress).Tag("External Login").Identity(CurrentUser.EmailAddress).Property("User Info", userInfo).Property("User", CurrentUser).Property("ExistingUser", existingUser).SetActionContext(ActionContext).Write();
                             return null;
+                        }
 
                         await _userRepository.SaveAsync(existingUser, true);
                     } else {
