@@ -70,18 +70,19 @@ namespace Exceptionless.Api.Controllers {
         [Route("login")]
         [ResponseType(typeof(TokenResult))]
         public async Task<IHttpActionResult> LoginAsync(LoginModel model) {
-            if (String.IsNullOrWhiteSpace(model?.Email)) {
+            string email = model?.Email?.Trim().ToLowerInvariant();
+            if (String.IsNullOrEmpty(email)) {
                 _logger.Error().Message("Login failed: Email Address is required.").Tag("Login").SetActionContext(ActionContext).Write();
                 return BadRequest("Email Address is required.");
             }
 
             if (String.IsNullOrWhiteSpace(model.Password)) {
-                _logger.Error().Message("Login failed for \"{0}\": Password is required.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Login failed for \"{0}\": Password is required.", email).Tag("Login").Identity(email).SetActionContext(ActionContext).Write();
                 return BadRequest("Password is required.");
             }
 
             // Only allow 5 password attempts per 15 minute period.
-            string userLoginAttemptsCacheKey = $"user:{model.Email}:attempts";
+            string userLoginAttemptsCacheKey = $"user:{email}:attempts";
             long userLoginAttempts = await _cache.IncrementAsync(userLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
             // Only allow 15 login attempts per 15 minute period by a single ip.
@@ -89,25 +90,25 @@ namespace Exceptionless.Api.Controllers {
             long ipLoginAttempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
             if (userLoginAttempts > 5) {
-                _logger.Error().Message("Login denied for \"{0}\" for the {1} time.", model.Email, userLoginAttempts).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Login denied for \"{0}\" for the {1} time.", email, userLoginAttempts).Tag("Login").Identity(email).SetActionContext(ActionContext).Write();
                 return Unauthorized();
             }
 
             if (ipLoginAttempts > 15) {
-                _logger.Error().Message("Login denied for \"{0}\" for the {1} time.", Request.GetClientIpAddress(), ipLoginAttempts).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Login denied for \"{0}\" for the {1} time.", Request.GetClientIpAddress(), ipLoginAttempts).Tag("Login").Identity(email).SetActionContext(ActionContext).Write();
                 return Unauthorized();
             }
 
             User user;
             try {
-                user = await _userRepository.GetByEmailAddressAsync(model.Email);
+                user = await _userRepository.GetByEmailAddressAsync(email);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Critical().Message("Login failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+                _logger.Error().Exception(ex).Critical().Message("Login failed for \"{0}\": {1}", email, ex.Message).Tag("Login").Identity(email).SetActionContext(ActionContext).Write();
                 return Unauthorized();
             }
 
             if (user == null) {
-                _logger.Error().Message("Login failed for \"{0}\": User not found.", model.Email).Tag("Login").Identity(model.Email).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Login failed for \"{0}\": User not found.", email).Tag("Login").Identity(email).SetActionContext(ActionContext).Write();
                 return Unauthorized();
             }
 
@@ -128,7 +129,7 @@ namespace Exceptionless.Api.Controllers {
                     return Unauthorized();
                 }
             } else {
-                if (!IsValidActiveDirectoryLogin(model.Email, model.Password)) {
+                if (!IsValidActiveDirectoryLogin(email, model.Password)) {
                     _logger.Error().Message("Domain login failed for \"{0}\": Invalid Password or Account.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                     return Unauthorized();
                 }
@@ -157,26 +158,27 @@ namespace Exceptionless.Api.Controllers {
             if (!valid)
                 return BadRequest("Account Creation is currently disabled.");
 
-            if (String.IsNullOrWhiteSpace(model?.Email)) {
+            string email = model?.Email?.Trim().ToLowerInvariant();
+            if (String.IsNullOrEmpty(email)) {
                 _logger.Error().Message("Signup failed: Email Address is required.").Tag("Signup").Property("Name", model != null ? model.Name : "<null>").SetActionContext(ActionContext).Write();
                 return BadRequest("Email Address is required.");
             }
 
             if (String.IsNullOrWhiteSpace(model.Name)) {
-                _logger.Error().Message("Signup failed for \"{0}\": Name is required.", model.Email).Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Signup failed for \"{0}\": Name is required.", email).Tag("Signup").Identity(email).SetActionContext(ActionContext).Write();
                 return BadRequest("Name is required.");
             }
 
             if (!IsValidPassword(model.Password)) {
-                _logger.Error().Message("Signup failed for \"{0}\": Invalid Password", model.Email).Tag("Signup").Identity(model.Email).Property("Password Length", model.Password?.Length ?? 0).SetActionContext(ActionContext).Write();
+                _logger.Error().Message("Signup failed for \"{0}\": Invalid Password", email).Tag("Signup").Identity(email).Property("Password Length", model.Password?.Length ?? 0).SetActionContext(ActionContext).Write();
                 return BadRequest("Password must be at least 6 characters long.");
             }
 
             User user;
             try {
-                user = await _userRepository.GetByEmailAddressAsync(model.Email);
+                user = await _userRepository.GetByEmailAddressAsync(email);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Critical().Message("Signup failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
+                _logger.Error().Exception(ex).Critical().Message("Signup failed for \"{0}\": {1}", email, ex.Message).Tag("Signup").Identity(email).SetActionContext(ActionContext).Write();
                 return BadRequest();
             }
 
@@ -189,20 +191,20 @@ namespace Exceptionless.Api.Controllers {
                 // Only allow 10 signups per hour period by a single ip.
                 long ipSignupAttempts = await _cache.IncrementAsync(ipSignupAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
                 if (ipSignupAttempts > 10) {
-                    _logger.Error().Message("Signup denied for \"{0}\" for the {1} time.", model.Email, ipSignupAttempts).Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
+                    _logger.Error().Message("Signup denied for \"{0}\" for the {1} time.", email, ipSignupAttempts).Tag("Signup").Identity(email).SetActionContext(ActionContext).Write();
                     return BadRequest();
                 }
             }
 
-            if (Settings.Current.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(model.Email, model.Password)) {
-                _logger.Error().Message("Signup failed for \"{0}\": Active Directory authentication failed.", model.Email).Tag("Signup").Identity(model.Email).SetActionContext(ActionContext).Write();
+            if (Settings.Current.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password)) {
+                _logger.Error().Message("Signup failed for \"{0}\": Active Directory authentication failed.", email).Tag("Signup").Identity(email).SetActionContext(ActionContext).Write();
                 return BadRequest();
             }
 
             user = new User {
                 IsActive = true,
-                FullName = model.Name,
-                EmailAddress = model.Email,
+                FullName = model.Name.Trim(),
+                EmailAddress = email,
                 IsEmailAddressVerified = Settings.Current.EnableActiveDirectoryAuth
             };
             user.CreateVerifyEmailAddressToken();
@@ -219,10 +221,10 @@ namespace Exceptionless.Api.Controllers {
                 user = await _userRepository.AddAsync(user, true);
             } catch (ValidationException ex) {
                 var errors = String.Join(", ", ex.Errors);
-                _logger.Error().Critical().Message("Signup failed for \"{0}\": {1}", model.Email, errors).Tag("Signup").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+                _logger.Error().Critical().Message("Signup failed for \"{0}\": {1}", email, errors).Tag("Signup").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 return BadRequest(errors);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Critical().Message("Signup failed for \"{0}\": {1}", model.Email, ex.Message).Tag("Signup").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
+                _logger.Error().Exception(ex).Critical().Message("Signup failed for \"{0}\": {1}", email, ex.Message).Tag("Signup").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 return BadRequest("An error occurred.");
             }
 
@@ -331,7 +333,8 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(email))
                 return StatusCode(HttpStatusCode.NoContent);
 
-            if (CurrentUser != null && String.Equals(CurrentUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
+            email = email.Trim().ToLowerInvariant();
+            if (CurrentUser != null && String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
                 return StatusCode(HttpStatusCode.Created);
 
             // Only allow 3 checks attempts per hour period by a single ip.
@@ -357,6 +360,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Please specify a valid Email Address.");
             }
 
+            email = email.Trim().ToLowerInvariant();
             var user = await _userRepository.GetByEmailAddressAsync(email);
             if (user == null) {
                 _logger.Error().Message("Forgot password failed for \"{0}\": No user was found.", email).Tag("Forgot Password").Identity(email).Property("Email Address", email).SetActionContext(ActionContext).Write();

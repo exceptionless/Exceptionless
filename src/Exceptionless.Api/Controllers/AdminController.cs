@@ -92,7 +92,7 @@ namespace Exceptionless.Api.Controllers {
 
             return Ok();
         }
-        
+
         [HttpGet]
         [Route("maintenance/{name:minlength(1)}")]
         public async Task<IHttpActionResult> RunJobAsync(string name) {
@@ -110,10 +110,13 @@ namespace Exceptionless.Api.Controllers {
                 case "increment-project-configuration-version":
                     await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { IncrementConfigurationVersion = true });
                     break;
+                case "normalize-user-email-address":
+                    await _workItemQueue.EnqueueAsync(new UserMaintenanceWorkItem { Normalize = true });
+                    break;
                 default:
                     return NotFound();
             }
-            
+
             return Ok();
         }
     }
