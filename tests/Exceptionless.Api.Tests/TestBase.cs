@@ -14,10 +14,9 @@ namespace Exceptionless.Api.Tests {
     public abstract class TestBase : TestWithLoggingBase, IDisposable {
         private Container _container;
         private bool _initialized;
+        private readonly IDisposable _testSystemClock = TestSystemClock.Install();
 
         public TestBase(ITestOutputHelper output) : base(output) {
-            SystemClock.Reset();
-
             Log.MinimumLevel = LogLevel.Information;
             Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
         }
@@ -48,6 +47,7 @@ namespace Exceptionless.Api.Tests {
         }
 
         public virtual void Dispose() {
+            _testSystemClock.Dispose();
             _container?.Dispose();
         }
     }

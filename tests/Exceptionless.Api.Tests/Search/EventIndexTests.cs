@@ -19,7 +19,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly PersistentEventQueryValidator _validator;
 
         public EventIndexTests(ITestOutputHelper output) : base(output) {
-            SystemClock.UtcNowFunc = () => new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc);
+            SystemClock.Test.SetFixedTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
             _repository = GetService<IEventRepository>();
             _validator = GetService<PersistentEventQueryValidator>();
             CreateEventsAsync().GetAwaiter().GetResult();
