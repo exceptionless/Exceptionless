@@ -189,7 +189,7 @@ namespace Exceptionless.Api.Controllers {
             StripeInvoice stripeInvoice = null;
             try {
                 var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
-                stripeInvoice = invoiceService.Get(id);
+                stripeInvoice = await invoiceService.GetAsync(id);
             } catch (Exception ex) {
                 _logger.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
             }
@@ -272,7 +272,7 @@ namespace Exceptionless.Api.Controllers {
 
             var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
             var invoiceOptions = new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
-            var invoices = (await MapCollectionAsync<InvoiceGridModel>(invoiceService.List(invoiceOptions), true)).ToList();
+            var invoices = (await MapCollectionAsync<InvoiceGridModel>(await invoiceService.ListAsync(invoiceOptions), true)).ToList();
             return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
         }
 
@@ -392,8 +392,8 @@ namespace Exceptionless.Api.Controllers {
                     organization.BillingStatus = BillingStatus.Active;
                     organization.RemoveSuspension();
                     organization.StripeCustomerId = customer.Id;
-                    if (customer.SourceList.TotalCount > 0)
-                        organization.CardLast4 = customer.SourceList.Data[0].Last4;
+                    if (customer.Sources.TotalCount > 0)
+                        organization.CardLast4 = customer.Sources.Data.First().Card.Last4;
                 } else {
                     var update = new StripeSubscriptionUpdateOptions { PlanId = planId };
                     var create = new StripeSubscriptionCreateOptions();
