@@ -56,9 +56,9 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 Log.Info("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id);
 
                 var subscriptionService = new StripeSubscriptionService(Settings.Current.StripeApiKey);
-                var subscriptions = subscriptionService.List(organization.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
+                var subscriptions = (await subscriptionService.ListAsync(organization.StripeCustomerId).AnyContext()).Where(s => !s.CanceledAt.HasValue);
                 foreach (var subscription in subscriptions)
-                    subscriptionService.Cancel(organization.StripeCustomerId, subscription.Id);
+                    await subscriptionService.CancelAsync(organization.StripeCustomerId, subscription.Id).AnyContext();
             }
 
             await context.ReportProgressAsync(20, "Removing users").AnyContext();
