@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrWhiteSpace(emailAddress))
                 return null;
 
-            emailAddress = emailAddress.ToLowerInvariant().Trim();
+            emailAddress = emailAddress.Trim().ToLowerInvariant();
             var query = new ExceptionlessQuery()
                 .WithElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress))
                 .WithCacheKey(String.Concat("Email:", emailAddress));

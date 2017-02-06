@@ -130,8 +130,8 @@ namespace Exceptionless.Api.Controllers {
             if (user == null)
                 return NotFound();
 
-            email = email.ToLower();
-            if (String.Equals(CurrentUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
+            email = email.Trim().ToLowerInvariant();
+            if (String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
                 return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
 
             // Only allow 3 email address updates per hour period by a single user.
@@ -145,7 +145,7 @@ namespace Exceptionless.Api.Controllers {
 
             user.ResetPasswordResetToken();
             user.EmailAddress = email;
-            user.IsEmailAddressVerified = user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.OrdinalIgnoreCase)) > 0;
+            user.IsEmailAddressVerified = user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.InvariantCultureIgnoreCase)) > 0;
             if (!user.IsEmailAddressVerified)
                 user.CreateVerifyEmailAddressToken();
             else
@@ -255,7 +255,8 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(email))
                 return false;
 
-            if (CurrentUser != null && String.Equals(CurrentUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
+            email = email.Trim().ToLowerInvariant();
+            if (CurrentUser != null && String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
                 return true;
 
             return await _repository.GetByEmailAddressAsync(email) == null;
