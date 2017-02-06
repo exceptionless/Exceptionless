@@ -14,13 +14,13 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public async Task CanCreateOrganizationIndex() {
-            await _configuration.Organizations.ConfigureAsync();
+        public Task CanCreateOrganizationIndex() {
+            return _configuration.Organizations.ConfigureAsync();
         }
 
         [Fact]
-        public async Task CanCreateStackIndex() {
-            await _configuration.Stacks.ConfigureAsync();
+        public Task CanCreateStackIndex() {
+            return _configuration.Stacks.ConfigureAsync();
         }
 
         [Fact]

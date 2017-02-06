@@ -210,8 +210,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             return eventId;
         }
 
-        private async Task SetSessionStartEventIdAsync(string projectId, string sessionId, string eventId) {
-            await _cache.SetAsync<string>(GetSessionStartEventIdCacheKey(projectId, sessionId), eventId, TimeSpan.FromDays(1)).AnyContext();
+        private Task SetSessionStartEventIdAsync(string projectId, string sessionId, string eventId) {
+            return _cache.SetAsync<string>(GetSessionStartEventIdCacheKey(projectId, sessionId), eventId, TimeSpan.FromDays(1));
         }
 
         private string GetIdentitySessionIdCacheKey(string projectId, string identity) {
@@ -229,8 +229,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             return sessionId;
         }
 
-        private async Task SetIdentitySessionIdAsync(string projectId, string identity, string sessionId) {
-            await _cache.SetAsync<string>(GetIdentitySessionIdCacheKey(projectId, identity), sessionId, _sessionTimeout).AnyContext();
+        private Task SetIdentitySessionIdAsync(string projectId, string identity, string sessionId) {
+            return _cache.SetAsync<string>(GetIdentitySessionIdCacheKey(projectId, identity), sessionId, _sessionTimeout);
         }
 
         private async Task<PersistentEvent> CreateSessionStartEventAsync(EventContext startContext, DateTime? lastActivityUtc, bool? isSessionEnd) {
