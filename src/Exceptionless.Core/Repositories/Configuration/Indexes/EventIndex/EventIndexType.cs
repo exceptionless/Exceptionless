@@ -207,7 +207,7 @@ ctx.error.code = codes;";
                 .Object<DataDictionary>(f3 => f3.Name(e => e.Data).Properties(p4 => p4
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.Browser).RootAlias(EventIndexType.Alias.Browser).AddKeywordField())
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserVersion).RootAlias(EventIndexType.Alias.BrowserVersion).AddKeywordField())
-                    .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserMajorVersion).RootAlias(EventIndexType.Alias.BrowserMajorVersion))
+                    .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserMajorVersion).RootAlias(EventIndexType.Alias.BrowserMajorVersion).AddKeywordField())
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.Device).RootAlias(EventIndexType.Alias.Device).AddKeywordField())
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OS).CopyTo(fd => fd.Field(EventIndexType.Alias.OperatingSystem)).Index(false))
                     .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OSVersion).RootAlias(EventIndexType.Alias.OperatingSystemVersion).AddKeywordField())
