@@ -203,6 +203,7 @@
     <Compile Include="Extensions\StringExtensionsTests.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Jobs\CloseInactiveSessionsJobTests.cs" />
+    <Compile Include="Jobs\EventPostJobTests.cs" />
     <Compile Include="Mail\MailerTests.cs" />
     <Compile Include="Mail\NullMailer.cs" />
     <Compile Include="Miscellaneous\DeltaTests.cs" />

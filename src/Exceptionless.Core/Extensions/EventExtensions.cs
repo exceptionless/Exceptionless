@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Newtonsoft.Json;
 
 namespace Exceptionless {
     public static class EventExtensions {
@@ -293,6 +295,10 @@ namespace Exceptionless {
                 return;
 
             ev.Data[Event.KnownDataKeys.UserDescription] = description;
+        }
+
+        public static byte[] GetBytes(this Event ev, JsonSerializerSettings settings) {
+            return Encoding.UTF8.GetBytes(ev.ToJson(Formatting.None, settings));
         }
     }
 }

@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
                     PersistentEvent[] parsedEvents;
                     if (input.TryFromJson(out parsedEvents, _settings))
                         events.AddRange(parsedEvents);
-                    
+
                     break;
                 }
             }

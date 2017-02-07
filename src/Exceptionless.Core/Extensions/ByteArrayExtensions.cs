@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Exceptionless.Core.Extensions {
     public static class ByteArrayExtensions {
         public async static Task<byte[]> DecompressAsync(this byte[] data, string encoding) {
-            byte[] decompressedData = null;
+            byte[] decompressedData;
             using (var outputStream = new MemoryStream()) {
                 using (var inputStream = new MemoryStream(data)) {
                     if (encoding == "gzip")
