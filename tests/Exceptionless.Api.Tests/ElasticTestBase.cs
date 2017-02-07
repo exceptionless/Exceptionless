@@ -4,7 +4,7 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests {
     public class ElasticTestBase : TestBase {
-        protected readonly ExceptionlessElasticConfiguration _configuration;
+        protected ExceptionlessElasticConfiguration _configuration;
 
         public ElasticTestBase(ITestOutputHelper output) : base(output) {
             _configuration = GetService<ExceptionlessElasticConfiguration>();

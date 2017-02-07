@@ -12,7 +12,14 @@ namespace Exceptionless.Core.Pipeline {
 
         public override bool HandleError(Exception ex, EventContext ctx) {
             string message = ErrorMessage ?? $"Error processing action: {GetType().Name} Message: {ex.Message}";
-            _logger.Error().Project(ctx.Event.ProjectId).Message(message).Exception(ex).Property("Event", ctx.Event).Tag(ErrorTags).Critical(IsCritical).Write();
+            _logger.Error()
+                .Project(ctx.Event.ProjectId)
+                .Message(message)
+                .Exception(ex)
+                .Property("Event", new { ctx.Event.Date, ctx.Event.StackId, ctx.Event.Type, ctx.Event.Source, ctx.Event.Message, ctx.Event.Value, ctx.Event.Geo, ctx.Event.ReferenceId, ctx.Event.Tags })
+                .Tag(ErrorTags)
+                .Critical(IsCritical)
+                .Write();
 
             return ContinueOnError;
         }

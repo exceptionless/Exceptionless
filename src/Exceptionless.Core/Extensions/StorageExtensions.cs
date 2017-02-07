@@ -55,8 +55,7 @@ namespace Exceptionless.Core.Extensions {
             if (path.StartsWith("archive"))
                 return true;
 
-            string archivePath = $"archive\\{projectId}\\{created.ToString("yy\\\\MM\\\\dd")}\\{Path.GetFileName(path)}";
-
+            string archivePath = $"archive\\{projectId}\\{created:yy\\MM\\dd}\\{Path.GetFileName(path)}";
             try {
                 if (shouldArchive && !await storage.ExistsAsync(archivePath).AnyContext()) {
                     if (!await storage.RenameFileAsync(path, archivePath).AnyContext())
@@ -69,7 +68,7 @@ namespace Exceptionless.Core.Extensions {
                 logger.Error(ex, "Error archiving event post data \"{0}\".", path);
                 return false;
             }
-            
+
             return true;
         }
     }

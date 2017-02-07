@@ -800,14 +800,14 @@ namespace Exceptionless.Api.Controllers {
 
             try {
                 await _eventPostQueue.EnqueueAsync(new EventPostInfo {
-                    MediaType = Request.Content.Headers.ContentType?.MediaType,
-                    CharSet = Request.Content.Headers.ContentType?.CharSet,
-                    ProjectId = projectId,
-                    UserAgent = userAgent,
                     ApiVersion = version,
-                    Data = Encoding.UTF8.GetBytes(ev.ToJson(Formatting.None, _jsonSerializerSettings)),
+                    CharSet = Request.Content.Headers.ContentType?.CharSet,
                     ContentEncoding = contentEncoding,
-                    IpAddress = Request.GetClientIpAddress()
+                    Data = ev.GetBytes(_jsonSerializerSettings),
+                    IpAddress = Request.GetClientIpAddress(),
+                    MediaType = Request.Content.Headers.ContentType?.MediaType,
+                    ProjectId = projectId,
+                    UserAgent = userAgent
                 }, _storage);
             } catch (Exception ex) {
                 _logger.Error().Exception(ex)
@@ -899,14 +899,14 @@ namespace Exceptionless.Api.Controllers {
 
             try {
                 await _eventPostQueue.EnqueueAsync(new EventPostInfo {
-                    MediaType = Request.Content.Headers.ContentType?.MediaType,
+                    ApiVersion = version,
                     CharSet = Request.Content.Headers.ContentType?.CharSet,
+                    ContentEncoding = contentEncoding,
+                    Data = data,
+                    IpAddress = Request.GetClientIpAddress(),
+                    MediaType = Request.Content.Headers.ContentType?.MediaType,
                     ProjectId = projectId,
                     UserAgent = userAgent,
-                    ApiVersion = version,
-                    Data = data,
-                    ContentEncoding = contentEncoding,
-                    IpAddress = Request.GetClientIpAddress()
                 }, _storage);
             } catch (Exception ex) {
                 _logger.Error().Exception(ex)
