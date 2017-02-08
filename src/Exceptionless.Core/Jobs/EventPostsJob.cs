@@ -30,47 +30,67 @@ namespace Exceptionless.Core.Jobs {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IFileStorage _storage;
+        private readonly JsonSerializerSettings _jsonSerializerSettings;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage, JsonSerializerSettings jsonSerializerSettings, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
             _metricsClient = metricsClient;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _storage = storage;
+            _jsonSerializerSettings = jsonSerializerSettings;
 
             AutoComplete = false;
         }
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventPost> context) {
             var queueEntry = context.QueueEntry;
-            var eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, _logger, context.CancellationToken).AnyContext();
-            if (eventPostInfo == null) {
+            var ep = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, _logger, context.CancellationToken).AnyContext();
+            if (ep == null) {
                 await AbandonEntryAsync(queueEntry).AnyContext();
                 return JobResult.FailedWithMessage($"Unable to retrieve post data '{queueEntry.Value.FilePath}'.");
             }
 
-            bool isInternalProject = eventPostInfo.ProjectId == Settings.Current.InternalProjectId;
+            bool isInternalProject = ep.ProjectId == Settings.Current.InternalProjectId;
             _logger.Info()
-                .Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPostInfo.ProjectId, eventPostInfo.IpAddress, eventPostInfo.ApiVersion, eventPostInfo.UserAgent)
-                .Property("ApiVersion", eventPostInfo.ApiVersion)
-                .Property("IpAddress", eventPostInfo.IpAddress)
-                .Property("Client", eventPostInfo.UserAgent)
-                .Property("Project", eventPostInfo.ProjectId)
+                .Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent)
+                .Property("ApiVersion", ep.ApiVersion)
+                .Property("IpAddress", ep.IpAddress)
+                .Property("Client", ep.UserAgent)
+                .Property("Project", ep.ProjectId)
                 .Property("@stack", "event-posted")
                 .WriteIf(!isInternalProject);
 
-            var project = await _projectRepository.GetByIdAsync(eventPostInfo.ProjectId, true).AnyContext();
+            var project = await _projectRepository.GetByIdAsync(ep.ProjectId, true).AnyContext();
             if (project == null) {
-                _logger.Error().Project(eventPostInfo.ProjectId).Message("Unable to process EventPost \"{0}\": Unable to load project: {1}", queueEntry.Value.FilePath, eventPostInfo.ProjectId).WriteIf(!isInternalProject);
-                await CompleteEntryAsync(queueEntry, eventPostInfo, SystemClock.UtcNow).AnyContext();
+                _logger.Error().Project(ep.ProjectId).Message("Unable to process EventPost \"{0}\": Unable to load project: {1}", queueEntry.Value.FilePath, ep.ProjectId).WriteIf(!isInternalProject);
+                await CompleteEntryAsync(queueEntry, ep, SystemClock.UtcNow).AnyContext();
                 return JobResult.Success;
             }
 
+            long maxEventPostSize = Settings.Current.MaximumEventPostSize;
+            byte[] uncompressedData = ep.Data;
+            if (!String.IsNullOrEmpty(ep.ContentEncoding)) {
+                try {
+                    // increase the absolute max just due to the content was compressed and might be a batch of events.
+                    maxEventPostSize *= 10;
+                    uncompressedData = await uncompressedData.DecompressAsync(ep.ContentEncoding).AnyContext();
+                } catch (Exception ex) {
+                    await CompleteEntryAsync(queueEntry, ep, SystemClock.UtcNow).AnyContext();
+                    return JobResult.FailedWithMessage($"Unable to decompress post data '{queueEntry.Value.FilePath}' ({ep.Data.Length} bytes compressed): {ex.Message}");
+                }
+            }
+
+            if (uncompressedData.Length > maxEventPostSize) {
+                await CompleteEntryAsync(queueEntry, ep, SystemClock.UtcNow).AnyContext();
+                return JobResult.FailedWithMessage($"Unable to process decompressed post data '{queueEntry.Value.FilePath}' ({ep.Data.Length} bytes compressed, {uncompressedData.Length} bytes): Maximum uncompressed event post size limit ({maxEventPostSize} bytes) reached.");
+            }
+
             var createdUtc = SystemClock.UtcNow;
-            var events = await ParseEventPostAsync(eventPostInfo, createdUtc, queueEntry.Id, isInternalProject).AnyContext();
+            var events = await ParseEventPostAsync(ep, createdUtc, uncompressedData, queueEntry.Id, isInternalProject).AnyContext();
             if (events == null || events.Count == 0) {
-                await CompleteEntryAsync(queueEntry, eventPostInfo, createdUtc).AnyContext();
+                await CompleteEntryAsync(queueEntry, ep, createdUtc).AnyContext();
                 return JobResult.Success;
             }
 
@@ -99,12 +119,12 @@ namespace Exceptionless.Core.Jobs {
             int errorCount = 0;
             var eventsToRetry = new List<PersistentEvent>();
             try {
-                var results = await _eventPipeline.RunAsync(events, eventPostInfo).AnyContext();
+                var results = await _eventPipeline.RunAsync(events, ep).AnyContext();
                 _logger.Info()
-                    .Message(() => $"Ran {results.Count} events through the pipeline: id={queueEntry.Id} project={eventPostInfo.ProjectId} success={results.Count(r => r.IsProcessed)} error={results.Count(r => r.HasError)}")
+                    .Message(() => $"Ran {results.Count} events through the pipeline: id={queueEntry.Id} project={ep.ProjectId} success={results.Count(r => r.IsProcessed)} error={results.Count(r => r.HasError)}")
                     .Property("@value", results.Count)
                     .Property("@stack", "event-processed")
-                    .Property("Project", eventPostInfo.ProjectId)
+                    .Property("Project", ep.ProjectId)
                     .WriteIf(!isInternalProject);
 
                 foreach (var eventContext in results) {
@@ -114,7 +134,7 @@ namespace Exceptionless.Core.Jobs {
                     if (!eventContext.HasError)
                         continue;
 
-                    _logger.Error().Exception(eventContext.Exception).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, eventContext.ErrorMessage).Write();
+                    _logger.Error().Exception(eventContext.Exception).Project(ep.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, eventContext.ErrorMessage).Write();
 
                     if (eventContext.Exception is ValidationException)
                         continue;
@@ -126,9 +146,9 @@ namespace Exceptionless.Core.Jobs {
                     }
                 }
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Project(eventPostInfo.ProjectId).Write();
+                _logger.Error().Exception(ex).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Project(ep.ProjectId).Write();
                 if (ex is ArgumentException || ex is DocumentNotFoundException) {
-                    await CompleteEntryAsync(queueEntry, eventPostInfo, createdUtc).AnyContext();
+                    await CompleteEntryAsync(queueEntry, ep, createdUtc).AnyContext();
                     return JobResult.Success;
                 }
 
@@ -138,51 +158,43 @@ namespace Exceptionless.Core.Jobs {
             }
 
             foreach (var requeueEvent in eventsToRetry) {
+                string contentEncoding = null;
+                byte[] data = requeueEvent.GetBytes(_jsonSerializerSettings);
+                if (data.Length > 1000) {
+                    data = await data.CompressAsync().AnyContext();
+                    contentEncoding = "gzip";
+                }
+
                 // Put this single event back into the queue so we can retry it separately.
                 await _queue.EnqueueAsync(new EventPostInfo {
-                    ApiVersion = eventPostInfo.ApiVersion,
-                    Data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(requeueEvent)),
-                    IpAddress = eventPostInfo.IpAddress,
-                    MediaType = eventPostInfo.MediaType,
-                    CharSet = eventPostInfo.CharSet,
-                    ProjectId = eventPostInfo.ProjectId,
-                    UserAgent = eventPostInfo.UserAgent
+                    ApiVersion = ep.ApiVersion,
+                    CharSet = ep.CharSet,
+                    ContentEncoding = contentEncoding,
+                    Data = data,
+                    IpAddress = ep.IpAddress,
+                    MediaType = ep.MediaType,
+                    ProjectId = ep.ProjectId,
+                    UserAgent = ep.UserAgent
                 }, _storage, false, context.CancellationToken).AnyContext();
             }
 
             if (isSingleEvent && errorCount > 0)
                 await AbandonEntryAsync(queueEntry).AnyContext();
             else
-                await CompleteEntryAsync(queueEntry, eventPostInfo, createdUtc).AnyContext();
+                await CompleteEntryAsync(queueEntry, ep, createdUtc).AnyContext();
 
             return JobResult.Success;
         }
 
-        private async Task AbandonEntryAsync(IQueueEntry<EventPost> queueEntry) {
-            await queueEntry.AbandonAsync().AnyContext();
-            await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, _logger).AnyContext();
-        }
-
-        private async Task CompleteEntryAsync(IQueueEntry<EventPost> queueEntry, EventPostInfo eventPostInfo, DateTime created) {
-            await queueEntry.CompleteAsync().AnyContext();
-            await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, _logger, queueEntry.Value.ShouldArchive).AnyContext();
-        }
-
-        private async Task<List<PersistentEvent>> ParseEventPostAsync(EventPostInfo ep, DateTime createdUtc, string queueEntryId, bool isInternalProject) {
+        private async Task<List<PersistentEvent>> ParseEventPostAsync(EventPostInfo ep, DateTime createdUtc, byte[] uncompressedData, string queueEntryId, bool isInternalProject) {
             List<PersistentEvent> events = null;
-
             try {
+                var encoding = Encoding.UTF8;
+                if (!String.IsNullOrEmpty(ep.CharSet))
+                    encoding = Encoding.GetEncoding(ep.CharSet);
+
                 await _metricsClient.TimeAsync(async () => {
-                    byte[] data = ep.Data;
-                    if (!String.IsNullOrEmpty(ep.ContentEncoding))
-                        data = await data.DecompressAsync(ep.ContentEncoding).AnyContext();
-
-                    var encoding = Encoding.UTF8;
-                    if (!String.IsNullOrEmpty(ep.CharSet))
-                        encoding = Encoding.GetEncoding(ep.CharSet);
-
-                    string input = encoding.GetString(data);
-
+                    string input = encoding.GetString(uncompressedData);
                     events = _eventParserPluginManager.ParseEvents(input, ep.ApiVersion, ep.UserAgent) ?? new List<PersistentEvent>(0);
                     foreach (var ev in events) {
                         ev.CreatedUtc = createdUtc;
@@ -206,6 +218,16 @@ namespace Exceptionless.Core.Jobs {
             }
 
             return events;
+        }
+
+        private async Task AbandonEntryAsync(IQueueEntry<EventPost> queueEntry) {
+            await queueEntry.AbandonAsync().AnyContext();
+            await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, _logger).AnyContext();
+        }
+
+        private async Task CompleteEntryAsync(IQueueEntry<EventPost> queueEntry, EventPostInfo eventPostInfo, DateTime created) {
+            await queueEntry.CompleteAsync().AnyContext();
+            await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, _logger, queueEntry.Value.ShouldArchive).AnyContext();
         }
 
         protected override void LogProcessingQueueEntry(IQueueEntry<EventPost> queueEntry) {

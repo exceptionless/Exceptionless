@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Extensions {
             foreach (var name in names)
                 target.Remove(name);
         }
-        
+
 
         public static bool RemoveAllIfNullOrEmpty(this JObject target, params string[] names) {
             if (target.IsNullOrEmpty())
@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Extensions {
             var properties = target.Descendants().OfType<JProperty>().Where(t => names.Contains(t.Name) && t.IsNullOrEmpty()).ToList();
             foreach(var p in properties)
                 p.Remove();
-            
+
             return true;
         }
 
@@ -119,9 +119,9 @@ namespace Exceptionless.Core.Extensions {
 
             return true;
         }
-        
+
         public static string GetPropertyStringValue(this JObject target, string name) {
-            if (target.IsPropertyNullOrEmpty(name)) 
+            if (target.IsPropertyNullOrEmpty(name))
                 return null;
 
             return target.Property(name).Value.ToString();
@@ -172,7 +172,7 @@ namespace Exceptionless.Core.Extensions {
             JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
             return data.ToObject<List<T>>(serializer);
         }
-        
+
         public static T FromJson<T>(this string data, JsonSerializerSettings settings = null) {
             JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
 
@@ -190,7 +190,7 @@ namespace Exceptionless.Core.Extensions {
                 return false;
             }
         }
-        
+
         private static readonly ConcurrentDictionary<Type, IMemberAccessor> _countAccessors = new ConcurrentDictionary<Type, IMemberAccessor>();
         public static bool IsValueEmptyCollection(this JsonProperty property, object target) {
             var value = property.ValueProvider.GetValue(target);

@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Extensions {
     public static class ByteArrayExtensions {
-        public async static Task<byte[]> DecompressAsync(this byte[] data, string encoding) {
-            byte[] decompressedData = null;
+        public static async Task<byte[]> DecompressAsync(this byte[] data, string encoding) {
+            byte[] decompressedData;
             using (var outputStream = new MemoryStream()) {
                 using (var inputStream = new MemoryStream(data)) {
                     if (encoding == "gzip")
@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Extensions {
                             await zip.CopyToAsync(outputStream).AnyContext();
                         }
                     else
-                        throw new ArgumentException($"Unsupported encoding type \"{encoding}\".", nameof(encoding));
+                        throw new InvalidOperationException($"Unsupported encoding type \"{encoding}\".");
                 }
 
                 decompressedData = outputStream.ToArray();
