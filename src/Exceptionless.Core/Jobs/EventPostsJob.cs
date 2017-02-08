@@ -32,8 +32,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IFileStorage _storage;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage,
-            JsonSerializerSettings jsonSerializerSettings, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage, JsonSerializerSettings jsonSerializerSettings, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
             _metricsClient = metricsClient;
@@ -47,17 +46,6 @@ namespace Exceptionless.Core.Jobs {
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventPost> context) {
             var queueEntry = context.QueueEntry;
-            var fileInfo = await _storage.GetFileInfoAsync(queueEntry.Value.FilePath).AnyContext();
-            if (fileInfo == null) {
-                await queueEntry.AbandonAsync().AnyContext();
-                return JobResult.FailedWithMessage($"Unable to retrieve post data info '{queueEntry.Value.FilePath}'.");
-            }
-
-            if (fileInfo.Size > Settings.Current.MaximumEventPostSize) {
-                await queueEntry.CompleteAsync().AnyContext();
-                return JobResult.FailedWithMessage($"Unable to process post data '{queueEntry.Value.FilePath}' ({fileInfo.Size} bytes): Maximum event post size limit ({Settings.Current.MaximumEventPostSize} bytes) reached.");
-            }
-
             var ep = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, _logger, context.CancellationToken).AnyContext();
             if (ep == null) {
                 await AbandonEntryAsync(queueEntry).AnyContext();
@@ -81,20 +69,22 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Success;
             }
 
+            long maxEventPostSize = Settings.Current.MaximumEventPostSize;
             byte[] uncompressedData = ep.Data;
             if (!String.IsNullOrEmpty(ep.ContentEncoding)) {
                 try {
+                    // increase the absolute max just due to the content was compressed and might be a batch of events.
+                    maxEventPostSize *= 10;
                     uncompressedData = await uncompressedData.DecompressAsync(ep.ContentEncoding).AnyContext();
                 } catch (OutOfMemoryException ex) {
                     await CompleteEntryAsync(queueEntry, ep, SystemClock.UtcNow).AnyContext();
                     return JobResult.FailedWithMessage($"Unable to decompress post data '{queueEntry.Value.FilePath}' ({ep.Data.Length} bytes compressed): {ex.Message}");
                 }
+            }
 
-                long maxUncompressedEventPostSize = Settings.Current.MaximumEventPostSize * 10;
-                if (uncompressedData.Length > maxUncompressedEventPostSize) {
-                    await CompleteEntryAsync(queueEntry, ep, SystemClock.UtcNow).AnyContext();
-                    return JobResult.FailedWithMessage($"Unable to process decompressed post data '{queueEntry.Value.FilePath}' ({ep.Data.Length} bytes compressed, {uncompressedData.Length} bytes): Maximum uncompressed event post size limit ({maxUncompressedEventPostSize} bytes) reached.");
-                }
+            if (uncompressedData.Length > maxEventPostSize) {
+                await CompleteEntryAsync(queueEntry, ep, SystemClock.UtcNow).AnyContext();
+                return JobResult.FailedWithMessage($"Unable to process decompressed post data '{queueEntry.Value.FilePath}' ({ep.Data.Length} bytes compressed, {uncompressedData.Length} bytes): Maximum uncompressed event post size limit ({maxEventPostSize} bytes) reached.");
             }
 
             var createdUtc = SystemClock.UtcNow;
