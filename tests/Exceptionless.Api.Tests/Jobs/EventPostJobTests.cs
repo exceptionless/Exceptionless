@@ -7,7 +7,6 @@ using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Storage;
@@ -30,7 +29,6 @@ namespace Exceptionless.Api.Tests.Jobs {
 
         public EventPostJobTests(ITestOutputHelper output) : base(output) {
             _job = GetService<EventPostsJob>();
-            _configuration = GetService<ExceptionlessElasticConfiguration>();
             _storage = GetService<IFileStorage>();
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();

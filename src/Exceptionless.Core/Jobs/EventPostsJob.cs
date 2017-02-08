@@ -76,7 +76,7 @@ namespace Exceptionless.Core.Jobs {
                     // increase the absolute max just due to the content was compressed and might be a batch of events.
                     maxEventPostSize *= 10;
                     uncompressedData = await uncompressedData.DecompressAsync(ep.ContentEncoding).AnyContext();
-                } catch (OutOfMemoryException ex) {
+                } catch (Exception ex) {
                     await CompleteEntryAsync(queueEntry, ep, SystemClock.UtcNow).AnyContext();
                     return JobResult.FailedWithMessage($"Unable to decompress post data '{queueEntry.Value.FilePath}' ({ep.Data.Length} bytes compressed): {ex.Message}");
                 }
@@ -88,7 +88,7 @@ namespace Exceptionless.Core.Jobs {
             }
 
             var createdUtc = SystemClock.UtcNow;
-            var events = await ParseEventPostAsync(ep, createdUtc, uncompressedData, queueEntry, isInternalProject).AnyContext();
+            var events = await ParseEventPostAsync(ep, createdUtc, uncompressedData, queueEntry.Id, isInternalProject).AnyContext();
             if (events == null || events.Count == 0) {
                 await CompleteEntryAsync(queueEntry, ep, createdUtc).AnyContext();
                 return JobResult.Success;
@@ -186,7 +186,7 @@ namespace Exceptionless.Core.Jobs {
             return JobResult.Success;
         }
 
-        private async Task<List<PersistentEvent>> ParseEventPostAsync(EventPostInfo ep, DateTime createdUtc, byte[] uncompressedData, IQueueEntry<EventPost> queueEntry, bool isInternalProject) {
+        private async Task<List<PersistentEvent>> ParseEventPostAsync(EventPostInfo ep, DateTime createdUtc, byte[] uncompressedData, string queueEntryId, bool isInternalProject) {
             List<PersistentEvent> events = null;
             try {
                 var encoding = Encoding.UTF8;
@@ -214,7 +214,7 @@ namespace Exceptionless.Core.Jobs {
                 await _metricsClient.GaugeAsync(MetricNames.PostsEventCount, events.Count).AnyContext();
             } catch (Exception ex) {
                 await _metricsClient.CounterAsync(MetricNames.PostsParseErrors).AnyContext();
-                _logger.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).WriteIf(!isInternalProject);
+                _logger.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntryId, ex.Message).WriteIf(!isInternalProject);
             }
 
             return events;
