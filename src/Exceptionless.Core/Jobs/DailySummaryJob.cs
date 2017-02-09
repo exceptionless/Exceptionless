@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Jobs {
                         UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
                     };
 
-                    var summarySent = await SendSummaryNotificationAsync(project, notification).AnyContext();
+                    bool summarySent = await SendSummaryNotificationAsync(project, notification).AnyContext();
                     if (summarySent) {
                         await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }).AnyContext();
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Threading;
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Jobs {
                     return JobResult.FailedWithMessage("Unable to download GeoIP database.");
 
                 _logger.Info("Extracting GeoIP database");
-                using (GZipStream decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync().AnyContext(), CompressionMode.Decompress))
+                using (var decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync().AnyContext(), CompressionMode.Decompress))
                     await _storage.SaveFileAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH, decompressionStream, context.CancellationToken).AnyContext();
             } catch (Exception ex) {
                 _logger.Error(ex, "An error occurred while downloading the GeoIP database.");
