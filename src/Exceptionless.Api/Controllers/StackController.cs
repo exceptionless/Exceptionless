@@ -801,7 +801,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
-            return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("cardinality:user sum:count~1 min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -830,7 +830,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organization);
-            return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("cardinality:user sum:count~1 min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -863,7 +863,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            return await GetAllByTermsAsync("cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("cardinality:user sum:count~1 min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -886,7 +886,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
-            return await GetAllByTermsAsync("-cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("-cardinality:user sum:count~1 min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -915,7 +915,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilterQuery(organization);
-            return await GetAllByTermsAsync("-cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("-cardinality:user sum:count~1 min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         /// <summary>
@@ -948,7 +948,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            return await GetAllByTermsAsync("-cardinality:user min:date max:date", sf, ti, filter, mode, page, limit);
+            return await GetAllByTermsAsync("-cardinality:user sum:count~1 min:date max:date", sf, ti, filter, mode, page, limit);
         }
 
         private async Task<IHttpActionResult> GetAllByTermsAsync(string aggregations, IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string mode = null, int page = 1, int limit = 10) {
@@ -1016,7 +1016,7 @@ namespace Exceptionless.Api.Controllers {
                 return new List<StackSummaryModel>();
 
             var systemFilter = new ElasticQuery().WithSystemFilter(eventSystemFilter).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
-            var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), $"terms:(stack_id~{stacks.Count} cardinality:user min:date max:date)");
+            var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), $"terms:(stack_id~{stacks.Count} cardinality:user sum:count~1 min:date max:date)");
             return await GetStackSummariesAsync(stacks, stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets, eventSystemFilter, ti);
         }
 
@@ -1034,7 +1034,7 @@ namespace Exceptionless.Api.Controllers {
                     Title = stack.Title,
                     FirstOccurrence = term.Aggregations.Min<DateTime>("min_date").Value,
                     LastOccurrence = term.Aggregations.Max<DateTime>("max_date").Value,
-                    Total = term.Total.GetValueOrDefault(),
+                    Total = (long)(term.Aggregations.Sum("sum_count").Value ?? term.Total.GetValueOrDefault()),
 
                     Users = term.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault(),
                     TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
