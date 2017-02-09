@@ -35,6 +35,10 @@ namespace Foundatio.Logging {
             return builder.Property(Tags, tagList);
         }
 
+        public static ILogBuilder Value(this ILogBuilder builder, decimal value) {
+            return builder.Property("@value", value);
+        }
+
         /// <summary>
         /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
         /// </summary>
