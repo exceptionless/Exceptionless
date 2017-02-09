@@ -62,7 +62,7 @@ namespace Exceptionless.Api.Utility {
         }
 
         private HttpResponseMessage CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
-            HttpResponseMessage response = request.CreateResponse(statusCode);
+            var response = request.CreateResponse(statusCode);
             response.ReasonPhrase = message;
             response.Content = new StringContent(message);
 
@@ -81,7 +81,7 @@ namespace Exceptionless.Api.Utility {
             }
 
             // fallback to using the IP address
-            var ip = request.GetClientIpAddress();
+            string ip = request.GetClientIpAddress();
             if (String.IsNullOrEmpty(ip) || ip == "::1")
                 ip = "127.0.0.1";
 
