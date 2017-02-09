@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         private async Task<GeoResult> GetGeoFromIpAddressesAsync(IEnumerable<string> ips) {
-            foreach (var ip in ips) {
+            foreach (string ip in ips) {
                 if (String.IsNullOrEmpty(ip))
                     continue;
 
