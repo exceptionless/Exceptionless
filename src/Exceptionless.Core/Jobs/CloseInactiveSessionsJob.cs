@@ -100,7 +100,7 @@ namespace Exceptionless.Core.Jobs {
         private async Task<HeartbeatResult> GetLastHeartbeatActivityUtcAsync(string cacheKey) {
             var cacheValue = await _cache.GetAsync<DateTime>(cacheKey).AnyContext();
             if (cacheValue.HasValue) {
-                var close = await _cache.GetAsync(cacheKey + "-close", false).AnyContext();
+                bool close = await _cache.GetAsync(cacheKey + "-close", false).AnyContext();
                 return new HeartbeatResult { ActivityUtc =  cacheValue.Value, Close = close, CacheKey = cacheKey };
             }
 

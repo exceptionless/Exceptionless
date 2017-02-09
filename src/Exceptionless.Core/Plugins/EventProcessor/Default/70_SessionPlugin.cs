@@ -77,7 +77,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ctx => ctx.Event.IsHidden = true);
 
                 // try to update an existing session
-                var sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent != null).AnyContext();
+                string sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent != null).AnyContext();
 
                 // do we already have a session start for this session id?
                 if (!String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent != null) {
@@ -178,7 +178,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             await base.EventProcessedAsync(context).AnyContext();
         }
 
-        private static List<List<EventContext>> CreateSessionGroups(IGrouping<String, EventContext> identityGroup) {
+        private static List<List<EventContext>> CreateSessionGroups(IGrouping<string, EventContext> identityGroup) {
             var sessions = new List<List<EventContext>>();
             var currentSession = new List<EventContext>();
             sessions.Add(currentSession);

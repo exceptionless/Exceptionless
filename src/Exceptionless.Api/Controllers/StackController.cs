@@ -196,7 +196,7 @@ namespace Exceptionless.Api.Controllers {
             if (id.StartsWith("http"))
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
-            var url = data.GetValue("Link").Value<string>();
+            string url = data.GetValue("Link").Value<string>();
             return await AddLinkAsync(id, url);
         }
 
@@ -434,18 +434,18 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id))
                 return NotFound();
 
-            Stack stack = await _stackRepository.GetByIdAsync(id);
+            var stack = await _stackRepository.GetByIdAsync(id);
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
             if (!await _billingManager.HasPremiumFeaturesAsync(stack.OrganizationId))
                 return PlanLimitReached("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
 
-            List<WebHook> promotedProjectHooks = (await _webHookRepository.GetByProjectIdAsync(stack.ProjectId)).Documents.Where(p => p.EventTypes.Contains(WebHookRepository.EventTypes.StackPromoted)).ToList();
+            var promotedProjectHooks = (await _webHookRepository.GetByProjectIdAsync(stack.ProjectId)).Documents.Where(p => p.EventTypes.Contains(WebHookRepository.EventTypes.StackPromoted)).ToList();
             if (!promotedProjectHooks.Any())
                 return NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
 
-            foreach (WebHook hook in promotedProjectHooks) {
+            foreach (var hook in promotedProjectHooks) {
                 var context = new WebHookDataContext(hook.Version, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.IsRegressed);
                 await _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
                     OrganizationId = stack.OrganizationId,
@@ -954,7 +954,7 @@ namespace Exceptionless.Api.Controllers {
         private async Task<IHttpActionResult> GetAllByTermsAsync(string aggregations, IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
-            var skip = GetSkip(page, limit);
+            int skip = GetSkip(page, limit);
             if (skip > MAXIMUM_SKIP)
                 return Ok(EmptyModels);
 

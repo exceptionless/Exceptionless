@@ -36,9 +36,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public OrganizationIndex Organizations { get; }
 
         protected override IElasticClient CreateElasticClient() {
-            ConnectionSettings settings = new ConnectionSettings(CreateConnectionPool(), s => new ElasticsearchJsonNetSerializer(s, _logger));
+            var settings = new ConnectionSettings(CreateConnectionPool(), s => new ElasticsearchJsonNetSerializer(s, _logger));
             ConfigureSettings(settings);
-            foreach (IIndex index in Indexes)
+            foreach (var index in Indexes)
                 index.ConfigureSettings(settings);
 
             return new ElasticClient(settings);

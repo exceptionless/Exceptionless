@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models.WorkItems;
@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
             var wi = (ThrottleBotsWorkItem)workItem;
-            var cacheKey = $"{nameof(ThrottleBotsWorkItemHandler)}:{wi.OrganizationId}:{wi.ClientIpAddress}";
+            string cacheKey = $"{nameof(ThrottleBotsWorkItemHandler)}:{wi.OrganizationId}:{wi.ClientIpAddress}";
             return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 

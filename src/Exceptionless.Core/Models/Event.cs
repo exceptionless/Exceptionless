@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Models {
         public string ReferenceId { get; set; }
 
         protected bool Equals(Event other) {
-            return string.Equals(Type, other.Type) && string.Equals(Source, other.Source) && Tags.CollectionEquals(other.Tags) && string.Equals(Message, other.Message) && string.Equals(Geo, other.Geo) && Value == other.Value && Equals(Data, other.Data);
+            return String.Equals(Type, other.Type) && String.Equals(Source, other.Source) && Tags.CollectionEquals(other.Tags) && String.Equals(Message, other.Message) && String.Equals(Geo, other.Geo) && Value == other.Value && Equals(Data, other.Data);
         }
 
         public override bool Equals(object obj) {
@@ -76,7 +76,7 @@ namespace Exceptionless.Core.Models {
         private static readonly List<string> _exclusions = new List<string> { KnownDataKeys.TraceLog };
         public override int GetHashCode() {
             unchecked {
-                var hashCode = Type?.GetHashCode() ?? 0;
+                int hashCode = Type?.GetHashCode() ?? 0;
                 hashCode = (hashCode * 397) ^ (Source?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ (Tags?.GetCollectionHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ (Message?.GetHashCode() ?? 0);

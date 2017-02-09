@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Jobs {
                 if (Settings.Current.MaximumRetentionDays > 0 && retentionDays > Settings.Current.MaximumRetentionDays)
                     retentionDays = Settings.Current.MaximumRetentionDays;
 
-                DateTime cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
+                var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
                 await _eventRepository.RemoveAllByDateAsync(organization.Id, cutoff).AnyContext();
             } catch (Exception ex) {
                 _logger.Error(ex, "Error enforcing limits: org={0} id={1} message=\"{2}\"", organization.Name, organization.Id, ex.Message);
