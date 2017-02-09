@@ -232,7 +232,7 @@ namespace Exceptionless.Api {
                 if (bootstrapperType == null)
                     return container;
 
-                bootstrapperType.GetMethod("RegisterServices", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[] { container, loggerFactory });
+                bootstrapperType.GetMethod("RegisterServices", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[] { container, Settings.Current.RunJobsInProcess, loggerFactory });
             }
 
             return container;

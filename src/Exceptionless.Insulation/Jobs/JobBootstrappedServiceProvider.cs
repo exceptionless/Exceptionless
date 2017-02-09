@@ -17,8 +17,9 @@ namespace Exceptionless.Insulation.Jobs {
             container.Options.AllowOverridingRegistrations = true;
             container.Options.DefaultScopedLifestyle = new ExecutionContextScopeLifestyle();
 
+            Settings.Current.DisableIndexConfiguration = true;
             Core.Bootstrapper.RegisterServices(container, loggerFactory);
-            Bootstrapper.RegisterServices(container, loggerFactory);
+            Bootstrapper.RegisterServices(container, true, loggerFactory);
 
 #if DEBUG
             container.Verify();
