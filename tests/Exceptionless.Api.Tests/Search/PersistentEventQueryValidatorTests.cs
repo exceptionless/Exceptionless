@@ -83,8 +83,39 @@ namespace Exceptionless.Api.Tests.Search {
         [InlineData("avg:", false, false)]
         [InlineData("avg:val", false, true)]
         [InlineData("avg:value", true, false)]
-        [InlineData("date:(date cardinality:stack) cardinality:stack terms:(first @include:true)", true, false)] // dashboards
-        [InlineData("date:(date cardinality:user sum:value avg:value) min:date max:date cardinality:user", true, false)] // stack dashboard
+        [InlineData("max:date", true, false)]
+        [InlineData("avg:count", true, false)]
+        [InlineData("terms:(first @include:true)", true, false)]
+        [InlineData("cardinality:stack", true, false)]
+        [InlineData("cardinality:user", true, false)]
+        [InlineData("cardinality:type", true, false)]
+        [InlineData("cardinality:source", true, true)]
+        [InlineData("cardinality:tags", true, true)]
+        [InlineData("cardinality:geo", true, true)]
+        [InlineData("cardinality:fixed", true, true)]
+        [InlineData("cardinality:hidden", true, true)]
+        [InlineData("cardinality:organization", true, true)]
+        [InlineData("cardinality:project", true, true)]
+        [InlineData("cardinality:error.code", true, true)]
+        [InlineData("cardinality:error.type", true, true)]
+        [InlineData("cardinality:error.targettype", true, true)]
+        [InlineData("cardinality:error.targetmethod", true, true)]
+        [InlineData("cardinality:machine", true, true)]
+        [InlineData("cardinality:architecture", true, true)]
+        [InlineData("cardinality:country", true, true)]
+        [InlineData("cardinality:level1", true, true)]
+        [InlineData("cardinality:level2", true, true)]
+        [InlineData("cardinality:locality", true, true)]
+        [InlineData("cardinality:browser", true, true)]
+        [InlineData("cardinality:browser.major", true, true)]
+        [InlineData("cardinality:device", true, true)]
+        [InlineData("cardinality:os", true, true)]
+        [InlineData("cardinality:os.version", true, true)]
+        [InlineData("cardinality:os.major", true, true)]
+        [InlineData("cardinality:bot", true, true)]
+        [InlineData("cardinality:version", true, true)]
+        [InlineData("date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1", true, false)] // dashboards
+        [InlineData("date:(date cardinality:user sum:value avg:value sum:count~1) min:date max:date cardinality:user sum:count~1", true, false)] // stack dashboard
         [InlineData("avg:value cardinality:user date:(date cardinality:user)", true, false)] // session dashboard
         [InlineData("date:(date~month terms:(project cardinality:stack terms:(first @include:true)) cardinality:stack terms:(first @include:true))", true, true)] // Breakdown of total events, new events and unique events per month by project
         public async Task CanProcessAggregationsAsync(string query, bool isValid, bool usesPremiumFeatures) {
