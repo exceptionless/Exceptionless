@@ -53,19 +53,17 @@
     </Reference>
     <Reference Include="Foundatio.Redis, Version=4.3.1289.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Foundatio.Redis.4.3.1289\lib\net46\Foundatio.Redis.dll</HintPath>
-    <Reference Include="Foundatio, Version=4.3.1286.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.4.3.1286\lib\net46\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.AzureStorage, Version=4.3.1286.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Foundatio.AzureStorage, Version=4.3.1289.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Foundatio.AzureStorage.4.3.1286\lib\net46\Foundatio.AzureStorage.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Logging.NLog, Version=4.3.1286.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Foundatio.Logging.NLog, Version=4.3.1289.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Foundatio.Logging.NLog.4.3.1286\lib\net46\Foundatio.Logging.NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Redis, Version=4.3.1286.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Foundatio.Redis, Version=4.3.1289.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Foundatio.Redis.4.3.1286\lib\net46\Foundatio.Redis.dll</HintPath>
       <Private>True</Private>
     </Reference>
