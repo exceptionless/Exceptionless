@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -49,7 +50,7 @@ namespace Exceptionless.Api.Utility {
                 long size = request.Content.Headers.ContentLength.GetValueOrDefault();
                 await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
                 if (size > Settings.Current.MaximumEventPostSize) {
-                    _logger.Warn().Message("Event submission discarded for being too large: {0}", size).Project(request.GetDefaultProjectId()).Write();
+                    _logger.Warn().Message("Event submission discarded for being too large: {0} bytes", size).Value(size).Tag(request.Content.Headers.ContentEncoding?.ToArray()).Project(request.GetDefaultProjectId()).Write();
                     await _metricsClient.CounterAsync(MetricNames.PostsDiscarded);
                     tooBig = true;
                 }
@@ -70,7 +71,7 @@ namespace Exceptionless.Api.Utility {
         }
 
         private HttpResponseMessage CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
-            HttpResponseMessage response = request.CreateResponse(statusCode);
+            var response = request.CreateResponse(statusCode);
             response.ReasonPhrase = message;
             response.Content = new StringContent(message);
 
