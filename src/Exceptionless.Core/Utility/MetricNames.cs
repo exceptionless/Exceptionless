@@ -19,10 +19,11 @@ namespace Exceptionless.Core.AppStats {
         public const string PostsDiscarded = "posts.discarded";
         public const string PostsBlocked = "posts.blocked";
 
-        public const string PostsJobSize = "posts.job.size";
-        public const string PostsJobUncompressedSize = "posts.job.uncompressedsize";
-        public const string PostsJobDecompressionTime = "posts.decompression.time";
-        public const string PostsJobDecompressionErrors = "posts.decompression.errors";
+        public const string PostsMessageSize = "posts.message.size";
+        public const string PostsCompressedSize = "posts.compressed.size";
+        public const string PostsUncompressedSize = "posts.uncompressed.size";
+        public const string PostsDecompressionTime = "posts.decompression.time";
+        public const string PostsDecompressionErrors = "posts.decompression.errors";
 
         public const string UsageGeocodingApi = "usage.geocoding";
         public const string ThrottleLimitExceeded = "throttle.limitexceeded";
