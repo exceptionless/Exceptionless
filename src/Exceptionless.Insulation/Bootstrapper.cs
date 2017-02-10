@@ -19,6 +19,7 @@ using Foundatio.Serializer;
 using Foundatio.Storage;
 using SimpleInjector;
 using StackExchange.Redis;
+using LogLevel = Exceptionless.Logging.LogLevel;
 
 namespace Exceptionless.Insulation {
     public class Bootstrapper {
@@ -70,9 +71,10 @@ namespace Exceptionless.Insulation {
             container.RegisterSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
             container.RegisterSingleton<ExceptionlessClient>(() => client);
 
+            client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
+            client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
             client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
             client.Configuration.SetVersion(Settings.Current.Version);
-            client.Configuration.UseLogger(new NLogExceptionlessLog(Exceptionless.Logging.LogLevel.Warn));
             if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
                 client.Configuration.Enabled = false;
 

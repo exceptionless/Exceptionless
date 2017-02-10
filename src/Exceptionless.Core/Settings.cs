@@ -67,15 +67,13 @@ namespace Exceptionless.Core {
 
         public bool EnableElasticsearchTracing { get; private set; }
 
-		public string LdapConnectionString { get; private set; }
+        public string LdapConnectionString { get; private set; }
 
-		public bool EnableActiveDirectoryAuth { get; internal set; }
+        public bool EnableActiveDirectoryAuth { get; internal set; }
 
         public bool EnableSignalR { get; private set; }
 
         public string Version { get; private set; }
-
-        public LogLevel MinimumLogLevel { get; private set; }
 
         public bool EnableIntercom => !String.IsNullOrEmpty(IntercomAppSecret);
 
@@ -196,15 +194,12 @@ namespace Exceptionless.Core {
             EnableSignalR = GetBool(nameof(EnableSignalR), true);
 
             Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
-            MinimumLogLevel = GetEnum<LogLevel>(nameof(MinimumLogLevel), LogLevel.Information);
         }
 
         public const string JobBootstrappedServiceProvider = "Exceptionless.Insulation.Jobs.JobBootstrappedServiceProvider,Exceptionless.Insulation";
 
         public LoggerFactory GetLoggerFactory() {
-            return new LoggerFactory {
-                DefaultLogLevel = MinimumLogLevel
-            };
+            return new LoggerFactory();
         }
     }
 
