@@ -8,6 +8,8 @@ namespace Exceptionless.Core.AppStats {
         public const string EventsPaidProcessed = "events.paid.processed";
         public const string EventsProcessErrors = "events.processing.errors";
         public const string EventsProcessCancelled = "events.processing.cancelled";
+        public const string EventsRetryCount = "events.Retry.count";
+        public const string EventsRetryErrors = "events.Retry.errors";
 
         public const string PostsParsed = "posts.parsed";
         public const string PostsEventCount = "posts.eventcount";
@@ -16,6 +18,11 @@ namespace Exceptionless.Core.AppStats {
         public const string PostsParsingTime = "posts.parsingtime";
         public const string PostsDiscarded = "posts.discarded";
         public const string PostsBlocked = "posts.blocked";
+
+        public const string PostsJobSize = "posts.job.size";
+        public const string PostsJobUncompressedSize = "posts.job.uncompressedsize";
+        public const string PostsJobDecompressionTime = "posts.decompression.time";
+        public const string PostsJobDecompressionErrors = "posts.decompression.errors";
 
         public const string UsageGeocodingApi = "usage.geocoding";
         public const string ThrottleLimitExceeded = "throttle.limitexceeded";
