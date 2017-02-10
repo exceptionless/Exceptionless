@@ -46,6 +46,18 @@ namespace Exceptionless.Core.Jobs {
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventPost> context) {
             var queueEntry = context.QueueEntry;
+            var fileInfo = await _storage.GetFileInfoAsync(queueEntry.Value.FilePath).AnyContext();
+            if (fileInfo == null) {
+                await queueEntry.AbandonAsync().AnyContext();
+                return JobResult.FailedWithMessage($"Unable to retrieve post data info '{queueEntry.Value.FilePath}'.");
+            }
+
+            await _metricsClient.GaugeAsync(MetricNames.PostsJobSize, fileInfo.Size).AnyContext();
+            if (fileInfo.Size > Settings.Current.MaximumEventPostSize) {
+                await queueEntry.CompleteAsync().AnyContext();
+                return JobResult.FailedWithMessage($"Unable to process post data '{queueEntry.Value.FilePath}' ({fileInfo.Size} bytes): Maximum event post size limit ({Settings.Current.MaximumEventPostSize} bytes) reached.");
+            }
+
             var ep = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, _logger, context.CancellationToken).AnyContext();
             if (ep == null) {
                 await AbandonEntryAsync(queueEntry).AnyContext();
@@ -73,15 +85,19 @@ namespace Exceptionless.Core.Jobs {
             byte[] uncompressedData = ep.Data;
             if (!String.IsNullOrEmpty(ep.ContentEncoding)) {
                 try {
-                    // increase the absolute max just due to the content was compressed and might be a batch of events.
-                    maxEventPostSize *= 10;
-                    uncompressedData = await uncompressedData.DecompressAsync(ep.ContentEncoding).AnyContext();
+                    await _metricsClient.TimeAsync(async () => {
+                        // increase the absolute max just due to the content was compressed and might be a batch of events.
+                        maxEventPostSize *= 10;
+                        uncompressedData = await uncompressedData.DecompressAsync(ep.ContentEncoding).AnyContext();
+                    }, MetricNames.PostsJobDecompressionTime).AnyContext();
                 } catch (Exception ex) {
+                    await _metricsClient.CounterAsync(MetricNames.PostsJobDecompressionErrors).AnyContext();
                     await CompleteEntryAsync(queueEntry, ep, SystemClock.UtcNow).AnyContext();
                     return JobResult.FailedWithMessage($"Unable to decompress post data '{queueEntry.Value.FilePath}' ({ep.Data.Length} bytes compressed): {ex.Message}");
                 }
             }
 
+            await _metricsClient.GaugeAsync(MetricNames.PostsJobUncompressedSize, fileInfo.Size).AnyContext();
             if (uncompressedData.Length > maxEventPostSize) {
                 await CompleteEntryAsync(queueEntry, ep, SystemClock.UtcNow).AnyContext();
                 return JobResult.FailedWithMessage($"Unable to process decompressed post data '{queueEntry.Value.FilePath}' ({ep.Data.Length} bytes compressed, {uncompressedData.Length} bytes): Maximum uncompressed event post size limit ({maxEventPostSize} bytes) reached.");
@@ -157,26 +173,8 @@ namespace Exceptionless.Core.Jobs {
                     eventsToRetry.AddRange(events);
             }
 
-            foreach (var requeueEvent in eventsToRetry) {
-                string contentEncoding = null;
-                byte[] data = requeueEvent.GetBytes(_jsonSerializerSettings);
-                if (data.Length > 1000) {
-                    data = await data.CompressAsync().AnyContext();
-                    contentEncoding = "gzip";
-                }
-
-                // Put this single event back into the queue so we can retry it separately.
-                await _queue.EnqueueAsync(new EventPostInfo {
-                    ApiVersion = ep.ApiVersion,
-                    CharSet = ep.CharSet,
-                    ContentEncoding = contentEncoding,
-                    Data = data,
-                    IpAddress = ep.IpAddress,
-                    MediaType = ep.MediaType,
-                    ProjectId = ep.ProjectId,
-                    UserAgent = ep.UserAgent
-                }, _storage, false, context.CancellationToken).AnyContext();
-            }
+            if (eventsToRetry.Count > 0)
+                await RetryEvents(context, eventsToRetry, ep, queueEntry).AnyContext();
 
             if (isSingleEvent && errorCount > 0)
                 await AbandonEntryAsync(queueEntry).AnyContext();
@@ -218,6 +216,42 @@ namespace Exceptionless.Core.Jobs {
             }
 
             return events;
+        }
+
+        private async Task RetryEvents(QueueEntryContext<EventPost> context, List<PersistentEvent> eventsToRetry, EventPostInfo ep, IQueueEntry<EventPost> queueEntry) {
+            await _metricsClient.GaugeAsync(MetricNames.EventsRetryCount, eventsToRetry.Count).AnyContext();
+            foreach (var ev in eventsToRetry) {
+                try {
+                    string contentEncoding = null;
+                    byte[] data = ev.GetBytes(_jsonSerializerSettings);
+                    if (data.Length > 1000) {
+                        data = await data.CompressAsync().AnyContext();
+                        contentEncoding = "gzip";
+                    }
+
+                    // Put this single event back into the queue so we can retry it separately.
+                    await _queue.EnqueueAsync(new EventPostInfo {
+                        ApiVersion = ep.ApiVersion,
+                        CharSet = ep.CharSet,
+                        ContentEncoding = contentEncoding,
+                        Data = data,
+                        IpAddress = ep.IpAddress,
+                        MediaType = ep.MediaType,
+                        ProjectId = ep.ProjectId,
+                        UserAgent = ep.UserAgent
+                    }, _storage, false, context.CancellationToken).AnyContext();
+                } catch (Exception ex) {
+                    _logger.Error()
+                        .Exception(ex)
+                        .Critical()
+                        .Message("Error while requeing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message)
+                        .Property("Event", new { ev.Date, ev.StackId, ev.Type, ev.Source, ev.Message, ev.Value, ev.Geo, ev.ReferenceId, ev.Tags })
+                        .Project(ep.ProjectId)
+                        .Write();
+
+                    await _metricsClient.CounterAsync(MetricNames.EventsRetryErrors).AnyContext();
+                }
+            }
         }
 
         private async Task AbandonEntryAsync(IQueueEntry<EventPost> queueEntry) {
