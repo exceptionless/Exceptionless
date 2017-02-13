@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -20,7 +21,6 @@ namespace Exceptionless.Core.Geo {
         private readonly ILogger _logger;
         private DatabaseReader _database;
         private DateTime? _databaseLastChecked;
-        
 
         public MaxMindGeoIpService(IFileStorage storage, ILogger<MaxMindGeoIpService> logger) {
             _storage = storage;
@@ -31,6 +31,7 @@ namespace Exceptionless.Core.Geo {
             if (String.IsNullOrWhiteSpace(ip) || (!ip.Contains(".") && !ip.Contains(":")))
                 return null;
 
+            // TODOP: detect ip:port
             ip = ip.Trim();
 
             var cacheValue = await _localCache.GetAsync<GeoResult>(ip).AnyContext();
@@ -102,7 +103,7 @@ namespace Exceptionless.Core.Geo {
 
             return _database;
         }
-        
+
         public void Dispose() {
             if (_database == null)
                 return;
