@@ -42,6 +42,7 @@ using SimpleInjector.Advanced;
 namespace Exceptionless.Core {
     public class Bootstrapper {
         public static void RegisterServices(Container container, ILoggerFactory loggerFactory) {
+            var logger = loggerFactory.CreateLogger<Bootstrapper>();
             container.RegisterLogger(loggerFactory);
             container.RegisterSingleton<IDependencyResolver>(() => new SimpleInjectorDependencyResolver(container));
 
@@ -126,10 +127,12 @@ namespace Exceptionless.Core {
 
             container.RegisterSingleton<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingleton<IMailer, Mailer>();
-            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+            if (Settings.Current.WebsiteMode != WebsiteMode.Dev) {
                 container.RegisterSingleton<IMailSender, SmtpMailSender>();
-            else
+            } else {
                 container.RegisterSingleton<IMailSender>(() => new InMemoryMailSender());
+                logger.Warn("Emails will NOT be sent in Dev mode.");
+            }
 
             container.RegisterSingleton<ILockProvider, CacheLockProvider>();
             container.Register<StripeEventHandler>();
