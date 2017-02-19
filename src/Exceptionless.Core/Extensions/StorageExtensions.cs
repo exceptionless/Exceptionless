@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Extensions {
             if (path.StartsWith("archive"))
                 return true;
 
-            string archivePath = $"archive\\{projectId}\\{created:yy\\MM\\dd}\\{Path.GetFileName(path)}";
+            string archivePath = $"archive\\{created:yy\\MM\\dd\\hh}\\{projectId}\\{Path.GetFileName(path)}";
             try {
                 if (shouldArchive && !await storage.ExistsAsync(archivePath).AnyContext()) {
                     if (!await storage.RenameFileAsync(path, archivePath).AnyContext())
