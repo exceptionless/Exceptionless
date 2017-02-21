@@ -634,7 +634,7 @@ namespace Exceptionless.Api.Controllers {
                 return false;
 
             string decodedName = Uri.UnescapeDataString(name).Trim().ToLowerInvariant();
-            var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds(), true);
+            var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds().ToArray(), true);
             return !results.Any(o => String.Equals(o.Name.Trim().ToLowerInvariant(), decodedName, StringComparison.OrdinalIgnoreCase));
         }
 

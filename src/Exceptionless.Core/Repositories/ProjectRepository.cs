@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Repositories {
                 return;
 
             string script = $"ctx._source.next_summary_end_of_day_ticks += {TimeSpan.TicksPerDay}L;";
-            await PatchAsync(projects.Select(p => p.Id), script, false).AnyContext();
+            await PatchAsync(projects.Select(p => p.Id).ToArray(), script, false).AnyContext();
             await InvalidateCacheAsync(projects).AnyContext();
         }
 

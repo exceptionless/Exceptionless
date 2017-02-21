@@ -133,7 +133,7 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
-            var organizations = await organizationRepository.GetByIdsAsync(associatedOrganizationIds, true);
+            var organizations = await organizationRepository.GetByIdsAsync(associatedOrganizationIds.ToArray(), true);
             return organizations.ToList().AsReadOnly();
         }
 
