@@ -65,7 +65,7 @@ namespace Exceptionless.Core {
 
         public int ElasticSearchNumberOfReplicas { get; private set; }
 
-        public bool EnableElasticsearchTracing { get; private set; }
+        public bool EnableElasticsearchMapperSizePlugin { get; private set; }
 
         public string LdapConnectionString { get; private set; }
 
@@ -183,7 +183,7 @@ namespace Exceptionless.Core {
             ElasticSearchConnectionString = GetConnectionString(nameof(ElasticSearchConnectionString));
             ElasticSearchNumberOfShards = GetInt(nameof(ElasticSearchNumberOfShards), 1);
             ElasticSearchNumberOfReplicas = GetInt(nameof(ElasticSearchNumberOfReplicas), 0);
-            EnableElasticsearchTracing = GetBool(nameof(EnableElasticsearchTracing));
+            EnableElasticsearchMapperSizePlugin = GetBool(nameof(EnableElasticsearchMapperSizePlugin));
 
             RedisConnectionString = GetConnectionString(nameof(RedisConnectionString));
             EnableRedis = GetBool(nameof(EnableRedis), !String.IsNullOrEmpty(RedisConnectionString));

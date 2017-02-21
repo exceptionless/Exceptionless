@@ -53,7 +53,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var localTime = SystemClock.UtcNow;
             var ev = GenerateEvent(localTime.AddMinutes(10));
 
-            await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
@@ -552,7 +553,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             PersistentEvent ev = GenerateEvent(SystemClock.UtcNow);
             ev.Tags.Add(Tag1);
 
-            await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
@@ -565,7 +567,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag2);
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            await _pipeline.RunAsync(ev);
+            context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new [] { Tag1, Tag2 }, stack.Tags.ToArray());
 
@@ -573,7 +576,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag2_Lowercase);
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            await _pipeline.RunAsync(ev);
+            context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
             stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
             Assert.Equal(new [] { Tag1, Tag2}, stack.Tags.ToArray());
         }
@@ -587,6 +591,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _pipeline.RunAsync(contexts);
+            Assert.True(contexts.All(c => !c.HasError));
             Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
             Assert.Equal(1, contexts.Count(c => c.IsNew));
             Assert.Equal(1, contexts.Count(c => !c.IsNew));
@@ -615,6 +620,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _pipeline.RunAsync(contexts);
+            Assert.True(contexts.All(c => !c.HasError));
             Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
             Assert.Equal(1, contexts.Count(c => c.IsNew));
             Assert.Equal(1, contexts.Count(c => !c.IsNew));
@@ -628,6 +634,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var context = new EventContext(ev);
             await _pipeline.RunAsync(context);
 
+            Assert.False(context.HasError, context.ErrorMessage);
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
             Assert.False(context.Event.IsFixed);
@@ -646,6 +653,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             await _configuration.Client.RefreshAsync(Indices.All);
             await _pipeline.RunAsync(contexts);
+            Assert.True(contexts.All(c => !c.HasError));
             Assert.Equal(0, contexts.Count(c => c.IsRegression));
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
             Assert.True(contexts.All(c => c.Event.IsFixed));
@@ -657,6 +665,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             await _configuration.Client.RefreshAsync(Indices.All);
             await _pipeline.RunAsync(contexts);
+            Assert.True(contexts.All(c => !c.HasError));
             Assert.Equal(1, contexts.Count(c => c.IsRegression));
             Assert.Equal(1, contexts.Count(c => !c.IsRegression));
             Assert.True(contexts.All(c => !c.Event.IsFixed));
@@ -668,6 +677,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             await _configuration.Client.RefreshAsync(Indices.All);
             await _pipeline.RunAsync(contexts);
+            Assert.True(contexts.All(c => !c.HasError));
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
             Assert.True(contexts.All(c => !c.Event.IsFixed));
         }
@@ -680,6 +690,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _pipeline.RunAsync(context);
             await _configuration.Client.RefreshAsync(Indices.All);
 
+            Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.Event.IsFixed);
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
@@ -699,6 +710,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             await _configuration.Client.RefreshAsync(Indices.All);
             await _pipeline.RunAsync(contexts);
+            Assert.True(contexts.All(c => !c.HasError));
             Assert.Equal(3, contexts.Count(c => c.Event.IsFixed));
             Assert.Equal(0, contexts.Count(c => c.IsRegression));
             Assert.Equal(3, contexts.Count(c => !c.IsRegression));
@@ -712,6 +724,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             await _configuration.Client.RefreshAsync(Indices.All);
             await _pipeline.RunAsync(contexts);
+            Assert.True(contexts.All(c => !c.HasError));
             Assert.Equal(0, contexts.Count(c => c.Event.IsFixed));
             Assert.Equal(1, contexts.Count(c => c.IsRegression));
             Assert.Equal(3, contexts.Count(c => !c.IsRegression));

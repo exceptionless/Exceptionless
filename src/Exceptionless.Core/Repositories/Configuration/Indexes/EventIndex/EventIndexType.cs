@@ -17,10 +17,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public string Pipeline { get; } = "events-pipeline";
 
         public override TypeMappingDescriptor<PersistentEvent> BuildMapping(TypeMappingDescriptor<PersistentEvent> map) {
-            return base.BuildMapping(map)
+            var mapping = base.BuildMapping(map)
                 .Dynamic(false)
                 .DynamicTemplates(dt => dt.DynamicTemplate("idx_reference", t => t.Match("*-r").Mapping(m => m.Keyword(s => s.IgnoreAbove(256)))))
-                .SizeField(s => s.Enabled())
                 .IncludeInAll(false)
                 .AllField(a => a.Analyzer(EventIndex.STANDARDPLUS_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER))
                 .Properties(p => p
@@ -45,6 +44,11 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .AddDataDictionaryMappings()
                     .AddCopyToMappings()
             );
+
+            if (Settings.Current.EnableElasticsearchMapperSizePlugin)
+                return mapping.SizeField(s => s.Enabled());
+
+            return mapping;
         }
 
         public override async Task ConfigureAsync() {

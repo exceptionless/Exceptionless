@@ -3,7 +3,6 @@ cluster.name: exceptionless
 action.destructive_requires_name: true
 action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*
 bootstrap.memory_lock: true
-plugin.mandatory: mapper-size
 
 node.max_local_storage_nodes: 1
 gateway.expected_nodes: 3
