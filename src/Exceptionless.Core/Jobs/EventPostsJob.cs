@@ -237,7 +237,7 @@ namespace Exceptionless.Core.Jobs {
                     }
 
                     // Put this single event back into the queue so we can retry it separately.
-                    await _queue.EnqueueAsync(new EventPostInfo {
+                    await _queue.Value.EnqueueAsync(new EventPostInfo {
                         ApiVersion = ep.ApiVersion,
                         CharSet = ep.CharSet,
                         ContentEncoding = contentEncoding,
