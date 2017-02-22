@@ -48,9 +48,8 @@
       <HintPath>..\..\..\packages\FluentValidation.6.2.1.0\lib\Net45\FluentValidation.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio, Version=4.3.1314.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.4.3.1314\lib\net46\Foundatio.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Foundatio, Version=4.3.1315.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.4.3.1315\lib\net46\Foundatio.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.268.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.268-pre\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
@@ -60,13 +59,11 @@
       <HintPath>..\..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.268-pre\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=5.0.466.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.Repositories.5.0.466-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Foundatio.Repositories, Version=5.0.467.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.Repositories.5.0.467-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.466.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.466-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.467.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.467-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
     </Reference>
     <Reference Include="Nest, Version=5.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\NEST.5.2.0\lib\net46\Nest.dll</HintPath>
