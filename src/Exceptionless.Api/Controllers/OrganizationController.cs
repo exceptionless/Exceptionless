@@ -339,7 +339,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null)
                 return Ok(ChangePlanResult.FailWithMessage("Invalid OrganizationId."));
 
-            BillingPlan plan = BillingManager.GetBillingPlan(planId);
+            var plan = BillingManager.GetBillingPlan(planId);
             if (plan == null)
                 return Ok(ChangePlanResult.FailWithMessage("Invalid PlanId."));
 
@@ -383,7 +383,7 @@ namespace Exceptionless.Api.Controllers {
                     if (!String.IsNullOrWhiteSpace(couponId))
                         createCustomer.CouponId = couponId;
 
-                    StripeCustomer customer = await customerService.CreateAsync(createCustomer);
+                    var customer = await customerService.CreateAsync(createCustomer);
 
                     organization.BillingStatus = BillingStatus.Active;
                     organization.RemoveSuspension();
@@ -444,14 +444,14 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return NotFound();
 
-            Organization organization = await GetModelAsync(id);
+            var organization = await GetModelAsync(id);
             if (organization == null)
                 return NotFound();
 
             if (!await _billingManager.CanAddUserAsync(organization))
                 return PlanLimitReached("Please upgrade your plan to add an additional user.");
 
-            User user = await _userRepository.GetByEmailAddressAsync(email);
+            var user = await _userRepository.GetByEmailAddressAsync(email);
             if (user != null) {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
                     user.OrganizationIds.Add(organization.Id);
@@ -465,7 +465,7 @@ namespace Exceptionless.Api.Controllers {
 
                 await _mailer.SendAddedToOrganizationAsync(CurrentUser, organization, user);
             } else {
-                Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
+                var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
                 if (invite == null) {
                     invite = new Invite {
                         Token = StringExtensions.GetNewToken(),
@@ -496,9 +496,9 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null)
                 return NotFound();
 
-            User user = await _userRepository.GetByEmailAddressAsync(email);
+            var user = await _userRepository.GetByEmailAddressAsync(email);
             if (user == null || !user.OrganizationIds.Contains(id)) {
-                Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
+                var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
                 if (invite == null)
                     return Ok();
 
@@ -511,9 +511,9 @@ namespace Exceptionless.Api.Controllers {
                 if ((await _userRepository.GetByOrganizationIdAsync(organization.Id)).Total == 1)
                     return BadRequest("An organization must contain at least one user.");
 
-                List<Project> projects = (await _projectRepository.GetByOrganizationIdAsync(organization.Id)).Documents.Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
+                var projects = (await _projectRepository.GetByOrganizationIdAsync(organization.Id)).Documents.Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
                 if (projects.Count > 0) {
-                    foreach (Project project in projects)
+                    foreach (var project in projects)
                         project.NotificationSettings.Remove(user.Id);
 
                     await _projectRepository.SaveAsync(projects);

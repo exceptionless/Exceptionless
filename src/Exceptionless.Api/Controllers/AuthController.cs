@@ -494,7 +494,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private async Task<User> FromExternalLoginAsync(UserInfo userInfo) {
-            User existingUser = await _userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
+            var existingUser = await _userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
 
             // Link user accounts.
             if (CurrentUser != null) {
@@ -530,7 +530,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             // Check to see if a user already exists with this email address.
-            User user = !String.IsNullOrEmpty(userInfo.Email) ? await _userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
+            var user = !String.IsNullOrEmpty(userInfo.Email) ? await _userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
             if (user == null) {
                 if (!Settings.Current.EnableAccountCreation)
                     throw new ApplicationException("Account Creation is currently disabled.");
