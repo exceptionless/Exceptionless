@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using StackExchange.Redis;
 
 namespace Exceptionless.Insulation.Redis {
-    public class RedisConnectionMapping : IConnectionMapping {
+    public sealed class RedisConnectionMapping : IConnectionMapping {
         private const string KeyPrefix = "Hub:";
         private readonly ConnectionMultiplexer _muxer;
 
@@ -14,11 +15,11 @@ namespace Exceptionless.Insulation.Redis {
             _muxer = muxer;
         }
 
-        public async Task AddAsync(string key, string connectionId) {
+        public Task AddAsync(string key, string connectionId) {
             if (key == null)
-                return;
+                return Task.CompletedTask;
 
-            await Database.SetAddAsync(String.Concat(KeyPrefix, key), connectionId);
+            return Database.SetAddAsync(String.Concat(KeyPrefix, key), connectionId);
         }
 
         private IDatabase Database => _muxer.GetDatabase();
@@ -27,15 +28,15 @@ namespace Exceptionless.Insulation.Redis {
             if (key == null)
                 return new List<string>();
 
-            var values = await Database.SetMembersAsync(String.Concat(KeyPrefix, key));
+            var values = await Database.SetMembersAsync(String.Concat(KeyPrefix, key)).AnyContext();
             return values.Select(v => v.ToString()).ToList();
         }
 
-        public async Task RemoveAsync(string key, string connectionId) {
+        public Task RemoveAsync(string key, string connectionId) {
             if (key == null)
-                return;
+                return Task.CompletedTask;
 
-            await Database.SetRemoveAsync(String.Concat(KeyPrefix, key), connectionId);
+            return Database.SetRemoveAsync(String.Concat(KeyPrefix, key), connectionId);
         }
     }
 }
