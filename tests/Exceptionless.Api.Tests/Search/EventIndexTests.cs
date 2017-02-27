@@ -447,7 +447,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         private async Task CreateEventsAsync() {
             var parserPluginManager = GetService<EventParserPluginManager>();
-            foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories)) {
+            foreach (string file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
                     continue;
 

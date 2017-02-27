@@ -36,7 +36,7 @@ namespace Exceptionless {
                 } else if (dataType == typeof(DateTime) || dataType == typeof(DateTimeOffset)) {
                     ev.Idx[field + "-d"] = ev.Data[key];
                 } else if (dataType == typeof(string)) {
-                    var input = (string)ev.Data[key];
+                    string input = (string)ev.Data[key];
                     if (String.IsNullOrEmpty(input) || input.Length >= 1000)
                         continue;
 
@@ -48,8 +48,8 @@ namespace Exceptionless {
 
                     bool value;
                     DateTimeOffset dtoValue;
-                    Decimal decValue;
-                    Double dblValue;
+                    decimal decValue;
+                    double dblValue;
                     if (Boolean.TryParse(input, out value))
                         ev.Idx[field + "-b"] = value;
                     else if (DateTimeOffset.TryParse(input, out dtoValue))
@@ -217,13 +217,13 @@ namespace Exceptionless {
 
             var ri = ev.GetRequestInfo();
             if (!String.IsNullOrEmpty(ri?.ClientIpAddress)) {
-                foreach (var ip in ri.ClientIpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (string ip in ri.ClientIpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     yield return ip.Trim();
             }
 
             var ei = ev.GetEnvironmentInfo();
             if (!String.IsNullOrEmpty(ei?.IpAddress)) {
-                foreach (var ip in ei.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (string ip in ei.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     yield return ip.Trim();
             }
         }

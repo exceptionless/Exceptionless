@@ -154,7 +154,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("signup")]
         [ResponseType(typeof(TokenResult))]
         public async Task<IHttpActionResult> SignupAsync(SignupModel model) {
-            var valid = await IsAccountCreationEnabledAsync(model?.InviteToken);
+            bool valid = await IsAccountCreationEnabledAsync(model?.InviteToken);
             if (!valid)
                 return BadRequest("Account Creation is currently disabled.");
 
@@ -220,7 +220,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 user = await _userRepository.AddAsync(user, true);
             } catch (ValidationException ex) {
-                var errors = String.Join(", ", ex.Errors);
+                string errors = String.Join(", ", ex.Errors);
                 _logger.Error().Critical().Message("Signup failed for \"{0}\": {1}", email, errors).Tag("Signup").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
                 return BadRequest(errors);
             } catch (Exception ex) {
