@@ -136,8 +136,8 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, IExceptionlessSystemFilterQuery systemFilter, string userFilter, DateTime? utcStart, DateTime? utcEnd) {
-            var previous = await GetPreviousEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd).AnyContext();
-            var next = await GetNextEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd).AnyContext();
+            string previous = await GetPreviousEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd).AnyContext();
+            string next = await GetNextEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd).AnyContext();
 
             return new PreviousAndNextEventIdResult {
                 Previous = previous,
@@ -187,7 +187,7 @@ namespace Exceptionless.Core.Repositories {
                 .OrderBy(t => t.Date.UtcTicks).ThenBy(t => t.Id)
                 .ToList();
 
-            var index = unionResults.FindIndex(t => t.Id == ev.Id);
+            int index = unionResults.FindIndex(t => t.Id == ev.Id);
             return index == 0 ? null : unionResults[index - 1].Id;
         }
 
@@ -232,7 +232,7 @@ namespace Exceptionless.Core.Repositories {
                 .OrderBy(t => t.Date.Ticks).ThenBy(t => t.Id)
                 .ToList();
 
-            var index = unionResults.FindIndex(t => t.Id == ev.Id);
+            int index = unionResults.FindIndex(t => t.Id == ev.Id);
             return index == unionResults.Count - 1 ? null : unionResults[index + 1].Id;
         }
 
