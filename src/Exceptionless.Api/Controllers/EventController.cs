@@ -215,7 +215,7 @@ namespace Exceptionless.Api.Controllers {
         private async Task<IHttpActionResult> GetInternalAsync(IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10, bool usesPremiumFeatures = false) {
             page = GetPage(page);
             limit = GetLimit(limit);
-            var skip = GetSkip(page, limit);
+            int skip = GetSkip(page, limit);
             if (skip > MAXIMUM_SKIP)
                 return Ok(EmptyModels);
 
