@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         }
 
         public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
-            var cacheKey = $"{nameof(RemoveOrganizationWorkItemHandler)}:{((RemoveOrganizationWorkItem)workItem).OrganizationId}";
+            string cacheKey = $"{nameof(RemoveOrganizationWorkItemHandler)}:{((RemoveOrganizationWorkItem)workItem).OrganizationId}";
             return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
@@ -56,14 +56,14 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 Log.Info("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id);
 
                 var subscriptionService = new StripeSubscriptionService(Settings.Current.StripeApiKey);
-                var subscriptions = (await subscriptionService.ListAsync(organization.StripeCustomerId).AnyContext()).Where(s => !s.CanceledAt.HasValue);
+                var subscriptions = (await subscriptionService.ListAsync(new StripeSubscriptionListOptions { CustomerId = organization.StripeCustomerId }).AnyContext()).Where(s => !s.CanceledAt.HasValue);
                 foreach (var subscription in subscriptions)
-                    await subscriptionService.CancelAsync(organization.StripeCustomerId, subscription.Id).AnyContext();
+                    await subscriptionService.CancelAsync(subscription.Id).AnyContext();
             }
 
             await context.ReportProgressAsync(20, "Removing users").AnyContext();
             var users = await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
-            foreach (User user in users.Documents) {
+            foreach (var user in users.Documents) {
                 // delete the user if they are not associated to any other organizations and they are not the current user
                 if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id)) && !String.Equals(user.Id, workItem.CurrentUserId)) {
                     Log.Info("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id);
@@ -84,8 +84,8 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             await context.ReportProgressAsync(50, "Removing projects").AnyContext();
             var projects = await _projectRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
             if (workItem.IsGlobalAdmin && projects.Total > 0) {
-                var completed = 1;
-                foreach (Project project in projects.Documents) {
+                int completed = 1;
+                foreach (var project in projects.Documents) {
                     Log.Info("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id);
                     await _eventRepository.RemoveAllByProjectIdAsync(organization.Id, project.Id).AnyContext();
                     await _stackRepository.RemoveAllByProjectIdAsync(organization.Id, project.Id).AnyContext();
