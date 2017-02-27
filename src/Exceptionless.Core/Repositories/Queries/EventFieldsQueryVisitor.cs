@@ -66,28 +66,31 @@ namespace Exceptionless.Core.Repositories.Queries {
                 return null;
 
             string[] parts = field.Split('.');
-            if (parts.Length != 2 || (parts.Length == 2 && IsKnownDataKey(parts[1])))
+            if (parts.Length != 2 || (parts.Length == 2 && parts[1].StartsWith("@")))
                 return field;
 
-            if (String.Equals(parts[0], "data")) {
-                string termType = GetTermType(terms);
+            if (String.Equals(parts[0], "data", StringComparison.OrdinalIgnoreCase)) {
+                string termType;
+                if (String.Equals(parts[1], Event.KnownDataKeys.SessionEnd, StringComparison.OrdinalIgnoreCase))
+                    termType = "d";
+                else if (String.Equals(parts[1], Event.KnownDataKeys.SessionHasError, StringComparison.OrdinalIgnoreCase))
+                    termType = "b";
+                else
+                    termType = GetTermType(terms);
+
                 field = $"idx.{parts[1].ToLowerInvariant()}-{termType}";
-            } else if (String.Equals(parts[0], "ref")) {
+            } else if (String.Equals(parts[0], "ref", StringComparison.OrdinalIgnoreCase)) {
                 field = $"idx.{parts[1].ToLowerInvariant()}-r";
             }
 
             return field;
         }
 
-        private bool IsKnownDataKey(string field) {
-            return field.StartsWith("@") || String.Equals(field, Event.KnownDataKeys.SessionEnd, StringComparison.OrdinalIgnoreCase) || String.Equals(field, Event.KnownDataKeys.SessionHasError, StringComparison.OrdinalIgnoreCase);
-        }
-
         private static string GetTermType(params string[] terms) {
             string termType = "s";
 
             var trimmedTerms = terms.Where(t => t != null).Distinct().ToList();
-            foreach (var term in trimmedTerms) {
+            foreach (string term in trimmedTerms) {
                 if (term.StartsWith("*"))
                     continue;
 
@@ -104,7 +107,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             }
 
             // Some terms can be a string date range: [now TO now/d+1d}
-            if (String.Equals(termType, "s") && trimmedTerms.All(t => String.Equals(t, "now", StringComparison.OrdinalIgnoreCase) || t.StartsWith("now/", StringComparison.OrdinalIgnoreCase)))
+            if (String.Equals(termType, "s") && trimmedTerms.Count > 0 && trimmedTerms.All(t => String.Equals(t, "now", StringComparison.OrdinalIgnoreCase) || t.StartsWith("now/", StringComparison.OrdinalIgnoreCase)))
                 termType = "d";
 
             return termType;
