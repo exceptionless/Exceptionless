@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Controllers {
         /// Count
         /// </summary>
         /// <param name="filter">A filter that controls what data is returned from the server.</param>
-        /// <param name="aggregations">A comma delimited list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
+        /// <param name="aggregations">A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         /// <response code="400">Invalid filter.</response>
@@ -102,7 +102,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="organizationId">The identifier of the organization.</param>
         /// <param name="filter">A filter that controls what data is returned from the server.</param>
-        /// <param name="aggregations">A comma delimited list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
+        /// <param name="aggregations">A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         /// <response code="400">Invalid filter.</response>
@@ -127,7 +127,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="projectId">The identifier of the project.</param>
         /// <param name="filter">A filter that controls what data is returned from the server.</param>
-        /// <param name="aggregations">A comma delimited list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
+        /// <param name="aggregations">A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         /// <response code="400">Invalid filter.</response>
