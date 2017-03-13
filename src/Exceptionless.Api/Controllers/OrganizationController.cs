@@ -27,10 +27,8 @@ using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
-using Foundatio.Repositories.Elasticsearch.Queries;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
 using Stripe;
 
@@ -87,8 +85,7 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> GetForAdminsAsync(string criteria = null, bool? paid = null, bool? suspended = null, string mode = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest) {
             page = GetPage(page);
             limit = GetLimit(limit);
-            var options = new PagingOptions { Page = page, Limit = limit };
-            var organizations = await _repository.GetByCriteriaAsync(criteria, options, sort, paid, suspended);
+            var organizations = await _repository.GetByCriteriaAsync(criteria, o => o.PageNumber(page).PageLimit(limit), sort, paid, suspended);
             var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
@@ -420,7 +417,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 BillingManager.ApplyBillingPlan(organization, plan, CurrentUser);
-                await _repository.SaveAsync(organization, true);
+                await _repository.SaveAsync(organization, o => o.Cache());
                 await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
             } catch (Exception e) {
                 _logger.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
@@ -455,7 +452,7 @@ namespace Exceptionless.Api.Controllers {
             if (user != null) {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
                     user.OrganizationIds.Add(organization.Id);
-                    await _userRepository.SaveAsync(user, true);
+                    await _userRepository.SaveAsync(user, o => o.Cache());
                     await _messagePublisher.PublishAsync(new UserMembershipChanged {
                         ChangeType = ChangeType.Added,
                         UserId = user.Id,
@@ -473,7 +470,7 @@ namespace Exceptionless.Api.Controllers {
                         DateAdded = SystemClock.UtcNow
                     };
                     organization.Invites.Add(invite);
-                    await _repository.SaveAsync(organization, true);
+                    await _repository.SaveAsync(organization, o => o.Cache());
                 }
 
                 await _mailer.SendInviteAsync(CurrentUser, organization, invite);
@@ -503,7 +500,7 @@ namespace Exceptionless.Api.Controllers {
                     return Ok();
 
                 organization.Invites.Remove(invite);
-                await _repository.SaveAsync(organization, true);
+                await _repository.SaveAsync(organization, o => o.Cache());
             } else {
                 if (!user.OrganizationIds.Contains(organization.Id))
                     return BadRequest();
@@ -520,7 +517,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 user.OrganizationIds.Remove(organization.Id);
-                await _userRepository.SaveAsync(user, true);
+                await _userRepository.SaveAsync(user, o => o.Cache());
                 await _messagePublisher.PublishAsync(new UserMembershipChanged {
                     ChangeType = ChangeType.Removed,
                     UserId = user.Id,
@@ -546,7 +543,7 @@ namespace Exceptionless.Api.Controllers {
             organization.SuspendedByUserId = CurrentUser.Id;
             organization.SuspensionCode = code;
             organization.SuspensionNotes = notes;
-            await _repository.SaveAsync(organization, true);
+            await _repository.SaveAsync(organization, o => o.Cache());
 
             return Ok();
         }
@@ -566,7 +563,7 @@ namespace Exceptionless.Api.Controllers {
             organization.SuspendedByUserId = null;
             organization.SuspensionCode = null;
             organization.SuspensionNotes = null;
-            await _repository.SaveAsync(organization, true);
+            await _repository.SaveAsync(organization, o => o.Cache());
 
             return Ok();
         }
@@ -586,7 +583,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             organization.Data[key] = value;
-            await _repository.SaveAsync(organization, true);
+            await _repository.SaveAsync(organization, o => o.Cache());
 
             return Ok();
         }
@@ -605,7 +602,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             if (organization.Data.Remove(key))
-                await _repository.SaveAsync(organization, true);
+                await _repository.SaveAsync(organization, o => o.Cache());
 
             return Ok();
         }
@@ -630,7 +627,7 @@ namespace Exceptionless.Api.Controllers {
                 return false;
 
             string decodedName = Uri.UnescapeDataString(name).Trim().ToLowerInvariant();
-            var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds().ToArray(), true);
+            var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds().ToArray(), o => o.Cache());
             return !results.Any(o => String.Equals(o.Name.Trim().ToLowerInvariant(), decodedName, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -653,7 +650,7 @@ namespace Exceptionless.Api.Controllers {
             var organization = await base.AddModelAsync(value);
 
             CurrentUser.OrganizationIds.Add(organization.Id);
-            await _userRepository.SaveAsync(CurrentUser, true);
+            await _userRepository.SaveAsync(CurrentUser, o => o.Cache());
             await _messagePublisher.PublishAsync(new UserMembershipChanged {
                 UserId = CurrentUser.Id,
                 OrganizationId = organization.Id,
@@ -717,8 +714,8 @@ namespace Exceptionless.Api.Controllers {
                 return viewOrganizations;
 
             var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, CreatedUtc = o.CreatedUtc, RetentionDays = o.RetentionDays }).ToList();
-            var sf = new ExceptionlessSystemFilterQuery(organizations);
-            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(organizations.GetRetentionUtcCutoff(), SystemClock.UtcNow, (PersistentEvent e) => e.Date).WithIndexes(organizations.GetRetentionUtcCutoff(), SystemClock.UtcNow);
+            var sf = new ExceptionlessSystemFilter(organizations);
+            var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(), SystemClock.UtcNow);
             var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)");
             foreach (var organization in viewOrganizations) {
                 var organizationStats = result.Aggregations.Terms<string>("terms_organization_id")?.Buckets.FirstOrDefault(t => t.Key == organization.Id);

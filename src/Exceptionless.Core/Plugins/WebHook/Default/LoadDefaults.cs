@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
+using Foundatio.Repositories;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(0)]
@@ -22,13 +23,13 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 throw new ArgumentException("Event cannot be null.");
 
             if (ctx.Project == null)
-                ctx.Project = await _projectRepository.GetByIdAsync(ctx.Event.ProjectId, true).AnyContext();
+                ctx.Project = await _projectRepository.GetByIdAsync(ctx.Event.ProjectId, o => o.Cache()).AnyContext();
 
             if (ctx.Project == null)
                 throw new ArgumentException("Project not found.");
 
             if (ctx.Organization == null)
-                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Event.OrganizationId, true).AnyContext();
+                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Event.OrganizationId, o => o.Cache()).AnyContext();
 
             if (ctx.Organization == null)
                 throw new ArgumentException("Organization not found.");
@@ -47,13 +48,13 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 throw new ArgumentException("Stack cannot be null.");
 
             if (ctx.Project == null)
-                ctx.Project = await _projectRepository.GetByIdAsync(ctx.Stack.ProjectId, true).AnyContext();
+                ctx.Project = await _projectRepository.GetByIdAsync(ctx.Stack.ProjectId, o => o.Cache()).AnyContext();
 
             if (ctx.Project == null)
                 throw new ArgumentException("Project not found.");
 
             if (ctx.Organization == null)
-                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Stack.OrganizationId, true).AnyContext();
+                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Stack.OrganizationId, o => o.Cache()).AnyContext();
 
             if (ctx.Organization == null)
                 throw new ArgumentException("Organization not found.");

@@ -11,7 +11,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Messaging;
-using Foundatio.Repositories.Models;
+using Foundatio.Repositories;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             var workItem = context.GetData<OrganizationMaintenanceWorkItem>();
             Log.Info("Received upgrade organizations work item. Upgrade Plans: {0}", workItem.UpgradePlans);
 
-            var results = await _organizationRepository.GetAllAsync(paging: new PagingOptions().WithLimit(LIMIT)).AnyContext();
+            var results = await _organizationRepository.GetAllAsync(o => o.PageLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in results.Documents) {
                     if (workItem.UpgradePlans)

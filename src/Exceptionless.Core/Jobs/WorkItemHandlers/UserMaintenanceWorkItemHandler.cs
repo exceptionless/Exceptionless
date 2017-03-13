@@ -10,7 +10,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Messaging;
-using Foundatio.Repositories.Models;
+using Foundatio.Repositories;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             var workItem = context.GetData<UserMaintenanceWorkItem>();
             Log.Info("Received user maintenance work item. Normalize: {0}", workItem.Normalize);
 
-            var results = await _userRepository.GetAllAsync(paging: new PagingOptions().WithLimit(LIMIT)).AnyContext();
+            var results = await _userRepository.GetAllAsync(o => o.PageLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var user in results.Documents) {
                     if (workItem.Normalize)

@@ -9,7 +9,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Messaging;
-using Foundatio.Repositories.Models;
+using Foundatio.Repositories;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             var workItem = context.GetData<ProjectMaintenanceWorkItem>();
             Log.Info("Received upgrade projects work item. Update Default Bot List: {0} IncrementConfigurationVersion: {1}", workItem.UpdateDefaultBotList, workItem.IncrementConfigurationVersion);
 
-            var results = await _projectRepository.GetAllAsync(paging: new PagingOptions().WithLimit(LIMIT)).AnyContext();
+            var results = await _projectRepository.GetAllAsync(o => o.PageLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var project in results.Documents) {
                     if (workItem.UpdateDefaultBotList)

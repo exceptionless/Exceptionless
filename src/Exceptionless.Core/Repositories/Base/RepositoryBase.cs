@@ -5,16 +5,19 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Options;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Options;
+using Foundatio.Repositories.Queries;
 using DataDictionary = Foundatio.Utility.DataDictionary;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : class, IIdentity, new() {
-
         public RepositoryBase(IIndexType<T> indexType, IValidator<T> validator) : base(indexType, validator) {}
 
         protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null, TimeSpan? delay = null) {
@@ -29,25 +32,24 @@ namespace Exceptionless.Core.Repositories {
             }, delay);
         }
 
-        protected override async Task SendQueryNotificationsAsync(ChangeType changeType, object query) {
-            if (!NotificationsEnabled)
+        protected override async Task SendQueryNotificationsAsync(ChangeType changeType, IRepositoryQuery query, ICommandOptions options) {
+            if (!NotificationsEnabled || !options.ShouldNotify())
                 return;
-
-            var eq = query as ExceptionlessQuery;
-            if (eq == null) {
-                await base.SendQueryNotificationsAsync(changeType, query).AnyContext();
-                return;
-            }
 
             var delay = TimeSpan.FromSeconds(1.5);
-            if (eq.Ids.Count > 0) {
-                foreach (var id in eq.Ids) {
+            var organizations = query.GetOrganizations();
+            var projects = query.GetProjects();
+            var stacks = query.GetStacks();
+            var ids = query.GetIds();
+
+            if (ids.Count > 0) {
+                foreach (string id in ids) {
                     await PublishMessageAsync(new ExtendedEntityChanged {
                         ChangeType = changeType,
                         Id = id,
-                        OrganizationId = eq.OrganizationIds.Count == 1 ? eq.OrganizationIds.Single() : null,
-                        ProjectId = eq.ProjectIds.Count == 1 ? eq.ProjectIds.Single() : null,
-                        StackId = eq.StackIds.Count == 1 ? eq.StackIds.Single() : null,
+                        OrganizationId = organizations.Count == 1 ? organizations.Single() : null,
+                        ProjectId = projects.Count == 1 ? projects.Single() : null,
+                        StackId = stacks.Count == 1 ? stacks.Single() : null,
                         Type = EntityTypeName
                     }, delay).AnyContext();
                 }
@@ -55,12 +57,12 @@ namespace Exceptionless.Core.Repositories {
                 return;
             }
 
-            if (eq.StackIds.Count > 0) {
-                foreach (var stackId in eq.StackIds) {
+            if (stacks.Count > 0) {
+                foreach (string stackId in stacks) {
                     await PublishMessageAsync(new ExtendedEntityChanged {
                         ChangeType = changeType,
-                        OrganizationId = eq.OrganizationIds.Count == 1 ? eq.OrganizationIds.Single() : null,
-                        ProjectId = eq.ProjectIds.Count == 1 ? eq.ProjectIds.Single() : null,
+                        OrganizationId = organizations.Count == 1 ? organizations.Single() : null,
+                        ProjectId = projects.Count == 1 ? projects.Single() : null,
                         StackId = stackId,
                         Type = EntityTypeName
                     }, delay).AnyContext();
@@ -69,11 +71,11 @@ namespace Exceptionless.Core.Repositories {
                 return;
             }
 
-            if (eq.ProjectIds.Count > 0) {
-                foreach (var projectId in eq.ProjectIds) {
+            if (projects.Count > 0) {
+                foreach (string projectId in projects) {
                     await PublishMessageAsync(new ExtendedEntityChanged {
                         ChangeType = changeType,
-                        OrganizationId = eq.OrganizationIds.Count == 1 ? eq.OrganizationIds.Single() : null,
+                        OrganizationId = organizations.Count == 1 ? organizations.Single() : null,
                         ProjectId = projectId,
                         Type = EntityTypeName
                     }, delay).AnyContext();
@@ -82,8 +84,8 @@ namespace Exceptionless.Core.Repositories {
                 return;
             }
 
-            if (eq.OrganizationIds.Count > 0) {
-                foreach (var organizationId in eq.OrganizationIds) {
+            if (organizations.Count > 0) {
+                foreach (string organizationId in organizations) {
                     await PublishMessageAsync(new ExtendedEntityChanged {
                         ChangeType = changeType,
                         OrganizationId = organizationId,

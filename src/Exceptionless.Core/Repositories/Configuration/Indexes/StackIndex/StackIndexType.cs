@@ -6,7 +6,6 @@ using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {

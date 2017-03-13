@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
@@ -11,6 +10,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Messaging;
+using Foundatio.Repositories;
 using Stripe;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 } else {
                     Log.Info("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id);
                     user.OrganizationIds.Remove(organization.Id);
-                    await _userRepository.SaveAsync(user, true).AnyContext();
+                    await _userRepository.SaveAsync(user, o => o.Cache()).AnyContext();
                 }
             }
 

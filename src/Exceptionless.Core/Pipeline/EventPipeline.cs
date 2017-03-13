@@ -13,6 +13,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories.Base;
 using Foundatio.Logging;
 using Foundatio.Metrics;
+using Foundatio.Repositories;
 
 namespace Exceptionless.Core.Pipeline {
     public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
@@ -50,13 +51,13 @@ namespace Exceptionless.Core.Pipeline {
                 if (contexts.Any(c => c.Event.ProjectId != projectId))
                     throw new ArgumentException("All Project Ids must be the same for a batch of events.");
 
-                var project = await _projectRepository.GetByIdAsync(projectId, true).AnyContext();
+                var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache()).AnyContext();
                 if (project == null)
                     throw new DocumentNotFoundException(projectId, $"Unable to load project: \"{projectId}\"");
 
                 contexts.ForEach(c => c.Project = project);
 
-                var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
+                var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache()).AnyContext();
                 if (organization == null)
                     throw new DocumentNotFoundException(project.OrganizationId, $"Unable to load organization: \"{project.OrganizationId}\"");
 

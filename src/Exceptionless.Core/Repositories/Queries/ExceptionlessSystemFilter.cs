@@ -5,28 +5,51 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Options;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
-using Foundatio.Repositories.Elasticsearch.Queries.Options;
-using Foundatio.Repositories.Queries;
+using Foundatio.Repositories.Options;
 using Nest;
 using Foundatio.Utility;
 
+namespace Exceptionless.Core.Repositories {
+    public static class ExceptionlessSystemFilterQueryExtensions {
+        internal const string SystemFilterKey = "@ExceptionlessSystemFilter";
+
+        public static T SystemFilter<T>(this T query, ExceptionlessSystemFilter filter) where T : IRepositoryQuery {
+            if (filter != null)
+                return query.BuildOption(SystemFilterKey, filter);
+
+            return query;
+        }
+    }
+}
+
+namespace Exceptionless.Core.Repositories.Options {
+    public static class ReadExceptionlessSystemFilterQueryExtensions {
+        public static ExceptionlessSystemFilter GetSystemFilter(this IRepositoryQuery query) {
+            return query.SafeGetOption<ExceptionlessSystemFilter>(ExceptionlessSystemFilterQueryExtensions.SystemFilterKey);
+        }
+    }
+}
+
 namespace Exceptionless.Core.Repositories.Queries {
-    public class ExceptionlessSystemFilterQuery : IExceptionlessSystemFilterQuery {
-        public ExceptionlessSystemFilterQuery(Organization organization) : this(new List<Organization> { organization }) {
+    public class ExceptionlessSystemFilter {
+        public ExceptionlessSystemFilter(Organization organization) : this(new List<Organization> { organization }) {
             if (organization == null)
                 throw new ArgumentNullException(nameof(organization));
         }
 
-        public ExceptionlessSystemFilterQuery(IReadOnlyCollection<Organization> organizations) {
+        public ExceptionlessSystemFilter(IReadOnlyCollection<Organization> organizations) {
             if (organizations == null)
                 throw new ArgumentNullException(nameof(organizations));
 
             Organizations = organizations;
         }
 
-        public ExceptionlessSystemFilterQuery(Project project, Organization organization) : this(new List<Project> { project }, new List<Organization> { organization }) {
+        public ExceptionlessSystemFilter(Project project, Organization organization) : this(new List<Project> { project }, new List<Organization> { organization }) {
             if (organization == null)
                 throw new ArgumentNullException(nameof(organization));
 
@@ -34,14 +57,14 @@ namespace Exceptionless.Core.Repositories.Queries {
                 throw new ArgumentNullException(nameof(project));
         }
 
-        public ExceptionlessSystemFilterQuery(IReadOnlyCollection<Project> projects, IReadOnlyCollection<Organization> organizations) : this(organizations) {
+        public ExceptionlessSystemFilter(IReadOnlyCollection<Project> projects, IReadOnlyCollection<Organization> organizations) : this(organizations) {
             if (projects == null)
                 throw new ArgumentNullException(nameof(projects));
 
             Projects = projects;
         }
 
-        public ExceptionlessSystemFilterQuery(Stack stack, Organization organization) : this(new List<Organization> { organization }) {
+        public ExceptionlessSystemFilter(Stack stack, Organization organization) : this(new List<Organization> { organization }) {
             if (stack == null)
                 throw new ArgumentNullException(nameof(stack));
 
@@ -53,14 +76,6 @@ namespace Exceptionless.Core.Repositories.Queries {
         public Stack Stack { get; }
         public bool UsesPremiumFeatures { get; set; }
         public bool IsUserOrganizationsFilter { get; set; }
-    }
-
-    public interface IExceptionlessSystemFilterQuery : IRepositoryQuery {
-        IReadOnlyCollection<Organization> Organizations { get; }
-        IReadOnlyCollection<Project> Projects { get; }
-        Stack Stack { get; }
-        bool UsesPremiumFeatures { get; set; }
-         bool IsUserOrganizationsFilter { get; set; }
     }
 
     public class ExceptionlessSystemFilterQueryBuilder : IElasticQueryBuilder {
@@ -79,10 +94,10 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
-            if (ctx.Type != ContextType.SystemFilter)
+            if (ctx.Type != ContextType.Default)
                 return Task.CompletedTask;
 
-            var sfq = ctx.GetSourceAs<IExceptionlessSystemFilterQuery>() ?? ctx.GetSourceAs<ISystemFilterQuery>()?.SystemFilter as IExceptionlessSystemFilterQuery;
+            var sfq = ctx.Source.GetSystemFilter();
             if (sfq == null)
                 return Task.CompletedTask;
 
@@ -92,7 +107,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 return Task.CompletedTask;
             }
 
-            string field = GetDateField(ctx.GetOptionsAs<IElasticQueryOptions>());
+            string field = GetDateField(ctx.Options.GetElasticTypeSettings());
             if (sfq.Stack != null) {
                 var organization = allowedOrganizations.SingleOrDefault(o => o.Id == sfq.Stack.OrganizationId);
                 if (organization != null)
@@ -131,8 +146,8 @@ namespace Exceptionless.Core.Repositories.Queries {
             return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
         }
 
-        private string GetDateField(IElasticQueryOptions options) {
-            if (options != null && options.IndexType.GetType() == typeof(StackIndexType))
+        private string GetDateField(ElasticTypeSettings settings) {
+            if (settings != null && settings.IndexType.GetType() == typeof(StackIndexType))
                 return _stackLastOccurrenceFieldName;
 
             return _eventDateFieldName;
