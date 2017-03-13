@@ -17,10 +17,8 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
-using Foundatio.Repositories.Elasticsearch.Queries;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
@@ -104,7 +102,7 @@ namespace Exceptionless.Core.Jobs {
                 return false;
             }
 
-            var results = await _userRepository.GetByIdsAsync(userIds, true).AnyContext();
+            var results = await _userRepository.GetByIdsAsync(userIds, o => o.Cache()).AnyContext();
             var users = results.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(project.OrganizationId)).ToList();
             if (users.Count == 0) {
                 _logger.Info().Project(project.Id).Message("Project \"{0}\" has no users to send summary to.", project.Name);
@@ -112,15 +110,15 @@ namespace Exceptionless.Core.Jobs {
             }
 
             // TODO: What should we do about suspended organizations.
-            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache()).AnyContext();
             if (organization == null) {
                 _logger.Info().Project(project.Id).Message("The organization \"{0}\" for project \"{1}\" may have been deleted. No summaries will be sent.", project.OrganizationId, project.Name);
                 return false;
             }
 
             _logger.Info("Sending daily summary: users={0} project={1}", users.Count, project.Id);
-            var sf = new ExceptionlessSystemFilterQuery(project, organization);
-            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).WithIndexes(data.UtcStartTime, data.UtcEndTime);
+            var sf = new ExceptionlessSystemFilter(project, organization);
+            var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(sf).DateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).Index(data.UtcStartTime, data.UtcEndTime);
             var result = await _eventRepository.CountBySearchAsync(systemFilter, $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error}", "terms:(is_first_occurrence @include:true) cardinality:stack_id").AnyContext();
             bool hasSubmittedEvents = result.Total > 0;
             if (!hasSubmittedEvents)

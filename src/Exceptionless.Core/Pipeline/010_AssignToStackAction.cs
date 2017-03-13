@@ -10,6 +10,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Foundatio.Logging;
 using Foundatio.Messaging;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Pipeline {
@@ -78,7 +79,7 @@ namespace Exceptionless.Core.Pipeline {
                         stacks.Add(signatureHash, Tuple.Create(true, ctx.Stack));
                     }
                 } else {
-                    ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId, true).AnyContext();
+                    ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId, o => o.Cache()).AnyContext();
                     if (ctx.Stack == null || ctx.Stack.ProjectId != ctx.Event.ProjectId) {
                         ctx.SetError("Invalid StackId.");
                         continue;
@@ -116,7 +117,7 @@ namespace Exceptionless.Core.Pipeline {
 
             var stacksToAdd = stacks.Where(kvp => kvp.Value.Item1 && String.IsNullOrEmpty(kvp.Value.Item2.Id)).Select(kvp => kvp.Value.Item2).ToList();
             if (stacksToAdd.Count > 0) {
-                await _stackRepository.AddAsync(stacksToAdd, true, sendNotification: stacksToAdd.Count == 1).AnyContext();
+                await _stackRepository.AddAsync(stacksToAdd, o => o.Cache().Notifications(stacksToAdd.Count == 1)).AnyContext();
                 if (stacksToAdd.Count > 1) {
                     await _publisher.PublishAsync(new ExtendedEntityChanged {
                         ChangeType = ChangeType.Added,
@@ -129,7 +130,7 @@ namespace Exceptionless.Core.Pipeline {
 
             var stacksToSave = stacks.Where(kvp => kvp.Value.Item1 && !String.IsNullOrEmpty(kvp.Value.Item2.Id)).Select(kvp => kvp.Value.Item2).ToList();
             if (stacksToSave.Count > 0)
-                await _stackRepository.SaveAsync(stacksToSave, true, sendNotification: false).AnyContext(); // notification will get sent later in the update stats step
+                await _stackRepository.SaveAsync(stacksToSave, o => o.Cache().Notifications(false)).AnyContext(); // notification will get sent later in the update stats step
 
             // Set stack ids after they have been saved and created
             contexts.ForEach(ctx => {

@@ -7,6 +7,7 @@ using AutoMapper;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Logging;
 using Foundatio.Repositories;
@@ -42,7 +43,7 @@ namespace Exceptionless.Api.Controllers {
             return await OkModelAsync(model);
         }
 
-        protected virtual async Task<IHttpActionResult> GetCountAsync(IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string aggregations = null) {
+        protected virtual async Task<IHttpActionResult> GetCountAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string aggregations = null) {
             var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
@@ -52,10 +53,10 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(far.Message);
 
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
-            IRepositoryQuery query = new ExceptionlessQuery()
-                .WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
-                .WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
-                .WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
+            var query = new RepositoryQuery<TModel>()
+                .SystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
+                .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
+                .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
 
             CountResult result;
             try {
@@ -84,7 +85,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            TModel model = await _repository.GetByIdAsync(id, useCache);
+            TModel model = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
             if (model == null)
                 return null;
 
@@ -101,7 +102,7 @@ namespace Exceptionless.Api.Controllers {
             if (ids == null || ids.Length == 0)
                 return EmptyModels;
 
-            var models = await _repository.GetByIdsAsync(ids, useCache);
+            var models = await _repository.GetByIdsAsync(ids, o => o.Cache(useCache));
             if (_supportsSoftDeletes)
                 models = models.Where(m => !((ISupportSoftDeletes)m).IsDeleted).ToList();
 

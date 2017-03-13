@@ -10,6 +10,6 @@ namespace Exceptionless.Core.Repositories {
         Task<User> GetByPasswordResetTokenAsync(string token);
         Task<User> GetUserByOAuthProviderAsync(string provider, string providerUserId);
         Task<User> GetByVerifyEmailAddressTokenAsync(string token);
-        Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
+        Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User> options = null);
     }
 }

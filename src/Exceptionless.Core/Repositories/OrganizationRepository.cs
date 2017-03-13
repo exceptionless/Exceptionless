@@ -8,15 +8,13 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Extensions;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
 using Nest;
 
@@ -30,7 +28,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(token));
 
             var filter = Query<Organization>.Term(f => f.Field(o => o.Invites.First().Token).Value(token));
-            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext();
+            var hit = await FindOneAsync(q => q.ElasticFilter(filter)).AnyContext();
             return hit?.Document;
         }
 
@@ -39,19 +37,16 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(customerId));
 
             var filter = Query<Organization>.Term(f => f.Field(o => o.StripeCustomerId).Value(customerId));
-            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext();
+            var hit = await FindOneAsync(q => q.ElasticFilter(filter)).AnyContext();
             return hit?.Document;
         }
 
-        public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(PagingOptions paging) {
+        public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(CommandOptionsDescriptor<Organization> options = null) {
             var filter = Query<Organization>.Range(f => f.Field(o => o.RetentionDays).GreaterThan(0));
-            return FindAsync(new ExceptionlessQuery()
-                .WithElasticFilter(filter)
-                .IncludeFields((Organization o) => o.Id, o => o.Name, o => o.RetentionDays)
-                .WithPaging(paging));
+            return FindAsync(q => q.ElasticFilter(filter).Include(o => o.Id, o => o.Name, o => o.RetentionDays), options);
         }
 
-        public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
+        public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
             var filter = Query<Organization>.MatchAll();
             if (!String.IsNullOrWhiteSpace(criteria))
                 filter &= Query<Organization>.Term(o => o.Name, criteria);
@@ -77,29 +72,28 @@ namespace Exceptionless.Core.Repositories {
                         ) || Query<Organization>.Term(o => o.IsSuspended, false);
             }
 
-            var query = new ExceptionlessQuery().WithPaging(paging).WithElasticFilter(filter);
+            var query = new RepositoryQuery<Organization>().ElasticFilter(filter);
             switch (sortBy) {
                 case OrganizationSortBy.Newest:
-                    query.WithSortDescending((Organization o) => o.Id);
+                    query.SortDescending((Organization o) => o.Id);
                     break;
                 case OrganizationSortBy.Subscribed:
-                    query.WithSortDescending((Organization o) => o.SubscribeDate);
+                    query.SortDescending((Organization o) => o.SubscribeDate);
                     break;
                 // case OrganizationSortBy.MostActive:
                 //    query.WithSortDescending((Organization o) => o.TotalEventCount);
                 //    break;
                 default:
-                    query.WithSortAscending((Organization o) => o.Name.Suffix("keyword"));
+                    query.SortAscending((Organization o) => o.Name.Suffix("keyword"));
                     break;
             }
 
-            return FindAsync(query);
+            return FindAsync(q => query, options);
         }
 
         public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
-            var query = new ExceptionlessQuery()
-                .IncludeFields((Organization o) => o.PlanId, o => o.IsSuspended, o => o.BillingPrice, o => o.BillingStatus)
-                .WithSortDescending((Organization o) => o.PlanId);
+            var query = new RepositoryQuery<Organization>().Include(o => o.PlanId, o => o.IsSuspended, o => o.BillingPrice, o => o.BillingStatus)
+                .SortDescending((Organization o) => o.PlanId);
 
             var results = (await FindAsync(query).AnyContext()).Documents;
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
@@ -168,7 +162,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(organizationId) || count == 0)
                 return false;
 
-            var org = await GetByIdAsync(organizationId, true).AnyContext();
+            var org = await GetByIdAsync(organizationId, o => o.Cache()).AnyContext();
             if (org == null || org.MaxEventsPerMonth < 0)
                 return false;
 
@@ -205,12 +199,12 @@ namespace Exceptionless.Core.Repositories {
 
             if (shouldSaveUsage) {
                 try {
-                    org = await GetByIdAsync(organizationId, false).AnyContext();
+                    org = await GetByIdAsync(organizationId).AnyContext();
                     org.SetMonthlyUsage(monthlyTotal, monthlyBlocked, monthlyTooBig);
                     if (hourlyTotal > org.GetHourlyEventLimit())
                         org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
 
-                    await SaveAsync(org, true).AnyContext();
+                    await SaveAsync(org, o => o.Cache()).AnyContext();
                     await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
                 } catch (Exception ex) {
                     _logger.Error(ex, "Error while saving organization usage data.");
@@ -251,7 +245,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public async Task<int> GetRemainingEventLimitAsync(string organizationId) {
-            var organization = await GetByIdAsync(organizationId, true).AnyContext();
+            var organization = await GetByIdAsync(organizationId, o => o.Cache()).AnyContext();
             if (organization == null || organization.MaxEventsPerMonth < 0)
                 return Int32.MaxValue;
 

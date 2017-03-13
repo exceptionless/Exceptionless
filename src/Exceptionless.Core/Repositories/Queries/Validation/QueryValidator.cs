@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Foundatio.Logging;
-using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;

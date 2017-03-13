@@ -1,5 +1,5 @@
 ﻿Param(
-  [string]$Version = "5.2.1",
+  [string]$Version = "5.2.2",
   [int]$NodeCount = 1,
   [bool]$StartKibana = $true,
   [int]$StartPort = 9200,

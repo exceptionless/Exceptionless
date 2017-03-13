@@ -10,9 +10,9 @@ using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
+using Foundatio.Repositories.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
@@ -37,13 +37,13 @@ namespace Exceptionless.Core.Repositories {
             }
         }
 
-        protected override async Task AddToCacheAsync(ICollection<Stack> documents, TimeSpan? expiresIn = null) {
-            if (!IsCacheEnabled)
+        protected override async Task AddToCacheAsync(ICollection<Stack> documents, ICommandOptions options) {
+            if (!IsCacheEnabled || Cache == null || !options.ShouldUseCache())
                 return;
 
-            await base.AddToCacheAsync(documents, expiresIn).AnyContext();
+            await base.AddToCacheAsync(documents, options).AnyContext();
             foreach (var stack in documents)
-                await Cache.SetAsync(GetStackSignatureCacheKey(stack), stack, expiresIn ?? TimeSpan.FromSeconds(ElasticType.DefaultCacheExpirationSeconds)).AnyContext();
+                await Cache.SetAsync(GetStackSignatureCacheKey(stack), stack, options.GetExpiresIn()).AnyContext();
         }
 
         private string GetStackSignatureCacheKey(Stack stack) {
@@ -107,46 +107,41 @@ ctx._source.total_occurrences += params.count;";
         }
 
         public async Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
-            var key = GetStackSignatureCacheKey(projectId, signatureHash);
+            string key = GetStackSignatureCacheKey(projectId, signatureHash);
             Stack stack = IsCacheEnabled ? await Cache.GetAsync(key, default(Stack)).AnyContext() : null;
             if (stack != null)
                 return stack;
 
-            var hit = await FindOneAsync(new ExceptionlessQuery()
-                .WithProjectId(projectId)
-                .WithElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
-
+            var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
             if (IsCacheEnabled && hit != null)
-                await Cache.SetAsync(key, hit.Document, TimeSpan.FromSeconds(ElasticType.DefaultCacheExpirationSeconds)).AnyContext();
+                await Cache.SetAsync(key, hit.Document, TimeSpan.FromSeconds(((StackIndexType)ElasticType).DefaultCacheExpirationSeconds)).AnyContext();
 
             return hit?.Document;
         }
 
-        public Task<FindResults<Stack>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
-            var search = new ExceptionlessQuery()
-                .WithDateRange(utcStart, utcEnd, field ?? ElasticType.GetFieldName(s => s.LastOccurrence))
-                .WithSystemFilter(systemFilter)
-                .WithFilter(userFilter)
-                .WithPaging(paging)
-                .WithSort(sort);
+        public Task<FindResults<Stack>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null) {
+            IRepositoryQuery<Stack> query = new RepositoryQuery<Stack>()
+                .DateRange(utcStart, utcEnd, field ?? ElasticType.GetFieldName(s => s.LastOccurrence))
+                .SystemFilter(systemFilter)
+                .SearchExpression(userFilter);
 
-            search = !String.IsNullOrEmpty(sort) ? search.WithSort(sort) : search.WithSortDescending((Stack s) => s.LastOccurrence);
-            return FindAsync(search);
+            query = !String.IsNullOrEmpty(sort) ? query.Sort(sort) : query.SortDescending(s => s.LastOccurrence);
+            return FindAsync(q => query, options);
         }
 
         public async Task MarkAsRegressedAsync(string stackId) {
             var stack = await GetByIdAsync(stackId).AnyContext();
             stack.IsRegressed = true;
-            await SaveAsync(stack, true).AnyContext();
+            await SaveAsync(stack, o => o.Cache()).AnyContext();
         }
 
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents) {
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ICommandOptions options = null) {
             if (!IsCacheEnabled)
                 return;
 
             var keys = documents.UnionOriginalAndModified().Select(GetStackSignatureCacheKey).Distinct();
             await Cache.RemoveAllAsync(keys).AnyContext();
-            await base.InvalidateCacheAsync(documents).AnyContext();
+            await base.InvalidateCacheAsync(documents, options).AnyContext();
         }
     }
 }

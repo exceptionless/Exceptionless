@@ -5,29 +5,25 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
-using Foundatio.Repositories.Elasticsearch.Queries;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
+    public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
         public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator)
             : base(configuration.Organizations.WebHook, validator) {}
 
         public Task<FindResults<WebHook>> GetByUrlAsync(string targetUrl) {
-            return FindAsync(new ExceptionlessQuery().WithFieldEquals((WebHook w) => w.Url, targetUrl));
+            return FindAsync(q => q.FieldEquals(w => w.Url, targetUrl));
         }
 
         public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
             var filter = (Query<WebHook>.Term(e => e.OrganizationId, organizationId) && !Query<WebHook>.Exists(e => e.Field(f => f.ProjectId))) || Query<WebHook>.Term(e => e.ProjectId, projectId);
 
             // TODO: This cache key may not always be cleared out if the webhook doesn't have both a org and project id.
-            return FindAsync(new ExceptionlessQuery()
-                .WithElasticFilter(filter)
-                .WithCacheKey(String.Concat("paged:Organization:", organizationId, ":Project:", projectId)));
+            return FindAsync(q => q.ElasticFilter(filter), o => o.CacheKey(String.Concat("paged:Organization:", organizationId, ":Project:", projectId)));
         }
 
         public static class EventTypes {
@@ -40,7 +36,7 @@ namespace Exceptionless.Core.Repositories {
             public const string StackPromoted = "StackPromoted";
         }
 
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents) {
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents, ICommandOptions options = null) {
             if (!IsCacheEnabled)
                 return;
 
@@ -49,15 +45,15 @@ namespace Exceptionless.Core.Repositories {
                 .Select(h => String.Concat("Organization:", h.OrganizationId, ":Project:", h.ProjectId))
                 .Distinct()).AnyContext();
 
-            await base.InvalidateCacheAsync(documents).AnyContext();
+            await base.InvalidateCacheAsync(documents, options).AnyContext();
         }
 
-        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<WebHook> documents) {
+        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<WebHook> documents, ICommandOptions options = null) {
             var keysToRemove = documents.Select(d => $"paged:Organization:{d.OrganizationId}:Project:{d.ProjectId}:*").Distinct();
             foreach (var key in keysToRemove)
                 await Cache.RemoveByPrefixAsync(key).AnyContext();
 
-            await base.InvalidateCachedQueriesAsync(documents).AnyContext();
+            await base.InvalidateCachedQueriesAsync(documents, options).AnyContext();
         }
     }
 }

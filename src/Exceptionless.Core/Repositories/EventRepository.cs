@@ -7,10 +7,8 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using FluentValidation;
-using Foundatio.Repositories.Elasticsearch.Queries;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
 using Nest;
 
@@ -27,15 +25,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         // TODO: We need to index and search by the created time.
-        public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, PagingOptions paging = null) {
+        public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent> options = null) {
             var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && !Query<PersistentEvent>.Exists(f => f.Field(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]));
             if (createdBeforeUtc.Ticks > 0)
                 filter &= Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThanOrEquals(createdBeforeUtc));
 
-            return FindAsync(new ExceptionlessQuery()
-                .WithElasticFilter(filter)
-                .WithSortDescending((PersistentEvent e) => e.Date)
-                .WithPaging(paging));
+            return FindAsync(q => q.ElasticFilter(filter).SortDescending(e => e.Date), options);
         }
 
         public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true) {
@@ -43,7 +38,7 @@ namespace Exceptionless.Core.Repositories {
             if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd, hasError))
                 return false;
 
-            await SaveAsync(ev, sendNotifications: sendNotifications).AnyContext();
+            await SaveAsync(ev, o => o.Notifications(sendNotifications)).AnyContext();
             return true;
         }
 
@@ -51,41 +46,28 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
 
-            var query = new ExceptionlessQuery()
-                .WithOrganizationId(organizationId)
-                .WithProjectId(projectId)
-                .WithStackId(stackId)
-                .WithFieldEquals((PersistentEvent e) => e.IsFixed, !isFixed);
-
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(query, new { is_fixed = isFixed, updated_utc = SystemClock.UtcNow });
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsFixed, !isFixed), new { is_fixed = isFixed, updated_utc = SystemClock.UtcNow });
         }
 
         public Task<long> UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
 
-            var query = new ExceptionlessQuery()
-                .WithOrganizationId(organizationId)
-                .WithProjectId(projectId)
-                .WithStackId(stackId)
-                .WithFieldEquals((PersistentEvent e) => e.IsHidden, !isHidden);
-
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(query, new { is_hidden = isHidden, updated_utc = SystemClock.UtcNow });
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsHidden, !isHidden), new { is_hidden = isHidden, updated_utc = SystemClock.UtcNow });
         }
 
         public Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
             var filter = Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcCutoffDate));
-            return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithElasticFilter(filter).IncludeDeleted(), false);
+            return RemoveAllAsync(q => q.Organization(organizationId).ElasticFilter(filter).SoftDeleteMode(SoftDeleteQueryMode.All));
         }
 
         public override Task<long> RemoveAllByOrganizationIdAsync(string organizationId) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            var query = new ExceptionlessQuery().WithOrganizationId(organizationId);
-            return PatchAllAsync(query, new { is_deleted = true, updated_utc = SystemClock.UtcNow });
+            return PatchAllAsync(q => q.Organization(organizationId), new { is_deleted = true, updated_utc = SystemClock.UtcNow });
         }
 
         public override Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId) {
@@ -95,47 +77,39 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException(nameof(projectId));
 
-            var query = new ExceptionlessQuery().WithOrganizationId(organizationId).WithProjectId(projectId);
-            return PatchAllAsync(query, new { is_deleted = true, updated_utc = SystemClock.UtcNow });
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId), new { is_deleted = true, updated_utc = SystemClock.UtcNow });
         }
 
         public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
-            var query = new ExceptionlessQuery().WithOrganizationId(organizationId).WithProjectId(projectId).WithStackId(stackId);
-            return PatchAllAsync(query, new { is_deleted = true, updated_utc = SystemClock.UtcNow });
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId), new { is_deleted = true, updated_utc = SystemClock.UtcNow });
         }
 
         public Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
-            var query = new ExceptionlessQuery()
-                .WithOrganizationId(organizationId)
-                .WithElasticFilter(Query<PersistentEvent>.Term(EventIndexType.Alias.IpAddress, clientIp))
-                .WithDateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date)
-                .WithIndexes(utcStart, utcEnd);
-
-            return PatchAllAsync(query, new { is_hidden = true, updated_utc = SystemClock.UtcNow });
+            return PatchAllAsync(q => q
+                    .Organization(organizationId)
+                    .ElasticFilter(Query<PersistentEvent>.Term(EventIndexType.Alias.IpAddress, clientIp))
+                    .DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date)
+                    .Index(utcStart, utcEnd)
+                , new { is_hidden = true, updated_utc = SystemClock.UtcNow });
         }
 
-        public Task<FindResults<PersistentEvent>> GetByFilterAsync(IExceptionlessSystemFilterQuery systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
-            var search = new ExceptionlessQuery()
-                .WithDateRange(utcStart, utcEnd, field ?? ElasticType.GetFieldName(e => e.Date))
-                .WithIndexes(utcStart, utcEnd)
-                .WithSystemFilter(systemFilter)
-                .WithFilter(userFilter)
-                .WithPaging(paging);
+        public Task<FindResults<PersistentEvent>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
+            IRepositoryQuery<PersistentEvent> query = new RepositoryQuery<PersistentEvent>()
+                .DateRange(utcStart, utcEnd, field ?? ElasticType.GetFieldName(e => e.Date))
+                .Index(utcStart, utcEnd)
+                .SystemFilter(systemFilter)
+                .SearchExpression(userFilter);
 
-            search = !String.IsNullOrEmpty(sort) ? search.WithSort(sort) : search.WithSortDescending((PersistentEvent e) => e.Date);
-            return FindAsync(search);
+            query = !String.IsNullOrEmpty(sort) ? query.Sort(sort) : query.SortDescending(e => e.Date);
+            return FindAsync(q => query, options);
         }
 
         public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId) {
             var filter = Query<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
-            return FindAsync(new ExceptionlessQuery()
-                .WithProjectId(projectId)
-                .WithElasticFilter(filter)
-                .WithSortDescending((PersistentEvent e) => e.Date)
-                .WithLimit(10));
+            return FindAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
         }
 
-        public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, IExceptionlessSystemFilterQuery systemFilter, string userFilter, DateTime? utcStart, DateTime? utcEnd) {
+        public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, ExceptionlessSystemFilter systemFilter, string userFilter, DateTime? utcStart, DateTime? utcEnd) {
             string previous = await GetPreviousEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd).AnyContext();
             string next = await GetNextEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd).AnyContext();
 
@@ -145,7 +119,7 @@ namespace Exceptionless.Core.Repositories {
             };
         }
 
-        private async Task<string> GetPreviousEventIdAsync(PersistentEvent ev, IExceptionlessSystemFilterQuery systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+        private async Task<string> GetPreviousEventIdAsync(PersistentEvent ev, ExceptionlessSystemFilter systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
             if (ev == null)
                 return null;
 
@@ -164,15 +138,14 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(userFilter))
                 userFilter = String.Concat(EventIndexType.Alias.StackId, ":", ev.StackId);
 
-            var results = await FindAsync(new ExceptionlessQuery()
-                .WithDateRange(utcStart, utcEventDate, (PersistentEvent e) => e.Date)
-                .WithIndexes(utcStart, utcEventDate)
-                .WithSortDescending((PersistentEvent e) => e.Date)
-                .WithLimit(10)
-                .IncludeFields((PersistentEvent e) => e.Id, e => e.Date)
-                .WithSystemFilter(systemFilter)
-                .WithElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
-                .WithFilter(userFilter)).AnyContext();
+            var results = await FindAsync(q => q
+                .DateRange(utcStart, utcEventDate, (PersistentEvent e) => e.Date)
+                .Index(utcStart, utcEventDate)
+                .SortDescending(e => e.Date)
+                .Include(e => e.Id, e => e.Date)
+                .SystemFilter(systemFilter)
+                .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
+                .SearchExpression(userFilter), o => o.PageLimit(10)).AnyContext();
 
             if (results.Total == 0)
                 return null;
@@ -191,7 +164,7 @@ namespace Exceptionless.Core.Repositories {
             return index == 0 ? null : unionResults[index - 1].Id;
         }
 
-        private async Task<string> GetNextEventIdAsync(PersistentEvent ev, IExceptionlessSystemFilterQuery systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+        private async Task<string> GetNextEventIdAsync(PersistentEvent ev, ExceptionlessSystemFilter systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
             if (ev == null)
                 return null;
 
@@ -209,15 +182,14 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(userFilter))
                 userFilter = String.Concat(EventIndexType.Alias.StackId, ":", ev.StackId);
 
-            var results = await FindAsync(new ExceptionlessQuery()
-                .WithDateRange(utcEventDate, utcEnd, (PersistentEvent e) => e.Date)
-                .WithIndexes(utcStart, utcEventDate)
-                .WithSortAscending((PersistentEvent e) => e.Date)
-                .WithLimit(10)
-                .IncludeFields((PersistentEvent e) => e.Id, e => e.Date)
-                .WithSystemFilter(systemFilter)
-                .WithElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
-                .WithFilter(userFilter)).AnyContext();
+            var results = await FindAsync(q => q
+                .DateRange(utcEventDate, utcEnd, (PersistentEvent e) => e.Date)
+                .Index(utcStart, utcEventDate)
+                .SortAscending(e => e.Date)
+                .Include(e => e.Id, e => e.Date)
+                .SystemFilter(systemFilter)
+                .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
+                .FilterExpression(userFilter), o => o.PageLimit(10)).AnyContext();
 
             if (results.Total == 0)
                 return null;
@@ -236,32 +208,23 @@ namespace Exceptionless.Core.Repositories {
             return index == unionResults.Count - 1 ? null : unionResults[index + 1].Id;
         }
 
-        public override Task<FindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public override Task<FindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<PersistentEvent> options = null) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            return FindAsync(new ExceptionlessQuery()
-                .WithOrganizationId(organizationId)
-                .WithPaging(paging)
-                .WithSortDescending((PersistentEvent e) => e.Date)
-                .WithSortDescending((PersistentEvent e) => e.Id)
-                .WithExpiresIn(expiresIn));
+            return FindAsync(q => q.Organization(organizationId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
         }
 
-        public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, PagingOptions paging = null) {
-            return FindAsync(new ExceptionlessQuery()
-                .WithProjectId(projectId)
-                .WithPaging(paging)
-                .WithSortDescending((PersistentEvent e) => e.Date)
-                .WithSortDescending((PersistentEvent e) => e.Id));
+        public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<PersistentEvent> options = null) {
+            return FindAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
         }
 
         public Task<CountResult> GetCountByProjectIdAsync(string projectId, bool includeDeleted = false) {
-            return CountAsync(new ExceptionlessQuery().WithProjectId(projectId).IncludeDeleted(includeDeleted));
+            return CountAsync(q => q.Project(projectId).SoftDeleteMode(includeDeleted ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly));
         }
 
         public Task<CountResult> GetCountByStackIdAsync(string stackId, bool includeDeleted = false) {
-            return CountAsync(new ExceptionlessQuery().WithStackId(stackId).IncludeDeleted(includeDeleted));
+            return CountAsync(q => q.Stack(stackId).SoftDeleteMode(includeDeleted ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly));
         }
     }
 }

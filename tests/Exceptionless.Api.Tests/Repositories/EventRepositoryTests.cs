@@ -10,6 +10,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Tests.Utility;
 using Foundatio.Logging;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
@@ -72,12 +73,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(events.Count, await _repository.CountAsync());
 
-            var results = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(2));
+            var results = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(2).PageLimit(2));
             Assert.Equal(2, results.Documents.Count);
             Assert.Equal(results.Documents.First().Id, events[2].Id);
             Assert.Equal(results.Documents.Last().Id, events[3].Id);
 
-            results = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(3).WithLimit(2));
+            results = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(3).PageLimit(2));
             Assert.Equal(2, results.Documents.Count);
             Assert.Equal(results.Documents.First().Id, events[4].Id);
             Assert.Equal(results.Documents.Last().Id, events[5].Id);
@@ -179,7 +180,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Fact]
         public async Task CanMarkAsFixedAsync() {
             const int NUMBER_OF_EVENTS_TO_CREATE = 10000;
-            await _repository.AddAsync(EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2).ToList(), sendNotification: false);
+            await _repository.AddAsync(EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2).ToList(), o => o.Notifications(false));
 
             await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, await _repository.CountAsync());
@@ -209,7 +210,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.AddAsync(events);
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
+            events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
             events.ForEach(e => {
                 Assert.False(e.IsHidden);
@@ -221,7 +222,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.HideAllByClientIpAndDateAsync(TestConstants.OrganizationId, _clientIpAddress, SystemClock.UtcNow.SubtractDays(3), SystemClock.UtcNow.AddDays(2));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
+            events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
             events.ForEach(e => Assert.True(e.IsHidden));
         }
@@ -258,7 +259,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
-            return _repository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            return _repository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue);
         }
     }
 }

@@ -137,7 +137,7 @@ namespace Exceptionless.Api.Controllers {
             return organizations.ToList().AsReadOnly();
         }
 
-        protected bool ShouldApplySystemFilter(IExceptionlessSystemFilterQuery sf, string filter) {
+        protected bool ShouldApplySystemFilter(ExceptionlessSystemFilter sf, string filter) {
             // Apply filter to non admin user.
             if (!Request.IsGlobalAdmin())
                 return true;
