@@ -24,10 +24,8 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
-using Foundatio.Repositories.Elasticsearch.Queries;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
 using McSherry.SemanticVersioning;
 using Newtonsoft.Json.Linq;
 
@@ -131,8 +129,7 @@ namespace Exceptionless.Api.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IHttpActionResult> MarkFixedAsync(JObject data) {
             string id = null;
-            JToken value;
-            if (data.TryGetValue("ErrorStack", out value))
+            if (data.TryGetValue("ErrorStack", out JToken value))
                 id = value.Value<string>();
 
             if (data.TryGetValue("Stack", out value))
@@ -183,8 +180,7 @@ namespace Exceptionless.Api.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IHttpActionResult> AddLinkAsync(JObject data) {
             string id = null;
-            JToken value;
-            if (data.TryGetValue("ErrorStack", out value))
+            if (data.TryGetValue("ErrorStack", out JToken value))
                 id = value.Value<string>();
 
             if (data.TryGetValue("Stack", out value))
@@ -523,10 +519,9 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(pr.Message);
 
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
-            var options = new PagingOptions { Page = page, Limit = limit };
 
             try {
-                var results = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.Range.UtcStart, ti.Range.UtcEnd, options);
+                var results = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.Range.UtcStart, ti.Range.UtcEnd, o => o.PageNumber(page).PageLimit(limit));
 
                 var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
@@ -965,7 +960,7 @@ namespace Exceptionless.Api.Controllers {
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
 
             try {
-                var systemFilter = new ElasticQuery().WithSystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
+                var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).Index(ti.Range.UtcStart, ti.Range.UtcEnd);
                 var stackTerms = (await _eventRepository.CountBySearchAsync(systemFilter, filter, $"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {aggregations})")).Aggregations.Terms<string>("terms_stack_id");
                 if (stackTerms == null || stackTerms.Buckets.Count == 0)
                     return Ok(EmptyModels);
@@ -997,14 +992,14 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return null;
 
-            return _organizationRepository.GetByIdAsync(organizationId, useCache);
+            return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
         }
 
         private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
             if (String.IsNullOrEmpty(projectId))
                 return null;
 
-            var project = await _projectRepository.GetByIdAsync(projectId, useCache);
+            var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache(useCache));
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return null;
 
@@ -1015,7 +1010,7 @@ namespace Exceptionless.Api.Controllers {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
 
-            var systemFilter = new ElasticQuery().WithSystemFilter(eventSystemFilter).WithDateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).WithIndexes(ti.Range.UtcStart, ti.Range.UtcEnd);
+            var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(eventSystemFilter).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).Index(ti.Range.UtcStart, ti.Range.UtcEnd);
             var stackTerms = await _eventRepository.CountBySearchAsync(systemFilter, String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}")), $"terms:(stack_id~{stacks.Count} cardinality:user sum:count~1 min:date max:date)");
             return await GetStackSummariesAsync(stacks, stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets, eventSystemFilter, ti);
         }
@@ -1053,7 +1048,7 @@ namespace Exceptionless.Api.Controllers {
             if (totals.Count == projectIds.Count)
                 return totals;
 
-            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).WithIndexes(utcStart, utcEnd);
+            var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(sf).DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).Index(utcStart, utcEnd);
             var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
             var countResult = await _eventRepository.CountBySearchAsync(systemFilter, projects.BuildFilter(), "terms:(project_id cardinality:user)");
 

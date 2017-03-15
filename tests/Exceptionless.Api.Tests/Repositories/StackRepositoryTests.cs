@@ -6,6 +6,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Nest;
@@ -28,7 +29,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(0, _cache.Hits);
             Assert.Equal(0, _cache.Misses);
 
-            var stack = await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), true);
+            var stack = await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.Cache());
             Assert.NotNull(stack?.Id);
             Assert.Equal(2, _cache.Count);
             Assert.Equal(0, _cache.Hits);
@@ -46,11 +47,11 @@ namespace Exceptionless.Api.Tests.Repositories {
             var stack = await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _repository.GetByFilterAsync(null, "fixed:true", null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            var results = await _repository.GetByFilterAsync(null, "fixed:true", null, null, DateTime.MinValue, DateTime.MaxValue);
             Assert.NotNull(results);
             Assert.Equal(0, results.Total);
 
-            results = await _repository.GetByFilterAsync(null, "fixed:false", null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            results = await _repository.GetByFilterAsync(null, "fixed:false", null, null, DateTime.MinValue, DateTime.MaxValue);
             Assert.NotNull(results);
             Assert.Equal(1, results.Total);
             Assert.False(results.Documents.Single().IsRegressed);
@@ -60,13 +61,13 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.SaveAsync(stack);
             await _configuration.Client.RefreshAsync(Indices.All);
 
-            results = await _repository.GetByFilterAsync(null, "fixed:true", null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            results = await _repository.GetByFilterAsync(null, "fixed:true", null, null, DateTime.MinValue, DateTime.MaxValue);
             Assert.NotNull(results);
             Assert.Equal(1, results.Total);
             Assert.False(results.Documents.Single().IsRegressed);
             Assert.NotNull(results.Documents.Single().DateFixed);
 
-            results = await _repository.GetByFilterAsync(null, "fixed:false", null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            results = await _repository.GetByFilterAsync(null, "fixed:false", null, null, DateTime.MinValue, DateTime.MaxValue);
             Assert.NotNull(results);
             Assert.Equal(0, results.Total);
         }
@@ -131,12 +132,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.AddAsync(StackData.GenerateSampleStacks());
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(1).WithLimit(1));
+            var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(1).PageLimit(1));
             Assert.NotNull(stacks);
             Assert.Equal(3, stacks.Total);
             Assert.Equal(1, stacks.Documents.Count);
 
-            var stacks2 = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(1));
+            var stacks2 = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(2).PageLimit(1));
             Assert.NotNull(stacks);
             Assert.Equal(1, stacks.Documents.Count);
 

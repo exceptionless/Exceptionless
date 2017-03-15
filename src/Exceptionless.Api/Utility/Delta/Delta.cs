@@ -147,8 +147,7 @@ namespace Exceptionless.Api.Utility {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            IMemberAccessor value;
-            if (_propertiesThatExist.TryGetValue(name, out value)) {
+            if (_propertiesThatExist.TryGetValue(name, out IMemberAccessor value)) {
                 type = value.MemberType;
                 return true;
             }
@@ -218,12 +217,10 @@ namespace Exceptionless.Api.Utility {
             var changedPropertyNames = new HashSet<string>();
 
             foreach (var propertyName in _changedProperties) {
-                object originalValue;
-                if (!TryGetPropertyValue(propertyName, out originalValue, original))
+                if (!TryGetPropertyValue(propertyName, out object originalValue, original))
                     changedPropertyNames.Add(propertyName);
 
-                object newValue;
-                if (!TryGetPropertyValue(propertyName, out newValue))
+                if (!TryGetPropertyValue(propertyName, out object newValue))
                     continue;
 
                 if (originalValue == null && newValue == null)
@@ -261,8 +258,7 @@ namespace Exceptionless.Api.Utility {
 
             foreach (IMemberAccessor sourceProperty in propertiesToCopy) {
                 object value = sourceProperty.GetValue(_entity);
-                IMemberAccessor targetAccessor;
-                if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out targetAccessor))
+                if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out IMemberAccessor targetAccessor))
                     continue;
 
                 if (!targetAccessor.MemberType.IsInstanceOfType(value))
@@ -290,8 +286,7 @@ namespace Exceptionless.Api.Utility {
 
             foreach (IMemberAccessor sourceProperty in propertiesToCopy) {
                 object value = sourceProperty.GetValue(_entity);
-                IMemberAccessor targetAccessor;
-                if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out targetAccessor))
+                if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out IMemberAccessor targetAccessor))
                     continue;
 
                 if (!targetAccessor.MemberType.IsInstanceOfType(value))

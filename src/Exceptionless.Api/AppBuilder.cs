@@ -101,14 +101,14 @@ namespace Exceptionless.Api {
             var workItemQueue = container.GetInstance<IQueue<WorkItemData>>();
             var subscriber = container.GetInstance<IMessageSubscriber>();
 
-            subscriber.Subscribe<PlanOverage>(async overage => {
+            subscriber.SubscribeAsync<PlanOverage>(async overage => {
                 logger.Info("Enqueueing plan overage work item for organization: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
                 await workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
                     OrganizationId = overage.OrganizationId,
                     IsOverHourlyLimit = overage.IsHourly,
                     IsOverMonthlyLimit = !overage.IsHourly
                 });
-            }, token);
+            }, token).GetAwaiter().GetResult();
         }
 
         private static void RunJobs(Container container, LoggerFactory loggerFactory, ILogger logger, CancellationToken token = default(CancellationToken)) {
@@ -180,7 +180,7 @@ namespace Exceptionless.Api {
             hubPipeline.AddModule(new ErrorHandlingPipelineModule(loggerFactory.CreateLogger<ErrorHandlingPipelineModule>()));
 
             app.MapSignalR<MessageBusConnection>("/api/v2/push", new ConnectionConfiguration { Resolver = resolver });
-            container.GetInstance<MessageBusBroker>().Start();
+            container.GetInstance<MessageBusBroker>().StartAsync().GetAwaiter().GetResult();
         }
 
         private static void SetupSwagger(HttpConfiguration config) {
@@ -250,8 +250,7 @@ namespace Exceptionless.Api {
                     tempEx = tempEx.InnerException;
                 }
 
-                var typeLoadException = tempEx as ReflectionTypeLoadException;
-                if (typeLoadException != null) {
+                if (tempEx is ReflectionTypeLoadException typeLoadException) {
                     foreach (var loaderEx in typeLoadException.LoaderExceptions)
                         Debug.WriteLine(loaderEx.Message);
                 }

@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Repositories {
     public class UserRepository : RepositoryBase<User>, IUserRepository {
         public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator)
             : base(configuration.Organizations.User, validator) {
-            FieldsRequiredForRemove.AddRange(new [] { ElasticType.GetFieldName(u => u.EmailAddress), ElasticType.GetFieldName(u => u.OrganizationIds) });
+            FieldsRequiredForRemove.AddRange(new Field[] { ElasticType.GetPropertyName(u => u.EmailAddress), ElasticType.GetPropertyName(u => u.OrganizationIds) });
             DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
 

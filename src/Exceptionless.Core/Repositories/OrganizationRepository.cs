@@ -96,16 +96,16 @@ namespace Exceptionless.Core.Repositories {
                 .SortDescending((Organization o) => o.PlanId);
 
             var results = (await FindAsync(query).AnyContext()).Documents;
-            List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
-            List<Organization> mediumOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();
-            List<Organization> largeOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargePlan.Id) && o.BillingPrice > 0).ToList();
+            var smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
+            var mediumOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();
+            var largeOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargePlan.Id) && o.BillingPrice > 0).ToList();
             decimal monthlyTotalPaid = smallOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
                 + mediumOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
                 + largeOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
 
-            List<Organization> smallYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallYearlyPlan.Id) && o.BillingPrice > 0).ToList();
-            List<Organization> mediumYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumYearlyPlan.Id) && o.BillingPrice > 0).ToList();
-            List<Organization> largeYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargeYearlyPlan.Id) && o.BillingPrice > 0).ToList();
+            var smallYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallYearlyPlan.Id) && o.BillingPrice > 0).ToList();
+            var mediumYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumYearlyPlan.Id) && o.BillingPrice > 0).ToList();
+            var largeYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargeYearlyPlan.Id) && o.BillingPrice > 0).ToList();
             decimal yearlyTotalPaid = smallYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
                 + mediumYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
                 + largeYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
@@ -162,7 +162,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(organizationId) || count == 0)
                 return false;
 
-            var org = await GetByIdAsync(organizationId, o => o.Cache()).AnyContext();
+            var org = await this.GetByIdAsync(organizationId, o => o.Cache()).AnyContext();
             if (org == null || org.MaxEventsPerMonth < 0)
                 return false;
 
@@ -204,7 +204,7 @@ namespace Exceptionless.Core.Repositories {
                     if (hourlyTotal > org.GetHourlyEventLimit())
                         org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
 
-                    await SaveAsync(org, o => o.Cache()).AnyContext();
+                    await this.SaveAsync(org, o => o.Cache()).AnyContext();
                     await Cache.SetAsync(GetUsageSavedCacheKey(organizationId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
                 } catch (Exception ex) {
                     _logger.Error(ex, "Error while saving organization usage data.");
@@ -245,12 +245,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public async Task<int> GetRemainingEventLimitAsync(string organizationId) {
-            var organization = await GetByIdAsync(organizationId, o => o.Cache()).AnyContext();
+            var organization = await this.GetByIdAsync(organizationId, o => o.Cache()).AnyContext();
             if (organization == null || organization.MaxEventsPerMonth < 0)
                 return Int32.MaxValue;
 
             string monthlyCacheKey = GetMonthlyTotalCacheKey(organizationId);
-            var monthlyEventCount = await Cache.GetAsync<long>(monthlyCacheKey, 0).AnyContext();
+            long monthlyEventCount = await Cache.GetAsync<long>(monthlyCacheKey, 0).AnyContext();
             return Math.Max(0, organization.GetMaxEventsPerMonthWithBonus() - (int)monthlyEventCount);
         }
     }

@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Repositories {
             if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd, hasError))
                 return false;
 
-            await SaveAsync(ev, o => o.Notifications(sendNotifications)).AnyContext();
+            await this.SaveAsync(ev, o => o.Notifications(sendNotifications)).AnyContext();
             return true;
         }
 
@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(stackId));
 
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsFixed, !isFixed), new { is_fixed = isFixed, updated_utc = SystemClock.UtcNow });
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsFixed, !isFixed), new PartialPatch(new { is_fixed = isFixed, updated_utc = SystemClock.UtcNow }));
         }
 
         public Task<long> UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(stackId));
 
             // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsHidden, !isHidden), new { is_hidden = isHidden, updated_utc = SystemClock.UtcNow });
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsHidden, !isHidden), new PartialPatch(new { is_hidden = isHidden, updated_utc = SystemClock.UtcNow }));
         }
 
         public Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
@@ -67,7 +67,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            return PatchAllAsync(q => q.Organization(organizationId), new { is_deleted = true, updated_utc = SystemClock.UtcNow });
+            return PatchAllAsync(q => q.Organization(organizationId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }));
         }
 
         public override Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId) {
@@ -77,11 +77,11 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException(nameof(projectId));
 
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId), new { is_deleted = true, updated_utc = SystemClock.UtcNow });
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }));
         }
 
         public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId), new { is_deleted = true, updated_utc = SystemClock.UtcNow });
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }));
         }
 
         public Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
@@ -90,7 +90,7 @@ namespace Exceptionless.Core.Repositories {
                     .ElasticFilter(Query<PersistentEvent>.Term(EventIndexType.Alias.IpAddress, clientIp))
                     .DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date)
                     .Index(utcStart, utcEnd)
-                , new { is_hidden = true, updated_utc = SystemClock.UtcNow });
+                , new PartialPatch(new { is_hidden = true, updated_utc = SystemClock.UtcNow }));
         }
 
         public Task<FindResults<PersistentEvent>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
