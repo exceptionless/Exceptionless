@@ -43,10 +43,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         public ExceptionlessSystemFilter(IReadOnlyCollection<Organization> organizations) {
-            if (organizations == null)
-                throw new ArgumentNullException(nameof(organizations));
-
-            Organizations = organizations;
+            Organizations = organizations ?? throw new ArgumentNullException(nameof(organizations));
         }
 
         public ExceptionlessSystemFilter(Project project, Organization organization) : this(new List<Project> { project }, new List<Organization> { organization }) {
@@ -58,17 +55,11 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         public ExceptionlessSystemFilter(IReadOnlyCollection<Project> projects, IReadOnlyCollection<Organization> organizations) : this(organizations) {
-            if (projects == null)
-                throw new ArgumentNullException(nameof(projects));
-
-            Projects = projects;
+            Projects = projects ?? throw new ArgumentNullException(nameof(projects));
         }
 
         public ExceptionlessSystemFilter(Stack stack, Organization organization) : this(new List<Organization> { organization }) {
-            if (stack == null)
-                throw new ArgumentNullException(nameof(stack));
-
-            Stack = stack;
+            Stack = stack ?? throw new ArgumentNullException(nameof(stack));
         }
 
         public IReadOnlyCollection<Organization> Organizations { get; }

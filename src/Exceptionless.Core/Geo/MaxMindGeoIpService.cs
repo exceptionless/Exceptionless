@@ -47,8 +47,7 @@ namespace Exceptionless.Core.Geo {
                 return null;
 
             try {
-                CityResponse city;
-                if (database.TryCity(ip, out city) && city?.Location != null) {
+                if (database.TryCity(ip, out CityResponse city) && city?.Location != null) {
                     result = new GeoResult {
                         Latitude = city.Location.Latitude,
                         Longitude = city.Location.Longitude,

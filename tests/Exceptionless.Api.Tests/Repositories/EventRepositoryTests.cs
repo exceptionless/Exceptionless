@@ -94,7 +94,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             _logger.Debug("");
             _logger.Debug("Sorted order:");
-            List<Tuple<string, DateTime>> sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
+            var sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
             foreach (var t in sortedIds)
                 _logger.Debug("{0}: {1}", t.Item1, t.Item2.ToLongTimeString());
 
@@ -121,7 +121,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             _logger.Debug("");
             _logger.Debug("Sorted order:");
-            List<Tuple<string, DateTime>> sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
+            var sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
             foreach (var t in sortedIds)
                 _logger.Debug("{0}: {1}", t.Item1, t.Item2.ToLongTimeString());
 

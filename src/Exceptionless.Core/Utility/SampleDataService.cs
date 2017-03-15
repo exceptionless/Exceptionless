@@ -56,7 +56,7 @@ namespace Exceptionless.Core.Utility {
             if (await _tokenRepository.GetByIdAsync(TEST_API_KEY).AnyContext() != null)
                 return;
 
-            User user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
+            var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
             var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme" };
             BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
             organization = await _organizationRepository.AddAsync(organization, o => o.Cache()).AnyContext();
@@ -92,7 +92,7 @@ namespace Exceptionless.Core.Utility {
             if (await _tokenRepository.GetByIdAsync(INTERNAL_API_KEY).AnyContext() != null)
                 return;
 
-            User user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
+            var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
             var organization = new Organization { Name = "Exceptionless" };
             BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
             organization = await _organizationRepository.AddAsync(organization, o => o.Cache()).AnyContext();

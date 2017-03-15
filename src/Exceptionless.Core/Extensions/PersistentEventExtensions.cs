@@ -46,17 +46,13 @@ namespace Exceptionless {
                     if (input[0] == '"')
                         input = input.TrimStart('"').TrimEnd('"');
 
-                    bool value;
-                    DateTimeOffset dtoValue;
-                    decimal decValue;
-                    double dblValue;
-                    if (Boolean.TryParse(input, out value))
+                    if (Boolean.TryParse(input, out bool value))
                         ev.Idx[field + "-b"] = value;
-                    else if (DateTimeOffset.TryParse(input, out dtoValue))
+                    else if (DateTimeOffset.TryParse(input, out DateTimeOffset dtoValue))
                         ev.Idx[field + "-d"] = dtoValue;
-                    else if (Decimal.TryParse(input, out decValue))
+                    else if (Decimal.TryParse(input, out decimal decValue))
                         ev.Idx[field + "-n"] = decValue;
-                    else if (Double.TryParse(input, out dblValue))
+                    else if (Double.TryParse(input, out double dblValue))
                         ev.Idx[field + "-n"] = dblValue;
                     else
                         ev.Idx[field + "-s"] = input;
@@ -117,8 +113,7 @@ namespace Exceptionless {
             if (ev == null || !ev.IsSessionStart())
                 return null;
 
-            object end;
-            if (ev.Data.TryGetValue(Event.KnownDataKeys.SessionEnd, out end) && end is DateTime)
+            if (ev.Data.TryGetValue(Event.KnownDataKeys.SessionEnd, out object end) && end is DateTime)
                 return (DateTime)end;
 
             return null;

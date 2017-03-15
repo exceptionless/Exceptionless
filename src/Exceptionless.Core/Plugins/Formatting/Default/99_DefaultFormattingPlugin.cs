@@ -26,8 +26,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override SummaryData GetStackSummaryData(Stack stack) {
             var data = new Dictionary<string, object> { { "Type", stack.Type } };
 
-            string value;
-            if (stack.SignatureInfo.TryGetValue("Source", out value))
+            if (stack.SignatureInfo.TryGetValue("Source", out string value))
                 data.Add("Source", value);
 
             return new SummaryData { TemplateKey = "stack-summary", Data = data };

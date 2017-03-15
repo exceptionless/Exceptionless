@@ -52,8 +52,7 @@ namespace Exceptionless.Core.Utility {
         }
 
         public object GetProperty(string name) {
-            object value;
-            return _extendedData.TryGetValue(name, out value) ? value : null;
+            return _extendedData.TryGetValue(name, out object value) ? value : null;
         }
 
         public IEnumerable<KeyValuePair<string, object>> GetProperties() {

@@ -22,13 +22,8 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IMessagePublisher _publisher;
 
         public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager, IMessagePublisher publisher, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
-            if (stackRepository == null)
-                throw new ArgumentNullException(nameof(stackRepository));
-            if (formattingPluginManager == null)
-                throw new ArgumentNullException(nameof(formattingPluginManager));
-
-            _stackRepository = stackRepository;
-            _formattingPluginManager = formattingPluginManager;
+            _stackRepository = stackRepository ?? throw new ArgumentNullException(nameof(stackRepository));
+            _formattingPluginManager = formattingPluginManager ?? throw new ArgumentNullException(nameof(formattingPluginManager));
             _publisher = publisher;
         }
 
@@ -47,8 +42,7 @@ namespace Exceptionless.Core.Pipeline {
                     string signatureHash = ctx.StackSignatureData.Values.ToSHA1();
                     ctx.SignatureHash = signatureHash;
 
-                    Tuple<bool, Stack> value;
-                    if (stacks.TryGetValue(signatureHash, out value)) {
+                    if (stacks.TryGetValue(signatureHash, out Tuple<bool, Stack> value)) {
                         ctx.Stack = value.Item2;
                     } else {
                         ctx.Stack = await _stackRepository.GetStackBySignatureHashAsync(ctx.Event.ProjectId, signatureHash).AnyContext();
@@ -97,7 +91,7 @@ namespace Exceptionless.Core.Pipeline {
                     if (ctx.Stack.Tags == null)
                         ctx.Stack.Tags = new TagSet();
 
-                    List<string> newTags = ctx.Event.Tags.Where(t => !ctx.Stack.Tags.Contains(t)).ToList();
+                    var newTags = ctx.Event.Tags.Where(t => !ctx.Stack.Tags.Contains(t)).ToList();
                     if (newTags.Count > 0) {
                         ctx.Stack.Tags.AddRange(newTags);
                         // make sure the stack gets saved

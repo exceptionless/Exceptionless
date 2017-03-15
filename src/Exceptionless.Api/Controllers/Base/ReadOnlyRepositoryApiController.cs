@@ -36,7 +36,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         public virtual async Task<IHttpActionResult> GetByIdAsync(string id) {
-            TModel model = await GetModelAsync(id);
+            var model = await GetModelAsync(id);
             if (model == null)
                 return NotFound();
 
@@ -85,7 +85,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            TModel model = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
+            var model = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
             if (model == null)
                 return null;
 
