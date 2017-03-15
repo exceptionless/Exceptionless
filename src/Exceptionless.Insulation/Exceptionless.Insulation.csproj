@@ -42,17 +42,17 @@
       <HintPath>..\..\packages\Exceptionless.WebApi.4.0.1934\lib\net45\Exceptionless.WebApi.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Foundatio, Version=5.0.1331.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.5.0.1331\lib\net46\Foundatio.dll</HintPath>
+    <Reference Include="Foundatio, Version=5.0.1336.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.5.0.1336\lib\net46\Foundatio.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.AzureStorage, Version=5.0.1331.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.AzureStorage.5.0.1331\lib\net46\Foundatio.AzureStorage.dll</HintPath>
+    <Reference Include="Foundatio.AzureStorage, Version=5.0.1336.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.AzureStorage.5.0.1336\lib\net46\Foundatio.AzureStorage.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Logging.NLog, Version=5.0.1331.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Logging.NLog.5.0.1331\lib\net46\Foundatio.Logging.NLog.dll</HintPath>
+    <Reference Include="Foundatio.Logging.NLog, Version=5.0.1336.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Logging.NLog.5.0.1336\lib\net46\Foundatio.Logging.NLog.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Redis, Version=5.0.1331.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Redis.5.0.1331\lib\net46\Foundatio.Redis.dll</HintPath>
+    <Reference Include="Foundatio.Redis, Version=5.0.1336.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Redis.5.0.1336\lib\net46\Foundatio.Redis.dll</HintPath>
     </Reference>
     <Reference Include="Geocoding, Version=3.6.0.0, Culture=neutral, PublicKeyToken=7c714700b88674c7, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Geocoding.net.3.6.0\lib\net40\Geocoding.dll</HintPath>

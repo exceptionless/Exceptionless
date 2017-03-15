@@ -10,6 +10,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Storage;
+using Foundatio.Repositories;
 using Foundatio.Utility;
 using Nest;
 using Newtonsoft.Json;
@@ -95,7 +96,7 @@ namespace Exceptionless.Api.Tests.Jobs {
         }
 
         private async Task CreateDataAsync() {
-            foreach (Organization organization in OrganizationData.GenerateSampleOrganizations()) {
+            foreach (var organization in OrganizationData.GenerateSampleOrganizations()) {
                 if (organization.Id == TestConstants.OrganizationId3)
                     BillingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, UserData.GenerateSampleUser());
                 else
@@ -111,12 +112,12 @@ namespace Exceptionless.Api.Tests.Jobs {
                     organization.SuspensionDate = SystemClock.UtcNow;
                 }
 
-                await _organizationRepository.AddAsync(organization, true);
+                await _organizationRepository.AddAsync(organization, o => o.Cache());
             }
 
-            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), true);
+            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.Cache());
 
-            foreach (User user in UserData.GenerateSampleUsers()) {
+            foreach (var user in UserData.GenerateSampleUsers()) {
                 if (user.Id == TestConstants.UserId) {
                     user.OrganizationIds.Add(TestConstants.OrganizationId2);
                     user.OrganizationIds.Add(TestConstants.OrganizationId3);
@@ -125,7 +126,7 @@ namespace Exceptionless.Api.Tests.Jobs {
                 if (!user.IsEmailAddressVerified)
                     user.CreateVerifyEmailAddressToken();
 
-                await _userRepository.AddAsync(user, true);
+                await _userRepository.AddAsync(user, o => o.Cache());
             }
 
             await _configuration.Client.RefreshAsync(Indices.All);

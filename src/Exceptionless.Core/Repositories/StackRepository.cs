@@ -108,7 +108,7 @@ ctx._source.total_occurrences += params.count;";
 
         public async Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
             string key = GetStackSignatureCacheKey(projectId, signatureHash);
-            Stack stack = IsCacheEnabled ? await Cache.GetAsync(key, default(Stack)).AnyContext() : null;
+            var stack = IsCacheEnabled ? await Cache.GetAsync(key, default(Stack)).AnyContext() : null;
             if (stack != null)
                 return stack;
 
@@ -132,7 +132,7 @@ ctx._source.total_occurrences += params.count;";
         public async Task MarkAsRegressedAsync(string stackId) {
             var stack = await GetByIdAsync(stackId).AnyContext();
             stack.IsRegressed = true;
-            await SaveAsync(stack, o => o.Cache()).AnyContext();
+            await this.SaveAsync(stack, o => o.Cache()).AnyContext();
         }
 
         protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ICommandOptions options = null) {

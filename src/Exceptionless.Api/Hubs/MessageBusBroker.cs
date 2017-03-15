@@ -28,13 +28,13 @@ namespace Exceptionless.Api.Hubs {
             _logger = logger;
         }
 
-        public void Start() {
-            _subscriber.Subscribe<ExtendedEntityChanged>(OnEntityChangedAsync);
-            _subscriber.Subscribe<PlanChanged>(OnPlanChangedAsync);
-            _subscriber.Subscribe<PlanOverage>(OnPlanOverageAsync);
-            _subscriber.Subscribe<UserMembershipChanged>(OnUserMembershipChangedAsync);
-            _subscriber.Subscribe<ReleaseNotification>(OnReleaseNotificationAsync);
-            _subscriber.Subscribe<SystemNotification>(OnSystemNotificationAsync);
+        public async Task StartAsync() {
+            await _subscriber.SubscribeAsync<ExtendedEntityChanged>(OnEntityChangedAsync);
+            await _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync);
+            await _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync);
+            await _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync);
+            await _subscriber.SubscribeAsync<ReleaseNotification>(OnReleaseNotificationAsync);
+            await _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync);
         }
 
         private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default(CancellationToken)) {
@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Hubs {
             // manage user organization group membership
             var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userMembershipChanged.UserId);
             _logger.Trace(() => $"Attempting to update user {userMembershipChanged.UserId} active groups for {userConnectionIds.Count} connections");
-            foreach (var connectionId in userConnectionIds) {
+            foreach (string connectionId in userConnectionIds) {
                 if (userMembershipChanged.ChangeType == ChangeType.Added)
                     await _connectionMapping.GroupAddAsync(userMembershipChanged.OrganizationId, connectionId) ;
                 else if (userMembershipChanged.ChangeType == ChangeType.Removed)
@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Hubs {
 
                 var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(entityChanged.Id);
                 _logger.Trace(() => $"Sending {UserTypeName} message to user: {entityChanged.Id} (to {userConnectionIds.Count} connections)");
-                foreach (var connectionId in userConnectionIds)
+                foreach (string connectionId in userConnectionIds)
                     await Context.Connection.TypedSendAsync(connectionId, entityChanged);
 
                 return;
@@ -81,7 +81,7 @@ namespace Exceptionless.Api.Hubs {
                 if (userId != null) {
                     var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
                     _logger.Trace(() => $"Sending {TokenTypeName} message for added user: {userId} (to {userConnectionIds.Count} connections)");
-                    foreach (var connectionId in userConnectionIds)
+                    foreach (string connectionId in userConnectionIds)
                         await Context.Connection.TypedSendAsync(connectionId, entityChanged);
 
                     return;
