@@ -98,7 +98,7 @@ namespace Exceptionless.Core.Repositories {
                 .DateRange(utcStart, utcEnd, field ?? ElasticType.GetFieldName(e => e.Date))
                 .Index(utcStart, utcEnd)
                 .SystemFilter(systemFilter)
-                .SearchExpression(userFilter);
+                .FilterExpression(userFilter);
 
             query = !String.IsNullOrEmpty(sort) ? query.Sort(sort) : query.SortDescending(e => e.Date);
             return FindAsync(q => query, options);
@@ -145,7 +145,7 @@ namespace Exceptionless.Core.Repositories {
                 .Include(e => e.Id, e => e.Date)
                 .SystemFilter(systemFilter)
                 .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
-                .SearchExpression(userFilter), o => o.PageLimit(10)).AnyContext();
+                .FilterExpression(userFilter), o => o.PageLimit(10)).AnyContext();
 
             if (results.Total == 0)
                 return null;

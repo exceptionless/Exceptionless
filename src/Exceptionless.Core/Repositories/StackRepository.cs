@@ -123,7 +123,7 @@ ctx._source.total_occurrences += params.count;";
             IRepositoryQuery<Stack> query = new RepositoryQuery<Stack>()
                 .DateRange(utcStart, utcEnd, field ?? ElasticType.GetFieldName(s => s.LastOccurrence))
                 .SystemFilter(systemFilter)
-                .SearchExpression(userFilter);
+                .FilterExpression(userFilter);
 
             query = !String.IsNullOrEmpty(sort) ? query.Sort(sort) : query.SortDescending(s => s.LastOccurrence);
             return FindAsync(q => query, options);
