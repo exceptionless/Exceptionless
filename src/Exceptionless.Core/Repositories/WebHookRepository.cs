@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Repositories {
 
         protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<WebHook> documents, ICommandOptions options = null) {
             var keysToRemove = documents.Select(d => $"paged:Organization:{d.OrganizationId}:Project:{d.ProjectId}:*").Distinct();
-            foreach (var key in keysToRemove)
+            foreach (string key in keysToRemove)
                 await Cache.RemoveByPrefixAsync(key).AnyContext();
 
             await base.InvalidateCachedQueriesAsync(documents, options).AnyContext();

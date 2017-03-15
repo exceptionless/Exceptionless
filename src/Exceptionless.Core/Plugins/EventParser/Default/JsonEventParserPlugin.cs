@@ -21,17 +21,15 @@ namespace Exceptionless.Core.Plugins.EventParser {
             var events = new List<PersistentEvent>();
             switch (input.GetJsonType()) {
                 case JsonType.Object: {
-                    PersistentEvent ev;
-                    if (input.TryFromJson(out ev, _settings))
-                        events.Add(ev);
-                    break;
+                        if (input.TryFromJson(out PersistentEvent ev, _settings))
+                            events.Add(ev);
+                        break;
                 }
                 case JsonType.Array: {
-                    PersistentEvent[] parsedEvents;
-                    if (input.TryFromJson(out parsedEvents, _settings))
-                        events.AddRange(parsedEvents);
+                        if (input.TryFromJson(out PersistentEvent[] parsedEvents, _settings))
+                            events.AddRange(parsedEvents);
 
-                    break;
+                        break;
                 }
             }
 

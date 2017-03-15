@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         }
 
         public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
-            var cacheKey = $"{nameof(OrganizationNotificationWorkItemHandler)}:{((OrganizationNotificationWorkItem)workItem).OrganizationId}";
+            string cacheKey = $"{nameof(OrganizationNotificationWorkItemHandler)}:{((OrganizationNotificationWorkItem)workItem).OrganizationId}";
             return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 

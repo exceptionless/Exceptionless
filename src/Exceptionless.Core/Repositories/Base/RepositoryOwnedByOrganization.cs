@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Repositories {
 
         protected virtual async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<T> documents, ICommandOptions options = null) {
             var organizations = documents.Select(d => d.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
-            foreach (var organizationId in organizations)
+            foreach (string organizationId in organizations)
                 await Cache.RemoveByPrefixAsync($"paged:Organization:{organizationId}:*").AnyContext();
         }
     }

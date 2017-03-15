@@ -16,9 +16,8 @@ namespace Exceptionless.Core.Models {
         }
 
         public string GetString(string name, string @default) {
-            string value;
 
-            if (TryGetValue(name, out value))
+            if (TryGetValue(name, out string value))
                 return value;
 
             return @default;
@@ -29,14 +28,12 @@ namespace Exceptionless.Core.Models {
         }
 
         public bool GetBoolean(string name, bool @default) {
-            bool value;
-            string temp;
 
-            bool result = TryGetValue(name, out temp);
+            bool result = TryGetValue(name, out string temp);
             if (!result)
                 return @default;
 
-            result = bool.TryParse(temp, out value);
+            result = bool.TryParse(temp, out bool value);
             return result ? value : @default;
         }
 
@@ -45,14 +42,12 @@ namespace Exceptionless.Core.Models {
         }
 
         public int GetInt32(string name, int @default) {
-            int value;
-            string temp;
 
-            bool result = TryGetValue(name, out temp);
+            bool result = TryGetValue(name, out string temp);
             if (!result)
                 return @default;
 
-            result = int.TryParse(temp, out value);
+            result = int.TryParse(temp, out int value);
             return result ? value : @default;
         }
 
@@ -61,26 +56,22 @@ namespace Exceptionless.Core.Models {
         }
 
         public long GetInt64(string name, long @default) {
-            long value;
-            string temp;
 
-            bool result = TryGetValue(name, out temp);
+            bool result = TryGetValue(name, out string temp);
             if (!result)
                 return @default;
 
-            result = long.TryParse(temp, out value);
+            result = long.TryParse(temp, out long value);
             return result ? value : @default;
         }
 
         public double GetDouble(string name, double @default = 0d) {
-            double value;
-            string temp;
 
-            bool result = TryGetValue(name, out temp);
+            bool result = TryGetValue(name, out string temp);
             if (!result)
                 return @default;
 
-            result = double.TryParse(temp, out value);
+            result = double.TryParse(temp, out double value);
             return result ? value : @default;
         }
 
@@ -89,14 +80,12 @@ namespace Exceptionless.Core.Models {
         }
 
         public DateTime GetDateTime(string name, DateTime @default) {
-            DateTime value;
-            string temp;
 
-            bool result = TryGetValue(name, out temp);
+            bool result = TryGetValue(name, out string temp);
             if (!result)
                 return @default;
 
-            result = DateTime.TryParse(temp, out value);
+            result = DateTime.TryParse(temp, out DateTime value);
             return result ? value : @default;
         }
 
@@ -105,14 +94,12 @@ namespace Exceptionless.Core.Models {
         }
 
         public DateTimeOffset GetDateTimeOffset(string name, DateTimeOffset @default) {
-            DateTimeOffset value;
-            string temp;
 
-            bool result = TryGetValue(name, out temp);
+            bool result = TryGetValue(name, out string temp);
             if (!result)
                 return @default;
 
-            result = DateTimeOffset.TryParse(temp, out value);
+            result = DateTimeOffset.TryParse(temp, out DateTimeOffset value);
             return result ? value : @default;
         }
 
@@ -121,9 +108,8 @@ namespace Exceptionless.Core.Models {
         }
 
         public Guid GetGuid(string name, Guid @default) {
-            string temp;
 
-            bool result = TryGetValue(name, out temp);
+            bool result = TryGetValue(name, out string temp);
             return result ? new Guid(temp) : @default;
         }
 

@@ -132,13 +132,11 @@ namespace Exceptionless {
         /// Gets the user info object from extended data.
         /// </summary>
         public static UserInfo GetUserIdentity(this Event ev) {
-            object value;
-            return ev.Data.TryGetValue(Event.KnownDataKeys.UserInfo, out value) ? value as UserInfo : null;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.UserInfo, out object value) ? value as UserInfo : null;
         }
 
         public static string GetVersion(this Event ev) {
-            object value;
-            return ev.Data.TryGetValue(Event.KnownDataKeys.Version, out value) ? value as string : null;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.Version, out object value) ? value as string : null;
         }
 
         /// <summary>
@@ -154,8 +152,7 @@ namespace Exceptionless {
         }
 
         public static Location GetLocation(this Event ev) {
-            object value;
-            return ev.Data.TryGetValue(Event.KnownDataKeys.Location, out value) ? value as Location : null;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.Location, out object value) ? value as Location : null;
         }
 
         public static void SetLocation(this Event ev, Location location) {
@@ -176,8 +173,7 @@ namespace Exceptionless {
         /// Gets the stacking info from extended data.
         /// </summary>
         public static ManualStackingInfo GetManualStackingInfo(this Event ev) {
-            object value;
-            return ev.Data.TryGetValue(Event.KnownDataKeys.ManualStackingInfo, out value) ? value as ManualStackingInfo : null;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.ManualStackingInfo, out object value) ? value as ManualStackingInfo : null;
         }
 
         /// <summary>
@@ -268,8 +264,7 @@ namespace Exceptionless {
         /// Gets the user description from extended data.
         /// </summary>
         public static UserDescription GetUserDescription(this Event ev) {
-            object value;
-            return ev.Data.TryGetValue(Event.KnownDataKeys.UserDescription, out value) ? value as UserDescription : null;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.UserDescription, out object value) ? value as UserDescription : null;
         }
 
         /// <summary>
