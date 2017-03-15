@@ -30,7 +30,6 @@ assembly_info:
 before_build:
   - nuget restore -verbosity quiet
   - ps: .\build\Start-ElasticSearch.ps1 -NodeCount 1 -StartKibana $false
-  - SET PATH="C:\Program Files (x86)\MSBuild\14.0\Bin";%PATH%"
 
 build:
   parallel: true
