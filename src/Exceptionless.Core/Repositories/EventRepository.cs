@@ -100,7 +100,7 @@ namespace Exceptionless.Core.Repositories {
                 .SystemFilter(systemFilter)
                 .FilterExpression(userFilter);
 
-            query = !String.IsNullOrEmpty(sort) ? query.Sort(sort) : query.SortDescending(e => e.Date);
+            query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortDescending(e => e.Date);
             return FindAsync(q => query, options);
         }
 

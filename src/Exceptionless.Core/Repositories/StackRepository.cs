@@ -125,7 +125,7 @@ ctx._source.total_occurrences += params.count;";
                 .SystemFilter(systemFilter)
                 .FilterExpression(userFilter);
 
-            query = !String.IsNullOrEmpty(sort) ? query.Sort(sort) : query.SortDescending(s => s.LastOccurrence);
+            query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortDescending(s => s.LastOccurrence);
             return FindAsync(q => query, options);
         }
 
