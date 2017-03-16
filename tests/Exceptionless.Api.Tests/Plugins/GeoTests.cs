@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Tests.Plugins {
 
             return new MaxMindGeoIpService(storage, loggerFactory.CreateLogger<MaxMindGeoIpService>());
         }
-        
+
         [Fact]
         public async Task WillNotSetLocation() {
             var plugin = new GeoPlugin(await GetResolverAsync(Log));
@@ -47,7 +47,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             Assert.Equal(GREEN_BAY_COORDINATES, ev.Geo);
             Assert.Null(ev.GetLocation());
         }
-       
+
         [Theory]
         [InlineData("")]
         [InlineData(null)]
@@ -56,14 +56,14 @@ namespace Exceptionless.Api.Tests.Plugins {
         [InlineData("190,180")]
         public async Task WillResetLocation(string geo) {
             var plugin = new GeoPlugin(await GetResolverAsync(Log));
-            
+
             var ev = new PersistentEvent { Geo = geo };
             await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev) });
 
             Assert.Null(ev.Geo);
             Assert.Null(ev.GetLocation());
         }
-        
+
         [Fact]
         public async Task WillSetLocationFromGeo() {
             var plugin = new GeoPlugin(await GetResolverAsync(Log));
@@ -129,7 +129,7 @@ namespace Exceptionless.Api.Tests.Plugins {
                 Assert.Equal("Green Bay", location?.Locality);
             }
         }
-        
+
         [Fact]
         public async Task WillNotSetFromMultipleGeo() {
             var plugin = new GeoPlugin(await GetResolverAsync(Log));
