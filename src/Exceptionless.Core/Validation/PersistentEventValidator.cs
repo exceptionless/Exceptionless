@@ -8,8 +8,9 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Core.Validation {
     public class PersistentEventValidator : AbstractValidator<PersistentEvent> {
-        public override ValidationResult Validate(PersistentEvent ev) {
+        public override ValidationResult Validate(ValidationContext<PersistentEvent> context) {
             var result = new ValidationResult();
+            var ev = context.InstanceToValidate;
 
             if (!IsObjectId(ev.Id))
                 result.Errors.Add(new ValidationFailure("Id", "Please specify a valid id."));

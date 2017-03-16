@@ -85,7 +85,7 @@ namespace Exceptionless.Serializer {
                 target.Data = new DataDictionary();
 
             string dataKey = GetDataKey(target.Data, p.Name);
-            String unknownTypeDataKey = GetDataKey(target.Data, p.Name, true);
+            string unknownTypeDataKey = GetDataKey(target.Data, p.Name, true);
 
             // when adding items to data, see if they are a known type and deserialize to the registered type
             if (_dataTypeRegistry.TryGetValue(p.Name, out Type dataType)) {
@@ -112,7 +112,7 @@ namespace Exceptionless.Serializer {
             } else if (p.Value is JArray) {
                 target.Data[dataType == null || dataType == typeof(JArray) ? dataKey : unknownTypeDataKey] = p.Value.ToObject<JArray>();
             } else if (p.Value is JValue && p.Value.Type != JTokenType.String) {
-                var value = ((JValue)p.Value).Value;
+                object value = ((JValue)p.Value).Value;
                 target.Data[dataType == null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
             } else {
                 string value = p.Value.ToString();
