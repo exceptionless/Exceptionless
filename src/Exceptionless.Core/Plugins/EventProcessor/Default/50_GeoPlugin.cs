@@ -22,8 +22,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
             var geoGroups = contexts.GroupBy(c => c.Event.Geo);
             foreach (var group in geoGroups) {
-                GeoResult result;
-                if (GeoResult.TryParse(group.Key, out result) && result.IsValid()) {
+                if (GeoResult.TryParse(group.Key, out GeoResult result) && result.IsValid()) {
                     group.ForEach(c => UpdateGeoAndlocation(c.Event, result, false));
                     continue;
                 }

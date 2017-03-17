@@ -169,8 +169,7 @@ namespace Exceptionless.Core.Utility {
                 return;
             }
 
-            object value;
-            if (extraProperties.TryGetValue("Number", out value))
+            if (extraProperties.TryGetValue("Number", out object value))
                 SignatureInfo.Add("Number", value.ToString());
 
             if (extraProperties.TryGetValue("ErrorCode", out value))

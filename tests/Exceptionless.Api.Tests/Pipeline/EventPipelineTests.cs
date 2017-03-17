@@ -19,7 +19,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Logging;
-using Foundatio.Repositories.Models;
+using Foundatio.Repositories;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using McSherry.SemanticVersioning;
@@ -196,7 +196,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(contexts.Any(c => c.IsProcessed));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var results = await _eventRepository.GetAllAsync(paging: new PagingOptions().WithLimit(15));
+            var results = await _eventRepository.GetAllAsync(o => o.PageLimit(15));
             Assert.Equal(9, results.Total);
             Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd() && e.GetUserIdentity()?.Identity == "blake@exceptionless.io"));
@@ -511,7 +511,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public void CanIndexExtendedData() {
-            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: SystemClock.UtcNow);
+            var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: SystemClock.UtcNow);
             ev.Data.Add("First Name", "Eric"); // invalid field name
             ev.Data.Add("IsVerified", true);
             ev.Data.Add("IsVerified1", true.ToString());
@@ -550,7 +550,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             const string Tag2 = "Tag Two";
             const string Tag2_Lowercase = "tag two";
 
-            PersistentEvent ev = GenerateEvent(SystemClock.UtcNow);
+            var ev = GenerateEvent(SystemClock.UtcNow);
             ev.Tags.Add(Tag1);
 
             var context = await _pipeline.RunAsync(ev);
@@ -560,7 +560,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.NotNull(ev);
             Assert.NotNull(ev.StackId);
 
-            var stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(new [] { Tag1 }, stack.Tags.ToArray());
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
@@ -569,7 +569,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _configuration.Client.RefreshAsync(Indices.All);
             context = await _pipeline.RunAsync(ev);
             Assert.False(context.HasError, context.ErrorMessage);
-            stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
+            stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(new [] { Tag1, Tag2 }, stack.Tags.ToArray());
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
@@ -578,7 +578,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _configuration.Client.RefreshAsync(Indices.All);
             context = await _pipeline.RunAsync(ev);
             Assert.False(context.HasError, context.ErrorMessage);
-            stack = await _stackRepository.GetByIdAsync(ev.StackId, true);
+            stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(new [] { Tag1, Tag2}, stack.Tags.ToArray());
         }
 
@@ -630,7 +630,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         [Fact]
         public async Task EnsureSingleRegressionAsync() {
             var utcNow = SystemClock.UtcNow;
-            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
+            var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
             var context = new EventContext(ev);
             await _pipeline.RunAsync(context);
 
@@ -644,7 +644,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var stack = await _stackRepository.GetByIdAsync(ev.StackId);
             stack.MarkFixed();
-            await _stackRepository.SaveAsync(stack, true);
+            await _stackRepository.SaveAsync(stack, o => o.Cache());
 
             var contexts = new List<EventContext> {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1))),
@@ -685,7 +685,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         [Fact]
         public async Task EnsureVersionedRegressionAsync() {
             var utcNow = SystemClock.UtcNow;
-            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
+            var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
             var context = new EventContext(ev);
             await _pipeline.RunAsync(context);
             await _configuration.Client.RefreshAsync(Indices.All);
@@ -700,7 +700,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var stack = await _stackRepository.GetByIdAsync(ev.StackId);
             stack.MarkFixed(new SemanticVersion(1, 0, 1, new []{ "rc2" }));
-            await _stackRepository.SaveAsync(stack, true);
+            await _stackRepository.SaveAsync(stack, o => o.Cache());
 
             var contexts = new List<EventContext> {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1))),
@@ -760,11 +760,11 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var parserPluginManager = GetService<EventParserPluginManager>();
             var pipeline = GetService<EventPipeline>();
             var startDate = SystemClock.OffsetNow.SubtractHours(1);
-            var totalBatches = 0;
-            var totalEvents = 0;
+            int totalBatches = 0;
+            int totalEvents = 0;
 
             var sw = new Stopwatch();
-            foreach (var file in Directory.GetFiles(@"..\..\Pipeline\Data\", "*.json", SearchOption.AllDirectories)) {
+            foreach (string file in Directory.GetFiles(@"..\..\Pipeline\Data\", "*.json", SearchOption.AllDirectories)) {
                 var events = parserPluginManager.ParseEvents(File.ReadAllText(file), 2, "exceptionless/2.0.0.0");
                 Assert.NotNull(events);
                 Assert.True(events.Count > 0);
@@ -793,15 +793,15 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact(Skip = "Used to create performance data from the queue directory")]
         public async Task GeneratePerformanceDataAsync() {
-            var currentBatchCount = 0;
+            int currentBatchCount = 0;
             var parserPluginManager = GetService<EventParserPluginManager>();
-            var dataDirectory = Path.GetFullPath(@"..\..\Pipeline\Data\");
+            string dataDirectory = Path.GetFullPath(@"..\..\Pipeline\Data\");
 
-            foreach (var file in Directory.GetFiles(dataDirectory))
+            foreach (string file in Directory.GetFiles(dataDirectory))
                 File.Delete(file);
 
-            Dictionary<string, UserInfo> _mappedUsers = new Dictionary<string, UserInfo>();
-            Dictionary<string, string> _mappedIPs = new Dictionary<string, string>();
+            var mappedUsers = new Dictionary<string, UserInfo>();
+            var mappedIPs = new Dictionary<string, string>();
 
             var storage = new FolderFileStorage(Path.GetFullPath(@"..\..\..\"));
             foreach (var file in await storage.GetFileListAsync(@"Api\App_Data\storage\q\*")) {
@@ -827,16 +827,16 @@ namespace Exceptionless.Api.Tests.Pipeline {
                         ev.Message = RandomData.GetSentence();
 
                     var keysToRemove = ev.Data.Keys.Where(k => !k.StartsWith("@") && k != "MachineName" && k != "job" && k != "host" && k != "process").ToList();
-                    foreach (var key in keysToRemove)
+                    foreach (string key in keysToRemove)
                         ev.Data.Remove(key);
 
                     ev.Data.Remove(Event.KnownDataKeys.UserDescription);
                     var identity = ev.GetUserIdentity();
                     if (identity != null) {
-                        if (!_mappedUsers.ContainsKey(identity.Identity))
-                            _mappedUsers.Add(identity.Identity, new UserInfo(Guid.NewGuid().ToString(), currentBatchCount.ToString()));
+                        if (!mappedUsers.ContainsKey(identity.Identity))
+                            mappedUsers.Add(identity.Identity, new UserInfo(Guid.NewGuid().ToString(), currentBatchCount.ToString()));
 
-                        ev.SetUserIdentity(_mappedUsers[identity.Identity]);
+                        ev.SetUserIdentity(mappedUsers[identity.Identity]);
                     }
 
                     var request = ev.GetRequestInfo();
@@ -850,10 +850,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
                         request.Data.Clear();
 
                         if (request.ClientIpAddress != null) {
-                            if (!_mappedIPs.ContainsKey(request.ClientIpAddress))
-                                _mappedIPs.Add(request.ClientIpAddress, RandomData.GetIp4Address());
+                            if (!mappedIPs.ContainsKey(request.ClientIpAddress))
+                                mappedIPs.Add(request.ClientIpAddress, RandomData.GetIp4Address());
 
-                            request.ClientIpAddress = _mappedIPs[request.ClientIpAddress];
+                            request.ClientIpAddress = mappedIPs[request.ClientIpAddress];
                         }
                     }
 
@@ -881,7 +881,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         public static IEnumerable<object[]> Events {
             get {
                 var result = new List<object[]>();
-                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "*.expected.json", SearchOption.AllDirectories))
+                foreach (string file in Directory.GetFiles(@"..\..\ErrorData\", "*.expected.json", SearchOption.AllDirectories))
                     result.Add(new object[] { file });
 
                 return result.ToArray();
@@ -889,7 +889,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         private async Task CreateProjectDataAsync() {
-            foreach (Organization organization in OrganizationData.GenerateSampleOrganizations()) {
+            foreach (var organization in OrganizationData.GenerateSampleOrganizations()) {
                 if (organization.Id == TestConstants.OrganizationId3)
                     BillingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, UserData.GenerateSampleUser());
                 else
@@ -905,10 +905,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
                     organization.SuspensionDate = SystemClock.UtcNow;
                 }
 
-                await _organizationRepository.AddAsync(organization, true);
+                await _organizationRepository.AddAsync(organization, o => o.Cache());
             }
 
-            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), true);
+            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.Cache());
 
             foreach (var user in UserData.GenerateSampleUsers()) {
                 if (user.Id == TestConstants.UserId) {
@@ -919,7 +919,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 if (!user.IsEmailAddressVerified)
                     user.CreateVerifyEmailAddressToken();
 
-                await _userRepository.AddAsync(user, true);
+                await _userRepository.AddAsync(user, o => o.Cache());
             }
 
             await _configuration.Client.RefreshAsync(Indices.All);

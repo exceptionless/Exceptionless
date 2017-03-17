@@ -5,7 +5,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Xunit;
 using Xunit.Abstractions;
-using Foundatio.Logging;
+using Foundatio.Repositories;
 using Nest;
 using LogLevel = Foundatio.Logging.LogLevel;
 
@@ -48,7 +48,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(2, await _repository.CountAsync());
             Assert.Equal(2, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
 
-            await _repository.RemoveAsync(project2, false);
+            await _repository.RemoveAsync(project2, o => o.Notifications(false));
             await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(1, await _repository.CountAsync());
             Assert.Equal(1, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
@@ -86,7 +86,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, _cache.Hits);
             Assert.Equal(1, _cache.Misses);
 
-            await _repository.RemoveAsync(project2.Id, false);
+            await _repository.RemoveAsync(project2.Id, o => o.Notifications(false));
             Assert.Equal(0, _cache.Count);
             Assert.Equal(1, _cache.Hits);
             Assert.Equal(2, _cache.Misses);
@@ -99,7 +99,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, _cache.Hits);
             Assert.Equal(3, _cache.Misses);
 
-            await _repository.RemoveAllAsync(false);
+            await _repository.RemoveAllAsync(o => o.Notifications(false));
             Assert.Equal(0, _cache.Count);
             Assert.Equal(1, _cache.Hits);
             Assert.Equal(3, _cache.Misses);

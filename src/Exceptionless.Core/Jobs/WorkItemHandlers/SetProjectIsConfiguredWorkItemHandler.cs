@@ -9,6 +9,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Messaging;
+using Foundatio.Repositories;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class SetProjectIsConfiguredWorkItemHandler : WorkItemHandlerBase {
@@ -36,7 +37,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 return;
 
             project.IsConfigured = workItem.IsConfigured || await _eventRepository.GetCountByProjectIdAsync(project.Id, true).AnyContext() > 0;
-            await _projectRepository.SaveAsync(project, true).AnyContext();
+            await _projectRepository.SaveAsync(project, o => o.Cache()).AnyContext();
         }
     }
 }

@@ -14,7 +14,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Foundatio.Logging;
-using Foundatio.Repositories.Models;
+using Foundatio.Repositories;
 using Foundatio.Utility;
 
 namespace Exceptionless.App.Controllers.API {
@@ -45,8 +45,7 @@ namespace Exceptionless.App.Controllers.API {
 
             page = GetPage(page);
             limit = GetLimit(limit);
-            var options = new PagingOptions { Page = page, Limit = limit };
-            var tokens = await _repository.GetByTypeAndOrganizationIdAsync(TokenType.Access, organizationId, options);
+            var tokens = await _repository.GetByTypeAndOrganizationIdAsync(TokenType.Access, organizationId, o => o.PageNumber(page).PageLimit(limit));
             var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true)).ToList();
             return OkWithResourceLinks(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
         }
@@ -68,8 +67,7 @@ namespace Exceptionless.App.Controllers.API {
 
             page = GetPage(page);
             limit = GetLimit(limit);
-            var options = new PagingOptions { Page = page, Limit = limit };
-            var tokens = await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, options);
+            var tokens = await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, o => o.PageNumber(page).PageLimit(limit));
             var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true)).ToList();
             return OkWithResourceLinks(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
         }
@@ -87,7 +85,7 @@ namespace Exceptionless.App.Controllers.API {
             if (project == null)
                 return NotFound();
 
-            var token = (await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, new PagingOptions { Limit = 1 })).Documents.FirstOrDefault();
+            var token = (await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, o => o.PageLimit(1))).Documents.FirstOrDefault();
             if (token != null)
                 return await OkModelAsync(token);
 
@@ -195,7 +193,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            var model = await _repository.GetByIdAsync(id, useCache);
+            var model = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
             if (model == null)
                 return null;
 
@@ -289,7 +287,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return null;
 
-            var project = await _projectRepository.GetByIdAsync(projectId, useCache);
+            var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache(useCache));
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return null;
 

@@ -13,6 +13,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Repositories;
 using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
@@ -28,8 +29,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected TimeSpan GetOffset(string offset) {
-            TimeSpan? value;
-            if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out value) && value.HasValue)
+            if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out TimeSpan? value) && value.HasValue)
                 return value.Value;
 
             return TimeSpan.Zero;
@@ -113,15 +113,15 @@ namespace Exceptionless.Api.Controllers {
                 if (scope.IsScopable) {
                     Organization organization = null;
                     if (scope.OrganizationId != null) {
-                        organization = await organizationRepository.GetByIdAsync(scope.OrganizationId, true);
+                        organization = await organizationRepository.GetByIdAsync(scope.OrganizationId, o => o.Cache());
                     } else if (scope.ProjectId != null) {
-                        var project = await projectRepository.GetByIdAsync(scope.ProjectId, true);
+                        var project = await projectRepository.GetByIdAsync(scope.ProjectId, o => o.Cache());
                         if (project != null)
-                            organization = await organizationRepository.GetByIdAsync(project.OrganizationId, true);
+                            organization = await organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
                     } else if (scope.StackId != null) {
-                        var stack = await stackRepository.GetByIdAsync(scope.StackId, true);
+                        var stack = await stackRepository.GetByIdAsync(scope.StackId, o => o.Cache());
                         if (stack != null)
-                            organization = await organizationRepository.GetByIdAsync(stack.OrganizationId, true);
+                            organization = await organizationRepository.GetByIdAsync(stack.OrganizationId, o => o.Cache());
                     }
 
                     if (organization != null) {
@@ -133,11 +133,11 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
-            var organizations = await organizationRepository.GetByIdsAsync(associatedOrganizationIds.ToArray(), true);
+            var organizations = await organizationRepository.GetByIdsAsync(associatedOrganizationIds.ToArray(), o => o.Cache());
             return organizations.ToList().AsReadOnly();
         }
 
-        protected bool ShouldApplySystemFilter(IExceptionlessSystemFilterQuery sf, string filter) {
+        protected bool ShouldApplySystemFilter(ExceptionlessSystemFilter sf, string filter) {
             // Apply filter to non admin user.
             if (!Request.IsGlobalAdmin())
                 return true;

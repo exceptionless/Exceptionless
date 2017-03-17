@@ -16,8 +16,7 @@ namespace Exceptionless.Core {
             if (String.IsNullOrEmpty(value))
                 return ConfigurationManager.AppSettings.GetBool(name, defaultValue);
 
-            bool boolean;
-            return Boolean.TryParse(value, out boolean) ? boolean : defaultValue;
+            return Boolean.TryParse(value, out bool boolean) ? boolean : defaultValue;
         }
 
         protected static string GetConnectionString(string name, string defaultValue = null) {
@@ -50,8 +49,7 @@ namespace Exceptionless.Core {
             if (String.IsNullOrEmpty(value))
                 return ConfigurationManager.AppSettings.GetInt(name, defaultValue);
 
-            int number;
-            return Int32.TryParse(value, out number) ? number : defaultValue;
+            return Int32.TryParse(value, out int number) ? number : defaultValue;
         }
 
         protected static long GetInt64(string name, long defaultValue = 0) {
@@ -59,8 +57,7 @@ namespace Exceptionless.Core {
             if (String.IsNullOrEmpty(value))
                 return ConfigurationManager.AppSettings.GetInt64(name, defaultValue);
 
-            long number;
-            return Int64.TryParse(value, out number) ? number : defaultValue;
+            return Int64.TryParse(value, out long number) ? number : defaultValue;
         }
 
         protected static string GetString(string name, string defaultValue = null) {

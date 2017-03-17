@@ -4,12 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
-using Foundatio.Repositories.Elasticsearch.Queries;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
+using Foundatio.Repositories.Options;
 using Nest;
 using User = Exceptionless.Core.Models.User;
 
@@ -17,7 +15,7 @@ namespace Exceptionless.Core.Repositories {
     public class UserRepository : RepositoryBase<User>, IUserRepository {
         public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator)
             : base(configuration.Organizations.User, validator) {
-            FieldsRequiredForRemove.AddRange(new [] { ElasticType.GetFieldName(u => u.EmailAddress), ElasticType.GetFieldName(u => u.OrganizationIds) });
+            FieldsRequiredForRemove.AddRange(new Field[] { ElasticType.GetPropertyName(u => u.EmailAddress), ElasticType.GetPropertyName(u => u.OrganizationIds) });
             DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
 
@@ -26,11 +24,7 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             emailAddress = emailAddress.Trim().ToLowerInvariant();
-            var query = new ExceptionlessQuery()
-                .WithElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress))
-                .WithCacheKey(String.Concat("Email:", emailAddress));
-
-            var hit = await FindOneAsync(query).AnyContext();
+            var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress)), o => o.CacheKey(String.Concat("Email:", emailAddress))).AnyContext();
             return hit?.Document;
         }
 
@@ -38,7 +32,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(Query<User>.Term(u => u.PasswordResetToken, token))).AnyContext();
+            var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.PasswordResetToken, token))).AnyContext();
             return hit?.Document;
         }
 
@@ -48,7 +42,7 @@ namespace Exceptionless.Core.Repositories {
 
             provider = provider.ToLowerInvariant();
             var filter = Query<User>.Term(u => u.OAuthAccounts.First().ProviderUserId, providerUserId);
-            var results = (await FindAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext()).Documents;
+            var results = (await FindAsync(q => q.ElasticFilter(filter)).AnyContext()).Documents;
             return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
         }
 
@@ -57,23 +51,23 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             var filter = Query<User>.Term(u => u.VerifyEmailAddressToken, token);
-            var hit = await FindOneAsync(new ExceptionlessQuery().WithElasticFilter(filter)).AnyContext();
+            var hit = await FindOneAsync(q => q.ElasticFilter(filter)).AnyContext();
             return hit?.Document;
         }
 
-        public Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User> options = null) {
             if (String.IsNullOrEmpty(organizationId))
                 return Task.FromResult<FindResults<User>>(new FindResults<User>());
 
-            return FindAsync(new ExceptionlessQuery()
-                .WithElasticFilter(Query<User>.Term(u => u.OrganizationIds, organizationId))
-                .WithPaging(paging)
-                .WithSortAscending((User u) => u.EmailAddress.Suffix("keyword"))
-                .WithCacheKey(useCache ? String.Concat("paged:Organization:", organizationId) : null)
-                .WithExpiresIn(expiresIn));
+            var commandOptions = options.Configure();
+            if (commandOptions.ShouldUseCache())
+                commandOptions.CacheKey(String.Concat("paged:Organization:", organizationId));
+
+            var filter = Query<User>.Term(u => u.OrganizationIds, organizationId);
+            return FindAsync(q => q.ElasticFilter(filter).SortAscending(u => u.EmailAddress.Suffix("keyword")), o => commandOptions);
         }
 
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents) {
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents, ICommandOptions options = null) {
             if (!IsCacheEnabled)
                 return;
 
@@ -81,20 +75,20 @@ namespace Exceptionless.Core.Repositories {
             var keysToRemove = users.Select(u => String.Concat("Email:", u.EmailAddress.ToLowerInvariant().Trim())).Distinct().ToList();
             await Cache.RemoveAllAsync(keysToRemove).AnyContext();
 
-            await InvalidateCachedQueriesAsync(users).AnyContext();
-            await base.InvalidateCacheAsync(documents).AnyContext();
+            await InvalidateCachedQueriesAsync(users, options).AnyContext();
+            await base.InvalidateCacheAsync(documents, options).AnyContext();
         }
 
         private Task OnDocumentsAdded(object sender, DocumentsEventArgs<User> documents) {
             if (!IsCacheEnabled)
                 return Task.CompletedTask;
 
-            return InvalidateCachedQueriesAsync(documents.Documents);
+            return InvalidateCachedQueriesAsync(documents.Documents, documents.Options);
         }
 
-        protected virtual async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<User> documents) {
+        protected virtual async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<User> documents, ICommandOptions options = null) {
             var organizations = documents.SelectMany(d => d.OrganizationIds).Distinct().Where(id => !String.IsNullOrEmpty(id));
-            foreach (var organizationId in organizations)
+            foreach (string organizationId in organizations)
                 await Cache.RemoveByPrefixAsync($"paged:Organization:{organizationId}:*").AnyContext();
         }
     }

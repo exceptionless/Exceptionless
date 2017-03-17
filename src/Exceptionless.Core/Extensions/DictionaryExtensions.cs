@@ -36,8 +36,7 @@ namespace Exceptionless.Core.Extensions {
         }
         
         public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) {
-            TValue obj;
-            dictionary.TryGetValue(key, out obj);
+            dictionary.TryGetValue(key, out TValue obj);
             return obj;
         }
 
@@ -48,8 +47,7 @@ namespace Exceptionless.Core.Extensions {
             foreach (var key in source.Keys) {
                 var sourceValue = source[key];
 
-                TValue otherValue;
-                if (!other.TryGetValue(key, out otherValue))
+                if (!other.TryGetValue(key, out TValue otherValue))
                     return false;
 
                 if (sourceValue.Equals(otherValue))

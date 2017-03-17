@@ -60,8 +60,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     data.Add("SourceShortName", parts.Last());
             }
 
-            object temp;
-            string level = ev.Data.TryGetValue(Event.KnownDataKeys.Level, out temp) ? temp as string : null;
+            string level = ev.Data.TryGetValue(Event.KnownDataKeys.Level, out object temp) ? temp as string : null;
             if (!String.IsNullOrWhiteSpace(level))
                 data.Add("Level", level.Trim());
 

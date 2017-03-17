@@ -11,7 +11,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Logging;
 using Foundatio.Messaging;
-using Foundatio.Repositories.Models;
+using Foundatio.Repositories;
 using Foundatio.Utility;
 using Nest;
 using Nito.AsyncEx;
@@ -64,17 +64,17 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(3, await _repository.CountAsync());
 
-            var organizations = await _repository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithPage(1).WithLimit(1));
+            var organizations = await _repository.GetByRetentionDaysEnabledAsync(o => o.PageNumber(1).PageLimit(1));
             Assert.NotNull(organizations);
             Assert.Equal(1, organizations.Documents.Count);
 
-            var organizations2 = await _repository.GetByRetentionDaysEnabledAsync(new PagingOptions().WithPage(2).WithLimit(1));
+            var organizations2 = await _repository.GetByRetentionDaysEnabledAsync(o => o.PageNumber(2).PageLimit(1));
             Assert.NotNull(organizations);
             Assert.Equal(1, organizations.Documents.Count);
 
             Assert.NotEqual(organizations.Documents.First(), organizations2.Documents.First());
 
-            organizations = await _repository.GetByRetentionDaysEnabledAsync(new PagingOptions());
+            organizations = await _repository.GetByRetentionDaysEnabledAsync();
             Assert.NotNull(organizations);
             Assert.Equal(2, organizations.Total);
 
@@ -92,14 +92,14 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Null(organization.Id);
 
             Assert.Equal(0, _cache.Count);
-            await _repository.AddAsync(organization, true);
+            await _repository.AddAsync(organization, o => o.Cache());
             await _configuration.Client.RefreshAsync(Indices.All);
             Assert.NotNull(organization.Id);
             Assert.Equal(1, _cache.Count);
 
             await _cache.RemoveAllAsync();
             Assert.Equal(0, _cache.Count);
-            await _repository.GetByIdAsync(organization.Id, true);
+            await _repository.GetByIdAsync(organization.Id, o => o.Cache());
             Assert.NotNull(organization.Id);
             Assert.Equal(1, _cache.Count);
 
@@ -113,7 +113,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             var messageBus = GetService<IMessageBus>();
 
             var countdown = new AsyncCountdownEvent(2);
-            messageBus.Subscribe<PlanOverage>(po => {
+            await messageBus.SubscribeAsync<PlanOverage>(po => {
                 _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly})");
                 countdown.Signal();
             });
@@ -164,12 +164,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             var messageBus = GetService<IMessageBus>();
 
             var countdown = new AsyncCountdownEvent(2);
-            messageBus.Subscribe<PlanOverage>(po => {
+            await messageBus.SubscribeAsync<PlanOverage>(po => {
                 _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly}");
                 countdown.Signal();
             });
 
-            var o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id }, true);
+            var o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id }, opt => opt.Cache());
             Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 5));
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
@@ -183,7 +183,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             o.SuspendedByUserId = TestConstants.UserId;
             o.SuspensionDate = SystemClock.UtcNow;
             o.SuspensionCode = SuspensionCode.Billing;
-            o = await _repository.SaveAsync(o, true);
+            o = await _repository.SaveAsync(o, opt => opt.Cache());
 
             Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 4995));
 
@@ -195,7 +195,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(4995, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
 
             o.RemoveSuspension();
-            o = await _repository.SaveAsync(o, true);
+            o = await _repository.SaveAsync(o, opt => opt.Cache());
 
             Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 1));
 

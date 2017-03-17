@@ -14,6 +14,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
+using Foundatio.Repositories;
 using Foundatio.Utility;
 
 #pragma warning disable 1998
@@ -50,12 +51,12 @@ namespace Exceptionless.Core.Jobs {
             int emailsSent = 0;
             _logger.Trace().Message(() => $"Process notification: project={eventNotification.Event.ProjectId} event={eventNotification.Event.Id} stack={eventNotification.Event.StackId}").WriteIf(shouldLog);
 
-            var project = await _projectRepository.GetByIdAsync(eventNotification.Event.ProjectId, true).AnyContext();
+            var project = await _projectRepository.GetByIdAsync(eventNotification.Event.ProjectId, o => o.Cache()).AnyContext();
             if (project == null)
                 return JobResult.FailedWithMessage($"Could not load project: {eventNotification.Event.ProjectId}.");
             _logger.Trace().Message(() => $"Loaded project: name={project.Name}").WriteIf(shouldLog);
 
-            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true).AnyContext();
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache()).AnyContext();
             if (organization == null)
                 return JobResult.FailedWithMessage($"Could not load organization: {project.OrganizationId}");
 

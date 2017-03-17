@@ -5,11 +5,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Storage;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
     public class DownloadGeoIPDatabaseJob : JobWithLockBase {
@@ -24,12 +26,13 @@ namespace Exceptionless.Core.Jobs {
         protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
             return _lockProvider.AcquireAsync(nameof(DownloadGeoIPDatabaseJob), TimeSpan.FromHours(2), new CancellationToken(true));
         }
-        
+
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             try {
-                if (await _storage.ExistsAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH).AnyContext()) {
-                    _logger.Info("Deleting existing GeoIP database.");
-                    await _storage.DeleteFileAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH, context.CancellationToken).AnyContext();
+                var fi = await _storage.GetFileInfoAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH).AnyContext();
+                if (fi != null && fi.Modified.IsAfter(SystemClock.UtcNow.StartOfDay())) {
+                    _logger.Info("The GeoIP database is already up-to-date.");
+                    return JobResult.Success;
                 }
 
                 _logger.Info("Downloading GeoIP database.");
