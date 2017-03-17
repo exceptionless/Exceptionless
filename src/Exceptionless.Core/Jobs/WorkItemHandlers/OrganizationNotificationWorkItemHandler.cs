@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
@@ -12,9 +13,33 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Logging;
 using Foundatio.Messaging;
+using Foundatio.Queues;
 using Foundatio.Repositories;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
+    public class EnqueueOrganizationNotificationOnPlanOverage {
+        private readonly IQueue<WorkItemData> _workItemQueue;
+        private readonly IMessageSubscriber _subscriber;
+        private readonly ILogger _logger;
+
+        public EnqueueOrganizationNotificationOnPlanOverage(IQueue<WorkItemData> workItemQueue, IMessageSubscriber subscriber, ILoggerFactory loggerFactory = null) {
+            _workItemQueue = workItemQueue;
+            _subscriber = subscriber;
+            _logger = loggerFactory.CreateLogger<EnqueueOrganizationNotificationOnPlanOverage>();
+        }
+
+        public Task RunAsync(CancellationToken token) {
+            return _subscriber.SubscribeAsync<PlanOverage>(async overage => {
+                _logger.Info("Enqueueing plan overage work item for organization: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
+                await _workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
+                    OrganizationId = overage.OrganizationId,
+                    IsOverHourlyLimit = overage.IsHourly,
+                    IsOverMonthlyLimit = !overage.IsHourly
+                }).AnyContext();
+            }, token);
+        }
+    }
+
     public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;

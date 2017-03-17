@@ -1,6 +1,7 @@
 ﻿using System;
 using Exceptionless.Core;
 using Exceptionless.NLog;
+using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.ServiceProviders;
 using SimpleInjector;
@@ -9,6 +10,8 @@ using SimpleInjector.Extensions.ExecutionContextScoping;
 namespace Exceptionless.Insulation.Jobs {
     public class JobBootstrappedServiceProvider : BootstrappedServiceProviderBase {
         protected override IServiceProvider BootstrapInternal(ILoggerFactory loggerFactory) {
+            var shutdownCancellationToken = JobRunner.GetShutdownCancellationToken();
+
             ExceptionlessClient.Default.Configuration.SetVersion(Settings.Current.Version);
             ExceptionlessClient.Default.Configuration.UseLogger(new NLogExceptionlessLog(Exceptionless.Logging.LogLevel.Warn));
             ExceptionlessClient.Default.Startup();
@@ -18,8 +21,8 @@ namespace Exceptionless.Insulation.Jobs {
             container.Options.DefaultScopedLifestyle = new ExecutionContextScopeLifestyle();
 
             Settings.Current.DisableIndexConfiguration = true;
-            Core.Bootstrapper.RegisterServices(container, loggerFactory);
-            Bootstrapper.RegisterServices(container, true, loggerFactory);
+            Core.Bootstrapper.RegisterServices(container, loggerFactory, shutdownCancellationToken);
+            Bootstrapper.RegisterServices(container, true, loggerFactory, shutdownCancellationToken);
 
 #if DEBUG
             container.Verify();

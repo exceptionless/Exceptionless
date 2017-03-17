@@ -16,16 +16,13 @@ using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
-using Exceptionless.Core.Messaging.Models;
-using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Serializer;
 using Foundatio.Jobs;
 using Foundatio.Logging;
-using Foundatio.Messaging;
-using Foundatio.Queues;
 using Foundatio.Utility;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -45,8 +42,11 @@ namespace Exceptionless.Api {
             var loggerFactory = Settings.Current.GetLoggerFactory();
             var logger = loggerFactory.CreateLogger(nameof(AppBuilder));
 
+            var context = new OwinContext(app.Properties);
+            var shutdownCancellationToken = context.Get<CancellationToken>("host.OnAppDisposing");
+
             if (container == null)
-                container = CreateContainer(loggerFactory, logger);
+                container = CreateContainer(loggerFactory, logger, shutdownCancellationToken);
 
             var config = new HttpConfiguration();
             config.Formatters.Remove(config.Formatters.XmlFormatter);
@@ -55,6 +55,14 @@ namespace Exceptionless.Api {
             SetupRouteConstraints(config);
             container.RegisterSingleton(config);
             container.RegisterWebApiControllers(config);
+
+            container.AddStartupAction(() => container.GetInstance<EnqueueOrganizationNotificationOnPlanOverage>().RunAsync(shutdownCancellationToken));
+
+            if (Settings.Current.EnableSignalR)
+                container.AddStartupAction(() => container.GetInstance<MessageBusBroker>().StartAsync(shutdownCancellationToken));
+
+            if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
+                container.AddStartupAction(() => CreateSampleDataAsync(container));
 
             VerifyContainer(container);
 
@@ -79,39 +87,17 @@ namespace Exceptionless.Api {
             config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
 
             EnableCors(config, app);
-
-            container.RunStartupActionsAsync().GetAwaiter().GetResult();
-
             app.UseWebApi(config);
             SetupSignalR(app, container, loggerFactory);
             SetupSwagger(config);
 
-            if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
-                Task.Run(async () => await CreateSampleDataAsync(container));
-
-            var context = new OwinContext(app.Properties);
-            var token = context.Get<CancellationToken>("host.OnAppDisposing");
-            RunMessageBusBroker(container, logger, token);
-            RunJobs(container, loggerFactory, logger, token);
+            container.RunStartupActionsAsync().GetAwaiter().GetResult();
+            RunJobs(container, loggerFactory, logger, shutdownCancellationToken);
 
             logger.Info("Starting api...");
         }
 
-        private static void RunMessageBusBroker(Container container, ILogger logger, CancellationToken token = default(CancellationToken)) {
-            var workItemQueue = container.GetInstance<IQueue<WorkItemData>>();
-            var subscriber = container.GetInstance<IMessageSubscriber>();
-
-            subscriber.SubscribeAsync<PlanOverage>(async overage => {
-                logger.Info("Enqueueing plan overage work item for organization: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
-                await workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
-                    OrganizationId = overage.OrganizationId,
-                    IsOverHourlyLimit = overage.IsHourly,
-                    IsOverMonthlyLimit = !overage.IsHourly
-                });
-            }, token).GetAwaiter().GetResult();
-        }
-
-        private static void RunJobs(Container container, LoggerFactory loggerFactory, ILogger logger, CancellationToken token = default(CancellationToken)) {
+        private static void RunJobs(Container container, LoggerFactory loggerFactory, ILogger logger, CancellationToken token) {
             if (!Settings.Current.RunJobsInProcess) {
                 logger.Info("Jobs running out of process.");
                 return;
@@ -180,7 +166,6 @@ namespace Exceptionless.Api {
             hubPipeline.AddModule(new ErrorHandlingPipelineModule(loggerFactory.CreateLogger<ErrorHandlingPipelineModule>()));
 
             app.MapSignalR<MessageBusConnection>("/api/v2/push", new ConnectionConfiguration { Resolver = resolver });
-            container.GetInstance<MessageBusBroker>().StartAsync().GetAwaiter().GetResult();
         }
 
         private static void SetupSwagger(HttpConfiguration config) {
@@ -209,13 +194,13 @@ namespace Exceptionless.Api {
             await dataHelper.CreateDataAsync();
         }
 
-        public static Container CreateContainer(ILoggerFactory loggerFactory, ILogger logger, bool includeInsulation = true) {
+        public static Container CreateContainer(ILoggerFactory loggerFactory, ILogger logger, CancellationToken shutdownCancellationToken, bool includeInsulation = true) {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
             container.Options.DefaultScopedLifestyle = new WebApiRequestLifestyle();
 
-            Core.Bootstrapper.RegisterServices(container, loggerFactory);
-            Bootstrapper.RegisterServices(container, loggerFactory);
+            Core.Bootstrapper.RegisterServices(container, loggerFactory, shutdownCancellationToken);
+            Bootstrapper.RegisterServices(container, loggerFactory, shutdownCancellationToken);
 
             if (!includeInsulation)
                 return container;
@@ -232,7 +217,7 @@ namespace Exceptionless.Api {
                 if (bootstrapperType == null)
                     return container;
 
-                bootstrapperType.GetMethod("RegisterServices", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[] { container, Settings.Current.RunJobsInProcess, loggerFactory });
+                bootstrapperType.GetMethod("RegisterServices", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[] { container, Settings.Current.RunJobsInProcess, loggerFactory, shutdownCancellationToken });
             }
 
             return container;

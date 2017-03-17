@@ -28,13 +28,15 @@ namespace Exceptionless.Api.Hubs {
             _logger = logger;
         }
 
-        public async Task StartAsync() {
-            await _subscriber.SubscribeAsync<ExtendedEntityChanged>(OnEntityChangedAsync);
-            await _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync);
-            await _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync);
-            await _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync);
-            await _subscriber.SubscribeAsync<ReleaseNotification>(OnReleaseNotificationAsync);
-            await _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync);
+        public async Task StartAsync(CancellationToken token) {
+            _logger.Debug("Subscribing to message bus notifications");
+            await _subscriber.SubscribeAsync<ExtendedEntityChanged>(OnEntityChangedAsync, token);
+            await _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync, token);
+            await _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync, token);
+            await _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync, token);
+            await _subscriber.SubscribeAsync<ReleaseNotification>(OnReleaseNotificationAsync, token);
+            await _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync, token);
+            _logger.Debug("Subscribed to message bus notifications");
         }
 
         private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default(CancellationToken)) {
