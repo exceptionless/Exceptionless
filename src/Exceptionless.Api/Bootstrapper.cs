@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using AutoMapper;
 using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Models;
@@ -21,7 +22,7 @@ using PrincipalUserIdProvider = Exceptionless.Api.Hubs.PrincipalUserIdProvider;
 
 namespace Exceptionless.Api {
     public class Bootstrapper {
-        public static void RegisterServices(Container container, ILoggerFactory loggerFactory) {
+        public static void RegisterServices(Container container, ILoggerFactory loggerFactory, CancellationToken shutdownCancellationToken) {
             container.Register<IUserIdProvider, PrincipalUserIdProvider>();
             container.Register<MessageBusConnection>();
             container.RegisterSingleton<IConnectionMapping, ConnectionMapping>();

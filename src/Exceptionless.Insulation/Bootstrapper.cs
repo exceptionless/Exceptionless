@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
@@ -23,7 +24,7 @@ using LogLevel = Exceptionless.Logging.LogLevel;
 
 namespace Exceptionless.Insulation {
     public class Bootstrapper {
-        public static void RegisterServices(Container container, bool runMaintenanceTasks, ILoggerFactory loggerFactory) {
+        public static void RegisterServices(Container container, bool runMaintenanceTasks, ILoggerFactory loggerFactory, CancellationToken shutdownCancellationToken) {
             loggerFactory.AddNLog();
             var logger = loggerFactory.CreateLogger<Bootstrapper>();
 
