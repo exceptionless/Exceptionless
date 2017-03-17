@@ -16,6 +16,7 @@ using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Repositories;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using Newtonsoft.Json;
@@ -77,7 +78,7 @@ namespace Exceptionless.Core.Jobs {
                 .Project(ep.ProjectId)
                 .WriteIf(!isInternalProject);
 
-            var project = await _projectRepository.GetByIdAsync(ep.ProjectId, true).AnyContext();
+            var project = await _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache()).AnyContext();
             if (project == null) {
                 _logger.Error().Message("Unable to process EventPost \"{0}\": Unable to load project: {1}", queueEntry.Value.FilePath, ep.ProjectId).Property("Id", queueEntry.Id).Project(ep.ProjectId).WriteIf(!isInternalProject);
                 await CompleteEntryAsync(queueEntry, ep, SystemClock.UtcNow).AnyContext();

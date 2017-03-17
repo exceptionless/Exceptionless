@@ -20,10 +20,8 @@ using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
-using Foundatio.Repositories.Elasticsearch.Queries;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
@@ -56,8 +54,7 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> GetAsync(int page = 1, int limit = 10, string mode = null) {
             page = GetPage(page);
             limit = GetLimit(limit);
-            var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), options);
+            var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), o => o.PageNumber(page).PageLimit(limit));
             var viewProjects = await MapCollectionAsync<ViewProject>(projects.Documents, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
@@ -83,8 +80,7 @@ namespace Exceptionless.Api.Controllers {
 
             page = GetPage(page);
             limit = GetLimit(limit);
-            var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = await _repository.GetByOrganizationIdAsync(organization, options, true);
+            var projects = await _repository.GetByOrganizationIdAsync(organization, o => o.PageNumber(page).PageLimit(limit).Cache());
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
@@ -206,7 +202,7 @@ namespace Exceptionless.Api.Controllers {
 
             project.Configuration.Settings[key.Trim()] = value.Trim();
             project.Configuration.IncrementVersion();
-            await _repository.SaveAsync(project, true);
+            await _repository.SaveAsync(project, o => o.Cache());
 
             return Ok();
         }
@@ -229,7 +225,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (project.Configuration.Settings.Remove(key.Trim())) {
                 project.Configuration.IncrementVersion();
-                await _repository.SaveAsync(project, true);
+                await _repository.SaveAsync(project, o => o.Cache());
             }
 
             return Ok();
@@ -284,8 +280,7 @@ namespace Exceptionless.Api.Controllers {
             if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
                 return NotFound();
 
-            NotificationSettings settings;
-            return Ok(project.NotificationSettings.TryGetValue(userId, out settings) ? settings : new NotificationSettings());
+            return Ok(project.NotificationSettings.TryGetValue(userId, out NotificationSettings settings) ? settings : new NotificationSettings());
         }
 
         /// <summary>
@@ -311,7 +306,7 @@ namespace Exceptionless.Api.Controllers {
             else
                 project.NotificationSettings[userId] = settings;
 
-            await _repository.SaveAsync(project, true);
+            await _repository.SaveAsync(project, o => o.Cache());
             return Ok();
         }
 
@@ -333,7 +328,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (project.NotificationSettings.ContainsKey(userId)) {
                 project.NotificationSettings.Remove(userId);
-                await _repository.SaveAsync(project, true);
+                await _repository.SaveAsync(project, o => o.Cache());
             }
 
             return Ok();
@@ -358,7 +353,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!project.PromotedTabs.Contains(name.Trim())) {
                 project.PromotedTabs.Add(name.Trim());
-                await _repository.SaveAsync(project, true);
+                await _repository.SaveAsync(project, o => o.Cache());
             }
 
             return Ok();
@@ -382,7 +377,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (project.PromotedTabs.Contains(name.Trim())) {
                 project.PromotedTabs.Remove(name.Trim());
-                await _repository.SaveAsync(project, true);
+                await _repository.SaveAsync(project, o => o.Cache());
             }
 
             return Ok();
@@ -434,7 +429,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             project.Data[key.Trim()] = value.Trim();
-            await _repository.SaveAsync(project, true);
+            await _repository.SaveAsync(project, o => o.Cache());
 
             return Ok();
         }
@@ -456,7 +451,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             if (project.Data.Remove(key.Trim()))
-                await _repository.SaveAsync(project, true);
+                await _repository.SaveAsync(project, o => o.Cache());
 
             return Ok();
         }
@@ -466,7 +461,7 @@ namespace Exceptionless.Api.Controllers {
 
             // TODO: We can optimize this by normalizing the project model to include the organization name.
             var viewProjects = models.OfType<ViewProject>().ToList();
-            var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true);
+            var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
             foreach (var viewProject in viewProjects) {
                 var organization = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId);
                 if (organization != null) {
@@ -534,10 +529,10 @@ namespace Exceptionless.Api.Controllers {
             if (viewProjects.Count <= 0)
                 return viewProjects;
 
-            var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), true);
+            var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
             var projects = viewProjects.Select(p => new Project { Id = p.Id, CreatedUtc = p.CreatedUtc, OrganizationId = p.OrganizationId }).ToList();
-            var sf = new ExceptionlessSystemFilterQuery(projects, organizations);
-            var systemFilter = new ElasticQuery().WithSystemFilter(sf).WithDateRange(organizations.GetRetentionUtcCutoff(), SystemClock.UtcNow, (PersistentEvent e) => e.Date).WithIndexes(organizations.GetRetentionUtcCutoff(), SystemClock.UtcNow);
+            var sf = new ExceptionlessSystemFilter(projects, organizations);
+            var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(), SystemClock.UtcNow);
             var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(project_id~{viewProjects.Count} cardinality:stack_id)");
             foreach (var project in viewProjects) {
                 var term = result.Aggregations.Terms<string>("terms_project_id")?.Buckets.FirstOrDefault(t => t.Key == project.Id);

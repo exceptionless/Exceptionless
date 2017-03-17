@@ -8,6 +8,7 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Foundatio.Repositories;
 using Foundatio.Utility;
 
 namespace Exceptionless.Api.Security {
@@ -75,7 +76,7 @@ namespace Exceptionless.Api.Security {
             if (String.IsNullOrEmpty(token))
                 return await BaseSendAsync(request, cancellationToken);
 
-            var tokenRecord = await _tokenRepository.GetByIdAsync(token, true);
+            var tokenRecord = await _tokenRepository.GetByIdAsync(token, o => o.Cache());
             if (tokenRecord == null)
                 return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
@@ -83,7 +84,7 @@ namespace Exceptionless.Api.Security {
                 return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
             if (!String.IsNullOrEmpty(tokenRecord.UserId)) {
-                var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, true);
+                var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
                 if (user == null)
                     return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 

@@ -5,13 +5,9 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
-using Foundatio.Repositories.Elasticsearch.Models;
-using Foundatio.Repositories.Elasticsearch.Queries;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
 using Foundatio.Utility;
 using Nest;
 
@@ -25,32 +21,27 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            return CountAsync(new ExceptionlessQuery()
-                .WithOrganizationId(organizationId)
-                .WithCacheKey(String.Concat("Organization:", organizationId)));
+            return CountAsync(q => q.Organization(organizationId), o => o.CacheKey(String.Concat("Organization:", organizationId)));
         }
 
-        public Task<FindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, PagingOptions paging = null) {
+        public Task<FindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, CommandOptionsDescriptor<Project> options = null) {
             if (organizationIds == null)
                 throw new ArgumentNullException(nameof(organizationIds));
 
             if (organizationIds.Count == 0)
                 return Task.FromResult(new FindResults<Project>());
 
-            if (organizationIds.Count == 1)
-                return GetByOrganizationIdAsync(organizationIds.First(), paging, true);
+            if (organizationIds.Count == 1) {
+                var commandOptions = options.Configure();
+                return GetByOrganizationIdAsync(organizationIds.First(), o => commandOptions.Cache());
+            }
 
-            return FindAsync(new ExceptionlessQuery().WithOrganizationIds(organizationIds).WithPaging(paging));
+            return FindAsync(q => q.Organizations(organizationIds), options);
         }
 
         public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50) {
             var filter = Query<Project>.Range(r => r.Field(o => o.NextSummaryEndOfDayTicks).LessThan(SystemClock.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
-            var query = new ExceptionlessQuery()
-                .WithElasticFilter(filter)
-                .WithPaging(new ElasticPagingOptions().UseSnapshotPaging().WithLimit(limit))
-                .WithSortAscending((Project p) => p.OrganizationId);
-
-            return FindAsync(query);
+            return FindAsync(q => q.ElasticFilter(filter).SortAscending(p => p.OrganizationId), o => o.SnapshotPaging().PageLimit(limit));
         }
 
         public async Task IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects) {
@@ -61,14 +52,14 @@ namespace Exceptionless.Core.Repositories {
                 return;
 
             string script = $"ctx._source.next_summary_end_of_day_ticks += {TimeSpan.TicksPerDay}L;";
-            await PatchAsync(projects.Select(p => p.Id).ToArray(), script, false).AnyContext();
+            await this.PatchAsync(projects.Select(p => p.Id).ToArray(), new ScriptPatch(script), o => o.Notifications(false)).AnyContext();
             await InvalidateCacheAsync(projects).AnyContext();
         }
 
-        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<Project> documents) {
+        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<Project> documents, ICommandOptions options = null) {
             var organizations = documents.Select(d => d.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
             await Cache.RemoveAllAsync(organizations.Select(id => $"count:Organization:{id}")).AnyContext();
-            await base.InvalidateCachedQueriesAsync(documents).AnyContext();
+            await base.InvalidateCachedQueriesAsync(documents, options).AnyContext();
         }
     }
 }

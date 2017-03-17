@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
@@ -27,6 +26,7 @@ using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
 using Foundatio.Queues;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 using Foundatio.Utility;
@@ -93,7 +93,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(CountResult.Empty);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
             return await base.GetCountAsync(sf, ti, filter, aggregations);
         }
 
@@ -118,7 +118,7 @@ namespace Exceptionless.Api.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organization);
+            var sf = new ExceptionlessSystemFilter(organization);
             return await base.GetCountAsync(sf, ti, filter, aggregations);
         }
 
@@ -147,7 +147,7 @@ namespace Exceptionless.Api.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
-            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            var sf = new ExceptionlessSystemFilter(project, organization);
             return await base.GetCountAsync(sf, ti, filter, aggregations);
         }
 
@@ -183,7 +183,7 @@ namespace Exceptionless.Api.Controllers {
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organization);
+            var sf = new ExceptionlessSystemFilter(organization);
             var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, filter, ti.Range.UtcStart, ti.Range.UtcEnd);
             return OkWithLinks(model, GetEntityResourceLink(result.Previous, "previous"), GetEntityResourceLink(result.Next, "next"), GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
@@ -208,11 +208,11 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
-        private async Task<IHttpActionResult> GetInternalAsync(IExceptionlessSystemFilterQuery sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10, bool usesPremiumFeatures = false) {
+        private async Task<IHttpActionResult> GetInternalAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10, bool usesPremiumFeatures = false) {
             page = GetPage(page);
             limit = GetLimit(limit);
             int skip = GetSkip(page, limit);
@@ -224,11 +224,10 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(pr.Message);
 
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
-            var options = new PagingOptions { Page = page, Limit = limit };
 
             FindResults<PersistentEvent> events;
             try {
-                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.Range.UtcStart, ti.Range.UtcEnd, options);
+                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.Range.UtcStart, ti.Range.UtcEnd, o => o.PageNumber(page).PageLimit(limit));
             } catch (ApplicationException ex) {
                 _logger.Error().Exception(ex)
                     .Message("An error has occurred. Please check your search filter.")
@@ -282,7 +281,7 @@ namespace Exceptionless.Api.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organization);
+            var sf = new ExceptionlessSystemFilter(organization);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
@@ -316,7 +315,7 @@ namespace Exceptionless.Api.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
-            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            var sf = new ExceptionlessSystemFilter(project, organization);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
@@ -350,7 +349,7 @@ namespace Exceptionless.Api.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(stack));
-            var sf = new ExceptionlessSystemFilterQuery(stack, organization);
+            var sf = new ExceptionlessSystemFilter(stack, organization);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
@@ -372,7 +371,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit);
         }
 
@@ -404,7 +403,7 @@ namespace Exceptionless.Api.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff(project));
-            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            var sf = new ExceptionlessSystemFilter(project, organization);
             return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null,  mode, page, limit);
         }
 
@@ -429,7 +428,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, true);
         }
 
@@ -464,7 +463,7 @@ namespace Exceptionless.Api.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
-            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            var sf = new ExceptionlessSystemFilter(project, organization);
             return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, true);
         }
 
@@ -488,7 +487,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organizations) { IsUserOrganizationsFilter = true };
+            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }
 
@@ -518,7 +517,7 @@ namespace Exceptionless.Api.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
-            var sf = new ExceptionlessSystemFilterQuery(organization);
+            var sf = new ExceptionlessSystemFilter(organization);
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }
 
@@ -552,7 +551,7 @@ namespace Exceptionless.Api.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
-            var sf = new ExceptionlessSystemFilterQuery(project, organization);
+            var sf = new ExceptionlessSystemFilter(project, organization);
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }
 
@@ -615,8 +614,7 @@ namespace Exceptionless.Api.Controllers {
             if (changes == null)
                 return Ok();
 
-            object value;
-            if (changes.UnknownProperties.TryGetValue("UserEmail", out value))
+            if (changes.UnknownProperties.TryGetValue("UserEmail", out object value))
                 changes.TrySetPropertyValue("EmailAddress", value);
             if (changes.UnknownProperties.TryGetValue("UserDescription", out value))
                 changes.TrySetPropertyValue("Description", value);
@@ -657,7 +655,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, true);
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
             if (organization == null || organization.IsSuspended)
                 return Ok();
 
@@ -941,14 +939,14 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return null;
 
-            return _organizationRepository.GetByIdAsync(organizationId, useCache);
+            return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
         }
 
         private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
             if (String.IsNullOrEmpty(projectId))
                 return null;
 
-            var project = await _projectRepository.GetByIdAsync(projectId, useCache);
+            var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache(useCache));
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return null;
 
@@ -959,7 +957,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(stackId))
                 return null;
 
-            var stack = await _stackRepository.GetByIdAsync(stackId, useCache);
+            var stack = await _stackRepository.GetByIdAsync(stackId, o => o.Cache(useCache));
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return null;
 

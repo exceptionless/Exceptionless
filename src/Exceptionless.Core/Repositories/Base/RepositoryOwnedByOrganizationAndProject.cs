@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganizationAndProject<T> : RepositoryOwnedByOrganization<T>, IRepositoryOwnedByProject<T> where T : class, IOwnedByProject, IIdentity, IOwnedByOrganization, new() {
@@ -13,14 +12,12 @@ namespace Exceptionless.Core.Repositories {
             FieldsRequiredForRemove.Add("project_id");
         }
 
-        public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, PagingOptions paging = null) {
-            return FindAsync(new ExceptionlessQuery()
-                .WithProjectId(projectId)
-                .WithPaging(paging));
+        public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<T> options = null) {
+            return FindAsync(q => q.Project(projectId), options);
         }
 
         public virtual Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId) {
-            return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId).WithProjectId(projectId));
+            return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId));
         }
     }
 }

@@ -15,7 +15,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Foundatio.Logging;
-using Foundatio.Repositories.Models;
+using Foundatio.Repositories;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
@@ -49,8 +49,7 @@ namespace Exceptionless.App.Controllers.API {
 
             page = GetPage(page);
             limit = GetLimit(limit);
-            var options = new PagingOptions { Page = page, Limit = limit };
-            var results = await _repository.GetByProjectIdAsync(projectId, options);
+            var results = await _repository.GetByProjectIdAsync(projectId, o => o.PageNumber(page).PageLimit(limit));
             return OkWithResourceLinks(results.Documents, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
@@ -129,7 +128,7 @@ namespace Exceptionless.App.Controllers.API {
         [Route("~/api/v1/projecthook/unsubscribe")]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IHttpActionResult> UnsubscribeAsync(JObject data) {
-            var targetUrl = data.GetValue("target_url").Value<string>();
+            string targetUrl = data.GetValue("target_url").Value<string>();
 
             // don't let this anon method delete non-zapier hooks
             if (!targetUrl.Contains("zapier"))
@@ -169,7 +168,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            var webHook = await _repository.GetByIdAsync(id, useCache);
+            var webHook = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
             if (webHook == null)
                 return null;
 
@@ -186,7 +185,7 @@ namespace Exceptionless.App.Controllers.API {
             if (ids == null || ids.Length == 0)
                 return EmptyModels;
 
-            var webHooks = await _repository.GetByIdsAsync(ids, useCache);
+            var webHooks = await _repository.GetByIdsAsync(ids, o => o.Cache(useCache));
             if (webHooks.Count == 0)
                 return EmptyModels;
 
@@ -246,7 +245,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return null;
 
-            var project = await _projectRepository.GetByIdAsync(projectId, useCache);
+            var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache(useCache));
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return null;
 

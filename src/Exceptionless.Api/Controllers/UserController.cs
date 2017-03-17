@@ -19,7 +19,7 @@ using Exceptionless.DateTimeExtensions;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Logging;
-using Foundatio.Repositories.Models;
+using Foundatio.Repositories;
 using Foundatio.Utility;
 
 namespace Exceptionless.Api.Controllers {
@@ -77,18 +77,17 @@ namespace Exceptionless.Api.Controllers {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
-            var organization = await _organizationRepository.GetByIdAsync(organizationId, true);
+            var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
             if (organization == null)
                 return NotFound();
 
             page = GetPage(page);
             limit = GetLimit(limit);
-            var skip = GetSkip(page, limit);
+            int skip = GetSkip(page, limit);
             if (skip > MAXIMUM_SKIP)
                 return Ok(Enumerable.Empty<ViewUser>());
 
-            var options = new PagingOptions { Limit = MAXIMUM_SKIP };
-            var results = await _repository.GetByOrganizationIdAsync(organizationId, options);
+            var results = await _repository.GetByOrganizationIdAsync(organizationId, o => o.PageLimit(MAXIMUM_SKIP));
             var users = (await MapCollectionAsync<ViewUser>(results.Documents, true)).ToList();
             if (organization.Invites.Any()) {
                 users.AddRange(organization.Invites.Select(i => new ViewUser {
@@ -152,7 +151,7 @@ namespace Exceptionless.Api.Controllers {
                 user.ResetVerifyEmailAddressToken();
 
             try {
-                await _repository.SaveAsync(user, true);
+                await _repository.SaveAsync(user, o => o.Cache());
             } catch (ValidationException ex) {
                 return BadRequest(String.Join(", ", ex.Errors));
             } catch (Exception ex) {
@@ -188,7 +187,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Verify Email Address Token has expired.");
 
             user.MarkEmailAddressVerified();
-            await _repository.SaveAsync(user, true);
+            await _repository.SaveAsync(user, o => o.Cache());
 
             //ExceptionlessClient.Default.CreateFeatureUsage("Verify Email Address").AddObject(user).Submit();
             return Ok();
@@ -208,7 +207,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!user.IsEmailAddressVerified) {
                 user.CreateVerifyEmailAddressToken();
-                await _repository.SaveAsync(user, true);
+                await _repository.SaveAsync(user, o => o.Cache());
                 await _mailer.SendVerifyEmailAsync(user);
             }
 
@@ -227,7 +226,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!user.Roles.Contains(AuthorizationRoles.GlobalAdmin)) {
                 user.Roles.Add(AuthorizationRoles.GlobalAdmin);
-                await _repository.SaveAsync(user, true);
+                await _repository.SaveAsync(user, o => o.Cache());
             }
 
             return Ok();
@@ -245,7 +244,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin)) {
                 user.Roles.Remove(AuthorizationRoles.GlobalAdmin);
-                await _repository.SaveAsync(user, true);
+                await _repository.SaveAsync(user, o => o.Cache());
             }
 
             return StatusCode(HttpStatusCode.NoContent);

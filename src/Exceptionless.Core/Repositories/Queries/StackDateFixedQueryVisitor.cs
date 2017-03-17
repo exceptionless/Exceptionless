@@ -19,8 +19,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (!String.Equals(node.Field, "fixed", StringComparison.OrdinalIgnoreCase))
                 return Task.CompletedTask;
 
-            bool isFixed;
-            if (!Boolean.TryParse(node.Term, out isFixed))
+            if (!Boolean.TryParse(node.Term, out bool isFixed))
                 return Task.CompletedTask;
 
             var query = new ExistsQuery { Field = _dateFixedFieldName };

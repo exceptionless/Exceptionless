@@ -26,8 +26,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
             
             var data = new Dictionary<string, object>();
-            string value;
-            if (stack.SignatureInfo.TryGetValue("ExceptionType", out value)) {
+            if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value)) {
                 data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
                 data.Add("TypeFullName", value);
             }

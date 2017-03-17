@@ -467,7 +467,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             var result = await _validator.ValidateQueryAsync(filter);
             Assert.True(result.IsValid);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-            return await _repository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
+            return await _repository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue);
         }
     }
 }

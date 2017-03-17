@@ -16,8 +16,7 @@ namespace Exceptionless.Core.Extensions {
             if (value == null)
                 return null;
 
-            int number;
-            if (Int32.TryParse(value, out number))
+            if (Int32.TryParse(value, out int number))
                 return number;
 
             return null;
@@ -36,8 +35,7 @@ namespace Exceptionless.Core.Extensions {
             if (value == null)
                 return null;
 
-            long number;
-            if (Int64.TryParse(value, out number))
+            if (Int64.TryParse(value, out long number))
                 return number;
 
             return null;
@@ -48,8 +46,7 @@ namespace Exceptionless.Core.Extensions {
             if (value == null)
                 return null;
 
-            bool boolean;
-            if (Boolean.TryParse(value, out boolean))
+            if (Boolean.TryParse(value, out bool boolean))
                 return boolean;
 
             return null;

@@ -26,9 +26,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder) {
             builder.Register(new ExceptionlessSystemFilterQueryBuilder());
-            builder.Register(new OrganizationIdQueryBuilder());
-            builder.Register(new ProjectIdQueryBuilder());
-            builder.Register(new StackIdQueryBuilder());
+            builder.Register(new OrganizationQueryBuilder());
+            builder.Register(new ProjectQueryBuilder());
+            builder.Register(new StackQueryBuilder());
         }
 
         public StackIndex Stacks { get; }

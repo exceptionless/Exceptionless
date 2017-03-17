@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using AutoMapper;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
@@ -41,7 +42,7 @@ using SimpleInjector.Advanced;
 
 namespace Exceptionless.Core {
     public class Bootstrapper {
-        public static void RegisterServices(Container container, ILoggerFactory loggerFactory) {
+        public static void RegisterServices(Container container, ILoggerFactory loggerFactory, CancellationToken shutdownCancellationToken) {
             var logger = loggerFactory.CreateLogger<Bootstrapper>();
             container.RegisterLogger(loggerFactory);
             container.RegisterSingleton<IDependencyResolver>(() => new SimpleInjectorDependencyResolver(container));

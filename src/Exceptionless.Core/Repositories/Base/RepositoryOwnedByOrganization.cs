@@ -4,12 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Configuration;
-using Foundatio.Repositories.Elasticsearch.Queries;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
+using Foundatio.Repositories.Options;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
@@ -18,43 +17,42 @@ namespace Exceptionless.Core.Repositories {
             DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
 
-        public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<T> options = null) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            string cacheKey = String.Concat("paged:Organization:", organizationId);
-            return FindAsync(new ExceptionlessQuery()
-                .WithOrganizationId(organizationId)
-                .WithPaging(paging)
-                .WithCacheKey(useCache ? cacheKey : null)
-                .WithExpiresIn(expiresIn));
+            var commandOptions = options.Configure();
+            if (commandOptions.ShouldUseCache())
+                commandOptions.CacheKey(String.Concat("paged:Organization:", organizationId));
+
+            return FindAsync(new RepositoryQuery<T>().Organization(organizationId), commandOptions);
         }
 
         public virtual Task<long> RemoveAllByOrganizationIdAsync(string organizationId) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            return RemoveAllAsync(new ExceptionlessQuery().WithOrganizationId(organizationId));
+            return RemoveAllAsync(q => q.Organization(organizationId));
         }
 
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<T>> documents) {
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<T>> documents, ICommandOptions options = null) {
             if (!IsCacheEnabled)
                 return;
 
-            await InvalidateCachedQueriesAsync(documents.Select(d => d.Value).ToList());
-            await base.InvalidateCacheAsync(documents).AnyContext();
+            await InvalidateCachedQueriesAsync(documents.Select(d => d.Value).ToList(), options);
+            await base.InvalidateCacheAsync(documents, options).AnyContext();
         }
 
         private Task OnDocumentsAdded(object sender, DocumentsEventArgs<T> documents) {
             if (!IsCacheEnabled)
                 return Task.CompletedTask;
 
-            return InvalidateCachedQueriesAsync(documents.Documents);
+            return InvalidateCachedQueriesAsync(documents.Documents, documents.Options);
         }
 
-        protected virtual async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<T> documents) {
+        protected virtual async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<T> documents, ICommandOptions options = null) {
             var organizations = documents.Select(d => d.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
-            foreach (var organizationId in organizations)
+            foreach (string organizationId in organizations)
                 await Cache.RemoveByPrefixAsync($"paged:Organization:{organizationId}:*").AnyContext();
         }
     }

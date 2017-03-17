@@ -17,8 +17,7 @@ namespace Exceptionless.Api.Utility {
                     request.Method = new HttpMethod(httpMethod);
             }
 
-            object value;
-            if (request.Properties.TryGetValue("MS_HttpRouteData", out value)) {
+            if (request.Properties.TryGetValue("MS_HttpRouteData", out object value)) {
                 var routeData = value as IHttpRouteData;
                 if (routeData != null) {
                     if (!routeData.Values.ContainsKey("action"))

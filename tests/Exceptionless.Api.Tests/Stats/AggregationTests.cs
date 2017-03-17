@@ -9,6 +9,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Logging;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Nest;
@@ -57,7 +58,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(eventCount, result.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault());
             Assert.Equal(eventCount, result.Aggregations.DateHistogram("date_date").Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault()));
 
-            var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
+            var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageLimit(100));
             foreach (var stack in stacks.Documents) {
                 var stackResult = await _eventRepository.CountBySearchAsync(null, $"stack:{stack.Id}", "cardinality:id");
                 Assert.Equal(stack.TotalOccurrences, stackResult.Total);
@@ -131,7 +132,7 @@ namespace Exceptionless.Api.Tests.Stats {
             await CreateDataAsync(eventCount, false);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var stackSize = await _stackRepository.CountAsync();
+            long stackSize = await _stackRepository.CountAsync();
             var result = await _eventRepository.CountBySearchAsync(null, null, $"terms:(stack_id terms:(is_first_occurrence~{stackSize} @include:true))");
             Assert.Equal(eventCount, result.Total);
 
@@ -148,14 +149,14 @@ namespace Exceptionless.Api.Tests.Stats {
             await CreateDataAsync(eventCount, false);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var stackSize = await _stackRepository.CountAsync();
+            long stackSize = await _stackRepository.CountAsync();
             var result = await _eventRepository.CountBySearchAsync(null, null, $"terms:(stack_id~{stackSize} min:date max:date)");
             Assert.Equal(eventCount, result.Total);
 
             var termsAggregation = result.Aggregations.Terms<string>("terms_stack_id");
             var largestStackBucket = termsAggregation.Buckets.First();
 
-            var events = await _eventRepository.GetByFilterAsync(null, $"stack:{largestStackBucket.Key}", null, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions().WithLimit(eventCount));
+            var events = await _eventRepository.GetByFilterAsync(null, $"stack:{largestStackBucket.Key}", null, null, DateTime.MinValue, DateTime.MaxValue, o => o.PageLimit(eventCount));
             Assert.Equal(largestStackBucket.Total.GetValueOrDefault(), events.Total);
 
             var oldestEvent = events.Documents.OrderBy(e => e.Date).First();
@@ -190,10 +191,10 @@ namespace Exceptionless.Api.Tests.Stats {
 
         private async Task CreateDataAsync(int eventCount = 0, bool multipleProjects = true) {
             var orgs = OrganizationData.GenerateSampleOrganizations();
-            await _organizationRepository.AddAsync(orgs, true);
+            await _organizationRepository.AddAsync(orgs, o => o.Cache());
 
             var projects = ProjectData.GenerateSampleProjects();
-            await _projectRepository.AddAsync(projects, true);
+            await _projectRepository.AddAsync(projects, o => o.Cache());
             await _configuration.Client.RefreshAsync(Indices.All);
 
             if (eventCount > 0)

@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using FluentValidation;
 using FluentValidation.Results;
@@ -9,8 +8,9 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Core.Validation {
     public class PersistentEventValidator : AbstractValidator<PersistentEvent> {
-        public override ValidationResult Validate(PersistentEvent ev) {
+        public override ValidationResult Validate(ValidationContext<PersistentEvent> context) {
             var result = new ValidationResult();
+            var ev = context.InstanceToValidate;
 
             if (!IsObjectId(ev.Id))
                 result.Errors.Add(new ValidationFailure("Id", "Please specify a valid id."));
@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Validation {
             if (!ev.HasValidReferenceId())
                 result.Errors.Add(new ValidationFailure("ReferenceId", "ReferenceId must contain between 8 and 100 alphanumeric or '-' characters."));
 
-            foreach (var tag in ev.Tags) {
+            foreach (string tag in ev.Tags) {
                 if (String.IsNullOrEmpty(tag))
                     result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));
                 else if (tag.Length > 255)

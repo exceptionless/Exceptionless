@@ -40,12 +40,10 @@ namespace Exceptionless.Core.Utility {
                 await _localCache.SetAsync(version, semanticVersion).AnyContext();
                 return semanticVersion;
             }
-            
-            Version v;
-            int major;
-            if (version.Length >= 3 && Version.TryParse(version, out v))
+
+            if (version.Length >= 3 && Version.TryParse(version, out Version v))
                 semanticVersion = new SemanticVersion(v.Major > 0 ? v.Major : 0, v.Minor > 0 ? v.Minor : 0, v.Build > 0 ? v.Build : 0, v.Revision >= 0 ? new[] { v.Revision.ToString() } : EmptyIdentifiers);
-            else if (Int32.TryParse(version, out major))
+            else if (Int32.TryParse(version, out int major))
                 semanticVersion = new SemanticVersion(major, 0);
             else
                 _logger.Info("Unable to parse version: {version}", version);

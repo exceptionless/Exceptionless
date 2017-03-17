@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Queries;
@@ -8,6 +7,7 @@ using Foundatio.Logging;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .IncludeInAll(false)
                 .AllField(a => a.Analyzer(EventIndex.STANDARDPLUS_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER))
                 .Properties(p => p
-                    .Date(f => f.Name(e => e.CreatedUtc).Alias(Alias.CreatedUtc))
+                    .SetupDefaults()
                     .Keyword(f => f.Name(e => e.Id).Alias(Alias.Id).IncludeInAll())
                     .Keyword(f => f.Name(e => e.OrganizationId).Alias(Alias.OrganizationId))
                     .Keyword(f => f.Name(e => e.ProjectId).Alias(Alias.ProjectId))
@@ -96,7 +96,6 @@ ctx.error.code = codes;";
         }
 
         public sealed class Alias {
-            public const string CreatedUtc = "created";
             public const string OrganizationId = "organization";
             public const string ProjectId = "project";
             public const string StackId = "stack";

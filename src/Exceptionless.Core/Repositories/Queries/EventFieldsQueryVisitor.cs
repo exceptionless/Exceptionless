@@ -11,22 +11,18 @@ namespace Exceptionless.Core.Repositories.Queries {
     public class EventFieldsQueryVisitor : ChainableQueryVisitor {
         public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
             var childTerms = new List<string>();
-            var leftTermNode = node.Left as TermNode;
-            if (leftTermNode != null && leftTermNode.Field == null)
+            if (node.Left is TermNode leftTermNode && leftTermNode.Field == null)
                 childTerms.Add(leftTermNode.Term);
 
-            var leftTermRangeNode = node.Left as TermRangeNode;
-            if (leftTermRangeNode != null && leftTermRangeNode.Field == null) {
+            if (node.Left is TermRangeNode leftTermRangeNode && leftTermRangeNode.Field == null) {
                 childTerms.Add(leftTermRangeNode.Min);
                 childTerms.Add(leftTermRangeNode.Max);
             }
 
-            var rightTermNode = node.Right as TermNode;
-            if (rightTermNode != null && rightTermNode.Field == null)
+            if (node.Right is TermNode rightTermNode && rightTermNode.Field == null)
                 childTerms.Add(rightTermNode.Term);
 
-            var rightTermRangeNode = node.Right as TermRangeNode;
-            if (rightTermRangeNode != null && rightTermRangeNode.Field == null) {
+            if (node.Right is TermRangeNode rightTermRangeNode && rightTermRangeNode.Field == null) {
                 childTerms.Add(rightTermRangeNode.Min);
                 childTerms.Add(rightTermRangeNode.Max);
             }
@@ -94,13 +90,11 @@ namespace Exceptionless.Core.Repositories.Queries {
                 if (term.StartsWith("*"))
                     continue;
 
-                bool boolResult;
-                DateTime dateResult;
-                if (Boolean.TryParse(term, out boolResult))
+                if (Boolean.TryParse(term, out bool boolResult))
                     termType = "b";
                 else if (term.IsNumeric())
                     termType = "n";
-                else if (DateTime.TryParse(term, out dateResult))
+                else if (DateTime.TryParse(term, out DateTime dateResult))
                     termType = "d";
 
                 break;

@@ -11,18 +11,15 @@ namespace Exceptionless.Core.Models {
         }
 
         public object GetValueOrDefault(string key) {
-            object value;
-            return TryGetValue(key, out value) ? value : null;
+            return TryGetValue(key, out object value) ? value : null;
         }
 
         public object GetValueOrDefault(string key, object defaultValue) {
-            object value;
-            return TryGetValue(key, out value) ? value : defaultValue;
+            return TryGetValue(key, out object value) ? value : defaultValue;
         }
 
         public object GetValueOrDefault(string key, Func<object> defaultValueProvider) {
-            object value;
-            return TryGetValue(key, out value) ? value : defaultValueProvider();
+            return TryGetValue(key, out object value) ? value : defaultValueProvider();
         }
 
         public string GetString(string name) {
@@ -30,9 +27,8 @@ namespace Exceptionless.Core.Models {
         }
 
         public string GetString(string name, string @default) {
-            object value;
 
-            if (!TryGetValue(name, out value))
+            if (!TryGetValue(name, out object value))
                 return @default;
 
             if (value is string)
