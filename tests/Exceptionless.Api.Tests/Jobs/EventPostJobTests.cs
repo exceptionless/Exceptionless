@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -133,7 +134,7 @@ namespace Exceptionless.Api.Tests.Jobs {
         }
 
         private async Task<string> EnqueueEventPostAsync(PersistentEvent ev) {
-            return await _queue.EnqueueAsync(new EventPostInfo {
+            EventPostInfo eventPostInfo = new EventPostInfo {
                 ApiVersion = 2,
                 CharSet = "utf-8",
                 ContentEncoding = "gzip",
@@ -141,7 +142,9 @@ namespace Exceptionless.Api.Tests.Jobs {
                 MediaType = "application/json",
                 ProjectId = ev.ProjectId,
                 UserAgent = "exceptionless-test",
-            }, _storage, false).AnyContext();
+            };
+
+            return await _queue.EnqueueAsync(eventPostInfo, _storage).AnyContext();
         }
 
         private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {

@@ -34,6 +34,8 @@ namespace Exceptionless.Core {
 
         public int ApiThrottleLimit { get; private set; }
 
+        public bool EnableArchive { get; private set; }
+
         public bool EventSubmissionDisabled { get; private set; }
 
         /// <summary>
@@ -147,6 +149,7 @@ namespace Exceptionless.Core {
             RunJobsInProcess = GetBool(nameof(RunJobsInProcess), true);
             BotThrottleLimit = GetInt(nameof(BotThrottleLimit), 25);
             ApiThrottleLimit = GetInt(nameof(ApiThrottleLimit), Int32.MaxValue);
+            EnableArchive = GetBool(nameof(EnableArchive), true);
             EventSubmissionDisabled = GetBool(nameof(EventSubmissionDisabled));
             MaximumEventPostSize = GetInt64(nameof(MaximumEventPostSize), 1000000);
             MaximumRetentionDays = GetInt(nameof(MaximumRetentionDays), 180);
