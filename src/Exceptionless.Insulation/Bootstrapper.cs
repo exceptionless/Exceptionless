@@ -102,7 +102,7 @@ namespace Exceptionless.Insulation {
         private static IQueue<T> CreateAzureStorageQueue<T>(Container container, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
             return new AzureStorageQueue<T>(new AzureStorageQueueOptions<T> {
                 ConnectionString = Settings.Current.AzureStorageConnectionString,
-                Name = GetQueueName<T>(),
+                Name = GetQueueName<T>().ToLowerInvariant(),
                 Behaviors = container.GetAllInstances<IQueueBehavior<T>>(),
                 WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
                 Serializer = container.GetInstance<ISerializer>(),
