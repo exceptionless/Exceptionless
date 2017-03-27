@@ -51,16 +51,30 @@ namespace Exceptionless.Insulation {
                 if (Settings.Current.EnableSignalR)
                     container.RegisterSingleton<IConnectionMapping, RedisConnectionMapping>();
 
-                container.RegisterSingleton<IQueue<EventPost>>(() => new RedisQueue<EventPost>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventPost>(), behaviors: container.GetAllInstances<IQueueBehavior<EventPost>>(), runMaintenanceTasks: runMaintenanceTasks, loggerFactory: loggerFactory));
-                container.RegisterSingleton<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventUserDescription>(), behaviors: container.GetAllInstances<IQueueBehavior<EventUserDescription>>(), runMaintenanceTasks: runMaintenanceTasks, loggerFactory: loggerFactory));
-                container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new RedisQueue<EventNotificationWorkItem>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<EventNotificationWorkItem>(), behaviors: container.GetAllInstances<IQueueBehavior<EventNotificationWorkItem>>(), runMaintenanceTasks: runMaintenanceTasks, loggerFactory: loggerFactory));
-                container.RegisterSingleton<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<WebHookNotification>(), behaviors: container.GetAllInstances<IQueueBehavior<WebHookNotification>>(), runMaintenanceTasks: runMaintenanceTasks, loggerFactory: loggerFactory));
-                container.RegisterSingleton<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<MailMessage>(), behaviors: container.GetAllInstances<IQueueBehavior<MailMessage>>(), runMaintenanceTasks: runMaintenanceTasks, loggerFactory: loggerFactory));
-                container.RegisterSingleton<IQueue<WorkItemData>>(() => new RedisQueue<WorkItemData>(container.GetInstance<ConnectionMultiplexer>(), container.GetInstance<ISerializer>(), GetQueueName<WorkItemData>(), workItemTimeout: TimeSpan.FromHours(1), behaviors: container.GetAllInstances<IQueueBehavior<WorkItemData>>(), runMaintenanceTasks: runMaintenanceTasks, loggerFactory: loggerFactory));
-
-                container.RegisterSingleton<IMessageBus>(() => new RedisMessageBus(container.GetInstance<ConnectionMultiplexer>().GetSubscriber(), $"{Settings.Current.AppScopePrefix}messages", container.GetInstance<ISerializer>(), loggerFactory));
+                container.RegisterSingleton<IMessageBus>(() => new RedisMessageBus(new RedisMessageBusOptions {
+                    Subscriber = container.GetInstance<ConnectionMultiplexer>().GetSubscriber(),
+                    Topic = $"{Settings.Current.AppScopePrefix}messages",
+                    Serializer = container.GetInstance<ISerializer>(),
+                    LoggerFactory = loggerFactory
+                }));
             } else {
                 logger.Warn("Redis is NOT enabled.");
+            }
+
+            if (Settings.Current.EnableAzureStorage) {
+                container.RegisterSingleton(() => CreateAzureStorageQueue<EventPost>(container, loggerFactory: loggerFactory));
+                container.RegisterSingleton(() => CreateAzureStorageQueue<EventUserDescription>(container, loggerFactory: loggerFactory));
+                container.RegisterSingleton(() => CreateAzureStorageQueue<EventNotificationWorkItem>(container, loggerFactory: loggerFactory));
+                container.RegisterSingleton(() => CreateAzureStorageQueue<WebHookNotification>(container, loggerFactory: loggerFactory));
+                container.RegisterSingleton(() => CreateAzureStorageQueue<MailMessage>(container, loggerFactory: loggerFactory));
+                container.RegisterSingleton(() => CreateAzureStorageQueue<WorkItemData>(container, TimeSpan.FromHours(1), loggerFactory));
+            } else if (Settings.Current.EnableRedis) {
+                container.RegisterSingleton(() => CreateRedisQueue<EventPost>(container, runMaintenanceTasks, loggerFactory: loggerFactory));
+                container.RegisterSingleton(() => CreateRedisQueue<EventUserDescription>(container, runMaintenanceTasks, loggerFactory: loggerFactory));
+                container.RegisterSingleton(() => CreateRedisQueue<EventNotificationWorkItem>(container, runMaintenanceTasks, loggerFactory: loggerFactory));
+                container.RegisterSingleton(() => CreateRedisQueue<WebHookNotification>(container, runMaintenanceTasks, loggerFactory: loggerFactory));
+                container.RegisterSingleton(() => CreateRedisQueue<MailMessage>(container, runMaintenanceTasks, loggerFactory: loggerFactory));
+                container.RegisterSingleton(() => CreateRedisQueue<WorkItemData>(container, runMaintenanceTasks, TimeSpan.FromHours(1), loggerFactory));
             }
 
             if (Settings.Current.EnableAzureStorage)
@@ -83,6 +97,29 @@ namespace Exceptionless.Insulation {
             container.AddStartupAction(() => client.RegisterWebApi(container.GetInstance<HttpConfiguration>()));
             client.Configuration.UseInMemoryStorage();
             client.Configuration.UseReferenceIds();
+        }
+
+        private static IQueue<T> CreateAzureStorageQueue<T>(Container container, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
+            return new AzureStorageQueue<T>(new AzureStorageQueueOptions<T> {
+                ConnectionString = Settings.Current.AzureStorageConnectionString,
+                Name = GetQueueName<T>(),
+                Behaviors = container.GetAllInstances<IQueueBehavior<T>>(),
+                WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
+                Serializer = container.GetInstance<ISerializer>(),
+                LoggerFactory = loggerFactory
+            });
+        }
+
+        private static IQueue<T> CreateRedisQueue<T>(Container container, bool runMaintenanceTasks, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
+            return new RedisQueue<T>(new RedisQueueOptions<T> {
+                ConnectionMultiplexer = container.GetInstance<ConnectionMultiplexer>(),
+                Name = GetQueueName<T>(),
+                Behaviors = container.GetAllInstances<IQueueBehavior<T>>(),
+                WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
+                RunMaintenanceTasks = runMaintenanceTasks,
+                Serializer = container.GetInstance<ISerializer>(),
+                LoggerFactory = loggerFactory
+            });
         }
 
         private static string GetQueueName<T>() {

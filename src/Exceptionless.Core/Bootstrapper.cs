@@ -82,12 +82,6 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IEnumerable<IQueueBehavior<MailMessage>>>(() => new[] { new MetricsQueueBehavior<MailMessage>(container.GetInstance<IMetricsClient>()) });
             container.RegisterSingleton<IEnumerable<IQueueBehavior<WorkItemData>>>(() => new[] { new MetricsQueueBehavior<WorkItemData>(container.GetInstance<IMetricsClient>()) });
 
-            container.RegisterSingleton<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(behaviors: container.GetAllInstances<IQueueBehavior<EventPost>>(), loggerFactory: loggerFactory));
-            container.RegisterSingleton<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(behaviors: container.GetAllInstances<IQueueBehavior<EventUserDescription>>(), loggerFactory: loggerFactory));
-            container.RegisterSingleton<IQueue<EventNotificationWorkItem>>(() => new InMemoryQueue<EventNotificationWorkItem>(behaviors: container.GetAllInstances<IQueueBehavior<EventNotificationWorkItem>>(), loggerFactory: loggerFactory));
-            container.RegisterSingleton<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(behaviors: container.GetAllInstances<IQueueBehavior<WebHookNotification>>(), loggerFactory: loggerFactory));
-            container.RegisterSingleton<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(behaviors: container.GetAllInstances<IQueueBehavior<MailMessage>>(), loggerFactory: loggerFactory));
-
             var workItemHandlers = new WorkItemHandlers();
             workItemHandlers.Register<ReindexWorkItem>(container.GetInstance<ReindexWorkItemHandler>);
             workItemHandlers.Register<RemoveOrganizationWorkItem>(container.GetInstance<RemoveOrganizationWorkItemHandler>);
@@ -101,7 +95,13 @@ namespace Exceptionless.Core {
             workItemHandlers.Register<ProjectMaintenanceWorkItem>(container.GetInstance<ProjectMaintenanceWorkItemHandler>);
             workItemHandlers.Register<UserMaintenanceWorkItem>(container.GetInstance<UserMaintenanceWorkItemHandler>);
             container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);
-            container.RegisterSingleton<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(behaviors: container.GetAllInstances<IQueueBehavior<WorkItemData>>(), workItemTimeout: TimeSpan.FromHours(1), loggerFactory: loggerFactory));
+
+            container.RegisterSingleton(() => CreateInMemoryQueue<EventPost>(container, loggerFactory: loggerFactory));
+            container.RegisterSingleton(() => CreateInMemoryQueue<EventUserDescription>(container, loggerFactory: loggerFactory));
+            container.RegisterSingleton(() => CreateInMemoryQueue<EventNotificationWorkItem>(container, loggerFactory: loggerFactory));
+            container.RegisterSingleton(() => CreateInMemoryQueue<WebHookNotification>(container, loggerFactory: loggerFactory));
+            container.RegisterSingleton(() => CreateInMemoryQueue<MailMessage>(container, loggerFactory: loggerFactory));
+            container.RegisterSingleton(() => CreateInMemoryQueue<WorkItemData>(container, TimeSpan.FromHours(1), loggerFactory));
 
             container.RegisterSingleton<IMessageBus, InMemoryMessageBus>();
             container.RegisterSingleton<IMessagePublisher>(container.GetInstance<IMessageBus>);
@@ -159,6 +159,15 @@ namespace Exceptionless.Core {
                 });
 
                 return config.CreateMapper();
+            });
+        }
+
+        private static IQueue<T> CreateInMemoryQueue<T>(Container container, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
+            return new InMemoryQueue<T>(new InMemoryQueueOptions<T> {
+                Behaviors = container.GetAllInstances<IQueueBehavior<T>>(),
+                WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
+                Serializer = container.GetInstance<ISerializer>(),
+                LoggerFactory = loggerFactory
             });
         }
     }
