@@ -103,7 +103,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton(() => CreateInMemoryQueue<MailMessage>(container, loggerFactory: loggerFactory));
             container.RegisterSingleton(() => CreateInMemoryQueue<WorkItemData>(container, TimeSpan.FromHours(1), loggerFactory));
 
-            container.RegisterSingleton<IMessageBus, InMemoryMessageBus>();
+            container.RegisterSingleton<IMessageBus>(() => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = loggerFactory }));
             container.RegisterSingleton<IMessagePublisher>(container.GetInstance<IMessageBus>);
             container.RegisterSingleton<IMessageSubscriber>(container.GetInstance<IMessageBus>);
 
