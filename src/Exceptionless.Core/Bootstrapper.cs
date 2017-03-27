@@ -96,12 +96,12 @@ namespace Exceptionless.Core {
             workItemHandlers.Register<UserMaintenanceWorkItem>(container.GetInstance<UserMaintenanceWorkItemHandler>);
             container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);
 
-            container.RegisterSingleton(() => CreateInMemoryQueue<EventPost>(container, loggerFactory: loggerFactory));
-            container.RegisterSingleton(() => CreateInMemoryQueue<EventUserDescription>(container, loggerFactory: loggerFactory));
-            container.RegisterSingleton(() => CreateInMemoryQueue<EventNotificationWorkItem>(container, loggerFactory: loggerFactory));
-            container.RegisterSingleton(() => CreateInMemoryQueue<WebHookNotification>(container, loggerFactory: loggerFactory));
-            container.RegisterSingleton(() => CreateInMemoryQueue<MailMessage>(container, loggerFactory: loggerFactory));
-            container.RegisterSingleton(() => CreateInMemoryQueue<WorkItemData>(container, TimeSpan.FromHours(1), loggerFactory));
+            container.RegisterSingleton(() => CreateQueue<EventPost>(container, loggerFactory: loggerFactory));
+            container.RegisterSingleton(() => CreateQueue<EventUserDescription>(container, loggerFactory: loggerFactory));
+            container.RegisterSingleton(() => CreateQueue<EventNotificationWorkItem>(container, loggerFactory: loggerFactory));
+            container.RegisterSingleton(() => CreateQueue<WebHookNotification>(container, loggerFactory: loggerFactory));
+            container.RegisterSingleton(() => CreateQueue<MailMessage>(container, loggerFactory: loggerFactory));
+            container.RegisterSingleton(() => CreateQueue<WorkItemData>(container, TimeSpan.FromHours(1), loggerFactory));
 
             container.RegisterSingleton<IMessageBus>(() => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = loggerFactory }));
             container.RegisterSingleton<IMessagePublisher>(container.GetInstance<IMessageBus>);
@@ -162,7 +162,7 @@ namespace Exceptionless.Core {
             });
         }
 
-        private static IQueue<T> CreateInMemoryQueue<T>(Container container, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
+        private static IQueue<T> CreateQueue<T>(Container container, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
             return new InMemoryQueue<T>(new InMemoryQueueOptions<T> {
                 Behaviors = container.GetAllInstances<IQueueBehavior<T>>(),
                 WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
