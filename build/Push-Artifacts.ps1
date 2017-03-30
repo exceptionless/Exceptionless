@@ -38,7 +38,7 @@ git rm -r * -q 2>&1 | %{ "$_" }
 Write-Host "Copying build artifacts..."
 ROBOCOPY "$sourceDir\Exceptionless.Api" "$artifactsDir" /XD "$sourceDir\Exceptionless.Api\obj" "$sourceDir\Exceptionless.Api\App_Data" /S /XF "*.nuspec" "*.settings" "*.cs" "packages.config" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" /NFL /NDL /NJH /NJS /nc /ns /np
 
-ROBOCOPY "$sourceDir\Jobs" "$artifactsDir\App_Data\functions" host.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs" "$artifactsDir" host.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying CleanupSnapshot job..."
 ROBOCOPY "$sourceDir\Jobs\CleanupSnapshot\bin\Release" "$artifactsDir\App_Data\jobs\triggered\CleanupSnapshot" /XD "$sourceDir\Jobs\CleanupSnapshot\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying CloseInactiveSession job..."
@@ -52,7 +52,7 @@ ROBOCOPY "$sourceDir\Jobs\EventNotification\bin\Release" "$artifactsDir\App_Data
 Write-Host "Copying EventPost job..."
 ROBOCOPY "$sourceDir\Jobs\EventPost\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventPost" /XD "$sourceDir\Jobs\EventPost\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\Jobs\EventPost\bin\Release" "$artifactsDir\bin" /XD "$sourceDir\Jobs\EventPost\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
-ROBOCOPY "$sourceDir\Jobs\EventPost" "$artifactsDir\App_Data\functions\EventPost" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\EventPost" "$artifactsDir\FunctionEventPost" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventSnapshot job..."
 ROBOCOPY "$sourceDir\Jobs\EventSnapshot\bin\Release" "$artifactsDir\App_Data\jobs\triggered\EventSnapshot" /XD "$sourceDir\Jobs\EventSnapshot\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventUserDescription job..."
