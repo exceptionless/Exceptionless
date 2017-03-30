@@ -1,0 +1,12 @@
+﻿{
+  "scriptFile": "EventPostsJob.dll",
+  "entryPoint": "EventPostsJob.Program.RunAsync",
+  "bindings": [
+    {
+      "name": "data",
+      "type": "queueTrigger",
+      "direction": "in",
+      "queueName": "eventpost"
+    }
+  ]
+}
