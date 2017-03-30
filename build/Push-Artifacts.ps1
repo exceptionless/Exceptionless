@@ -52,7 +52,7 @@ ROBOCOPY "$sourceDir\Jobs\EventNotification\bin\Release" "$artifactsDir\App_Data
 Write-Host "Copying EventPost job..."
 ROBOCOPY "$sourceDir\Jobs\EventPost\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventPost" /XD "$sourceDir\Jobs\EventPost\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\Jobs\EventPost\bin\Release" "$artifactsDir\bin" /XD "$sourceDir\Jobs\EventPost\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
-ROBOCOPY "$sourceDir\Jobs\EventPost" "$artifactsDir\App_Data\functions\EventPost" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\EventPost" "$artifactsDir\FunctionEventPost" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventSnapshot job..."
 ROBOCOPY "$sourceDir\Jobs\EventSnapshot\bin\Release" "$artifactsDir\App_Data\jobs\triggered\EventSnapshot" /XD "$sourceDir\Jobs\EventSnapshot\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventUserDescription job..."
