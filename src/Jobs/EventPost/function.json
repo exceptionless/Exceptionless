@@ -1,5 +1,5 @@
 ﻿{
-  "scriptFile": "..\\bin\\EventPostsJob.exe",
+  "scriptFile": "..\\..\\..\\bin\\EventPostsJob.exe",
   "entryPoint": "EventPostsJob.Program.RunAsync",
   "bindings": [
     {
