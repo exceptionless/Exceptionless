@@ -6,7 +6,8 @@
       "name": "data",
       "type": "queueTrigger",
       "direction": "in",
-      "queueName": "eventpost"
+      "queueName": "eventpost",
+      "connection": "Exceptionless_AzureStorageConnectionString"
     }
   ]
 }
