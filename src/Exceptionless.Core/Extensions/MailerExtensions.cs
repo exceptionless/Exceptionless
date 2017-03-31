@@ -31,7 +31,6 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static MimeMessage ToMailMessage(this MailMessage notification) {
-
             var message = new MimeMessage();
             var builder = new BodyBuilder();
 
@@ -51,8 +50,7 @@ namespace Exceptionless.Core.Extensions {
             return message;
         }
 
-        public static System.Net.Mail.MailMessage ToSystemNetMailMessage(this MailMessage notification)
-        {
+        public static System.Net.Mail.MailMessage ToSystemNetMailMessage(this MailMessage notification) {
             var message = new System.Net.Mail.MailMessage { Subject = notification.Subject };
             if (!String.IsNullOrEmpty(notification.To))
                 message.To.Add(notification.To);
@@ -65,7 +63,6 @@ namespace Exceptionless.Core.Extensions {
 
             if (!String.IsNullOrEmpty(notification.HtmlBody))
                 message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(notification.HtmlBody, null, "text/html"));
-
             return message;
         }
     }
