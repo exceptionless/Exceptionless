@@ -1,6 +1,6 @@
 ﻿{
-  "scriptFile": "..\\bin\\EventPostsJob.exe",
-  "entryPoint": "EventPostsJob.Program.RunAsync",
+  "scriptFile": "..\\bin\\Exceptionless.Functions.dll",
+  "entryPoint": "Exceptionless.Functions.FunctionRunner.ProcessEventPostQueueItem",
   "bindings": [
     {
       "name": "data",

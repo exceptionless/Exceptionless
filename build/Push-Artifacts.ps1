@@ -51,7 +51,7 @@ Write-Host "Copying EventNotification job..."
 ROBOCOPY "$sourceDir\Jobs\EventNotification\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventNotification" /XD "$sourceDir\Jobs\EventNotification\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventPost job..."
 ROBOCOPY "$sourceDir\Jobs\EventPost\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventPost" /XD "$sourceDir\Jobs\EventPost\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
-ROBOCOPY "$sourceDir\Jobs\EventPost\bin\Release" "$artifactsDir\bin" /XD "$sourceDir\Jobs\EventPost\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\Exceptionless.Functions\bin\Release" "$artifactsDir\bin" /XD "$sourceDir\Jobs\Functions\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\Jobs\EventPost" "$artifactsDir\FunctionEventPost" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventSnapshot job..."
 ROBOCOPY "$sourceDir\Jobs\EventSnapshot\bin\Release" "$artifactsDir\App_Data\jobs\triggered\EventSnapshot" /XD "$sourceDir\Jobs\EventSnapshot\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
