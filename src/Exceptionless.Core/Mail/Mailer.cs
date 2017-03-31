@@ -95,7 +95,7 @@ namespace Exceptionless.Core.Mail {
             }
 
             msg.To = emailAddress;
-            return QueueMessageAsync(msg.ToMailMessage(), "eventnotice");
+            return QueueMessageAsync(msg.ToSystemNetMailMessage(), "eventnotice");
         }
 
         public Task SendOrganizationNoticeAsync(string emailAddress, OrganizationNotificationModel model) {
