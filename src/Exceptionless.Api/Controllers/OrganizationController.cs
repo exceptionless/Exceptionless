@@ -393,8 +393,8 @@ namespace Exceptionless.Api.Controllers {
                     bool cardUpdated = false;
 
                     if (!String.IsNullOrEmpty(stripeToken)) {
-                        update.Card = new StripeCreditCardOptions { TokenId = stripeToken };
-                        create.Card = new StripeCreditCardOptions { TokenId = stripeToken };
+                        update.Source = stripeToken;
+                        create.Source = stripeToken;
                         cardUpdated = true;
                     }
 

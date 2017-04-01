@@ -5,7 +5,7 @@ using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.ServiceProviders;
 using SimpleInjector;
-using SimpleInjector.Extensions.ExecutionContextScoping;
+using SimpleInjector.Lifestyles;
 
 namespace Exceptionless.Insulation.Jobs {
     public class JobBootstrappedServiceProvider : BootstrappedServiceProviderBase {
@@ -18,7 +18,7 @@ namespace Exceptionless.Insulation.Jobs {
 
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
-            container.Options.DefaultScopedLifestyle = new ExecutionContextScopeLifestyle();
+            container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
 
             Settings.Current.DisableIndexConfiguration = true;
             Core.Bootstrapper.RegisterServices(container, loggerFactory, shutdownCancellationToken);
