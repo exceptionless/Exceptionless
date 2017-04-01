@@ -90,7 +90,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrganizationSnapshotJob", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StackSnapshotJob", "src\Jobs\StackSnapshot\StackSnapshotJob.csproj", "{2B4EB8F1-D73A-4F43-A25A-4194A55CC0B6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Functions", "src\Jobs\Exceptionless.Functions\Exceptionless.Functions.csproj", "{D8127DB5-7C2C-4E28-AD19-992AD230E6FD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.AzureFunctions", "src\Jobs\Exceptionless.AzureFunctions\Exceptionless.AzureFunctions.csproj", "{D8127DB5-7C2C-4E28-AD19-992AD230E6FD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
