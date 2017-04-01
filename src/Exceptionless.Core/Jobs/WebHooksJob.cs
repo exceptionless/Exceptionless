@@ -11,6 +11,7 @@ using Foundatio.Queues;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Jobs {
+    [Job(Description = "Processes queued web hook messages.", InitialDelay = "5s")]
     public class WebHooksJob : QueueJobBase<WebHookNotification> {
         private readonly IWebHookRepository _webHookRepository;
         private readonly JsonSerializerSettings _jsonSerializerSettings;

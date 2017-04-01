@@ -8,6 +8,7 @@ using Foundatio.Logging;
 using Foundatio.Queues;
 
 namespace Exceptionless.Core.Jobs {
+    [Job(Description = "Sends queued email messages.", InitialDelay = "5s")]
     public class MailMessageJob : QueueJobBase<MailMessage> {
         private readonly IMailSender _mailSender;
 
