@@ -22,7 +22,7 @@ namespace Exceptionless.Functions {
              _serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, _loggerFactory);
         }
 
-        public static Task ProcessEventPostQueueItem(String id, EventPost data, DateTimeOffset insertionTime, int dequeueCount, CancellationToken token = default(CancellationToken)) {
+        public static Task ProcessEventPostQueueItem(EventPost data, string id, DateTimeOffset insertionTime, int dequeueCount, CancellationToken token = default(CancellationToken)) {
             return ProcessQueueItem<EventPostsJob, EventPost>(id, data, insertionTime.UtcDateTime, dequeueCount, token);
         }
 
