@@ -14,6 +14,7 @@ using Foundatio.Storage;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
+    [Job(Description = "Downloads Geo IP database.", IsContinuous = false)]
     public class DownloadGeoIPDatabaseJob : JobWithLockBase {
         private readonly IFileStorage _storage;
         private readonly ILockProvider _lockProvider;
