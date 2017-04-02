@@ -54,28 +54,27 @@
     </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.2.65.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.2.65\lib\net45\Exceptionless.DateTimeExtensions.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="FluentValidation, Version=6.4.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\FluentValidation.6.4.1\lib\Net45\FluentValidation.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio, Version=5.1.1404.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.5.1.1404-pre\lib\net46\Foundatio.dll</HintPath>
+    <Reference Include="Foundatio, Version=5.1.1405.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.5.1.1405-pre\lib\net46\Foundatio.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Jobs.Commands, Version=5.1.1404.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Jobs.Commands.5.1.1404-pre\lib\net46\Foundatio.Jobs.Commands.dll</HintPath>
+    <Reference Include="Foundatio.Jobs.Commands, Version=5.1.1405.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Jobs.Commands.5.1.1405-pre\lib\net46\Foundatio.Jobs.Commands.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.293.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.293-pre\lib\net46\Foundatio.Parsers.ElasticQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.307.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.307-pre\lib\net461\Foundatio.Parsers.ElasticQueries.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.293.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.293-pre\lib\net46\Foundatio.Parsers.LuceneQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.307.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.307-pre\lib\net461\Foundatio.Parsers.LuceneQueries.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=5.0.536.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.5.0.536-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
+    <Reference Include="Foundatio.Repositories, Version=5.0.549.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.5.0.549-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.536.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.536-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.549.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.549-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
     </Reference>
     <Reference Include="McSherry.SemanticVersioning, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\McSherry.SemanticVersioning.1.2.0\lib\net45\McSherry.SemanticVersioning.dll</HintPath>
@@ -146,11 +145,8 @@
     <Reference Include="SimpleInjector, Version=4.0.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <HintPath>..\..\packages\SimpleInjector.4.0.0\lib\net45\SimpleInjector.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleInjector.Extensions.ExecutionContextScoping, Version=4.0.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.Extensions.ExecutionContextScoping.4.0.0\lib\net45\SimpleInjector.Extensions.ExecutionContextScoping.dll</HintPath>
-    </Reference>
     <Reference Include="SimpleInjector.Integration.WebApi, Version=4.0.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.Integration.WebApi.4.0.0\lib\net45\SimpleInjector.Integration.WebApi.dll</HintPath>
+      <HintPath>..\..\packages\SimpleInjector.Integration.WebApi.4.0.1\lib\net45\SimpleInjector.Integration.WebApi.dll</HintPath>
     </Reference>
     <Reference Include="Stripe.net, Version=7.7.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Stripe.net.7.7.0\lib\net45\Stripe.net.dll</HintPath>

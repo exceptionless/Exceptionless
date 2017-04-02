@@ -12,6 +12,8 @@
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -31,14 +33,44 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Foundatio, Version=5.1.1404.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.5.1.1404-pre\lib\net46\Foundatio.dll</HintPath>
+    <Reference Include="Elasticsearch.Net, Version=5.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Elasticsearch.Net.5.3.0\lib\net46\Elasticsearch.Net.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.AzureStorage, Version=5.1.1404.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.AzureStorage.5.1.1404-pre\lib\net46\Foundatio.AzureStorage.dll</HintPath>
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.2.65.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Exceptionless.DateTimeExtensions.3.2.65\lib\net45\Exceptionless.DateTimeExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="FluentValidation, Version=6.4.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\FluentValidation.6.4.1\lib\Net45\FluentValidation.dll</HintPath>
+    </Reference>
+    <Reference Include="Foundatio, Version=5.1.1405.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.5.1.1405-pre\lib\net46\Foundatio.dll</HintPath>
+    </Reference>
+    <Reference Include="Foundatio.AzureStorage, Version=5.1.1405.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.AzureStorage.5.1.1405-pre\lib\net46\Foundatio.AzureStorage.dll</HintPath>
+    </Reference>
+    <Reference Include="Foundatio.Jobs.Commands, Version=5.1.1405.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.Jobs.Commands.5.1.1405-pre\lib\net46\Foundatio.Jobs.Commands.dll</HintPath>
+    </Reference>
+    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.307.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.307-pre\lib\net461\Foundatio.Parsers.ElasticQueries.dll</HintPath>
+    </Reference>
+    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.307.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.307-pre\lib\net461\Foundatio.Parsers.LuceneQueries.dll</HintPath>
+    </Reference>
+    <Reference Include="Foundatio.Repositories, Version=5.0.549.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.Repositories.5.0.549-pre\lib\net46\Foundatio.Repositories.dll</HintPath>
+    </Reference>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.549.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.549-pre\lib\net46\Foundatio.Repositories.Elasticsearch.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Azure.KeyVault.Core, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\Microsoft.Azure.KeyVault.Core.2.0.4\lib\net45\Microsoft.Azure.KeyVault.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Azure.WebJobs, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Microsoft.Azure.WebJobs.Core.2.0.0\lib\net45\Microsoft.Azure.WebJobs.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Azure.WebJobs.Host, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Microsoft.Azure.WebJobs.2.0.0\lib\net45\Microsoft.Azure.WebJobs.Host.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Data.Edm, Version=5.8.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\Microsoft.Data.Edm.5.8.2\lib\net40\Microsoft.Data.Edm.dll</HintPath>
@@ -49,8 +81,14 @@
     <Reference Include="Microsoft.Data.Services.Client, Version=5.8.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\Microsoft.Data.Services.Client.5.8.2\lib\net40\Microsoft.Data.Services.Client.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Extensions.CommandLineUtils, Version=1.1.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Microsoft.Extensions.CommandLineUtils.1.1.0\lib\net451\Microsoft.Extensions.CommandLineUtils.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.WindowsAzure.Storage, Version=8.1.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\WindowsAzure.Storage.8.1.1\lib\net45\Microsoft.WindowsAzure.Storage.dll</HintPath>
+    </Reference>
+    <Reference Include="Nest, Version=5.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\NEST.5.3.0\lib\net46\Nest.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -66,6 +104,9 @@
     </Reference>
     <Reference Include="Nito.Disposables, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\Nito.Disposables.1.1.0\lib\portable45-net45+win8+wp8+wpa81\Nito.Disposables.dll</HintPath>
+    </Reference>
+    <Reference Include="Pegasus.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=28c69b6c6d100f4a, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Pegasus.4.0.0\lib\net40\Pegasus.Common.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -87,7 +128,7 @@
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="FunctionRunner.cs" />
+    <Compile Include="JobRunner.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Exceptionless.Core\Exceptionless.Core.csproj">
@@ -99,4 +140,11 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\..\..\packages\Pegasus.4.0.0\build\Pegasus.targets" Condition="Exists('..\..\..\packages\Pegasus.4.0.0\build\Pegasus.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\..\packages\Pegasus.4.0.0\build\Pegasus.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\Pegasus.4.0.0\build\Pegasus.targets'))" />
+  </Target>
 </Project>
