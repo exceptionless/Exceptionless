@@ -3,6 +3,7 @@
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunRetentionLimitsJob",
   "bindings": [
     {
+      "name": "RetentionLimitsJob",
       "type": "timerTrigger",
       "direction": "in",
       "schedule": "0 0 */12 * * *"

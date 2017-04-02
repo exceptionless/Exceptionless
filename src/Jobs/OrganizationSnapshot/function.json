@@ -3,6 +3,7 @@
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunOrganizationSnapshotJob",
   "bindings": [
     {
+      "name": "OrganizationSnapshotJob",
       "type": "timerTrigger",
       "direction": "in",
       "schedule": "0 30 * * * *"
