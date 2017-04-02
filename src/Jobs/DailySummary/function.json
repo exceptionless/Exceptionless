@@ -3,7 +3,7 @@
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunDailySummaryJob",
   "bindings": [
     {
-      "name": "DailySummaryJob",
+      "name": "",
       "type": "timerTrigger",
       "direction": "in",
       "schedule": "0 0 */1 * * *"

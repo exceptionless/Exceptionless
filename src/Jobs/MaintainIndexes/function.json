@@ -3,7 +3,7 @@
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunMaintainIndexesJob",
   "bindings": [
     {
-      "name": "MaintainIndexesJob",
+      "name": "",
       "type": "timerTrigger",
       "direction": "in",
       "schedule": "0 10 */2 * * *"
