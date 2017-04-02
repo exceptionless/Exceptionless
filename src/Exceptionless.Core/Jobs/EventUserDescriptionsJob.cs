@@ -13,6 +13,7 @@ using Foundatio.Queues;
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
+    [Job(Description = "Processes queued event user descriptions.", InitialDelay = "3s")]
     public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription> {
         private readonly IEventRepository _eventRepository;
 

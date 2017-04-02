@@ -78,7 +78,7 @@ namespace Exceptionless.Insulation {
             }
 
             if (Settings.Current.EnableAzureStorage)
-                container.RegisterSingleton<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events"));
+                container.RegisterSingleton<IFileStorage>(() => new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events"));
             else
                 logger.Warn("Azure Storage is NOT enabled.");
 

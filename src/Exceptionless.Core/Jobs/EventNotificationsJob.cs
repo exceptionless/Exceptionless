@@ -20,6 +20,7 @@ using Foundatio.Utility;
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
+    [Job(Description = "Queues event notification emails.", InitialDelay = "5s")]
     public class EventNotificationsJob : QueueJobBase<EventNotificationWorkItem> {
         private readonly IMailer _mailer;
         private readonly IOrganizationRepository _organizationRepository;

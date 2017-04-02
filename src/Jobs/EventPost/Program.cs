@@ -9,7 +9,6 @@ namespace EventPostsJob {
     public class Program {
         public static int Main() {
             AppDomain.CurrentDomain.SetDataDirectory();
-
             var loggerFactory = Settings.Current.GetLoggerFactory();
             var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
             var job = serviceProvider.GetService<Exceptionless.Core.Jobs.EventPostsJob>();
