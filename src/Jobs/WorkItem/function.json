@@ -3,7 +3,7 @@
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.ProcessWorkItemDataQueueItem",
   "bindings": [
     {
-      "name": "data",
+      "name": "message",
       "type": "queueTrigger",
       "direction": "in",
       "queueName": "workitemdata",
