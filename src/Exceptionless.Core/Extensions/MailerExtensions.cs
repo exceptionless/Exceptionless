@@ -45,5 +45,24 @@ namespace Exceptionless.Core.Extensions {
 
             return message;
         }
+
+        public static MimeKit.MimeMessage ToMimeMessage(this MailMessage notification) {
+            var message = new MimeKit.MimeMessage { Subject = notification.Subject };
+            if (!string.IsNullOrEmpty(notification.To)) {
+                message.To.AddRange(MimeKit.InternetAddressList.Parse(notification.To));
+            }
+            if (!string.IsNullOrEmpty(notification.From)) {
+                message.From.AddRange(MimeKit.InternetAddressList.Parse(notification.From));
+            }
+            var builder = new MimeKit.BodyBuilder();
+            if (!string.IsNullOrEmpty(notification.TextBody)) {
+                builder.TextBody = notification.TextBody;
+            }
+            if (!string.IsNullOrEmpty(notification.HtmlBody)) {
+                builder.HtmlBody = notification.HtmlBody;
+            }
+            message.Body = builder.ToMessageBody();
+            return message;
+        }
     }
 }
