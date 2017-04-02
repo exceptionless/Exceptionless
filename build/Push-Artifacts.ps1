@@ -38,7 +38,6 @@ git rm -r * -q 2>&1 | %{ "$_" }
 Write-Host "Copying build artifacts..."
 ROBOCOPY "$sourceDir\Exceptionless.Api" "$artifactsDir" /XD "$sourceDir\Exceptionless.Api\obj" "$sourceDir\Exceptionless.Api\App_Data" /S /XF "*.nuspec" "*.settings" "*.cs" "packages.config" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" /NFL /NDL /NJH /NJS /nc /ns /np
 
-ROBOCOPY "$sourceDir\Jobs" "$artifactsDir" host.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying CleanupSnapshot job..."
 ROBOCOPY "$sourceDir\Jobs\CleanupSnapshot\bin\Release" "$artifactsDir\App_Data\jobs\triggered\CleanupSnapshot" /XD "$sourceDir\Jobs\CleanupSnapshot\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying CloseInactiveSession job..."
@@ -51,8 +50,6 @@ Write-Host "Copying EventNotification job..."
 ROBOCOPY "$sourceDir\Jobs\EventNotification\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventNotification" /XD "$sourceDir\Jobs\EventNotification\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventPost job..."
 ROBOCOPY "$sourceDir\Jobs\EventPost\bin\Release" "$artifactsDir\App_Data\jobs\continuous\EventPost" /XD "$sourceDir\Jobs\EventPost\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
-ROBOCOPY "$sourceDir\Jobs\Exceptionless.Functions\bin\Release" "$artifactsDir\bin" /XD "$sourceDir\Jobs\Functions\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
-ROBOCOPY "$sourceDir\Jobs\EventPost" "$artifactsDir\FunctionEventPost" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventSnapshot job..."
 ROBOCOPY "$sourceDir\Jobs\EventSnapshot\bin\Release" "$artifactsDir\App_Data\jobs\triggered\EventSnapshot" /XD "$sourceDir\Jobs\EventSnapshot\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying EventUserDescription job..."
@@ -71,6 +68,24 @@ Write-Host "Copying WebHook job..."
 ROBOCOPY "$sourceDir\Jobs\WebHook\bin\Release" "$artifactsDir\App_Data\jobs\continuous\WebHook" /XD "$sourceDir\Jobs\WebHook\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying WorkItem job..."
 ROBOCOPY "$sourceDir\Jobs\WorkItem\bin\Release" "$artifactsDir\App_Data\jobs\continuous\WorkItem" /XD "$sourceDir\Jobs\WorkItem\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
+
+Write-Host "Copying Functions"
+ROBOCOPY "$sourceDir\Jobs" "$artifactsDir" host.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\Exceptionless.AzureFunctions\bin\Release" "$artifactsDir\bin" /XD "$sourceDir\Jobs\Exceptionless.AzureFunctions\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\CleanupSnapshot" "$artifactsDir\CleanupSnapshot" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\CloseInactiveSession" "$artifactsDir\CloseInactiveSession" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\DailySummary" "$artifactsDir\DailySummary" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\DownloadGeoIPDatabase" "$artifactsDir\DownloadGeoIPDatabase" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\EventNotification" "$artifactsDir\EventNotification" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\EventPost" "$artifactsDir\EventPost" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\EventSnapshot" "$artifactsDir\EventSnapshot" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\EventUserDescription" "$artifactsDir\EventUserDescription" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\MailMessage" "$artifactsDir\MailMessage" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\MaintainIndexes" "$artifactsDir\MaintainIndexes" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\RetentionLimit" "$artifactsDir\RetentionLimit" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\StackSnapshot" "$artifactsDir\StackSnapshot" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\WebHook" "$artifactsDir\WebHook" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\WorkItem" "$artifactsDir\WorkItem" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 
 git add * 2>&1 | %{ "$_" }
 $res = git diff --cached --numstat | wc -l

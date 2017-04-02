@@ -1,12 +1,12 @@
 ﻿{
   "scriptFile": "..\\bin\\Exceptionless.AzureFunctions.dll",
-  "entryPoint": "Exceptionless.AzureFunctions.JobRunner.ProcessEventPostQueueItem",
+  "entryPoint": "Exceptionless.AzureFunctions.JobRunner.ProcessMailMessageQueueItem",
   "bindings": [
     {
       "name": "data",
       "type": "queueTrigger",
       "direction": "in",
-      "queueName": "eventpost",
+      "queueName": "mailmessage",
       "connection": "Exceptionless_AzureStorageConnectionString"
     }
   ]
