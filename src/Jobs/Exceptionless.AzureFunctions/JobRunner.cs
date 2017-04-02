@@ -9,6 +9,7 @@ using Exceptionless.Core.Queues.Models;
 using Foundatio.Extensions;
 using Foundatio.Jobs;
 using Foundatio.Logging;
+using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Foundatio.ServiceProviders;
@@ -20,13 +21,19 @@ namespace Exceptionless.AzureFunctions {
     public class JobRunner {
         private static readonly ILoggerFactory _loggerFactory;
         private static readonly IServiceProvider _serviceProvider;
+        private static readonly string _metricsPrefix;
+        private static readonly IMetricsClient _metricsClient;
         private static readonly ISerializer _serializer;
 
         static JobRunner() {
             AppDomain.CurrentDomain.SetDataDirectory();
             _loggerFactory = Settings.Current.GetLoggerFactory();
              _serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, _loggerFactory);
+            _metricsClient = _serviceProvider.GetService<IMetricsClient>();
             _serializer = _serviceProvider.GetService<ISerializer>();
+
+            if (!String.IsNullOrEmpty(Settings.Current.AppScope) && !Settings.Current.AppScope.EndsWith("."))
+                _metricsPrefix += ".";
         }
 
         public static Task RunCleanupSnapshotJob(TimerInfo timer, TraceWriter log, CancellationToken token = default(CancellationToken)) {
@@ -100,6 +107,7 @@ namespace Exceptionless.AzureFunctions {
                 EnqueuedTimeUtc = insertionTime.UtcDateTime
             };
 
+            await IncrementDequeueCountersAsync(entry).AnyContext();
             var result = await job.ProcessAsync(entry, token).AnyContext();
             LogResult(result, log, jobName);
         }
@@ -126,6 +134,39 @@ namespace Exceptionless.AzureFunctions {
             } else {
                 log.Error($"Null job run result for \"{jobName}\".");
             }
+        }
+
+        private static async Task IncrementDequeueCountersAsync<T>(IQueueEntry<T> queueEntry) where T : class {
+            var metadata = queueEntry as IQueueEntryMetadata;
+            string subMetricName = GetSubMetricName(queueEntry.Value);
+
+            if (!String.IsNullOrEmpty(subMetricName))
+                await _metricsClient.CounterAsync(GetFullMetricName<T>(subMetricName, "dequeued")).AnyContext();
+            await _metricsClient.CounterAsync(GetFullMetricName<T>("dequeued")).AnyContext();
+
+            if (metadata == null || metadata.EnqueuedTimeUtc == DateTime.MinValue || metadata.DequeuedTimeUtc == DateTime.MinValue)
+                return;
+
+            var start = metadata.EnqueuedTimeUtc;
+            var end = metadata.DequeuedTimeUtc;
+            var time = (int)(end - start).TotalMilliseconds;
+
+            if (!String.IsNullOrEmpty(subMetricName))
+                await _metricsClient.TimerAsync(GetFullMetricName<T>(subMetricName, "queuetime"), time).AnyContext();
+            await _metricsClient.TimerAsync(GetFullMetricName<T>("queuetime"), time).AnyContext();
+        }
+
+        private static string GetSubMetricName<T>(T data) where T : class {
+            var haveStatName = data as IHaveSubMetricName;
+            return haveStatName?.GetSubMetricName();
+        }
+
+        private static string GetFullMetricName<T>(string name) where T : class {
+            return String.Concat(_metricsPrefix, typeof(T).Name.ToLowerInvariant(), ".", name);
+        }
+
+        private static string GetFullMetricName<T>(string customMetricName, string name) where T : class {
+            return String.IsNullOrEmpty(customMetricName) ? GetFullMetricName<T>(name) : String.Concat(_metricsPrefix, typeof(T).Name.ToLowerInvariant(), ".", customMetricName.ToLower(), ".", name);
         }
     }
 }
