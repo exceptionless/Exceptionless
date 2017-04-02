@@ -1,6 +1,7 @@
 ﻿{
   "scriptFile": "..\\bin\\Exceptionless.AzureFunctions.dll",
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunOrganizationSnapshotJob",
+  "disabled": false,
   "bindings": [
     {
       "name": "timer",

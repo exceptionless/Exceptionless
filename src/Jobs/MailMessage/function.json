@@ -1,6 +1,7 @@
 ﻿{
   "scriptFile": "..\\bin\\Exceptionless.AzureFunctions.dll",
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.ProcessMailMessageQueueItem",
+  "disabled": false,
   "bindings": [
     {
       "name": "message",

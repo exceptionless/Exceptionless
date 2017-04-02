@@ -1,6 +1,7 @@
 ﻿{
   "scriptFile": "..\\bin\\Exceptionless.AzureFunctions.dll",
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.ProcessEventNotificationWorkItemQueueItem",
+  "disabled": false,
   "bindings": [
     {
       "name": "message",
