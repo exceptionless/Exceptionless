@@ -3,10 +3,11 @@
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunDownloadGeoIPDatabaseJob",
   "bindings": [
     {
+      "name": "DownloadGeoIPDatabaseJob",
       "type": "timerTrigger",
       "direction": "in",
       "schedule": "0 0 1 * * *",
-      "runOnStartup":  true 
+      "runOnStartup": true
     }
   ]
 }
