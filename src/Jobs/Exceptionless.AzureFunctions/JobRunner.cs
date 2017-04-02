@@ -12,6 +12,7 @@ using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Foundatio.ServiceProviders;
+using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.WindowsAzure.Storage.Queue;
 
@@ -28,40 +29,40 @@ namespace Exceptionless.AzureFunctions {
             _serializer = _serviceProvider.GetService<ISerializer>();
         }
 
-        public static Task RunCleanupSnapshotJob(TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return RunJob<CleanupSnapshotJob>(log, token);
+        public static Task RunCleanupSnapshotJob(TimerInfo timer, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return RunJob<CleanupSnapshotJob>(timer, log, token);
         }
 
-        public static Task RunCloseInactiveSessionsJob(TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return RunJob<CloseInactiveSessionsJob>(log, token);
+        public static Task RunCloseInactiveSessionsJob(TimerInfo timer, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return RunJob<CloseInactiveSessionsJob>(timer, log, token);
         }
 
-        public static Task RunDailySummaryJob(TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return RunJob<DailySummaryJob>(log, token);
+        public static Task RunDailySummaryJob(TimerInfo timer, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return RunJob<DailySummaryJob>(timer, log, token);
         }
 
-        public static Task RunDownloadGeoIPDatabaseJob(TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return RunJob<DownloadGeoIPDatabaseJob>(log, token);
+        public static Task RunDownloadGeoIPDatabaseJob(TimerInfo timer, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return RunJob<DownloadGeoIPDatabaseJob>(timer, log, token);
         }
 
-        public static Task RunEventSnapshotJob(TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return RunJob<EventSnapshotJob>(log, token);
+        public static Task RunEventSnapshotJob(TimerInfo timer, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return RunJob<EventSnapshotJob>(timer, log, token);
         }
 
-        public static Task RunMaintainIndexesJob(TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return RunJob<MaintainIndexesJob>(log, token);
+        public static Task RunMaintainIndexesJob(TimerInfo timer, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return RunJob<MaintainIndexesJob>(timer, log, token);
         }
 
-        public static Task RunOrganizationSnapshotJob(TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return RunJob<OrganizationSnapshotJob>(log, token);
+        public static Task RunOrganizationSnapshotJob(TimerInfo timer, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return RunJob<OrganizationSnapshotJob>(timer, log, token);
         }
 
-        public static Task RunRetentionLimitsJob(TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return RunJob<RetentionLimitsJob>(log, token);
+        public static Task RunRetentionLimitsJob(TimerInfo timer, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return RunJob<RetentionLimitsJob>(timer, log, token);
         }
 
-        public static Task RunStackSnapshotJob(TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return RunJob<StackSnapshotJob>(log, token);
+        public static Task RunStackSnapshotJob(TimerInfo timer, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return RunJob<StackSnapshotJob>(timer, log, token);
         }
 
         public static Task ProcessEventNotificationWorkItemQueueItem(CloudQueueMessage message, TraceWriter log, CancellationToken token = default(CancellationToken)) {
@@ -98,7 +99,7 @@ namespace Exceptionless.AzureFunctions {
             LogResult(result, log, jobName);
         }
 
-        private static async Task RunJob<TJob>(TraceWriter log, CancellationToken token) where TJob : class, IJob {
+        private static async Task RunJob<TJob>(TimerInfo timer, TraceWriter log, CancellationToken token) where TJob : class, IJob {
             var job = _serviceProvider.GetService<TJob>();
             string jobName = job.GetType().Name;
 

@@ -3,7 +3,7 @@
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunCloseInactiveSessionsJob",
   "bindings": [
     {
-      "name": "",
+      "name": "timer",
       "type": "timerTrigger",
       "direction": "in",
       "schedule": "30 * * * * *"

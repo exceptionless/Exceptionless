@@ -3,7 +3,7 @@
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.ProcessEventNotificationWorkItemQueueItem",
   "bindings": [
     {
-      "name": "data",
+      "name": "message",
       "type": "queueTrigger",
       "direction": "in",
       "queueName": "eventnotificationworkitem",
