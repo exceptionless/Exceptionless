@@ -65,37 +65,42 @@ namespace Exceptionless.AzureFunctions {
             return RunJob<StackSnapshotJob>(timer, log, token);
         }
 
-        public static Task ProcessEventNotificationWorkItemQueueItem(CloudQueueMessage message, TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return ProcessQueueItem<EventNotificationsJob, EventNotificationWorkItem>(message, log, token);
+        public static Task ProcessEventNotificationWorkItemQueueItem(string id, byte[] message, DateTimeOffset insertionTime, string popReceipt, int dequeueCount, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return ProcessQueueItem<EventNotificationsJob, EventNotificationWorkItem>(id, message, insertionTime, popReceipt, dequeueCount, log, token);
         }
 
-        public static Task ProcessEventPostQueueItem(CloudQueueMessage message, TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return ProcessQueueItem<EventPostsJob, EventPost>(message, log, token);
+        public static Task ProcessEventPostQueueItem(string id, byte[] message, DateTimeOffset insertionTime, string popReceipt, int dequeueCount, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return ProcessQueueItem<EventPostsJob, EventPost>(id, message, insertionTime, popReceipt, dequeueCount, log, token);
         }
 
-        public static Task ProcessEventUserDescriptionQueueItem(CloudQueueMessage message, TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return ProcessQueueItem<EventUserDescriptionsJob, EventUserDescription>(message, log, token);
+        public static Task ProcessEventUserDescriptionQueueItem(string id, byte[] message, DateTimeOffset insertionTime, string popReceipt, int dequeueCount, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return ProcessQueueItem<EventUserDescriptionsJob, EventUserDescription>(id, message, insertionTime, popReceipt, dequeueCount, log, token);
         }
 
-        public static Task ProcessMailMessageQueueItem(CloudQueueMessage message, TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return ProcessQueueItem<MailMessageJob, MailMessage>(message, log, token);
+        public static Task ProcessMailMessageQueueItem(string id, byte[] message, DateTimeOffset insertionTime, string popReceipt, int dequeueCount, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return ProcessQueueItem<MailMessageJob, MailMessage>(id, message, insertionTime, popReceipt, dequeueCount, log, token);
         }
 
-        public static Task ProcessWebHookNotificationQueueItem(CloudQueueMessage message, TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return ProcessQueueItem<WebHooksJob, WebHookNotification>(message, log, token);
+        public static Task ProcessWebHookNotificationQueueItem(string id, byte[] message, DateTimeOffset insertionTime, string popReceipt, int dequeueCount, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return ProcessQueueItem<WebHooksJob, WebHookNotification>(id, message, insertionTime, popReceipt, dequeueCount, log, token);
         }
 
-        public static Task ProcessWorkItemDataQueueItem(CloudQueueMessage message, TraceWriter log, CancellationToken token = default(CancellationToken)) {
-            return ProcessQueueItem<WorkItemJob, WorkItemData>(message, log, token);
+        public static Task ProcessWorkItemDataQueueItem(string id, byte[] message, DateTimeOffset insertionTime, string popReceipt, int dequeueCount, TraceWriter log, CancellationToken token = default(CancellationToken)) {
+            return ProcessQueueItem<WorkItemJob, WorkItemData>(id, message, insertionTime, popReceipt, dequeueCount, log, token);
         }
 
-        private static async Task ProcessQueueItem<TJob, TWorkItem>(CloudQueueMessage message, TraceWriter log, CancellationToken token) where TJob : class, IQueueJob<TWorkItem> where TWorkItem : class {
+        private static async Task ProcessQueueItem<TJob, TWorkItem>(string id, byte[] message, DateTimeOffset insertionTime, string popReceipt, int dequeueCount, TraceWriter log, CancellationToken token) where TJob : class, IQueueJob<TWorkItem> where TWorkItem : class {
             var job = _serviceProvider.GetService<TJob>();
             string jobName = typeof(TWorkItem).Name;
 
-            log.Info($"Processing {jobName} queue item: {message.Id} Attempts: {message.DequeueCount} Enqueued: {message.InsertionTime.GetValueOrDefault():O}");
-            var data = await _serializer.DeserializeAsync<TWorkItem>(message.AsBytes).AnyContext();
-            var result = await job.ProcessAsync(new AzureStorageQueueEntry<TWorkItem>(message, data, job.Queue), token).AnyContext();
+            log.Info($"Processing {jobName} queue item: {id} Attempts: {dequeueCount} Enqueued: {insertionTime:O}");
+            var data = await _serializer.DeserializeAsync<TWorkItem>(message).AnyContext();
+            var entry = new AzureStorageQueueEntry<TWorkItem>(new CloudQueueMessage(id, popReceipt), data, job.Queue) {
+                Attempts = dequeueCount,
+                EnqueuedTimeUtc = insertionTime.UtcDateTime
+            };
+
+            var result = await job.ProcessAsync(entry, token).AnyContext();
             LogResult(result, log, jobName);
         }
 
