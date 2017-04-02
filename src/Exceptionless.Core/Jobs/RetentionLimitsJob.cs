@@ -14,6 +14,7 @@ using Foundatio.Repositories;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
+    [Job(Description = "Deletes old events that are outside of a plans retention period.", InitialDelay = "15m", Interval = "1h")]
     public class RetentionLimitsJob : JobWithLockBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IEventRepository _eventRepository;

@@ -24,6 +24,7 @@ using Newtonsoft.Json;
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
+    [Job(Description = "Processes queued events.", InitialDelay = "2s")]
     public class EventPostsJob : QueueJobBase<EventPost> {
         private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;

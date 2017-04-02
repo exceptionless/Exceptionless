@@ -1,0 +1,14 @@
+﻿{
+  "scriptFile": "..\\bin\\Exceptionless.AzureFunctions.dll",
+  "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunDownloadGeoIPDatabaseJob",
+  "disabled": false,
+  "bindings": [
+    {
+      "name": "timer",
+      "type": "timerTrigger",
+      "direction": "in",
+      "schedule": "0 0 1 * * *",
+      "runOnStartup": true
+    }
+  ]
+}

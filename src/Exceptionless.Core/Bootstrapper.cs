@@ -64,7 +64,7 @@ namespace Exceptionless.Core {
 
             container.RegisterSingleton<IContractResolver>(() => resolver);
             container.RegisterSingleton<JsonSerializerSettings>(settings);
-            container.RegisterSingleton<JsonSerializer>(JsonSerializer.Create(settings));
+            container.RegisterSingleton<JsonSerializer>(() => JsonSerializer.Create(settings));
             container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
 
             container.RegisterSingleton<IMetricsClient>(() => new InMemoryMetricsClient(loggerFactory: loggerFactory));
@@ -108,9 +108,9 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IMessageSubscriber>(container.GetInstance<IMessageBus>);
 
             if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
-                container.RegisterSingleton<IFileStorage>(new FolderFileStorage(Settings.Current.StorageFolder));
+                container.RegisterSingleton<IFileStorage>(() => new FolderFileStorage(Settings.Current.StorageFolder));
             else
-                container.RegisterSingleton<IFileStorage>(new InMemoryFileStorage());
+                container.RegisterSingleton<IFileStorage>(() => new InMemoryFileStorage());
 
             container.RegisterSingleton<IStackRepository, StackRepository>();
             container.RegisterSingleton<IEventRepository, EventRepository>();

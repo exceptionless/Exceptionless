@@ -15,6 +15,7 @@ using Foundatio.Repositories;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
+    [Job(Description = "Closes inactive user sessions.", InitialDelay = "30s", Interval = "30s")]
     public class CloseInactiveSessionsJob : JobWithLockBase {
         private readonly IEventRepository _eventRepository;
         private readonly ICacheClient _cache;
