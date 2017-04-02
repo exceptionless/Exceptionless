@@ -1,0 +1,11 @@
+﻿{
+  "scriptFile": "..\\bin\\Exceptionless.AzureFunctions.dll",
+  "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunCleanupSnapshotJob",
+  "bindings": [
+    {
+      "type": "timerTrigger",
+      "direction": "in",
+      "schedule": "0 5 */1 * * *"
+    }
+  ]
+}
