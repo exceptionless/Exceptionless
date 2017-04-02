@@ -3,7 +3,7 @@
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunStackSnapshotJob",
   "bindings": [
     {
-      "name": "StackSnapshotJob",
+      "name": "",
       "type": "timerTrigger",
       "direction": "in",
       "schedule": "0 40 * * * *"

@@ -3,7 +3,7 @@
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunCleanupSnapshotJob",
   "bindings": [
     {
-      "name": "CleanupSnapshotJob",
+      "name": "",
       "type": "timerTrigger",
       "direction": "in",
       "schedule": "0 5 */1 * * *"
