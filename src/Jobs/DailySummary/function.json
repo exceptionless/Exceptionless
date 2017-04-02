@@ -1,6 +1,7 @@
 ﻿{
   "scriptFile": "..\\bin\\Exceptionless.AzureFunctions.dll",
   "entryPoint": "Exceptionless.AzureFunctions.JobRunner.RunDailySummaryJob",
+  "disabled": false,
   "bindings": [
     {
       "name": "timer",
