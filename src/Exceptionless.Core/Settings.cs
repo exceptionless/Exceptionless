@@ -30,6 +30,8 @@ namespace Exceptionless.Core {
 
         public bool RunJobsInProcess { get; private set; }
 
+        public int JobsIterationLimit { get; set; }
+
         public int BotThrottleLimit { get; private set; }
 
         public int ApiThrottleLimit { get; private set; }
@@ -147,6 +149,7 @@ namespace Exceptionless.Core {
             TestEmailAddress = GetString(nameof(TestEmailAddress));
             AllowedOutboundAddresses = GetStringList(nameof(AllowedOutboundAddresses), "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
             RunJobsInProcess = GetBool(nameof(RunJobsInProcess), true);
+            JobsIterationLimit = GetInt(nameof(JobsIterationLimit), -1);
             BotThrottleLimit = GetInt(nameof(BotThrottleLimit), 25);
             ApiThrottleLimit = GetInt(nameof(ApiThrottleLimit), Int32.MaxValue);
             EnableArchive = GetBool(nameof(EnableArchive), true);

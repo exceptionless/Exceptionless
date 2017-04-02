@@ -13,7 +13,7 @@ namespace EventNotificationsJob {
             var loggerFactory = Settings.Current.GetLoggerFactory();
             var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
             var job = serviceProvider.GetService<Exceptionless.Core.Jobs.EventNotificationsJob>();
-            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.Zero).RunInConsole();
+            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.Zero, iterationLimit: Settings.Current.JobsIterationLimit).RunInConsole();
         }
     }
 }
