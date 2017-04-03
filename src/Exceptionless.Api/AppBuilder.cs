@@ -34,6 +34,7 @@ using Newtonsoft.Json.Serialization;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
+using SimpleInjector.Lifestyles;
 using Swashbuckle.Application;
 
 namespace Exceptionless.Api {
@@ -197,7 +198,7 @@ namespace Exceptionless.Api {
         public static Container CreateContainer(ILoggerFactory loggerFactory, ILogger logger, CancellationToken shutdownCancellationToken, bool includeInsulation = true) {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
-            container.Options.DefaultScopedLifestyle = new WebApiRequestLifestyle();
+            container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
 
             Core.Bootstrapper.RegisterServices(container, loggerFactory, shutdownCancellationToken);
             Bootstrapper.RegisterServices(container, loggerFactory, shutdownCancellationToken);

@@ -20,10 +20,11 @@ namespace RazorSharpEmail {
             if (String.IsNullOrEmpty(rootDirectory))
                 rootDirectory = "Templates";
 
-            string resolvedRootDirectory = Path.IsPathRooted(rootDirectory) ? rootDirectory : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, rootDirectory);
+            string baseDirectory = GetBaseDirectory();
+            string resolvedRootDirectory = Path.IsPathRooted(rootDirectory) ? rootDirectory : Path.Combine(baseDirectory, rootDirectory);
             if (!Path.IsPathRooted(rootDirectory)) {
                 string assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string binDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"bin", rootDirectory);
+                string binDirectory = Path.Combine(baseDirectory, "bin", rootDirectory);
 
                 if (!Directory.Exists(resolvedRootDirectory) && assemblyDirectory != null && Directory.Exists(Path.Combine(assemblyDirectory, rootDirectory)))
                     resolvedRootDirectory = Path.Combine(assemblyDirectory, rootDirectory);
@@ -33,6 +34,14 @@ namespace RazorSharpEmail {
             }
 
             _directoryFolder = resolvedRootDirectory;
+        }
+
+        private string GetBaseDirectory() {
+            var path = Environment.GetEnvironmentVariable("WEBROOT_PATH");
+            if (!String.IsNullOrEmpty(path) && Directory.Exists(path))
+                return path;
+
+            return AppDomain.CurrentDomain.BaseDirectory;
         }
 
         public string Resolve(string name) {

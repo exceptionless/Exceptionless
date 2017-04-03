@@ -87,10 +87,13 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(path))
                 path = @"q\*";
 
-            foreach (var file in await _fileStorage.GetFileListAsync(path))
+            int enqueued = 0;
+            foreach (var file in await _fileStorage.GetFileListAsync(path)) {
                 await _eventPostQueue.EnqueueAsync(new EventPost { FilePath = file.Path, ShouldArchive = archive });
+                enqueued++;
+            }
 
-            return Ok();
+            return Ok(new { Enqueued = enqueued });
         }
 
         [HttpGet]

@@ -22,6 +22,7 @@ using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Jobs {
+    [Job(Description = "Sends daily summary emails.", InitialDelay = "1m", Interval = "1h")]
     public class DailySummaryJob : JobWithLockBase {
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;

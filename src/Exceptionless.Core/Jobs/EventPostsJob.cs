@@ -24,6 +24,7 @@ using Newtonsoft.Json;
 #pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
+    [Job(Description = "Processes queued events.", InitialDelay = "2s")]
     public class EventPostsJob : QueueJobBase<EventPost> {
         private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;
@@ -47,19 +48,21 @@ namespace Exceptionless.Core.Jobs {
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventPost> context) {
             var queueEntry = context.QueueEntry;
-            var fileInfo = await _storage.GetFileInfoAsync(queueEntry.Value.FilePath).AnyContext();
+            FileSpec fileInfo = null;
+            await _metricsClient.TimeAsync(async () => fileInfo = await _storage.GetFileInfoAsync(queueEntry.Value.FilePath).AnyContext(), MetricNames.PostsFileInfoTime).AnyContext();
             if (fileInfo == null) {
-                await queueEntry.AbandonAsync().AnyContext();
+                await _metricsClient.TimeAsync(() => queueEntry.AbandonAsync(), MetricNames.PostsAbandonTime).AnyContext();
                 return JobResult.FailedWithMessage($"Unable to retrieve post data info '{queueEntry.Value.FilePath}'.");
             }
 
             await _metricsClient.GaugeAsync(MetricNames.PostsMessageSize, fileInfo.Size).AnyContext();
             if (fileInfo.Size > GetMaximumEventPostFileSize()) {
-                await queueEntry.CompleteAsync().AnyContext();
+                await _metricsClient.TimeAsync(() => queueEntry.CompleteAsync(), MetricNames.PostsCompleteTime).AnyContext();
                 return JobResult.FailedWithMessage($"Unable to process post data '{queueEntry.Value.FilePath}' ({fileInfo.Size} bytes): Maximum event post size limit ({Settings.Current.MaximumEventPostSize} bytes) reached.");
             }
 
-            var ep = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, _logger, context.CancellationToken).AnyContext();
+            EventPostInfo ep = null;
+            await _metricsClient.TimeAsync(async () => ep = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, _logger, context.CancellationToken).AnyContext(), MetricNames.PostsMarkFileActiveTime).AnyContext();
             if (ep == null) {
                 await AbandonEntryAsync(queueEntry).AnyContext();
                 return JobResult.FailedWithMessage($"Unable to retrieve post data '{queueEntry.Value.FilePath}'.");
@@ -122,19 +125,21 @@ namespace Exceptionless.Core.Jobs {
 
             bool isSingleEvent = events.Count == 1;
             if (!isSingleEvent) {
-                // Don't process all the events if it will put the account over its limits.
-                int eventsToProcess = await _organizationRepository.GetRemainingEventLimitAsync(project.OrganizationId).AnyContext();
+                await _metricsClient.TimeAsync(async () => {
+                    // Don't process all the events if it will put the account over its limits.
+                    int eventsToProcess = await _organizationRepository.GetRemainingEventLimitAsync(project.OrganizationId).AnyContext();
 
-                // Add 1 because we already counted 1 against their limit when we received the event post.
-                if (eventsToProcess < Int32.MaxValue)
-                    eventsToProcess += 1;
+                    // Add 1 because we already counted 1 against their limit when we received the event post.
+                    if (eventsToProcess < Int32.MaxValue)
+                        eventsToProcess += 1;
 
-                // Discard any events over there limit.
-                events = events.Take(eventsToProcess).ToList();
+                    // Discard any events over there limit.
+                    events = events.Take(eventsToProcess).ToList();
 
-                // Increment the count if greater than 1, since we already incremented it by 1 in the OverageHandler.
-                if (events.Count > 1)
-                    await _organizationRepository.IncrementUsageAsync(project.OrganizationId, false, events.Count - 1, applyHourlyLimit: false).AnyContext();
+                    // Increment the count if greater than 1, since we already incremented it by 1 in the OverageHandler.
+                    if (events.Count > 1)
+                        await _organizationRepository.IncrementUsageAsync(project.OrganizationId, false, events.Count - 1, applyHourlyLimit: false).AnyContext();
+                }, MetricNames.PostsUpdateEventLimitTime).AnyContext();
             }
 
             int errorCount = 0;
@@ -172,7 +177,7 @@ namespace Exceptionless.Core.Jobs {
             }
 
             if (eventsToRetry.Count > 0)
-                await RetryEvents(context, eventsToRetry, ep, queueEntry).AnyContext();
+                await _metricsClient.TimeAsync(() => RetryEvents(context, eventsToRetry, ep, queueEntry), MetricNames.PostsRetryTime).AnyContext();
 
             if (isSingleEvent && errorCount > 0)
                 await AbandonEntryAsync(queueEntry).AnyContext();
@@ -262,14 +267,18 @@ namespace Exceptionless.Core.Jobs {
             }
         }
 
-        private async Task AbandonEntryAsync(IQueueEntry<EventPost> queueEntry) {
-            await queueEntry.AbandonAsync().AnyContext();
-            await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, _logger).AnyContext();
+        private Task AbandonEntryAsync(IQueueEntry<EventPost> queueEntry) {
+            return _metricsClient.TimeAsync(async () => {
+                await queueEntry.AbandonAsync().AnyContext();
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, _logger).AnyContext();
+            }, MetricNames.PostsAbandonTime);
         }
 
-        private async Task CompleteEntryAsync(IQueueEntry<EventPost> queueEntry, EventPostInfo eventPostInfo, DateTime created) {
-            await queueEntry.CompleteAsync().AnyContext();
-            await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, _logger, queueEntry.Value.ShouldArchive).AnyContext();
+        private Task CompleteEntryAsync(IQueueEntry<EventPost> queueEntry, EventPostInfo eventPostInfo, DateTime created) {
+            return _metricsClient.TimeAsync(async () => {
+                await queueEntry.CompleteAsync().AnyContext();
+                await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, _logger, queueEntry.Value.ShouldArchive).AnyContext();
+            }, MetricNames.PostsCompleteTime);
         }
 
         protected override void LogProcessingQueueEntry(IQueueEntry<EventPost> queueEntry) {
