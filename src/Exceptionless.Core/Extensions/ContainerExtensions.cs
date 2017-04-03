@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static void AddStartupAction<T>(this Container container) where T : IStartupAction {
-            container.AppendToCollection(typeof(IStartupAction), Lifestyle.Transient.CreateRegistration(typeof(IStartupAction), typeof(T), container));
+            container.AppendToCollection(typeof(IStartupAction), Lifestyle.Transient.CreateRegistration(typeof(T), container));
         }
 
         public static void AddStartupAction(this Container container, Action action) {

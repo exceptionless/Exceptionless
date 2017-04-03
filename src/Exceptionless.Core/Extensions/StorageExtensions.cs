@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Queues.Models;
@@ -9,6 +8,8 @@ using Foundatio.Storage;
 
 namespace Exceptionless.Core.Extensions {
     public static class StorageExtensions {
+        private static readonly byte[] _emptyStringAsBytes = new byte[0];
+
         public static async Task<EventPostInfo> GetEventPostAndSetActiveAsync(this IFileStorage storage, string path, ILogger logger, CancellationToken cancellationToken = default(CancellationToken)) {
             if (String.IsNullOrEmpty(path))
                 return null;
@@ -22,7 +23,7 @@ namespace Exceptionless.Core.Extensions {
                 if (cancellationToken.IsCancellationRequested)
                     return null;
 
-                if (!await storage.ExistsAsync(path + ".x").AnyContext() && !await storage.SaveFileAsync(path + ".x", new MemoryStream(Encoding.UTF8.GetBytes(String.Empty))).AnyContext())
+                if (!await storage.ExistsAsync(path + ".x").AnyContext() && !await storage.SaveFileAsync(path + ".x", new MemoryStream(_emptyStringAsBytes)).AnyContext())
                     return null;
             } catch (Exception ex) {
                 logger.Error(ex, "Error retrieving event post data \"{0}\".", path);

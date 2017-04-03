@@ -57,6 +57,8 @@ namespace Exceptionless.Core.Extensions {
 
             if (!String.IsNullOrEmpty(notification.From))
                 message.From = new MailAddress(notification.From);
+            else
+                message.From = new MailAddress(Settings.Current.SmtpFrom);
 
             if (!String.IsNullOrEmpty(notification.TextBody))
                 message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(notification.TextBody, null, "text/plain"));

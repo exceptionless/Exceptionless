@@ -1,0 +1,14 @@
+﻿{
+  "scriptFile": "..\\bin\\Exceptionless.AzureFunctions.dll",
+  "entryPoint": "Exceptionless.AzureFunctions.JobRunner.ProcessEventUserDescriptionQueueItem",
+  "disabled": false,
+  "bindings": [
+    {
+      "name": "message",
+      "type": "queueTrigger",
+      "direction": "in",
+      "queueName": "eventuserdescription",
+      "connection": "Exceptionless_AzureStorageConnectionString"
+    }
+  ]
+}
