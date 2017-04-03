@@ -100,6 +100,7 @@ namespace Exceptionless.AzureFunctions {
             string jobName = typeof(TWorkItem).Name;
             log.Info($"Processing {jobName} queue item: {id} Attempts: {dequeueCount} Enqueued: {insertionTime:O}");
 
+            var job = _serviceProvider.GetService<TJob>();
             var data = await _serializer.DeserializeAsync<TWorkItem>(message).AnyContext();
             var entry = new AzureStorageQueueEntry<TWorkItem>(new CloudQueueMessage(id, popReceipt), data, job.Queue) {
                 Attempts = dequeueCount,
@@ -110,7 +111,6 @@ namespace Exceptionless.AzureFunctions {
             await IncrementDequeueCountersAsync(entry).AnyContext();
 
             log.Info($"Running job {jobName}: {id}");
-            var job = _serviceProvider.GetService<TJob>();
             var result = await job.ProcessAsync(entry, token).AnyContext();
             LogResult(result, log, jobName);
         }
