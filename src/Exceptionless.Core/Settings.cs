@@ -115,6 +115,8 @@ namespace Exceptionless.Core {
 
         public int BulkBatchSize { get; private set; }
 
+        internal string SmtpFrom { get; private set; }
+
         internal string SmtpHost { get; private set; }
 
         internal int SmtpPort { get; private set; }
@@ -175,9 +177,10 @@ namespace Exceptionless.Core {
             StorageFolder = GetString(nameof(StorageFolder));
             BulkBatchSize = GetInt(nameof(BulkBatchSize), 1000);
 
-            SmtpHost = GetString(nameof(SmtpHost));
-            SmtpPort = GetInt(nameof(SmtpPort), 587);
-            SmtpEnableSsl = GetBool(nameof(SmtpEnableSsl), true);
+            SmtpFrom = GetString(nameof(SmtpFrom), "Exceptionless <noreply@exceptionless.io>");
+            SmtpHost = GetString(nameof(SmtpHost), "localhost");
+            SmtpPort = GetInt(nameof(SmtpPort), String.Equals(SmtpHost, "localhost") ? 25 : 587);
+            SmtpEnableSsl = GetBool(nameof(SmtpEnableSsl), !String.Equals(SmtpHost, "localhost"));
             SmtpUser = GetString(nameof(SmtpUser));
             SmtpPassword = GetString(nameof(SmtpPassword));
 
