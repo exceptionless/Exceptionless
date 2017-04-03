@@ -74,7 +74,7 @@ namespace Exceptionless.Core.Pipeline {
                 foreach (string key in project.Data.Keys)
                     contexts.ForEach(c => c.SetProperty(key, project.Data[key]));
 
-                await _metricsClient.TimeAsync(async () => await base.RunAsync(contexts).AnyContext(), MetricNames.EventsProcessingTime).AnyContext();
+                await _metricsClient.TimeAsync(() => base.RunAsync(contexts), MetricNames.EventsProcessingTime).AnyContext();
 
                 int cancelled = contexts.Count(c => c.IsCancelled);
                 if (cancelled > 0)
