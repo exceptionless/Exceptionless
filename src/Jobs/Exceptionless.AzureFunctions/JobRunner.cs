@@ -97,17 +97,20 @@ namespace Exceptionless.AzureFunctions {
         }
 
         private static async Task ProcessQueueItem<TJob, TWorkItem>(string id, byte[] message, DateTimeOffset insertionTime, string popReceipt, int dequeueCount, TraceWriter log, CancellationToken token) where TJob : class, IQueueJob<TWorkItem> where TWorkItem : class {
-            var job = _serviceProvider.GetService<TJob>();
             string jobName = typeof(TWorkItem).Name;
-
             log.Info($"Processing {jobName} queue item: {id} Attempts: {dequeueCount} Enqueued: {insertionTime:O}");
+
+            var job = _serviceProvider.GetService<TJob>();
             var data = await _serializer.DeserializeAsync<TWorkItem>(message).AnyContext();
             var entry = new AzureStorageQueueEntry<TWorkItem>(new CloudQueueMessage(id, popReceipt), data, job.Queue) {
                 Attempts = dequeueCount,
                 EnqueuedTimeUtc = insertionTime.UtcDateTime
             };
 
+            log.Info($"Incrementing {jobName} dequeue counter: {id}");
             await IncrementDequeueCountersAsync(entry).AnyContext();
+
+            log.Info($"Running job {jobName}: {id}");
             var result = await job.ProcessAsync(entry, token).AnyContext();
             LogResult(result, log, jobName);
         }
