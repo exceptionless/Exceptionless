@@ -82,6 +82,7 @@ ROBOCOPY "$sourceDir\Jobs\EventSnapshot" "$artifactsDir\EventSnapshot" function.
 ROBOCOPY "$sourceDir\Jobs\EventUserDescription" "$artifactsDir\EventUserDescription" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\Jobs\MailMessage" "$artifactsDir\MailMessage" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\Jobs\MaintainIndexes" "$artifactsDir\MaintainIndexes" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\OrganizationSnapshot" "$artifactsDir\OrganizationSnapshot" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\Jobs\RetentionLimit" "$artifactsDir\RetentionLimit" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\Jobs\StackSnapshot" "$artifactsDir\StackSnapshot" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\Jobs\WebHook" "$artifactsDir\WebHook" function.json /S /NFL /NDL /NJH /NJS /nc /ns /np
