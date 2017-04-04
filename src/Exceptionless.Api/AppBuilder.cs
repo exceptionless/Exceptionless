@@ -75,7 +75,8 @@ namespace Exceptionless.Api {
             config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
             config.Services.Add(typeof(IExceptionLogger), new FoundatioExceptionLogger(loggerFactory.CreateLogger<FoundatioExceptionLogger>()));
-            config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
+            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl))
+                config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
 
             config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
             config.MessageHandlers.Add(container.GetInstance<EncodingDelegatingHandler>());
