@@ -13,7 +13,7 @@ namespace WorkItemJob {
             var loggerFactory = Settings.Current.GetLoggerFactory();
             var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
             var job = serviceProvider.GetService<Foundatio.Jobs.WorkItemJob>();
-            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(2), interval: TimeSpan.Zero, instanceCount: 2, iterationLimit: Settings.Current.JobsIterationLimit).RunInConsole();
+            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(2), interval: TimeSpan.Zero, iterationLimit: Settings.Current.JobsIterationLimit).RunInConsole();
         }
     }
 }

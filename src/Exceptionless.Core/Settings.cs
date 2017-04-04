@@ -16,6 +16,16 @@ namespace Exceptionless.Core {
         /// </summary>
         public string InternalProjectId { get; private set; }
 
+        /// <summary>
+        /// Configures the exceptionless client api key, which logs all internal errors and log messages.
+        /// </summary>
+        public string ExceptionlessApiKey { get; private set; }
+
+        /// <summary>
+        /// Configures the exceptionless client server url, which logs all internal errors and log messages.
+        /// </summary>
+        public string ExceptionlessServerUrl { get; private set; }
+
         public WebsiteMode WebsiteMode { get; private set; }
 
         public string AppScope { get; private set; }
@@ -146,6 +156,8 @@ namespace Exceptionless.Core {
             }
 
             InternalProjectId = GetString(nameof(InternalProjectId), "54b56e480ef9605a88a13153");
+            ExceptionlessApiKey = GetString(nameof(ExceptionlessApiKey));
+            ExceptionlessServerUrl = GetString(nameof(ExceptionlessServerUrl));
             WebsiteMode = GetEnum<WebsiteMode>(nameof(WebsiteMode), WebsiteMode.Dev);
             AppScope = GetString(nameof(AppScope), String.Empty);
             TestEmailAddress = GetString(nameof(TestEmailAddress));
