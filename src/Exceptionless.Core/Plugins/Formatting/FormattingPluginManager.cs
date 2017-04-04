@@ -4,10 +4,11 @@ using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Foundatio.Logging;
+using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin> {
-        public FormattingPluginManager(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) : base(dependencyResolver, loggerFactory) { }
+        public FormattingPluginManager(IDependencyResolver dependencyResolver = null, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(dependencyResolver, metricsClient, loggerFactory) { }
 
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
@@ -66,7 +67,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public MailMessage GetEventNotificationMailMessage(EventNotification model) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    MailMessage result = plugin.GetEventNotificationMailMessage(model);
+                    var result = plugin.GetEventNotificationMailMessage(model);
                     if (result != null)
                         return result;
                 } catch (Exception ex) {

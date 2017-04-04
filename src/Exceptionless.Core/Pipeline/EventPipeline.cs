@@ -19,12 +19,10 @@ namespace Exceptionless.Core.Pipeline {
     public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly IMetricsClient _metricsClient;
 
-        public EventPipeline(IDependencyResolver dependencyResolver, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(dependencyResolver, loggerFactory) {
+        public EventPipeline(IDependencyResolver dependencyResolver, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(dependencyResolver, metricsClient, loggerFactory) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
-            _metricsClient = metricsClient;
         }
 
         public Task<EventContext> RunAsync(PersistentEvent ev, EventPostInfo epi = null) {

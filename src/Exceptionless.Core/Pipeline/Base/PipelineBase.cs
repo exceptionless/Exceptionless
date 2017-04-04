@@ -7,6 +7,7 @@ using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Helpers;
 using Foundatio.Logging;
+using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Pipeline {
     /// <summary>
@@ -24,11 +25,15 @@ namespace Exceptionless.Core.Pipeline {
         protected static readonly ConcurrentDictionary<Type, IList<Type>> _actionTypeCache = new ConcurrentDictionary<Type, IList<Type>>();
         private readonly IDependencyResolver _dependencyResolver;
         private readonly IList<IPipelineAction<TContext>> _actions;
+        protected readonly string _metricPrefix;
+        protected readonly IMetricsClient _metricsClient;
         protected readonly ILogger _logger;
 
-        public PipelineBase(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) {
+        public PipelineBase(IDependencyResolver dependencyResolver = null, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
             _actions = GetActionTypes().Select(t => _dependencyResolver.GetService(t) as IPipelineAction<TContext>).ToList();
+            _metricPrefix = String.Concat(GetType().Name.ToLower(), ".");
+            _metricsClient = metricsClient ?? new InMemoryMetricsClient(loggerFactory: loggerFactory);
             _logger = loggerFactory.CreateLogger(GetType());
         }
 
@@ -48,14 +53,16 @@ namespace Exceptionless.Core.Pipeline {
         public virtual async Task<ICollection<TContext>> RunAsync(ICollection<TContext> contexts) {
             PipelineRunning(contexts);
 
+            string metricPrefix = String.Concat(_metricPrefix, nameof(RunAsync).ToLower(), ".");
             foreach (var action in _actions) {
-                await action.ProcessBatchAsync(contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList()).AnyContext();
-                if (contexts.All(c => c.IsCancelled || c.HasError))
+                string metricName = String.Concat(metricPrefix, action.GetType().Name.ToLower());
+                var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
+                await _metricsClient.TimeAsync(() => action.ProcessBatchAsync(contextsToProcess), metricName).AnyContext();
+                if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                     break;
             }
 
             contexts.ForEach(c => c.IsProcessed = c.IsCancelled == false && !c.HasError);
-
             PipelineCompleted(contexts);
 
             return contexts;

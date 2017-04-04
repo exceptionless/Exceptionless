@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using ApprovalTests.Reporters;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Plugins.EventParser;
@@ -22,21 +23,21 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Theory]
         [MemberData("Errors")]
-        public void ParseErrors(string errorFilePath) {
-            var json = File.ReadAllText(errorFilePath);
+        public async Task ParseErrorsAsync(string errorFilePath) {
+            string json = File.ReadAllText(errorFilePath);
             var ctx = new EventUpgraderContext(json);
 
-            _upgrader.Upgrade(ctx);
+            await _upgrader.UpgradeAsync(ctx);
             ApprovalsUtility.VerifyFile(Path.ChangeExtension(errorFilePath, ".expected.json"), ctx.Documents.First.ToString());
 
-            var events = _parser.ParseEvents(ctx.Documents.ToString(), 2, "exceptionless/2.0.0.0");
+            var events = await _parser.ParseEventsAsync(ctx.Documents.ToString(), 2, "exceptionless/2.0.0.0");
             Assert.Equal(1, events.Count);
         }
 
         public static IEnumerable<object[]> Errors {
             get {
                 var result = new List<object[]>();
-                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
+                foreach (string file in Directory.GetFiles(@"..\..\ErrorData\", "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
                     result.Add(new object[] { Path.GetFullPath(file) });
 
                 return result.ToArray();
