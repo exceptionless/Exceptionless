@@ -71,6 +71,7 @@ Write-Host "Copying WebHook job..."
 ROBOCOPY "$sourceDir\Jobs\WebHook\bin\Release" "$artifactsDir\App_Data\jobs\continuous\WebHook" /XD "$sourceDir\Jobs\WebHook\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying WorkItem job..."
 ROBOCOPY "$sourceDir\Jobs\WorkItem\bin\Release" "$artifactsDir\App_Data\jobs\continuous\WorkItem" /XD "$sourceDir\Jobs\WorkItem\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\WorkItem\bin\Release" "$artifactsDir\App_Data\jobs\continuous\WorkItem2" /XD "$sourceDir\Jobs\WorkItem\bin\Release\bin" /S /NFL /NDL /NJH /NJS /nc /ns /np
 
 git add * 2>&1 | %{ "$_" }
 $res = git diff --cached --numstat | wc -l
