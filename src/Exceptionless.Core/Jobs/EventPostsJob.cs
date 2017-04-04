@@ -257,7 +257,7 @@ namespace Exceptionless.Core.Jobs {
                     _logger.Error()
                         .Exception(ex)
                         .Critical()
-                        .Message("Error while requeing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message)
+                        .Message("Error while requeuing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message)
                         .Property("Event", new { ev.Date, ev.StackId, ev.Type, ev.Source, ev.Message, ev.Value, ev.Geo, ev.ReferenceId, ev.Tags })
                         .Project(ep.ProjectId)
                         .Write();
@@ -268,10 +268,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private Task AbandonEntryAsync(IQueueEntry<EventPost> queueEntry) {
-            return _metricsClient.TimeAsync(async () => {
-                await queueEntry.AbandonAsync().AnyContext();
-                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, _logger).AnyContext();
-            }, MetricNames.PostsAbandonTime);
+            return _metricsClient.TimeAsync(queueEntry.AbandonAsync, MetricNames.PostsAbandonTime);
         }
 
         private Task CompleteEntryAsync(IQueueEntry<EventPost> queueEntry, EventPostInfo eventPostInfo, DateTime created) {

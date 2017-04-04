@@ -8,8 +8,6 @@ using Foundatio.Storage;
 
 namespace Exceptionless.Core.Extensions {
     public static class StorageExtensions {
-        private static readonly byte[] _emptyStringAsBytes = new byte[0];
-
         public static async Task<EventPostInfo> GetEventPostAndSetActiveAsync(this IFileStorage storage, string path, ILogger logger, CancellationToken cancellationToken = default(CancellationToken)) {
             if (String.IsNullOrEmpty(path))
                 return null;
@@ -17,14 +15,6 @@ namespace Exceptionless.Core.Extensions {
             EventPostInfo eventPostInfo;
             try {
                 eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(path, cancellationToken).AnyContext();
-                if (eventPostInfo == null)
-                    return null;
-
-                if (cancellationToken.IsCancellationRequested)
-                    return null;
-
-                if (!await storage.ExistsAsync(path + ".x").AnyContext() && !await storage.SaveFileAsync(path + ".x", new MemoryStream(_emptyStringAsBytes)).AnyContext())
-                    return null;
             } catch (Exception ex) {
                 logger.Error(ex, "Error retrieving event post data \"{0}\".", path);
                 return null;
@@ -33,44 +23,24 @@ namespace Exceptionless.Core.Extensions {
             return eventPostInfo;
         }
 
-        public static async Task<bool> SetNotActiveAsync(this IFileStorage storage, string path, ILogger logger) {
+        public static Task<bool> CompleteEventPostAsync(this IFileStorage storage, string path, string projectId, DateTime created, ILogger logger, bool shouldArchive = true) {
             if (String.IsNullOrEmpty(path))
-                return false;
-
-            try {
-                return await storage.DeleteFileAsync(path + ".x").AnyContext();
-            } catch (Exception ex) {
-                logger.Error(ex, "Error deleting work marker \"{0}\".", path + ".x");
-            }
-
-            return false;
-        }
-
-        public static async Task<bool> CompleteEventPostAsync(this IFileStorage storage, string path, string projectId, DateTime created, ILogger logger, bool shouldArchive = true) {
-            if (String.IsNullOrEmpty(path))
-                return false;
-
-            await storage.SetNotActiveAsync(path, logger).AnyContext();
+                return Task.FromResult(false);
 
             // don't move files that are already in the archive
             if (path.StartsWith("archive"))
-                return true;
+                return Task.FromResult(true);
 
             string archivePath = $"archive\\{created:yy\\\\MM\\\\dd\\\\HH}\\{projectId}\\{Path.GetFileName(path)}";
             try {
-                if (shouldArchive && !await storage.ExistsAsync(archivePath).AnyContext()) {
-                    if (!await storage.RenameFileAsync(path, archivePath).AnyContext())
-                        return false;
-                } else {
-                    if (!await storage.DeleteFileAsync(path).AnyContext())
-                        return false;
-                }
+                if (shouldArchive)
+                    return storage.RenameFileAsync(path, archivePath);
+
+                return storage.DeleteFileAsync(path);
             } catch (Exception ex) {
                 logger.Error(ex, "Error archiving event post data \"{0}\".", path);
-                return false;
+                return Task.FromResult(false);
             }
-
-            return true;
         }
     }
 }
