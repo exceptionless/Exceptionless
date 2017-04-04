@@ -59,7 +59,7 @@ namespace RazorSharpEmail {
         }
 
         public TemplatedEmail Generate<TModel>(TModel model, string templateName = null) {
-            var language = GetCurrentLanguage();
+            string language = GetCurrentLanguage();
 
             var templatedEmail = new TemplatedEmail();
             if (String.IsNullOrEmpty(templateName))

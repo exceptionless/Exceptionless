@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -14,9 +15,9 @@ namespace Exceptionless.Core.Plugins.EventParser {
             _settings = settings;
         }
 
-        public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
+        public Task<List<PersistentEvent>> ParseEventsAsync(string input, int apiVersion, string userAgent) {
             if (apiVersion < 2)
-                return null;
+                return Task.FromResult<List<PersistentEvent>>(null);
 
             var events = new List<PersistentEvent>();
             switch (input.GetJsonType()) {
@@ -33,7 +34,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
                 }
             }
 
-            return events.Count > 0 ? events : null;
+            return Task.FromResult(events.Count > 0 ? events : null);
         }
     }
 }

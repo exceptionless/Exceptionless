@@ -739,7 +739,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         public async Task ProcessEventsAsync(string errorFilePath) {
             var pipeline = GetService<EventPipeline>();
             var parserPluginManager = GetService<EventParserPluginManager>();
-            var events = parserPluginManager.ParseEvents(File.ReadAllText(errorFilePath), 2, "exceptionless/2.0.0.0");
+            var events = await parserPluginManager.ParseEventsAsync(File.ReadAllText(errorFilePath), 2, "exceptionless/2.0.0.0");
             Assert.NotNull(events);
             Assert.True(events.Count > 0);
 
@@ -765,7 +765,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var sw = new Stopwatch();
             foreach (string file in Directory.GetFiles(@"..\..\Pipeline\Data\", "*.json", SearchOption.AllDirectories)) {
-                var events = parserPluginManager.ParseEvents(File.ReadAllText(file), 2, "exceptionless/2.0.0.0");
+                var events = await parserPluginManager.ParseEventsAsync(File.ReadAllText(file), 2, "exceptionless/2.0.0.0");
                 Assert.NotNull(events);
                 Assert.True(events.Count > 0);
 
@@ -815,7 +815,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                     encoding = Encoding.GetEncoding(eventPostInfo.CharSet);
 
                 string input = encoding.GetString(data);
-                var events = parserPluginManager.ParseEvents(input, eventPostInfo.ApiVersion, eventPostInfo.UserAgent);
+                var events = await parserPluginManager.ParseEventsAsync(input, eventPostInfo.ApiVersion, eventPostInfo.UserAgent);
 
                 foreach (var ev in events) {
                     ev.Date = new DateTimeOffset(new DateTime(2020, 1, 1));
