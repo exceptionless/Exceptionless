@@ -1,22 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Dependency;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Logging;
+using Foundatio.Metrics;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin> {
-        public EventParserPluginManager(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) : base(dependencyResolver, loggerFactory){}
+        public EventParserPluginManager(IDependencyResolver dependencyResolver = null, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(dependencyResolver, metricsClient, loggerFactory){}
 
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
         /// </summary>
-        public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
+        public async Task<List<PersistentEvent>> ParseEventsAsync(string input, int apiVersion, string userAgent) {
+            string metricPrefix = String.Concat(_metricPrefix, nameof(ParseEventsAsync).ToLower(), ".");
             foreach (var plugin in Plugins.Values.ToList()) {
+                string metricName = String.Concat(metricPrefix, plugin.GetType().Name.ToLower());
+
                 try {
-                    var events = plugin.ParseEvents(input, apiVersion, userAgent);
+                    List<PersistentEvent> events = null;
+                    await _metricsClient.TimeAsync(async () => events = await plugin.ParseEventsAsync(input, apiVersion, userAgent).AnyContext(), metricName).AnyContext();
                     if (events == null)
                         continue;
 

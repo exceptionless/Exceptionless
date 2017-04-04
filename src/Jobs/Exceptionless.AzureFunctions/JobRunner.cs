@@ -152,7 +152,7 @@ namespace Exceptionless.AzureFunctions {
 
             var start = metadata.EnqueuedTimeUtc;
             var end = metadata.DequeuedTimeUtc;
-            var time = (int)(end - start).TotalMilliseconds;
+            int time = (int)(end - start).TotalMilliseconds;
 
             if (!String.IsNullOrEmpty(subMetricName))
                 await _metricsClient.TimerAsync(GetFullMetricName<T>(subMetricName, "queuetime"), time).AnyContext();

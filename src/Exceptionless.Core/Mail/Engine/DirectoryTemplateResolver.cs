@@ -37,7 +37,7 @@ namespace RazorSharpEmail {
         }
 
         private string GetBaseDirectory() {
-            var path = Environment.GetEnvironmentVariable("WEBROOT_PATH");
+            string path = Environment.GetEnvironmentVariable("WEBROOT_PATH");
             if (!String.IsNullOrEmpty(path) && Directory.Exists(path))
                 return path;
 
