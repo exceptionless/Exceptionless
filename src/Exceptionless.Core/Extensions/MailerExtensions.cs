@@ -34,11 +34,13 @@ namespace Exceptionless.Core.Extensions {
             var message = new MimeMessage();
             var builder = new BodyBuilder();
 
-            if (!String.IsNullOrEmpty(notification.From))
-                message.From.Add(new MailboxAddress(notification.From));
-
             if (!String.IsNullOrEmpty(notification.To))
                 message.To.Add(new MailboxAddress(notification.To));
+
+            if (!String.IsNullOrEmpty(notification.From))
+                message.From.Add(new MailboxAddress(notification.From));
+            else
+                message.From.Add(new MailboxAddress(Settings.Current.SmtpFrom));
 
             if (!String.IsNullOrEmpty(notification.TextBody))
                 builder.TextBody = notification.TextBody;
