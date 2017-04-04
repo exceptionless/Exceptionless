@@ -13,9 +13,10 @@ using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Serializer {
     public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData, new() {
+        private static readonly Type _type = typeof(T);
+        private static readonly IDictionary<string, IMemberAccessor> _propertyAccessors = new Dictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
         private readonly IDictionary<string, Type> _dataTypeRegistry = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
         private readonly ILogger _logger;
-        private static IDictionary<string, IMemberAccessor> _propertyAccessors = new Dictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
         private readonly char[] _filteredChars = { '.', '-', '_' };
 
         public DataObjectConverter(ILogger logger, IEnumerable<KeyValuePair<string, Type>> knownDataTypes = null) {
@@ -27,7 +28,7 @@ namespace Exceptionless.Serializer {
             if (_propertyAccessors.Count != 0)
                 return;
 
-            foreach (var prop in typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.Public).Where(p => p.CanWrite))
+            foreach (var prop in _type.GetProperties(BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.Public).Where(p => p.CanWrite))
                 _propertyAccessors.Add(prop.Name, LateBinder.GetPropertyAccessor(prop));
         }
 
@@ -154,7 +155,7 @@ namespace Exceptionless.Serializer {
         public override bool CanWrite => false;
 
         public override bool CanConvert(Type objectType) {
-            return objectType == typeof(T);
+            return objectType == _type;
         }
     }
 }
