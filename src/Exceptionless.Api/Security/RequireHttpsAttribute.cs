@@ -14,7 +14,7 @@ namespace Exceptionless.Api.Security {
         protected virtual void HandleNonHttpsRequest(HttpActionContext context) {
             string url = $"https://{context.Request.RequestUri.Host}{context.Request.RequestUri.PathAndQuery}";
 
-            HttpResponseMessage response = context.ControllerContext.Request.CreateResponse(HttpStatusCode.Redirect);
+            var response = context.ControllerContext.Request.CreateResponse(HttpStatusCode.Redirect);
             response.Headers.Location = new Uri(url);
 
             context.Response = response;

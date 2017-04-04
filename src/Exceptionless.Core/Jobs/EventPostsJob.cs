@@ -205,7 +205,7 @@ namespace Exceptionless.Core.Jobs {
 
                 await _metricsClient.TimeAsync(async () => {
                     string input = encoding.GetString(uncompressedData);
-                    events = _eventParserPluginManager.ParseEvents(input, ep.ApiVersion, ep.UserAgent) ?? new List<PersistentEvent>(0);
+                    events = await _eventParserPluginManager.ParseEventsAsync(input, ep.ApiVersion, ep.UserAgent).AnyContext() ?? new List<PersistentEvent>(0);
                     foreach (var ev in events) {
                         ev.CreatedUtc = createdUtc;
 

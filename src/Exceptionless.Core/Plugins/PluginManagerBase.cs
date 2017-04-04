@@ -5,15 +5,20 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Helpers;
 using Foundatio.Logging;
+using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Plugins {
     public abstract class PluginManagerBase<TPlugin> {
-        protected readonly ILogger _logger;
         protected readonly IDependencyResolver _dependencyResolver;
+        protected readonly string _metricPrefix;
+        protected readonly IMetricsClient _metricsClient;
+        protected readonly ILogger _logger;
 
-        public PluginManagerBase(IDependencyResolver dependencyResolver = null, ILoggerFactory loggerFactory = null) {
+        public PluginManagerBase(IDependencyResolver dependencyResolver = null, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
             _logger = loggerFactory.CreateLogger(GetType());
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
+            _metricPrefix = String.Concat(GetType().Name.ToLower(), ".");
+            _metricsClient = metricsClient ?? new InMemoryMetricsClient(loggerFactory: loggerFactory);
             Plugins = new SortedList<int, TPlugin>();
             LoadDefaultPlugins();
         }

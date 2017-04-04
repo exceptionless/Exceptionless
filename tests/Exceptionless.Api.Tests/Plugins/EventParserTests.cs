@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using ApprovalTests.Reporters;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Extensions;
@@ -36,8 +37,8 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Theory]
         [MemberData("EventData")]
-        public void ParseEvents(string input, int expectedEvents, string[] expectedMessage, string expectedType) {
-            var events = _parser.ParseEvents(input, 2, "exceptionless/2.0.0.0");
+        public async Task ParseEventsAsync(string input, int expectedEvents, string[] expectedMessage, string expectedType) {
+            var events = await _parser.ParseEventsAsync(input, 2, "exceptionless/2.0.0.0");
             Assert.Equal(expectedEvents, events.Count);
             for (int index = 0; index < events.Count; index++) {
                 var ev = events[index];
@@ -49,10 +50,10 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Theory]
         [MemberData("Events")]
-        public void VerifyEventParserSerialization(string eventsFilePath) {
-            var json = File.ReadAllText(eventsFilePath);
+        public async Task VerifyEventParserSerialization(string eventsFilePath) {
+            string json = File.ReadAllText(eventsFilePath);
 
-            var events = _parser.ParseEvents(json, 2, "exceptionless/2.0.0.0");
+            var events = await _parser.ParseEventsAsync(json, 2, "exceptionless/2.0.0.0");
             Assert.Equal(1, events.Count);
 
             ApprovalsUtility.VerifyFile(eventsFilePath, events.First().ToJson(Formatting.Indented, GetService<JsonSerializerSettings>()));
@@ -61,7 +62,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         [Theory]
         [MemberData("Events")]
         public void CanDeserializeEvents(string eventsFilePath) {
-            var json = File.ReadAllText(eventsFilePath);
+            string json = File.ReadAllText(eventsFilePath);
 
             var ev = json.FromJson<PersistentEvent>(GetService<JsonSerializerSettings>());
             Assert.NotNull(ev);
@@ -70,7 +71,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public static IEnumerable<object[]> Events {
             get {
                 var result = new List<object[]>();
-                foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories))
+                foreach (string file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories))
                     if (!file.EndsWith("summary.json"))
                         result.Add(new object[] { Path.GetFullPath(file) });
 

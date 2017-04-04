@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Extensions {
             if (message.AlternateViews.Count == 0)
                 throw new ArgumentException("MailMessage must contain an alternative view.", nameof(message));
 
-            foreach (AlternateView view in message.AlternateViews) {
+            foreach (var view in message.AlternateViews) {
                 if (view.ContentType.MediaType == "text/html")
                     using (var reader = new StreamReader(view.ContentStream))
                         notification.HtmlBody = reader.ReadToEnd();
