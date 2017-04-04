@@ -89,7 +89,7 @@ namespace Exceptionless.Core.Repositories {
         protected virtual async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<User> documents, ICommandOptions options = null) {
             var organizations = documents.SelectMany(d => d.OrganizationIds).Distinct().Where(id => !String.IsNullOrEmpty(id));
             foreach (string organizationId in organizations)
-                await Cache.RemoveByPrefixAsync($"paged:Organization:{organizationId}:*").AnyContext();
+                await Cache.RemoveByPrefixAsync($"paged:Organization:{organizationId}:").AnyContext();
         }
     }
 }
