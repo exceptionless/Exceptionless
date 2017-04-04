@@ -20,7 +20,7 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
   2. Start `Elasticsearch` by running `StartBackendServers.bat`.
   3. Open the `Exceptionless.sln` Visual Studio solution file.
   4. Select `Exceptionless.Api` as startup projects.
-  5. Run the project by pressing `F5` to start the server.
+  5. Run the project by pressing `F5` to start the server. _Please note that you may need to configure our [nightly NuGet feed](https://www.myget.org/gallery/exceptionless) to sucessfully build the solution._
   6. We have a prebuilt [Exceptionless UI](https://github.com/exceptionless/Exceptionless.UI) that's configured to talk to the localhost server instance. Just navigate to [http://local-app.exceptionless.io](http://local-app.exceptionless.io) to get started.
 
 Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuBoDs) showing how to get started with the project.
