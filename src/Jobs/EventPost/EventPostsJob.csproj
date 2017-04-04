@@ -92,7 +92,6 @@
       <Link>run.bat</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="function.json" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

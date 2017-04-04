@@ -126,7 +126,6 @@
       <Link>run.bat</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="function.json" />
     <None Include="packages.config" />
     <None Include="settings.job">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
