@@ -6,15 +6,24 @@ using Foundatio.Logging;
 using Foundatio.ServiceProviders;
 using SimpleInjector;
 using SimpleInjector.Lifestyles;
+using LogLevel = Exceptionless.Logging.LogLevel;
 
 namespace Exceptionless.Insulation.Jobs {
     public class JobBootstrappedServiceProvider : BootstrappedServiceProviderBase {
         protected override IServiceProvider BootstrapInternal(ILoggerFactory loggerFactory) {
             var shutdownCancellationToken = JobRunner.GetShutdownCancellationToken();
 
-            ExceptionlessClient.Default.Configuration.SetVersion(Settings.Current.Version);
-            ExceptionlessClient.Default.Configuration.UseLogger(new NLogExceptionlessLog(Exceptionless.Logging.LogLevel.Warn));
-            ExceptionlessClient.Default.Startup();
+            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
+                var client = ExceptionlessClient.Default;
+                client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
+                client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
+                client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
+                client.Configuration.SetVersion(Settings.Current.Version);
+                client.Configuration.UseInMemoryStorage();
+
+                client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
+                client.Startup(Settings.Current.ExceptionlessApiKey);
+            }
 
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;

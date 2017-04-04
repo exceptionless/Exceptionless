@@ -82,21 +82,25 @@ namespace Exceptionless.Insulation {
             else
                 logger.Warn("Azure Storage is NOT enabled.");
 
-            var client = ExceptionlessClient.Default;
-            container.RegisterSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
-            container.RegisterSingleton<ExceptionlessClient>(() => client);
+            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
+                var client = ExceptionlessClient.Default;
+                container.RegisterSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
+                container.RegisterSingleton<ExceptionlessClient>(() => client);
 
-            client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
-            client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
-            client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
-            client.Configuration.SetVersion(Settings.Current.Version);
-            if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
-                client.Configuration.Enabled = false;
+                client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
+                client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
+                client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
+                client.Configuration.SetVersion(Settings.Current.Version);
+                if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
+                    client.Configuration.Enabled = false;
 
-            client.Startup();
-            container.AddStartupAction(() => client.RegisterWebApi(container.GetInstance<HttpConfiguration>()));
-            client.Configuration.UseInMemoryStorage();
-            client.Configuration.UseReferenceIds();
+                client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
+                client.Startup(Settings.Current.ExceptionlessApiKey);
+
+                container.AddStartupAction(() => client.RegisterWebApi(container.GetInstance<HttpConfiguration>()));
+                client.Configuration.UseInMemoryStorage();
+                client.Configuration.UseReferenceIds();
+            }
         }
 
         private static IQueue<T> CreateAzureStorageQueue<T>(Container container, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
