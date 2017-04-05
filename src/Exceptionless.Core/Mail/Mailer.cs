@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Net.Mail;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
@@ -11,7 +9,6 @@ using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using RazorSharpEmail;
-using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Core.Mail {
     public class Mailer : IMailer {
@@ -33,56 +30,56 @@ namespace Exceptionless.Core.Mail {
             if (String.IsNullOrEmpty(user?.PasswordResetToken))
                 return Task.CompletedTask;
 
-            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {
+            var msg = _emailGenerator.GenerateMessage(new UserModel {
                 User = user,
                 BaseUrl = Settings.Current.BaseURL
-            }, "PasswordReset");
-            msg.To.Add(user.EmailAddress);
+            }, "PasswordReset").ToMailMessage();
+            msg.To = user.EmailAddress;
 
             return QueueMessageAsync(msg, "passwordreset");
         }
 
         public Task SendVerifyEmailAsync(User user) {
-            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {
+            var msg = _emailGenerator.GenerateMessage(new UserModel {
                 User = user,
                 BaseUrl = Settings.Current.BaseURL
-            }, "VerifyEmail");
-            msg.To.Add(user.EmailAddress);
+            }, "VerifyEmail").ToMailMessage();
+            msg.To = user.EmailAddress;
 
             return QueueMessageAsync(msg, "verifyemail");
         }
 
         public Task SendInviteAsync(User sender, Organization organization, Invite invite) {
-            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new InviteModel {
+            var msg = _emailGenerator.GenerateMessage(new InviteModel {
                 Sender = sender,
                 Organization = organization,
                 Invite = invite,
                 BaseUrl = Settings.Current.BaseURL
-            }, "Invite");
-            msg.To.Add(invite.EmailAddress);
+            }, "Invite").ToMailMessage();
+            msg.To = invite.EmailAddress;
 
             return QueueMessageAsync(msg, "invite");
         }
 
         public Task SendPaymentFailedAsync(User owner, Organization organization) {
-            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new PaymentModel {
+            var msg = _emailGenerator.GenerateMessage(new PaymentModel {
                 Owner = owner,
                 Organization = organization,
                 BaseUrl = Settings.Current.BaseURL
-            }, "PaymentFailed");
-            msg.To.Add(owner.EmailAddress);
+            }, "PaymentFailed").ToMailMessage();
+            msg.To = owner.EmailAddress;
 
             return QueueMessageAsync(msg, "paymentfailed");
         }
 
         public Task SendAddedToOrganizationAsync(User sender, Organization organization, User user) {
-            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new AddedToOrganizationModel {
+            var msg = _emailGenerator.GenerateMessage(new AddedToOrganizationModel {
                 Sender = sender,
                 Organization = organization,
                 User = user,
                 BaseUrl = Settings.Current.BaseURL
-            }, "AddedToOrganization");
-            msg.To.Add(user.EmailAddress);
+            }, "AddedToOrganization").ToMailMessage();
+            msg.To = user.EmailAddress;
 
             return QueueMessageAsync(msg, "addedtoorganization");
         }
@@ -95,62 +92,44 @@ namespace Exceptionless.Core.Mail {
             }
 
             msg.To = emailAddress;
-            return QueueMessageAsync(msg.ToSystemNetMailMessage(), "eventnotice");
+            return QueueMessageAsync(msg, "eventnotice");
         }
 
         public Task SendOrganizationNoticeAsync(string emailAddress, OrganizationNotificationModel model) {
             model.BaseUrl = Settings.Current.BaseURL;
 
-            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(model, "OrganizationNotice");
-            msg.To.Add(emailAddress);
+            var msg = _emailGenerator.GenerateMessage(model, "OrganizationNotice").ToMailMessage();
+            msg.To = emailAddress;
 
             return QueueMessageAsync(msg, "organizationnotice");
         }
 
         public Task SendDailySummaryAsync(string emailAddress, DailySummaryModel notification) {
             notification.BaseUrl = Settings.Current.BaseURL;
-            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(notification, "DailySummary");
-            msg.To.Add(emailAddress);
+
+            var msg = _emailGenerator.GenerateMessage(notification, "DailySummary").ToMailMessage();
+            msg.To = emailAddress;
 
             return QueueMessageAsync(msg, "dailysummary");
         }
 
-        private async Task QueueMessageAsync(System.Net.Mail.MailMessage message, string metricsName) {
-            await _metrics.CounterAsync($"mailer.{metricsName}").AnyContext();
-
+        private Task QueueMessageAsync(MailMessage message, string metricsName) {
             CleanAddresses(message);
-            await _queue.EnqueueAsync(message.ToMailMessage()).AnyContext();
+            return Task.WhenAll(
+                _metrics.CounterAsync($"mailer.{metricsName}"),
+                _queue.EnqueueAsync(message)
+            );
         }
 
-        private static void CleanAddresses(System.Net.Mail.MailMessage message) {
+        private static void CleanAddresses(MailMessage message) {
             if (Settings.Current.WebsiteMode == WebsiteMode.Production)
                 return;
 
-            var invalid = new List<string>();
-            invalid.AddRange(CleanAddresses(message.To));
-            invalid.AddRange(CleanAddresses(message.CC));
-            invalid.AddRange(CleanAddresses(message.Bcc));
-
-            if (invalid.Count == 0)
+            if (Settings.Current.AllowedOutboundAddresses.Contains(message.To.ToLowerInvariant()))
                 return;
 
-            if (invalid.Count <= 3)
-                message.Subject = String.Concat("[", invalid.ToDelimitedString(), "] ", message.Subject).StripInvisible();
-
-            message.To.Add(Settings.Current.TestEmailAddress);
-        }
-
-        private static IEnumerable<string> CleanAddresses(MailAddressCollection mac) {
-            var invalid = new List<string>();
-            for (int i = 0; i < mac.Count; i++) {
-                if (!Settings.Current.AllowedOutboundAddresses.Contains(v => mac[i].Address.ToLowerInvariant().Contains(v))) {
-                    invalid.Add(mac[i].Address);
-                    mac.RemoveAt(i);
-                    i--;
-                }
-            }
-
-            return invalid;
+            message.Subject = $"[{message.To}] {message.Subject}".StripInvisible();
+            message.To = Settings.Current.TestEmailAddress;
         }
     }
 }

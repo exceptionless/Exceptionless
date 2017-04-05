@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             return null;
         }
-        
+
         /// <summary>
         /// Runs through the formatting plugins to calculate a stack title based on an event.
         /// </summary>
