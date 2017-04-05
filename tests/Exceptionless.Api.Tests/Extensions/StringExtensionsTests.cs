@@ -7,6 +7,17 @@ namespace Exceptionless.Api.Tests.Extensions {
     public class StringExtensionsTests : TestBase {
         public StringExtensionsTests(ITestOutputHelper output) : base(output) { }
 
+        [Fact]
+        public void ToAddress() {
+            Assert.Equal("::1", "::1".ToAddress());
+            Assert.Equal("1.2.3.4", "1.2.3.4".ToAddress());
+            Assert.Equal("1.2.3.4", "1.2.3.4:".ToAddress());
+            Assert.Equal("1.2.3.4", "1.2.3.4:80".ToAddress());
+            Assert.Equal("1:2:3:4:5:6:7:8", "1:2:3:4:5:6:7:8".ToAddress());
+            Assert.Equal("1:2:3:4:5:6:7:8", "1:2:3:4:5:6:7:8:".ToAddress());
+            Assert.Equal("1:2:3:4:5:6:7:8", "1:2:3:4:5:6:7:8:80".ToAddress());
+        }
+
         [Fact(Skip = "TODO: https://github.com/exceptionless/Exceptionless.Net/issues/2")]
         public void LowerUnderscoredWords() {
             Assert.Equal("enable_ssl", "EnableSSL".ToLowerUnderscoredWords());

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
@@ -18,21 +20,23 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (String.IsNullOrEmpty(context.Event.ReferenceId))
                 return;
 
-            // TODO: Look into using a lock on reference id so we can ensure there is no race conditions with setting keys
-            if (await _cacheClient.AddAsync(GetCacheKey(context), true, TimeSpan.FromMinutes(1)).AnyContext())
+            if (await _cacheClient.AddAsync(GetCacheKey(context), true, TimeSpan.FromDays(1)).AnyContext()) {
+                context.SetProperty("AddedReferenceId", true);
                 return;
+            }
 
             _logger.Warn().Project(context.Event.ProjectId).Message("Discarding event due to duplicate reference id: {0}", context.Event.ReferenceId).Write();
             context.IsCancelled = true;
         }
-        
-        public override Task EventProcessedAsync(EventContext context) {
-            if (String.IsNullOrEmpty(context.Event.ReferenceId))
+
+        public override Task EventBatchProcessedAsync(ICollection<EventContext> contexts) {
+            var values = contexts.Where(c => !String.IsNullOrEmpty(c.Event.ReferenceId) && c.GetProperty("AddedReferenceId") == null).ToDictionary(GetCacheKey, v => true);
+            if (values.Count == 0)
                 return Task.CompletedTask;
-            
-            return _cacheClient.SetAsync(GetCacheKey(context), true, TimeSpan.FromDays(1));
+
+            return _cacheClient.SetAllAsync(values, TimeSpan.FromDays(1));
         }
-        
+
         private string GetCacheKey(EventContext context) {
             return String.Concat("Project:", context.Project.Id, ":", context.Event.ReferenceId);
         }
