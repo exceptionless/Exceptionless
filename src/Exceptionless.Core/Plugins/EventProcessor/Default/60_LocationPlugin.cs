@@ -23,25 +23,33 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             _workItemQueue = workItemQueue;
         }
 
-        public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
+        public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
             var geoGroups = contexts.Where(c => c.Organization.HasPremiumFeatures && !String.IsNullOrEmpty(c.Event.Geo) && !c.Event.Data.ContainsKey(Event.KnownDataKeys.Location)).GroupBy(c => c.Event.Geo);
-            foreach (var geoGroup in geoGroups) {
-                var location = await _cacheClient.GetAsync<Location>(geoGroup.Key, null).AnyContext();
-                if (location == null)
-                    continue;
 
-                await _cacheClient.SetExpirationAsync(geoGroup.Key, TimeSpan.FromDays(3)).AnyContext();
-                geoGroup.ForEach(c => c.Event.Data[Event.KnownDataKeys.Location] = location);
-            }
+            var tasks = new List<Task>();
+            foreach (var geoGroup in geoGroups)
+                tasks.Add(GetGeoLocationFromCacheAsync(geoGroup));
+
+            return Task.WhenAll(tasks);
         }
 
-        public override async Task EventBatchProcessedAsync(ICollection<EventContext> contexts) {
-            foreach (var ctx in contexts.Where(c => c.Organization.HasPremiumFeatures && !String.IsNullOrEmpty(c.Event.Geo) && !c.Event.Data.ContainsKey(Event.KnownDataKeys.Location))) {
-                await _workItemQueue.EnqueueAsync(new SetLocationFromGeoWorkItem {
-                    EventId = ctx.Event.Id,
-                    Geo = ctx.Event.Geo
-                }).AnyContext();
-            }
+        public override Task EventBatchProcessedAsync(ICollection<EventContext> contexts) {
+            var contextsToProcess = contexts.Where(c => c.Organization.HasPremiumFeatures && !String.IsNullOrEmpty(c.Event.Geo) && !c.Event.Data.ContainsKey(Event.KnownDataKeys.Location));
+
+            var tasks = new List<Task>();
+            foreach (var ctx in contextsToProcess)
+                tasks.Add(_workItemQueue.EnqueueAsync(new SetLocationFromGeoWorkItem { EventId = ctx.Event.Id, Geo = ctx.Event.Geo }));
+
+            return Task.WhenAll(tasks);
+        }
+
+        private async Task GetGeoLocationFromCacheAsync(IGrouping<string, EventContext> geoGroup) {
+            var location = await _cacheClient.GetAsync<Location>(geoGroup.Key, null).AnyContext();
+            if (location == null)
+                return;
+
+            await _cacheClient.SetExpirationAsync(geoGroup.Key, TimeSpan.FromDays(3)).AnyContext();
+            geoGroup.ForEach(c => c.Event.Data[Event.KnownDataKeys.Location] = location);
         }
     }
 }

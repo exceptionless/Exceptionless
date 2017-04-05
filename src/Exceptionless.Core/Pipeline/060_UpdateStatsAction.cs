@@ -22,37 +22,44 @@ namespace Exceptionless.Core.Pipeline {
             return Task.CompletedTask;
         }
 
-        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+        public override Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var stacks = contexts.Where(c => !c.IsNew).GroupBy(c => c.Event.StackId);
-            foreach (var stackGroup in stacks) {
-                var stackContexts = stackGroup.ToList();
 
-                try {
-                    int count = stackContexts.Count;
-                    DateTime minDate = stackContexts.Min(s => s.Event.Date.UtcDateTime);
-                    DateTime maxDate = stackContexts.Max(s => s.Event.Date.UtcDateTime);
-                    await _stackRepository.IncrementEventCounterAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count).AnyContext();
+            var tasks = new List<Task>();
+            foreach (var stackGroup in stacks)
+                tasks.Add(IncrementEventCountersAsync(stackGroup));
 
-                    // Update stacks in memory since they are used in notifications.
-                    foreach (var ctx in stackContexts) {
-                        if (ctx.Stack.FirstOccurrence > minDate)
-                            ctx.Stack.FirstOccurrence = minDate;
+            return Task.WhenAll(tasks);
+        }
 
-                        if (ctx.Stack.LastOccurrence < maxDate)
-                            ctx.Stack.LastOccurrence = maxDate;
+        private async Task IncrementEventCountersAsync(IGrouping<string, EventContext> stackGroup) {
+            var stackContexts = stackGroup.ToList();
 
-                        ctx.Stack.TotalOccurrences += count;
-                    }
-                } catch (Exception ex) {
-                    foreach (var context in stackContexts) {
-                        bool cont = false;
-                        try {
-                            cont = HandleError(ex, context);
-                        } catch {}
+            try {
+                int count = stackContexts.Count;
+                DateTime minDate = stackContexts.Min(s => s.Event.Date.UtcDateTime);
+                DateTime maxDate = stackContexts.Max(s => s.Event.Date.UtcDateTime);
+                await _stackRepository.IncrementEventCounterAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count).AnyContext();
 
-                        if (!cont)
-                            context.SetError(ex.Message, ex);
-                    }
+                // Update stacks in memory since they are used in notifications.
+                foreach (var ctx in stackContexts) {
+                    if (ctx.Stack.FirstOccurrence > minDate)
+                        ctx.Stack.FirstOccurrence = minDate;
+
+                    if (ctx.Stack.LastOccurrence < maxDate)
+                        ctx.Stack.LastOccurrence = maxDate;
+
+                    ctx.Stack.TotalOccurrences += count;
+                }
+            } catch (Exception ex) {
+                foreach (var context in stackContexts) {
+                    bool cont = false;
+                    try {
+                        cont = HandleError(ex, context);
+                    } catch { }
+
+                    if (!cont)
+                        context.SetError(ex.Message, ex);
                 }
             }
         }
