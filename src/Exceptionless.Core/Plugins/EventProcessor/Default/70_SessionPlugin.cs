@@ -28,16 +28,14 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             _locationPlugin = locationPlugin;
         }
 
-        public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-            var autoSessionEvents = contexts
-                .Where(c => !String.IsNullOrWhiteSpace(c.Event.GetUserIdentity()?.Identity)
-                    && String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
+        public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
+            var autoSessionEvents = contexts.Where(c => !String.IsNullOrWhiteSpace(c.Event.GetUserIdentity()?.Identity) && String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
+            var manualSessionsEvents = contexts.Where(c => !String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
 
-            var manualSessionsEvents = contexts
-                .Where(c => !String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
-
-            await ProcessAutoSessionsAsync(autoSessionEvents).AnyContext();
-            await ProcessManualSessionsAsync(manualSessionsEvents).AnyContext();
+            return Task.WhenAll(
+                ProcessAutoSessionsAsync(autoSessionEvents), 
+                ProcessManualSessionsAsync(manualSessionsEvents)
+            );
         }
 
         private async Task ProcessManualSessionsAsync(ICollection<EventContext> contexts) {
@@ -171,11 +169,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             }
         }
 
-        public override async Task EventProcessedAsync(EventContext context) {
+        public override Task EventProcessedAsync(EventContext context) {
             if (context.GetProperty("SetSessionStartEventId") != null)
-                await SetSessionStartEventIdAsync(context.Project.Id, context.Event.GetSessionId(), context.Event.Id).AnyContext();
+                return SetSessionStartEventIdAsync(context.Project.Id, context.Event.GetSessionId(), context.Event.Id);
 
-            await base.EventProcessedAsync(context).AnyContext();
+            return Task.CompletedTask;
         }
 
         private static List<List<EventContext>> CreateSessionGroups(IGrouping<string, EventContext> identityGroup) {
@@ -222,8 +220,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             string cacheKey = GetIdentitySessionIdCacheKey(projectId, identity);
             string sessionId = await _cache.GetAsync<string>(cacheKey, null).AnyContext();
             if (!String.IsNullOrEmpty(sessionId)) {
-                await _cache.SetExpirationAsync(cacheKey, _sessionTimeout).AnyContext();
-                await _cache.SetExpirationAsync(GetSessionStartEventIdCacheKey(projectId, sessionId), TimeSpan.FromDays(1)).AnyContext();
+                await Task.WhenAll(
+                    _cache.SetExpirationAsync(cacheKey, _sessionTimeout),
+                    _cache.SetExpirationAsync(GetSessionStartEventIdCacheKey(projectId, sessionId), TimeSpan.FromDays(1))
+                ).AnyContext();
             }
 
             return sessionId;
@@ -235,7 +235,6 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
         private async Task<PersistentEvent> CreateSessionStartEventAsync(EventContext startContext, DateTime? lastActivityUtc, bool? isSessionEnd) {
             var startEvent = startContext.Event.ToSessionStartEvent(lastActivityUtc, isSessionEnd, startContext.Organization.HasPremiumFeatures);
-
             var startEventContexts = new List<EventContext> {
                 new EventContext(startEvent) { Project = startContext.Project, Organization = startContext.Organization }
             };
@@ -246,7 +245,6 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             await _locationPlugin.EventBatchProcessedAsync(startEventContexts).AnyContext();
 
             await SetSessionStartEventIdAsync(startContext.Project.Id, startContext.Event.GetSessionId(), startEvent.Id).AnyContext();
-
             return startEvent;
         }
 
