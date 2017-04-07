@@ -10,15 +10,13 @@ using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(10)]
-    public class LegacyErrorParserPlugin : IEventParserPlugin {
+    public class LegacyErrorParserPlugin : PluginBase, IEventParserPlugin {
         private readonly EventUpgraderPluginManager _manager;
         private readonly JsonSerializerSettings _settings;
-        private readonly ILogger _logger;
 
-        public LegacyErrorParserPlugin(EventUpgraderPluginManager manager, JsonSerializerSettings settings, ILogger<LegacyErrorParserPlugin> logger) {
+        public LegacyErrorParserPlugin(EventUpgraderPluginManager manager, JsonSerializerSettings settings, ILoggerFactory loggerFactory) : base(loggerFactory) {
             _manager = manager;
             _settings = settings;
-            _logger = logger;
         }
 
         public async Task<List<PersistentEvent>> ParseEventsAsync(string input, int apiVersion, string userAgent) {

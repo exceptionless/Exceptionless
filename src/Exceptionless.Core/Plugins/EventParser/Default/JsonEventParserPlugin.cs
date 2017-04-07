@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(0)]
-    public class JsonEventParserPlugin : IEventParserPlugin {
+    public class JsonEventParserPlugin : PluginBase, IEventParserPlugin {
         private readonly JsonSerializerSettings _settings;
 
         public JsonEventParserPlugin(JsonSerializerSettings settings) {

@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(0)]
-    public class GetVersion : IEventUpgraderPlugin {
+    public class GetVersion : PluginBase, IEventUpgraderPlugin {
         public void Upgrade(EventUpgraderContext ctx) {
             if (ctx.Version != null)
                 return;

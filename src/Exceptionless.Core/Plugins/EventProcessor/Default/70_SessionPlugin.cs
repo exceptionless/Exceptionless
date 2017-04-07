@@ -239,10 +239,13 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 new EventContext(startEvent) { Project = startContext.Project, Organization = startContext.Organization }
             };
 
-            await _assignToStack.ProcessBatchAsync(startEventContexts).AnyContext();
-            await _updateStats.ProcessBatchAsync(startEventContexts).AnyContext();
+            if (_assignToStack.Enabled)
+                await _assignToStack.ProcessBatchAsync(startEventContexts).AnyContext();
+            if (_updateStats.Enabled)
+                await _updateStats.ProcessBatchAsync(startEventContexts).AnyContext();
             await _eventRepository.AddAsync(startEvent).AnyContext();
-            await _locationPlugin.EventBatchProcessedAsync(startEventContexts).AnyContext();
+            if (_locationPlugin.Enabled)
+                await _locationPlugin.EventBatchProcessedAsync(startEventContexts).AnyContext();
 
             await SetSessionStartEventIdAsync(startContext.Project.Id, startContext.Event.GetSessionId(), startEvent.Id).AnyContext();
             return startEvent;

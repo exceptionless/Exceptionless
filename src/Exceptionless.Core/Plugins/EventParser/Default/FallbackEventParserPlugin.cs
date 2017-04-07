@@ -9,7 +9,7 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(Int32.MaxValue)]
-    public class FallbackEventParserPlugin : IEventParserPlugin {
+    public class FallbackEventParserPlugin : PluginBase, IEventParserPlugin {
         public Task<List<PersistentEvent>> ParseEventsAsync(string input, int apiVersion, string userAgent) {
             var events = input.SplitLines().Select(entry => new PersistentEvent {
                 Date = SystemClock.OffsetNow,

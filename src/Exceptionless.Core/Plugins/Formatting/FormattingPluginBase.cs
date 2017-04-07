@@ -5,7 +5,7 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
-    public abstract class FormattingPluginBase : IFormattingPlugin {
+    public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin {
         public virtual SummaryData GetStackSummaryData(Stack stack) {
             return null;
         }
