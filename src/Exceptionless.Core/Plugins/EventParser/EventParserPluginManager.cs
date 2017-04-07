@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
         public async Task<List<PersistentEvent>> ParseEventsAsync(string input, int apiVersion, string userAgent) {
             string metricPrefix = String.Concat(_metricPrefix, nameof(ParseEventsAsync).ToLower(), ".");
             foreach (var plugin in Plugins.Values.ToList()) {
-                string metricName = String.Concat(metricPrefix, plugin.GetType().Name.ToLower());
+                string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
 
                 try {
                     List<PersistentEvent> events = null;
@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
 
                     return events;
                 } catch (Exception ex) {
-                    _logger.Error(ex, "Error calling ParseEvents in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message);
+                    _logger.Error(ex, "Error calling ParseEvents in plugin \"{0}\": {1}", plugin.Name, ex.Message);
                 }
             }
 

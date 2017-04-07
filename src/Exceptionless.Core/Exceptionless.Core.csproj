@@ -265,6 +265,7 @@
     <Compile Include="Plugins\EventProcessor\Default\03_ManualStackingPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\60_LocationPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\05_ManualStackingFormattingPlugin.cs" />
+    <Compile Include="Plugins\IPlugin.cs" />
     <Compile Include="Repositories\Base\RepositoryBase.cs" />
     <Compile Include="Repositories\Configuration\ExceptionlessElasticConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex\EventIndex.cs" />

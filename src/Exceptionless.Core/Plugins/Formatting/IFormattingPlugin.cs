@@ -3,7 +3,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
-    public interface IFormattingPlugin {
+    public interface IFormattingPlugin : IPlugin {
         string GetStackTitle(PersistentEvent ev);
         string GetEventViewName(PersistentEvent ev);
         SummaryData GetStackSummaryData(Stack stack);

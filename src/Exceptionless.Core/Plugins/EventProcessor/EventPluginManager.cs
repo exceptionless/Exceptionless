@@ -18,10 +18,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             string metricPrefix = String.Concat(_metricPrefix, nameof(StartupAsync).ToLower(), ".");
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    string metricName = String.Concat(metricPrefix, plugin.GetType().Name.ToLower());
+                    string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
                     await _metricsClient.TimeAsync(() => plugin.StartupAsync(), metricName).AnyContext();
                 } catch (Exception ex) {
-                    _logger.Error(ex, "Error calling startup in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message);
+                    _logger.Error(ex, "Error calling startup in plugin \"{0}\": {1}", plugin.Name, ex.Message);
                 }
             }
         }
@@ -36,13 +36,13 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 if (contextsToProcess.Count == 0)
                     break;
 
-                string metricName = String.Concat(metricPrefix, plugin.GetType().Name.ToLower());
+                string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
                 try {
                     await _metricsClient.TimeAsync(() => plugin.EventBatchProcessingAsync(contextsToProcess), metricName).AnyContext();
                     if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
-                    _logger.Error(ex, "Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message);
+                    _logger.Error(ex, "Error calling event processing in plugin \"{0}\": {1}", plugin.Name, ex.Message);
                 }
             }
         }
@@ -57,13 +57,13 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 if (contextsToProcess.Count == 0)
                     break;
 
-                string metricName = String.Concat(metricPrefix, plugin.GetType().Name.ToLower());
+                string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
                 try {
                     await _metricsClient.TimeAsync(() => plugin.EventBatchProcessedAsync(contextsToProcess), metricName).AnyContext();
                     if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
-                    _logger.Error(ex, "Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message);
+                    _logger.Error(ex, "Error calling event processed in plugin \"{0}\": {1}", plugin.Name, ex.Message);
                 }
             }
         }
