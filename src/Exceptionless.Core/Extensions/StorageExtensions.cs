@@ -8,7 +8,7 @@ using Foundatio.Storage;
 
 namespace Exceptionless.Core.Extensions {
     public static class StorageExtensions {
-        public static async Task<EventPostInfo> GetEventPostAndSetActiveAsync(this IFileStorage storage, string path, ILogger logger, CancellationToken cancellationToken = default(CancellationToken)) {
+        public static async Task<EventPostInfo> GetEventPostAsync(this IFileStorage storage, string path, ILogger logger, CancellationToken cancellationToken = default(CancellationToken)) {
             if (String.IsNullOrEmpty(path))
                 return null;
 
@@ -23,23 +23,24 @@ namespace Exceptionless.Core.Extensions {
             return eventPostInfo;
         }
 
-        public static Task<bool> CompleteEventPostAsync(this IFileStorage storage, string path, string projectId, DateTime created, ILogger logger, bool shouldArchive = true) {
+        public static async Task<bool> CompleteEventPostAsync(this IFileStorage storage, string path, string projectId, DateTime created, ILogger logger, bool shouldArchive = true) {
             if (String.IsNullOrEmpty(path))
-                return Task.FromResult(false);
+                return false;
 
             // don't move files that are already in the archive
             if (path.StartsWith("archive"))
-                return Task.FromResult(true);
+                return true;
 
-            string archivePath = $"archive\\{created:yy\\\\MM\\\\dd\\\\HH}\\{projectId}\\{Path.GetFileName(path)}";
             try {
-                if (shouldArchive)
-                    return storage.RenameFileAsync(path, archivePath);
+                if (shouldArchive) {
+                    string archivePath = $"archive\\{created:yy\\\\MM\\\\dd\\\\HH}\\{projectId}\\{Path.GetFileName(path)}";
+                    return await storage.RenameFileAsync(path, archivePath).AnyContext();
+                }
 
-                return storage.DeleteFileAsync(path);
+                return await storage.DeleteFileAsync(path).AnyContext();
             } catch (Exception ex) {
                 logger.Error(ex, "Error archiving event post data \"{0}\".", path);
-                return Task.FromResult(false);
+                return false;
             }
         }
     }
