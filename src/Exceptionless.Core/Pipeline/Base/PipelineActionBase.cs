@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Foundatio.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     public interface IPipelineAction<TContext> where TContext : IPipelineContext {
+        string Name { get; }
+        bool Enabled { get; }
+
         /// <summary>
         /// Processes this action using the specified pipeline context.
         /// </summary>
@@ -35,8 +39,15 @@ namespace Exceptionless.Core.Pipeline {
         protected readonly ILogger _logger;
 
         public PipelineActionBase(ILoggerFactory loggerFactory = null) {
-            _logger = loggerFactory.CreateLogger(GetType());
+            var type = GetType();
+            Name = type.Name;
+            Enabled = !Settings.Current.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase);
+            _logger = loggerFactory.CreateLogger(type);
         }
+
+        public string Name { get; }
+
+        public bool Enabled { get; }
 
         protected bool ContinueOnError { get; set; }
 

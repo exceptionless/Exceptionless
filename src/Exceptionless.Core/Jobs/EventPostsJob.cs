@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Jobs {
             }
 
             EventPostInfo ep = null;
-            await _metricsClient.TimeAsync(async () => ep = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, _logger, context.CancellationToken).AnyContext(), MetricNames.PostsMarkFileActiveTime).AnyContext();
+            await _metricsClient.TimeAsync(async () => ep = await _storage.GetEventPostAsync(queueEntry.Value.FilePath, _logger, context.CancellationToken).AnyContext(), MetricNames.PostsMarkFileActiveTime).AnyContext();
             if (ep == null) {
                 await AbandonEntryAsync(queueEntry).AnyContext();
                 return JobResult.FailedWithMessage($"Unable to retrieve post data '{queueEntry.Value.FilePath}'.");

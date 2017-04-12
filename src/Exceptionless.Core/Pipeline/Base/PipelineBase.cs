@@ -31,10 +31,13 @@ namespace Exceptionless.Core.Pipeline {
 
         public PipelineBase(IDependencyResolver dependencyResolver = null, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
-            _actions = GetActionTypes().Select(t => _dependencyResolver.GetService(t) as IPipelineAction<TContext>).ToList();
-            _metricPrefix = String.Concat(GetType().Name.ToLower(), ".");
+
+            var type = GetType();
+            _metricPrefix = String.Concat(type.Name.ToLower(), ".");
             _metricsClient = metricsClient ?? new InMemoryMetricsClient(loggerFactory: loggerFactory);
-            _logger = loggerFactory.CreateLogger(GetType());
+            _logger = loggerFactory.CreateLogger(type);
+
+            _actions = LoadDefaultActions();
         }
 
         /// <summary>
@@ -55,7 +58,7 @@ namespace Exceptionless.Core.Pipeline {
 
             string metricPrefix = String.Concat(_metricPrefix, nameof(RunAsync).ToLower(), ".");
             foreach (var action in _actions) {
-                string metricName = String.Concat(metricPrefix, action.GetType().Name.ToLower());
+                string metricName = String.Concat(metricPrefix, action.Name.ToLower());
                 var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
                 await _metricsClient.TimeAsync(() => action.ProcessBatchAsync(contextsToProcess), metricName).AnyContext();
                 if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
@@ -86,6 +89,25 @@ namespace Exceptionless.Core.Pipeline {
         /// <returns>An enumerable list of action types in priority order to run for the pipeline.</returns>
         protected virtual IList<Type> GetActionTypes() {
             return _actionTypeCache.GetOrAdd(typeof(TAction), t => TypeHelper.GetDerivedTypes<TAction>().SortByPriority());
+        }
+
+        private List<IPipelineAction<TContext>> LoadDefaultActions() {
+            var actions = new List<IPipelineAction<TContext>>();
+            foreach (var type in GetActionTypes()) {
+                if (Settings.Current.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {
+                    _logger.Warn(() => $"Pipeline Action {type.Name} is currently disabled and won't be executed.");
+                    continue;
+                }
+
+                try {
+                    actions.Add((IPipelineAction<TContext>)_dependencyResolver.GetService(type));
+                } catch (Exception ex) {
+                    _logger.Error(ex, "Unable to instantiate Pipeline Action of type \"{0}\": {1}", type.FullName, ex.Message);
+                    throw;
+                }
+            }
+
+            return actions;
         }
     }
 }

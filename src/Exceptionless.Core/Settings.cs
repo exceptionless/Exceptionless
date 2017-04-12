@@ -46,6 +46,9 @@ namespace Exceptionless.Core {
 
         public bool EventSubmissionDisabled { get; private set; }
 
+        internal List<string> DisabledPipelineActions { get; private set; }
+        internal List<string> DisabledPlugins { get; private set; }
+
         /// <summary>
         /// In bytes
         /// </summary>
@@ -173,6 +176,8 @@ namespace Exceptionless.Core {
             ApiThrottleLimit = GetInt(nameof(ApiThrottleLimit), Int32.MaxValue);
             EnableArchive = GetBool(nameof(EnableArchive), true);
             EventSubmissionDisabled = GetBool(nameof(EventSubmissionDisabled));
+            DisabledPipelineActions = GetStringList(nameof(DisabledPipelineActions), String.Empty);
+            DisabledPlugins = GetStringList(nameof(DisabledPlugins), String.Empty);
             MaximumEventPostSize = GetInt64(nameof(MaximumEventPostSize), 1000000);
             MaximumRetentionDays = GetInt(nameof(MaximumRetentionDays), 180);
             MetricsServerName = GetString(nameof(MetricsServerName)) ?? "127.0.0.1";
