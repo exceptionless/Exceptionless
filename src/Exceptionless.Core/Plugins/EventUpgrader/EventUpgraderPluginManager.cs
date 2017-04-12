@@ -16,11 +16,11 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
         public async Task UpgradeAsync(EventUpgraderContext context) {
             string metricPrefix = String.Concat(_metricPrefix, nameof(UpgradeAsync).ToLower(), ".");
             foreach (var plugin in Plugins.Values.ToList()) {
-                string metricName = String.Concat(metricPrefix, plugin.GetType().Name.ToLower());
+                string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
                 try {
                    await _metricsClient.TimeAsync(() => plugin.Upgrade(context), metricName).AnyContext();
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling upgrade in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("Context", context).Write();
+                    _logger.Error().Exception(ex).Message("Error calling upgrade in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("Context", context).Write();
                     throw;
                 }
             }

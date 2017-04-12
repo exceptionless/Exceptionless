@@ -8,11 +8,8 @@ using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(2000)]
-    public class V2EventUpgrade : IEventUpgraderPlugin {
-        private readonly ILogger _logger;
-        public V2EventUpgrade(ILogger<V2EventUpgrade> logger) {
-            _logger = logger;
-        }
+    public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin {
+        public V2EventUpgrade(ILoggerFactory loggerFactory) : base(loggerFactory) {}
 
         public void Upgrade(EventUpgraderContext ctx) {
             if (ctx.Version > new Version(2, 0))

@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
         public async Task<object> CreateFromEventAsync(WebHookDataContext context) {
             string metricPrefix = String.Concat(_metricPrefix, nameof(CreateFromEventAsync).ToLower(), ".");
             foreach (var plugin in Plugins.Values) {
-                string metricName = String.Concat(metricPrefix, plugin.GetType().Name.ToLower());
+                string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
                 try {
                     object data = null;
                     await _metricsClient.TimeAsync(async () => data = await plugin.CreateFromEventAsync(context).AnyContext(), metricName).AnyContext();
@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
 
                     return data;
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling create from event in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("Event", context.Event).Write();
+                    _logger.Error().Exception(ex).Message("Error calling create from event in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("Event", context.Event).Write();
                 }
             }
 
@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
         public async Task<object> CreateFromStackAsync(WebHookDataContext context) {
             string metricPrefix = String.Concat(_metricPrefix, nameof(CreateFromStackAsync).ToLower(), ".");
             foreach (var plugin in Plugins.Values) {
-                string metricName = String.Concat(metricPrefix, plugin.GetType().Name.ToLower());
+                string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
                 try {
                     object data = null;
                     await _metricsClient.TimeAsync(async () => data = await plugin.CreateFromStackAsync(context).AnyContext(), metricName).AnyContext();
@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
 
                     return data;
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling create from stack in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("Stack", context.Stack).Write();
+                    _logger.Error().Exception(ex).Message("Error calling create from stack in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("Stack", context.Stack).Write();
                 }
             }
 
