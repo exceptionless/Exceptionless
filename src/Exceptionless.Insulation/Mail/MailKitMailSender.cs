@@ -30,10 +30,7 @@ namespace Exceptionless.Insulation.Mail {
                 // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
                 client.AuthenticationMechanisms.Remove("XOAUTH2");
 
-                if ((Settings.Current.SmtpUser == null) != (Settings.Current.SmtpPassword == null))
-                    throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");
-
-                if (Settings.Current.SmtpUser != null)
+                if (!String.IsNullOrEmpty(Settings.Current.SmtpUser))
                     await client.AuthenticateAsync(Settings.Current.SmtpUser, Settings.Current.SmtpPassword).AnyContext();
 
                 await client.SendAsync(message).AnyContext();
@@ -45,7 +42,7 @@ namespace Exceptionless.Insulation.Mail {
         }
 
         private MimeMessage CreateMailMessage(MailMessage notification) {
-            var message = new MimeMessage();
+            var message = new MimeMessage { Subject = notification.Subject };
             var builder = new BodyBuilder();
 
             if (!String.IsNullOrEmpty(notification.To))
