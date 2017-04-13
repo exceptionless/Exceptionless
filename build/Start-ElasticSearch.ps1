@@ -19,7 +19,7 @@ If (-Not (Test-Path -Path "elasticsearch-$Version") -And -Not (Test-Path -Path "
   Write-Output "Downloading Elasticsearch $Version..."
   Invoke-WebRequest "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$Version.zip" -OutFile "elasticsearch-$Version.zip"
 } Else {
-  Write-Output "Using already downloaded Kibana $Version..."
+  Write-Output "Using already downloaded Elasticsearch $Version..."
 }
 
 If ((Test-Path -Path "elasticsearch-$Version.zip") -And !(Test-Path -Path "elasticsearch-$Version")) {
@@ -38,7 +38,7 @@ For ($i = 1; $i -le $NodeCount; $i++) {
     Copy-Item .\elasticsearch-$Version .\elasticsearch-$Version-node$i -Recurse
     Copy-Item .\elasticsearch.yml .\elasticsearch-$Version-node$i\config -Force
     Add-Content .\elasticsearch-$Version-node$i\config\elasticsearch.yml "`nhttp.port: $nodePort"
-        
+
     Invoke-Expression ".\elasticsearch-$Version-node$i\bin\elasticsearch-plugin.bat install mapper-size"
     if ($LastExitCode -ne 0) {
       $host.SetShouldExit($LastExitCode)
@@ -59,10 +59,10 @@ For ($i = 1; $i -le $NodeCount; $i++) {
     If ($attempts -gt 0) {
       Start-Sleep -s 2
     }
-        
+
     Write-Host "Waiting for Elasticsearch $Version node $i to respond ($attempts)..."
     $res = $null
-        
+
     Try {
       $res = Invoke-WebRequest http://localhost:$nodePort -UseBasicParsing
       If ($res -ne $null -And $res.StatusCode -eq 200) {
@@ -106,10 +106,10 @@ If ($StartKibana -eq $true) {
     If ($attempts -gt 0) {
       Start-Sleep -s 2
     }
-        
+
     Write-Host "Waiting for Kibana $Version to respond ($attempts)..."
     $res = $null
-        
+
     Try {
       $res = Invoke-WebRequest http://localhost:5601 -UseBasicParsing
       If ($res -ne $null -And $res.StatusCode -eq 200) {
