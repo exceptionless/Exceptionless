@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Mail {
         public InMemoryMailSender(int messagesToStore = 25) {
             _messagesToStore = messagesToStore;
         }
-        
+
         public long TotalSent => _totalSent;
         public List<MailMessage> SentMessages => _recentMessages.ToList();
         public MailMessage LastMessage => SentMessages.LastOrDefault();

@@ -4,9 +4,11 @@ using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
+using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
+using Exceptionless.Insulation.Mail;
 using Exceptionless.Insulation.Redis;
 using Exceptionless.NLog;
 using Foundatio.Caching;
@@ -35,6 +37,11 @@ namespace Exceptionless.Insulation {
                 container.RegisterSingleton<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.MetricsServerName, Settings.Current.MetricsServerPort, "ex"));
             else
                 logger.Warn("StatsD Metrics is NOT enabled.");
+
+            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+                container.RegisterSingleton<IMailSender, MailKitMailSender>();
+            else
+                logger.Warn("Emails will NOT be sent in Dev mode.");
 
             if (Settings.Current.EnableRedis) {
                 container.RegisterSingleton<ConnectionMultiplexer>(() => {
