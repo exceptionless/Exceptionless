@@ -49,12 +49,12 @@ namespace Exceptionless.Insulation.Mail {
             var builder = new BodyBuilder();
 
             if (!String.IsNullOrEmpty(notification.To))
-                message.To.Add(InternetAddressList.Parse(notification.To));
+                message.To.AddRange(InternetAddressList.Parse(notification.To));
 
             if (!String.IsNullOrEmpty(notification.From))
-                message.From.Add(InternetAddressList.Parse(notification.From));
+                message.From.AddRange(InternetAddressList.Parse(notification.From));
             else
-                message.From.Add(InternetAddressList.Parse(Settings.Current.SmtpFrom));
+                message.From.AddRange(InternetAddressList.Parse(Settings.Current.SmtpFrom));
 
             if (!String.IsNullOrEmpty(notification.TextBody))
                 builder.TextBody = notification.TextBody;
