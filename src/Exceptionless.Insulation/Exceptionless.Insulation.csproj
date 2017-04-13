@@ -36,26 +36,26 @@
     <Reference Include="Exceptionless, Version=4.0.1934.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Exceptionless.4.0.1934\lib\net45\Exceptionless.dll</HintPath>
       <Private>True</Private>
+    <Reference Include="Exceptionless, Version=4.0.1951.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.4.0.1951\lib\net45\Exceptionless.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.NLog, Version=4.0.1934.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.NLog.4.0.1934\lib\net45\Exceptionless.NLog.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Exceptionless.NLog, Version=4.0.1951.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.NLog.4.0.1951\lib\net45\Exceptionless.NLog.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.WebApi, Version=4.0.1934.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.4.0.1934\lib\net45\Exceptionless.WebApi.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Exceptionless.WebApi, Version=4.0.1951.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.4.0.1951\lib\net45\Exceptionless.WebApi.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio, Version=5.1.1422.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.5.1.1422-pre\lib\net46\Foundatio.dll</HintPath>
+    <Reference Include="Foundatio, Version=5.1.1426.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.5.1.1426-pre\lib\net46\Foundatio.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.AzureStorage, Version=5.1.1422.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.AzureStorage.5.1.1422-pre\lib\net46\Foundatio.AzureStorage.dll</HintPath>
+    <Reference Include="Foundatio.AzureStorage, Version=5.1.1426.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.AzureStorage.5.1.1426-pre\lib\net46\Foundatio.AzureStorage.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Logging.NLog, Version=5.1.1422.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Logging.NLog.5.1.1422-pre\lib\net46\Foundatio.Logging.NLog.dll</HintPath>
+    <Reference Include="Foundatio.Logging.NLog, Version=5.1.1426.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Logging.NLog.5.1.1426-pre\lib\net46\Foundatio.Logging.NLog.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Redis, Version=5.1.1422.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Redis.5.1.1422-pre\lib\net46\Foundatio.Redis.dll</HintPath>
+    <Reference Include="Foundatio.Redis, Version=5.1.1426.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Redis.5.1.1426-pre\lib\net46\Foundatio.Redis.dll</HintPath>
     </Reference>
     <Reference Include="Geocoding, Version=3.6.0.0, Culture=neutral, PublicKeyToken=7c714700b88674c7, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Geocoding.net.3.6.0\lib\net40\Geocoding.dll</HintPath>
@@ -93,6 +93,8 @@
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Newtonsoft.Json.10.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Nito.AsyncEx.Coordination, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Nito.AsyncEx.Coordination.1.0.2\lib\net46\Nito.AsyncEx.Coordination.dll</HintPath>
