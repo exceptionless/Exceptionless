@@ -325,7 +325,6 @@
     <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Mail\IMailSender.cs" />
     <Compile Include="Mail\InMemoryMailSender.cs" />
-    <Compile Include="Mail\SmtpMailSender.cs" />
     <Compile Include="Plugins\EventProcessor\Default\40_RequestInfoPlugin.cs" />
     <Compile Include="Repositories\Exceptions\DocumentNotFoundException.cs" />
     <Compile Include="Extensions\MailerExtensions.cs" />

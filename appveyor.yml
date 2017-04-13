@@ -28,7 +28,6 @@ assembly_info:
   assembly_informational_version: "{version} $(GIT_HASH)"
 
 before_build:
-  - nuget sources add -Name ExceptionlessNightly -Source https://www.myget.org/F/exceptionless/api/v3/index.json
   - nuget restore -verbosity quiet
   - ps: .\build\Start-ElasticSearch.ps1 -NodeCount 1 -StartKibana $false
 

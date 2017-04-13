@@ -34,10 +34,6 @@ namespace Exceptionless.Core {
 
         public string AppScopePrefix => HasAppScope ? AppScope + "-" : String.Empty;
 
-        public string TestEmailAddress { get; private set; }
-
-        public List<string> AllowedOutboundAddresses { get; private set; }
-
         public bool RunJobsInProcess { get; private set; }
 
         public int JobsIterationLimit { get; set; }
@@ -59,8 +55,6 @@ namespace Exceptionless.Core {
         public long MaximumEventPostSize { get; private set; }
 
         public int MaximumRetentionDays { get; private set; }
-
-        public bool EnableDailySummary { get; private set; }
 
         public string MetricsServerName { get; private set; }
 
@@ -96,8 +90,6 @@ namespace Exceptionless.Core {
 
         public string IntercomAppSecret { get; private set; }
 
-        public bool EnableAccountCreation { get; internal set; }
-
         public string MicrosoftAppId { get; private set; }
 
         public string MicrosoftAppSecret { get; private set; }
@@ -128,17 +120,31 @@ namespace Exceptionless.Core {
 
         public int BulkBatchSize { get; private set; }
 
-        internal string SmtpFrom { get; private set; }
+        public bool EnableAccountCreation { get; internal set; }
 
-        internal string SmtpHost { get; private set; }
+        public bool EnableDailySummary { get; private set; }
 
-        internal int SmtpPort { get; private set; }
+        /// <summary>
+        /// All emails that do not match the AllowedOutboundAddresses will be sent to this address in QA mode
+        /// </summary>
+        public string TestEmailAddress { get; private set; }
 
-        internal bool SmtpEnableSsl { get; private set; }
+        /// <summary>
+        /// Email addresses that match this comma delimited list of domains and email addresses will be allowed to be sent out in QA mode
+        /// </summary>
+        public List<string> AllowedOutboundAddresses { get; private set; }
 
-        internal string SmtpUser { get; private set; }
+        public string SmtpFrom { get; private set; }
 
-        internal string SmtpPassword { get; private set; }
+        public string SmtpHost { get; private set; }
+
+        public int SmtpPort { get; private set; }
+
+        public bool SmtpEnableSSL { get; private set; }
+
+        public string SmtpUser { get; private set; }
+
+        public string SmtpPassword { get; private set; }
 
         public override void Initialize() {
             EnvironmentVariablePrefix = "Exceptionless_";
@@ -163,8 +169,7 @@ namespace Exceptionless.Core {
             ExceptionlessServerUrl = GetString(nameof(ExceptionlessServerUrl));
             WebsiteMode = GetEnum<WebsiteMode>(nameof(WebsiteMode), WebsiteMode.Dev);
             AppScope = GetString(nameof(AppScope), String.Empty);
-            TestEmailAddress = GetString(nameof(TestEmailAddress));
-            AllowedOutboundAddresses = GetStringList(nameof(AllowedOutboundAddresses), "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
+
             RunJobsInProcess = GetBool(nameof(RunJobsInProcess), true);
             JobsIterationLimit = GetInt(nameof(JobsIterationLimit), -1);
             BotThrottleLimit = GetInt(nameof(BotThrottleLimit), 25);
@@ -175,12 +180,10 @@ namespace Exceptionless.Core {
             DisabledPlugins = GetStringList(nameof(DisabledPlugins), String.Empty);
             MaximumEventPostSize = GetInt64(nameof(MaximumEventPostSize), 1000000);
             MaximumRetentionDays = GetInt(nameof(MaximumRetentionDays), 180);
-            EnableDailySummary = GetBool(nameof(EnableDailySummary));
             MetricsServerName = GetString(nameof(MetricsServerName)) ?? "127.0.0.1";
             MetricsServerPort = GetInt(nameof(MetricsServerPort), 8125);
             EnableMetricsReporting = GetBool(nameof(EnableMetricsReporting));
             IntercomAppSecret = GetString(nameof(IntercomAppSecret));
-            EnableAccountCreation = GetBool(nameof(EnableAccountCreation), true);
             GoogleAppId = GetString(nameof(GoogleAppId));
             GoogleAppSecret = GetString(nameof(GoogleAppSecret));
             GoogleGeocodingApiKey = GetString(nameof(GoogleGeocodingApiKey));
@@ -194,12 +197,19 @@ namespace Exceptionless.Core {
             StorageFolder = GetString(nameof(StorageFolder));
             BulkBatchSize = GetInt(nameof(BulkBatchSize), 1000);
 
+            EnableAccountCreation = GetBool(nameof(EnableAccountCreation), true);
+            EnableDailySummary = GetBool(nameof(EnableDailySummary));
+            AllowedOutboundAddresses = GetStringList(nameof(AllowedOutboundAddresses), "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
+            TestEmailAddress = GetString(nameof(TestEmailAddress), "noreply@exceptionless.io");
             SmtpFrom = GetString(nameof(SmtpFrom), "Exceptionless <noreply@exceptionless.io>");
             SmtpHost = GetString(nameof(SmtpHost), "localhost");
-            SmtpPort = GetInt(nameof(SmtpPort), String.Equals(SmtpHost, "localhost") ? 25 : 587);
-            SmtpEnableSsl = GetBool(nameof(SmtpEnableSsl), !String.Equals(SmtpHost, "localhost"));
+            SmtpPort = GetInt(nameof(SmtpPort), String.Equals(SmtpHost, "localhost") ? 25 : 465);
+            SmtpEnableSSL = GetBool(nameof(SmtpEnableSSL), !String.Equals(SmtpHost, "localhost"));
             SmtpUser = GetString(nameof(SmtpUser));
             SmtpPassword = GetString(nameof(SmtpPassword));
+
+            if (String.IsNullOrWhiteSpace(SmtpUser) != String.IsNullOrWhiteSpace(SmtpPassword))
+                throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");
 
             AzureStorageConnectionString = GetConnectionString(nameof(AzureStorageConnectionString));
             EnableAzureStorage = GetBool(nameof(EnableAzureStorage), !String.IsNullOrEmpty(AzureStorageConnectionString));

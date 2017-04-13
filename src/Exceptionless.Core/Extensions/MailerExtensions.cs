@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
-using System.Net.Mail;
-using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
+using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Extensions {
     public static class MailerExtensions {
@@ -27,25 +26,6 @@ namespace Exceptionless.Core.Extensions {
             }
 
             return notification;
-        }
-
-        public static System.Net.Mail.MailMessage ToMailMessage(this MailMessage notification) {
-            var message = new System.Net.Mail.MailMessage { Subject = notification.Subject };
-            if (!String.IsNullOrEmpty(notification.To))
-                message.To.Add(notification.To);
-
-            if (!String.IsNullOrEmpty(notification.From))
-                message.From = new MailAddress(notification.From);
-            else
-                message.From = new MailAddress(Settings.Current.SmtpFrom);
-
-            if (!String.IsNullOrEmpty(notification.TextBody))
-                message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(notification.TextBody, null, "text/plain"));
-
-            if (!String.IsNullOrEmpty(notification.HtmlBody))
-                message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(notification.HtmlBody, null, "text/html"));
-
-            return message;
         }
     }
 }
