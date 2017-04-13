@@ -203,10 +203,13 @@ namespace Exceptionless.Core {
             TestEmailAddress = GetString(nameof(TestEmailAddress), "noreply@exceptionless.io");
             SmtpFrom = GetString(nameof(SmtpFrom), "Exceptionless <noreply@exceptionless.io>");
             SmtpHost = GetString(nameof(SmtpHost), "localhost");
-            SmtpPort = GetInt(nameof(SmtpPort), String.Equals(SmtpHost, "localhost") ? 25 : 587);
+            SmtpPort = GetInt(nameof(SmtpPort), String.Equals(SmtpHost, "localhost") ? 25 : 465);
             SmtpEnableSSL = GetBool(nameof(SmtpEnableSSL), !String.Equals(SmtpHost, "localhost"));
             SmtpUser = GetString(nameof(SmtpUser));
             SmtpPassword = GetString(nameof(SmtpPassword));
+
+            if (String.IsNullOrWhiteSpace(SmtpUser) != String.IsNullOrWhiteSpace(SmtpPassword))
+                throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");
 
             AzureStorageConnectionString = GetConnectionString(nameof(AzureStorageConnectionString));
             EnableAzureStorage = GetBool(nameof(EnableAzureStorage), !String.IsNullOrEmpty(AzureStorageConnectionString));
