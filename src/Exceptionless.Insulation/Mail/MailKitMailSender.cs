@@ -6,15 +6,12 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Foundatio.Utility;
 using MailKit.Net.Smtp;
+using MailKit.Security;
 using MimeKit;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Insulation.Mail {
     public class MailKitMailSender : IMailSender {
-        private long _totalSent;
-
-        public long TotalSent => _totalSent;
-
         public async Task SendAsync(MailMessage model) {
             var message = CreateMailMessage(model);
             message.Headers.Add("X-Mailer-Machine", Environment.MachineName);
@@ -25,7 +22,7 @@ namespace Exceptionless.Insulation.Mail {
             using (var client = new SmtpClient()) {
                 client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
-                await client.ConnectAsync(Settings.Current.SmtpHost, Settings.Current.SmtpPort, Settings.Current.SmtpEnableSSL).AnyContext();
+                await client.ConnectAsync(Settings.Current.SmtpHost, Settings.Current.SmtpPort, GetSecureSocketOption(Settings.Current.SmtpEncryption)).AnyContext();
 
                 // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
                 client.AuthenticationMechanisms.Remove("XOAUTH2");
@@ -34,10 +31,18 @@ namespace Exceptionless.Insulation.Mail {
                     await client.AuthenticateAsync(Settings.Current.SmtpUser, Settings.Current.SmtpPassword).AnyContext();
 
                 await client.SendAsync(message).AnyContext();
-
-                // we don't care if there is an error at this point.
-                Interlocked.Increment(ref _totalSent);
                 await client.DisconnectAsync(true).AnyContext();
+            }
+        }
+
+        private SecureSocketOptions GetSecureSocketOption(SmtpEncryption encryption) {
+            switch (encryption) {
+                case SmtpEncryption.StartTLS:
+                    return SecureSocketOptions.StartTls;
+                case SmtpEncryption.SSL:
+                    return SecureSocketOptions.SslOnConnect;
+                default:
+                    return SecureSocketOptions.Auto;
             }
         }
 

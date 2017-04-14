@@ -140,7 +140,7 @@ namespace Exceptionless.Core {
 
         public int SmtpPort { get; private set; }
 
-        public bool SmtpEnableSSL { get; private set; }
+        public SmtpEncryption SmtpEncryption { get; private set; }
 
         public string SmtpUser { get; private set; }
 
@@ -203,8 +203,8 @@ namespace Exceptionless.Core {
             TestEmailAddress = GetString(nameof(TestEmailAddress), "noreply@exceptionless.io");
             SmtpFrom = GetString(nameof(SmtpFrom), "Exceptionless <noreply@exceptionless.io>");
             SmtpHost = GetString(nameof(SmtpHost), "localhost");
-            SmtpPort = GetInt(nameof(SmtpPort), String.Equals(SmtpHost, "localhost") ? 25 : 465);
-            SmtpEnableSSL = GetBool(nameof(SmtpEnableSSL), !String.Equals(SmtpHost, "localhost"));
+            SmtpPort = GetInt(nameof(SmtpPort), String.Equals(SmtpHost, "localhost") ? 25 : 587);
+            SmtpEncryption = GetEnum<SmtpEncryption>(nameof(SmtpEncryption), GetDefaultSmtpEncryption(SmtpPort));
             SmtpUser = GetString(nameof(SmtpUser));
             SmtpPassword = GetString(nameof(SmtpPassword));
 
@@ -232,7 +232,20 @@ namespace Exceptionless.Core {
             Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
         }
 
+        private SmtpEncryption GetDefaultSmtpEncryption(int port) {
+            switch (port) {
+                case 465:
+                    return SmtpEncryption.SSL;
+                case 587:
+                case 2525:
+                    return SmtpEncryption.StartTLS;
+                default:
+                    return SmtpEncryption.None;
+            }
+        }
+
         public const string JobBootstrappedServiceProvider = "Exceptionless.Insulation.Jobs.JobBootstrappedServiceProvider,Exceptionless.Insulation";
+
 
         public LoggerFactory GetLoggerFactory() {
             return new LoggerFactory();
@@ -243,5 +256,11 @@ namespace Exceptionless.Core {
         Production,
         QA,
         Dev
+    }
+
+    public enum SmtpEncryption {
+        None,
+        StartTLS,
+        SSL
     }
 }
