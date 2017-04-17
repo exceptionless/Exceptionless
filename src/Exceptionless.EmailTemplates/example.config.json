@@ -1,0 +1,32 @@
+{
+  "aws": {
+    "region": "us-east-1",
+    "accessKeyId": "YOUR_ACCOUNT_KEY",
+    "secretAccessKey": "YOUR_ACCOUNT_SECRET",
+    "params": {
+        "Bucket": "elasticbeanstalk-us-east-1-THIS_IS_JUST_AN_EXAMPLE"
+    },
+    "url": "https://s3.amazonaws.com/elasticbeanstalk-us-east-1-THIS_IS_JUST_AN_EXAMPLE"
+  },
+  "litmus": {
+    "username": "YOUR_LITMUS@exceptionless.io",
+    "password": "YOUR_ACCOUNT_PASSWORD",
+    "url": "https://YOUR_ACCOUNT.litmus.com",
+    "applications": ["ol2003","ol2007","ol2010","ol2011","ol2013","chromegmailnew","chromeyahoo","appmail9","iphone5s","ipad","android4","androidgmailapp"]
+  },
+  "mail": {
+    "to": [
+      "team@exceptionless.com"
+    ],
+    "from": "Exceptionless <team@exceptionless.io>",
+    "smtp": {
+      "auth": {
+        "user": "example@exceptionless.io",
+        "pass": "12345678"
+      },
+      "host": "smtp.mandrillapp.com",
+      "secureConnection": true,
+      "port": 587
+    }
+  }
+}

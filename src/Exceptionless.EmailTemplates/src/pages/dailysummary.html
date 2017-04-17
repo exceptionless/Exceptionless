@@ -1,0 +1,43 @@
+<container>
+  <spacer size="16"></spacer>
+  <row>
+    <columns small="12">
+      <h1>Summary for \{{StartDate}}</h1>
+      \{{#if HasSubmittedEvents}}
+      <p class="lead">
+        \{{#if Total}}
+          The "\{{ProjectName}}" project had <b>\{{Total}} total</b>, <b>\{{UniqueTotal}} unique</b>, and <b>\{{NewTotal}} new</b> errors.
+        \{{else}}
+          Congrats! The "\{{ProjectName}}" project was exceptionless!
+        \{{/if}}
+      </p>
+
+      \{{#if IsFreePlan}}
+      <p class="lead">
+          You are currently on a free plan. If you would like to receive notifications for errors as they happen, <a href="\{{BaseUrl}}/project/\{{ProjectId}}/error/dashboard">upgrade to a paid plan</a>.
+      </p>
+      \{{/if}}
+
+      <center>
+        <button class="button radius" href="\{{BaseUrl}}/project/\{{ProjectId}}/error/dashboard">
+            View Dashboard
+          </button>
+      </center>
+    \{{else}}
+      <p class="lead">
+          Unfortunately, it appears that your "\{{ProjectName}}" project has not yet been configured to send errors to <a href="https://exceptionless.com">Exceptionless</a>. Send us an email at <a href="mailto:support@exceptionless.io">support@exceptionless.io</a> if you have any questions or need help getting started.
+      </p>
+    \{{/if}}
+    </columns>
+  </row>
+  <wrapper class="actions">
+    <row>
+      <columns small="12">
+        <h5>Other Actions</h5>
+        <ul>
+          <li><a href="\{{BaseUrl}}/account/manage?projectId=\{{ProjectId}}&tab=notifications">Change your notification settings for this project</a></li>
+        </ul>
+      </columns>
+    </row>
+  </wrapper>
+</container>

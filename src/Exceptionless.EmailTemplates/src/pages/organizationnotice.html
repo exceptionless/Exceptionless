@@ -1,0 +1,31 @@
+<container>
+  <spacer size="16"></spacer>
+  <row>
+    <columns small="12">
+      <p class="lead">
+        \{{#if IsOverMonthlyLimit}}
+          \{{OrganizationName}} has reached its monthly plan limit.
+        \{{else if IsOverHourlyLimit}}
+          Events are currently being throttled for \{{OrganizationName}} to prevent using up your plan limit in a small window of time.
+        \{{/if}}
+      </p>
+
+      <center>
+        <button class="button radius" href="\{{BaseUrl}}/organization/\{{OrganizationId}}/frequent">
+            View most frequent events
+          </button>
+      </center>
+    </columns>
+  </row>
+  <wrapper class="actions">
+    <row>
+      <columns small="12">
+        <h5>Other Actions</h5>
+        <ul>
+          <li><a href="\{{BaseUrl}}/organization/\{{OrganizationId}}/manage">View usage</a></li>
+          <li><a href="\{{BaseUrl}}/account/manage?tab=notifications">Change your notification settings</a></li>
+        </ul>
+      </columns>
+    </row>
+  </wrapper>
+</container>
