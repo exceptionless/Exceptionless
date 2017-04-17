@@ -1,8 +1,0 @@
-﻿@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.UserModel>
-Hello @Model.User.FullName,
-
-We're ready to activate your account. All we need to do is make sure this is your email address.
-
-@Model.BaseUrl/account/verify?token=@Model.User.VerifyEmailAddressToken
-
-If you didn't create an Exceptionless account, just delete this email and everything will go back to the way it was.

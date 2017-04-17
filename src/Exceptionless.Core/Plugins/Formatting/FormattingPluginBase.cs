@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return null;
         }
 
-        public virtual MailMessage GetEventNotificationMailMessage(EventNotification model) {
+        public virtual Dictionary<string, object> GetEventNotificationMailMessage(EventNotification model) {
             return null;
         }
 

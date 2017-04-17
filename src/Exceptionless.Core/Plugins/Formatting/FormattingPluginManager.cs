@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Models;
@@ -64,7 +65,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to get notification mail content for an event.
         /// </summary>
-        public MailMessage GetEventNotificationMailMessage(EventNotification model) {
+        public Dictionary<string, object> GetEventNotificationMailMessage(EventNotification model) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
                     var result = plugin.GetEventNotificationMailMessage(model);

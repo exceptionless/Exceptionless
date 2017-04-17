@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
@@ -125,25 +124,16 @@ namespace Exceptionless.Core.Jobs {
             if (!hasSubmittedEvents)
                 hasSubmittedEvents = await _eventRepository.GetCountByProjectIdAsync(project.Id, true).AnyContext() > 0;
 
-            var notification = new DailySummaryModel {
-                ProjectId = project.Id,
-                ProjectName = project.Name,
-                StartDate = data.UtcStartTime,
-                EndDate = data.UtcEndTime,
-                Total = result.Total,
-                PerHourAverage = result.Total / data.UtcEndTime.Subtract(data.UtcStartTime).TotalHours,
-                NewTotal = result.Aggregations.Terms<double>("terms_is_first_occurrence")?.Buckets.FirstOrDefault()?.Total ?? 0,
-                UniqueTotal = result.Aggregations.Cardinality("cardinality_stack_id")?.Value ?? 0,
-                HasSubmittedEvents = hasSubmittedEvents,
-                IsFreePlan = organization.PlanId == BillingManager.FreePlan.Id
-            };
+            double newTotal = result.Aggregations.Terms<double>("terms_is_first_occurrence")?.Buckets.FirstOrDefault()?.Total ?? 0;
+            double uniqueTotal = result.Aggregations.Cardinality("cardinality_stack_id")?.Value ?? 0;
+            bool isFreePlan = organization.PlanId == BillingManager.FreePlan.Id;
 
             foreach (var user in users) {
-                _logger.Info().Project(project.Id).Message("Queueing \"{0}\" daily summary email ({1}-{2}) for user {3}.", project.Name, notification.StartDate, notification.EndDate, user.EmailAddress);
-                await _mailer.SendDailySummaryAsync(user.EmailAddress, notification).AnyContext();
+                _logger.Info().Project(project.Id).Message("Queueing \"{0}\" daily summary email ({1}-{2}) for user {3}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
+                await _mailer.SendProjectDailySummaryAsync(user, project, data.UtcStartTime, hasSubmittedEvents, result.Total, uniqueTotal, newTotal, isFreePlan).AnyContext();
             }
 
-            _logger.Info().Project(project.Id).Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Name, notification.Total);
+            _logger.Info().Project(project.Id).Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Name, result.Total);
             return true;
         }
     }

@@ -3,20 +3,18 @@
   <row>
     <columns small="12">
       <p class="lead">
-        \{{#if IsNew}}
-          A new \{{#if IsCritical}}critical \{{/if}}event has occurred in the "\{{ProjectName}}" project.
-        \{{else if IsRegression}}
-          \{{#if IsCritical}}A critical\{{else}}An\{{/if}} event has regressed in the "\{{ProjectName}}" project.
-        \{{else}}
-          \{{#if IsCritical}}A critical\{{else}}An\{{/if}} event has reoccurred for the \{{TotalOccurrences}} time in the "\{{ProjectName}}" project.
-        \{{/if}}
+        \{{#if IsNew}} A new \{{#if IsCritical}}critical \{{/if}}event has occurred in the "\{{ProjectName}}" project. \{{else if
+        IsRegression}} \{{#if IsCritical}}A critical\{{else}}An\{{/if}} event has regressed in the "\{{ProjectName}}" project.
+        \{{else}} \{{#if IsCritical}}A critical\{{else}}An\{{/if}} event has reoccurred for the \{{TotalOccurrences}} time
+        in the "\{{ProjectName}}" project. \{{/if}}
       </p>
 
       \{{#if Fields}}
       <callout class="fieldset radius">
         \{{#Fields}}
         <row>
-          \{{#if @index}}<hr class="separator" />\{{/if}}
+          \{{#if @index}}
+          <hr class="separator" />\{{/if}}
           <columns small="12" class="field">
             <h5>\{{Key}}</h5>
             <p>\{{Value}}</p>
@@ -38,8 +36,8 @@
       <columns small="12">
         <h5>Other Actions</h5>
         <ul>
-          <li><a href="\{{BaseUrl}}/stack/@Model.Event.StackId/mark-fixed">Mark event as fixed</a></li>
-          <li><a href="\{{BaseUrl}}/stack/@Model.Event.StackId/stop-notifications">Stop sending notifications for this event</a></li>
+          <li><a href="\{{BaseUrl}}/stack/\{{StackId}}/mark-fixed">Mark event as fixed</a></li>
+          <li><a href="\{{BaseUrl}}/stack/\{{StackId}}/stop-notifications">Stop sending notifications for this event</a></li>
           <li><a href="\{{BaseUrl}}/account/manage?projectId=\{{ProjectId}}&tab=notifications">Change your notification settings for this project</a></li>
         </ul>
       </columns>

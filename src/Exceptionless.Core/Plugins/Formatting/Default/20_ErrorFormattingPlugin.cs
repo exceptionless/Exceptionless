@@ -3,20 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
-using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(20)]
     public sealed class ErrorFormattingPlugin : FormattingPluginBase {
-        private readonly IEmailGenerator _emailGenerator;
-
-        public ErrorFormattingPlugin(IEmailGenerator emailGenerator) {
-            _emailGenerator = emailGenerator;
-        }
-
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
         }
@@ -32,7 +24,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override SummaryData GetStackSummaryData(Stack stack) {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("ExceptionType"))
                 return null;
-            
+
             var data = new Dictionary<string, object>();
             if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value) && !String.IsNullOrEmpty(value)) {
                 data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
@@ -58,7 +50,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
-            
+
             var stackingTarget = ev.GetStackingTarget();
             if (stackingTarget?.Error == null)
                 return null;
@@ -83,7 +75,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-error-summary", Data = data };
         }
 
-        public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
+        public override Dictionary<string, object> GetEventNotificationMailMessage(EventNotification model) {
             if (!ShouldHandle(model.Event))
                 return null;
 
@@ -104,16 +96,14 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (model.IsCritical)
                 notificationType = String.Concat("Critical ", notificationType);
 
-            var mailerModel = new EventNotificationModel(model) {
-                BaseUrl = Settings.Current.BaseURL,
-                Subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message.Truncate(120)),
-                Url = requestInfo?.GetFullPath(true, true, true),
-                Message = stackingTarget.Error.Message,
-                TypeFullName = errorType,
-                MethodFullName = stackingTarget.Method?.GetFullName()
+            return new Dictionary<string, object> {
+                { "Subject", String.Concat(notificationType, ": ", stackingTarget.Error.Message.Truncate(120)) },
+                { "BaseUrl", Settings.Current.BaseURL },
+                { "Url", requestInfo?.GetFullPath(true, true, true) },
+                { "Message", stackingTarget.Error.Message },
+                { "TypeFullName", errorType },
+                { "MethodFullName", stackingTarget.Method?.GetFullName() }
             };
-
-            return _emailGenerator.GenerateMessage(mailerModel, "NoticeError").ToMailMessage();
         }
 
         public override string GetEventViewName(PersistentEvent ev) {

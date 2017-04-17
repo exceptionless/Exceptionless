@@ -36,7 +36,6 @@ using Foundatio.Serializer;
 using Foundatio.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using RazorSharpEmail;
 using SimpleInjector;
 using SimpleInjector.Advanced;
 
@@ -126,7 +125,6 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<IQueryParser>(() => new ElasticQueryParser());
             container.Register(typeof(IValidator<>), new[] { typeof(Bootstrapper).Assembly }, Lifestyle.Singleton);
 
-            container.RegisterSingleton<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingleton<IMailer, Mailer>();
             container.RegisterSingleton<IMailSender>(() => new InMemoryMailSender());
 

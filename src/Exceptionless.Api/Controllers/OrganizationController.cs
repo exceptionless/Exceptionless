@@ -460,7 +460,7 @@ namespace Exceptionless.Api.Controllers {
                     });
                 }
 
-                await _mailer.SendAddedToOrganizationAsync(CurrentUser, organization, user);
+                await _mailer.SendOrganizationAddedAsync(CurrentUser, organization, user);
             } else {
                 var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
                 if (invite == null) {
@@ -473,7 +473,7 @@ namespace Exceptionless.Api.Controllers {
                     await _repository.SaveAsync(organization, o => o.Cache());
                 }
 
-                await _mailer.SendInviteAsync(CurrentUser, organization, invite);
+                await _mailer.SendOrganizationInviteAsync(CurrentUser, organization, invite);
             }
 
             return Ok(new User { EmailAddress = email });

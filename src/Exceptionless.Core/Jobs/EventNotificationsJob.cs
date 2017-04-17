@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
@@ -159,11 +158,6 @@ namespace Exceptionless.Core.Jobs {
                 if (!shouldReport)
                     continue;
 
-                var model = new EventNotificationModel(eventNotification) {
-                    ProjectName = project.Name,
-                    TotalOccurrences = totalOccurrences
-                };
-
                 // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
                 if (Settings.Current.WebsiteMode != WebsiteMode.Production
                     && !Settings.Current.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
@@ -172,7 +166,7 @@ namespace Exceptionless.Core.Jobs {
                 }
 
                 _logger.Trace("Sending email to {0}...", user.EmailAddress);
-                await _mailer.SendEventNoticeAsync(user.EmailAddress, model).AnyContext();
+                await _mailer.SendEventNoticeAsync(user, eventNotification).AnyContext();
                 emailsSent++;
                 _logger.Trace().Message(() => "Done sending email.").WriteIf(shouldLog);
             }
