@@ -153,7 +153,7 @@ namespace Exceptionless.Core.Billing {
             }
 
             _logger.Info("Stripe payment failed. Customer: {0} Org: {1} Org Name: {2} Email: {3}", inv.CustomerId, org.Id, org.Name, user.EmailAddress);
-            await _mailer.SendPaymentFailedAsync(user, org).AnyContext();
+            await _mailer.SendOrganizationPaymentFailedAsync(user, org).AnyContext();
         }
     }
 }

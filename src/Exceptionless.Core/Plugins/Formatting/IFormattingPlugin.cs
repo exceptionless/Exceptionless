@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 
@@ -8,6 +9,6 @@ namespace Exceptionless.Core.Plugins.Formatting {
         string GetEventViewName(PersistentEvent ev);
         SummaryData GetStackSummaryData(Stack stack);
         SummaryData GetEventSummaryData(PersistentEvent ev);
-        MailMessage GetEventNotificationMailMessage(EventNotification model);
+        Dictionary<string, object> GetEventNotificationMailMessage(EventNotification model);
     }
 }

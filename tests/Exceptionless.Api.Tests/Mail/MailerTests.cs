@@ -131,7 +131,7 @@ namespace Exceptionless.Api.Tests.Mail {
         public async Task SendInviteAsync() {
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
-            await _mailer.SendInviteAsync(user, organization, new Invite {
+            await _mailer.SendOrganizationInviteAsync(user, organization, new Invite {
                 DateAdded = SystemClock.UtcNow,
                 EmailAddress = Settings.Current.TestEmailAddress,
                 Token = "1"
@@ -142,7 +142,7 @@ namespace Exceptionless.Api.Tests.Mail {
             var sender = GetService<IMailSender>() as InMemoryMailSender;
             if (sender != null) {
                 Assert.Equal(Settings.Current.TestEmailAddress, sender.LastMessage.To);
-                Assert.Contains("Join Organization", sender.LastMessage.HtmlBody);
+                Assert.Contains("Join Organization", sender.LastMessage.Body);
             }
         }
 
@@ -151,27 +151,27 @@ namespace Exceptionless.Api.Tests.Mail {
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
 
-            await _mailer.SendAddedToOrganizationAsync(user, organization, user);
+            await _mailer.SendOrganizationAddedAsync(user, organization, user);
             await RunMailJobAsync();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
         public async Task SendPasswordResetAsync() {
             User user = UserData.GenerateSampleUser();
-            await _mailer.SendPasswordResetAsync(user);
+            await _mailer.SendUserPasswordResetAsync(user);
             await RunMailJobAsync();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
         public async Task SendVerifyEmailAsync() {
             User user = UserData.GenerateSampleUser();
-            await _mailer.SendVerifyEmailAsync(user);
+            await _mailer.SendUserEmailVerifyAsync(user);
             await RunMailJobAsync();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
         public async Task SendSummaryNotificationAsync() {
-            await _mailer.SendDailySummaryAsync(Settings.Current.TestEmailAddress, new DailySummaryModel {
+            await _mailer.SendProjectDailySummaryAsync(Settings.Current.TestEmailAddress, new DailySummaryModel {
                 ProjectId = "1",
                 BaseUrl = "http://be.exceptionless.io",
                 StartDate = SystemClock.UtcNow.Date,
@@ -192,7 +192,7 @@ namespace Exceptionless.Api.Tests.Mail {
         public async Task SendPaymentFailedAsync() {
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
-            await _mailer.SendPaymentFailedAsync(user, organization);
+            await _mailer.SendOrganizationPaymentFailedAsync(user, organization);
             await RunMailJobAsync();
         }
 

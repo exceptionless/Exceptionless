@@ -3,20 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
-using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(10)]
     public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
-        private readonly IEmailGenerator _emailGenerator;
-
-        public SimpleErrorFormattingPlugin(IEmailGenerator emailGenerator) {
-            _emailGenerator = emailGenerator;
-        }
-
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
         }
@@ -24,7 +16,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override SummaryData GetStackSummaryData(Stack stack) {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("StackTrace"))
                 return null;
-            
+
             var data = new Dictionary<string, object>();
             if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value)) {
                 data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
@@ -52,7 +44,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             var error = ev.GetSimpleError();
             if (error == null)
                 return null;
-            
+
             var data = new Dictionary<string, object> { { "Message", ev.Message } };
             AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
@@ -68,7 +60,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-simple-summary", Data = data };
         }
 
-        public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
+        public override Dictionary<string, object> GetEventNotificationMailMessage(EventNotification model) {
             if (!ShouldHandle(model.Event))
                 return null;
 
@@ -88,14 +80,12 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (model.IsCritical)
                 notificationType = String.Concat("Critical ", notificationType);
 
-            var mailerModel = new EventNotificationModel(model) {
-                BaseUrl = Settings.Current.BaseURL,
-                Subject = String.Concat(notificationType, ": ", error.Message.Truncate(120)),
-                Message = error.Message,
-                Url = requestInfo?.GetFullPath(true, true, true)
+            return new Dictionary<string, object> {
+                { "Subject", String.Concat(notificationType, ": ", error.Message.Truncate(120)) },
+                { "BaseUrl", Settings.Current.BaseURL },
+                { "Message", error.Message },
+                { "Url", requestInfo?.GetFullPath(true, true, true) }
             };
-
-            return _emailGenerator.GenerateMessage(mailerModel, "NoticeError").ToMailMessage();
         }
 
         public override string GetEventViewName(PersistentEvent ev) {

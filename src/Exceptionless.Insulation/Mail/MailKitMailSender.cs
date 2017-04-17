@@ -58,11 +58,8 @@ namespace Exceptionless.Insulation.Mail {
             else
                 message.From.AddRange(InternetAddressList.Parse(Settings.Current.SmtpFrom));
 
-            if (!String.IsNullOrEmpty(notification.TextBody))
-                builder.TextBody = notification.TextBody;
-
-            if (!String.IsNullOrEmpty(notification.HtmlBody))
-                builder.HtmlBody = notification.HtmlBody;
+            if (!String.IsNullOrEmpty(notification.Body))
+                builder.HtmlBody = notification.Body;
 
             message.Body = builder.ToMessageBody();
             return message;

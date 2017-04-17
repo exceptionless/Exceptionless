@@ -71,6 +71,9 @@
     <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.567.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.567-pre\lib\net461\Foundatio.Repositories.Elasticsearch.dll</HintPath>
     </Reference>
+    <Reference Include="Handlebars, Version=1.0.0.0, Culture=neutral, PublicKeyToken=22225d0bf33cd661, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Handlebars.Net.1.8.0\lib\portable-net45+sl5+wp8+win8\Handlebars.dll</HintPath>
+    </Reference>
     <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
       <HintPath>..\..\packages\MaxMind.Db.2.1.3\lib\net45\MaxMind.Db.dll</HintPath>
       <Private>True</Private>
@@ -110,10 +113,6 @@
       <HintPath>..\..\packages\Pegasus.4.0.0\lib\net40\Pegasus.Common.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="RazorEngine, Version=3.9.3.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\RazorEngine.3.9.3\lib\net45\RazorEngine.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="RestSharp, Version=105.2.3.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\RestSharp.105.2.3\lib\net46\RestSharp.dll</HintPath>
       <Private>True</Private>
@@ -140,10 +139,6 @@
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web" />
-    <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.AspNet.Razor.3.2.3\lib\net45\System.Web.Razor.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -186,15 +181,6 @@
     <Compile Include="Jobs\WorkItemHandlers\OrganizationMaintenanceWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\ProjectMaintenanceWorkItemHandler.cs" />
     <Compile Include="Jobs\WorkItemHandlers\UserMaintenanceWorkItemHandler.cs" />
-    <Compile Include="Mail\Engine\DirectoryTemplateResolver.cs" />
-    <Compile Include="Mail\Engine\EmailTemplate.cs" />
-    <Compile Include="Mail\Engine\EmbeddedTemplateResolver.cs" />
-    <Compile Include="Mail\Engine\IEmailGenerator.cs" />
-    <Compile Include="Mail\Engine\LanguageScope.cs" />
-    <Compile Include="Mail\Engine\RazorEmailGenerator.cs" />
-    <Compile Include="Mail\Engine\StringExtensions.cs" />
-    <Compile Include="Mail\Engine\TemplatedEmail.cs" />
-    <Compile Include="Mail\Models\OrganizationNotificationModel.cs" />
     <Compile Include="Models\Billing\ChangePlanResult.cs" />
     <Compile Include="Models\ClientConfiguration.cs" />
     <Compile Include="Models\Collections\DataDictionary.cs" />
@@ -327,7 +313,6 @@
     <Compile Include="Mail\InMemoryMailSender.cs" />
     <Compile Include="Plugins\EventProcessor\Default\40_RequestInfoPlugin.cs" />
     <Compile Include="Repositories\Exceptions\DocumentNotFoundException.cs" />
-    <Compile Include="Extensions\MailerExtensions.cs" />
     <Compile Include="Extensions\ValidationExtensions.cs" />
     <Compile Include="Jobs\EventUserDescriptionsJob.cs" />
     <Compile Include="Jobs\MailMessageJob.cs" />
@@ -409,14 +394,9 @@
     <Compile Include="Validation\UserDescriptionValidator.cs" />
     <Compile Include="Validation\UserValidator.cs" />
     <Compile Include="Validation\WebHookValidator.cs" />
-    <None Include="Mail\Templates\AddedToOrganization\Subject.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <Compile Include="Models\Billing\BillingPlan.cs" />
     <Compile Include="Models\Queues\EventPostInfo.cs" />
     <Compile Include="Models\WebHookStack.cs" />
-    <Compile Include="Mail\Models\PaymentModel.cs" />
-    <Compile Include="Mail\Models\DailySummaryModel.cs" />
     <Compile Include="Models\WebHookEvent.cs" />
     <Compile Include="Pipeline\100_RunEventProcessedPluginsAction.cs" />
     <Compile Include="Pipeline\005_RunEventProcessingPluginsAction.cs" />
@@ -451,11 +431,6 @@
     <Compile Include="Utility\SimpleInjectorDependencyResolver.cs" />
     <Compile Include="Mail\IMailer.cs" />
     <Compile Include="Mail\Mailer.cs" />
-    <Compile Include="Mail\Models\AddedToOrganizationModel.cs" />
-    <Compile Include="Mail\Models\EventNotificationModel.cs" />
-    <Compile Include="Mail\Models\InviteModel.cs" />
-    <Compile Include="Mail\Models\MailModelBase.cs" />
-    <Compile Include="Mail\Models\UserModel.cs" />
     <Compile Include="Pipeline\010_AssignToStackAction.cs" />
     <Compile Include="Pipeline\020_MarkAsCriticalAction.cs" />
     <Compile Include="Pipeline\030_CheckForRegressionAction.cs" />
@@ -478,94 +453,17 @@
     <Compile Include="Repositories\OrganizationRepository.cs" />
     <Compile Include="Repositories\ProjectRepository.cs" />
     <Compile Include="Repositories\UserRepository.cs" />
-    <Content Include="Mail\Templates\OrganizationNotice\Html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\OrganizationNotice\PlainText.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <None Include="Mail\Templates\OrganizationNotice\Subject.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <EmbeddedResource Include="Mail\Templates\event-notice.html" />
+    <EmbeddedResource Include="Mail\Templates\organization-added.html" />
+    <EmbeddedResource Include="Mail\Templates\organization-invited.html" />
+    <EmbeddedResource Include="Mail\Templates\organization-notice.html" />
+    <EmbeddedResource Include="Mail\Templates\organization-payment-failed.html" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Mail\Templates\AddedToOrganization\Html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\AddedToOrganization\PlainText.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\clean_template.html" />
-    <Content Include="Mail\Templates\email.css">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\Invite\Html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\Invite\PlainText.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\PasswordReset\Html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\PasswordReset\PlainText.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\VerifyEmail\Html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\VerifyEmail\PlainText.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\DailySummary\PlainText.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\DailySummary\Html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\PaymentFailed\Html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\PaymentFailed\PlainText.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\Notice\Html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\Notice\PlainText.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\NoticeError\Html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\NoticeError\PlainText.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <None Include="Mail\Templates\NoticeError\Subject.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Mail\Templates\Notice\Subject.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Mail\Templates\Invite\Subject.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Mail\Templates\PasswordReset\Subject.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Mail\Templates\PaymentFailed\Subject.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Mail\Templates\DailySummary\Subject.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Mail\Templates\VerifyEmail\Subject.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Mail\Templates\_Layout.html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <EmbeddedResource Include="Mail\Templates\project-daily-summary.html" />
+    <EmbeddedResource Include="Mail\Templates\user-email-verify.html" />
+    <EmbeddedResource Include="Mail\Templates\user-password-reset.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\Pegasus.4.0.0\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.4.0.0\build\Pegasus.targets')" />
