@@ -1,0 +1,47 @@
+---
+layout: index-layout
+subject: Exceptionless Email Templates
+---
+
+<spacer size="16"></spacer>
+<container>
+  <spacer size="24"></spacer>
+  <row>
+    <columns small="12">
+
+    <p class="lead">Hi there!</p>
+    <p>
+      We use <a href="http://foundation.zurb.com/emails/docs/">Foundation for Emails</a> to simplify the
+      process of creating and properly formatting emails. We process to update the email content that we
+      send out is simple:
+    </p>
+
+    <ol>
+      <li>Edit the markup located in this folder to update the templates.</li>
+      <li>Run gulp --production to update the existing templates.</li>
+      <li>Rebuild the solution to take advantage of the updated email templates.</li>
+    </ol>
+
+    <spacer size="16"></spacer>
+
+    <h3>Our templates:</h3>
+    <center>
+      <menu class="vertical">
+        <item href="{{root}}addedtoorganization.html" target="_blank">Added To Organization Template</item>
+        <item href="{{root}}dailysummary.html" target="_blank">Daily Summary Template</item>
+        <item href="{{root}}invite.html" target="_blank">Invite Template</item>
+        <item href="{{root}}notice.html" target="_blank">Notice Template</item>
+        <item href="{{root}}organizationnotice.html" target="_blank">Organization Notice Template</item>
+        <item href="{{root}}paymentfailed.html" target="_blank">Password Failed Template</item>
+        <item href="{{root}}passwordreset.html" target="_blank">Password Reset Template</item>
+        <item href="{{root}}verifyemail.html" target="_blank">Verify Email Template</item>
+      </menu>
+    </center>
+
+    <spacer size="16"></spacer>
+    <p>Happy Coding,</p>
+    <p>The Exceptionless Team</p>
+    </columns>
+  </row>
+</container>
+
