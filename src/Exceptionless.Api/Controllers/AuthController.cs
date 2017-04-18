@@ -140,6 +140,7 @@ namespace Exceptionless.Api.Controllers {
                 await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
 
             await _cache.RemoveAsync(userLoginAttemptsCacheKey);
+            await _cache.IncrementAsync(ipLoginAttemptsCacheKey, -1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
             _logger.Info().Message("\"{0}\" logged in.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
             return Ok(new TokenResult { Token = await GetTokenAsync(user) });
