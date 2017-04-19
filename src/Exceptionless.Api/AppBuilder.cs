@@ -196,16 +196,13 @@ namespace Exceptionless.Api {
             await dataHelper.CreateDataAsync();
         }
 
-        public static Container CreateContainer(ILoggerFactory loggerFactory, ILogger logger, CancellationToken shutdownCancellationToken, bool includeInsulation = true) {
+        public static Container CreateContainer(ILoggerFactory loggerFactory, ILogger logger, CancellationToken shutdownCancellationToken) {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
 
             Core.Bootstrapper.RegisterServices(container, loggerFactory, shutdownCancellationToken);
             Bootstrapper.RegisterServices(container, loggerFactory, shutdownCancellationToken);
-
-            if (!includeInsulation)
-                return container;
 
             Assembly insulationAssembly = null;
             try {

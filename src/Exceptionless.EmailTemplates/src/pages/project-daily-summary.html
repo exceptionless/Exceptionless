@@ -11,21 +11,31 @@
           Congrats! The "\{{ProjectName}}" project was exceptionless!
         \{{/if}}
       </p>
-
-      \{{#if IsFreePlan}}
-      <p class="lead">
-          You are currently on a free plan. If you would like to receive notifications for errors as they happen, <a href="\{{BaseUrl}}/project/\{{ProjectId}}/error/dashboard">upgrade to a paid plan</a>.
-      </p>
-      \{{/if}}
-
       <center>
         <button class="button radius" href="\{{BaseUrl}}/project/\{{ProjectId}}/error/dashboard">
             View Dashboard
           </button>
       </center>
+
+      \{{#if IsFreePlan}}
+      <p>
+          You are currently on a free plan. If you would like to receive notifications for errors as they happen,
+          <a href="\{{BaseUrl}}/organization/\{{OrganizationId}}/upgrade">upgrade to a paid plan</a>.
+      </p>
+      \{{/if}}
     \{{else}}
       <p class="lead">
-          Unfortunately, it appears that your "\{{ProjectName}}" project has not yet been configured to send errors to <a href="https://exceptionless.com">Exceptionless</a>. Send us an email at <a href="mailto:support@exceptionless.io">support@exceptionless.io</a> if you have any questions or need help getting started.
+          Unfortunately, it appears that your "\{{ProjectName}}" project has not yet been configured to send errors
+          to <a href="https://exceptionless.com">Exceptionless</a>.
+      </p>
+      <center>
+        <button class="button radius" href="\{{BaseUrl}}/project/\{{ProjectId}}/configure">
+            Configure Project
+        </button>
+      </center>
+
+      <p>
+        Send us an email at <a href="mailto:support@exceptionless.io">support@exceptionless.io</a> if you have any questions or need help getting started.
       </p>
     \{{/if}}
     </columns>
