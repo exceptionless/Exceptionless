@@ -2,15 +2,16 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Utility;
 using HandlebarsDotNet;
 
 namespace Exceptionless.Core.Mail {
@@ -30,7 +31,7 @@ namespace Exceptionless.Core.Mail {
 
         public Task SendEventNoticeAsync(User user, EventNotification model) {
             var data = _pluginManager.GetEventNotificationMailMessage(model);
-            if (data == null) {
+            if (data == null || data.Count == 0) {
                 _logger.Warn("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, user.EmailAddress);
                 return Task.CompletedTask;
             }
@@ -82,7 +83,7 @@ namespace Exceptionless.Core.Mail {
 
         public Task SendOrganizationNoticeAsync(User user, Organization organization, bool isOverMonthlyLimit, bool isOverHourlyLimit) {
             const string template = "organization-notice";
-            string subject = isOverHourlyLimit
+            string subject = isOverMonthlyLimit
                     ? $"[{organization.Name}] Monthly plan limit exceeded."
                     : $"[{organization.Name}] Events are currently being throttled.";
 
@@ -92,7 +93,8 @@ namespace Exceptionless.Core.Mail {
                 { "OrganizationId", organization.Id },
                 { "OrganizationName", organization.Name },
                 { "IsOverMonthlyLimit", isOverMonthlyLimit },
-                { "IsOverHourlyLimit", isOverHourlyLimit }
+                { "IsOverHourlyLimit", isOverHourlyLimit },
+                { "ThrottledUntil", SystemClock.UtcNow.StartOfHour().AddHours(1).ToShortTimeString() }
             };
 
             return QueueMessageAsync(new MailMessage {
@@ -103,8 +105,8 @@ namespace Exceptionless.Core.Mail {
         }
 
         public Task SendOrganizationPaymentFailedAsync(User owner, Organization organization) {
-            const string template = "organization-notice";
-            string subject = $"Payment failed for your organization \"{organization.Name}\" on Exceptionless";
+            const string template = "organization-payment-failed";
+            string subject = $"[{organization.Name}] Payment failed! Update billing information to avoid service interuption!";
             var data = new Dictionary<string, object> {
                 { "Subject", subject },
                 { "BaseUrl", Settings.Current.BaseURL },
@@ -125,9 +127,10 @@ namespace Exceptionless.Core.Mail {
             var data = new Dictionary<string, object> {
                 { "Subject", subject },
                 { "BaseUrl", Settings.Current.BaseURL },
+                { "OrganizationId", project.OrganizationId },
                 { "ProjectId", project.Id },
                 { "ProjectName", project.Name },
-                { "StartDate", startDate },
+                { "StartDate", startDate.ToLongDateString() },
                 { "HasSubmittedEvents", hasSubmittedEvents },
                 { "Total", total },
                 { "UniqueTotal", uniqueTotal },
@@ -189,8 +192,8 @@ namespace Exceptionless.Core.Mail {
 
         private Func<object, string> GetCompiledTemplate(string name) {
             return _cachedTemplates.GetOrAdd(name, templateName => {
-                var assembly = Assembly.GetExecutingAssembly();
-                var resourceName = $"Exceptionless.Core.{templateName}.html";
+                var assembly = typeof(Mailer).Assembly;
+                string resourceName = $"Exceptionless.Core.Mail.Templates.{templateName}.html";
 
                 using (var stream = assembly.GetManifestResourceStream(resourceName)) {
                     using (var reader = new StreamReader(stream)) {
