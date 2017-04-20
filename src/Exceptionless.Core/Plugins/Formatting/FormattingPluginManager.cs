@@ -65,31 +65,14 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to get notification mail content for an event.
         /// </summary>
-        public Dictionary<string, object> GetEventNotificationMailMessage(EventNotification model) {
+        public Dictionary<string, object> GetEventNotificationMailMessage(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    var result = plugin.GetEventNotificationMailMessage(model);
+                    var result = plugin.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling GetEventNotificationMailMessage in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("EventNotification", model).Write();
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Runs through the formatting plugins to calculate a razor view name for an event.
-        /// </summary>
-        public string GetEventViewName(PersistentEvent ev) {
-            foreach (var plugin in Plugins.Values.ToList()) {
-                try {
-                    string result = plugin.GetStackTitle(ev);
-                    if (!String.IsNullOrEmpty(result))
-                        return result;
-                } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling GetEventViewName in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("PersistentEvent", ev).Write();
+                    _logger.Error().Exception(ex).Message("Error calling GetEventNotificationMailMessage in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("EventNotification", ev).Write();
                 }
             }
 

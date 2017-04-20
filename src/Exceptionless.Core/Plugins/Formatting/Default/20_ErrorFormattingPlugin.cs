@@ -4,7 +4,6 @@ using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(20)]
@@ -75,42 +74,41 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-error-summary", Data = data };
         }
 
-        public override Dictionary<string, object> GetEventNotificationMailMessage(EventNotification model) {
-            if (!ShouldHandle(model.Event))
+        public override Dictionary<string, object> GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+            if (!ShouldHandle(ev))
                 return null;
 
-            var error = model.Event.GetError();
+            var error = ev.GetError();
             var stackingTarget = error?.GetStackingTarget();
             if (stackingTarget?.Error == null)
                 return null;
 
-            var requestInfo = model.Event.GetRequestInfo();
             string errorType = !String.IsNullOrEmpty(stackingTarget.Error.Type) ? stackingTarget.Error.Type : "Error";
-
             string notificationType = String.Concat(errorType, " occurrence");
-            if (model.IsNew)
-                notificationType = String.Concat(!model.IsCritical ? "New " : "new ", error.Type);
-            else if (model.IsRegression)
+            if (isNew)
+                notificationType = String.Concat(!isCritical ? "New " : "new ", errorType);
+            else if (isRegression)
                 notificationType = String.Concat(errorType, " regression");
 
-            if (model.IsCritical)
+            if (isCritical)
                 notificationType = String.Concat("Critical ", notificationType);
+
+            var fields = new Dictionary<string, object> { { "Message", stackingTarget.Error.Message } };
+            if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
+                fields.Add("Type", stackingTarget.Error.Type);
+
+            if (stackingTarget.Method != null)
+                fields.Add("Method", stackingTarget.Method.GetFullName());
+
+            var requestInfo = ev.GetRequestInfo();
+            if (requestInfo != null)
+                fields.Add("Url", requestInfo.GetFullPath(true, true, true));
 
             return new Dictionary<string, object> {
                 { "Subject", String.Concat(notificationType, ": ", stackingTarget.Error.Message.Truncate(120)) },
-                { "BaseUrl", Settings.Current.BaseURL },
-                { "Url", requestInfo?.GetFullPath(true, true, true) },
-                { "Message", stackingTarget.Error.Message },
-                { "TypeFullName", errorType },
-                { "MethodFullName", stackingTarget.Method?.GetFullName() }
+                { "IsFixable", true },
+                { "Fields", fields }
             };
-        }
-
-        public override string GetEventViewName(PersistentEvent ev) {
-            if (!ShouldHandle(ev))
-                return null;
-
-            return "Event-Error";
         }
     }
 }

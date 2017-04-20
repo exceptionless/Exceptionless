@@ -29,18 +29,25 @@ namespace Exceptionless.Core.Mail {
             _logger = logger;
         }
 
-        public Task SendEventNoticeAsync(User user, EventNotification model) {
-            var data = _pluginManager.GetEventNotificationMailMessage(model);
+        public Task SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
+            bool isCritical = ev.IsCritical();
+            var data = _pluginManager.GetEventNotificationMailMessage(ev, isCritical, isNew, isRegression);
             if (data == null || data.Count == 0) {
-                _logger.Warn("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, user.EmailAddress);
+                _logger.Warn("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", ev.Id, user.EmailAddress);
                 return Task.CompletedTask;
             }
 
-            const string template = "event-notice";
+            data["BaseUrl"] = Settings.Current.BaseURL;
+            data["IsCritical"] = isCritical;
+            data["IsNew"] = isNew;
+            data["IsRegression"] = isRegression;
+            data["TotalOccurrences"] = totalOccurrences;
+            data["ProjectName"] = project.Name;
             string subject = data["Subject"]?.ToString();
             if (String.IsNullOrEmpty(subject))
-                data["Subject"] = subject = $"[{model.ProjectName}] {model.Event.Message ?? model.Event.Source ?? "(Global)"}";
+                data["Subject"] = subject = $"[{project.Name}] {ev.Message ?? ev.Source ?? "(Global)"}";
 
+            const string template = "event-notice";
             return QueueMessageAsync(new MailMessage {
                 To = user.EmailAddress,
                 Subject = subject,

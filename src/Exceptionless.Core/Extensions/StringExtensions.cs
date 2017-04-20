@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Extensions {
 
             // 172.16.0.0 – 172.31.255.255 (Class B)
             if (ip.StartsWith("172.")) {
-                for (var range = 16; range < 32; range++) {
+                for (int range = 16; range < 32; range++) {
                     if (ip.StartsWith("172." + range + "."))
                         return true;
                 }
@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Extensions {
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), "length cannot be less than zero.");
 
-            if (string.IsNullOrEmpty(allowedChars))
+            if (String.IsNullOrEmpty(allowedChars))
                 throw new ArgumentException("allowedChars may not be empty.");
 
             const int byteSize = 0x100;
@@ -76,8 +76,8 @@ namespace Exceptionless.Core.Extensions {
 
                 while (result.Length < length) {
                     rng.GetBytes(buf);
-                    for (var i = 0; i < buf.Length && result.Length < length; ++i) {
-                        var outOfRangeStart = byteSize - (byteSize % allowedCharSet.Length);
+                    for (int i = 0; i < buf.Length && result.Length < length; ++i) {
+                        int outOfRangeStart = byteSize - (byteSize % allowedCharSet.Length);
                         if (outOfRangeStart <= buf[i])
                             continue;
                         result.Append(allowedCharSet[buf[i] % allowedCharSet.Length]);
@@ -154,7 +154,7 @@ namespace Exceptionless.Core.Extensions {
                 delimiter = ",";
 
             var sb = new StringBuilder();
-            foreach (var i in values) {
+            foreach (string i in values) {
                 if (sb.Length > 0)
                     sb.Append(delimiter);
 
@@ -242,12 +242,12 @@ namespace Exceptionless.Core.Extensions {
             if (String.IsNullOrEmpty(input))
                 return input;
 
-            var i = input.IndexOf(find, StringComparison.Ordinal);
+            int i = input.IndexOf(find, StringComparison.Ordinal);
             if (i < 0)
                 return input;
 
-            var pre = input.Substring(0, i);
-            var post = input.Substring(i + find.Length);
+            string pre = input.Substring(0, i);
+            string post = input.Substring(i + find.Length);
             return String.Concat(pre, replace, post);
         }
 
@@ -1092,7 +1092,7 @@ namespace Exceptionless.Core.Extensions {
                     str = Convert.ToChar(376).ToString();
                     break;
                 case "yuml":
-                    str = Convert.ToChar((int)byte.MaxValue).ToString();
+                    str = Convert.ToChar((int)Byte.MaxValue).ToString();
                     break;
                 case "zeta":
                     str = Convert.ToChar(950).ToString();

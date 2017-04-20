@@ -31,17 +31,19 @@ namespace Exceptionless.Core.Pipeline {
             if (!ctx.Organization.HasPremiumFeatures)
                 return;
 
+            // notifications are disabled or stack is hidden.
+            if (ctx.Stack.DisableNotifications || ctx.Stack.IsHidden)
+                return;
+
             if (ShouldQueueNotification(ctx))
                 await _notificationQueue.EnqueueAsync(new EventNotificationWorkItem {
                     EventId = ctx.Event.Id,
                     IsNew = ctx.IsNew,
-                    IsCritical = ctx.Event.IsCritical(),
                     IsRegression = ctx.IsRegression,
-                    TotalOccurrences = ctx.Stack.TotalOccurrences,
-                    ProjectName = ctx.Project.Name
+                    TotalOccurrences = ctx.Stack.TotalOccurrences
                 }).AnyContext();
 
-            foreach (WebHook hook in (await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId).AnyContext()).Documents) {
+            foreach (var hook in (await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId).AnyContext()).Documents) {
                 if (!ShouldCallWebHook(hook, ctx))
                     continue;
 
