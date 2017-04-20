@@ -83,7 +83,7 @@ namespace Exceptionless.Api.Tests.Mail {
         [Fact]
         public Task SendEventNoticeLogMessageAsync() {
             return SendEventNoticeAsync(new PersistentEvent {
-                Message = "Happy days are here again...",
+                Message = "Only Message",
                 Type = Event.KnownTypes.Log
             });
         }
@@ -91,7 +91,7 @@ namespace Exceptionless.Api.Tests.Mail {
         [Fact]
         public Task SendEventNoticeLogSourceAsync() {
             return SendEventNoticeAsync(new PersistentEvent {
-                Source = "My Log Source",
+                Source = "Only Source",
                 Type = Event.KnownTypes.Log
             });
         }
@@ -99,26 +99,21 @@ namespace Exceptionless.Api.Tests.Mail {
         [Fact]
         public Task SendEventNoticeDefaultAsync() {
             return SendEventNoticeAsync(new PersistentEvent {
-                Message = "Test Message",
-                Source = "Test Source"
+                Message = "Default Test Message",
+                Source = "Default Test Source"
             });
         }
 
         private async Task SendEventNoticeAsync(PersistentEvent ev) {
             var user = UserData.GenerateSampleUser();
+            var project = ProjectData.GenerateSampleProject();
+
             ev.Id = TestConstants.EventId;
             ev.OrganizationId = TestConstants.OrganizationId;
             ev.ProjectId = TestConstants.ProjectId;
             ev.StackId = TestConstants.StackId;
 
-            await _mailer.SendEventNoticeAsync(user, new EventNotification {
-                Event = ev,
-                IsNew = true,
-                IsCritical = true,
-                IsRegression = false,
-                TotalOccurrences = 1,
-                ProjectName = "Testing"
-            });
+            await _mailer.SendEventNoticeAsync(user, ev, project, RandomData.GetBool(), RandomData.GetBool(), 1);
             await RunMailJobAsync();
         }
 

@@ -4,7 +4,6 @@ using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(10)]
@@ -60,39 +59,37 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-simple-summary", Data = data };
         }
 
-        public override Dictionary<string, object> GetEventNotificationMailMessage(EventNotification model) {
-            if (!ShouldHandle(model.Event))
-                return null;
-
-            var error = model.Event.GetSimpleError();
-            if (error == null)
-                return null;
-
-            var requestInfo = model.Event.GetRequestInfo();
-            string errorType = !String.IsNullOrEmpty(error.Type) ? error.Type : "Error";
-
-            string notificationType = String.Concat(errorType, " Occurrence");
-            if (model.IsNew)
-                notificationType = String.Concat(!model.IsCritical ? "New " : "new ", errorType);
-            else if (model.IsRegression)
-                notificationType = String.Concat(errorType, " Regression");
-
-            if (model.IsCritical)
-                notificationType = String.Concat("Critical ", notificationType);
-
-            return new Dictionary<string, object> {
-                { "Subject", String.Concat(notificationType, ": ", error.Message.Truncate(120)) },
-                { "BaseUrl", Settings.Current.BaseURL },
-                { "Message", error.Message },
-                { "Url", requestInfo?.GetFullPath(true, true, true) }
-            };
-        }
-
-        public override string GetEventViewName(PersistentEvent ev) {
+        public override Dictionary<string, object> GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
             if (!ShouldHandle(ev))
                 return null;
 
-            return "Event-Simple";
+            var error = ev.GetSimpleError();
+            if (error == null)
+                return null;
+
+            string errorType = !String.IsNullOrEmpty(error.Type) ? error.Type : "Error";
+            string notificationType = String.Concat(errorType, " occurrence");
+            if (isNew)
+                notificationType = String.Concat(!isCritical ? "New " : "new ", errorType);
+            else if (isRegression)
+                notificationType = String.Concat(errorType, " regression");
+
+            if (isCritical)
+                notificationType = String.Concat("Critical ", notificationType);
+
+            var fields = new Dictionary<string, object> { { "Message", error.Message } };
+            if (!String.IsNullOrEmpty(error.Type))
+                fields.Add("Type", error.Type);
+
+            var requestInfo = ev.GetRequestInfo();
+            if (requestInfo != null)
+                fields.Add("Url", requestInfo.GetFullPath(true, true, true));
+
+            return new Dictionary<string, object> {
+                { "Subject", String.Concat(notificationType, ": ", error.Message.Truncate(120)) },
+                { "IsFixable", true },
+                { "Fields", fields }
+            };
         }
     }
 }

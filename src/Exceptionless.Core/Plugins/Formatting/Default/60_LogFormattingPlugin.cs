@@ -4,7 +4,6 @@ using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(60)]
@@ -59,32 +58,32 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-log-summary", Data = data };
         }
 
-        public override Dictionary<string, object> GetEventNotificationMailMessage(EventNotification model) {
-            if (!ShouldHandle(model.Event))
-                return null;
-
-            string notificationType = "Log Message";
-            if (model.IsNew)
-                notificationType = "New Log Source";
-            else if (model.IsRegression)
-                notificationType = "Log Regression";
-
-            if (model.IsCritical)
-                notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
-
-           var requestInfo = model.Event.GetRequestInfo();
-            return new Dictionary<string, object> {
-                { "Subject", String.Concat(notificationType, ": ", model.Event.Source.Truncate(120)) },
-                { "BaseUrl", Settings.Current.BaseURL },
-                { "Url", requestInfo?.GetFullPath(true, true, true) ?? model.Event.Source }
-            };
-        }
-
-        public override string GetEventViewName(PersistentEvent ev) {
+        public override Dictionary<string, object> GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
             if (!ShouldHandle(ev))
                 return null;
 
-            return "Event-NotFound";
+            string notificationType = "Log Message";
+            if (isNew)
+                notificationType = "New Log Source";
+            else if (isRegression)
+                notificationType = "Log Regression";
+
+            if (isCritical)
+                notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
+
+            string source = !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
+            var fields = new Dictionary<string, object> { { "Source", source } };
+            if (!String.IsNullOrEmpty(ev.Message))
+                fields.Add("Message", ev.Message);
+
+            var requestInfo = ev.GetRequestInfo();
+            if (requestInfo != null)
+                fields.Add("Url", requestInfo.GetFullPath(true, true, true));
+
+            return new Dictionary<string, object> {
+                { "Subject", String.Concat(notificationType, ": ", source.Truncate(120)) },
+                { "Fields", fields }
+            };
         }
     }
 }
