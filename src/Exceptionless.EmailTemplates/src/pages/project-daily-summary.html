@@ -51,3 +51,25 @@
     </row>
   </wrapper>
 </container>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "\{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+\{{#if HasSubmittedEvents}}
+    "target": "\{{BaseUrl}}/project/\{{ProjectId}}/error/dashboard",
+    "name": "View Dashboard"
+\{{else}}
+    "target": "\{{BaseUrl}}/project/\{{ProjectId}}/configure",
+    "name": "Configure Project"
+\{{/if}}
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com"
+  }
+}
+</script>

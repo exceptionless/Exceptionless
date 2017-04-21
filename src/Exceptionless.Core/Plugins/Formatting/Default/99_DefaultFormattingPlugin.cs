@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-summary", Data = data };
         }
 
-        public override Dictionary<string, object> GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+        public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
             string messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
             if (String.IsNullOrEmpty(messageOrSource))
                 return null;
@@ -49,21 +49,19 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (isCritical)
                 notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
-            var fields = new Dictionary<string, object>();
+            string subject = String.Concat(notificationType, ": ", messageOrSource.Truncate(120));
+            var data = new Dictionary<string, object>();
             if (!String.IsNullOrEmpty(ev.Message))
-                fields.Add("Message", ev.Message);
+                data.Add("Message", ev.Message);
 
             if (!String.IsNullOrEmpty(ev.Source))
-                fields.Add("Source", ev.Source);
+                data.Add("Source", ev.Source);
 
             var requestInfo = ev.GetRequestInfo();
             if (requestInfo != null)
-                fields.Add("Url", requestInfo.GetFullPath(true, true, true));
+                data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
-            return new Dictionary<string, object> {
-                { "Subject", String.Concat(notificationType, ": ", messageOrSource.Truncate(120)) },
-                { "Fields", fields }
-            };
+            return new MailMessageData { Subject = subject, Data = data };
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.Formatting;
@@ -31,28 +32,78 @@ namespace Exceptionless.Core.Mail {
 
         public Task SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
             bool isCritical = ev.IsCritical();
-            var data = _pluginManager.GetEventNotificationMailMessage(ev, isCritical, isNew, isRegression);
-            if (data == null || data.Count == 0) {
+            var result = _pluginManager.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
+            if (result == null || result.Data.Count == 0) {
                 _logger.Warn("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", ev.Id, user.EmailAddress);
                 return Task.CompletedTask;
             }
 
-            data["BaseUrl"] = Settings.Current.BaseURL;
-            data["IsCritical"] = isCritical;
-            data["IsNew"] = isNew;
-            data["IsRegression"] = isRegression;
-            data["TotalOccurrences"] = totalOccurrences;
-            data["ProjectName"] = project.Name;
-            string subject = data["Subject"]?.ToString();
-            if (String.IsNullOrEmpty(subject))
-                data["Subject"] = subject = $"[{project.Name}] {ev.Message ?? ev.Source ?? "(Global)"}";
+            if (String.IsNullOrEmpty(result.Subject))
+                result.Subject = ev.Message ?? ev.Source ?? "(Global)";
+
+            var messageData = new Dictionary<string, object> {
+                { "Subject", result.Subject },
+                { "BaseUrl", Settings.Current.BaseURL },
+                { "ProjectName", project.Name },
+                { "ProjectId", project.Id },
+                { "StackId", ev.StackId },
+                { "EventId", ev.Id },
+                { "IsCritical", isCritical },
+                { "IsNew", isNew },
+                { "IsRegression", isRegression },
+                { "IsFixable", ev.Type == Event.KnownTypes.Error || ev.Type == Event.KnownTypes.NotFound },
+                { "TotalOccurrences", totalOccurrences },
+                { "Fields", result.Data }
+            };
+
+            AddDefaultFields(ev, result.Data);
+            AddUserInfo(ev, messageData);
 
             const string template = "event-notice";
             return QueueMessageAsync(new MailMessage {
                 To = user.EmailAddress,
-                Subject = subject,
-                Body = RenderTemplate(template, data)
+                Subject = $"[{project.Name}] {result.Subject}",
+                Body = RenderTemplate(template, messageData)
             }, template);
+        }
+
+        private void AddUserInfo(PersistentEvent ev, Dictionary<string, object> data) {
+            var ud = ev.GetUserDescription();
+            var ui = ev.GetUserIdentity();
+            if (!String.IsNullOrEmpty(ud?.Description))
+                data["UserDescription"] = ud.Description;
+
+            if (!String.IsNullOrEmpty(ud?.EmailAddress))
+                data["UserEmail"] = ud.EmailAddress;
+
+            string displayName = null;
+            if (!String.IsNullOrEmpty(ui?.Identity))
+                data["UserIdentity"] = displayName = ui.Identity;
+
+            if (!String.IsNullOrEmpty(ui?.Name))
+                data["UserName"] = displayName = ui.Name;
+
+            if (!String.IsNullOrEmpty(displayName) && !String.IsNullOrEmpty(ud?.EmailAddress))
+                displayName = $"{displayName} ({ud.EmailAddress})";
+            else if (!String.IsNullOrEmpty(ui?.Identity) && !String.IsNullOrEmpty(ui.Name))
+                displayName = $"{ui.Name} ({ui.Identity})";
+
+            if (!String.IsNullOrEmpty(displayName))
+                data["UserDisplayName"] = displayName;
+
+            data["HasUserInfo"] = ud != null || ui != null;
+        }
+
+        private void AddDefaultFields(PersistentEvent ev, Dictionary<string, object> data) {
+            if (ev.Tags.Count > 0)
+                data["Tags"] = String.Join(", ", ev.Tags);
+
+            if (ev.Value.GetValueOrDefault() != 0)
+                data["Value"] = ev.Value;
+
+            string version = ev.GetVersion();
+            if (!String.IsNullOrEmpty(version))
+                data["Version"] = version;
         }
 
         public Task SendOrganizationAddedAsync(User sender, Organization organization, User user) {
@@ -223,7 +274,8 @@ namespace Exceptionless.Core.Mail {
             if (Settings.Current.WebsiteMode == WebsiteMode.Production)
                 return;
 
-            if (Settings.Current.AllowedOutboundAddresses.Contains(message.To.ToLowerInvariant()))
+            var address = message.To.ToLowerInvariant();
+            if (Settings.Current.AllowedOutboundAddresses.Any(address.Contains))
                 return;
 
             message.Subject = $"[{message.To}] {message.Subject}".StripInvisible();

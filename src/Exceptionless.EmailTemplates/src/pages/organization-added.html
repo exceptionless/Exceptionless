@@ -9,7 +9,7 @@
             View Organization
           </button>
       </center>
-      
+
       <p>
         What is <a href="https://exceptionless.com">Exceptionless</a>? Exceptionless is an error reporting service. Go from
         signing up to catching every error in your application in 15 minutes or less.
@@ -18,3 +18,20 @@
   </row>
   {{> social}}
 </container>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "\{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "\{{BaseUrl}}/organization/\{{OrganizationId}}/dashboard",
+    "name": "View Organization"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com"
+  }
+}
+</script>

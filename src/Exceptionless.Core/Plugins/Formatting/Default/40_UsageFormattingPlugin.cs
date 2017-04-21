@@ -35,17 +35,16 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-feature-summary", Data = data };
         }
 
-        public override Dictionary<string, object> GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+        public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
             if (!ShouldHandle(ev))
                 return null;
 
-            return new Dictionary<string, object> {
-                { "Subject", String.Concat("Feature: ", ev.Source.Truncate(120)) },
-                { "Fields", new Dictionary<string, object> {
-                        { "Source", ev.Source }
-                    }
-                }
+            string subject = String.Concat("Feature: ", ev.Source.Truncate(120));
+            var data = new Dictionary<string, object> {
+                { "Source", ev.Source }
             };
+
+            return new MailMessageData { Subject = subject, Data = data };
         }
     }
 }

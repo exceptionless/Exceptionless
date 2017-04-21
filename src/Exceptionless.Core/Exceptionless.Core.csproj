@@ -219,6 +219,7 @@
     <Compile Include="Models\Interfaces\IOwnedByProject.cs" />
     <Compile Include="Models\Interfaces\IOwnedByStack.cs" />
     <Compile Include="Models\Invite.cs" />
+    <Compile Include="Models\MailMessageData.cs" />
     <Compile Include="Models\Messaging\ReleaseNotification.cs" />
     <Compile Include="Models\Messaging\SystemNotification.cs" />
     <Compile Include="Models\NotificationSettings.cs" />

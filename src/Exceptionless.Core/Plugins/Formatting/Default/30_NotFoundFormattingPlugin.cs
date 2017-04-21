@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-notfound-summary", Data = data };
         }
 
-        public override Dictionary<string, object> GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+        public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
             if (!ShouldHandle(ev))
                 return null;
 
@@ -48,14 +48,13 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (isCritical)
                 notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
+            string subject = String.Concat(notificationType, ": ", ev.Source.Truncate(120));
             var requestInfo = ev.GetRequestInfo();
-            return new Dictionary<string, object> {
-                { "Subject", String.Concat(notificationType, ": ", ev.Source.Truncate(120)) },
-                { "Fields", new Dictionary<string, object> {
-                        { "Url",  requestInfo?.GetFullPath(true, true, true) ?? ev.Source }
-                    }
-                }
+            var data = new Dictionary<string, object> {
+                { "Url", requestInfo?.GetFullPath(true, true, true) ?? ev.Source }
             };
+
+            return new MailMessageData { Subject = subject, Data = data };
         }
     }
 }

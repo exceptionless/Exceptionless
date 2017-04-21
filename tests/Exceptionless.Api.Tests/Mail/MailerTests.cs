@@ -55,6 +55,25 @@ namespace Exceptionless.Api.Tests.Mail {
             });
         }
 
+
+        [Fact]
+        public Task SendEventNoticeErrorWithDetailsAsync() {
+            return SendEventNoticeAsync(new PersistentEvent {
+                Type = Event.KnownTypes.Error,
+                Geo = "44.5241,-87.9056",
+                ReferenceId = "ex_blake_dreams_of_cookies",
+                Tags = new TagSet(new [] { "Out", "Of", "Cookies", "Critical" }),
+                Count = 2,
+                Value = 500,
+                Data = new Core.Models.DataDictionary {
+                    { Event.KnownDataKeys.Error, EventData.GenerateError() },
+                    { Event.KnownDataKeys.Version, "1.2.3" },
+                    { Event.KnownDataKeys.UserInfo, new UserInfo("niemyjski", "Blake Niemyjski")  },
+                    { Event.KnownDataKeys.UserDescription, new UserDescription("noreply@exceptionless.io", "Blake ate two boxes of cookies and needs help") }
+                }
+            });
+        }
+
         [Fact]
         public Task SendEventNoticeNotFoundAsync() {
             return SendEventNoticeAsync(new PersistentEvent {
@@ -73,7 +92,7 @@ namespace Exceptionless.Api.Tests.Mail {
         }
 
         [Fact]
-        public Task SendEventNoticeEmptyEventAsync() {
+        public Task SendEventNoticeEmptyLogEventAsync() {
             return SendEventNoticeAsync(new PersistentEvent {
                 Value = 1,
                 Type = Event.KnownTypes.Log
@@ -93,6 +112,26 @@ namespace Exceptionless.Api.Tests.Mail {
             return SendEventNoticeAsync(new PersistentEvent {
                 Source = "Only Source",
                 Type = Event.KnownTypes.Log
+            });
+        }
+
+        [Fact]
+        public Task SendEventNoticeLogReallyLongSourceAsync() {
+            return SendEventNoticeAsync(new PersistentEvent {
+                Source = "Soooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooorce",
+                Type = Event.KnownTypes.Log
+            });
+        }
+
+        [Fact]
+        public Task SendEventNoticeLogMessageSourceLevelAsync() {
+            return SendEventNoticeAsync(new PersistentEvent {
+                Message = "My Message",
+                Source = "My Source",
+                Type = Event.KnownTypes.Log,
+                Data = new Core.Models.DataDictionary {
+                    { Event.KnownDataKeys.Level, "Warn" }
+                }
             });
         }
 

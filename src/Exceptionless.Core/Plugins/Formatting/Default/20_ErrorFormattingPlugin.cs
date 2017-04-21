@@ -74,7 +74,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-error-summary", Data = data };
         }
 
-        public override Dictionary<string, object> GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+        public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
             if (!ShouldHandle(ev))
                 return null;
 
@@ -93,22 +93,19 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (isCritical)
                 notificationType = String.Concat("Critical ", notificationType);
 
-            var fields = new Dictionary<string, object> { { "Message", stackingTarget.Error.Message } };
+            string subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message.Truncate(120));
+            var data = new Dictionary<string, object> { { "Message", stackingTarget.Error.Message } };
             if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
-                fields.Add("Type", stackingTarget.Error.Type);
+                data.Add("Type", stackingTarget.Error.Type);
 
             if (stackingTarget.Method != null)
-                fields.Add("Method", stackingTarget.Method.GetFullName());
+                data.Add("Method", stackingTarget.Method.GetFullName());
 
             var requestInfo = ev.GetRequestInfo();
             if (requestInfo != null)
-                fields.Add("Url", requestInfo.GetFullPath(true, true, true));
+                data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
-            return new Dictionary<string, object> {
-                { "Subject", String.Concat(notificationType, ": ", stackingTarget.Error.Message.Truncate(120)) },
-                { "IsFixable", true },
-                { "Fields", fields }
-            };
+            return new MailMessageData { Subject = subject, Data = data };
         }
     }
 }
