@@ -48,3 +48,20 @@
     </row>
   </wrapper>
 </container>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "\{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "\{{BaseUrl}}/organization/\{{OrganizationId}}/upgrade",
+    "name": "Upgrade Plan"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com"
+  }
+}
+</script>

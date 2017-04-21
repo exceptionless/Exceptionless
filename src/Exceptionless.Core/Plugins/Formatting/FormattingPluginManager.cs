@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues.Models;
 using Foundatio.Logging;
 using Foundatio.Metrics;
 
@@ -65,7 +63,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to get notification mail content for an event.
         /// </summary>
-        public Dictionary<string, object> GetEventNotificationMailMessage(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+        public MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
                     var result = plugin.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);

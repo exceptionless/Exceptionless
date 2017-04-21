@@ -12,6 +12,12 @@
         \{{/if}}
       </p>
 
+      <center>
+        <button class="button radius" href="\{{BaseUrl}}/event/\{{EventId}}">
+          View Event Details
+        </button>
+      </center>
+
       \{{#if Fields}}
       <callout class="fieldset radius">
         \{{#each Fields}}
@@ -22,11 +28,26 @@
       </callout>
       \{{/if}}
 
-      <center>
-        <button class="button radius" href="\{{BaseUrl}}/event/\{{EventId}}">
-            View Event Details
-          </button>
-      </center>
+      \{{#if HasUserInfo}}
+      <h4>User Info</h4>
+      <callout class="fieldset radius">
+        \{{#if UserDisplayName}}
+          <h5>Name</h5>
+          <p>
+            \{{#if UserEmail}}
+              <a href="mailto:\{{UserEmail}}?body=\{{UserDescription}}">\{{UserDisplayName}}</a>
+            \{{else}}
+              \{{UserDisplayName}}
+            \{{/if}}
+          </p>
+          \{{#if UserDescription}}<hr class="separator" />\{{/if}}
+        \{{/if}}
+        \{{#if UserDescription}}
+          <h5>Description</h5>
+          <p>\{{UserDescription}}</p>
+        \{{/if}}
+      </callout>
+      \{{/if}}
     </columns>
   </row>
   <wrapper class="actions">
@@ -44,3 +65,20 @@
     </row>
   </wrapper>
 </container>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "\{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "\{{BaseUrl}}/event/\{{EventId}}",
+    "name": "View Event Details"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com"
+  }
+}
+</script>

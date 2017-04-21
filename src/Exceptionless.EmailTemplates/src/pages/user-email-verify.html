@@ -19,3 +19,20 @@
     </columns>
   </row>
 </container>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "\{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "\{{BaseUrl}}/account/verify?token=/\{{UserVerifyEmailAddressToken}}",
+    "name": "Verify Address"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com"
+  }
+}
+</script>
