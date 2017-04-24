@@ -11,6 +11,7 @@
           Congrats! The "\{{ProjectName}}" project was exceptionless!
         \{{/if}}
       </p>
+
       <center>
         <button class="button radius" href="\{{BaseUrl}}/project/\{{ProjectId}}/error/dashboard">
             View Dashboard
@@ -18,22 +19,27 @@
       </center>
 
       \{{#if IsFreePlan}}
+      <spacer size="16"></spacer>
       <p>
           You are currently on a free plan. If you would like to receive notifications for errors as they happen,
           <a href="\{{BaseUrl}}/organization/\{{OrganizationId}}/upgrade">upgrade to a paid plan</a>.
       </p>
       \{{/if}}
     \{{else}}
+      <spacer size="16"></spacer>
       <p class="lead">
           Unfortunately, it appears that your "\{{ProjectName}}" project has not yet been configured to send errors
           to <a href="https://exceptionless.com">Exceptionless</a>.
       </p>
+
+      <spacer size="16"></spacer>
       <center>
         <button class="button radius" href="\{{BaseUrl}}/project/\{{ProjectId}}/configure">
             Configure Project
         </button>
       </center>
 
+      <spacer size="16"></spacer>
       <p>
         Send us an email at <a href="mailto:support@exceptionless.io">support@exceptionless.io</a> if you have any questions or need help getting started.
       </p>
@@ -51,6 +57,7 @@
     </row>
   </wrapper>
 </container>
+
 <script type="application/ld+json">
 {
   "@context": "http://schema.org",
@@ -69,7 +76,9 @@
   "publisher": {
     "@type": "Organization",
     "name": "Exceptionless",
-    "url": "https://exceptionless.com"
+    "url": "https://exceptionless.com",
+    "url/googlePlus": "https://plus.google.com/111513069275546127753"
+    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
   }
 }
 </script>
