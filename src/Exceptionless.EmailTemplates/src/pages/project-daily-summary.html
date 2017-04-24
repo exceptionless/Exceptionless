@@ -1,5 +1,5 @@
 <container>
-  <spacer size="16"></spacer>
+  <spacer size="5"></spacer>
   <row>
     <columns small="12">
       <h1>Summary for \{{StartDate}}</h1>
@@ -19,27 +19,27 @@
       </center>
 
       \{{#if IsFreePlan}}
-      <spacer size="16"></spacer>
+      <spacer size="5"></spacer>
       <p>
           You are currently on a free plan. If you would like to receive notifications for errors as they happen,
           <a href="\{{BaseUrl}}/organization/\{{OrganizationId}}/upgrade">upgrade to a paid plan</a>.
       </p>
       \{{/if}}
     \{{else}}
-      <spacer size="16"></spacer>
+      <spacer size="5"></spacer>
       <p class="lead">
           Unfortunately, it appears that your "\{{ProjectName}}" project has not yet been configured to send errors
           to <a href="https://exceptionless.com">Exceptionless</a>.
       </p>
 
-      <spacer size="16"></spacer>
+      <spacer size="5"></spacer>
       <center>
         <button class="button radius" href="\{{BaseUrl}}/project/\{{ProjectId}}/configure">
             Configure Project
         </button>
       </center>
 
-      <spacer size="16"></spacer>
+      <spacer size="5"></spacer>
       <p>
         Send us an email at <a href="mailto:support@exceptionless.io">support@exceptionless.io</a> if you have any questions or need help getting started.
       </p>
