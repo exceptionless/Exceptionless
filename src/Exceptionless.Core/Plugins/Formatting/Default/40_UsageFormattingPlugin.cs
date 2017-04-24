@@ -2,20 +2,11 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues.Models;
-using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(40)]
     public sealed class UsageFormattingPlugin : FormattingPluginBase {
-        private readonly IEmailGenerator _emailGenerator;
-
-        public UsageFormattingPlugin(IEmailGenerator emailGenerator) {
-            _emailGenerator = emailGenerator;
-        }
-
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsFeatureUsage();
         }
@@ -44,24 +35,16 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-feature-summary", Data = data };
         }
 
-        public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
-            if (!ShouldHandle(model.Event))
-                return null;
-
-            var mailerModel = new EventNotificationModel(model) {
-                BaseUrl = Settings.Current.BaseURL,
-                Subject = String.Concat("Feature: ", model.Event.Source.Truncate(120)),
-                Source = model.Event.Source
-            };
-
-            return _emailGenerator.GenerateMessage(mailerModel, "Notice").ToMailMessage();
-        }
-
-        public override string GetEventViewName(PersistentEvent ev) {
+        public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
             if (!ShouldHandle(ev))
                 return null;
 
-            return "Event-Feature";
+            string subject = String.Concat("Feature: ", ev.Source.Truncate(120));
+            var data = new Dictionary<string, object> {
+                { "Source", ev.Source }
+            };
+
+            return new MailMessageData { Subject = subject, Data = data };
         }
     }
 }

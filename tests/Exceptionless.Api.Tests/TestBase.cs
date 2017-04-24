@@ -43,7 +43,7 @@ namespace Exceptionless.Api.Tests {
         }
 
         public Container GetDefaultContainer() {
-            var container = AppBuilder.CreateContainer(Log, _logger, _disposedCancellationTokenSource.Token, false);
+            var container = AppBuilder.CreateContainer(Log, _logger, _disposedCancellationTokenSource.Token);
             RegisterServices(container);
             return container;
         }

@@ -6,7 +6,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Options;
-using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch;

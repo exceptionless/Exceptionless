@@ -234,7 +234,7 @@ namespace Exceptionless.Api.Controllers {
                 await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
 
             if (!user.IsEmailAddressVerified)
-                await _mailer.SendVerifyEmailAsync(user);
+                await _mailer.SendUserEmailVerifyAsync(user);
 
             _logger.Info().Message("\"{0}\" signed up.", user.EmailAddress).Tag("Signup").Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
             return Ok(new TokenResult { Token = await GetTokenAsync(user) });
@@ -372,7 +372,7 @@ namespace Exceptionless.Api.Controllers {
             user.CreatePasswordResetToken();
             await _userRepository.SaveAsync(user, o => o.Cache());
 
-            await _mailer.SendPasswordResetAsync(user);
+            await _mailer.SendUserPasswordResetAsync(user);
 
             _logger.Info().Message("\"{0}\" forgot their password.", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
             return Ok();
