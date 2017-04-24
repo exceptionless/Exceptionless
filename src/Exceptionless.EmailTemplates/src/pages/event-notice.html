@@ -19,32 +19,38 @@
       </center>
 
       \{{#if Fields}}
+      <spacer size="16"></spacer>
       <callout class="fieldset radius">
         \{{#each Fields}}
           \{{#if @index}}<hr class="separator" />\{{/if}}
-          <h5>\{{@key}}</h5>
-          <p>\{{this}}</p>
+          <p>
+            <strong>\{{@key}}</strong><br />
+            <span class="blt">\{{this}}</span>
+          </p>
         \{{/each}}
       </callout>
       \{{/if}}
 
       \{{#if HasUserInfo}}
+      <spacer size="16"></spacer>
       <h4>User Info</h4>
       <callout class="fieldset radius">
         \{{#if UserDisplayName}}
-          <h5>Name</h5>
           <p>
+            <strong>Name</strong><br />
             \{{#if UserEmail}}
               <a href="mailto:\{{UserEmail}}?body=\{{UserDescription}}">\{{UserDisplayName}}</a>
             \{{else}}
-              \{{UserDisplayName}}
+              <span class="blt">\{{UserDisplayName}}</span>
             \{{/if}}
           </p>
           \{{#if UserDescription}}<hr class="separator" />\{{/if}}
         \{{/if}}
         \{{#if UserDescription}}
-          <h5>Description</h5>
-          <p>\{{UserDescription}}</p>
+          <p>
+            <strong>Description</strong><br />
+            <span class="blt">\{{UserDescription}}</span>
+          </p>
         \{{/if}}
       </callout>
       \{{/if}}
@@ -65,6 +71,7 @@
     </row>
   </wrapper>
 </container>
+
 <script type="application/ld+json">
 {
   "@context": "http://schema.org",
@@ -78,7 +85,9 @@
   "publisher": {
     "@type": "Organization",
     "name": "Exceptionless",
-    "url": "https://exceptionless.com"
+    "url": "https://exceptionless.com",
+    "url/googlePlus": "https://plus.google.com/111513069275546127753"
+    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
   }
 }
 </script>
