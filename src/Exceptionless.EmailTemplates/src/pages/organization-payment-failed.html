@@ -1,0 +1,50 @@
+<container>
+  <spacer size="5"></spacer>
+  <row>
+    <columns small="12">
+      <h1>Payment Failed</h1>
+      <p class="lead">Payment failed for organization "\{{OrganizationName}}". In order to avoid service interuption, please login and update your payment information.</p>
+
+      <center>
+        <button class="button radius" href="\{{BaseUrl}}/organization/\{{OrganizationId}}/manage?tab=billing">
+            Update Billing Information
+          </button>
+      </center>
+
+      <spacer size="5"></spacer>
+      <p>
+        Send us an email at <a href="mailto:support@exceptionless.io">support@exceptionless.io</a> if you have any questions or need assistance.
+      </p>
+    </columns>
+  </row>
+  <wrapper class="actions">
+    <row>
+      <columns small="12">
+        <h5>Other Actions</h5>
+        <ul>
+          <li><a href="\{{BaseUrl}}/organization/\{{OrganizationId}}/manage?tab=billing">View invoices</a></li>
+        </ul>
+      </columns>
+    </row>
+  </wrapper>
+</container>
+
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "\{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "\{{BaseUrl}}/organization/\{{OrganizationId}}/manage?tab=billing",
+    "name": "Update Billing Information"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com",
+    "url/googlePlus": "https://plus.google.com/111513069275546127753"
+    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
+  }
+}
+</script>

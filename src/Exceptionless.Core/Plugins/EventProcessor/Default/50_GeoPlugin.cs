@@ -6,7 +6,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
-using Foundatio.Caching;
 using Foundatio.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {

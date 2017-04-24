@@ -1,116 +1,265 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
-using RazorSharpEmail;
+using Foundatio.Utility;
+using HandlebarsDotNet;
 
 namespace Exceptionless.Core.Mail {
     public class Mailer : IMailer {
-        private readonly IEmailGenerator _emailGenerator;
+        private readonly ConcurrentDictionary<string, Func<object, string>> _cachedTemplates = new ConcurrentDictionary<string, Func<object, string>>();
         private readonly IQueue<MailMessage> _queue;
         private readonly FormattingPluginManager _pluginManager;
         private readonly IMetricsClient _metrics;
         private readonly ILogger _logger;
 
-        public Mailer(IEmailGenerator emailGenerator, IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IMetricsClient metrics, ILogger<Mailer> logger) {
-            _emailGenerator = emailGenerator;
+        public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IMetricsClient metrics, ILogger<Mailer> logger) {
             _queue = queue;
             _pluginManager = pluginManager;
             _metrics = metrics;
             _logger = logger;
         }
 
-        public Task SendPasswordResetAsync(User user) {
-            if (String.IsNullOrEmpty(user?.PasswordResetToken))
-                return Task.CompletedTask;
-
-            var msg = _emailGenerator.GenerateMessage(new UserModel {
-                User = user,
-                BaseUrl = Settings.Current.BaseURL
-            }, "PasswordReset").ToMailMessage();
-            msg.To = user.EmailAddress;
-
-            return QueueMessageAsync(msg, "passwordreset");
-        }
-
-        public Task SendVerifyEmailAsync(User user) {
-            var msg = _emailGenerator.GenerateMessage(new UserModel {
-                User = user,
-                BaseUrl = Settings.Current.BaseURL
-            }, "VerifyEmail").ToMailMessage();
-            msg.To = user.EmailAddress;
-
-            return QueueMessageAsync(msg, "verifyemail");
-        }
-
-        public Task SendInviteAsync(User sender, Organization organization, Invite invite) {
-            var msg = _emailGenerator.GenerateMessage(new InviteModel {
-                Sender = sender,
-                Organization = organization,
-                Invite = invite,
-                BaseUrl = Settings.Current.BaseURL
-            }, "Invite").ToMailMessage();
-            msg.To = invite.EmailAddress;
-
-            return QueueMessageAsync(msg, "invite");
-        }
-
-        public Task SendPaymentFailedAsync(User owner, Organization organization) {
-            var msg = _emailGenerator.GenerateMessage(new PaymentModel {
-                Owner = owner,
-                Organization = organization,
-                BaseUrl = Settings.Current.BaseURL
-            }, "PaymentFailed").ToMailMessage();
-            msg.To = owner.EmailAddress;
-
-            return QueueMessageAsync(msg, "paymentfailed");
-        }
-
-        public Task SendAddedToOrganizationAsync(User sender, Organization organization, User user) {
-            var msg = _emailGenerator.GenerateMessage(new AddedToOrganizationModel {
-                Sender = sender,
-                Organization = organization,
-                User = user,
-                BaseUrl = Settings.Current.BaseURL
-            }, "AddedToOrganization").ToMailMessage();
-            msg.To = user.EmailAddress;
-
-            return QueueMessageAsync(msg, "addedtoorganization");
-        }
-
-        public Task SendEventNoticeAsync(string emailAddress, EventNotification model) {
-            var msg = _pluginManager.GetEventNotificationMailMessage(model);
-            if (msg == null) {
-                _logger.Warn("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, emailAddress);
+        public Task SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
+            bool isCritical = ev.IsCritical();
+            var result = _pluginManager.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
+            if (result == null || result.Data.Count == 0) {
+                _logger.Warn("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", ev.Id, user.EmailAddress);
                 return Task.CompletedTask;
             }
 
-            msg.To = emailAddress;
-            return QueueMessageAsync(msg, "eventnotice");
+            if (String.IsNullOrEmpty(result.Subject))
+                result.Subject = ev.Message ?? ev.Source ?? "(Global)";
+
+            var messageData = new Dictionary<string, object> {
+                { "Subject", result.Subject },
+                { "BaseUrl", Settings.Current.BaseURL },
+                { "ProjectName", project.Name },
+                { "ProjectId", project.Id },
+                { "StackId", ev.StackId },
+                { "EventId", ev.Id },
+                { "IsCritical", isCritical },
+                { "IsNew", isNew },
+                { "IsRegression", isRegression },
+                { "IsFixable", ev.Type == Event.KnownTypes.Error || ev.Type == Event.KnownTypes.NotFound },
+                { "TotalOccurrences", totalOccurrences },
+                { "Fields", result.Data }
+            };
+
+            AddDefaultFields(ev, result.Data);
+            AddUserInfo(ev, messageData);
+
+            const string template = "event-notice";
+            return QueueMessageAsync(new MailMessage {
+                To = user.EmailAddress,
+                Subject = $"[{project.Name}] {result.Subject}",
+                Body = RenderTemplate(template, messageData)
+            }, template);
         }
 
-        public Task SendOrganizationNoticeAsync(string emailAddress, OrganizationNotificationModel model) {
-            model.BaseUrl = Settings.Current.BaseURL;
+        private void AddUserInfo(PersistentEvent ev, Dictionary<string, object> data) {
+            var ud = ev.GetUserDescription();
+            var ui = ev.GetUserIdentity();
+            if (!String.IsNullOrEmpty(ud?.Description))
+                data["UserDescription"] = ud.Description;
 
-            var msg = _emailGenerator.GenerateMessage(model, "OrganizationNotice").ToMailMessage();
-            msg.To = emailAddress;
+            if (!String.IsNullOrEmpty(ud?.EmailAddress))
+                data["UserEmail"] = ud.EmailAddress;
 
-            return QueueMessageAsync(msg, "organizationnotice");
+            string displayName = null;
+            if (!String.IsNullOrEmpty(ui?.Identity))
+                data["UserIdentity"] = displayName = ui.Identity;
+
+            if (!String.IsNullOrEmpty(ui?.Name))
+                data["UserName"] = displayName = ui.Name;
+
+            if (!String.IsNullOrEmpty(displayName) && !String.IsNullOrEmpty(ud?.EmailAddress))
+                displayName = $"{displayName} ({ud.EmailAddress})";
+            else if (!String.IsNullOrEmpty(ui?.Identity) && !String.IsNullOrEmpty(ui.Name))
+                displayName = $"{ui.Name} ({ui.Identity})";
+
+            if (!String.IsNullOrEmpty(displayName))
+                data["UserDisplayName"] = displayName;
+
+            data["HasUserInfo"] = ud != null || ui != null;
         }
 
-        public Task SendDailySummaryAsync(string emailAddress, DailySummaryModel notification) {
-            notification.BaseUrl = Settings.Current.BaseURL;
+        private void AddDefaultFields(PersistentEvent ev, Dictionary<string, object> data) {
+            if (ev.Tags.Count > 0)
+                data["Tags"] = String.Join(", ", ev.Tags);
 
-            var msg = _emailGenerator.GenerateMessage(notification, "DailySummary").ToMailMessage();
-            msg.To = emailAddress;
+            if (ev.Value.GetValueOrDefault() != 0)
+                data["Value"] = ev.Value;
 
-            return QueueMessageAsync(msg, "dailysummary");
+            string version = ev.GetVersion();
+            if (!String.IsNullOrEmpty(version))
+                data["Version"] = version;
+        }
+
+        public Task SendOrganizationAddedAsync(User sender, Organization organization, User user) {
+            const string template = "organization-added";
+            string subject = $"{sender.FullName} added you to the organization \"{organization.Name}\" on Exceptionless";
+            var data = new Dictionary<string, object> {
+                { "Subject", subject },
+                { "BaseUrl", Settings.Current.BaseURL },
+                { "OrganizationId", organization.Id },
+                { "OrganizationName", organization.Name }
+            };
+
+            return QueueMessageAsync(new MailMessage {
+                To = user.EmailAddress,
+                Subject = subject,
+                Body = RenderTemplate(template, data)
+            }, template);
+        }
+
+        public Task SendOrganizationInviteAsync(User sender, Organization organization, Invite invite) {
+            const string template = "organization-invited";
+            string subject = $"{sender.FullName} invited you to join the organization \"{organization.Name}\" on Exceptionless";
+            var data = new Dictionary<string, object> {
+                { "Subject", subject },
+                { "BaseUrl", Settings.Current.BaseURL },
+                { "InviteToken", invite.Token }
+            };
+
+            return QueueMessageAsync(new MailMessage {
+                To = invite.EmailAddress,
+                Subject = subject,
+                Body = RenderTemplate(template, data)
+            }, template);
+        }
+
+        public Task SendOrganizationNoticeAsync(User user, Organization organization, bool isOverMonthlyLimit, bool isOverHourlyLimit) {
+            const string template = "organization-notice";
+            string subject = isOverMonthlyLimit
+                    ? $"[{organization.Name}] Monthly plan limit exceeded."
+                    : $"[{organization.Name}] Events are currently being throttled.";
+
+            var data = new Dictionary<string, object> {
+                { "Subject", subject },
+                { "BaseUrl", Settings.Current.BaseURL },
+                { "OrganizationId", organization.Id },
+                { "OrganizationName", organization.Name },
+                { "IsOverMonthlyLimit", isOverMonthlyLimit },
+                { "IsOverHourlyLimit", isOverHourlyLimit },
+                { "ThrottledUntil", SystemClock.UtcNow.StartOfHour().AddHours(1).ToShortTimeString() }
+            };
+
+            return QueueMessageAsync(new MailMessage {
+                To = user.EmailAddress,
+                Subject = subject,
+                Body = RenderTemplate(template, data)
+            }, template);
+        }
+
+        public Task SendOrganizationPaymentFailedAsync(User owner, Organization organization) {
+            const string template = "organization-payment-failed";
+            string subject = $"[{organization.Name}] Payment failed! Update billing information to avoid service interuption!";
+            var data = new Dictionary<string, object> {
+                { "Subject", subject },
+                { "BaseUrl", Settings.Current.BaseURL },
+                { "OrganizationId", organization.Id },
+                { "OrganizationName", organization.Name }
+            };
+
+            return QueueMessageAsync(new MailMessage {
+                To = owner.EmailAddress,
+                Subject = subject,
+                Body = RenderTemplate(template, data)
+            }, template);
+        }
+
+        public Task SendProjectDailySummaryAsync(User user, Project project, DateTime startDate, bool hasSubmittedEvents, long total, double uniqueTotal, double newTotal, bool isFreePlan) {
+            const string template = "project-daily-summary";
+            string subject = $"[{project.Name}] Summary for {startDate.ToShortDateString()}";
+            var data = new Dictionary<string, object> {
+                { "Subject", subject },
+                { "BaseUrl", Settings.Current.BaseURL },
+                { "OrganizationId", project.OrganizationId },
+                { "ProjectId", project.Id },
+                { "ProjectName", project.Name },
+                { "StartDate", startDate.ToLongDateString() },
+                { "HasSubmittedEvents", hasSubmittedEvents },
+                { "Total", total },
+                { "UniqueTotal", uniqueTotal },
+                { "NewTotal", newTotal },
+                { "IsFreePlan", isFreePlan }
+            };
+
+            return QueueMessageAsync(new MailMessage {
+                To = user.EmailAddress,
+                Subject = subject,
+                Body = RenderTemplate(template, data)
+            }, template);
+        }
+
+        public Task SendUserEmailVerifyAsync(User user) {
+            if (String.IsNullOrEmpty(user?.VerifyEmailAddressToken))
+                return Task.CompletedTask;
+
+            const string template = "user-email-verify";
+            const string subject = "Exceptionless Account Confirmation";
+            var data = new Dictionary<string, object> {
+                { "Subject", subject },
+                { "BaseUrl", Settings.Current.BaseURL },
+                { "UserFullName", user.FullName },
+                { "UserVerifyEmailAddressToken", user.VerifyEmailAddressToken }
+            };
+
+            return QueueMessageAsync(new MailMessage {
+                To = user.EmailAddress,
+                Subject = subject,
+                Body = RenderTemplate(template, data)
+            }, template);
+        }
+
+        public Task SendUserPasswordResetAsync(User user) {
+            if (String.IsNullOrEmpty(user?.PasswordResetToken))
+                return Task.CompletedTask;
+
+            const string template = "user-password-reset";
+            const string subject = "Exceptionless Password Reset";
+            var data = new Dictionary<string, object> {
+                { "Subject", subject },
+                { "BaseUrl", Settings.Current.BaseURL },
+                { "UserFullName", user.FullName },
+                { "UserPasswordResetToken", user.PasswordResetToken }
+            };
+
+            return QueueMessageAsync(new MailMessage {
+                To = user.EmailAddress,
+                Subject = subject,
+                Body = RenderTemplate(template, data)
+            }, template);
+        }
+
+        private string RenderTemplate(string name, IDictionary<string, object> data) {
+            var template = GetCompiledTemplate(name);
+            return template(data);
+        }
+
+        private Func<object, string> GetCompiledTemplate(string name) {
+            return _cachedTemplates.GetOrAdd(name, templateName => {
+                var assembly = typeof(Mailer).Assembly;
+                string resourceName = $"Exceptionless.Core.Mail.Templates.{templateName}.html";
+
+                using (var stream = assembly.GetManifestResourceStream(resourceName)) {
+                    using (var reader = new StreamReader(stream)) {
+                        string template = reader.ReadToEnd();
+                        return Handlebars.Compile(template);
+                    }
+                }
+            });
         }
 
         private Task QueueMessageAsync(MailMessage message, string metricsName) {
@@ -125,7 +274,8 @@ namespace Exceptionless.Core.Mail {
             if (Settings.Current.WebsiteMode == WebsiteMode.Production)
                 return;
 
-            if (Settings.Current.AllowedOutboundAddresses.Contains(message.To.ToLowerInvariant()))
+            var address = message.To.ToLowerInvariant();
+            if (Settings.Current.AllowedOutboundAddresses.Any(address.Contains))
                 return;
 
             message.Subject = $"[{message.To}] {message.Subject}".StripInvisible();

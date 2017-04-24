@@ -1,0 +1,42 @@
+<container>
+  <spacer size="5"></spacer>
+  <row>
+    <columns small="12">
+      <h1>Hello \{{UserFullName}},</h1>
+      <p class="lead">
+        We're ready to activate your account. All we need to do is make sure this is your email address.
+      </p>
+
+      <center>
+        <button class="button radius" href="\{{BaseUrl}}/account/verify?token=/\{{UserVerifyEmailAddressToken}}">
+            Verify Address
+          </button>
+      </center>
+
+      <spacer size="5"></spacer>
+      <p>
+        If you didn't create an Exceptionless account, just delete this email and everything will go back to the way it was.
+      </p>
+    </columns>
+  </row>
+</container>
+
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "\{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "\{{BaseUrl}}/account/verify?token=/\{{UserVerifyEmailAddressToken}}",
+    "name": "Verify Address"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com",
+    "url/googlePlus": "https://plus.google.com/111513069275546127753"
+    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
+  }
+}
+</script>

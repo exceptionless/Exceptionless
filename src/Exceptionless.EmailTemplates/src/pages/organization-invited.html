@@ -1,0 +1,42 @@
+<container>
+  <spacer size="5"></spacer>
+  <row>
+    <columns small="12">
+      <h1>You've been invited to become Exceptionless!</h1>
+      <p class="lead">\{{Subject}}</p>
+
+      <center>
+        <button class="button radius" href="\{{BaseUrl}}/signup?token=\{{InviteToken}}">
+            Join Organization
+          </button>
+      </center>
+
+      <spacer size="5"></spacer>
+      <p>
+        What is <a href="https://exceptionless.com">Exceptionless</a>? Exceptionless is an error reporting service. Go from
+        signing up to catching every error in your application in 15 minutes or less.
+      </p>
+    </columns>
+  </row>
+  {{> social}}
+</container>
+
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "\{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "\{{BaseUrl}}/signup?token=\{{InviteToken}}",
+    "name": "Join Organization"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com",
+    "url/googlePlus": "https://plus.google.com/111513069275546127753"
+    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
+  }
+}
+</script>

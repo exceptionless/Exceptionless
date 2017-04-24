@@ -106,10 +106,12 @@ namespace Exceptionless.Tests.Utility {
 
         private static List<Error> _randomErrors;
 
-        private static Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
-            var error = new Error();
-            error.Message = @"Generated exception message.";
-            error.Type = TestConstants.ExceptionTypes.Random();
+        internal static Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
+            var error = new Error {
+                Message = "Generated exception message.",
+                Type = TestConstants.ExceptionTypes.Random()
+            };
+
             if (RandomData.GetBool())
                 error.Code = RandomData.GetInt(-234523453, 98690899).ToString();
 

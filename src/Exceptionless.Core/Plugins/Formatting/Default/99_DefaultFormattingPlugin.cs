@@ -2,20 +2,11 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues.Models;
-using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(99)]
     public sealed class DefaultFormattingPlugin : FormattingPluginBase {
-        private readonly IEmailGenerator _emailGenerator;
-
-        public DefaultFormattingPlugin(IEmailGenerator emailGenerator) {
-            _emailGenerator = emailGenerator;
-        }
-
         public override string GetStackTitle(PersistentEvent ev) {
             if (String.IsNullOrWhiteSpace(ev.Message) && ev.IsError())
                 return "Unknown Error";
@@ -44,34 +35,33 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-summary", Data = data };
         }
 
-        public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
-            string messageOrSource = !String.IsNullOrEmpty(model.Event.Message) ? model.Event.Message : model.Event.Source;
+        public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+            string messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
             if (String.IsNullOrEmpty(messageOrSource))
                 return null;
 
             string notificationType = "Occurrence event";
-            if (model.IsNew)
+            if (isNew)
                 notificationType = "New event";
-            else if (model.IsRegression)
+            else if (isRegression)
                 notificationType = "Regression event";
 
-            if (model.IsCritical)
+            if (isCritical)
                 notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
-            var requestInfo = model.Event.GetRequestInfo();
-            var mailerModel = new EventNotificationModel(model) {
-                BaseUrl = Settings.Current.BaseURL,
-                Subject = String.Concat(notificationType, ": ", messageOrSource.Truncate(120)),
-                Message = model.Event.Message,
-                Source = model.Event.Source,
-                Url = requestInfo?.GetFullPath(true, true, true)
-            };
+            string subject = String.Concat(notificationType, ": ", messageOrSource.Truncate(120));
+            var data = new Dictionary<string, object>();
+            if (!String.IsNullOrEmpty(ev.Message))
+                data.Add("Message", ev.Message);
 
-            return _emailGenerator.GenerateMessage(mailerModel, "Notice").ToMailMessage();
-        }
+            if (!String.IsNullOrEmpty(ev.Source))
+                data.Add("Source", ev.Source);
 
-        public override string GetEventViewName(PersistentEvent ev) {
-            return "Event";
+            var requestInfo = ev.GetRequestInfo();
+            if (requestInfo != null)
+                data.Add("Url", requestInfo.GetFullPath(true, true, true));
+
+            return new MailMessageData { Subject = subject, Data = data };
         }
     }
 }

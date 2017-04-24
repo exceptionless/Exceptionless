@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin {
@@ -18,11 +17,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return null;
         }
 
-        public virtual MailMessage GetEventNotificationMailMessage(EventNotification model) {
-            return null;
-        }
-
-        public virtual string GetEventViewName(PersistentEvent ev) {
+        public virtual MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
             return null;
         }
 

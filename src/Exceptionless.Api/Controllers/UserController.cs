@@ -208,7 +208,7 @@ namespace Exceptionless.Api.Controllers {
             if (!user.IsEmailAddressVerified) {
                 user.CreateVerifyEmailAddressToken();
                 await _repository.SaveAsync(user, o => o.Cache());
-                await _mailer.SendVerifyEmailAsync(user);
+                await _mailer.SendUserEmailVerifyAsync(user);
             }
 
             return Ok();

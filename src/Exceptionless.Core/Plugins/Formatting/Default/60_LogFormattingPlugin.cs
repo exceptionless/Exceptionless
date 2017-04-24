@@ -3,20 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues.Models;
-using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(60)]
     public sealed class LogFormattingPlugin : FormattingPluginBase {
-        private readonly IEmailGenerator _emailGenerator;
-
-        public LogFormattingPlugin(IEmailGenerator emailGenerator) {
-            _emailGenerator = emailGenerator;
-        }
-
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsLog();
         }
@@ -67,34 +58,34 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-log-summary", Data = data };
         }
 
-        public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
-            if (!ShouldHandle(model.Event))
-                return null;
-
-            string notificationType = "Log Message";
-            if (model.IsNew)
-                notificationType = "New Log Source";
-            else if (model.IsRegression)
-                notificationType = "Log Regression";
-
-            if (model.IsCritical)
-                notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
-
-           var requestInfo = model.Event.GetRequestInfo();
-            var mailerModel = new EventNotificationModel(model) {
-                BaseUrl = Settings.Current.BaseURL,
-                Subject = String.Concat(notificationType, ": ", model.Event.Source.Truncate(120)),
-                Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : model.Event.Source
-            };
-
-            return _emailGenerator.GenerateMessage(mailerModel, "Notice").ToMailMessage();
-        }
-
-        public override string GetEventViewName(PersistentEvent ev) {
+        public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
             if (!ShouldHandle(ev))
                 return null;
 
-            return "Event-NotFound";
+            string notificationType = "Log Message";
+            if (isNew)
+                notificationType = "New Log Source";
+            else if (isRegression)
+                notificationType = "Log Regression";
+
+            if (isCritical)
+                notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
+
+            string source = !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
+            string subject = String.Concat(notificationType, ": ", source.Truncate(120));
+            var data = new Dictionary<string, object> { { "Source", source } };
+            if (!String.IsNullOrEmpty(ev.Message))
+                data.Add("Message", ev.Message);
+
+            string level = ev.GetLevel();
+            if (!String.IsNullOrEmpty(level))
+                data.Add("Level", level);
+
+            var requestInfo = ev.GetRequestInfo();
+            if (requestInfo != null)
+                data.Add("Url", requestInfo.GetFullPath(true, true, true));
+
+            return new MailMessageData { Subject = subject, Data = data };
         }
     }
 }

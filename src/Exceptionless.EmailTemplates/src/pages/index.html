@@ -1,0 +1,42 @@
+--- layout: index-layout subject: Exceptionless Email Templates ---
+
+<spacer size="5"></spacer>
+<container>
+  <spacer size="24"></spacer>
+  <row>
+    <columns small="12">
+
+      <p class="lead">Hi there!</p>
+      <p>
+        We use <a href="http://foundation.zurb.com/emails/docs/">Foundation for Emails</a> to simplify the process of creating
+        and properly formatting emails. We process to update the email content that we send out is simple:
+      </p>
+
+      <ol>
+        <li>Edit the markup located in this folder to update the templates.</li>
+        <li>Run gulp --production to update the existing templates.</li>
+        <li>Rebuild the solution to take advantage of the updated email templates.</li>
+      </ol>
+
+      <spacer size="5"></spacer>
+
+      <h3>Our templates:</h3>
+      <center>
+        <menu class="vertical">
+          <item href="{{root}}event-notice.html" target="_blank">Event Notice Template</item>
+          <item href="{{root}}organization-added.html" target="_blank">Added To Organization Template</item>
+          <item href="{{root}}organization-invited.html" target="_blank">Invited To Organization Template</item>
+          <item href="{{root}}organization-notice.html" target="_blank">Organization Notice Template</item>
+          <item href="{{root}}organization-payment-failed.html" target="_blank">Organization Payment Failed Template</item>
+          <item href="{{root}}project-daily-summary.html" target="_blank">Project Daily Summary Template</item>
+          <item href="{{root}}user-email-verify.html" target="_blank">User Verify Email Template</item>
+          <item href="{{root}}user-password-reset.html" target="_blank">User Password Reset Template</item>
+        </menu>
+      </center>
+
+      <spacer size="5"></spacer>
+      <p>Happy Coding,</p>
+      <p>The Exceptionless Team</p>
+    </columns>
+  </row>
+</container>

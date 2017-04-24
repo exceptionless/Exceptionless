@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
@@ -84,11 +83,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 }
 
                 Log.Trace("Sending email to {0}...", user.EmailAddress);
-                await _mailer.SendOrganizationNoticeAsync(user.EmailAddress, new OrganizationNotificationModel {
-                    Organization = organization,
-                    IsOverHourlyLimit = isOverHourlyLimit,
-                    IsOverMonthlyLimit = isOverMonthlyLimit
-                }).AnyContext();
+                await _mailer.SendOrganizationNoticeAsync(user, organization, isOverMonthlyLimit, isOverHourlyLimit).AnyContext();
             }
 
             Log.Trace().Message("Done sending email.");

@@ -1,0 +1,93 @@
+<container>
+  <spacer size="5"></spacer>
+  <row>
+    <columns small="12">
+      <p class="lead">
+        \{{#if IsNew}}
+          A new \{{#if IsCritical}}critical \{{/if}}event has occurred in the "\{{ProjectName}}" project.
+        \{{else if IsRegression}}
+          \{{#if IsCritical}}A critical\{{else}}An\{{/if}} event has regressed in the "\{{ProjectName}}" project.
+        \{{else}}
+          \{{#if IsCritical}}A critical\{{else}}An\{{/if}} event has reoccurred for the \{{TotalOccurrences}} time in the "\{{ProjectName}}" project.
+        \{{/if}}
+      </p>
+
+      <center>
+        <button class="button radius" href="\{{BaseUrl}}/event/\{{EventId}}">
+          View Event Details
+        </button>
+      </center>
+
+      \{{#if Fields}}
+      <spacer size="5"></spacer>
+      <callout class="fieldset radius">
+        \{{#each Fields}}
+          \{{#if @index}}<hr class="separator" />\{{/if}}
+          <p>
+            <strong>\{{@key}}</strong><br />
+            <span class="blt">\{{this}}</span>
+          </p>
+        \{{/each}}
+      </callout>
+      \{{/if}}
+
+      \{{#if HasUserInfo}}
+      <spacer size="5"></spacer>
+      <h4>User Info</h4>
+      <callout class="fieldset radius">
+        \{{#if UserDisplayName}}
+          <p>
+            <strong>Name</strong><br />
+            \{{#if UserEmail}}
+              <a href="mailto:\{{UserEmail}}?body=\{{UserDescription}}">\{{UserDisplayName}}</a>
+            \{{else}}
+              <span class="blt">\{{UserDisplayName}}</span>
+            \{{/if}}
+          </p>
+          \{{#if UserDescription}}<hr class="separator" />\{{/if}}
+        \{{/if}}
+        \{{#if UserDescription}}
+          <p>
+            <strong>Description</strong><br />
+            <span class="blt">\{{UserDescription}}</span>
+          </p>
+        \{{/if}}
+      </callout>
+      \{{/if}}
+    </columns>
+  </row>
+  <wrapper class="actions">
+    <row>
+      <columns small="12">
+        <h5>Other Actions</h5>
+        <ul>
+          \{{#if IsFixable}}
+          <li><a href="\{{BaseUrl}}/stack/\{{StackId}}/mark-fixed">Mark event as fixed</a></li>
+           \{{/if}}
+          <li><a href="\{{BaseUrl}}/stack/\{{StackId}}/stop-notifications">Stop sending notifications for this event</a></li>
+          <li><a href="\{{BaseUrl}}/account/manage?projectId=\{{ProjectId}}&tab=notifications">Change your notification settings for this project</a></li>
+        </ul>
+      </columns>
+    </row>
+  </wrapper>
+</container>
+
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "\{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "\{{BaseUrl}}/event/\{{EventId}}",
+    "name": "View Event Details"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com",
+    "url/googlePlus": "https://plus.google.com/111513069275546127753"
+    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
+  }
+}
+</script>

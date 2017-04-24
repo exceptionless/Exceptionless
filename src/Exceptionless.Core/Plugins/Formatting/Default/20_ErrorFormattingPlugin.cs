@@ -3,20 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues.Models;
-using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(20)]
     public sealed class ErrorFormattingPlugin : FormattingPluginBase {
-        private readonly IEmailGenerator _emailGenerator;
-
-        public ErrorFormattingPlugin(IEmailGenerator emailGenerator) {
-            _emailGenerator = emailGenerator;
-        }
-
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
         }
@@ -32,7 +23,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override SummaryData GetStackSummaryData(Stack stack) {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("ExceptionType"))
                 return null;
-            
+
             var data = new Dictionary<string, object>();
             if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value) && !String.IsNullOrEmpty(value)) {
                 data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
@@ -58,7 +49,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
-            
+
             var stackingTarget = ev.GetStackingTarget();
             if (stackingTarget?.Error == null)
                 return null;
@@ -83,44 +74,38 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "event-error-summary", Data = data };
         }
 
-        public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
-            if (!ShouldHandle(model.Event))
+        public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+            if (!ShouldHandle(ev))
                 return null;
 
-            var error = model.Event.GetError();
+            var error = ev.GetError();
             var stackingTarget = error?.GetStackingTarget();
             if (stackingTarget?.Error == null)
                 return null;
 
-            var requestInfo = model.Event.GetRequestInfo();
             string errorType = !String.IsNullOrEmpty(stackingTarget.Error.Type) ? stackingTarget.Error.Type : "Error";
-
             string notificationType = String.Concat(errorType, " occurrence");
-            if (model.IsNew)
-                notificationType = String.Concat(!model.IsCritical ? "New " : "new ", error.Type);
-            else if (model.IsRegression)
+            if (isNew)
+                notificationType = String.Concat(!isCritical ? "New " : "new ", errorType);
+            else if (isRegression)
                 notificationType = String.Concat(errorType, " regression");
 
-            if (model.IsCritical)
+            if (isCritical)
                 notificationType = String.Concat("Critical ", notificationType);
 
-            var mailerModel = new EventNotificationModel(model) {
-                BaseUrl = Settings.Current.BaseURL,
-                Subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message.Truncate(120)),
-                Url = requestInfo?.GetFullPath(true, true, true),
-                Message = stackingTarget.Error.Message,
-                TypeFullName = errorType,
-                MethodFullName = stackingTarget.Method?.GetFullName()
-            };
+            string subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message.Truncate(120));
+            var data = new Dictionary<string, object> { { "Message", stackingTarget.Error.Message } };
+            if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
+                data.Add("Type", stackingTarget.Error.Type);
 
-            return _emailGenerator.GenerateMessage(mailerModel, "NoticeError").ToMailMessage();
-        }
+            if (stackingTarget.Method != null)
+                data.Add("Method", stackingTarget.Method.GetFullName());
 
-        public override string GetEventViewName(PersistentEvent ev) {
-            if (!ShouldHandle(ev))
-                return null;
+            var requestInfo = ev.GetRequestInfo();
+            if (requestInfo != null)
+                data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
-            return "Event-Error";
+            return new MailMessageData { Subject = subject, Data = data };
         }
     }
 }
