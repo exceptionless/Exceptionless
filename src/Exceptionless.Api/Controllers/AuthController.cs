@@ -146,6 +146,27 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new TokenResult { Token = await GetTokenAsync(user) });
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet]
+        [Route("logout")]
+        [Authorize(Roles = AuthorizationRoles.User)]
+        public async Task<IHttpActionResult> LogoutAsync() {
+            if (!User.IsTokenAuthType())
+                return Ok();
+
+            var id = User.GetLoggedInUsersTokenId();
+            if (String.IsNullOrEmpty(id))
+                return Ok();
+
+            try {
+                await _tokenRepository.RemoveAsync(id);
+            } catch (Exception ex) {
+                _logger.Error().Exception(ex).Critical().Message("Logout failed for \"{0}\": {1}", CurrentUser.EmailAddress, ex.Message).Tag("Logout").Identity(CurrentUser.EmailAddress).SetActionContext(ActionContext).Write();
+            }
+
+            return Ok();
+        }
+
         /// <summary>
         /// Signup
         /// </summary>
@@ -272,10 +293,17 @@ namespace Exceptionless.Api.Controllers {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), Settings.Current.MicrosoftAppId, Settings.Current.MicrosoftAppSecret, (f, c) => new WindowsLiveClient(f, c));
         }
 
+        /// <summary>
+        /// Removes an external login provider from the account
+        /// </summary>
+        /// <param name="providerName">The provider name.</param>
+        /// <response code="400">Invalid provider name.</response>
+        /// <response code="500">An error while saving the user account.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("unlink/{providerName:minlength(1)}")]
         [Authorize(Roles = AuthorizationRoles.User)]
+        [ResponseType(typeof(TokenResult))]
         public async Task<IHttpActionResult> RemoveExternalLoginAsync(string providerName, [NakedBody] string providerUserId) {
             if (String.IsNullOrWhiteSpace(providerName) || String.IsNullOrWhiteSpace(providerUserId)) {
                 _logger.Error().Message("Remove external login failed for \"{0}\": Invalid Provider Name or Provider User Id.", CurrentUser.EmailAddress).Tag("External Login", providerName).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Provider User Id", providerUserId).SetActionContext(ActionContext).Write();
@@ -287,11 +315,18 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("You must set a local password before removing your external login.");
             }
 
-            if (CurrentUser.RemoveOAuthAccount(providerName, providerUserId))
-                await _userRepository.SaveAsync(CurrentUser, o => o.Cache());
+            try {
+                if (CurrentUser.RemoveOAuthAccount(providerName, providerUserId))
+                    await _userRepository.SaveAsync(CurrentUser, o => o.Cache());
+            } catch (Exception ex) {
+                _logger.Error().Exception(ex).Critical().Message("Error removing external login for \"{0}\": {1}", CurrentUser.EmailAddress, ex.Message).Tag("RemoveExternalLoginAsync").Identity(CurrentUser.EmailAddress).SetActionContext(ActionContext).Write();
+                throw;
+            }
+
+            await ResetUserTokensAsync(CurrentUser, nameof(RemoveExternalLoginAsync));
 
             _logger.Info().Message("\"{0}\" removed an external login: \"{1}\"", CurrentUser.EmailAddress, providerName).Tag("External Login", providerName).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
-            return Ok();
+            return Ok(new TokenResult { Token = await GetTokenAsync(CurrentUser) });
         }
 
         /// <summary>
@@ -302,6 +337,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("change-password")]
         [Authorize(Roles = AuthorizationRoles.User)]
+        [ResponseType(typeof(TokenResult))]
         public async Task<IHttpActionResult> ChangePasswordAsync(ChangePasswordModel model) {
             if (model == null || !IsValidPassword(model.Password)) {
                 _logger.Error().Message("Change password failed for \"{0}\": The New Password must be at least 6 characters long.", CurrentUser.EmailAddress).Tag("Change Password").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Password Length", model?.Password?.Length ?? 0).SetActionContext(ActionContext).Write();
@@ -322,10 +358,11 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
-            await ChangePasswordAsync(CurrentUser, model.Password);
+            await ChangePasswordAsync(CurrentUser, model.Password, nameof(ChangePasswordAsync));
+            await ResetUserTokensAsync(CurrentUser, nameof(ChangePasswordAsync));
 
             _logger.Info().Message("\"{0}\" changed their password.", CurrentUser.EmailAddress).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
-            return Ok();
+            return Ok(new TokenResult { Token = await GetTokenAsync(CurrentUser) });
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -373,7 +410,6 @@ namespace Exceptionless.Api.Controllers {
             await _userRepository.SaveAsync(user, o => o.Cache());
 
             await _mailer.SendUserPasswordResetAsync(user);
-
             _logger.Info().Message("\"{0}\" forgot their password.", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
             return Ok();
         }
@@ -385,6 +421,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid reset password model.</response>
         [HttpPost]
         [Route("reset-password")]
+        [ResponseType(typeof(TokenResult))]
         public async Task<IHttpActionResult> ResetPasswordAsync(ResetPasswordModel model) {
             if (String.IsNullOrEmpty(model?.PasswordResetToken)) {
                 _logger.Error().Message("Reset password failed: Invalid Password Reset Token.").Tag("Reset Password").SetActionContext(ActionContext).Write();
@@ -408,10 +445,11 @@ namespace Exceptionless.Api.Controllers {
             }
 
             user.MarkEmailAddressVerified();
-            await ChangePasswordAsync(user, model.Password);
+            await ChangePasswordAsync(user, model.Password, nameof(ResetPasswordAsync));
+            await ResetUserTokensAsync(user, nameof(ResetPasswordAsync));
 
             _logger.Info().Message("\"{0}\" reset their password.", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
-            return Ok();
+            return Ok(new TokenResult { Token = await GetTokenAsync(CurrentUser) });
         }
 
         /// <summary>
@@ -592,13 +630,29 @@ namespace Exceptionless.Api.Controllers {
             await _organizationRepository.SaveAsync(organization, o => o.Cache());
         }
 
-        private Task ChangePasswordAsync(User user, string password) {
+        private async Task ChangePasswordAsync(User user, string password, string tag) {
             if (String.IsNullOrEmpty(user.Salt))
                 user.Salt = Core.Extensions.StringExtensions.GetNewToken();
 
             user.Password = password.ToSaltedHash(user.Salt);
             user.ResetPasswordResetToken();
-            return _userRepository.SaveAsync(user, o => o.Cache());
+
+            try {
+                await _userRepository.SaveAsync(user, o => o.Cache());
+                _logger.Info().Message("Changed password \"{0}\"", user.EmailAddress).Tag(tag).Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
+            } catch (Exception ex) {
+                _logger.Error().Exception(ex).Critical().Message("Error changing password for \"{0}\": {1}", user.EmailAddress, ex.Message).Tag(tag).Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
+                throw;
+            }
+        }
+
+        private async Task ResetUserTokensAsync(User user, string tag) {
+            try {
+                var total = await _tokenRepository.RemoveAllByUserIdAsync(user.Id);
+                _logger.Info().Message("Removed user {0} tokens for \"{1}\"", total, user.EmailAddress).Tag(tag).Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
+            } catch (Exception ex) {
+                _logger.Error().Exception(ex).Critical().Message("Error removing user tokens for \"{0}\": {1}", user.EmailAddress, ex.Message).Tag(tag).Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
+            }
         }
 
         private async Task<string> GetTokenAsync(User user) {
@@ -612,6 +666,7 @@ namespace Exceptionless.Api.Controllers {
                 UserId = user.Id,
                 CreatedUtc = SystemClock.UtcNow,
                 UpdatedUtc = SystemClock.UtcNow,
+                ExpiresUtc = SystemClock.UtcNow.AddMonths(3),
                 CreatedBy = user.Id,
                 Type = TokenType.Access
             });

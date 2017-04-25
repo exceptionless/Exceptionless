@@ -16,9 +16,9 @@ namespace Exceptionless.Core.Repositories {
             : base(configuration.Organizations.Token, validator) {
         }
 
-        public Task<FindResults<Token>> GetByUserIdAsync(string userId) {
+        public Task<FindResults<Token>> GetByUserIdAsync(string userId, CommandOptionsDescriptor<Token> options = null) {
             var filter = Query<Token>.Term(e => e.UserId, userId);
-            return FindAsync(q => q.ElasticFilter(filter));
+            return FindAsync(q => q.ElasticFilter(filter), options);
         }
 
         public Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, CommandOptionsDescriptor<Token> options = null) {
@@ -36,6 +36,10 @@ namespace Exceptionless.Core.Repositories {
         public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token> options = null) {
             var filter = (Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId));
             return FindAsync(q => q.ElasticFilter(filter), options);
+        }
+
+        public Task<long> RemoveAllByUserIdAsync(string userId, CommandOptionsDescriptor<Token> options = null) {
+            return RemoveAllAsync(q => q.ElasticFilter(Query<Token>.Term(t => t.UserId, userId)), options);
         }
 
         protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token document, IDictionary<string, object> data = null, TimeSpan? delay = null) {
