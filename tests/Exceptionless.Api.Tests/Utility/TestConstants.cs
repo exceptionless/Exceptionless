@@ -35,6 +35,7 @@ namespace Exceptionless.Tests.Utility {
         public const string StackId = "1ecd0826e447a44e78877ab1";
         public const string StackId2 = "2ecd0826e447a44e78877ab2";
         public const string InvalidStackId = "0ecd0826e447ad1e78877ab0";
+        public const string TokenId = "88cd0826e447a44e78877ab1";
 
         public const string ApiKey = "LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw";
         public const string ApiKey2 = "2ccd0826e447ad1e78877ab2";

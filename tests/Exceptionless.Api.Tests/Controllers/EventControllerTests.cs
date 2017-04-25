@@ -51,7 +51,12 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostStringAsync() {
-            _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(new User { EmailAddress = TestConstants.UserEmail, Id = TestConstants.UserId, OrganizationIds = new[] { TestConstants.OrganizationId }, Roles = new[] { AuthorizationRoles.Client }}.ToIdentity(TestConstants.ProjectId)), false, false);
+            _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(new User {
+                EmailAddress = TestConstants.UserEmail,
+                Id = TestConstants.UserId,
+                OrganizationIds = new[] { TestConstants.OrganizationId },
+                Roles = new[] { AuthorizationRoles.Client }
+            }.ToIdentity(new Core.Models.Token { Id = TestConstants.TokenId, DefaultProjectId = TestConstants.ProjectId })), false, false);
 
             var metricsClient = GetService<IMetricsClient>() as InMemoryMetricsClient;
             Assert.NotNull(metricsClient);

@@ -88,7 +88,7 @@ namespace Exceptionless.Api.Security {
                 if (user == null)
                     return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
-                SetupUserRequest(request, user);
+                SetupUserRequest(request, user, tokenRecord);
             } else {
                 SetupTokenRequest(request, tokenRecord);
             }
@@ -96,8 +96,8 @@ namespace Exceptionless.Api.Security {
             return await BaseSendAsync(request, cancellationToken);
         }
 
-        private void SetupUserRequest(HttpRequestMessage request, User user) {
-            request.GetRequestContext().Principal = new ClaimsPrincipal(user.ToIdentity());
+        private void SetupUserRequest(HttpRequestMessage request, User user, Token token = null) {
+            request.GetRequestContext().Principal = new ClaimsPrincipal(user.ToIdentity(token));
             request.SetUser(user);
         }
 
