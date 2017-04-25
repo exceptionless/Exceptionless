@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Extensions {
     public static class IdentityUtils {
         public const string TokenAuthenticationType = "Token";
         public const string UserAuthenticationType = "User";
-        public const string UserIdClaim = "UserId";
+        public const string LoggedInUsersTokenId = "LoggedInUsersTokenId";
         public const string OrganizationIdsClaim = "OrganizationIds";
         public const string ProjectIdClaim = "ProjectId";
         public const string DefaultProjectIdClaim = "DefaultProjectId";
@@ -41,19 +41,23 @@ namespace Exceptionless.Core.Extensions {
 
             return new ClaimsIdentity(claims, TokenAuthenticationType);
         }
-        
-        public static ClaimsIdentity ToIdentity(this User user, string defaultProjectId = null) {
+
+        public static ClaimsIdentity ToIdentity(this User user, Token token = null) {
             if (user == null)
                 return WindowsIdentity.GetAnonymous();
-            
+
             var claims = new List<Claim> {
                     new Claim(ClaimTypes.Name, user.EmailAddress),
                     new Claim(ClaimTypes.NameIdentifier, user.Id),
                     new Claim(OrganizationIdsClaim, String.Join(",", user.OrganizationIds.ToArray()))
                 };
 
-            if (!String.IsNullOrEmpty(defaultProjectId))
-                claims.Add(new Claim(DefaultProjectIdClaim, defaultProjectId));
+            if (token != null) {
+                claims.Add(new Claim(LoggedInUsersTokenId, token.Id));
+
+                if (!String.IsNullOrEmpty(token.DefaultProjectId))
+                    claims.Add(new Claim(DefaultProjectIdClaim, token.DefaultProjectId));
+            }
 
             var userRoles = new HashSet<string>(user.Roles.ToArray());
             if (userRoles.Any()) {
@@ -106,7 +110,16 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string GetUserId(this IPrincipal principal) {
-            return IsTokenAuthType(principal) ? GetClaimValue(principal, UserIdClaim) : GetClaimValue(principal, ClaimTypes.NameIdentifier);
+            return IsUserAuthType(principal) ? GetClaimValue(principal, ClaimTypes.NameIdentifier) : null;
+        }
+
+        /// <summary>
+        /// Gets the token id that authenticated the current user. If null, user logged in via oauth.
+        /// </summary>
+        /// <param name="principal"></param>
+        /// <returns></returns>
+        public static string GetLoggedInUsersTokenId(this IPrincipal principal) {
+            return IsUserAuthType(principal) ? GetClaimValue(principal, LoggedInUsersTokenId) : null;
         }
 
         public static string[] GetOrganizationIds(this IPrincipal principal) {
@@ -149,7 +162,7 @@ namespace Exceptionless.Core.Extensions {
             return claim.Value;
         }
     }
-    
+
     public enum AuthType {
         User,
         Token,
