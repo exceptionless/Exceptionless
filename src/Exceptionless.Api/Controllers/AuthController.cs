@@ -151,7 +151,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("logout")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IHttpActionResult> LogoutAsync() {
-            if (!User.IsTokenAuthType())
+            if (User.IsTokenAuthType())
                 return Ok();
 
             var id = User.GetLoggedInUsersTokenId();
@@ -421,7 +421,6 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid reset password model.</response>
         [HttpPost]
         [Route("reset-password")]
-        [ResponseType(typeof(TokenResult))]
         public async Task<IHttpActionResult> ResetPasswordAsync(ResetPasswordModel model) {
             if (String.IsNullOrEmpty(model?.PasswordResetToken)) {
                 _logger.Error().Message("Reset password failed: Invalid Password Reset Token.").Tag("Reset Password").SetActionContext(ActionContext).Write();
@@ -449,7 +448,7 @@ namespace Exceptionless.Api.Controllers {
             await ResetUserTokensAsync(user, nameof(ResetPasswordAsync));
 
             _logger.Info().Message("\"{0}\" reset their password.", user.EmailAddress).Identity(user.EmailAddress).Property("User", user).SetActionContext(ActionContext).Write();
-            return Ok(new TokenResult { Token = await GetTokenAsync(CurrentUser) });
+            return Ok();
         }
 
         /// <summary>
@@ -648,7 +647,7 @@ namespace Exceptionless.Api.Controllers {
 
         private async Task ResetUserTokensAsync(User user, string tag) {
             try {
-                var total = await _tokenRepository.RemoveAllByUserIdAsync(user.Id);
+                var total = await _tokenRepository.RemoveAllByUserIdAsync(user.Id, o => o.ImmediateConsistency(true));
                 _logger.Info().Message("Removed user {0} tokens for \"{1}\"", total, user.EmailAddress).Tag(tag).Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
             } catch (Exception ex) {
                 _logger.Error().Exception(ex).Critical().Message("Error removing user tokens for \"{0}\": {1}", user.EmailAddress, ex.Message).Tag(tag).Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
@@ -669,7 +668,7 @@ namespace Exceptionless.Api.Controllers {
                 ExpiresUtc = SystemClock.UtcNow.AddMonths(3),
                 CreatedBy = user.Id,
                 Type = TokenType.Access
-            });
+            }, o => o.Cache());
 
             return token.Id;
         }
