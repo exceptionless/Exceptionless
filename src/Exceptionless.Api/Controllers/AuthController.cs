@@ -638,7 +638,7 @@ namespace Exceptionless.Api.Controllers {
 
             try {
                 await _userRepository.SaveAsync(user, o => o.Cache());
-                _logger.Info().Message("Changed password \"{0}\"", user.EmailAddress).Tag(tag).Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
+                _logger.Info().Message("Changed password for \"{0}\"", user.EmailAddress).Tag(tag).Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
             } catch (Exception ex) {
                 _logger.Error().Exception(ex).Critical().Message("Error changing password for \"{0}\": {1}", user.EmailAddress, ex.Message).Tag(tag).Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
                 throw;
