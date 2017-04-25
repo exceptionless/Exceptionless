@@ -67,9 +67,11 @@
     "@type": "ViewAction",
 \{{#if HasSubmittedEvents}}
     "target": "\{{BaseUrl}}/project/\{{ProjectId}}/error/dashboard",
+    "url": "\{{BaseUrl}}/project/\{{ProjectId}}/error/dashboard",
     "name": "View Dashboard"
 \{{else}}
     "target": "\{{BaseUrl}}/project/\{{ProjectId}}/configure",
+    "url": "\{{BaseUrl}}/project/\{{ProjectId}}/configure",
     "name": "Configure Project"
 \{{/if}}
   },
@@ -77,7 +79,7 @@
     "@type": "Organization",
     "name": "Exceptionless",
     "url": "https://exceptionless.com",
-    "url/googlePlus": "https://plus.google.com/111513069275546127753"
+    "url/googlePlus": "https://plus.google.com/111513069275546127753",
     "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
   }
 }
