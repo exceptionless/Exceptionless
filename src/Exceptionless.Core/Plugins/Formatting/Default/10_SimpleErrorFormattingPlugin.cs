@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             var data = new Dictionary<string, object>();
             if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value)) {
-                data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
+                data.Add("Type", value.TypeName());
                 data.Add("TypeFullName", value);
             }
 
@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
             if (!String.IsNullOrEmpty(error.Type)) {
-                data.Add("Type", error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
+                data.Add("Type", error.Type.TypeName());
                 data.Add("TypeFullName", error.Type);
             }
 
@@ -67,7 +67,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (error == null)
                 return null;
 
-            string errorType = !String.IsNullOrEmpty(error.Type) ? error.Type : "Error";
+            string errorTypeName = null;
+            if (!String.IsNullOrEmpty(error.Type))
+                errorTypeName = error.Type.TypeName().Truncate(60);
+
+            string errorType = !String.IsNullOrEmpty(errorTypeName) ? errorTypeName : "Error";
             string notificationType = String.Concat(errorType, " occurrence");
             if (isNew)
                 notificationType = String.Concat(!isCritical ? "New " : "new ", errorType);
@@ -77,14 +81,14 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (isCritical)
                 notificationType = String.Concat("Critical ", notificationType);
 
-            string subject = String.Concat(notificationType, ": ", error.Message.Truncate(120));
-            var data = new Dictionary<string, object> { { "Message", error.Message } };
-            if (!String.IsNullOrEmpty(error.Type))
-                data.Add("Type", error.Type);
+            string subject = String.Concat(notificationType, ": ", error.Message).Truncate(120);
+            var data = new Dictionary<string, object> { { "Message", error.Message.Truncate(60) } };
+            if (!String.IsNullOrEmpty(errorTypeName))
+                data.Add("Type", errorTypeName);
 
             var requestInfo = ev.GetRequestInfo();
             if (requestInfo != null)
-                data.Add("Url", requestInfo.GetFullPath(true, true, true));
+                data.Add("Url", requestInfo.GetFullPath(true, true, true).Truncate(60));
 
             return new MailMessageData { Subject = subject, Data = data };
         }

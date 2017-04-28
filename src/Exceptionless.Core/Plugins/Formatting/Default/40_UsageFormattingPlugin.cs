@@ -39,9 +39,9 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            string subject = String.Concat("Feature: ", ev.Source.Truncate(120));
+            string subject = String.Concat("Feature: ", ev.Source).Truncate(120);
             var data = new Dictionary<string, object> {
-                { "Source", ev.Source }
+                { "Source", ev.Source.Truncate(60) }
             };
 
             return new MailMessageData { Subject = subject, Data = data };

@@ -26,12 +26,12 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             var data = new Dictionary<string, object>();
             if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value) && !String.IsNullOrEmpty(value)) {
-                data.Add("Type", value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
+                data.Add("Type", value.TypeName());
                 data.Add("TypeFullName", value);
             }
 
             if (stack.SignatureInfo.TryGetValue("Method", out value) && !String.IsNullOrEmpty(value)) {
-                string method = value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+                string method = value.TypeName();
                 int index = method.IndexOf('(');
                 data.Add("Method", index > 0 ? method.Substring(0, index) : method);
                 data.Add("MethodFullName", value);
@@ -58,7 +58,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
             if (!String.IsNullOrEmpty(stackingTarget.Error.Type)) {
-                data.Add("Type", stackingTarget.Error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last());
+                data.Add("Type", stackingTarget.Error.Type.TypeName());
                 data.Add("TypeFullName", stackingTarget.Error.Type);
             }
 
@@ -83,7 +83,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (stackingTarget?.Error == null)
                 return null;
 
-            string errorType = !String.IsNullOrEmpty(stackingTarget.Error.Type) ? stackingTarget.Error.Type : "Error";
+            string errorTypeName = null;
+            if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
+                errorTypeName = stackingTarget.Error.Type.TypeName().Truncate(60);
+
+            string errorType = !String.IsNullOrEmpty(errorTypeName) ? errorTypeName : "Error";
             string notificationType = String.Concat(errorType, " occurrence");
             if (isNew)
                 notificationType = String.Concat(!isCritical ? "New " : "new ", errorType);
@@ -93,17 +97,17 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (isCritical)
                 notificationType = String.Concat("Critical ", notificationType);
 
-            string subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message.Truncate(120));
-            var data = new Dictionary<string, object> { { "Message", stackingTarget.Error.Message } };
-            if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
-                data.Add("Type", stackingTarget.Error.Type);
+            string subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message).Truncate(120);
+            var data = new Dictionary<string, object> { { "Message", stackingTarget.Error.Message.Truncate(60) } };
+            if (!String.IsNullOrEmpty(errorTypeName))
+                data.Add("Type", errorTypeName);
 
             if (stackingTarget.Method != null)
-                data.Add("Method", stackingTarget.Method.GetFullName());
+                data.Add("Method", stackingTarget.Method.Name.Truncate(60));
 
             var requestInfo = ev.GetRequestInfo();
             if (requestInfo != null)
-                data.Add("Url", requestInfo.GetFullPath(true, true, true));
+                data.Add("Url", requestInfo.GetFullPath(true, true, true).Truncate(60));
 
             return new MailMessageData { Subject = subject, Data = data };
         }

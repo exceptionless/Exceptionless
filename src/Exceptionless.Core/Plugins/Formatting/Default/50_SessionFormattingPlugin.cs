@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsSessionStart() || ev.IsSessionEnd() || ev.IsSessionHeartbeat();
         }
-        
+
         public override SummaryData GetStackSummaryData(Stack stack) {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Session, Event.KnownTypes.SessionEnd, Event.KnownTypes.SessionHeartbeat))
                 return null;
