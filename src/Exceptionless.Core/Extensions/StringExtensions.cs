@@ -281,6 +281,10 @@ namespace Exceptionless.Core.Extensions {
             return String.Concat(buffer.Substring(0, keep - 3), "...");
         }
 
+        public static string TypeName(this string typeFullName) {
+            return typeFullName?.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+        }
+
         public static string ToLowerFiltered(this string value, char[] charsToRemove) {
             var builder = new StringBuilder(value.Length);
 

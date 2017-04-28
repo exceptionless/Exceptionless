@@ -33,6 +33,13 @@ namespace Exceptionless.Core.Extensions {
             return stack;
         }
 
+        public static string GetTypeName(this Stack stack) {
+            if (stack.SignatureInfo.TryGetValue("ExceptionType", out string type) && !String.IsNullOrEmpty(type))
+                return type.TypeName();
+
+            return type;
+        }
+
         public static bool IsFixed(this Stack stack) {
             if (stack == null)
                 return false;

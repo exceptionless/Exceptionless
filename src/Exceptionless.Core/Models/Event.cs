@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models {
+    [DebuggerDisplay("Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
     public class Event : IData {
         public Event() {
             Tags = new TagSet();

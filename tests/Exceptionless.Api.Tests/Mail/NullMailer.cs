@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
@@ -26,7 +27,7 @@ namespace Exceptionless.Api.Tests.Mail {
             return Task.CompletedTask;
         }
 
-        public Task SendProjectDailySummaryAsync(User user, Project project, DateTime startDate, bool hasSubmittedEvents, long total, double uniqueTotal, double newTotal, bool isFreePlan) {
+        public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, bool isFreePlan) {
             return Task.CompletedTask;
         }
 

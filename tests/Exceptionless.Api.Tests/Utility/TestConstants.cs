@@ -48,6 +48,8 @@ namespace Exceptionless.Tests.Utility {
             "System.NullReferenceException",
             "System.ApplicationException",
             "System.AggregateException",
+            "System.Exception",
+            "System.ArgumentException",
             "System.InvalidArgumentException",
             "System.InvalidOperationException"
         };

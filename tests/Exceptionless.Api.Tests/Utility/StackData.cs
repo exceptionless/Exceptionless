@@ -40,6 +40,9 @@ namespace Exceptionless.Tests.Utility {
                 SignatureInfo = new SettingsDictionary()
             };
 
+            if (type == Event.KnownTypes.Error)
+                stack.SignatureInfo.Add("ExceptionType", TestConstants.ExceptionTypes.Random());
+
             for (int i = 0; i < RandomData.GetInt(0, 5); i++) {
                 string tag = RandomData.GetWord();
                 while (stack.Tags.Contains(tag))
