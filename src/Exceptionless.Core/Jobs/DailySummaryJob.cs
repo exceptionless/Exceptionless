@@ -26,14 +26,16 @@ namespace Exceptionless.Core.Jobs {
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IMailer _mailer;
         private readonly ILockProvider _lockProvider;
 
-        public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
+            _stackRepository = stackRepository;
             _eventRepository = eventRepository;
             _mailer = mailer;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
@@ -119,21 +121,34 @@ namespace Exceptionless.Core.Jobs {
             _logger.Info("Sending daily summary: users={0} project={1}", users.Count, project.Id);
             var sf = new ExceptionlessSystemFilter(project, organization);
             var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(sf).DateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).Index(data.UtcStartTime, data.UtcEndTime);
-            var result = await _eventRepository.CountBySearchAsync(systemFilter, $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error}", "terms:(is_first_occurrence @include:true) cardinality:stack_id").AnyContext();
-            bool hasSubmittedEvents = result.Total > 0;
-            if (!hasSubmittedEvents)
-                hasSubmittedEvents = await _eventRepository.GetCountByProjectIdAsync(project.Id, true).AnyContext() > 0;
+            var filter = $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error} {EventIndexType.Alias.IsHidden}:false {EventIndexType.Alias.IsFixed}:false";
+            var result = await _eventRepository.CountBySearchAsync(systemFilter, filter, "terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1").AnyContext();
 
-            double newTotal = result.Aggregations.Terms<double>("terms_is_first_occurrence")?.Buckets.FirstOrDefault()?.Total ?? 0;
+            double total = result.Aggregations.Sum("sum_count").Value ?? result.Total;
+            double newTotal = result.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
             double uniqueTotal = result.Aggregations.Cardinality("cardinality_stack_id")?.Value ?? 0;
+            bool hasSubmittedEvents = total > 0 || project.IsConfigured.GetValueOrDefault();
             bool isFreePlan = organization.PlanId == BillingManager.FreePlan.Id;
 
+            var fixedFilter = $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error} {EventIndexType.Alias.IsHidden}:false {EventIndexType.Alias.IsFixed}:true";
+            var fixedResult = await _eventRepository.CountBySearchAsync(systemFilter, fixedFilter, "sum:count~1").AnyContext();
+            double fixedTotal = fixedResult.Aggregations.Sum("sum_count").Value ?? fixedResult.Total;
+
+            IReadOnlyCollection<Stack> mostFrequent = null;
+            var stackTerms = result.Aggregations.Terms<string>("terms_stack_id");
+            if (stackTerms?.Buckets.Count > 0)
+                mostFrequent = await _stackRepository.GetByIdsAsync(stackTerms.Buckets.Select(b => b.Key).ToArray()).AnyContext();
+
+            IReadOnlyCollection<Stack> newest = null;
+            if (newTotal > 0)
+                newest = (await _stackRepository.GetByFilterAsync(sf, filter, "-first", "first", data.UtcStartTime, data.UtcEndTime, o => o.PageLimit(3)).AnyContext()).Documents;
+
             foreach (var user in users) {
-                _logger.Info().Project(project.Id).Message("Queueing \"{0}\" daily summary email ({1}-{2}) for user {3}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
-                await _mailer.SendProjectDailySummaryAsync(user, project, data.UtcStartTime, hasSubmittedEvents, result.Total, uniqueTotal, newTotal, isFreePlan).AnyContext();
+                _logger.Info().Project(project.Id).Message("Queuing \"{0}\" daily summary email ({1}-{2}) for user {3}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
+                await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, data.UtcStartTime, hasSubmittedEvents, total, uniqueTotal, newTotal, fixedTotal, isFreePlan).AnyContext();
             }
 
-            _logger.Info().Project(project.Id).Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Name, result.Total);
+            _logger.Info().Project(project.Id).Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Name, total);
             return true;
         }
     }

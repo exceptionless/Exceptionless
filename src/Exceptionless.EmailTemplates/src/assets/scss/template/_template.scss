@@ -67,16 +67,18 @@ table.button.github table td {
 
 .wrapper.actions h5 {
     color: $dark-gray;
+}
+
+h1, h2, h3, h4, h5, h6 {
     margin-top: 0px;
     margin-bottom: 5px;
 }
 
-.wrapper.actions ul {
+ul {
     margin-top: 0px;
-    margin-bottom: 0px;
 }
 
-.wrapper.actions li {
+li {
     margin-top: 5px;
     margin-left: 5px;
 }

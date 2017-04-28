@@ -3,20 +3,83 @@
   <row>
     <columns small="12">
       <h1>Summary for \{{StartDate}}</h1>
+    </columns>
+  </row>
+
+  \{{#if HasSubmittedEvents}}
+  <row>
+    <columns small="4">
+      <callout>
+        <b>Count</b>
+        <h1 class="text-center">\{{Count}}</h1>
+      </callout>
+    </columns>
+    <columns small="4">
+      <callout>
+        <b>Unique</b>
+        <h1 class="text-center">\{{Unique}}</h1>
+      </callout>
+    </columns>
+    <columns small="4">
+      <callout>
+        <b>New</b>
+        <h1 class="text-center">\{{New}}</h1>
+      </callout>
+    </columns>
+  </row>
+  \{{/if}}
+  <row>
+    <columns small="12">
       \{{#if HasSubmittedEvents}}
-      <p class="lead">
-        \{{#if Total}}
-          The "\{{ProjectName}}" project had <b>\{{Total}} total</b>, <b>\{{UniqueTotal}} unique</b>, and <b>\{{NewTotal}} new</b> errors.
+      <p>
+        \{{#if Count}}
+          The "\{{ProjectName}}" project had <strong>\{{Count}} total</strong>, <strong>\{{Unique}} unique</strong>, and <strong>\{{New}} new</strong> errors.
         \{{else}}
           Congrats! The "\{{ProjectName}}" project was exceptionless!
+        \{{/if}}
+        \{{#if Fixed}}
+          Additionally, <strong>\{{Fixed}} errors</strong> that have been marked as fixed occurred in outdated instances of your application.
         \{{/if}}
       </p>
 
       <center>
         <button class="button radius" href="\{{BaseUrl}}/project/\{{ProjectId}}/error/dashboard">
-            View Dashboard
-          </button>
+          View Dashboard
+        </button>
       </center>
+
+      <spacer size="5"></spacer>
+      \{{#if MostFrequent}}
+      <h5>Most Frequent</h5>
+      <ul>
+        \{{#each MostFrequent}}
+          <li>
+            <a href="\{{../BaseUrl}}/stack/\{{StackId}}">
+              \{{#if IsRegressed}}<strong>[REGRESSED]</strong> \{{/if}}
+              \{{#if TypeName}}<strong>\{{TypeName}}:</strong> \{{/if}}
+              \{{Title}}
+            </a>
+          </li>
+        \{{/each}}
+          <li><a href="\{{BaseUrl}}/project/\{{ProjectId}}/type/error/frequent">View more...</a></li>
+      </ul>
+      \{{/if}}
+
+      \{{#if Newest}}
+      <h5>Newest</h5>
+      <ul>
+        \{{#each Newest}}
+          <li>
+            <a href="\{{../BaseUrl}}/stack/\{{StackId}}">
+              \{{#if IsRegressed}}<strong>[REGRESSED]</strong> \{{/if}}
+              \{{#if TypeName}}<strong>\{{TypeName}}:</strong> \{{/if}}
+              \{{Title}}
+            </a>
+          </li>
+        \{{/each}}
+          <li><a href="\{{BaseUrl}}/project/\{{ProjectId}}/type/error/new">View more...</a></li>
+      </ul>
+      \{{/if}}
 
       \{{#if IsFreePlan}}
       <spacer size="5"></spacer>
@@ -26,7 +89,6 @@
       </p>
       \{{/if}}
     \{{else}}
-      <spacer size="5"></spacer>
       <p class="lead">
           Unfortunately, it appears that your "\{{ProjectName}}" project has not yet been configured to send errors
           to <a href="https://exceptionless.com">Exceptionless</a>.

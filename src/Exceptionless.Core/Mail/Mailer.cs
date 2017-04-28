@@ -179,7 +179,7 @@ namespace Exceptionless.Core.Mail {
             }, template);
         }
 
-        public Task SendProjectDailySummaryAsync(User user, Project project, DateTime startDate, bool hasSubmittedEvents, long total, double uniqueTotal, double newTotal, bool isFreePlan) {
+        public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, bool isFreePlan) {
             const string template = "project-daily-summary";
             string subject = $"[{project.Name}] Summary for {startDate.ToShortDateString()}";
             var data = new Dictionary<string, object> {
@@ -188,11 +188,14 @@ namespace Exceptionless.Core.Mail {
                 { "OrganizationId", project.OrganizationId },
                 { "ProjectId", project.Id },
                 { "ProjectName", project.Name },
+                { "MostFrequent", GetStackTemplateData(mostFrequent) },
+                { "Newest", GetStackTemplateData(newest) },
                 { "StartDate", startDate.ToLongDateString() },
                 { "HasSubmittedEvents", hasSubmittedEvents },
-                { "Total", total },
-                { "UniqueTotal", uniqueTotal },
-                { "NewTotal", newTotal },
+                { "Count", count },
+                { "Unique", uniqueCount },
+                { "New", newCount },
+                { "Fixed", fixedCount },
                 { "IsFreePlan", isFreePlan }
             };
 
@@ -201,6 +204,15 @@ namespace Exceptionless.Core.Mail {
                 Subject = subject,
                 Body = RenderTemplate(template, data)
             }, template);
+        }
+
+        private static IEnumerable<object> GetStackTemplateData(IEnumerable<Stack> stacks) {
+            return stacks?.Select(s => new {
+                StackId = s.Id,
+                Title = s.Title.Truncate(50),
+                TypeName = s.GetTypeName().Truncate(50),
+                s.IsRegressed,
+            });
         }
 
         public Task SendUserEmailVerifyAsync(User user) {
@@ -274,7 +286,7 @@ namespace Exceptionless.Core.Mail {
             if (Settings.Current.WebsiteMode == WebsiteMode.Production)
                 return;
 
-            var address = message.To.ToLowerInvariant();
+            string address = message.To.ToLowerInvariant();
             if (Settings.Current.AllowedOutboundAddresses.Any(address.Contains))
                 return;
 

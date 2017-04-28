@@ -11,11 +11,11 @@ namespace Exceptionless.Core.Extensions {
 
             InnerError targetError = error;
             while (targetError != null) {
-                StackFrame m = targetError.StackTrace?.FirstOrDefault(st => st.IsSignatureTarget);
-                if (m != null)
+                var frame = targetError.StackTrace?.FirstOrDefault(st => st.IsSignatureTarget);
+                if (frame != null)
                     return new StackingTarget {
                         Error = targetError,
-                        Method = m
+                        Method = frame
                     };
 
                 if (targetError.TargetMethod != null && targetError.TargetMethod.IsSignatureTarget)
@@ -28,8 +28,8 @@ namespace Exceptionless.Core.Extensions {
             }
 
             // fallback to default
-            InnerError defaultError = error.GetInnermostError();
-            Method defaultMethod = defaultError.StackTrace?.FirstOrDefault();
+            var defaultError = error.GetInnermostError();
+            var defaultMethod = defaultError.StackTrace?.FirstOrDefault();
             if (defaultMethod == null && error.StackTrace != null) {
                 defaultMethod = error.StackTrace.FirstOrDefault();
                 defaultError = error;
@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Extensions {
             if (error == null)
                 throw new ArgumentNullException(nameof(error));
 
-            InnerError current = error;
+            var current = error;
             while (current.Inner != null)
                 current = current.Inner;
 

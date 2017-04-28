@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
+    [DebuggerDisplay("Id: {Id}, Type: {Type}, Title: {Title}, TotalOccurrences: {TotalOccurrences}")]
     public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates {
         public Stack() {
             Tags = new TagSet();
