@@ -72,18 +72,18 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
             string source = !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
-            string subject = String.Concat(notificationType, ": ", source.Truncate(120));
-            var data = new Dictionary<string, object> { { "Source", source } };
+            string subject = String.Concat(notificationType, ": ", source).Truncate(120);
+            var data = new Dictionary<string, object> { { "Source", source.Truncate(60) } };
             if (!String.IsNullOrEmpty(ev.Message))
-                data.Add("Message", ev.Message);
+                data.Add("Message", ev.Message.Truncate(60));
 
             string level = ev.GetLevel();
             if (!String.IsNullOrEmpty(level))
-                data.Add("Level", level);
+                data.Add("Level", level.Truncate(60));
 
             var requestInfo = ev.GetRequestInfo();
             if (requestInfo != null)
-                data.Add("Url", requestInfo.GetFullPath(true, true, true));
+                data.Add("Url", requestInfo.GetFullPath(true, true, true).Truncate(60));
 
             return new MailMessageData { Subject = subject, Data = data };
         }

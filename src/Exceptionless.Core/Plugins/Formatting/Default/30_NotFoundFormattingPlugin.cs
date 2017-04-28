@@ -48,10 +48,10 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (isCritical)
                 notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
-            string subject = String.Concat(notificationType, ": ", ev.Source.Truncate(120));
+            string subject = String.Concat(notificationType, ": ", ev.Source).Truncate(120);
             var requestInfo = ev.GetRequestInfo();
             var data = new Dictionary<string, object> {
-                { "Url", requestInfo?.GetFullPath(true, true, true) ?? ev.Source }
+                { "Url", (requestInfo?.GetFullPath(true, true, true) ?? ev.Source).Truncate(60) }
             };
 
             return new MailMessageData { Subject = subject, Data = data };
