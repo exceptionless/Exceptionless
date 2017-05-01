@@ -7,7 +7,6 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Nest;
 using Xunit;

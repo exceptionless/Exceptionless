@@ -211,6 +211,7 @@
     <Compile Include="Search\EventIndexTests.cs" />
     <Compile Include="SemanticVersionParserTests.cs" />
     <Compile Include="SerializerTests.cs" />
+    <Compile Include="Services\UsageServiceTests.cs" />
     <Compile Include="Stats\AggregationTests.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="Utility\Approvals.cs" />

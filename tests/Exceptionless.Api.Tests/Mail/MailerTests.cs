@@ -215,7 +215,17 @@ namespace Exceptionless.Api.Tests.Mail {
             var project = ProjectData.GenerateSampleProject();
             var mostFrequent = StackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
 
-            await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, SystemClock.UtcNow.Date, true, 12, 1, 0, 1, false);
+            await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, SystemClock.UtcNow.Date, true, 12, 1, 0, 1, 0, 0, false);
+            await RunMailJobAsync();
+        }
+
+        [Fact]
+        public async Task SendProjectDailySummaryWithAllBlockedAsync() {
+            var user = UserData.GenerateSampleUser();
+            var project = ProjectData.GenerateSampleProject();
+            var mostFrequent = StackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
+
+            await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, SystemClock.UtcNow.Date, true, 123456, 1, 0, 1, 123456, 0, false);
             await RunMailJobAsync();
         }
 
@@ -224,7 +234,7 @@ namespace Exceptionless.Api.Tests.Mail {
             var user = UserData.GenerateSampleUser();
             var project = ProjectData.GenerateSampleProject();
 
-            await _mailer.SendProjectDailySummaryAsync(user, project, null, null, SystemClock.UtcNow.Date, false, 0, 0, 0, 0, false);
+            await _mailer.SendProjectDailySummaryAsync(user, project, null, null, SystemClock.UtcNow.Date, false, 0, 0, 0, 0, 0, 0, false);
             await RunMailJobAsync();
         }
 
@@ -233,7 +243,16 @@ namespace Exceptionless.Api.Tests.Mail {
             var user = UserData.GenerateSampleUser();
             var project = ProjectData.GenerateSampleProject();
 
-            await _mailer.SendProjectDailySummaryAsync(user, project, null, null, SystemClock.UtcNow.Date, true, 0, 0, 0, 10, false);
+            await _mailer.SendProjectDailySummaryAsync(user, project, null, null, SystemClock.UtcNow.Date, true, 0, 0, 0, 10, 0, 0, false);
+            await RunMailJobAsync();
+        }
+
+        [Fact]
+        public async Task SendProjectDailySummaryWithNoEventsButHasFixedAndTooBigEventsAsync() {
+            var user = UserData.GenerateSampleUser();
+            var project = ProjectData.GenerateSampleProject();
+
+            await _mailer.SendProjectDailySummaryAsync(user, project, null, null, SystemClock.UtcNow.Date, true, 0, 0, 0, 10, 123456, 23, false);
             await RunMailJobAsync();
         }
 
@@ -244,7 +263,7 @@ namespace Exceptionless.Api.Tests.Mail {
             var mostFrequent = StackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
             var newest = StackData.GenerateStacks(1, generateId: true, type: Event.KnownTypes.Error);
 
-            await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, SystemClock.UtcNow.Date, true, 12, 1, 1, 2, true);
+            await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, SystemClock.UtcNow.Date, true, 12, 1, 1, 2, 0, 0, true);
             await RunMailJobAsync();
         }
 
