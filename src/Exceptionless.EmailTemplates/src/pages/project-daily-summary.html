@@ -7,6 +7,34 @@
   </row>
 
   \{{#if HasSubmittedEvents}}
+  \{{#if Blocked}}
+  <row>
+    <columns small="3">
+      <callout>
+        <b>Count</b>
+        <h1 class="text-center">\{{Count}}</h1>
+      </callout>
+    </columns>
+    <columns small="3">
+      <callout>
+        <b>Unique</b>
+        <h1 class="text-center">\{{Unique}}</h1>
+      </callout>
+    </columns>
+    <columns small="3">
+      <callout>
+        <b>New</b>
+        <h1 class="text-center">\{{New}}</h1>
+      </callout>
+    </columns>
+    <columns small="3">
+      <callout>
+        <b>Discarded</b>
+        <h1 class="text-center alert">\{{Blocked}}</h1>
+      </callout>
+    </columns>
+  </row>
+  \{{else}}
   <row>
     <columns small="4">
       <callout>
@@ -28,6 +56,7 @@
     </columns>
   </row>
   \{{/if}}
+  \{{/if}}
   <row>
     <columns small="12">
       \{{#if HasSubmittedEvents}}
@@ -47,6 +76,22 @@
           View Dashboard
         </button>
       </center>
+
+      \{{#if Blocked}}
+      <callout class="alert">
+        <p>
+          <strong>\{{Blocked}} events</strong> were discarded due to throttling.
+          <a href="\{{BaseUrl}}/organization/\{{OrganizationId}}/upgrade">Upgrade now</a> to increase your limits.
+          <a href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled">Click here to learn more about throttling.</a>
+        </p>
+
+        <center>
+          <button class="button radius alert" href="\{{BaseUrl}}/organization/\{{OrganizationId}}/upgrade">
+              Upgrade Plan
+          </button>
+        </center>
+      </callout>
+      \{{/if}}
 
       <spacer size="5"></spacer>
       \{{#if MostFrequent}}

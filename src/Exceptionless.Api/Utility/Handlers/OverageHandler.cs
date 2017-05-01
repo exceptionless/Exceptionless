@@ -7,18 +7,18 @@ using System.Threading.Tasks;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Foundatio.Logging;
 using Foundatio.Metrics;
 
 namespace Exceptionless.Api.Utility {
     public sealed class OverageHandler : DelegatingHandler {
-        private readonly IOrganizationRepository _organizationRepository;
+        private readonly UsageService _usageService;
         private readonly IMetricsClient _metricsClient;
         private readonly ILogger _logger;
 
-        public OverageHandler(IOrganizationRepository organizationRepository, IMetricsClient metricsClient, ILogger<OverageHandler> logger) {
-            _organizationRepository = organizationRepository;
+        public OverageHandler(UsageService usageService, IMetricsClient metricsClient, ILogger<OverageHandler> logger) {
+            _usageService = usageService;
             _metricsClient = metricsClient;
             _logger = logger;
         }
@@ -56,7 +56,7 @@ namespace Exceptionless.Api.Utility {
                 }
             }
 
-            bool overLimit = await _organizationRepository.IncrementUsageAsync(request.GetDefaultOrganizationId(), tooBig);
+            bool overLimit = await _usageService.IncrementUsageAsync(request.GetDefaultOrganizationId(), request.GetDefaultProjectId(), tooBig);
 
             // block large submissions, client should break them up or remove some of the data.
             if (tooBig)

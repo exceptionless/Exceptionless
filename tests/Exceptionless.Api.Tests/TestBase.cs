@@ -19,7 +19,7 @@ namespace Exceptionless.Api.Tests {
         private readonly CancellationTokenSource _disposedCancellationTokenSource = new CancellationTokenSource();
 
         public TestBase(ITestOutputHelper output) : base(output) {
-            Log.MinimumLevel = LogLevel.Trace;
+            Log.MinimumLevel = LogLevel.Information;
             Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
         }
 

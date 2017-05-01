@@ -8,7 +8,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;

@@ -16,7 +16,6 @@ using Foundatio.Utility;
 using Nest;
 using Xunit;
 using Xunit.Abstractions;
-using User = Exceptionless.Core.Models.User;
 
 namespace Exceptionless.Api.Tests.Jobs {
     public class CloseInactiveSessionsJobTests : ElasticTestBase {

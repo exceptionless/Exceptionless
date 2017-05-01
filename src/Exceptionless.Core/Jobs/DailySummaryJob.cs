@@ -134,6 +134,10 @@ namespace Exceptionless.Core.Jobs {
             var fixedResult = await _eventRepository.CountBySearchAsync(systemFilter, fixedFilter, "sum:count~1").AnyContext();
             double fixedTotal = fixedResult.Aggregations.Sum("sum_count").Value ?? fixedResult.Total;
 
+            var usages = project.OverageHours.Where(u => data.UtcStartTime.IsBeforeOrEqual(u.Date) && data.UtcEndTime.IsAfterOrEqual(u.Date)).ToList();
+            int blockedTotal = usages.Sum(u => u.Blocked);
+            int tooBigTotal = usages.Sum(u => u.TooBig);
+
             IReadOnlyCollection<Stack> mostFrequent = null;
             var stackTerms = result.Aggregations.Terms<string>("terms_stack_id");
             if (stackTerms?.Buckets.Count > 0)
@@ -145,7 +149,7 @@ namespace Exceptionless.Core.Jobs {
 
             foreach (var user in users) {
                 _logger.Info().Project(project.Id).Message("Queuing \"{0}\" daily summary email ({1}-{2}) for user {3}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
-                await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, data.UtcStartTime, hasSubmittedEvents, total, uniqueTotal, newTotal, fixedTotal, isFreePlan).AnyContext();
+                await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, data.UtcStartTime, hasSubmittedEvents, total, uniqueTotal, newTotal, fixedTotal, blockedTotal, tooBigTotal, isFreePlan).AnyContext();
             }
 
             _logger.Info().Project(project.Id).Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Name, total);

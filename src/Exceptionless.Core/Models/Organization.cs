@@ -161,14 +161,6 @@ namespace Exceptionless.Core.Models {
         string IOwnedByOrganization.OrganizationId { get { return Id; } set { Id = value; } }
     }
 
-    public class UsageInfo {
-        public DateTime Date { get; set; }
-        public int Total { get; set; }
-        public int Blocked { get; set; }
-        public int Limit { get; set; }
-        public int TooBig { get; set; }
-    }
-
     public enum BillingStatus {
         Trialing = 0,
         Active = 1,

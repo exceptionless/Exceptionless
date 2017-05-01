@@ -26,14 +26,16 @@ namespace Exceptionless.Api.Tests.Validation {
 
         [Fact]
         public void RunBenchmark() {
+            const int iterations = 10000;
+
             var sw = Stopwatch.StartNew();
-            for (int i = 0; i < 10000; i++) {
+            for (int i = 0; i < iterations; i++) {
                 var result = _validator.Validate(_benchmarkEvent);
                 Assert.Equal(true, result.IsValid);
             }
-            sw.Stop();
 
-            _logger.Info($"Time: {sw.ElapsedTicks} ticks, Avg: {sw.ElapsedTicks / 10000} ticks");
+            sw.Stop();
+            _logger.Info($"Time: {sw.ElapsedMilliseconds}ms, Avg: ({sw.ElapsedTicks / iterations}ticks | {sw.ElapsedMilliseconds / iterations}ms)");
         }
 
         [Theory]

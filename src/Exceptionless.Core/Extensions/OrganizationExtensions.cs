@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Extensions {
                 return 0;
 
             var utcNow = SystemClock.UtcNow;
-            var hoursLeftInMonth = (utcNow.EndOfMonth() - utcNow).TotalHours;
+            double hoursLeftInMonth = (utcNow.EndOfMonth() - utcNow).TotalHours;
             if (hoursLeftInMonth < 10.0)
                 return eventsLeftInMonth;
 
@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit) {
-            var cacheKey = String.Concat("api", ":", organizationId, ":", SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
+            string cacheKey = String.Concat("api", ":", organizationId, ":", SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
             var limit = await cacheClient.GetAsync<long>(cacheKey).AnyContext();
             return limit.HasValue && limit.Value >= apiThrottleLimit;
         }
@@ -137,32 +137,6 @@ namespace Exceptionless.Core.Extensions {
         public static void SetMonthlyUsage(this Organization organization, double total, double blocked, double tooBig) {
             var date = new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             organization.Usage.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetMaxEventsPerMonthWithBonus(), TimeSpan.FromDays(366));
-        }
-
-        public static void SetUsage(this ICollection<UsageInfo> usages, DateTime date, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge = null) {
-            var usageInfo = usages.FirstOrDefault(o => o.Date == date);
-            if (usageInfo == null) {
-                usageInfo = new UsageInfo {
-                    Date = date,
-                    Total = total,
-                    Blocked = blocked,
-                    Limit = limit,
-                    TooBig = tooBig
-                };
-                usages.Add(usageInfo);
-            } else {
-                usageInfo.Limit = limit;
-                usageInfo.Total = total;
-                usageInfo.Blocked = blocked;
-                usageInfo.TooBig = tooBig;
-            }
-
-            if (!maxUsageAge.HasValue)
-                return;
-
-            // remove old usage entries
-            foreach (var usage in usages.Where(u => u.Date < SystemClock.UtcNow.Subtract(maxUsageAge.Value)).ToList())
-                usages.Remove(usage);
         }
     }
 }

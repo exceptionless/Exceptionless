@@ -162,6 +162,7 @@
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\NumericExtensions.cs" />
     <Compile Include="Extensions\PersistentEventExtensions.cs" />
+    <Compile Include="Extensions\UsageExtensions.cs" />
     <Compile Include="Geo\IGeocodeService.cs" />
     <Compile Include="Geo\NullGeocodeService.cs" />
     <Compile Include="Jobs\CloseInactiveSessionsJob.cs" />
@@ -232,6 +233,7 @@
     <Compile Include="Models\Stack.cs" />
     <Compile Include="Models\StackSummaryModel.cs" />
     <Compile Include="Models\Token.cs" />
+    <Compile Include="Models\UsageInfo.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WebHook.cs" />
     <Compile Include="Models\WorkItems\OrganizationNotificationWorkItem.cs" />
@@ -275,6 +277,7 @@
     <Compile Include="Serialization\DynamicTypeContractResolver.cs" />
     <Compile Include="Serialization\ElasticDynamicTypeContractResolver.cs" />
     <Compile Include="Serialization\ElasticLowerCaseUnderscorePropertyNamesContractResolver.cs" />
+    <Compile Include="Services\UsageService.cs" />
     <Compile Include="Utility\IConnectionMapping.cs" />
     <Compile Include="Utility\SemanticVersionParser.cs" />
     <Compile Include="Utility\SettingsBase.cs" />
