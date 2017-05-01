@@ -134,7 +134,8 @@ namespace Exceptionless.Core.Jobs {
             var fixedResult = await _eventRepository.CountBySearchAsync(systemFilter, fixedFilter, "sum:count~1").AnyContext();
             double fixedTotal = fixedResult.Aggregations.Sum("sum_count").Value ?? fixedResult.Total;
 
-            var usages = project.OverageHours.Where(u => data.UtcStartTime.IsBeforeOrEqual(u.Date) && data.UtcEndTime.IsAfterOrEqual(u.Date)).ToList();
+            var range = new DateTimeRange(data.UtcStartTime, data.UtcEndTime);
+            var usages = project.OverageHours.Where(u => range.Contains(u.Date)).ToList();
             int blockedTotal = usages.Sum(u => u.Blocked);
             int tooBigTotal = usages.Sum(u => u.TooBig);
 
