@@ -8,6 +8,7 @@ using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
@@ -20,7 +21,7 @@ using Foundatio.Utility;
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/tokens")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, Token> {
+    public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, UpdateToken> {
         private readonly IProjectRepository _projectRepository;
 
         public TokenController(ITokenRepository repository, IProjectRepository projectRepository, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
@@ -171,6 +172,20 @@ namespace Exceptionless.App.Controllers.API {
 
             token.OrganizationId = organizationId;
             return await PostAsync(token);
+        }
+
+        /// <summary>
+        /// Update
+        /// </summary>
+        /// <param name="id">The identifier of the token.</param>
+        /// <param name="changes">The changes</param>
+        /// <response code="400">An error occurred while updating the token.</response>
+        /// <response code="404">The token could not be found.</response>
+        [HttpPatch]
+        [HttpPut]
+        [Route("{id:tokens}")]
+        public override Task<IHttpActionResult> PatchAsync(string id, Delta<UpdateToken> changes) {
+            return base.PatchAsync(id, changes);
         }
 
         /// <summary>
