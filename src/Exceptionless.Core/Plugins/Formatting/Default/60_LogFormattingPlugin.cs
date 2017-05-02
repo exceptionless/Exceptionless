@@ -83,7 +83,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             var requestInfo = ev.GetRequestInfo();
             if (requestInfo != null)
-                data.Add("Url", requestInfo.GetFullPath(true, true, true).Truncate(60));
+                data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
             return new MailMessageData { Subject = subject, Data = data };
         }
