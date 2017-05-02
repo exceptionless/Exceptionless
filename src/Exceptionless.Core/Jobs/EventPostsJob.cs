@@ -11,6 +11,7 @@ using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
+using Exceptionless.Core.Services;
 using FluentValidation;
 using Foundatio.Jobs;
 using Foundatio.Logging;
@@ -29,16 +30,16 @@ namespace Exceptionless.Core.Jobs {
         private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;
         private readonly IMetricsClient _metricsClient;
-        private readonly IOrganizationRepository _organizationRepository;
+        private readonly UsageService _usageService;
         private readonly IProjectRepository _projectRepository;
         private readonly IFileStorage _storage;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage, JsonSerializerSettings jsonSerializerSettings, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, UsageService usageService, IProjectRepository projectRepository, IFileStorage storage, JsonSerializerSettings jsonSerializerSettings, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
             _metricsClient = metricsClient;
-            _organizationRepository = organizationRepository;
+            _usageService = usageService;
             _projectRepository = projectRepository;
             _storage = storage;
             _jsonSerializerSettings = jsonSerializerSettings;
@@ -127,7 +128,7 @@ namespace Exceptionless.Core.Jobs {
             if (!isSingleEvent) {
                 await _metricsClient.TimeAsync(async () => {
                     // Don't process all the events if it will put the account over its limits.
-                    int eventsToProcess = await _organizationRepository.GetRemainingEventLimitAsync(project.OrganizationId).AnyContext();
+                    int eventsToProcess = await _usageService.GetRemainingEventLimitAsync(project.OrganizationId).AnyContext();
 
                     // Add 1 because we already counted 1 against their limit when we received the event post.
                     if (eventsToProcess < Int32.MaxValue)
@@ -138,7 +139,7 @@ namespace Exceptionless.Core.Jobs {
 
                     // Increment the count if greater than 1, since we already incremented it by 1 in the OverageHandler.
                     if (events.Count > 1)
-                        await _organizationRepository.IncrementUsageAsync(project.OrganizationId, false, events.Count - 1, applyHourlyLimit: false).AnyContext();
+                        await _usageService.IncrementUsageAsync(project.OrganizationId, project.Id, false, events.Count - 1, applyHourlyLimit: false).AnyContext();
                 }, MetricNames.PostsUpdateEventLimitTime).AnyContext();
             }
 

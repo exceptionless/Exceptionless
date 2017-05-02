@@ -5,7 +5,6 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
-using Foundatio.Logging;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Nest;

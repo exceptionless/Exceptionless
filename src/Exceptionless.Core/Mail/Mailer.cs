@@ -164,7 +164,7 @@ namespace Exceptionless.Core.Mail {
 
         public Task SendOrganizationPaymentFailedAsync(User owner, Organization organization) {
             const string template = "organization-payment-failed";
-            string subject = $"[{organization.Name}] Payment failed! Update billing information to avoid service interuption!";
+            string subject = $"[{organization.Name}] Payment failed! Update billing information to avoid service interruption!";
             var data = new Dictionary<string, object> {
                 { "Subject", subject },
                 { "BaseUrl", Settings.Current.BaseURL },
@@ -179,9 +179,9 @@ namespace Exceptionless.Core.Mail {
             }, template);
         }
 
-        public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, bool isFreePlan) {
+        public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan) {
             const string template = "project-daily-summary";
-            string subject = $"[{project.Name}] Summary for {startDate.ToShortDateString()}";
+            string subject = $"[{project.Name}] Summary for {startDate.ToLongDateString()}";
             var data = new Dictionary<string, object> {
                 { "Subject", subject },
                 { "BaseUrl", Settings.Current.BaseURL },
@@ -196,6 +196,8 @@ namespace Exceptionless.Core.Mail {
                 { "Unique", uniqueCount },
                 { "New", newCount },
                 { "Fixed", fixedCount },
+                { "Blocked", blockedCount },
+                { "TooBig", tooBigCount },
                 { "IsFreePlan", isFreePlan }
             };
 

@@ -1,20 +1,12 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Api.Tests.Extensions;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
-using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
-using Foundatio.Logging;
-using Foundatio.Messaging;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Nest;
-using Nito.AsyncEx;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Foundatio.Logging.LogLevel;
@@ -106,121 +98,6 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _repository.RemoveAllAsync();
             await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(0, _cache.Count);
-        }
-
-        [Fact]
-        public async Task CanIncrementUsageAsync() {
-            var messageBus = GetService<IMessageBus>();
-
-            var countdown = new AsyncCountdownEvent(2);
-            await messageBus.SubscribeAsync<PlanOverage>(po => {
-                _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly})");
-                countdown.Signal();
-            });
-
-            var o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
-            await _configuration.Client.RefreshAsync(Indices.All);
-            Assert.InRange(o.GetHourlyEventLimit(), 1, 750);
-
-            int totalToIncrement = o.GetHourlyEventLimit() - 1;
-            Assert.False(await _repository.IncrementUsageAsync(o.Id, false, totalToIncrement));
-            await _configuration.Client.RefreshAsync(Indices.All);
-            o = await _repository.GetByIdAsync(o.Id);
-
-            await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
-            Assert.Equal(2, countdown.CurrentCount);
-            Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
-            Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
-
-            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 2));
-            await _configuration.Client.RefreshAsync(Indices.All);
-            o = await _repository.GetByIdAsync(o.Id);
-
-            await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
-            Assert.Equal(1, countdown.CurrentCount);
-            Assert.Equal(totalToIncrement + 2, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(totalToIncrement + 2, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(1, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
-            Assert.Equal(1, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
-
-            o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
-            await _configuration.Client.RefreshAsync(Indices.All);
-
-            totalToIncrement = o.GetHourlyEventLimit() + 20;
-            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, totalToIncrement));
-
-            await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
-            Assert.Equal(0, countdown.CurrentCount);
-            Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(20, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
-            Assert.Equal(20, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
-        }
-
-        [Fact]
-        public async Task CanIncrementSuspendedOrganizationUsageAsync() {
-            var messageBus = GetService<IMessageBus>();
-
-            var countdown = new AsyncCountdownEvent(2);
-            await messageBus.SubscribeAsync<PlanOverage>(po => {
-                _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly}");
-                countdown.Signal();
-            });
-
-            var o = await _repository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id }, opt => opt.Cache());
-            Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 5));
-
-            await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
-            Assert.Equal(2, countdown.CurrentCount);
-            Assert.Equal(5, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(5, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
-            Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
-
-            o.IsSuspended = true;
-            o.SuspendedByUserId = TestConstants.UserId;
-            o.SuspensionDate = SystemClock.UtcNow;
-            o.SuspensionCode = SuspensionCode.Billing;
-            o = await _repository.SaveAsync(o, opt => opt.Cache());
-
-            Assert.True(await _repository.IncrementUsageAsync(o.Id, false, 4995));
-
-            await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
-            Assert.Equal(1, countdown.CurrentCount);
-            Assert.Equal(5000, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(5000, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(4995, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
-            Assert.Equal(4995, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
-
-            o.RemoveSuspension();
-            o = await _repository.SaveAsync(o, opt => opt.Cache());
-
-            Assert.False(await _repository.IncrementUsageAsync(o.Id, false, 1));
-
-            await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
-            Assert.Equal(1, countdown.CurrentCount);
-            Assert.Equal(5001, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(5001, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
-            Assert.Equal(4995, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
-            Assert.Equal(4995, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
-        }
-
-        private string GetHourlyBlockedCacheKey(string organizationId) {
-            return String.Concat("Organization:usage-blocked", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
-        }
-
-        private string GetHourlyTotalCacheKey(string organizationId) {
-            return String.Concat("Organization:usage-total", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
-        }
-
-        private string GetMonthlyBlockedCacheKey(string organizationId) {
-            return String.Concat("Organization:usage-blocked", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
-        }
-
-        private string GetMonthlyTotalCacheKey(string organizationId) {
-            return String.Concat("Organization:usage-total", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
     }
 }
