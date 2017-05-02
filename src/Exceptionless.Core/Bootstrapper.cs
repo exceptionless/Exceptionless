@@ -19,6 +19,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Serialization;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using FluentValidation;
@@ -131,6 +132,7 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<ILockProvider, CacheLockProvider>();
             container.Register<StripeEventHandler>();
             container.RegisterSingleton<BillingManager>();
+            container.RegisterSingleton<UsageService>();
             container.RegisterSingleton<SampleDataService>();
             container.RegisterSingleton<EventPipeline>();
             container.RegisterSingleton<EventPluginManager>();

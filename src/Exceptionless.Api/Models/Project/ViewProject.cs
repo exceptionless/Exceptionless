@@ -17,5 +17,7 @@ namespace Exceptionless.Api.Models {
         public long StackCount { get; set; }
         public long EventCount { get; set; }
         public bool HasPremiumFeatures { get; set; }
+        public ICollection<UsageInfo> OverageHours { get; set; }
+        public ICollection<UsageInfo> Usage { get; set; }
     }
 }

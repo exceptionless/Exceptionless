@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Services {
         private readonly IMessagePublisher _messagePublisher;
         private readonly ILogger<UsageService> _logger;
 
-        public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher, LoggerFactory loggerFactory = null) {
+        public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher, ILoggerFactory loggerFactory = null) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _cache = cache;
