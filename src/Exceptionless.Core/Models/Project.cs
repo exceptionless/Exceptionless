@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Foundatio.Repositories.Models;
 
@@ -11,6 +12,8 @@ namespace Exceptionless.Core.Models {
             NotificationSettings = new Dictionary<string, NotificationSettings>();
             PromotedTabs = new HashSet<string>();
             DeleteBotDataEnabled = false;
+            Usage = new Collection<UsageInfo>();
+            OverageHours = new Collection<UsageInfo>();
             Data = new DataDictionary();
         }
 
@@ -31,6 +34,16 @@ namespace Exceptionless.Core.Models {
         public ClientConfiguration Configuration { get; set; }
 
         public Dictionary<string, NotificationSettings> NotificationSettings { get; set; }
+
+        /// <summary>
+        /// Hours over event limit.
+        /// </summary>
+        public ICollection<UsageInfo> OverageHours { get; set; }
+
+        /// <summary>
+        /// Account event usage information.
+        /// </summary>
+        public ICollection<UsageInfo> Usage { get; set; }
 
         /// <summary>
         /// Optional data entries that contain additional configuration information for this project.

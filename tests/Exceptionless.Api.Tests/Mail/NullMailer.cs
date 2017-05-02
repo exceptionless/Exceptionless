@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Models;
 
 namespace Exceptionless.Api.Tests.Mail {
@@ -27,7 +26,7 @@ namespace Exceptionless.Api.Tests.Mail {
             return Task.CompletedTask;
         }
 
-        public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, bool isFreePlan) {
+        public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan) {
             return Task.CompletedTask;
         }
 
