@@ -112,8 +112,9 @@ namespace Exceptionless.Core.Services {
 
             try {
                 org = await _organizationRepository.GetByIdAsync(org.Id).AnyContext();
-                org.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig);
-                org.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig);
+                org.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig); ;
+                if (usage.HourlyBlocked > 0 || usage.HourlyTooBig > 0)
+                    org.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig);
 
                 await _organizationRepository.SaveAsync(org, o => o.Cache()).AnyContext();
                 await _cache.SetAsync(GetUsageSavedCacheKey(org.Id), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
@@ -133,7 +134,8 @@ namespace Exceptionless.Core.Services {
             try {
                 project = await _projectRepository.GetByIdAsync(project.Id).AnyContext();
                 project.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig, org.GetMaxEventsPerMonthWithBonus());
-                project.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, org.GetHourlyEventLimit());
+                if (usage.HourlyBlocked > 0 || usage.HourlyTooBig > 0)
+                    project.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, org.GetHourlyEventLimit());
 
                 await _projectRepository.SaveAsync(project, o => o.Cache()).AnyContext();
                 await _cache.SetAsync(GetUsageSavedCacheKey(org.Id, project.Id), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
