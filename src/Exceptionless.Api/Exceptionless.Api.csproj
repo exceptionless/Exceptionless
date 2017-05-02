@@ -212,6 +212,7 @@
     <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\AuthController.cs" />
     <Compile Include="Controllers\Base\ExceptionlessApiController.cs" />
+    <Compile Include="Models\Token\UpdateToken.cs" />
     <Compile Include="Utility\GetFilterScopeVisitor.cs" />
     <Compile Include="Controllers\Base\ModelActionResults.cs" />
     <Compile Include="Controllers\Base\PermissionResult.cs" />
