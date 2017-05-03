@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Tests.Services {
                 countdown.Signal();
             });
 
-            var o = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
+            var o = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.SmallPlan.Id });
             var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = o.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, opt => opt.Cache());
 
             await _configuration.Client.RefreshAsync(Indices.All);
@@ -83,7 +83,7 @@ namespace Exceptionless.Api.Tests.Services {
             Assert.Equal(1, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
             Assert.Equal(1, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id, project.Id), 0));
 
-            o = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
+            o = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.SmallPlan.Id });
             project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = o.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, opt => opt.Cache());
             await _configuration.Client.RefreshAsync(Indices.All);
 
@@ -103,6 +103,55 @@ namespace Exceptionless.Api.Tests.Services {
             Assert.Equal(20, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id, project.Id), 0));
         }
 
+
+        [Fact]
+        public async Task WillNotThrottleFreePlan() {
+            var messageBus = GetService<IMessageBus>();
+
+            var countdown = new AsyncCountdownEvent(2);
+            await messageBus.SubscribeAsync<PlanOverage>(po => {
+                _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly})");
+                countdown.Signal();
+            });
+            
+            const int limit = 750;
+            var o = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = limit, PlanId = BillingManager.FreePlan.Id });
+            var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = o.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, opt => opt.Cache());
+
+            await _configuration.Client.RefreshAsync(Indices.All);
+            Assert.Equal(limit, o.GetHourlyEventLimit());
+
+            Assert.False(await _usageService.IncrementUsageAsync(o.Id, project.Id, false, limit));
+            await _configuration.Client.RefreshAsync(Indices.All);
+            o = await _organizationRepository.GetByIdAsync(o.Id);
+
+            await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
+            Assert.Equal(2, countdown.CurrentCount);
+            Assert.Equal(limit, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(limit, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id, project.Id), 0));
+            Assert.Equal(limit, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(limit, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id, project.Id), 0));
+            Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
+            Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id, project.Id), 0));
+            Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
+            Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id, project.Id), 0));
+
+            Assert.True(await _usageService.IncrementUsageAsync(o.Id, project.Id, false, 2));
+            await _configuration.Client.RefreshAsync(Indices.All);
+            o = await _organizationRepository.GetByIdAsync(o.Id);
+
+            await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
+            Assert.Equal(1, countdown.CurrentCount);
+            Assert.Equal(limit + 2, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(limit + 2, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id, project.Id), 0));
+            Assert.Equal(limit + 2, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id), 0));
+            Assert.Equal(limit + 2, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(o.Id, project.Id), 0));
+            Assert.Equal(2, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id), 0));
+            Assert.Equal(2, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(o.Id, project.Id), 0));
+            Assert.Equal(2, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
+            Assert.Equal(2, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id, project.Id), 0));
+        }
+
         [Fact]
         public async Task CanIncrementSuspendedOrganizationUsageAsync() {
             var messageBus = GetService<IMessageBus>();
@@ -113,7 +162,7 @@ namespace Exceptionless.Api.Tests.Services {
                 countdown.Signal();
             });
 
-            var o = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id }, opt => opt.Cache());
+            var o = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.SmallPlan.Id }, opt => opt.Cache());
             var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = o.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, opt => opt.Cache());
             Assert.False(await _usageService.IncrementUsageAsync(o.Id, project.Id, false, 5));
 
