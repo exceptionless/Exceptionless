@@ -8,11 +8,12 @@ using UAParser;
 namespace Exceptionless.Core.Utility {
     public sealed class UserAgentParser {
         private static readonly Lazy<Parser> _parser = new Lazy<Parser>(Parser.GetDefault);
-        private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 250 };
+        private readonly InMemoryCacheClient _localCache;
         private readonly ILogger _logger;
 
-        public UserAgentParser(ILogger<UserAgentParser> logger) {
-            _logger = logger;
+        public UserAgentParser(ILoggerFactory loggerFactory) {
+            _localCache = new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory }) { MaxItems = 250 };
+            _logger = loggerFactory.CreateLogger<UserAgentParser>();
         }
 
         public async Task<ClientInfo> ParseAsync(string userAgent, string projectId = null) {

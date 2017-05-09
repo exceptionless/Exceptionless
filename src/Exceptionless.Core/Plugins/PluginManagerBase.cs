@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Plugins {
         public PluginManagerBase(IDependencyResolver dependencyResolver = null, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
             var type = GetType();
             _metricPrefix = String.Concat(type.Name.ToLower(), ".");
-            _metricsClient = metricsClient ?? new InMemoryMetricsClient(loggerFactory: loggerFactory);
+            _metricsClient = metricsClient ?? new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = loggerFactory });
             _logger = loggerFactory.CreateLogger(type);
 
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();

@@ -4,7 +4,6 @@ using Exceptionless.Api.Tests.Authentication;
 using Exceptionless.Api.Tests.Mail;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
-using Foundatio.Extensions;
 using Foundatio.Logging;
 using Foundatio.Logging.Xunit;
 using Foundatio.Utility;
