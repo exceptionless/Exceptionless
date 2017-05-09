@@ -9,11 +9,12 @@ using McSherry.SemanticVersioning;
 namespace Exceptionless.Core.Utility {
     public class SemanticVersionParser {
         private static readonly IReadOnlyCollection<string> EmptyIdentifiers = new List<string>(0).AsReadOnly();
-        private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient { MaxItems = 250 };
+        private readonly InMemoryCacheClient _localCache;
         private readonly ILogger _logger;
 
         public SemanticVersionParser(ILoggerFactory loggerFactory) {
-            _logger = loggerFactory.CreateLogger(GetType());
+            _localCache = new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory }) { MaxItems = 250 };
+            _logger = loggerFactory.CreateLogger<SemanticVersionParser>();
         }
 
         public SemanticVersion Default { get; } = new SemanticVersion(0, 0);
@@ -22,7 +23,7 @@ namespace Exceptionless.Core.Utility {
             version = version?.Trim();
             if (String.IsNullOrEmpty(version))
                 return null;
-            
+
             var cacheValue = await _localCache.GetAsync<SemanticVersion>(version).AnyContext();
             if (cacheValue.HasValue)
                 return cacheValue.Value;

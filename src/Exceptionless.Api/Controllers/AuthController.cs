@@ -154,7 +154,7 @@ namespace Exceptionless.Api.Controllers {
             if (User.IsTokenAuthType())
                 return Ok();
 
-            var id = User.GetLoggedInUsersTokenId();
+            string id = User.GetLoggedInUsersTokenId();
             if (String.IsNullOrEmpty(id))
                 return Ok();
 
@@ -297,6 +297,7 @@ namespace Exceptionless.Api.Controllers {
         /// Removes an external login provider from the account
         /// </summary>
         /// <param name="providerName">The provider name.</param>
+        /// <param name="providerUserId">The provider user id.</param>
         /// <response code="400">Invalid provider name.</response>
         /// <response code="500">An error while saving the user account.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -647,7 +648,7 @@ namespace Exceptionless.Api.Controllers {
 
         private async Task ResetUserTokensAsync(User user, string tag) {
             try {
-                var total = await _tokenRepository.RemoveAllByUserIdAsync(user.Id, o => o.ImmediateConsistency(true));
+                long total = await _tokenRepository.RemoveAllByUserIdAsync(user.Id, o => o.ImmediateConsistency(true));
                 _logger.Info().Message("Removed user {0} tokens for \"{1}\"", total, user.EmailAddress).Tag(tag).Identity(user.EmailAddress).SetActionContext(ActionContext).Write();
             } catch (Exception ex) {
                 _logger.Error().Exception(ex).Critical().Message("Error removing user tokens for \"{0}\": {1}", user.EmailAddress, ex.Message).Tag(tag).Identity(user.EmailAddress).SetActionContext(ActionContext).Write();

@@ -35,7 +35,7 @@ namespace Exceptionless.Api.Tests.Plugins {
                 Assert.True(result.IsSuccess);
             }
 
-            return new MaxMindGeoIpService(storage, loggerFactory.CreateLogger<MaxMindGeoIpService>());
+            return new MaxMindGeoIpService(storage, loggerFactory);
         }
 
         [Fact]

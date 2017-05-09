@@ -1,7 +1,7 @@
 ﻿using System;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
-using Foundatio.Extensions;
+using Foundatio.Utility;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.ServiceProviders;

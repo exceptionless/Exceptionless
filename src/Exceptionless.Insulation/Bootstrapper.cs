@@ -34,7 +34,7 @@ namespace Exceptionless.Insulation {
                 container.RegisterSingleton<IGeocodeService>(() => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
 
             if (Settings.Current.EnableMetricsReporting)
-                container.RegisterSingleton<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.MetricsServerName, Settings.Current.MetricsServerPort, "ex"));
+                container.RegisterSingleton<IMetricsClient>(() => new StatsDMetricsClient(new StatsDMetricsClientOptions { ServerName = Settings.Current.MetricsServerName, Port = Settings.Current.MetricsServerPort, Prefix = "ex", LoggerFactory = loggerFactory }));
             else
                 logger.Warn("StatsD Metrics is NOT enabled.");
 
@@ -51,9 +51,9 @@ namespace Exceptionless.Insulation {
                 });
 
                 if (Settings.Current.HasAppScope)
-                    container.RegisterSingleton<ICacheClient>(() => new ScopedCacheClient(new RedisCacheClient(container.GetInstance<ConnectionMultiplexer>(), loggerFactory: loggerFactory), Settings.Current.AppScope));
+                    container.RegisterSingleton<ICacheClient>(() => new ScopedCacheClient(CreateRedisCacheClient(container, loggerFactory), Settings.Current.AppScope));
                 else
-                    container.RegisterSingleton<ICacheClient, RedisCacheClient>();
+                    container.RegisterSingleton<ICacheClient>(() => CreateRedisCacheClient(container, loggerFactory));
 
                 if (Settings.Current.EnableSignalR)
                     container.RegisterSingleton<IConnectionMapping, RedisConnectionMapping>();
@@ -135,6 +135,14 @@ namespace Exceptionless.Insulation {
 
         private static string GetQueueName<T>() {
             return String.Concat(Settings.Current.AppScopePrefix, typeof(T).Name);
+        }
+
+        private static RedisCacheClient CreateRedisCacheClient(Container container, ILoggerFactory loggerFactory) {
+            return new RedisCacheClient(new RedisCacheClientOptions {
+                ConnectionMultiplexer = container.GetInstance<ConnectionMultiplexer>(),
+                Serializer = container.GetInstance<ISerializer>(),
+                LoggerFactory = loggerFactory
+            });
         }
     }
 }
