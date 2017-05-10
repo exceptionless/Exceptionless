@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Extensions {
             object data = extendedData[key];
             if (data is T)
                 return (T)data;
-            
+
             if (data is JObject) {
                 try {
                     return ((JObject)data).ToObject<T>();

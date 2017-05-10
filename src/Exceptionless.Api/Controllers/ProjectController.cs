@@ -17,6 +17,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Services;
 using Foundatio.Jobs;
 using Foundatio.Logging;
 using Foundatio.Queues;
@@ -32,12 +33,14 @@ namespace Exceptionless.Api.Controllers {
         private readonly IEventRepository _eventRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
+        private readonly SlackService _slackService;
 
-        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IEventRepository eventRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(projectRepository, mapper, validator, loggerFactory) {
+        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IEventRepository eventRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, SlackService slackService, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(projectRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
             _eventRepository = eventRepository;
             _workItemQueue = workItemQueue;
             _billingManager = billingManager;
+            _slackService = slackService;
         }
 
         #region CRUD
@@ -212,6 +215,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the project.</param>
         /// <param name="key">The key name of the configuration object.</param>
+        /// <response code="400">Invalid key value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpDelete]
         [Route("{id:objectid}/config")]
@@ -339,6 +343,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the project.</param>
         /// <param name="name">The tab name.</param>
+        /// <response code="400">Invalid tab name.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpPut]
         [HttpPost]
@@ -364,6 +369,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the project.</param>
         /// <param name="name">The tab name.</param>
+        /// <response code="400">Invalid tab name.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpDelete]
         [Route("{id:objectid}/promotedtabs")]
@@ -417,6 +423,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="id">The identifier of the project.</param>
         /// <param name="key">The key name of the data object.</param>
         /// <param name="value">Any string value.</param>
+        /// <response code="400">Invalid key or value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpPost]
         [Route("{id:objectid}/data")]
@@ -439,6 +446,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the project.</param>
         /// <param name="key">The key name of the data object.</param>
+        /// <response code="400">Invalid key or value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpDelete]
         [Route("{id:objectid}/data")]
@@ -451,6 +459,85 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             if (project.Data.Remove(key.Trim()))
+                await _repository.SaveAsync(project, o => o.Cache());
+
+            return Ok();
+        }
+
+
+        /// <summary>
+        /// Adds slack integration to the project
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="code">The oauth code that must be exchanged for an auth token.</param>D
+        /// <response code="400">Invalid code or error contacting slack.</response>
+        /// <response code="404">The project could not be found.</response>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost]
+        [Route("{id:objectid}/slack")]
+        public async Task<IHttpActionResult> AddSlackAsync(string id, string code) {
+            if (String.IsNullOrWhiteSpace(code))
+                return BadRequest();
+
+            var project = await GetModelAsync(id, false);
+            if (project == null)
+                return NotFound();
+
+            if (project.Data.ContainsKey(Project.KnownDataKeys.SlackToken))
+                return StatusCode(HttpStatusCode.NotModified);
+
+            SlackToken token = null;
+            try {
+                token = await _slackService.GetAccessTokenAsync(code);
+            } catch (Exception ex) {
+                _logger.Error().Exception(ex)
+                    .Message($"Error getting slack access token: {ex.Message}")
+                    .Property("Code", code)
+                    .Tag("Slack")
+                    .Identity(CurrentUser.EmailAddress)
+                    .Property("User", CurrentUser)
+                    .SetActionContext(ActionContext)
+                    .Write();
+            }
+
+            if (token == null)
+                return BadRequest();
+
+            project.Data[Project.KnownDataKeys.SlackToken] = token;
+            await _repository.SaveAsync(project, o => o.Cache());
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// Remove custom data
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <response code="404">The project could not be found.</response>
+        [HttpDelete]
+        [Route("{id:objectid}/slack")]
+        public async Task<IHttpActionResult> RemoveSlackAsync(string id) {
+            var project = await GetModelAsync(id, false);
+            if (project == null)
+                return NotFound();
+
+            var token = project.GetSlackToken();
+            if (token != null) {
+                try {
+                    await _slackService.RevokeAccessTokenAsync(token.AccessToken);
+                } catch (Exception ex) {
+                    _logger.Error().Exception(ex)
+                        .Message($"Error revoking slack access token: {ex.Message}")
+                        .Property("Token", token)
+                        .Tag("Slack")
+                        .Identity(CurrentUser.EmailAddress)
+                        .Property("User", CurrentUser)
+                        .SetActionContext(ActionContext)
+                        .Write();
+                }
+            }
+
+            if (project.Data.Remove(Project.KnownDataKeys.SlackToken))
                 await _repository.SaveAsync(project, o => o.Cache());
 
             return Ok();

@@ -222,7 +222,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static void AddModelConverters(this JsonSerializerSettings settings, ILogger logger) {
-            var knownDataTypes = new Dictionary<string, Type> {
+            var knownEventDataTypes = new Dictionary<string, Type> {
                 { Event.KnownDataKeys.Error, typeof(Error) },
                 { Event.KnownDataKeys.EnvironmentInfo, typeof(EnvironmentInfo) },
                 { Event.KnownDataKeys.Location, typeof(Location) },
@@ -233,8 +233,14 @@ namespace Exceptionless.Core.Extensions {
                 { Event.KnownDataKeys.UserInfo, typeof(UserInfo) }
             };
 
-            settings.Converters.Add(new DataObjectConverter<PersistentEvent>(logger, knownDataTypes));
-            settings.Converters.Add(new DataObjectConverter<Event>(logger, knownDataTypes));
+            var knownProjectDataTypes = new Dictionary<string, Type> {
+                { Project.KnownDataKeys.SlackToken, typeof(SlackToken) }
+            };
+
+            settings.Converters.Add(new DataObjectConverter<Organization>(logger));
+            settings.Converters.Add(new DataObjectConverter<Project>(logger, knownProjectDataTypes));
+            settings.Converters.Add(new DataObjectConverter<PersistentEvent>(logger, knownEventDataTypes));
+            settings.Converters.Add(new DataObjectConverter<Event>(logger, knownEventDataTypes));
             settings.Converters.Add(new DataObjectConverter<EnvironmentInfo>(logger));
             settings.Converters.Add(new DataObjectConverter<Error>(logger));
             settings.Converters.Add(new DataObjectConverter<InnerError>(logger));
