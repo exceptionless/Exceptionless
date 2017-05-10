@@ -39,6 +39,13 @@ namespace Exceptionless.Core.Extensions {
             return builder.ToString();
         }
 
+        /// <summary>
+        /// Gets the slack token from extended data.
+        /// </summary>
+        public static SlackToken GetSlackToken(this Project project) {
+            return project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out object value) ? value as SlackToken : null;
+        }
+
         public static int GetCurrentHourlyTotal(this Project project) {
             var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = project.OverageHours.FirstOrDefault(o => o.Date == date);

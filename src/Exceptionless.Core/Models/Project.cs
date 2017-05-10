@@ -64,5 +64,9 @@ namespace Exceptionless.Core.Models {
 
         public DateTime CreatedUtc { get; set; }
         public DateTime UpdatedUtc { get; set; }
+
+        public static class KnownDataKeys {
+            public const string SlackToken = "@slack";
+        }
     }
 }

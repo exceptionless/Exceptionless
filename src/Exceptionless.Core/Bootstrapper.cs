@@ -131,7 +131,6 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<ILockProvider, CacheLockProvider>();
             container.Register<StripeEventHandler>();
             container.RegisterSingleton<BillingManager>();
-            container.RegisterSingleton<UsageService>();
             container.RegisterSingleton<SampleDataService>();
             container.RegisterSingleton<EventPipeline>();
             container.RegisterSingleton<EventPluginManager>();
@@ -139,6 +138,9 @@ namespace Exceptionless.Core {
             container.RegisterSingleton<UserAgentParser>();
             container.RegisterSingleton<SystemHealthChecker>();
             container.RegisterSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
+
+            container.RegisterSingleton<UsageService>();
+            container.RegisterSingleton<SlackService>();
 
             container.Register<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
 
