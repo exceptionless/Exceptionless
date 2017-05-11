@@ -160,6 +160,7 @@
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\NumericExtensions.cs" />
     <Compile Include="Extensions\PersistentEventExtensions.cs" />
+    <Compile Include="Extensions\UriExtensions.cs" />
     <Compile Include="Extensions\UsageExtensions.cs" />
     <Compile Include="Geo\IGeocodeService.cs" />
     <Compile Include="Geo\NullGeocodeService.cs" />
