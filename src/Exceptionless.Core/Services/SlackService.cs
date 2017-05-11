@@ -25,13 +25,15 @@ namespace Exceptionless.Core.Services {
             if (String.IsNullOrEmpty(code))
                 throw new ArgumentNullException(nameof(code));
 
-            var data = await _serializer.SerializeToStringAsync(new Dictionary<string, string> {
+            var data = new Dictionary<string, string> {
                 { "client_id", Settings.Current.SlackAppId },
                 { "client_secret", Settings.Current.SlackAppSecret },
-                { "code", code }
-            }).AnyContext();
+                { "code", code },
+                { "redirect_uri", new Uri(Settings.Current.BaseURL).GetLeftPart(UriPartial.Authority) }
+            };
 
-            var response = await _client.PostAsync("https://slack.com/api/oauth.access", new StringContent(data, Encoding.UTF8, "application/json")).AnyContext();
+            string url = $"https://slack.com/api/oauth.access?{data.ToQueryString()}";
+            var response = await _client.PostAsync(url, new StringContent(String.Empty)).AnyContext();
             var body = await response.Content.ReadAsByteArrayAsync().AnyContext();
             var result = await _serializer.DeserializeAsync<OAuthAccessResponse>(body).AnyContext();
 
@@ -50,10 +52,10 @@ namespace Exceptionless.Core.Services {
 
             if (result.incoming_webhook != null) {
                 token.IncomingWebhook = new SlackToken.IncomingWebHook {
-                    Channel = token.IncomingWebhook.Channel,
-                    ChannelId = token.IncomingWebhook.ChannelId,
-                    ConfigurationUrl = token.IncomingWebhook.ConfigurationUrl,
-                    Url = token.IncomingWebhook.Url
+                    Channel = result.incoming_webhook.channel,
+                    ChannelId = result.incoming_webhook.channel_id,
+                    ConfigurationUrl = result.incoming_webhook.configuration_url,
+                    Url = result.incoming_webhook.url
                 };
             }
 
@@ -64,11 +66,8 @@ namespace Exceptionless.Core.Services {
             if (String.IsNullOrEmpty(token))
                 throw new ArgumentNullException(nameof(token));
 
-            var data = await _serializer.SerializeToStringAsync(new Dictionary<string, string> {
-                { "token", token }
-            }).AnyContext();
-
-            var response = await _client.PostAsync("https://slack.com/api/auth.revoke", new StringContent(data, Encoding.UTF8, "application/json")).AnyContext();
+            string url = $"https://slack.com/api/auth.revoke?token={token}";
+            var response = await _client.PostAsync(url, new StringContent(String.Empty)).AnyContext();
             var body = await response.Content.ReadAsByteArrayAsync().AnyContext();
             var result = await _serializer.DeserializeAsync<AuthRevokeResponse>(body).AnyContext();
 
