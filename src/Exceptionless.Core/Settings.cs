@@ -12,7 +12,7 @@ namespace Exceptionless.Core {
         public string BaseURL { get; private set; }
 
         /// <summary>
-        /// Internal project id keeps us from recursively logging to ourself
+        /// Internal project id keeps us from recursively logging to our self
         /// </summary>
         public string InternalProjectId { get; private set; }
 

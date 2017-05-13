@@ -20,7 +20,7 @@ namespace Exceptionless.Api.Utility {
     public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType : class {
         // cache property accessors for this type and all its derived types.
         private static ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>> _propertyCache = new ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>>();
-        
+
         private Dictionary<string, IMemberAccessor> _propertiesThatExist;
         private readonly Dictionary<string, object> _unknownProperties = new Dictionary<string, object>();
         private HashSet<string> _changedProperties;
