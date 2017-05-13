@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -110,6 +109,52 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
             return new MailMessageData { Subject = subject, Data = data };
+        }
+
+        public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+            if (!ShouldHandle(ev))
+                return null;
+
+            var error = ev.GetError();
+            var stackingTarget = error?.GetStackingTarget();
+            if (stackingTarget?.Error == null)
+                return null;
+
+            string errorTypeName = null;
+            if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
+                errorTypeName = stackingTarget.Error.Type.TypeName().Truncate(60);
+
+            string errorType = !String.IsNullOrEmpty(errorTypeName) ? errorTypeName : "error";
+            string notificationType = String.Concat(errorType, " occurrence");
+            if (isNew)
+                notificationType = String.Concat("new ", errorType);
+            else if (isRegression)
+                notificationType = String.Concat(errorType, " regression");
+
+            if (isCritical)
+                notificationType = String.Concat("critical ", notificationType);
+
+            var attachment = new SlackMessage.SlackAttachment(ev) {
+                Color = "#BB423F",
+                Fields = new List<SlackMessage.SlackAttachmentFields> {
+                    new SlackMessage.SlackAttachmentFields {
+                        Title = "Message",
+                        Value = stackingTarget.Error.Message.Truncate(60)
+                    }
+                }
+            };
+
+            if (!String.IsNullOrEmpty(errorTypeName))
+                attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Type", Value = errorTypeName });
+
+            if (stackingTarget.Method != null)
+                attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Method", Value = stackingTarget.Method.Name.Truncate(60) });
+
+            AddDefaultSlackFields(ev, attachment.Fields);
+            string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, stackingTarget.Error.Message.Truncate(120))}*";
+            return new SlackMessage(subject) {
+                Attachments = new List<SlackMessage.SlackAttachment> { attachment }
+            };
         }
     }
 }

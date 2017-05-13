@@ -4,7 +4,7 @@ using Exceptionless.Core.Models;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Api.Models {
-    public class ViewProject : IIdentity, IHaveCreatedDate {
+    public class ViewProject : IIdentity, IData, IHaveCreatedDate {
         public string Id { get; set; }
         public DateTime CreatedUtc { get; set; }
         public string OrganizationId { get; set; }
@@ -17,6 +17,7 @@ namespace Exceptionless.Api.Models {
         public long StackCount { get; set; }
         public long EventCount { get; set; }
         public bool HasPremiumFeatures { get; set; }
+        public bool HasSlackIntegration { get; set; }
         public ICollection<UsageInfo> OverageHours { get; set; }
         public ICollection<UsageInfo> Usage { get; set; }
     }

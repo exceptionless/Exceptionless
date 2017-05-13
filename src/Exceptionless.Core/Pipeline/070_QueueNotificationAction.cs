@@ -53,6 +53,7 @@ namespace Exceptionless.Core.Pipeline {
                     ProjectId = ctx.Event.ProjectId,
                     WebHookId = hook.Id,
                     Url = hook.Url,
+                    Type = WebHookType.General,
                     Data = await _webHookDataPluginManager.CreateFromEventAsync(context).AnyContext()
                 };
 

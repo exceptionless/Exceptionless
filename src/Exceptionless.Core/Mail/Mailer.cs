@@ -30,12 +30,12 @@ namespace Exceptionless.Core.Mail {
             _logger = logger;
         }
 
-        public Task SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
+        public async Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
             bool isCritical = ev.IsCritical();
             var result = _pluginManager.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
             if (result == null || result.Data.Count == 0) {
                 _logger.Warn("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", ev.Id, user.EmailAddress);
-                return Task.CompletedTask;
+                return false;
             }
 
             if (String.IsNullOrEmpty(result.Subject))
@@ -60,11 +60,12 @@ namespace Exceptionless.Core.Mail {
             AddUserInfo(ev, messageData);
 
             const string template = "event-notice";
-            return QueueMessageAsync(new MailMessage {
+            await QueueMessageAsync(new MailMessage {
                 To = user.EmailAddress,
                 Subject = $"[{project.Name}] {result.Subject}",
                 Body = RenderTemplate(template, messageData)
-            }, template);
+            }, template).AnyContext();
+            return true;
         }
 
         private void AddUserInfo(PersistentEvent ev, Dictionary<string, object> data) {
