@@ -30,17 +30,17 @@ namespace Exceptionless.Core.Models {
         public string StackId { get; set; }
 
         /// <summary>
-        /// Wether the event resulted in the creation of a new stack.
+        /// Whether the event resulted in the creation of a new stack.
         /// </summary>
         public bool IsFirstOccurrence { get; set; }
 
         /// <summary>
-        /// Wether the event has been marked as fixed or not.
+        /// Whether the event has been marked as fixed or not.
         /// </summary>
         public bool IsFixed { get; set; }
 
         /// <summary>
-        /// Wether the event has been marked as hidden or not.
+        /// Whether the event has been marked as hidden or not.
         /// </summary>
         public bool IsHidden { get; set; }
 

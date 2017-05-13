@@ -168,11 +168,11 @@ namespace Exceptionless.Api.Controllers {
         }
 
         /// <summary>
-        /// Signup
+        /// Sign up
         /// </summary>
-        /// <param name="model">The signup model.</param>
-        /// <response code="400">The signup model is invalid.</response>
-        /// <response code="401">Signup failed.</response>
+        /// <param name="model">The sign up model.</param>
+        /// <response code="400">The sign up model is invalid.</response>
+        /// <response code="401">Sign up failed.</response>
         [HttpPost]
         [Route("signup")]
         [ResponseType(typeof(TokenResult))]
@@ -211,7 +211,7 @@ namespace Exceptionless.Api.Controllers {
             string ipSignupAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:signup:attempts";
             bool hasValidInviteToken = !String.IsNullOrWhiteSpace(model.InviteToken) && await _organizationRepository.GetByInviteTokenAsync(model.InviteToken) != null;
             if (!hasValidInviteToken) {
-                // Only allow 10 signups per hour period by a single ip.
+                // Only allow 10 sign ups per hour period by a single ip.
                 long ipSignupAttempts = await _cache.IncrementAsync(ipSignupAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
                 if (ipSignupAttempts > 10) {
                     _logger.Error().Message("Signup denied for \"{0}\" for the {1} time.", email, ipSignupAttempts).Tag("Signup").Identity(email).SetActionContext(ActionContext).Write();
