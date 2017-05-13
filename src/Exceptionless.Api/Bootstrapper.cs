@@ -51,7 +51,7 @@ namespace Exceptionless.Api {
                 CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
 
                 CreateMap<NewProject, Project>();
-                CreateMap<Project, ViewProject>();
+                CreateMap<Project, ViewProject>().AfterMap((p, vp) => vp.HasSlackIntegration = p.Data.ContainsKey(Project.KnownDataKeys.SlackToken));
 
                 CreateMap<NewToken, Token>().ForMember(m => m.Type, m => m.Ignore());
                 CreateMap<Token, ViewToken>();

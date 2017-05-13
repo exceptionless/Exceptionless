@@ -1,22 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Exceptions;
+using Exceptionless.Core.Plugins.Formatting;
+using Exceptionless.Core.Queues.Models;
 using Foundatio.Logging;
+using Foundatio.Queues;
 using Foundatio.Serializer;
 
 namespace Exceptionless.Core.Services {
     public class SlackService {
         private readonly HttpClient _client = new HttpClient();
+        private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
+        private readonly FormattingPluginManager _pluginManager;
         private readonly ISerializer _serializer;
         private readonly ILogger _logger;
 
-        public SlackService(ISerializer serializer, ILoggerFactory loggerFactory = null) {
+        public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ISerializer serializer, ILoggerFactory loggerFactory = null) {
+            _webHookNotificationQueue = webHookNotificationQueue;
+            _pluginManager = pluginManager;
             _serializer = serializer;
             _logger = loggerFactory.CreateLogger<SlackService>();
         }
@@ -33,7 +37,7 @@ namespace Exceptionless.Core.Services {
             };
 
             string url = $"https://slack.com/api/oauth.access?{data.ToQueryString()}";
-            var response = await _client.PostAsync(url, new StringContent(String.Empty)).AnyContext();
+            var response = await _client.PostAsync(url).AnyContext();
             var body = await response.Content.ReadAsByteArrayAsync().AnyContext();
             var result = await _serializer.DeserializeAsync<OAuthAccessResponse>(body).AnyContext();
 
@@ -67,7 +71,7 @@ namespace Exceptionless.Core.Services {
                 throw new ArgumentNullException(nameof(token));
 
             string url = $"https://slack.com/api/auth.revoke?token={token}";
-            var response = await _client.PostAsync(url, new StringContent(String.Empty)).AnyContext();
+            var response = await _client.PostAsync(url).AnyContext();
             var body = await response.Content.ReadAsByteArrayAsync().AnyContext();
             var result = await _serializer.DeserializeAsync<AuthRevokeResponse>(body).AnyContext();
 
@@ -78,32 +82,44 @@ namespace Exceptionless.Core.Services {
             return false;
         }
 
-        public async Task SendMessageAsync(string url, string message) {
+        public async Task SendMessageAsync(string organizationId, string projectId, string url, SlackMessage message) {
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException(nameof(organizationId));
+
+            if (String.IsNullOrEmpty(projectId))
+                throw new ArgumentNullException(nameof(projectId));
+
             if (String.IsNullOrEmpty(url))
                 throw new ArgumentNullException(nameof(url));
 
-            if (String.IsNullOrEmpty(message))
+            if (message == null)
                 throw new ArgumentNullException(nameof(message));
 
-            var data = await _serializer.SerializeToStringAsync(new Dictionary<string, string> {
-                { "text", message }
-            }).AnyContext();
-
-            var response = await _client.PostAsync(url, new StringContent(data, Encoding.UTF8, "application/json")).AnyContext();
-            if (response.IsSuccessStatusCode)
-                return;
-
-            var body = await response.Content.ReadAsByteArrayAsync().AnyContext();
-            var result = await _serializer.DeserializeAsync<Response>(body).AnyContext();
-
-            _logger.Warn().Message("Error sending message: [{0}] {1}", response.StatusCode, result.error ?? result.warning).Property("Response", result).Write();
-            if ((int)response.StatusCode == 429 && response.Headers.RetryAfter.Date.HasValue)
-                throw new RateLimitException { RetryAfter = response.Headers.RetryAfter.Date.Value.UtcDateTime };
-
-            throw new WebHookException(result.error ?? result.warning) {
-                StatusCode = (int)response.StatusCode,
-                Unauthorized = response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.Gone
+            var notification = new WebHookNotification {
+                OrganizationId = organizationId,
+                ProjectId = projectId,
+                Url = url,
+                Type = WebHookType.Slack,
+                Data = message
             };
+
+            await _webHookNotificationQueue.EnqueueAsync(notification).AnyContext();
+        }
+
+        public async Task<bool> SendEventNoticeAsync(PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
+            var token = project.GetSlackToken();
+            if (token?.IncomingWebhook?.Url == null)
+                return false;
+
+            bool isCritical = ev.IsCritical();
+            var message = _pluginManager.GetSlackEventNotificationMessage(ev, project, isCritical, isNew, isRegression);
+            if (message == null) {
+                _logger.Warn("Unable to create event notification slack message for event \"{0}\".", ev.Id);
+                return false;
+            }
+
+            await SendMessageAsync(ev.OrganizationId, ev.ProjectId, token.IncomingWebhook.Url, message);
+            return true;
         }
 
         private class Response {

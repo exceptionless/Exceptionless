@@ -428,7 +428,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/data")]
         public async Task<IHttpActionResult> PostDataAsync(string id, string key, [NakedBody]string value) {
-            if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value))
+            if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value) || key.StartsWith("-"))
                 return BadRequest();
 
             var project = await GetModelAsync(id, false);
@@ -451,7 +451,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id:objectid}/data")]
         public async Task<IHttpActionResult> DeleteDataAsync(string id, string key) {
-            if (String.IsNullOrWhiteSpace(key))
+            if (String.IsNullOrWhiteSpace(key) || key.StartsWith("-"))
                 return BadRequest();
 
             var project = await GetModelAsync(id, false);
@@ -537,7 +537,7 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
-            if (project.Data.Remove(Project.KnownDataKeys.SlackToken))
+            if (project.NotificationSettings.Remove(Project.NotificationIntegrations.Slack) | project.Data.Remove(Project.KnownDataKeys.SlackToken))
                 await _repository.SaveAsync(project, o => o.Cache());
 
             return Ok();
