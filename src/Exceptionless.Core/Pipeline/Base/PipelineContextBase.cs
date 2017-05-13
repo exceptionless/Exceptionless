@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Pipeline
         bool IsProcessed { get; set; }
 
         /// <summary>
-        /// Gets a value indicating wether or not this context has gotten an error during processing.
+        /// Gets a value indicating whether or not this context has gotten an error during processing.
         /// </summary>
         bool HasError { get; }
 
@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Pipeline
         public bool IsProcessed { get; set; }
 
         /// <summary>
-        /// Gets a value indicating wether or not this context has gotten an error during processing.
+        /// Gets a value indicating whether or not this context has gotten an error during processing.
         /// </summary>
         public bool HasError => ErrorMessage != null || Exception != null;
 

@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Repositories {
         public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
             var filter = (Query<WebHook>.Term(e => e.OrganizationId, organizationId) && !Query<WebHook>.Exists(e => e.Field(f => f.ProjectId))) || Query<WebHook>.Term(e => e.ProjectId, projectId);
 
-            // TODO: This cache key may not always be cleared out if the webhook doesn't have both a org and project id.
+            // TODO: This cache key may not always be cleared out if the web hook doesn't have both a org and project id.
             return FindAsync(q => q.ElasticFilter(filter), o => o.CacheKey(String.Concat("paged:Organization:", organizationId, ":Project:", projectId)));
         }
 
