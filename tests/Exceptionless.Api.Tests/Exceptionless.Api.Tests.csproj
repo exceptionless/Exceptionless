@@ -47,7 +47,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Elasticsearch.Net, Version=5.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Elasticsearch.Net.5.3.1\lib\net46\Elasticsearch.Net.dll</HintPath>
+      <HintPath>..\..\packages\Elasticsearch.Net.5.4.0\lib\net46\Elasticsearch.Net.dll</HintPath>
     </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.2.75.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.2.75\lib\net461\Exceptionless.DateTimeExtensions.dll</HintPath>
@@ -88,14 +88,14 @@
     <Reference Include="McSherry.SemanticVersioning, Version=1.2.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\McSherry.SemanticVersioning.1.2.1\lib\net46\McSherry.SemanticVersioning.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Extensions.CommandLineUtils, Version=1.1.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Extensions.CommandLineUtils.1.1.0\lib\net451\Microsoft.Extensions.CommandLineUtils.dll</HintPath>
+    <Reference Include="Microsoft.Extensions.CommandLineUtils, Version=1.1.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Extensions.CommandLineUtils.1.1.1\lib\net451\Microsoft.Extensions.CommandLineUtils.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.Owin.3.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
     </Reference>
     <Reference Include="Nest, Version=5.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NEST.5.3.1\lib\net46\Nest.dll</HintPath>
+      <HintPath>..\..\packages\NEST.5.4.0\lib\net46\Nest.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.10.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
