@@ -830,7 +830,7 @@ namespace Exceptionless.Api.Controllers {
         /// we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON
         /// object into the events data collection.
         ///
-        /// You can also post a multiline string. We automatically split strings by the \n character and create a new log event for every line.
+        /// You can also post a multi-line string. We automatically split strings by the \n character and create a new log event for every line.
         ///
         /// Simple event:
         /// <code>

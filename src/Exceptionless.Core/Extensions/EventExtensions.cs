@@ -53,7 +53,7 @@ namespace Exceptionless {
         }
 
         /// <summary>
-        /// Indicates wether the event has been marked as critical.
+        /// Indicates whether the event has been marked as critical.
         /// </summary>
         public static bool IsCritical(this Event ev) {
             return ev.Tags != null && ev.Tags.Contains(Event.KnownTags.Critical);

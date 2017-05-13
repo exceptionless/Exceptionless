@@ -18,15 +18,12 @@ namespace Exceptionless.Api.Utility {
     /// body; they also need to interrogate the RequestUri etc.
     /// </remarks>
     internal class PerRequestParameterBinding : HttpParameterBinding {
-        private IEnumerable<MediaTypeFormatter> _formatters;
+        private readonly IEnumerable<MediaTypeFormatter> _formatters;
 
         public PerRequestParameterBinding(HttpParameterDescriptor descriptor,
             IEnumerable<MediaTypeFormatter> formatters)
             : base(descriptor) {
-            if (formatters == null)
-                throw new ArgumentNullException(nameof(formatters));
-
-            _formatters = formatters;
+            _formatters = formatters ?? throw new ArgumentNullException(nameof(formatters));
         }
 
         public override Task ExecuteBindingAsync(ModelMetadataProvider metadataProvider, HttpActionContext actionContext, CancellationToken cancellationToken) {

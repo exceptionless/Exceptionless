@@ -85,7 +85,7 @@ namespace Exceptionless.Api {
             // Throttle api calls to X every 15 minutes by IP address.
             config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
 
-            // Reject event posts in orgs over their max event limits.
+            // Reject event posts in organizations over their max event limits.
             config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
 
             EnableCors(config, app);

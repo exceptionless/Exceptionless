@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static string GetDefaultOrganizationId(this HttpRequestMessage message) {
-            // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated orgs.
+            // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated organizations.
             return message?.GetAssociatedOrganizationIds().FirstOrDefault();
         }
 
