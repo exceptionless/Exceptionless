@@ -66,7 +66,7 @@ namespace Exceptionless.Core.Models {
         public DateTime UpdatedUtc { get; set; }
 
         public static class NotificationIntegrations {
-            public const string Slack = "@slack";
+            public const string Slack = "slack";
         }
 
         public static class KnownDataKeys {
