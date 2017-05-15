@@ -98,7 +98,8 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task<bool> SendSummaryNotificationAsync(Project project, SummaryNotification data) {
-            var userIds = project.NotificationSettings.Where(n => n.Value.SendDailySummary).Select(n => n.Key).ToList();
+            // TODO: Add slack daily summaries
+            var userIds = project.NotificationSettings.Where(n => n.Value.SendDailySummary && !String.Equals(n.Key, Project.NotificationIntegrations.Slack)).Select(n => n.Key).ToList();
             if (userIds.Count == 0) {
                 _logger.Info().Project(project.Id).Message("Project \"{0}\" has no users to send summary to.", project.Name).Write();
                 return false;

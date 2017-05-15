@@ -8,13 +8,19 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Core.Extensions {
     public static class ProjectExtensions {
-        public static void AddDefaultOwnerNotificationSettings(this Project project, string userId, NotificationSettings settings = null) {
-            if (project.NotificationSettings.ContainsKey(userId))
+        /// <summary>
+        /// These are the default settings for the integration or user who created the project.
+        /// </summary>
+        /// <param name="project"></param>
+        /// <param name="userIdOrIntegration"></param>
+        /// <param name="settings"></param>
+        public static void AddDefaultNotificationSettings(this Project project, string userIdOrIntegration, NotificationSettings settings = null) {
+            if (project.NotificationSettings.ContainsKey(userIdOrIntegration))
                 return;
 
-            project.NotificationSettings.Add(userId, settings ?? new NotificationSettings {
-                ReportNewErrors = true,
+            project.NotificationSettings.Add(userIdOrIntegration, settings ?? new NotificationSettings {
                 SendDailySummary = true,
+                ReportNewErrors = true,
                 ReportCriticalErrors = true,
                 ReportEventRegressions = true
             });

@@ -287,6 +287,28 @@ namespace Exceptionless.Api.Controllers {
             return Ok(project.NotificationSettings.TryGetValue(userId, out NotificationSettings settings) ? settings : new NotificationSettings());
         }
 
+
+        /// <summary>
+        /// Get an integrations notification settings
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="integration">The identifier of the integration.</param>
+        /// <response code="404">The project or integration could not be found.</response>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet]
+        [Route("{id:objectid}/{integration:minlength(1)}/notifications")]
+        [ResponseType(typeof(NotificationSettings))]
+        public async Task<IHttpActionResult> GetIntegrationNotificationSettingsAsync(string id, string integration) {
+            var project = await GetModelAsync(id);
+            if (project == null)
+                return NotFound();
+
+            if (!String.Equals(Project.NotificationIntegrations.Slack, integration))
+                return NotFound();
+
+            return Ok(project.NotificationSettings.TryGetValue(Project.NotificationIntegrations.Slack, out NotificationSettings settings) ? settings : new NotificationSettings());
+        }
+
         /// <summary>
         /// Set user notification settings
         /// </summary>
@@ -309,6 +331,41 @@ namespace Exceptionless.Api.Controllers {
                 project.NotificationSettings.Remove(userId);
             else
                 project.NotificationSettings[userId] = settings;
+
+            await _repository.SaveAsync(project, o => o.Cache());
+            return Ok();
+        }
+
+        /// <summary>
+        /// Set an integrations notification settings
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="integration">The identifier of the user.</param>
+        /// <param name="settings">The notification settings.</param>
+        /// <response code="404">The project or integration could not be found.</response>
+        /// <response code="426">Please upgrade your plan to enable integrations.</response>
+        [HttpPut]
+        [HttpPost]
+        [Route("{id:objectid}/{integration:minlength(1)}/notifications")]
+        public async Task<IHttpActionResult> SetIntegrationNotificationSettingsAsync(string id, string integration, NotificationSettings settings) {
+            if (!String.Equals(Project.NotificationIntegrations.Slack, integration))
+                return NotFound();
+
+            var project = await GetModelAsync(id, false);
+            if (project == null)
+                return NotFound();
+
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
+            if (organization == null)
+                return NotFound();
+
+            if (!organization.HasPremiumFeatures)
+                return PlanLimitReached($"Please upgrade your plan to enable {integration.TrimStart('@')} integration.");
+
+            if (settings == null)
+                project.NotificationSettings.Remove(integration);
+            else
+                project.NotificationSettings[integration] = settings;
 
             await _repository.SaveAsync(project, o => o.Cache());
             return Ok();
@@ -464,7 +521,6 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-
         /// <summary>
         /// Adds slack integration to the project
         /// </summary>
@@ -503,6 +559,7 @@ namespace Exceptionless.Api.Controllers {
             if (token == null)
                 return BadRequest();
 
+            project.AddDefaultNotificationSettings(Project.NotificationIntegrations.Slack);
             project.Data[Project.KnownDataKeys.SlackToken] = token;
             await _repository.SaveAsync(project, o => o.Cache());
 
@@ -581,7 +638,7 @@ namespace Exceptionless.Api.Controllers {
         protected override Task<Project> AddModelAsync(Project value) {
             value.IsConfigured = false;
             value.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
-            value.AddDefaultOwnerNotificationSettings(CurrentUser.Id);
+            value.AddDefaultNotificationSettings(CurrentUser.Id);
             value.SetDefaultUserAgentBotPatterns();
             value.Configuration.IncrementVersion();
 
