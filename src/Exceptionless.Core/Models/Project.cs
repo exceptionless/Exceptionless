@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Models {
         public string Name { get; set; }
 
         /// <summary>
-        /// Returns true if we've detected that the project has recieved data.
+        /// Returns true if we've detected that the project has received data.
         /// </summary>
         public bool? IsConfigured { get; set; }
 
@@ -64,5 +64,13 @@ namespace Exceptionless.Core.Models {
 
         public DateTime CreatedUtc { get; set; }
         public DateTime UpdatedUtc { get; set; }
+
+        public static class NotificationIntegrations {
+            public const string Slack = "slack";
+        }
+
+        public static class KnownDataKeys {
+            public const string SlackToken = "-@slack";
+        }
     }
 }

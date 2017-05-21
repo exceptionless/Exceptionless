@@ -62,11 +62,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            string notificationType = "Log Message";
+            string notificationType = "Log message";
             if (isNew)
-                notificationType = "New Log Source";
+                notificationType = "New log source";
             else if (isRegression)
-                notificationType = "Log Regression";
+                notificationType = "Log regression";
 
             if (isCritical)
                 notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
@@ -86,6 +86,65 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
             return new MailMessageData { Subject = subject, Data = data };
+        }
+
+        public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+            if (!ShouldHandle(ev))
+                return null;
+
+            string notificationType = "log message";
+            if (isNew)
+                notificationType = "new log source";
+            else if (isRegression)
+                notificationType = "log regression";
+
+            if (isCritical)
+                notificationType = String.Concat("critical ", notificationType);
+
+            string source = !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
+            var attachment = new SlackMessage.SlackAttachment(ev) {
+                Fields = new List<SlackMessage.SlackAttachmentFields> {
+                    new SlackMessage.SlackAttachmentFields {
+                        Title = "Source",
+                        Value = source.Truncate(60)
+                    }
+                }
+            };
+
+            if (!String.IsNullOrEmpty(ev.Message))
+                attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Message", Value = ev.Message.Truncate(60) });
+
+            string level = ev.GetLevel();
+            if (!String.IsNullOrEmpty(level)) {
+                switch (level.ToLower()) {
+                    case "trace":
+                    case "debug":
+                        attachment.Color = "#5cb85c";
+                        break;
+                    case "info":
+                        attachment.Color = "#5bc0de";
+                        break;
+                    case "warn":
+                        attachment.Color = "#f0ad4e";
+                        break;
+                    case "error":
+                    case "fatal":
+                        attachment.Color = "#d9534f";
+                        break;
+                }
+
+                attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Level", Value = level.Truncate(60) });
+            }
+
+            var requestInfo = ev.GetRequestInfo();
+            if (requestInfo != null)
+                attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Url", Value = requestInfo.GetFullPath(true, true, true) });
+
+            AddDefaultSlackFields(ev, attachment.Fields);
+            string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, source.Truncate(120))}*";
+            return new SlackMessage(subject) {
+                Attachments = new List<SlackMessage.SlackAttachment> { attachment }
+            };
         }
     }
 }

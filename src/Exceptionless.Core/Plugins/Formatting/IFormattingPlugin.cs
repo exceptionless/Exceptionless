@@ -7,5 +7,6 @@ namespace Exceptionless.Core.Plugins.Formatting {
         SummaryData GetStackSummaryData(Stack stack);
         SummaryData GetEventSummaryData(PersistentEvent ev);
         MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression);
+        SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression);
     }
 }

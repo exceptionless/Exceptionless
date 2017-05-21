@@ -448,6 +448,7 @@ namespace Exceptionless.Api.Controllers {
                     ProjectId = stack.ProjectId,
                     WebHookId = hook.Id,
                     Url = hook.Url,
+                    Type = WebHookType.General,
                     Data = await _webHookDataPluginManager.CreateFromStackAsync(context)
                 });
             }

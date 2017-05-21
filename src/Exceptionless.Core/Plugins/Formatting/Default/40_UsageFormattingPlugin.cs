@@ -46,5 +46,25 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             return new MailMessageData { Subject = subject, Data = data };
         }
+
+        public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+            if (!ShouldHandle(ev))
+                return null;
+
+            var attachment = new SlackMessage.SlackAttachment(ev) {
+                Fields = new List<SlackMessage.SlackAttachmentFields> {
+                    new SlackMessage.SlackAttachmentFields {
+                        Title = "Source",
+                        Value = ev.Source.Truncate(60)
+                    }
+                }
+            };
+
+            AddDefaultSlackFields(ev, attachment.Fields, false);
+            string subject = $"[{project.Name}] Feature: *{GetSlackEventUrl(ev.Id, ev.Source).Truncate(120)}*";
+            return new SlackMessage(subject) {
+                Attachments = new List<SlackMessage.SlackAttachment> { attachment }
+            };
+        }
     }
 }

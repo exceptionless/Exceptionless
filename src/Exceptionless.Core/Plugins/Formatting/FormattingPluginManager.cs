@@ -76,5 +76,22 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             return null;
         }
+
+        /// <summary>
+        /// Runs through the formatting plugins to get notification mail content for an event.
+        /// </summary>
+        public SlackMessage GetSlackEventNotificationMessage(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+            foreach (var plugin in Plugins.Values.ToList()) {
+                try {
+                    var message = plugin.GetSlackEventNotification(ev, project, isCritical, isNew, isRegression);
+                    if (message != null)
+                        return message;
+                } catch (Exception ex) {
+                    _logger.Error().Exception(ex).Message("Error calling GetSlackEventNotificationMessage in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("EventNotification", ev).Write();
+                }
+            }
+
+            return null;
+        }
     }
 }

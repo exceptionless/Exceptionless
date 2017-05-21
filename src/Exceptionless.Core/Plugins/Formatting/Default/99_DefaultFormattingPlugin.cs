@@ -63,5 +63,33 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             return new MailMessageData { Subject = subject, Data = data };
         }
+
+        public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+            string messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
+            if (String.IsNullOrEmpty(messageOrSource))
+                return null;
+
+            string notificationType = "Occurrence event";
+            if (isNew)
+                notificationType = "New event";
+            else if (isRegression)
+                notificationType = "Regression event";
+
+            if (isCritical)
+                notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
+
+            var attachment = new SlackMessage.SlackAttachment(ev);
+            if (!String.IsNullOrEmpty(ev.Message))
+                attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Message", Value = ev.Message.Truncate(60) });
+
+            if (!String.IsNullOrEmpty(ev.Source))
+                attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Source", Value = ev.Source.Truncate(60) });
+
+            AddDefaultSlackFields(ev, attachment.Fields);
+            string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, messageOrSource.Truncate(120))}*";
+            return new SlackMessage(subject) {
+                Attachments = new List<SlackMessage.SlackAttachment> { attachment }
+            };
+        }
     }
 }

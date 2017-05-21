@@ -233,7 +233,6 @@
     <Compile Include="Extensions\HttpExtensions.cs" />
     <Compile Include="Extensions\LogBuilderExtensions.cs" />
     <Compile Include="Extensions\OAuth2Extensions.cs" />
-    <Compile Include="Extensions\UriExtensions.cs" />
     <Compile Include="Hubs\ConnectionMapping.cs" />
     <Compile Include="Hubs\ErrorHandlingPipelineModule.cs" />
     <Compile Include="Hubs\MessageBusBroker.cs" />

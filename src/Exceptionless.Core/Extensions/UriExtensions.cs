@@ -6,7 +6,11 @@ using System.Linq;
 namespace Exceptionless.Core.Extensions {
     public static class UriExtensions {
         public static string ToQueryString(this NameValueCollection collection) {
-            return collection.AsKeyValuePairs().ToConcatenatedString(pair => pair.Key == null ? pair.Value : $"{pair.Key}={pair.Value}", "&");
+            return collection.AsKeyValuePairs().ToQueryString();
+        }
+
+        public static string ToQueryString(this IEnumerable<KeyValuePair<string, string>> collection) {
+            return collection.ToConcatenatedString(pair => pair.Key == null ? pair.Value : $"{pair.Key}={pair.Value}", "&");
         }
 
         /// <summary>

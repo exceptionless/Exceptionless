@@ -8,13 +8,16 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Core.Extensions {
     public static class ProjectExtensions {
-        public static void AddDefaultOwnerNotificationSettings(this Project project, string userId, NotificationSettings settings = null) {
-            if (project.NotificationSettings.ContainsKey(userId))
+        /// <summary>
+        /// These are the default settings for the integration or user who created the project.
+        /// </summary>
+        public static void AddDefaultNotificationSettings(this Project project, string userIdOrIntegration, NotificationSettings settings = null) {
+            if (project.NotificationSettings.ContainsKey(userIdOrIntegration))
                 return;
 
-            project.NotificationSettings.Add(userId, settings ?? new NotificationSettings {
-                ReportNewErrors = true,
+            project.NotificationSettings.Add(userIdOrIntegration, settings ?? new NotificationSettings {
                 SendDailySummary = true,
+                ReportNewErrors = true,
                 ReportCriticalErrors = true,
                 ReportEventRegressions = true
             });
@@ -37,6 +40,13 @@ namespace Exceptionless.Core.Extensions {
             }
 
             return builder.ToString();
+        }
+
+        /// <summary>
+        /// Gets the slack token from extended data.
+        /// </summary>
+        public static SlackToken GetSlackToken(this Project project) {
+            return project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out object value) ? value as SlackToken : null;
         }
 
         public static int GetCurrentHourlyTotal(this Project project) {

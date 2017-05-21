@@ -6,8 +6,8 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Api.Tests.Mail {
     public class NullMailer : IMailer {
-        public Task SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
-            return Task.CompletedTask;
+        public Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
+            return Task.FromResult(true);
         }
 
         public Task SendOrganizationAddedAsync(User sender, Organization organization, User user) {
