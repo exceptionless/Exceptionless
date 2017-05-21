@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Jobs {
                 // throw new RateLimitException { RetryAfter = response.Headers.RetryAfter.Date.Value.UtcDateTime };
 
                 _logger.Warn().Project(body.ProjectId).Message("Web hook rate limit reached: status={0} org={1} project={2} url={3}", response.StatusCode, body.OrganizationId, body.ProjectId, body.Url).WriteIf(shouldLog);
-                return JobResult.Success;
+                return JobResult.FailedWithMessage("Rate limit exceeded");
             }
 
             if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.Gone) {

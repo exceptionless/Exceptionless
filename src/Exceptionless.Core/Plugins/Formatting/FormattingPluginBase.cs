@@ -42,11 +42,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!String.IsNullOrEmpty(version))
                 attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Version", Value = version, Short = true });
 
-            var actions = new List<string> { $"* {GetSlackEventUrl(ev.Id, "View Event")}" };
+            var actions = new List<string> { $"• {GetSlackEventUrl(ev.Id, "View Event")}" };
             if (ev.Type == Event.KnownTypes.Error || ev.Type == Event.KnownTypes.NotFound)
-                actions.Add($"* <{Settings.Current.BaseURL}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>");
-            actions.Add($"* <{Settings.Current.BaseURL}/stack/{ev.StackId}/stop-notifications|Stop sending notifications for this event>");
-            actions.Add($"* <{Settings.Current.BaseURL}/project/{ev.ProjectId}/manage?tab=integrations|Change your notification settings for this project>");
+                actions.Add($"• <{Settings.Current.BaseURL}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>");
+            actions.Add($"• <{Settings.Current.BaseURL}/stack/{ev.StackId}/stop-notifications|Stop sending notifications for this event>");
+            actions.Add($"• <{Settings.Current.BaseURL}/project/{ev.ProjectId}/manage?tab=integrations|Change your notification settings for this project>");
 
             attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Other Actions", Value = String.Join("\n", actions) });
         }
