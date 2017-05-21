@@ -160,6 +160,7 @@
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\NumericExtensions.cs" />
     <Compile Include="Extensions\PersistentEventExtensions.cs" />
+    <Compile Include="Extensions\UriExtensions.cs" />
     <Compile Include="Extensions\UsageExtensions.cs" />
     <Compile Include="Geo\IGeocodeService.cs" />
     <Compile Include="Geo\NullGeocodeService.cs" />
@@ -208,6 +209,8 @@
     <Compile Include="Models\Enums\ResponseStatusType.cs" />
     <Compile Include="Models\Enums\SuspensionCode.cs" />
     <Compile Include="Models\Event.cs" />
+    <Compile Include="Models\Exceptions\RateLimitException.cs" />
+    <Compile Include="Models\Exceptions\WebHookException.cs" />
     <Compile Include="Models\Interfaces\IData.cs" />
     <Compile Include="Models\Interfaces\IOwnedByOrganization.cs" />
     <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProject.cs" />
@@ -228,6 +231,7 @@
     <Compile Include="Models\Project.cs" />
     <Compile Include="Models\EventPreviousAndNextIdResult.cs" />
     <Compile Include="Models\SessionInfo.cs" />
+    <Compile Include="Models\SlackToken.cs" />
     <Compile Include="Models\Stack.cs" />
     <Compile Include="Models\StackSummaryModel.cs" />
     <Compile Include="Models\Token.cs" />
@@ -275,6 +279,7 @@
     <Compile Include="Serialization\DynamicTypeContractResolver.cs" />
     <Compile Include="Serialization\ElasticDynamicTypeContractResolver.cs" />
     <Compile Include="Serialization\ElasticLowerCaseUnderscorePropertyNamesContractResolver.cs" />
+    <Compile Include="Services\SlackService.cs" />
     <Compile Include="Services\UsageService.cs" />
     <Compile Include="Utility\IConnectionMapping.cs" />
     <Compile Include="Utility\SemanticVersionParser.cs" />

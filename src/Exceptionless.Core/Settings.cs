@@ -108,6 +108,12 @@ namespace Exceptionless.Core {
 
         public string GoogleGeocodingApiKey { get; private set; }
 
+        public string SlackAppId { get; private set; }
+
+        public string SlackAppSecret { get; private set; }
+
+        public bool EnableSlack => !String.IsNullOrEmpty(SlackAppId);
+
         public bool EnableBilling => !String.IsNullOrEmpty(StripeApiKey);
 
         public string StripeApiKey { get; private set; }
@@ -187,6 +193,8 @@ namespace Exceptionless.Core {
             GoogleAppId = GetString(nameof(GoogleAppId));
             GoogleAppSecret = GetString(nameof(GoogleAppSecret));
             GoogleGeocodingApiKey = GetString(nameof(GoogleGeocodingApiKey));
+            SlackAppId = GetString(nameof(SlackAppId));
+            SlackAppSecret = GetString(nameof(SlackAppSecret));
             MicrosoftAppId = GetString(nameof(MicrosoftAppId));
             MicrosoftAppSecret = GetString(nameof(MicrosoftAppSecret));
             FacebookAppId = GetString(nameof(FacebookAppId));

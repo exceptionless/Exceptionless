@@ -64,7 +64,7 @@ namespace Exceptionless.Core.Utility {
             var project = new Project { Id = TEST_PROJECT_ID, Name = "Disintegrating Pistol", OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
-            project.AddDefaultOwnerNotificationSettings(userId);
+            project.AddDefaultNotificationSettings(userId);
             project = await _projectRepository.AddAsync(project, o => o.Cache()).AnyContext();
 
             await _tokenRepository.AddAsync(new Token {
@@ -99,7 +99,7 @@ namespace Exceptionless.Core.Utility {
 
             var project = new Project { Id = INTERNAL_PROJECT_ID, Name = "API", OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
-            project.AddDefaultOwnerNotificationSettings(userId);
+            project.AddDefaultNotificationSettings(userId);
             project = await _projectRepository.AddAsync(project, o => o.Cache()).AnyContext();
 
             await _tokenRepository.AddAsync(new Token {

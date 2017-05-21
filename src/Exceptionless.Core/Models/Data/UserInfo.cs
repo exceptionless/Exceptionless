@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Models.Data {
             if (!String.IsNullOrWhiteSpace(identity))
                 Identity = identity.Trim();
         }
-        
+
         public UserInfo(string identity, string name) : this(identity) {
             if (!String.IsNullOrWhiteSpace(name))
                 Name = name.Trim();
