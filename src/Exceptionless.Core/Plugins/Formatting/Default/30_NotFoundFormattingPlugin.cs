@@ -75,7 +75,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 Fields = new List<SlackMessage.SlackAttachmentFields> {
                     new SlackMessage.SlackAttachmentFields {
                         Title = "Url",
-                        Value = requestInfo != null ? $"<{requestInfo.GetFullPath(true, true, true)}>" : ev.Source.Truncate(60)
+                        Value = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : ev.Source.Truncate(60)
                     }
                 }
             };
