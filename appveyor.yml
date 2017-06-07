@@ -66,7 +66,7 @@ notifications:
   - provider: Slack
     channel: '#notifications'
     auth_token:
-      secure: GniMpFE62HprSyQNQoej/fBOAdbQe8EMWAMMNXX0s2JxeNePjemiO1bCf4eYweE4p70mm0sCwMjeEP/Ps9aTMA==
+      secure: GniMpFE62HprSyQNQoej/VSBnxn2GNnTrca3BnF8+ikMdqduO4Ts4t297teZF6wDAmGwnOtXusctUla8+WxLFkIztvVCS2Z1RG/DvEDYoc0=
     on_build_success: true
     on_build_failure: true
     on_build_status_changed: false
