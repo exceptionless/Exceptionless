@@ -19,5 +19,9 @@ namespace Exceptionless.Core.Extensions {
         private static IEnumerable<KeyValuePair<string, string>> AsKeyValuePairs(this NameValueCollection collection) {
             return collection.AllKeys.Select(key => new KeyValuePair<string, string>(key, collection.Get(key)));
         }
+
+        public static string GetBaseUrl(this Uri uri) {
+            return uri.Scheme + "://" + uri.Authority + uri.AbsolutePath;
+        }		
     }
 }
