@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string ToQueryString(this IEnumerable<KeyValuePair<string, string>> collection) {
-            return collection.ToConcatenatedString(pair => pair.Key == null ? pair.Value : $"{pair.Key}={System.Web.HttpUtility.UrlEncode(pair.Value)}", "&");
+            return collection.ToConcatenatedString(pair => pair.Key == null ? pair.Value : $"{pair.Key}={Uri.EscapeDataString(pair.Value)}", "&");
         }
 
         /// <summary>
