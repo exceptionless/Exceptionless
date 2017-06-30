@@ -159,6 +159,10 @@ namespace Exceptionless {
             return ev.Data.TryGetValue(Event.KnownDataKeys.Level, out object value) ? value as string : null;
         }
 
+        public static string GetSubmissionMethod(this Event ev) {
+            return ev.Data.TryGetValue(Event.KnownDataKeys.SubmissionMethod, out object value) ? value as string : null;
+        }
+
         public static void SetLocation(this Event ev, Location location) {
             if (location == null)
                 return;
