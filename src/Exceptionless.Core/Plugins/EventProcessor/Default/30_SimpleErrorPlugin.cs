@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Logging;
@@ -31,6 +32,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (!String.IsNullOrEmpty(error.StackTrace))
                 context.StackSignatureData.Add("StackTrace", error.StackTrace.ToSHA1());
 
+            error.Data[Error.KnownDataKeys.TargetInfo] = new SettingsDictionary(context.StackSignatureData);
             return Task.CompletedTask;
         }
     }
