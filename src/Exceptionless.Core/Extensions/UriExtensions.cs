@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string ToQueryString(this IEnumerable<KeyValuePair<string, string>> collection) {
-            return collection.ToConcatenatedString(pair => pair.Key == null ? pair.Value : $"{pair.Key}={pair.Value}", "&");
+            return collection.ToConcatenatedString(pair => pair.Key == null ? pair.Value : $"{pair.Key}={Uri.EscapeDataString(pair.Value)}", "&");
         }
 
         /// <summary>
@@ -19,5 +19,9 @@ namespace Exceptionless.Core.Extensions {
         private static IEnumerable<KeyValuePair<string, string>> AsKeyValuePairs(this NameValueCollection collection) {
             return collection.AllKeys.Select(key => new KeyValuePair<string, string>(key, collection.Get(key)));
         }
+
+        public static string GetBaseUrl(this Uri uri) {
+            return uri.Scheme + "://" + uri.Authority + uri.AbsolutePath;
+        }		
     }
 }
