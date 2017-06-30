@@ -133,7 +133,7 @@ namespace Exceptionless.Api.Tests.Jobs {
         }
 
         private async Task<string> EnqueueEventPostAsync(PersistentEvent ev) {
-            EventPostInfo eventPostInfo = new EventPostInfo {
+            var eventPostInfo = new EventPostInfo {
                 ApiVersion = 2,
                 CharSet = "utf-8",
                 ContentEncoding = "gzip",
