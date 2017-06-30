@@ -71,9 +71,7 @@ namespace Exceptionless.Api.Utility.Results {
             var nextParameters = new NameValueCollection(previousParameters);
             nextParameters["page"] = (page + 1).ToString();
 
-            string baseUrl = url.ToString();
-            if (!String.IsNullOrEmpty(url.Query))
-                baseUrl = baseUrl.Replace(url.Query, "");
+            string baseUrl = url.GetBaseUrl();
 
             string previousLink = $"<{baseUrl}?{previousParameters.ToQueryString()}>; rel=\"previous\"";
             string nextLink = $"<{baseUrl}?{nextParameters.ToQueryString()}>; rel=\"next\"";
@@ -125,9 +123,7 @@ namespace Exceptionless.Api.Utility.Results {
                 includePrevious = false;
             }
 
-            string baseUrl = url.ToString();
-            if (!String.IsNullOrEmpty(url.Query))
-                baseUrl = baseUrl.Replace(url.Query, "");
+            string baseUrl = url.GetBaseUrl();
 
             string previousLink = $"<{baseUrl}?{previousParameters.ToQueryString()}>; rel=\"previous\"";
             string nextLink = $"<{baseUrl}?{nextParameters.ToQueryString()}>; rel=\"next\"";
