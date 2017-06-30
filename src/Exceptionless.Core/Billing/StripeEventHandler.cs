@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Billing {
                     break;
                 }
                 default: {
-                        _logger.Trace("Unhandled stripe webhook called. Type: {0} Id: {1} UserId: {2}", stripeEvent.Type, stripeEvent.Id, stripeEvent.UserId);
+                        _logger.Trace("Unhandled stripe webhook called. Type: {0} Id: {1} Account: {2}", stripeEvent.Type, stripeEvent.Id, stripeEvent.Account);
                     break;
                 }
             }
