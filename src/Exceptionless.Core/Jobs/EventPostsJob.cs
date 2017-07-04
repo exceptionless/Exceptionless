@@ -178,7 +178,7 @@ namespace Exceptionless.Core.Jobs {
             }
 
             if (eventsToRetry.Count > 0)
-                await _metricsClient.TimeAsync(() => RetryEvents(context, eventsToRetry, ep, queueEntry), MetricNames.PostsRetryTime).AnyContext();
+                await _metricsClient.TimeAsync(() => RetryEvents(eventsToRetry, ep, queueEntry), MetricNames.PostsRetryTime).AnyContext();
 
             if (isSingleEvent && errorCount > 0)
                 await AbandonEntryAsync(queueEntry).AnyContext();
@@ -232,7 +232,7 @@ namespace Exceptionless.Core.Jobs {
             return events;
         }
 
-        private async Task RetryEvents(QueueEntryContext<EventPost> context, List<PersistentEvent> eventsToRetry, EventPostInfo ep, IQueueEntry<EventPost> queueEntry) {
+        private async Task RetryEvents(List<PersistentEvent> eventsToRetry, EventPostInfo ep, IQueueEntry<EventPost> queueEntry) {
             await _metricsClient.GaugeAsync(MetricNames.EventsRetryCount, eventsToRetry.Count).AnyContext();
             foreach (var ev in eventsToRetry) {
                 try {
@@ -253,7 +253,7 @@ namespace Exceptionless.Core.Jobs {
                         MediaType = ep.MediaType,
                         ProjectId = ep.ProjectId,
                         UserAgent = ep.UserAgent
-                    }, _storage, false, context.CancellationToken).AnyContext();
+                    }, _storage, false).AnyContext();
                 } catch (Exception ex) {
                     _logger.Error()
                         .Exception(ex)

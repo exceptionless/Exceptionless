@@ -72,6 +72,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             var requestInfo = ev.GetRequestInfo();
             var attachment = new SlackMessage.SlackAttachment(ev) {
+                Color = "#BB423F",
                 Fields = new List<SlackMessage.SlackAttachmentFields> {
                     new SlackMessage.SlackAttachmentFields {
                         Title = "Url",
