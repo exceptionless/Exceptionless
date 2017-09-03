@@ -836,6 +836,16 @@ namespace Exceptionless.Api.Controllers {
         /// <code>
         ///     { "message": "Exceptionless is amazing!" }
         /// </code>
+        /// 
+        /// Simple log event with user identity:
+        /// <code>
+        ///     {
+        ///         "type": "log",
+        ///         "message": "Exceptionless is amazing!",
+        ///         "date":"2020-01-01T12:00:00.0000000-05:00",
+        ///         "@user":{ "identity":"123456789", "name": "Test User" }
+        ///     }
+        /// </code>
         ///
         /// Multiple events from string content:
         /// <code>
@@ -847,6 +857,7 @@ namespace Exceptionless.Api.Controllers {
         /// <code>
         ///     {
         ///         "type": "error",
+        ///         "date":"2020-01-01T12:00:00.0000000-05:00",
         ///         "@simple_error": {
         ///             "message": "Simple Exception",
         ///             "type": "System.Exception",
