@@ -134,6 +134,7 @@ ctx.error.code = codes;";
             public const string OperatingSystemVersion = "os.version";
             public const string OperatingSystemMajorVersion = "os.major";
 
+            public const string CommandLine = "cmd";
             public const string MachineName = "machine";
             public const string MachineArchitecture = "architecture";
 
@@ -238,6 +239,7 @@ ctx.error.code = codes;";
                 .Text(f3 => f3.Name(r => r.IpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false).IncludeInAll())
                 .Text(f3 => f3.Name(r => r.MachineName).RootAlias(EventIndexType.Alias.MachineName).IncludeInAll().Boost(1.1).AddKeywordField())
                 .Text(f3 => f3.Name(r => r.OSName).CopyTo(fd => fd.Field(EventIndexType.Alias.OperatingSystem)))
+                .Text(f3 => f3.Name(r => r.CommandLine).RootAlias(EventIndexType.Alias.CommandLine))
                 .Keyword(f3 => f3.Name(r => r.Architecture).RootAlias(EventIndexType.Alias.MachineArchitecture))));
         }
 
