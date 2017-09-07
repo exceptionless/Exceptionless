@@ -22,14 +22,11 @@ namespace Exceptionless.Core.Pipeline {
             return Task.CompletedTask;
         }
 
-        public override Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var stacks = contexts.Where(c => !c.IsNew).GroupBy(c => c.Event.StackId);
 
-            var tasks = new List<Task>();
             foreach (var stackGroup in stacks)
-                tasks.Add(IncrementEventCountersAsync(stackGroup));
-
-            return Task.WhenAll(tasks);
+                await IncrementEventCountersAsync(stackGroup).AnyContext();
         }
 
         private async Task IncrementEventCountersAsync(IGrouping<string, EventContext> stackGroup) {
