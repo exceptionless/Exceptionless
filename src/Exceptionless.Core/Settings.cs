@@ -152,6 +152,8 @@ namespace Exceptionless.Core {
 
         public string SmtpPassword { get; private set; }
 
+        public TimeSpan QueueWorkTimeout { get; private set; }
+
         public override void Initialize() {
             EnvironmentVariablePrefix = "Exceptionless_";
 
@@ -236,6 +238,8 @@ namespace Exceptionless.Core {
             EnableActiveDirectoryAuth = GetBool(nameof(EnableActiveDirectoryAuth), !String.IsNullOrEmpty(LdapConnectionString));
 
             EnableSignalR = GetBool(nameof(EnableSignalR), true);
+
+            QueueWorkTimeout = GetTimeSpan(nameof(QueueWorkTimeout), TimeSpan.FromMinutes(5.0));
 
             Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
         }

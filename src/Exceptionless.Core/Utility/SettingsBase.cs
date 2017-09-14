@@ -64,6 +64,14 @@ namespace Exceptionless.Core {
             return GetEnvironmentVariable(name) ?? GetConfigVariable(name) ?? ConfigurationManager.AppSettings[name] ?? defaultValue;
         }
 
+        protected static TimeSpan GetTimeSpan(string name, TimeSpan defaultValue) {
+            string value = GetEnvironmentVariable(name) ?? GetConfigVariable(name);
+            if (String.IsNullOrEmpty(value))
+                return ConfigurationManager.AppSettings.GetTimeSpan(name, defaultValue);
+
+            return TimeSpan.TryParse(value, out var timespan) ? timespan : defaultValue;
+        }
+
         protected static List<string> GetStringList(string name, string defaultValues = null, char[] separators = null) {
             string value = GetEnvironmentVariable(name) ?? GetConfigVariable(name);
             if (String.IsNullOrEmpty(value))
