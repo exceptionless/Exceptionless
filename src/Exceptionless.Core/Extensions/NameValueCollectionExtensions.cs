@@ -56,6 +56,21 @@ namespace Exceptionless.Core.Extensions {
             return GetBool(collection, name) ?? defaultValue;
         }
 
+        public static TimeSpan? GetTimeSpan(this NameValueCollection collection, string name) {
+            string value = collection[name];
+            if (value == null)
+                return null;
+
+            if (TimeSpan.TryParse(value, out var timespan))
+                return timespan;
+
+            return null;
+        }
+
+        public static TimeSpan GetTimeSpan(this NameValueCollection collection, string name, TimeSpan defaultValue) {
+            return GetTimeSpan(collection, name) ?? defaultValue;
+        }
+
         public static T GetEnum<T>(this NameValueCollection collection, string name, T? defaultValue = null) where T: struct {
             string value = GetValue(collection, name);
             if (value == null) {

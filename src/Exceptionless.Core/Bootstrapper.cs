@@ -161,7 +161,7 @@ namespace Exceptionless.Core {
         private static IQueue<T> CreateQueue<T>(Container container, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
             return new InMemoryQueue<T>(new InMemoryQueueOptions<T> {
                 Behaviors = container.GetAllInstances<IQueueBehavior<T>>(),
-                WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
+                WorkItemTimeout = workItemTimeout.GetValueOrDefault(Settings.Current.QueueWorkTimeout),
                 Serializer = container.GetInstance<ISerializer>(),
                 LoggerFactory = loggerFactory
             });

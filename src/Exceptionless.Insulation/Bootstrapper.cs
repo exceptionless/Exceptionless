@@ -116,7 +116,7 @@ namespace Exceptionless.Insulation {
                 Name = GetQueueName<T>().ToLowerInvariant(),
                 Retries = retries,
                 Behaviors = container.GetAllInstances<IQueueBehavior<T>>(),
-                WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
+                WorkItemTimeout = workItemTimeout.GetValueOrDefault(Settings.Current.QueueWorkTimeout),
                 Serializer = container.GetInstance<ISerializer>(),
                 LoggerFactory = loggerFactory
             });
@@ -128,7 +128,7 @@ namespace Exceptionless.Insulation {
                 Name = GetQueueName<T>(),
                 Retries = retries,
                 Behaviors = container.GetAllInstances<IQueueBehavior<T>>(),
-                WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
+                WorkItemTimeout = workItemTimeout.GetValueOrDefault(Settings.Current.QueueWorkTimeout),
                 RunMaintenanceTasks = runMaintenanceTasks,
                 Serializer = container.GetInstance<ISerializer>(),
                 LoggerFactory = loggerFactory
