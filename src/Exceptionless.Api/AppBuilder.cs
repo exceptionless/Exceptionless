@@ -53,7 +53,7 @@ namespace Exceptionless.Api {
             config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
 
             SetupRouteConstraints(config);
-            container.RegisterSingleton(config);
+            container.AddSingleton(config);
             container.RegisterWebApiControllers(config);
 
             container.AddStartupAction(() => container.GetInstance<EnqueueOrganizationNotificationOnPlanOverage>().RunAsync(shutdownCancellationToken));

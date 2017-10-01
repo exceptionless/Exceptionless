@@ -1,9 +1,10 @@
 ﻿using System;
 using Exceptionless.Core;
-using Foundatio.Jobs;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Insulation.Configuration;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SimpleInjector;
-using SimpleInjector.Lifestyles;
 using LogLevel = Exceptionless.Logging.LogLevel;
 
 namespace Exceptionless.Insulation.Jobs {
@@ -12,7 +13,12 @@ namespace Exceptionless.Insulation.Jobs {
             loggerFactory.AddConsole();
             loggerFactory.AddExceptionless();
 
-            var shutdownCancellationToken = JobRunner.GetShutdownCancellationToken();
+            var services = new ServiceCollection();
+            var config = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
+                .Build();
+            Settings.Initialize(config);
 
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
@@ -26,17 +32,14 @@ namespace Exceptionless.Insulation.Jobs {
                 client.Startup(Settings.Current.ExceptionlessApiKey);
             }
 
-            var container = new Container();
-            container.Options.AllowOverridingRegistrations = true;
-            container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
-
             Settings.Current.DisableIndexConfiguration = true;
-            Core.Bootstrapper.RegisterServices(container, loggerFactory, shutdownCancellationToken);
-            Bootstrapper.RegisterServices(container, true, loggerFactory, shutdownCancellationToken);
+            Core.Bootstrapper.RegisterServices(services, loggerFactory);
+            Bootstrapper.RegisterServices(services, true, loggerFactory);
 
-#if DEBUG
-            container.Verify();
-#endif
+            var container = services.BuildServiceProvider();
+
+            if (!Settings.Current.DisableBootstrapStartupActions)
+                container.RunStartupActionsAsync().GetAwaiter().GetResult();
 
             return container;
         }

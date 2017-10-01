@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Serializer;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -16,12 +19,19 @@ using Nest;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration {
+    public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
+        private CancellationToken _shutdownToken = default(CancellationToken);
+
         public ExceptionlessElasticConfiguration(IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
             _logger.LogInformation("All new indexes will be created with {ElasticSearchNumberOfShards} Shards and {ElasticSearchNumberOfReplicas} Replicas", Settings.Current.ElasticSearchNumberOfShards, Settings.Current.ElasticSearchNumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
             AddIndex(Events = new EventIndex(this));
             AddIndex(Organizations = new OrganizationIndex(this));
+        }
+
+        public Task RunAsync(CancellationToken shutdownToken = default(CancellationToken)) {
+            _shutdownToken = shutdownToken;
+            return ConfigureIndexesAsync();
         }
 
         public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder) {
@@ -41,7 +51,16 @@ namespace Exceptionless.Core.Repositories.Configuration {
             foreach (var index in Indexes)
                 index.ConfigureSettings(settings);
 
-            return new ElasticClient(settings);
+            var client = new ElasticClient(settings);
+            var startTime = DateTime.Now;
+            while (!_shutdownToken.IsCancellationRequested && !client.Ping().IsValid) {
+                _logger.LogWarning("Waiting for Elasticsearch ({Duration})...", DateTime.Now.Subtract(startTime).ToWords(true));
+                Thread.Sleep(1000);
+                if (DateTime.Now.Subtract(startTime) > TimeSpan.FromMinutes(2))
+                    break;
+            }
+
+            return client;
         }
 
         protected override IConnectionPool CreateConnectionPool() {
