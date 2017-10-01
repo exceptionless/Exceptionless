@@ -10,24 +10,26 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
 using Exceptionless.Insulation.Mail;
 using Exceptionless.Insulation.Redis;
-using Exceptionless.NLog;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using Foundatio.Logging;
-using Foundatio.Logging.NLog;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Foundatio.Storage;
+using Microsoft.Extensions.Logging;
 using SimpleInjector;
 using StackExchange.Redis;
 using LogLevel = Exceptionless.Logging.LogLevel;
 
 namespace Exceptionless.Insulation {
     public class Bootstrapper {
+        public static void ConfigureLoggerFactory(ILoggerFactory loggerFactory) {
+            loggerFactory.AddConsole();
+            loggerFactory.AddExceptionless();
+        }
+
         public static void RegisterServices(Container container, bool runMaintenanceTasks, ILoggerFactory loggerFactory, CancellationToken shutdownCancellationToken) {
-            loggerFactory.AddNLog();
             var logger = loggerFactory.CreateLogger<Bootstrapper>();
 
             if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
@@ -36,12 +38,12 @@ namespace Exceptionless.Insulation {
             if (Settings.Current.EnableMetricsReporting)
                 container.RegisterSingleton<IMetricsClient>(() => new StatsDMetricsClient(new StatsDMetricsClientOptions { ServerName = Settings.Current.MetricsServerName, Port = Settings.Current.MetricsServerPort, Prefix = "ex", LoggerFactory = loggerFactory }));
             else
-                logger.Warn("StatsD Metrics is NOT enabled.");
+                logger.LogWarning("StatsD Metrics is NOT enabled.");
 
             if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
                 container.RegisterSingleton<IMailSender, MailKitMailSender>();
             else
-                logger.Warn("Emails will NOT be sent in Dev mode.");
+                logger.LogWarning("Emails will NOT be sent in Dev mode.");
 
             if (Settings.Current.EnableRedis) {
                 container.RegisterSingleton<ConnectionMultiplexer>(() => {
@@ -65,7 +67,7 @@ namespace Exceptionless.Insulation {
                     LoggerFactory = loggerFactory
                 }));
             } else {
-                logger.Warn("Redis is NOT enabled.");
+                logger.LogWarning("Redis is NOT enabled.");
             }
 
             if (Settings.Current.EnableAzureStorage) {
@@ -87,14 +89,15 @@ namespace Exceptionless.Insulation {
             if (Settings.Current.EnableAzureStorage)
                 container.RegisterSingleton<IFileStorage>(() => new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events"));
             else
-                logger.Warn("Azure Storage is NOT enabled.");
+                logger.LogWarning("Azure Storage is NOT enabled.");
 
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
                 container.RegisterSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
                 container.RegisterSingleton<ExceptionlessClient>(() => client);
 
-                client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
+                // TODO...
+                //client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
                 client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
                 client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
                 client.Configuration.SetVersion(Settings.Current.Version);

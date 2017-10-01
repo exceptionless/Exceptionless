@@ -24,12 +24,12 @@ using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 using Stripe;
 
 #pragma warning disable 1998
@@ -188,7 +188,8 @@ namespace Exceptionless.Api.Controllers {
                 var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
                 stripeInvoice = await invoiceService.GetAsync(id);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
+                using (_logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                    _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}", id);
             }
 
             if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
@@ -419,9 +420,11 @@ namespace Exceptionless.Api.Controllers {
                 BillingManager.ApplyBillingPlan(organization, plan, CurrentUser);
                 await _repository.SaveAsync(organization, o => o.Cache());
                 await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
-            } catch (Exception e) {
-                _logger.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
-                return Ok(ChangePlanResult.FailWithMessage(e.Message));
+            } catch (Exception ex) {
+                using (_logger.BeginScope(new ExceptionlessState().Tag("Change Plan").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                    _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {Message}", ex.Message);
+
+                return Ok(ChangePlanResult.FailWithMessage(ex.Message));
             }
 
             return Ok(new ChangePlanResult { Success = true });
@@ -682,7 +685,9 @@ namespace Exceptionless.Api.Controllers {
         protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
             var workItems = new List<string>();
             foreach (var organization in organizations) {
-                _logger.Info().Message("User {0} deleting organization {1}.", CurrentUser.Id, organization.Id).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
+                using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                    _logger.LogInformation("User {user} deleting organization {organization}.", CurrentUser.Id, organization.Id);
+
                 workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveOrganizationWorkItem {
                     OrganizationId = organization.Id,
                     CurrentUserId = CurrentUser.Id,

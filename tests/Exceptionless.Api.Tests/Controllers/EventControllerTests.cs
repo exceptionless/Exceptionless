@@ -17,10 +17,10 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 using Microsoft.Owin;
 using Nest;
 using Newtonsoft.Json;
@@ -79,7 +79,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         [Fact]
         public async Task CanPostCompressedStringAsync() {
             _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(GetClientToken().ToIdentity()), true, false);
-            var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync());
+            var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string").Compress());
             Assert.IsType<StatusCodeResult>(actionResult);
             Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
             Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
@@ -94,7 +94,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         [Fact]
         public async Task CanPostSingleEventAsync() {
             _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(GetClientToken().ToIdentity()), true, false);
-            var actionResult = await _eventController.PostAsync(await Encoding.UTF8.GetBytes("simple string").CompressAsync());
+            var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string").Compress());
             Assert.IsType<StatusCodeResult>(actionResult);
             Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
             Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
@@ -132,7 +132,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             await Run.InParallelAsync(batchCount, async i => {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(GetClientToken().ToIdentity()), true, false);
                 var events = new RandomEventGenerator().Generate(batchSize);
-                var compressedEvents = await Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).CompressAsync();
+                var compressedEvents = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).Compress();
                 var actionResult = await _eventController.PostAsync(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0");
                 Assert.IsType<StatusCodeResult>(actionResult);
             });
@@ -143,9 +143,9 @@ namespace Exceptionless.Api.Tests.Controllers {
 
             var processEventsJob = GetService<EventPostsJob>();
             var sw = Stopwatch.StartNew();
-            await processEventsJob.RunUntilEmptyAsync();
+            processEventsJob.RunUntilEmpty();
             sw.Stop();
-            _logger.Info(sw.Elapsed.ToString());
+            _logger.LogInformation(sw.Elapsed.ToString());
 
             await _configuration.Client.RefreshAsync(Indices.All);
             var stats = await _eventQueue.GetQueueStatsAsync();

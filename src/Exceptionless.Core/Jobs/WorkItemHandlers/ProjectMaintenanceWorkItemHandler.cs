@@ -7,10 +7,10 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase {
@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             const int LIMIT = 100;
 
             var workItem = context.GetData<ProjectMaintenanceWorkItem>();
-            Log.Info("Received upgrade projects work item. Update Default Bot List: {0} IncrementConfigurationVersion: {1}", workItem.UpdateDefaultBotList, workItem.IncrementConfigurationVersion);
+            Log.LogInformation("Received upgrade projects work item. Update Default Bot List: {UpdateDefaultBotList} IncrementConfigurationVersion: {IncrementConfigurationVersion}", workItem.UpdateDefaultBotList, workItem.IncrementConfigurationVersion);
 
             var results = await _projectRepository.GetAllAsync(o => o.PageLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {

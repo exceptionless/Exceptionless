@@ -2,8 +2,8 @@
 using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Logging;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(1)]
@@ -18,11 +18,11 @@ namespace Exceptionless.Core.Pipeline {
                 ctx.Event.Date = ctx.Event.Date.Subtract(ctx.Event.Date.UtcDateTime - SystemClock.OffsetUtcNow);
 
             // Discard events that are being submitted outside of the plan retention limit.
-            double eventAgeInDays = SystemClock.UtcNow.Subtract(ctx.Event.Date.UtcDateTime).TotalDays;
-            if (eventAgeInDays > 3 || ctx.Organization.RetentionDays > 0 && eventAgeInDays > ctx.Organization.RetentionDays) {
-                _logger.Warn().Project(ctx.Event.ProjectId).Message("Discarding event that occurred more than three days ago or outside of your retention limit.").Write();
-                ctx.IsCancelled = true;
-            }
+            //double eventAgeInDays = SystemClock.UtcNow.Subtract(ctx.Event.Date.UtcDateTime).TotalDays;
+            //if (eventAgeInDays > 3 || ctx.Organization.RetentionDays > 0 && eventAgeInDays > ctx.Organization.RetentionDays) {
+            //    _logger.LogWarning("Discarding event that occurred more than three days ago or outside of your retention limit.").Write();
+            //    ctx.IsCancelled = true;
+            //}
 
             return Task.CompletedTask;
         }

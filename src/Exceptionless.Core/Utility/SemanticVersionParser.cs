@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Foundatio.Caching;
-using Foundatio.Logging;
 using McSherry.SemanticVersioning;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Utility {
     public class SemanticVersionParser {
@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Utility {
             else if (Int32.TryParse(version, out int major))
                 semanticVersion = new SemanticVersion(major, 0);
             else
-                _logger.Info("Unable to parse version: {version}", version);
+                _logger.LogInformation("Unable to parse version: {Version}", version);
 
             await _localCache.SetAsync(version, semanticVersion).AnyContext();
             return semanticVersion;

@@ -8,7 +8,7 @@ using Exceptionless.Core.Reflection;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Serializer;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;

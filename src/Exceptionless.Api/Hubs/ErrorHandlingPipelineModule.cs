@@ -1,6 +1,6 @@
 ﻿using System;
-using Foundatio.Logging;
 using Microsoft.AspNet.SignalR.Hubs;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Hubs {
     public class ErrorHandlingPipelineModule : HubPipelineModule {
@@ -11,12 +11,8 @@ namespace Exceptionless.Api.Hubs {
         }
 
         protected override void OnIncomingError(ExceptionContext exceptionContext, IHubIncomingInvokerContext invokerContext) {
-            _logger.Error()
-                .Exception(exceptionContext.Error)
-                .MarkUnhandled("ErrorHandlingPipelineModule")
-                .Message("Unhandled: {0}", exceptionContext.Error.Message)
-                .Tag("SignalR")
-                .Write();
+            using (_logger.BeginScope(new ExceptionlessState().MarkUnhandled("ErrorHandlingPipelineModule").Tag("SignalR")))
+                _logger.LogError(exceptionContext.Error, "Unhandled: {Message}", exceptionContext.Error.Message);
             
             base.OnIncomingError(exceptionContext, invokerContext);
         }

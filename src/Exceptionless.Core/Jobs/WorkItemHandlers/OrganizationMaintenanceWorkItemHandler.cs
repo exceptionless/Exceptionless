@@ -9,10 +9,10 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase {
@@ -30,18 +30,17 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override async Task HandleItemAsync(WorkItemContext context) {
             const int LIMIT = 100;
-
-            var workItem = context.GetData<OrganizationMaintenanceWorkItem>();
-            Log.Info("Received upgrade organizations work item. Upgrade Plans: {0}", workItem.UpgradePlans);
+            var wi = context.GetData<OrganizationMaintenanceWorkItem>();
+            Log.LogInformation("Received upgrade organizations work item. Upgrade Plans: {UpgradePlans}", wi.UpgradePlans);
 
             var results = await _organizationRepository.GetAllAsync(o => o.PageLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in results.Documents) {
-                    if (workItem.UpgradePlans)
+                    if (wi.UpgradePlans)
                         UpgradePlan(organization);
                 }
 
-                if (workItem.UpgradePlans)
+                if (wi.UpgradePlans)
                     await _organizationRepository.SaveAsync(results.Documents).AnyContext();
 
                 // Sleep so we are not hammering the backend.
@@ -53,12 +52,13 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 if (results.Documents.Count > 0)
                     await context.RenewLockAsync().AnyContext();
             }
+            
         }
 
         private void UpgradePlan(Organization organization) {
             var plan = BillingManager.GetBillingPlan(organization.PlanId);
             if (plan == null) {
-                Log.Error().Message("Unable to find a valid plan for organization: {0}", organization.Id).Write();
+                Log.LogError("Unable to find a valid plan for organization: {organization}", organization.Id);
                 return;
             }
 

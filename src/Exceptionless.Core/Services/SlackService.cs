@@ -6,9 +6,9 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
-using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Serializer;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services {
     public class SlackService {
@@ -39,10 +39,10 @@ namespace Exceptionless.Core.Services {
             string url = $"https://slack.com/api/oauth.access?{data.ToQueryString()}";
             var response = await _client.PostAsync(url).AnyContext();
             var body = await response.Content.ReadAsByteArrayAsync().AnyContext();
-            var result = await _serializer.DeserializeAsync<OAuthAccessResponse>(body).AnyContext();
+            var result = _serializer.Deserialize<OAuthAccessResponse>(body);
 
             if (!result.ok) {
-                _logger.Warn().Message("Error getting access token: {0}", result.error ?? result.warning).Property("Response", result).Write();
+                _logger.LogWarning("Error getting access token: {Message}, Response: {Response}", result.error ?? result.warning, result);
                 return null;
             }
 
@@ -73,12 +73,12 @@ namespace Exceptionless.Core.Services {
             string url = $"https://slack.com/api/auth.revoke?token={token}";
             var response = await _client.PostAsync(url).AnyContext();
             var body = await response.Content.ReadAsByteArrayAsync().AnyContext();
-            var result = await _serializer.DeserializeAsync<AuthRevokeResponse>(body).AnyContext();
+            var result = _serializer.Deserialize<AuthRevokeResponse>(body);
 
             if (result.ok && result.revoked || String.Equals(result.error, "invalid_auth"))
                 return true;
 
-            _logger.Warn().Message("Error revoking token: {0}", result.error ?? result.warning).Property("Response", result).Write();
+            _logger.LogWarning("Error revoking token: {Message}, Response: {Response}", result.error ?? result.warning, result);
             return false;
         }
 
@@ -114,7 +114,7 @@ namespace Exceptionless.Core.Services {
             bool isCritical = ev.IsCritical();
             var message = _pluginManager.GetSlackEventNotificationMessage(ev, project, isCritical, isNew, isRegression);
             if (message == null) {
-                _logger.Warn("Unable to create event notification slack message for event \"{0}\".", ev.Id);
+                _logger.LogWarning("Unable to create event notification slack message for event \"{id}\".", ev.Id);
                 return false;
             }
 

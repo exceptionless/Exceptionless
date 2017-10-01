@@ -3,8 +3,8 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Queues.Models;
-using Foundatio.Logging;
 using Foundatio.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions {
     public static class StorageExtensions {
@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Extensions {
             try {
                 eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(path, cancellationToken).AnyContext();
             } catch (Exception ex) {
-                logger.Error(ex, "Error retrieving event post data \"{0}\".", path);
+                logger.LogError(ex, "Error retrieving event post data \"{Path}\".", path);
                 return null;
             }
 
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Extensions {
 
                 return await storage.DeleteFileAsync(path).AnyContext();
             } catch (Exception ex) {
-                logger.Error(ex, "Error archiving event post data \"{0}\".", path);
+                logger.LogError(ex, "Error archiving event post data \"{Path}\".", path);
                 return false;
             }
         }

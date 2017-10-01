@@ -19,11 +19,11 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]
@@ -248,6 +248,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             string workItemId = await _workItemQueue.EnqueueAsync(new RemoveProjectWorkItem {
+                OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
                 Reset = true
             });
@@ -546,14 +547,8 @@ namespace Exceptionless.Api.Controllers {
             try {
                 token = await _slackService.GetAccessTokenAsync(code);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex)
-                    .Message($"Error getting slack access token: {ex.Message}")
-                    .Property("Code", code)
-                    .Tag("Slack")
-                    .Identity(CurrentUser.EmailAddress)
-                    .Property("User", CurrentUser)
-                    .SetActionContext(ActionContext)
-                    .Write();
+                using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Property("Code", code).Tag("Slack").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                    _logger.LogError(ex, "Error getting slack access token: {Message}", ex.Message);
             }
 
             if (token == null)
@@ -583,14 +578,8 @@ namespace Exceptionless.Api.Controllers {
                 try {
                     await _slackService.RevokeAccessTokenAsync(token.AccessToken);
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex)
-                        .Message($"Error revoking slack access token: {ex.Message}")
-                        .Property("Token", token)
-                        .Tag("Slack")
-                        .Identity(CurrentUser.EmailAddress)
-                        .Property("User", CurrentUser)
-                        .SetActionContext(ActionContext)
-                        .Write();
+                    using (_logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                        _logger.LogError(ex, "Error revoking slack access token: {Message}", ex.Message);
                 }
             }
 
@@ -657,6 +646,7 @@ namespace Exceptionless.Api.Controllers {
             var workItems = new List<string>();
             foreach (var project in projects) {
                 workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveProjectWorkItem {
+                    OrganizationId = project.OrganizationId,
                     ProjectId = project.Id,
                     Reset = false
                 }));

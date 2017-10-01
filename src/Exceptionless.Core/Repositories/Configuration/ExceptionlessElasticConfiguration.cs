@@ -7,18 +7,18 @@ using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Serializer;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration {
         public ExceptionlessElasticConfiguration(IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
-            _logger.Info().Message($"All new indexes will be created with {Settings.Current.ElasticSearchNumberOfShards} Shards and {Settings.Current.ElasticSearchNumberOfReplicas} Replicas");
+            _logger.LogInformation("All new indexes will be created with {ElasticSearchNumberOfShards} Shards and {ElasticSearchNumberOfReplicas} Replicas", Settings.Current.ElasticSearchNumberOfShards, Settings.Current.ElasticSearchNumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
             AddIndex(Events = new EventIndex(this));
             AddIndex(Organizations = new OrganizationIndex(this));

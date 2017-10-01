@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Foundatio.Caching;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 using UAParser;
 
 namespace Exceptionless.Core.Utility {
@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Utility {
             _logger = loggerFactory.CreateLogger<UserAgentParser>();
         }
 
-        public async Task<ClientInfo> ParseAsync(string userAgent, string projectId = null) {
+        public async Task<ClientInfo> ParseAsync(string userAgent) {
             if (String.IsNullOrEmpty(userAgent))
                 return null;
 
@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Utility {
             try {
                 info = _parser.Value.Parse(userAgent);
             } catch (Exception ex) {
-                _logger.Warn().Project(projectId).Message("Unable to parse user agent {0}. Exception: {1}", userAgent, ex.Message).Write();
+                _logger.LogWarning("Unable to parse user agent {UserAgent}. Exception: {Message}", userAgent, ex.Message);
             }
 
             await _localCache.SetAsync(userAgent, info).AnyContext();

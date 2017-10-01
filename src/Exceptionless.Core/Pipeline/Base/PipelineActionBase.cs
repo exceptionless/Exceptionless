@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     public interface IPipelineAction<TContext> where TContext : IPipelineContext {

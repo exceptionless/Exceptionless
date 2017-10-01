@@ -4,8 +4,8 @@ using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Helpers;
-using Foundatio.Logging;
 using Foundatio.Metrics;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins {
     public abstract class PluginManagerBase<TPlugin> where TPlugin : class, IPlugin {
@@ -41,14 +41,14 @@ namespace Exceptionless.Core.Plugins {
 
             foreach (var type in pluginTypes) {
                 if (Settings.Current.DisabledPlugins.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {
-                    _logger.Warn(() => $"Plugin {type.Name} is currently disabled and won't be executed.");
+                    _logger.LogWarning("Plugin {TypeName} is currently disabled and won't be executed.", type.Name);
                     continue;
                 }
 
                 try {
                     AddPlugin(type);
                 } catch (Exception ex) {
-                    _logger.Error(ex, "Unable to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message);
+                    _logger.LogError(ex, "Unable to instantiate plugin of type \"{TypeFullName}\": {Message}", type.FullName, ex.Message);
                     throw;
                 }
             }

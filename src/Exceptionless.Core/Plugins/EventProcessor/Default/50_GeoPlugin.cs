@@ -6,7 +6,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(50)]

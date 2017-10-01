@@ -14,9 +14,9 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/tokens")]

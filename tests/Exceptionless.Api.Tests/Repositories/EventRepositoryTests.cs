@@ -9,15 +9,15 @@ using Exceptionless.Helpers;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Tests.Utility;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 using Nest;
 using Xunit;
 using Xunit.Abstractions;
-using LogLevel = Foundatio.Logging.LogLevel;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public sealed class EventRepositoryTests : ElasticTestBase {
@@ -60,7 +60,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             }
 
             sw.Stop();
-            _logger.Info(sw.ElapsedMilliseconds.ToString());
+            _logger.LogInformation(sw.ElapsedMilliseconds.ToString());
         }
 
         [Fact]
@@ -88,22 +88,22 @@ namespace Exceptionless.Api.Tests.Repositories {
         public async Task GetPreviousEventIdInStackTestAsync() {
             await CreateDataAsync();
 
-            _logger.Debug("Actual order:");
+            _logger.LogDebug("Actual order:");
             foreach (var t in _ids)
-                _logger.Debug("{0}: {1}", t.Item1, t.Item2.ToLongTimeString());
+                _logger.LogDebug("{Id}: {Date}", t.Item1, t.Item2.ToLongTimeString());
 
-            _logger.Debug("");
-            _logger.Debug("Sorted order:");
+            _logger.LogDebug("");
+            _logger.LogDebug("Sorted order:");
             var sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
             foreach (var t in sortedIds)
-                _logger.Debug("{0}: {1}", t.Item1, t.Item2.ToLongTimeString());
+                _logger.LogDebug("{Id}: {Date}", t.Item1, t.Item2.ToLongTimeString());
 
-            _logger.Debug("");
-            _logger.Debug("Tests:");
+            _logger.LogDebug("");
+            _logger.LogDebug("Tests:");
             await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(_ids.Count, await _repository.CountAsync());
             for (int i = 0; i < sortedIds.Count; i++) {
-                _logger.Debug("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
+                _logger.LogDebug("Current - {Id}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
                 if (i == 0)
                     Assert.Null((await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Previous);
                 else
@@ -115,22 +115,22 @@ namespace Exceptionless.Api.Tests.Repositories {
         public async Task GetNextEventIdInStackTestAsync() {
             await CreateDataAsync();
 
-            _logger.Debug("Actual order:");
+            _logger.LogDebug("Actual order:");
             foreach (var t in _ids)
-                _logger.Debug("{0}: {1}", t.Item1, t.Item2.ToLongTimeString());
+                _logger.LogDebug("{Id}: {Date}", t.Item1, t.Item2.ToLongTimeString());
 
-            _logger.Debug("");
-            _logger.Debug("Sorted order:");
+            _logger.LogDebug("");
+            _logger.LogDebug("Sorted order:");
             var sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
             foreach (var t in sortedIds)
-                _logger.Debug("{0}: {1}", t.Item1, t.Item2.ToLongTimeString());
+                _logger.LogDebug("{Id}: {Date}", t.Item1, t.Item2.ToLongTimeString());
 
-            _logger.Debug("");
-            _logger.Debug("Tests:");
+            _logger.LogDebug("");
+            _logger.LogDebug("Tests:");
             await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(_ids.Count, await _repository.CountAsync());
             for (int i = 0; i < sortedIds.Count; i++) {
-                _logger.Debug("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
+                _logger.LogDebug("Current - {Id}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
                 string nextId = (await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Next;
                 if (i == sortedIds.Count - 1)
                     Assert.Null(nextId);
@@ -187,12 +187,12 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             var sw = Stopwatch.StartNew();
             await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, false, sendNotifications: false);
-            _logger.Info(() => $"Time to mark not fixed events as not fixed: {sw.ElapsedMilliseconds}ms");
+            _logger.LogInformation("Time to mark not fixed events as not fixed: {ElapsedMilliseconds}ms", sw.ElapsedMilliseconds);
             await _configuration.Client.RefreshAsync(Indices.All);
             sw.Restart();
 
             await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, true, sendNotifications: false);
-            _logger.Info(() => $"Time to mark not fixed events as fixed: {sw.ElapsedMilliseconds}ms");
+            _logger.LogInformation("Time to mark not fixed events as fixed: {ElapsedMilliseconds}ms", sw.ElapsedMilliseconds);
             await _configuration.Client.RefreshAsync(Indices.All);
             sw.Stop();
 

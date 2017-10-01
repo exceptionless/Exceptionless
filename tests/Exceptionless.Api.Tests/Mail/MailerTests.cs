@@ -9,10 +9,10 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Tests.Utility;
-using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -293,9 +293,9 @@ namespace Exceptionless.Api.Tests.Mail {
             if (sender == null)
                 return;
 
-            _logger.Trace($"To:       {sender.LastMessage.To}");
-            _logger.Trace($"Subject: {sender.LastMessage.Subject}");
-            _logger.Trace($"Body:\n{sender.LastMessage.Body}");
+            _logger.LogTrace("To:      {To}", sender.LastMessage.To);
+            _logger.LogTrace("Subject: {Subject}", sender.LastMessage.Subject);
+            _logger.LogTrace("Body:\n{Body}", sender.LastMessage.Body);
         }
 
         private Exception GetException() {

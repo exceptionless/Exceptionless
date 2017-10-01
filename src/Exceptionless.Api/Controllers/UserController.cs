@@ -18,9 +18,9 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.DateTimeExtensions;
 using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/users")]
@@ -155,7 +155,8 @@ namespace Exceptionless.Api.Controllers {
             } catch (ValidationException ex) {
                 return BadRequest(String.Join(", ", ex.Errors));
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Property("User", user).SetActionContext(ActionContext).Write();
+                using (_logger.BeginScope(new ExceptionlessState().Property("User", user).SetActionContext(ActionContext)))
+                    _logger.LogError(ex, ex.Message);
                 return BadRequest("An error occurred.");
             }
 

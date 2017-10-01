@@ -9,12 +9,9 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
-using Foundatio.Logging;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Elasticsearch.Queries;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Controllers {
     public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> : ExceptionlessApiController where TRepository : ISearchableReadOnlyRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() {
@@ -62,14 +59,8 @@ namespace Exceptionless.Api.Controllers {
             try {
                 result = await _repository.CountBySearchAsync(query, filter, aggregations);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex)
-                    .Message("An error has occurred. Please check your filter or aggregations.")
-                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations })
-                    .Tag("Search")
-                    .Identity(CurrentUser.EmailAddress)
-                    .Property("User", CurrentUser)
-                    .SetActionContext(ActionContext)
-                    .Write();
+                using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                    _logger.LogError(ex, "An error has occurred. Please check your filter or aggregations.");
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }

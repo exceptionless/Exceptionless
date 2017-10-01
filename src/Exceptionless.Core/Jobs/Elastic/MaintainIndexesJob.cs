@@ -2,7 +2,7 @@
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.Elastic {
     [Job(Description = "Maintains Elasticsearch index aliases and index retention", IsContinuous = false)]

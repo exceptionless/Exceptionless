@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Models;
-using Foundatio.Logging;
 using Foundatio.Metrics;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin> {
@@ -19,7 +20,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling GetStackSummaryHtml in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("Stack", stack).Write();
+                    _logger.LogError(ex, "Error calling GetStackSummaryHtml for stack {stack} in plugin \"{PluginName}\": {Message}", stack.Id, plugin.Name, ex.Message);
                 }
             }
 
@@ -36,7 +37,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling GetEventSummaryHtml in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("PersistentEvent", ev).Write();
+                    _logger.LogError(ex, "Error calling GetEventSummaryHtml for Event {id} in plugin \"{PluginName}\": {Message}", ev.Id, plugin.Name, ex.Message);
                 }
             }
 
@@ -53,7 +54,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (!String.IsNullOrEmpty(result))
                         return result;
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling GetStackTitle in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("PersistentEvent", ev).Write();
+                    _logger.LogError(ex, "Error calling GetStackTitle for Event {id} in plugin \"{PluginName}\": {Message}", ev.Id, plugin.Name, ex.Message);
                 }
             }
 
@@ -70,7 +71,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling GetEventNotificationMailMessage in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("EventNotification", ev).Write();
+                    _logger.LogError(ex, "Error calling GetEventNotificationMailMessage for Event {id} in plugin \"{PluginName}\": {Message}", ev.Id, plugin.Name, ex.Message);
                 }
             }
 
@@ -87,7 +88,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (message != null)
                         return message;
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling GetSlackEventNotificationMessage in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("EventNotification", ev).Write();
+                    _logger.LogError(ex, "Error calling GetSlackEventNotificationMessage for Event {id} in plugin \"{PluginName}\": {Message}", ev.Id, plugin.Name, ex.Message);
                 }
             }
 

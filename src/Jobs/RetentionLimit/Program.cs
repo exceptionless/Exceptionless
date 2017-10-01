@@ -1,9 +1,9 @@
 ﻿using System;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
-using Foundatio.Utility;
+using Exceptionless.Insulation.Jobs;
 using Foundatio.Jobs;
-using Foundatio.ServiceProviders;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace RetentionLimitsJob {
     public class Program {
@@ -11,7 +11,7 @@ namespace RetentionLimitsJob {
             AppDomain.CurrentDomain.SetDataDirectory();
 
             var loggerFactory = Settings.Current.GetLoggerFactory();
-            var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
+            var serviceProvider = JobServiceProvider.CreateServiceProvider(loggerFactory);
             var job = serviceProvider.GetService<Exceptionless.Core.Jobs.RetentionLimitsJob>();
             return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromHours(1)).RunInConsole();
         }

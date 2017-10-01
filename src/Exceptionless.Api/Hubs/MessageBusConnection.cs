@@ -2,8 +2,8 @@
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
-using Foundatio.Logging;
 using Microsoft.AspNet.SignalR;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Hubs {
     public class MessageBusConnection : PersistentConnection {
@@ -22,7 +22,7 @@ namespace Exceptionless.Api.Hubs {
 
                 await _connectionMapping.UserIdAddAsync(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
-                _logger.Error(ex, "OnReconnected Error: {0}", ex.Message);
+                _logger.LogError(ex, "OnReconnected Error: {Message}", ex.Message);
                 throw;
             }
         }
@@ -34,7 +34,7 @@ namespace Exceptionless.Api.Hubs {
 
                 await _connectionMapping.UserIdRemoveAsync(request.User.GetUserId(), connectionId);
             } catch (Exception ex) {
-                _logger.Error(ex, "OnDisconnected Error: {0}", ex.Message);
+                _logger.LogError(ex, "OnDisconnected Error: {Message}", ex.Message);
                 throw;
             }
         }

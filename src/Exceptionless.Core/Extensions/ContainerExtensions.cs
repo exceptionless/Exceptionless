@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 using SimpleInjector;
 using SimpleInjector.Advanced;
 

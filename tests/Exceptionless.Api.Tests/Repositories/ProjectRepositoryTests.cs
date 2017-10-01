@@ -7,7 +7,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Foundatio.Repositories;
 using Nest;
-using LogLevel = Foundatio.Logging.LogLevel;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public sealed class ProjectRepositoryTests : ElasticTestBase {

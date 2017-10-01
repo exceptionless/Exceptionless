@@ -8,9 +8,9 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Queues;
 using McSherry.SemanticVersioning;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(30)]
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Pipeline {
                     if (regressedContext == null)
                         return;
 
-                    _logger.Trace("Marking stack and events as regressed in version: {version}", regressedVersion);
+                    _logger.LogTrace("Marking stack and events as regressed in version: {Version}", regressedVersion);
                     stack.IsRegressed = true;
                     await _stackRepository.MarkAsRegressedAsync(stack.Id).AnyContext();
                     await _workItemQueue.EnqueueAsync(new StackWorkItem {

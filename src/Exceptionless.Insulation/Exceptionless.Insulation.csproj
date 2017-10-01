@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Exceptionless.Insulation</RootNamespace>
     <AssemblyName>Exceptionless.Insulation</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,94 +34,91 @@
     <Reference Include="BouncyCastle.Crypto, Version=1.8.1.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
       <HintPath>..\..\packages\BouncyCastle.1.8.1\lib\BouncyCastle.Crypto.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless, Version=4.0.1955.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.4.0.1955\lib\net45\Exceptionless.dll</HintPath>
+    <Reference Include="Exceptionless, Version=4.1.1964.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.4.1.1964-pre\lib\net45\Exceptionless.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.NLog, Version=4.0.1955.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.NLog.4.0.1955\lib\net45\Exceptionless.NLog.dll</HintPath>
+    <Reference Include="Exceptionless.Extensions.Logging, Version=4.1.1964.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.Extensions.Logging.4.1.1964-pre\lib\netstandard2.0\Exceptionless.Extensions.Logging.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.WebApi, Version=4.0.1955.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.4.0.1955\lib\net45\Exceptionless.WebApi.dll</HintPath>
+    <Reference Include="Exceptionless.WebApi, Version=4.1.1964.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.4.1.1964-pre\lib\net45\Exceptionless.WebApi.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio, Version=5.1.1457.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.5.1.1457\lib\net46\Foundatio.dll</HintPath>
+    <Reference Include="Foundatio, Version=6.0.1531.0, Culture=neutral, PublicKeyToken=fc181f0a46f65747, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.6.0.1531-pre\lib\netstandard2.0\Foundatio.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.AzureStorage, Version=5.1.1460.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.AzureStorage.5.1.1460\lib\net46\Foundatio.AzureStorage.dll</HintPath>
+    <Reference Include="Foundatio.AzureStorage, Version=6.0.1467.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.AzureStorage.6.0.1467-pre\lib\netstandard2.0\Foundatio.AzureStorage.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Logging.NLog, Version=5.1.1457.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Logging.NLog.5.1.1457\lib\net46\Foundatio.Logging.NLog.dll</HintPath>
-    </Reference>
-    <Reference Include="Foundatio.Redis, Version=5.1.1468.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Redis.5.1.1468\lib\net46\Foundatio.Redis.dll</HintPath>
+    <Reference Include="Foundatio.Redis, Version=6.0.1485.0, Culture=neutral, PublicKeyToken=fc181f0a46f65747, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Redis.6.0.1485-pre\lib\netstandard2.0\Foundatio.Redis.dll</HintPath>
     </Reference>
     <Reference Include="Geocoding, Version=3.6.0.0, Culture=neutral, PublicKeyToken=7c714700b88674c7, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Geocoding.net.3.6.1\lib\net40\Geocoding.dll</HintPath>
     </Reference>
-    <Reference Include="MailKit, Version=1.16.0.0, Culture=neutral, PublicKeyToken=4e064fe7c44a8f1b, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\MailKit.1.16.2\lib\net451\MailKit.dll</HintPath>
+    <Reference Include="MailKit, Version=1.18.0.0, Culture=neutral, PublicKeyToken=4e064fe7c44a8f1b, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\MailKit.1.18.1.1\lib\net451\MailKit.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Azure.KeyVault.Core, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.Azure.KeyVault.Core.2.0.4\lib\net45\Microsoft.Azure.KeyVault.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.Data.Edm, Version=5.8.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Data.Edm.5.8.2\lib\net40\Microsoft.Data.Edm.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Microsoft.Data.Edm, Version=5.8.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Data.Edm.5.8.3\lib\net40\Microsoft.Data.Edm.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Data.OData, Version=5.8.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Data.OData.5.8.2\lib\net40\Microsoft.Data.OData.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Microsoft.Data.OData, Version=5.8.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Data.OData.5.8.3\lib\net40\Microsoft.Data.OData.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Data.Services.Client, Version=5.8.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Data.Services.Client.5.8.2\lib\net40\Microsoft.Data.Services.Client.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Microsoft.Data.Services.Client, Version=5.8.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Data.Services.Client.5.8.3\lib\net40\Microsoft.Data.Services.Client.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Extensions.Configuration.Abstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Extensions.Configuration.Abstractions.2.0.0\lib\netstandard2.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.2.0.0\lib\netstandard2.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Extensions.Logging.2.0.0\lib\netstandard2.0\Microsoft.Extensions.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Extensions.Logging.Abstractions.2.0.0\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Console, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Extensions.Logging.Console.2.0.0\lib\netstandard2.0\Microsoft.Extensions.Logging.Console.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Options, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Extensions.Options.2.0.0\lib\netstandard2.0\Microsoft.Extensions.Options.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Primitives, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Extensions.Primitives.2.0.0\lib\netstandard2.0\Microsoft.Extensions.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="Microsoft.WindowsAzure.Configuration, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.WindowsAzure.ConfigurationManager.3.2.3\lib\net40\Microsoft.WindowsAzure.Configuration.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.WindowsAzure.Storage, Version=8.1.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\WindowsAzure.Storage.8.1.4\lib\net45\Microsoft.WindowsAzure.Storage.dll</HintPath>
+    <Reference Include="Microsoft.WindowsAzure.Storage, Version=8.4.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\WindowsAzure.Storage.8.4.0\lib\net45\Microsoft.WindowsAzure.Storage.dll</HintPath>
     </Reference>
-    <Reference Include="MimeKit, Version=1.16.0.0, Culture=neutral, PublicKeyToken=bede1c8a46c66814, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\MimeKit.1.16.2\lib\net451\MimeKit.dll</HintPath>
+    <Reference Include="MimeKit, Version=1.18.0.0, Culture=neutral, PublicKeyToken=bede1c8a46c66814, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\MimeKit.1.18.1\lib\net451\MimeKit.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Coordination, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.AsyncEx.Coordination.1.0.2\lib\net46\Nito.AsyncEx.Coordination.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Tasks, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.AsyncEx.Tasks.1.1.0\lib\net46\Nito.AsyncEx.Tasks.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.Collections.Deque, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.Collections.Deque.1.0.0\lib\portable45-net45+win8+wp8+wpa81\Nito.Collections.Deque.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.Disposables, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.Disposables.1.1.0\lib\portable45-net45+win8+wp8+wpa81\Nito.Disposables.dll</HintPath>
-    </Reference>
-    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NLog.4.4.11\lib\net45\NLog.dll</HintPath>
     </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleInjector, Version=4.0.8.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.4.0.8\lib\net45\SimpleInjector.dll</HintPath>
+    <Reference Include="SimpleInjector, Version=4.0.11.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.4.0.11\lib\net45\SimpleInjector.dll</HintPath>
     </Reference>
-    <Reference Include="StackExchange.Redis, Version=1.2.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\StackExchange.Redis.1.2.4\lib\net46\StackExchange.Redis.dll</HintPath>
+    <Reference Include="StackExchange.Redis.StrongName, Version=1.2.6.0, Culture=neutral, PublicKeyToken=c219ff1ca8c2ce46, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\StackExchange.Redis.StrongName.1.2.6\lib\net46\StackExchange.Redis.StrongName.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Collections.Immutable.1.3.1\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="System.Collections.Immutable, Version=1.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Collections.Immutable.1.4.0\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
     </Reference>
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -132,12 +130,15 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Net.Http.WebRequest" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Runtime.CompilerServices.Unsafe.4.4.0\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Spatial, Version=5.8.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Spatial.5.8.2\lib\net40\System.Spatial.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="System.Spatial, Version=5.8.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Spatial.5.8.3\lib\net40\System.Spatial.dll</HintPath>
     </Reference>
     <Reference Include="System.Transactions" />
     <Reference Include="System.Web.Http, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -157,7 +158,7 @@
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="ExceptionlessClientLastReferenceIdManager.cs" />
     <Compile Include="Geo\GoogleGeocodeService.cs" />
-    <Compile Include="Jobs\JobBootstrappedServiceProvider.cs" />
+    <Compile Include="Jobs\JobServiceProvider.cs" />
     <Compile Include="Mail\MailKitMailSender.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Redis\RedisConnectionMap.cs" />
