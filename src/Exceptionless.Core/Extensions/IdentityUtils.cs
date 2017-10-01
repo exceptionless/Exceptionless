@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static ClaimsIdentity ToIdentity(this Token token) {
             if (token == null || token.Type != TokenType.Access)
-                return WindowsIdentity.GetAnonymous();
+                return new ClaimsIdentity();
 
             if (!String.IsNullOrEmpty(token.UserId))
                 throw new ApplicationException("Can't create token type identity for user token.");
@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static ClaimsIdentity ToIdentity(this User user, Token token = null) {
             if (user == null)
-                return WindowsIdentity.GetAnonymous();
+                return new ClaimsIdentity();
 
             var claims = new List<Claim> {
                     new Claim(ClaimTypes.Name, user.EmailAddress),

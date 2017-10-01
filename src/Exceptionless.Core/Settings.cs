@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Extensions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core {
-    public class Settings : SettingsBase<Settings> {
+    public class Settings {
         public bool EnableSSL { get; private set; }
 
         public string BaseURL { get; private set; }
@@ -69,6 +70,7 @@ namespace Exceptionless.Core {
         public bool DisableSnapshotJobs { get; set; }
 
         public bool DisableIndexConfiguration { get; set; }
+        public bool DisableBootstrapStartupActions { get; private set; }
 
         public string ElasticSearchConnectionString { get; private set; }
 
@@ -152,92 +154,94 @@ namespace Exceptionless.Core {
 
         public string SmtpPassword { get; private set; }
 
-        public override void Initialize() {
-            EnvironmentVariablePrefix = "Exceptionless_";
+        public static Settings Current { get; private set; }
 
-            EnableSSL = GetBool(nameof(EnableSSL));
+        public static void Initialize(IConfiguration configRoot){
+        //    EnvironmentVariablePrefix = "Exceptionless_";
 
-            string value = GetString(nameof(BaseURL));
-            if (!String.IsNullOrEmpty(value)) {
-                if (value.EndsWith("/"))
-                    value = value.Substring(0, value.Length - 1);
+        //    EnableSSL = GetBool(nameof(EnableSSL));
 
-                if (EnableSSL && value.StartsWith("http:"))
-                    value = value.ReplaceFirst("http:", "https:");
-                else if (!EnableSSL && value.StartsWith("https:"))
-                    value = value.ReplaceFirst("https:", "http:");
+        //    string value = GetString(nameof(BaseURL));
+        //    if (!String.IsNullOrEmpty(value)) {
+        //        if (value.EndsWith("/"))
+        //            value = value.Substring(0, value.Length - 1);
 
-                BaseURL = value;
-            }
+        //        if (EnableSSL && value.StartsWith("http:"))
+        //            value = value.ReplaceFirst("http:", "https:");
+        //        else if (!EnableSSL && value.StartsWith("https:"))
+        //            value = value.ReplaceFirst("https:", "http:");
 
-            InternalProjectId = GetString(nameof(InternalProjectId), "54b56e480ef9605a88a13153");
-            ExceptionlessApiKey = GetString(nameof(ExceptionlessApiKey));
-            ExceptionlessServerUrl = GetString(nameof(ExceptionlessServerUrl));
-            WebsiteMode = GetEnum<WebsiteMode>(nameof(WebsiteMode), WebsiteMode.Dev);
-            AppScope = GetString(nameof(AppScope), String.Empty);
+        //        BaseURL = value;
+        //    }
 
-            RunJobsInProcess = GetBool(nameof(RunJobsInProcess), true);
-            JobsIterationLimit = GetInt(nameof(JobsIterationLimit), -1);
-            BotThrottleLimit = GetInt(nameof(BotThrottleLimit), 25);
-            ApiThrottleLimit = GetInt(nameof(ApiThrottleLimit), Int32.MaxValue);
-            EnableArchive = GetBool(nameof(EnableArchive), true);
-            EventSubmissionDisabled = GetBool(nameof(EventSubmissionDisabled));
-            DisabledPipelineActions = GetStringList(nameof(DisabledPipelineActions), String.Empty);
-            DisabledPlugins = GetStringList(nameof(DisabledPlugins), String.Empty);
-            MaximumEventPostSize = GetInt64(nameof(MaximumEventPostSize), 1000000);
-            MaximumRetentionDays = GetInt(nameof(MaximumRetentionDays), 180);
-            MetricsServerName = GetString(nameof(MetricsServerName)) ?? "127.0.0.1";
-            MetricsServerPort = GetInt(nameof(MetricsServerPort), 8125);
-            EnableMetricsReporting = GetBool(nameof(EnableMetricsReporting));
-            IntercomAppSecret = GetString(nameof(IntercomAppSecret));
-            GoogleAppId = GetString(nameof(GoogleAppId));
-            GoogleAppSecret = GetString(nameof(GoogleAppSecret));
-            GoogleGeocodingApiKey = GetString(nameof(GoogleGeocodingApiKey));
-            SlackAppId = GetString(nameof(SlackAppId));
-            SlackAppSecret = GetString(nameof(SlackAppSecret));
-            MicrosoftAppId = GetString(nameof(MicrosoftAppId));
-            MicrosoftAppSecret = GetString(nameof(MicrosoftAppSecret));
-            FacebookAppId = GetString(nameof(FacebookAppId));
-            FacebookAppSecret = GetString(nameof(FacebookAppSecret));
-            GitHubAppId = GetString(nameof(GitHubAppId));
-            GitHubAppSecret = GetString(nameof(GitHubAppSecret));
-            StripeApiKey = GetString(nameof(StripeApiKey));
-            StorageFolder = GetString(nameof(StorageFolder));
-            BulkBatchSize = GetInt(nameof(BulkBatchSize), 1000);
+        //    InternalProjectId = GetString(nameof(InternalProjectId), "54b56e480ef9605a88a13153");
+        //    ExceptionlessApiKey = GetString(nameof(ExceptionlessApiKey));
+        //    ExceptionlessServerUrl = GetString(nameof(ExceptionlessServerUrl));
+        //    WebsiteMode = GetEnum<WebsiteMode>(nameof(WebsiteMode), WebsiteMode.Dev);
+        //    AppScope = GetString(nameof(AppScope), String.Empty);
 
-            EnableAccountCreation = GetBool(nameof(EnableAccountCreation), true);
-            EnableDailySummary = GetBool(nameof(EnableDailySummary));
-            AllowedOutboundAddresses = GetStringList(nameof(AllowedOutboundAddresses), "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
-            TestEmailAddress = GetString(nameof(TestEmailAddress), "noreply@exceptionless.io");
-            SmtpFrom = GetString(nameof(SmtpFrom), "Exceptionless <noreply@exceptionless.io>");
-            SmtpHost = GetString(nameof(SmtpHost), "localhost");
-            SmtpPort = GetInt(nameof(SmtpPort), String.Equals(SmtpHost, "localhost") ? 25 : 587);
-            SmtpEncryption = GetEnum<SmtpEncryption>(nameof(SmtpEncryption), GetDefaultSmtpEncryption(SmtpPort));
-            SmtpUser = GetString(nameof(SmtpUser));
-            SmtpPassword = GetString(nameof(SmtpPassword));
+        //    RunJobsInProcess = GetBool(nameof(RunJobsInProcess), true);
+        //    JobsIterationLimit = GetInt(nameof(JobsIterationLimit), -1);
+        //    BotThrottleLimit = GetInt(nameof(BotThrottleLimit), 25);
+        //    ApiThrottleLimit = GetInt(nameof(ApiThrottleLimit), Int32.MaxValue);
+        //    EnableArchive = GetBool(nameof(EnableArchive), true);
+        //    EventSubmissionDisabled = GetBool(nameof(EventSubmissionDisabled));
+        //    DisabledPipelineActions = GetStringList(nameof(DisabledPipelineActions), String.Empty);
+        //    DisabledPlugins = GetStringList(nameof(DisabledPlugins), String.Empty);
+        //    MaximumEventPostSize = GetInt64(nameof(MaximumEventPostSize), 1000000);
+        //    MaximumRetentionDays = GetInt(nameof(MaximumRetentionDays), 180);
+        //    MetricsServerName = GetString(nameof(MetricsServerName)) ?? "127.0.0.1";
+        //    MetricsServerPort = GetInt(nameof(MetricsServerPort), 8125);
+        //    EnableMetricsReporting = GetBool(nameof(EnableMetricsReporting));
+        //    IntercomAppSecret = GetString(nameof(IntercomAppSecret));
+        //    GoogleAppId = GetString(nameof(GoogleAppId));
+        //    GoogleAppSecret = GetString(nameof(GoogleAppSecret));
+        //    GoogleGeocodingApiKey = GetString(nameof(GoogleGeocodingApiKey));
+        //    SlackAppId = GetString(nameof(SlackAppId));
+        //    SlackAppSecret = GetString(nameof(SlackAppSecret));
+        //    MicrosoftAppId = GetString(nameof(MicrosoftAppId));
+        //    MicrosoftAppSecret = GetString(nameof(MicrosoftAppSecret));
+        //    FacebookAppId = GetString(nameof(FacebookAppId));
+        //    FacebookAppSecret = GetString(nameof(FacebookAppSecret));
+        //    GitHubAppId = GetString(nameof(GitHubAppId));
+        //    GitHubAppSecret = GetString(nameof(GitHubAppSecret));
+        //    StripeApiKey = GetString(nameof(StripeApiKey));
+        //    StorageFolder = GetString(nameof(StorageFolder));
+        //    BulkBatchSize = GetInt(nameof(BulkBatchSize), 1000);
 
-            if (String.IsNullOrWhiteSpace(SmtpUser) != String.IsNullOrWhiteSpace(SmtpPassword))
-                throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");
+        //    EnableAccountCreation = GetBool(nameof(EnableAccountCreation), true);
+        //    EnableDailySummary = GetBool(nameof(EnableDailySummary));
+        //    AllowedOutboundAddresses = GetStringList(nameof(AllowedOutboundAddresses), "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
+        //    TestEmailAddress = GetString(nameof(TestEmailAddress), "noreply@exceptionless.io");
+        //    SmtpFrom = GetString(nameof(SmtpFrom), "Exceptionless <noreply@exceptionless.io>");
+        //    SmtpHost = GetString(nameof(SmtpHost), "localhost");
+        //    SmtpPort = GetInt(nameof(SmtpPort), String.Equals(SmtpHost, "localhost") ? 25 : 587);
+        //    SmtpEncryption = GetEnum<SmtpEncryption>(nameof(SmtpEncryption), GetDefaultSmtpEncryption(SmtpPort));
+        //    SmtpUser = GetString(nameof(SmtpUser));
+        //    SmtpPassword = GetString(nameof(SmtpPassword));
 
-            AzureStorageConnectionString = GetConnectionString(nameof(AzureStorageConnectionString));
-            EnableAzureStorage = GetBool(nameof(EnableAzureStorage), !String.IsNullOrEmpty(AzureStorageConnectionString));
+        //    if (String.IsNullOrWhiteSpace(SmtpUser) != String.IsNullOrWhiteSpace(SmtpPassword))
+        //        throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");
 
-            DisableIndexConfiguration = GetBool(nameof(DisableIndexConfiguration));
-            DisableSnapshotJobs = GetBool(nameof(DisableSnapshotJobs), !String.IsNullOrEmpty(AppScopePrefix));
-            ElasticSearchConnectionString = GetConnectionString(nameof(ElasticSearchConnectionString));
-            ElasticSearchNumberOfShards = GetInt(nameof(ElasticSearchNumberOfShards), 1);
-            ElasticSearchNumberOfReplicas = GetInt(nameof(ElasticSearchNumberOfReplicas), 0);
-            EnableElasticsearchMapperSizePlugin = GetBool(nameof(EnableElasticsearchMapperSizePlugin));
+        //    AzureStorageConnectionString = GetConnectionString(nameof(AzureStorageConnectionString));
+        //    EnableAzureStorage = GetBool(nameof(EnableAzureStorage), !String.IsNullOrEmpty(AzureStorageConnectionString));
 
-            RedisConnectionString = GetConnectionString(nameof(RedisConnectionString));
-            EnableRedis = GetBool(nameof(EnableRedis), !String.IsNullOrEmpty(RedisConnectionString));
+        //    DisableIndexConfiguration = GetBool(nameof(DisableIndexConfiguration));
+        //    DisableSnapshotJobs = GetBool(nameof(DisableSnapshotJobs), !String.IsNullOrEmpty(AppScopePrefix));
+        //    ElasticSearchConnectionString = GetConnectionString(nameof(ElasticSearchConnectionString));
+        //    ElasticSearchNumberOfShards = GetInt(nameof(ElasticSearchNumberOfShards), 1);
+        //    ElasticSearchNumberOfReplicas = GetInt(nameof(ElasticSearchNumberOfReplicas), 0);
+        //    EnableElasticsearchMapperSizePlugin = GetBool(nameof(EnableElasticsearchMapperSizePlugin));
 
-            LdapConnectionString = GetConnectionString(nameof(LdapConnectionString));
-            EnableActiveDirectoryAuth = GetBool(nameof(EnableActiveDirectoryAuth), !String.IsNullOrEmpty(LdapConnectionString));
+        //    RedisConnectionString = GetConnectionString(nameof(RedisConnectionString));
+        //    EnableRedis = GetBool(nameof(EnableRedis), !String.IsNullOrEmpty(RedisConnectionString));
 
-            EnableSignalR = GetBool(nameof(EnableSignalR), true);
+        //    LdapConnectionString = GetConnectionString(nameof(LdapConnectionString));
+        //    EnableActiveDirectoryAuth = GetBool(nameof(EnableActiveDirectoryAuth), !String.IsNullOrEmpty(LdapConnectionString));
 
-            Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
+        //    EnableSignalR = GetBool(nameof(EnableSignalR), true);
+
+        //    Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
         }
 
         private SmtpEncryption GetDefaultSmtpEncryption(int port) {

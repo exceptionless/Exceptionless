@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Linq;
 using AutoMapper;
+using AutoMapper.EquivalencyExpression;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
+using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
@@ -34,19 +35,15 @@ using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch.Jobs;
 using Foundatio.Serializer;
 using Foundatio.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using SimpleInjector;
-using SimpleInjector.Advanced;
 
 namespace Exceptionless.Core {
     public class Bootstrapper {
-        public static void RegisterServices(Container container, ILoggerFactory loggerFactory, CancellationToken shutdownCancellationToken) {
-            var logger = loggerFactory.CreateLogger<Bootstrapper>();
+        public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory) {
             container.RegisterLogger(loggerFactory);
-            container.RegisterSingleton<IDependencyResolver>(() => new SimpleInjectorDependencyResolver(container));
-
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
                 DateParseHandling = DateParseHandling.DateTimeOffset
             };
@@ -62,93 +59,99 @@ namespace Exceptionless.Core {
 
             settings.AddModelConverters(loggerFactory.CreateLogger(nameof(Bootstrapper)));
 
-            container.RegisterSingleton<IContractResolver>(() => resolver);
-            container.RegisterSingleton<JsonSerializerSettings>(settings);
-            container.RegisterSingleton<JsonSerializer>(() => JsonSerializer.Create(settings));
-            container.RegisterSingleton<ISerializer>(() => new JsonNetSerializer(settings));
+            container.AddSingleton<IContractResolver>(resolver);
+            container.AddSingleton<JsonSerializerSettings>(settings);
+            container.AddSingleton<JsonSerializer>(JsonSerializer.Create(settings));
+            container.AddSingleton<ISerializer>(new JsonNetSerializer(settings));
 
-            container.RegisterSingleton<ICacheClient>(() => new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory }));
-            container.RegisterSingleton<IMetricsClient>(() => new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = loggerFactory }));
+            container.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory }));
+            container.AddSingleton<IMetricsClient>(s => new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = loggerFactory }));
 
-            container.RegisterSingleton<ExceptionlessElasticConfiguration>();
+            container.AddSingleton<ExceptionlessElasticConfiguration>();
             if (!Settings.Current.DisableIndexConfiguration)
-                container.AddStartupAction(() => container.GetInstance<ExceptionlessElasticConfiguration>().ConfigureIndexesAsync(beginReindexingOutdated: false));
+                container.AddStartupAction<ExceptionlessElasticConfiguration>();
 
-            container.RegisterSingleton<IEnumerable<IQueueBehavior<EventPost>>>(() => new[] { new MetricsQueueBehavior<EventPost>(container.GetInstance<IMetricsClient>()) });
-            container.RegisterSingleton<IEnumerable<IQueueBehavior<EventUserDescription>>>(() => new[] { new MetricsQueueBehavior<EventUserDescription>(container.GetInstance<IMetricsClient>()) });
-            container.RegisterSingleton<IEnumerable<IQueueBehavior<EventNotificationWorkItem>>>(() => new[] { new MetricsQueueBehavior<EventNotificationWorkItem>(container.GetInstance<IMetricsClient>()) });
-            container.RegisterSingleton<IEnumerable<IQueueBehavior<WebHookNotification>>>(() => new[] { new MetricsQueueBehavior<WebHookNotification>(container.GetInstance<IMetricsClient>()) });
-            container.RegisterSingleton<IEnumerable<IQueueBehavior<MailMessage>>>(() => new[] { new MetricsQueueBehavior<MailMessage>(container.GetInstance<IMetricsClient>()) });
-            container.RegisterSingleton<IEnumerable<IQueueBehavior<WorkItemData>>>(() => new[] { new MetricsQueueBehavior<WorkItemData>(container.GetInstance<IMetricsClient>()) });
+            container.AddSingleton<IQueueBehavior<EventPost>>(s => new MetricsQueueBehavior<EventPost>(s.GetRequiredService<IMetricsClient>()));
+            container.AddSingleton<IQueueBehavior<EventUserDescription>>(s => new MetricsQueueBehavior<EventUserDescription>(s.GetRequiredService<IMetricsClient>()));
+            container.AddSingleton<IQueueBehavior<EventNotificationWorkItem>>(s => new MetricsQueueBehavior<EventNotificationWorkItem>(s.GetRequiredService<IMetricsClient>()));
+            container.AddSingleton<IQueueBehavior<WebHookNotification>>(s => new MetricsQueueBehavior<WebHookNotification>(s.GetRequiredService<IMetricsClient>()));
+            container.AddSingleton<IQueueBehavior<MailMessage>>(s => new MetricsQueueBehavior<MailMessage>(s.GetRequiredService<IMetricsClient>()));
+            container.AddSingleton<IQueueBehavior<WorkItemData>>(s => new MetricsQueueBehavior<WorkItemData>(s.GetRequiredService<IMetricsClient>()));
 
-            var workItemHandlers = new WorkItemHandlers();
-            workItemHandlers.Register<ReindexWorkItem>(container.GetInstance<ReindexWorkItemHandler>);
-            workItemHandlers.Register<RemoveOrganizationWorkItem>(container.GetInstance<RemoveOrganizationWorkItemHandler>);
-            workItemHandlers.Register<RemoveProjectWorkItem>(container.GetInstance<RemoveProjectWorkItemHandler>);
-            workItemHandlers.Register<SetLocationFromGeoWorkItem>(container.GetInstance<SetLocationFromGeoWorkItemHandler>);
-            workItemHandlers.Register<SetProjectIsConfiguredWorkItem>(container.GetInstance<SetProjectIsConfiguredWorkItemHandler>);
-            workItemHandlers.Register<StackWorkItem>(container.GetInstance<StackWorkItemHandler>);
-            workItemHandlers.Register<ThrottleBotsWorkItem>(container.GetInstance<ThrottleBotsWorkItemHandler>);
-            workItemHandlers.Register<OrganizationMaintenanceWorkItem>(container.GetInstance<OrganizationMaintenanceWorkItemHandler>);
-            workItemHandlers.Register<OrganizationNotificationWorkItem>(container.GetInstance<OrganizationNotificationWorkItemHandler>);
-            workItemHandlers.Register<ProjectMaintenanceWorkItem>(container.GetInstance<ProjectMaintenanceWorkItemHandler>);
-            workItemHandlers.Register<UserMaintenanceWorkItem>(container.GetInstance<UserMaintenanceWorkItemHandler>);
-            container.RegisterSingleton<WorkItemHandlers>(workItemHandlers);
+            container.AddSingleton(typeof(IWorkItemHandler), typeof(Bootstrapper).Assembly);
+            container.AddSingleton<WorkItemHandlers>(s => {
+                var handlers = new WorkItemHandlers();
+                handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
+                handlers.Register<RemoveOrganizationWorkItem>(s.GetRequiredService<RemoveOrganizationWorkItemHandler>);
+                handlers.Register<RemoveProjectWorkItem>(s.GetRequiredService<RemoveProjectWorkItemHandler>);
+                handlers.Register<SetLocationFromGeoWorkItem>(s.GetRequiredService<SetLocationFromGeoWorkItemHandler>);
+                handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);
+                handlers.Register<StackWorkItem>(s.GetRequiredService<StackWorkItemHandler>);
+                handlers.Register<ThrottleBotsWorkItem>(s.GetRequiredService<ThrottleBotsWorkItemHandler>);
+                handlers.Register<OrganizationMaintenanceWorkItem>(s.GetRequiredService<OrganizationMaintenanceWorkItemHandler>);
+                handlers.Register<OrganizationNotificationWorkItem>(s.GetRequiredService<OrganizationNotificationWorkItemHandler>);
+                handlers.Register<ProjectMaintenanceWorkItem>(s.GetRequiredService<ProjectMaintenanceWorkItemHandler>);
+                handlers.Register<UserMaintenanceWorkItem>(s.GetRequiredService<UserMaintenanceWorkItemHandler>);
+                return handlers;
+            });
 
-            container.RegisterSingleton(() => CreateQueue<EventPost>(container, loggerFactory: loggerFactory));
-            container.RegisterSingleton(() => CreateQueue<EventUserDescription>(container, loggerFactory: loggerFactory));
-            container.RegisterSingleton(() => CreateQueue<EventNotificationWorkItem>(container, loggerFactory: loggerFactory));
-            container.RegisterSingleton(() => CreateQueue<WebHookNotification>(container, loggerFactory: loggerFactory));
-            container.RegisterSingleton(() => CreateQueue<MailMessage>(container, loggerFactory: loggerFactory));
-            container.RegisterSingleton(() => CreateQueue<WorkItemData>(container, TimeSpan.FromHours(1), loggerFactory));
+            container.AddSingleton(s => CreateQueue<EventPost>(s, loggerFactory: loggerFactory));
+            container.AddSingleton(s => CreateQueue<EventUserDescription>(s, loggerFactory: loggerFactory));
+            container.AddSingleton(s => CreateQueue<EventNotificationWorkItem>(s, loggerFactory: loggerFactory));
+            container.AddSingleton(s => CreateQueue<WebHookNotification>(s, loggerFactory: loggerFactory));
+            container.AddSingleton(s => CreateQueue<MailMessage>(s, loggerFactory: loggerFactory));
+            container.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1), loggerFactory));
 
-            container.RegisterSingleton<IMessageBus>(() => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = loggerFactory }));
-            container.RegisterSingleton<IMessagePublisher>(container.GetInstance<IMessageBus>);
-            container.RegisterSingleton<IMessageSubscriber>(container.GetInstance<IMessageBus>);
+            container.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = loggerFactory }));
+            container.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
+            container.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
 
             if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
-                container.RegisterSingleton<IFileStorage>(() => new FolderFileStorage(Settings.Current.StorageFolder));
+                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(Settings.Current.StorageFolder));
             else
-                container.RegisterSingleton<IFileStorage>(() => new InMemoryFileStorage());
+                container.AddSingleton<IFileStorage>(s => new InMemoryFileStorage());
 
-            container.RegisterSingleton<IStackRepository, StackRepository>();
-            container.RegisterSingleton<IEventRepository, EventRepository>();
-            container.RegisterSingleton<IOrganizationRepository, OrganizationRepository>();
-            container.RegisterSingleton<IProjectRepository, ProjectRepository>();
-            container.RegisterSingleton<IUserRepository, UserRepository>();
-            container.RegisterSingleton<IWebHookRepository, WebHookRepository>();
-            container.RegisterSingleton<ITokenRepository, TokenRepository>();
+            container.AddSingleton<IStackRepository, StackRepository>();
+            container.AddSingleton<IEventRepository, EventRepository>();
+            container.AddSingleton<IOrganizationRepository, OrganizationRepository>();
+            container.AddSingleton<IProjectRepository, ProjectRepository>();
+            container.AddSingleton<IUserRepository, UserRepository>();
+            container.AddSingleton<IWebHookRepository, WebHookRepository>();
+            container.AddSingleton<ITokenRepository, TokenRepository>();
 
-            container.RegisterSingleton<IGeoIpService, MaxMindGeoIpService>();
-            container.RegisterSingleton<IGeocodeService, NullGeocodeService>();
+            container.AddSingleton<IGeoIpService, MaxMindGeoIpService>();
+            container.AddSingleton<IGeocodeService, NullGeocodeService>();
 
-            container.RegisterSingleton<IQueryParser>(() => new ElasticQueryParser());
-            container.Register(typeof(IValidator<>), new[] { typeof(Bootstrapper).Assembly }, Lifestyle.Singleton);
+            container.AddSingleton<IQueryParser>(s => new ElasticQueryParser());
+            container.AddSingleton(typeof(IValidator<>), typeof(Bootstrapper).Assembly);
+            container.AddSingleton(typeof(IPipelineAction<EventContext>), typeof(Bootstrapper).Assembly);
+            container.AddSingleton(typeof(IJob), typeof(Bootstrapper).Assembly, typeof(MailMessageJob).Assembly);
 
-            container.RegisterSingleton<IMailer, Mailer>();
-            container.RegisterSingleton<IMailSender>(() => new InMemoryMailSender());
+            container.AddSingleton<IMailer, Mailer>();
+            container.AddSingleton<IMailSender>(s => new InMemoryMailSender());
 
-            container.RegisterSingleton<ILockProvider, CacheLockProvider>();
-            container.Register<StripeEventHandler>();
-            container.RegisterSingleton<BillingManager>();
-            container.RegisterSingleton<SampleDataService>();
-            container.RegisterSingleton<EventPipeline>();
-            container.RegisterSingleton<EventPluginManager>();
-            container.RegisterSingleton<FormattingPluginManager>();
-            container.RegisterSingleton<UserAgentParser>();
-            container.RegisterSingleton<SystemHealthChecker>();
-            container.RegisterSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
+            container.AddSingleton<ILockProvider, CacheLockProvider>();
+            container.AddTransient<StripeEventHandler>();
+            container.AddSingleton<BillingManager>();
+            container.AddSingleton<SampleDataService>();
+            container.AddSingleton<EventPipeline>();
+            container.AddSingleton<EventPluginManager>();
+            container.AddSingleton<FormattingPluginManager>();
+            container.AddSingleton<UserAgentParser>();
+            container.AddSingleton<SystemHealthChecker>();
+            container.AddSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
-            container.RegisterSingleton<UsageService>();
-            container.RegisterSingleton<SlackService>();
+            container.AddSingleton<UsageService>();
+            container.AddSingleton<SlackService>();
 
-            container.Register<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
+            container.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
 
-            container.AppendToCollection(typeof(Profile), typeof(CoreMappings));
-            container.RegisterSingleton<IMapper>(() => {
-                var profiles = container.GetAllInstances<Profile>();
+            container.AddTransient<AutoMapper.Profile, CoreMappings>();
+            container.AddSingleton<IMapper>(s => {
+                var profiles = s.GetServices<AutoMapper.Profile>();
                 var config = new MapperConfiguration(cfg => {
-                    cfg.ConstructServicesUsing(container.GetInstance);
+                    cfg.AddCollectionMappers();
+                    cfg.ConstructServicesUsing(s.GetRequiredService);
 
                     foreach (var profile in profiles)
                         cfg.AddProfile(profile);
@@ -158,11 +161,14 @@ namespace Exceptionless.Core {
             });
         }
 
-        private static IQueue<T> CreateQueue<T>(Container container, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
+        private static IQueue<T> CreateQueue<T>(IServiceProvider container, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
+            var behaviours = container.GetServices<IQueueBehavior<T>>().ToList();
+            behaviours.Add(new MetricsQueueBehavior<T>(container.GetRequiredService<IMetricsClient>(), null, TimeSpan.FromSeconds(2), loggerFactory));
+
             return new InMemoryQueue<T>(new InMemoryQueueOptions<T> {
-                Behaviors = container.GetAllInstances<IQueueBehavior<T>>(),
+                Behaviors = behaviours,
                 WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
-                Serializer = container.GetInstance<ISerializer>(),
+                Serializer = container.GetRequiredService<ISerializer>(),
                 LoggerFactory = loggerFactory
             });
         }

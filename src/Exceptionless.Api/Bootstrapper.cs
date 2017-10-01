@@ -25,15 +25,15 @@ namespace Exceptionless.Api {
         public static void RegisterServices(Container container, ILoggerFactory loggerFactory, CancellationToken shutdownCancellationToken) {
             container.Register<IUserIdProvider, PrincipalUserIdProvider>();
             container.Register<MessageBusConnection>();
-            container.RegisterSingleton<IConnectionMapping, ConnectionMapping>();
-            container.RegisterSingleton<MessageBusBroker>();
+            container.AddSingleton<IConnectionMapping, ConnectionMapping>();
+            container.AddSingleton<MessageBusBroker>();
 
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);
-            container.RegisterSingleton<IDependencyResolver>(resolver);
-            container.RegisterSingleton<IConnectionManager>(() => new ConnectionManager(resolver));
+            container.AddSingleton<IDependencyResolver>(resolver);
+            container.AddSingleton<IConnectionManager>(() => new ConnectionManager(resolver));
 
-            container.RegisterSingleton<OverageHandler>();
-            container.RegisterSingleton<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), container.GetInstance<IMetricsClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+            container.AddSingleton<OverageHandler>();
+            container.AddSingleton<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), container.GetInstance<IMetricsClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
 
             container.AppendToCollection(typeof(Profile), typeof(ApiMappings));
         }

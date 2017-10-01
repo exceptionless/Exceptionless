@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -20,7 +19,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
 
-        public EventPipeline(IDependencyResolver dependencyResolver, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(dependencyResolver, metricsClient, loggerFactory) {
+        public EventPipeline(IServiceProvider serviceProvider, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(serviceProvider, metricsClient, loggerFactory) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
         }

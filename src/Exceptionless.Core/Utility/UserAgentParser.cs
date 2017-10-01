@@ -7,7 +7,7 @@ using UAParser;
 
 namespace Exceptionless.Core.Utility {
     public sealed class UserAgentParser {
-        private static readonly Lazy<Parser> _parser = new Lazy<Parser>(Parser.GetDefault);
+        private static readonly Lazy<Parser> _parser = new Lazy<Parser>(() => Parser.GetDefault());
         private readonly InMemoryCacheClient _localCache;
         private readonly ILogger _logger;
 
