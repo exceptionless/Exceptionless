@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.Core.Pipeline {
     public interface IPipelineAction<TContext> where TContext : IPipelineContext {
@@ -42,7 +43,7 @@ namespace Exceptionless.Core.Pipeline {
             var type = GetType();
             Name = type.Name;
             Enabled = !Settings.Current.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase);
-            _logger = loggerFactory.CreateLogger(type);
+            _logger = loggerFactory?.CreateLogger(type) ?? NullLogger.Instance;
         }
 
         public string Name { get; }

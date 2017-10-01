@@ -6,6 +6,7 @@ using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Helpers;
 using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.Core.Plugins {
     public abstract class PluginManagerBase<TPlugin> where TPlugin : class, IPlugin {
@@ -18,7 +19,7 @@ namespace Exceptionless.Core.Plugins {
             var type = GetType();
             _metricPrefix = String.Concat(type.Name.ToLower(), ".");
             _metricsClient = metricsClient ?? new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = loggerFactory });
-            _logger = loggerFactory.CreateLogger(type);
+            _logger = loggerFactory?.CreateLogger(type) ?? NullLogger.Instance;
 
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
 
