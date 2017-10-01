@@ -4,11 +4,11 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
-using Foundatio.Logging;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Visitors;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -59,7 +59,7 @@ namespace Exceptionless.Api.Tests.Search {
             try {
                 result = await _parser.ParseAsync(query, QueryType.Query, context).AnyContext();
             } catch (Exception ex) {
-                _logger.Error(ex, $"Error parsing query: {query}. Message: {ex.Message}");
+                _logger.LogError(ex, "Error parsing query: {Query}. Message: {Message}", query, ex.Message);
                 if (isValid)
                     throw;
 
@@ -71,7 +71,7 @@ namespace Exceptionless.Api.Tests.Search {
             Assert.Equal(expected, await GenerateQueryVisitor.RunAsync(result, context));
 
             var info = await _validator.ValidateQueryAsync(result);
-            _logger.Info(() => $"UsesPremiumFeatures: {info.UsesPremiumFeatures} IsValid: {info.IsValid} Message: {info.Message}");
+            _logger.LogInformation("UsesPremiumFeatures: {UsesPremiumFeatures} IsValid: {IsValid} Message: {Message}", info.UsesPremiumFeatures, info.IsValid, info.Message);
             Assert.Equal(isValid, info.IsValid);
             Assert.Equal(usesPremiumFeatures, info.UsesPremiumFeatures);
         }
@@ -119,7 +119,7 @@ namespace Exceptionless.Api.Tests.Search {
         [InlineData("date:(date~month terms:(project cardinality:stack terms:(first @include:true)) cardinality:stack terms:(first @include:true))", true, true)] // Breakdown of total events, new events and unique events per month by project
         public async Task CanProcessAggregationsAsync(string query, bool isValid, bool usesPremiumFeatures) {
             var info = await _validator.ValidateAggregationsAsync(query);
-            _logger.Info(() => $"UsesPremiumFeatures: {info.UsesPremiumFeatures} IsValid: {info.IsValid} Message: {info.Message}");
+            _logger.LogInformation("UsesPremiumFeatures: {UsesPremiumFeatures} IsValid: {IsValid} Message: {Message}", info.UsesPremiumFeatures, info.IsValid, info.Message);
             Assert.Equal(isValid, info.IsValid);
             if (isValid)
                 Assert.Equal(usesPremiumFeatures, info.UsesPremiumFeatures);

@@ -5,7 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(20)]

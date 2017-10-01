@@ -10,9 +10,9 @@ using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Closes inactive user sessions.", InitialDelay = "30s", Interval = "30s")]

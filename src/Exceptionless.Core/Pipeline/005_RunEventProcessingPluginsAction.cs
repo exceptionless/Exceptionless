@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(5)]

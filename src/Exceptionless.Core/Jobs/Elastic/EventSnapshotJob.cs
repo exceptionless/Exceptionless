@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Repositories.Elasticsearch.Jobs;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.Elastic {
     [Job(Description = "Takes an Elasticsearch events index snapshot ", IsContinuous = false)]

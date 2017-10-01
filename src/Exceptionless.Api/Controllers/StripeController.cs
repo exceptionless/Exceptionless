@@ -4,7 +4,7 @@ using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Billing;
 using Exceptionless.Api.Utility;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 using Stripe;
 #pragma warning disable 1998
 
@@ -23,22 +23,26 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [HttpPost]
         public async Task<IHttpActionResult> PostAsync([NakedBody]string json) {
-            StripeEvent stripeEvent;
-            try {
-                stripeEvent = StripeEventUtility.ParseEvent(json);
-            } catch (Exception ex) {
-                _logger.Error().Exception(ex).Message("Unable to parse incoming event.").Property("event", json).SetActionContext(ActionContext).Write();
-                return BadRequest("Unable to parse incoming event");
+            using (_logger.BeginScope(new ExceptionlessState().SetActionContext(ActionContext))) {
+                StripeEvent stripeEvent;
+                try {
+                    stripeEvent = StripeEventUtility.ParseEvent(json);
+                } catch (Exception ex) {
+                    using (_logger.BeginScope(new ExceptionlessState().Property("event", json)))
+                        _logger.LogError(ex, "Unable to parse incoming event.");
+
+                    return BadRequest("Unable to parse incoming event");
+                }
+
+                if (stripeEvent == null) {
+                    _logger.LogWarning("Null stripe event.");
+                    return BadRequest("Incoming event empty");
+                }
+
+                await _stripeEventHandler.HandleEventAsync(stripeEvent);
+
+                return Ok();
             }
-
-            if (stripeEvent == null) {
-                _logger.Warn().Message("Null stripe event.").SetActionContext(ActionContext).Write();
-                return BadRequest("Incoming event empty");
-            }
-
-            await _stripeEventHandler.HandleEventAsync(stripeEvent);
-
-            return Ok();
         }
     }
 }

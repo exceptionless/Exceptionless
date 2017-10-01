@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.Elastic {
     [Job(Description = "Removes old Elasticsearch snapshots.", IsContinuous = false)]

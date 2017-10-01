@@ -8,10 +8,10 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Extensions;
 using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services {
     public sealed class UsageService {
@@ -119,7 +119,7 @@ namespace Exceptionless.Core.Services {
                 await _organizationRepository.SaveAsync(org, o => o.Cache()).AnyContext();
                 await _cache.SetAsync(GetUsageSavedCacheKey(org.Id), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
             } catch (Exception ex) {
-                _logger.Error(ex, "Error while saving organization usage data.");
+                _logger.LogError(ex, "Error while saving organization usage data.");
 
                 // Set the next document save for 5 seconds in the future.
                 await _cache.SetAsync(GetUsageSavedCacheKey(org.Id), SystemClock.UtcNow.SubtractMinutes(4).SubtractSeconds(55), TimeSpan.FromDays(32)).AnyContext();
@@ -140,7 +140,7 @@ namespace Exceptionless.Core.Services {
                 await _projectRepository.SaveAsync(project, o => o.Cache()).AnyContext();
                 await _cache.SetAsync(GetUsageSavedCacheKey(org.Id, project.Id), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
             } catch (Exception ex) {
-                _logger.Error(ex, "Error while saving project usage data.");
+                _logger.LogError(ex, "Error while saving project usage data.");
 
                 // Set the next document save for 5 seconds in the future.
                 await _cache.SetAsync(GetUsageSavedCacheKey(org.Id, project.Id), SystemClock.UtcNow.SubtractMinutes(4).SubtractSeconds(55), TimeSpan.FromDays(32)).AnyContext();

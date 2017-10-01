@@ -1,10 +1,10 @@
 ﻿using System;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
-using Foundatio.Utility;
+using Exceptionless.Insulation.Jobs;
 using Foundatio.Jobs;
-using Foundatio.Logging;
-using Foundatio.ServiceProviders;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CleanupSnapshotJob {
     public class Program {
@@ -12,13 +12,14 @@ namespace CleanupSnapshotJob {
             AppDomain.CurrentDomain.SetDataDirectory();
 
             var loggerFactory = Settings.Current.GetLoggerFactory();
+            var serviceProvider = JobServiceProvider.CreateServiceProvider(loggerFactory);
+
             if (Settings.Current.DisableSnapshotJobs) {
                 var logger = loggerFactory.CreateLogger(nameof(CleanupSnapshotJob));
-                logger.Info("Snapshot Jobs are currently disabled.");
+                logger.LogInformation("Snapshot Jobs are currently disabled.");
                 return 0;
             }
 
-            var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
             var job = serviceProvider.GetService<Exceptionless.Core.Jobs.Elastic.CleanupSnapshotJob>();
             return new JobRunner(job, loggerFactory, runContinuous: false).RunInConsole();
         }

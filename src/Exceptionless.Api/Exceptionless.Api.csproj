@@ -13,7 +13,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Exceptionless.Api</RootNamespace>
     <AssemblyName>Exceptionless.Api</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <UseIISExpress>true</UseIISExpress>
     <IISExpressSSLPort />
     <IISExpressAnonymousAuthentication />
@@ -51,31 +51,31 @@
       <HintPath>..\..\packages\AutoMapper.6.1.1\lib\net45\AutoMapper.dll</HintPath>
     </Reference>
     <Reference Include="Elasticsearch.Net, Version=5.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Elasticsearch.Net.5.4.0\lib\net46\Elasticsearch.Net.dll</HintPath>
+      <HintPath>..\..\packages\Elasticsearch.Net.5.5.0\lib\net46\Elasticsearch.Net.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.2.75.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.2.75\lib\net461\Exceptionless.DateTimeExtensions.dll</HintPath>
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.2.86.0, Culture=neutral, PublicKeyToken=fc181f0a46f65747, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.2.86\lib\netstandard2.0\Exceptionless.DateTimeExtensions.dll</HintPath>
     </Reference>
     <Reference Include="FluentValidation, Version=7.0.0.0, Culture=neutral, PublicKeyToken=7de548da2fbae0f0, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\FluentValidation.7.1.0\lib\net45\FluentValidation.dll</HintPath>
+      <HintPath>..\..\packages\FluentValidation.7.1.1\lib\net45\FluentValidation.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio, Version=5.1.1457.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.5.1.1457\lib\net46\Foundatio.dll</HintPath>
+    <Reference Include="Foundatio, Version=6.0.1531.0, Culture=neutral, PublicKeyToken=fc181f0a46f65747, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.6.0.1531-pre\lib\netstandard2.0\Foundatio.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Jobs.Commands, Version=5.1.1457.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Jobs.Commands.5.1.1457\lib\net46\Foundatio.Jobs.Commands.dll</HintPath>
+    <Reference Include="Foundatio.Jobs.Commands, Version=6.0.1531.0, Culture=neutral, PublicKeyToken=fc181f0a46f65747, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Jobs.Commands.6.0.1531-pre\lib\netstandard2.0\Foundatio.Jobs.Commands.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.336.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.336\lib\net461\Foundatio.Parsers.ElasticQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.354.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.354-pre\lib\netstandard2.0\Foundatio.Parsers.ElasticQueries.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.336.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.336\lib\net461\Foundatio.Parsers.LuceneQueries.dll</HintPath>
+    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.354.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.354-pre\lib\netstandard2.0\Foundatio.Parsers.LuceneQueries.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Repositories, Version=5.0.598.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.5.0.598\lib\net461\Foundatio.Repositories.dll</HintPath>
+    <Reference Include="Foundatio.Repositories, Version=6.0.630.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.6.0.630-pre\lib\netstandard2.0\Foundatio.Repositories.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.598.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.598\lib\net461\Foundatio.Repositories.Elasticsearch.dll</HintPath>
+    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=6.0.630.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.6.0.630-pre\lib\netstandard2.0\Foundatio.Repositories.Elasticsearch.dll</HintPath>
     </Reference>
     <Reference Include="McSherry.SemanticVersioning, Version=1.2.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\McSherry.SemanticVersioning.1.2.1\lib\net46\McSherry.SemanticVersioning.dll</HintPath>
@@ -86,6 +86,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Extensions.CommandLineUtils, Version=1.1.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.Extensions.CommandLineUtils.1.1.1\lib\net451\Microsoft.Extensions.CommandLineUtils.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Extensions.Logging.Abstractions.2.0.0\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.Owin.3.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
@@ -100,25 +103,10 @@
       <HintPath>..\..\packages\Microsoft.Owin.Security.3.1.0\lib\net45\Microsoft.Owin.Security.dll</HintPath>
     </Reference>
     <Reference Include="Nest, Version=5.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NEST.5.4.0\lib\net46\Nest.dll</HintPath>
+      <HintPath>..\..\packages\NEST.5.5.0\lib\net46\Nest.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Coordination, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.AsyncEx.Coordination.1.0.2\lib\net46\Nito.AsyncEx.Coordination.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Tasks, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.AsyncEx.Tasks.1.1.0\lib\net46\Nito.AsyncEx.Tasks.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.Collections.Deque, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.Collections.Deque.1.0.0\lib\portable45-net45+win8+wp8+wpa81\Nito.Collections.Deque.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.Disposables, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.Disposables.1.1.0\lib\portable45-net45+win8+wp8+wpa81\Nito.Disposables.dll</HintPath>
     </Reference>
     <Reference Include="OAuth2, Version=0.8.40.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\OAuth2.0.8.40\lib\OAuth2.dll</HintPath>
@@ -136,11 +124,11 @@
       <HintPath>..\..\packages\RestSharp.105.2.3\lib\net46\RestSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SimpleInjector, Version=4.0.8.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.4.0.8\lib\net45\SimpleInjector.dll</HintPath>
+    <Reference Include="SimpleInjector, Version=4.0.11.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.4.0.11\lib\net45\SimpleInjector.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleInjector.Integration.WebApi, Version=4.0.8.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.Integration.WebApi.4.0.8\lib\net45\SimpleInjector.Integration.WebApi.dll</HintPath>
+    <Reference Include="SimpleInjector.Integration.WebApi, Version=4.0.11.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SimpleInjector.Integration.WebApi.4.0.11\lib\net45\SimpleInjector.Integration.WebApi.dll</HintPath>
     </Reference>
     <Reference Include="Stripe.net, Version=10.2.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Stripe.net.10.2.0\lib\net45\Stripe.net.dll</HintPath>
@@ -149,9 +137,8 @@
       <HintPath>..\..\packages\Swashbuckle.Core.5.6.0\lib\net40\Swashbuckle.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Collections.Immutable.1.3.1\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="System.Collections.Immutable, Version=1.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Collections.Immutable.1.4.0\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
     </Reference>
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
@@ -231,7 +218,7 @@
     <Compile Include="Controllers\WebHookController.cs" />
     <Compile Include="Extensions\DeltaExtensions.cs" />
     <Compile Include="Extensions\HttpExtensions.cs" />
-    <Compile Include="Extensions\LogBuilderExtensions.cs" />
+    <Compile Include="Extensions\ExceptionlessStateExtensions.cs" />
     <Compile Include="Extensions\OAuth2Extensions.cs" />
     <Compile Include="Hubs\ConnectionMapping.cs" />
     <Compile Include="Hubs\ErrorHandlingPipelineModule.cs" />
@@ -300,12 +287,10 @@
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
       <Name>Exceptionless.Core</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="NLog.config">
-      <SubType>Designer</SubType>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <ProjectReference Include="..\Exceptionless.Insulation\Exceptionless.Insulation.csproj">
+      <Project>{75d9d89f-09f2-43a6-8b53-e1518e9fa822}</Project>
+      <Name>Exceptionless.Insulation</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
@@ -335,11 +320,6 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
-  <PropertyGroup>
-    <PostBuildEvent>robocopy "$(ProjectDir)..\Exceptionless.Insulation\bin\$(ConfigurationName)" "$(TargetDir)." /S /NFL /NDL /NJH /NJS /nc /ns /np 
-IF %25ERRORLEVEL%25 GEQ 8 exit 1
-exit 0</PostBuildEvent>
-  </PropertyGroup>
   <Import Project="..\..\packages\Pegasus.4.0.0\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.4.0.0\build\Pegasus.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -347,11 +327,4 @@ exit 0</PostBuildEvent>
     </PropertyGroup>
     <Error Condition="!Exists('..\..\packages\Pegasus.4.0.0\build\Pegasus.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Pegasus.4.0.0\build\Pegasus.targets'))" />
   </Target>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

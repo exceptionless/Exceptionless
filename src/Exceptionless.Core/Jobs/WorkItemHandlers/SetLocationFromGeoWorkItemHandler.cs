@@ -10,9 +10,9 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase {
@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                     location = result.ToLocation();
                     await _metricsClient.CounterAsync(MetricNames.UsageGeocodingApi).AnyContext();
                 } catch (Exception ex) {
-                    Log.Error(ex, "Error occurred looking up reverse geocode: {0}", workItem.Geo);
+                    Log.LogError(ex, "Error occurred looking up reverse geocode: {Geo}", workItem.Geo);
                 }
             }
             

@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>EventPostsJob</RootNamespace>
     <AssemblyName>EventPostsJob</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <NuGetPackageImportStamp>
@@ -36,31 +36,21 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Foundatio, Version=5.1.1457.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.5.1.1457\lib\net46\Foundatio.dll</HintPath>
+    <Reference Include="Foundatio, Version=6.0.1531.0, Culture=neutral, PublicKeyToken=fc181f0a46f65747, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Foundatio.6.0.1531-pre\lib\netstandard2.0\Foundatio.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.2.0.0\lib\netstandard2.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Microsoft.Extensions.Logging.Abstractions.2.0.0\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="Nito.AsyncEx.Coordination, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Nito.AsyncEx.Coordination.1.0.2\lib\net46\Nito.AsyncEx.Coordination.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Tasks, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Nito.AsyncEx.Tasks.1.1.0\lib\net46\Nito.AsyncEx.Tasks.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.Collections.Deque, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Nito.Collections.Deque.1.0.0\lib\portable45-net45+win8+wp8+wpa81\Nito.Collections.Deque.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.Disposables, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Nito.Disposables.1.1.0\lib\portable45-net45+win8+wp8+wpa81\Nito.Disposables.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\System.Collections.Immutable.1.3.1\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="System.Collections.Immutable, Version=1.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\System.Collections.Immutable.1.4.0\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
     </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Net" />
@@ -83,10 +73,6 @@
     <None Include="..\App.config">
       <Link>App.config</Link>
     </None>
-    <None Include="..\NLog.config">
-      <Link>NLog.config</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Include="..\run.bat">
       <Link>run.bat</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -98,24 +84,10 @@
       <Project>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</Project>
       <Name>Exceptionless.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\Exceptionless.Insulation\Exceptionless.Insulation.csproj">
+      <Project>{75d9d89f-09f2-43a6-8b53-e1518e9fa822}</Project>
+      <Name>Exceptionless.Insulation</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>@echo off
-
-robocopy "$(SolutionDir)src\Exceptionless.Insulation\bin\$(ConfigurationName)" "$(TargetDir)bin\." /S /NFL /NDL /NJH /NJS /nc /ns /np
-IF %25ERRORLEVEL%25 GEQ 8 exit 1
-
-robocopy "$(TargetDir)." "$(TargetDir)bin\." /MOV /XD bin /XF EventPostsJob.* run.bat NLog.config /S /is /NFL /NDL /NJH /NJS /nc /ns /np
-IF %25ERRORLEVEL%25 GEQ 8 exit 1
-
-exit 0</PostBuildEvent>
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Foundatio.Caching;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(5)]
@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 return;
             }
 
-            _logger.Warn().Project(context.Event.ProjectId).Message("Discarding event due to duplicate reference id: {0}", context.Event.ReferenceId).Write();
+            _logger.LogWarning("Discarding event due to duplicate reference id: {ReferenceId}", context.Event.ReferenceId);
             context.IsCancelled = true;
         }
 

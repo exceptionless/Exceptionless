@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
-using Foundatio.Logging;
 using Foundatio.Metrics;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
                     await _metricsClient.TimeAsync(() => plugin.StartupAsync(), metricName).AnyContext();
                 } catch (Exception ex) {
-                    _logger.Error(ex, "Error calling startup in plugin \"{0}\": {1}", plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling startup in plugin \"{PluginName}\": {Message}", plugin.Name, ex.Message);
                 }
             }
         }
@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
-                    _logger.Error(ex, "Error calling event processing in plugin \"{0}\": {1}", plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling event processing in plugin \"{PluginName}\": {Message}", plugin.Name, ex.Message);
                 }
             }
         }
@@ -63,7 +63,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
-                    _logger.Error(ex, "Error calling event processed in plugin \"{0}\": {1}", plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling event processed in plugin \"{PluginName}\": {Message}", plugin.Name, ex.Message);
                 }
             }
         }

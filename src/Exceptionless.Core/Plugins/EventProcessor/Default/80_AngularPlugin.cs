@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(80)]

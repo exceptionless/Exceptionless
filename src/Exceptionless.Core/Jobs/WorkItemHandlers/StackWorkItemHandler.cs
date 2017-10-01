@@ -7,8 +7,8 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Messaging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class StackWorkItemHandler : WorkItemHandlerBase {
@@ -29,17 +29,19 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override async Task HandleItemAsync(WorkItemContext context) {
             var wi = context.GetData<StackWorkItem>();
-            if (wi.Delete) {
-                await _eventRepository.RemoveAllByStackIdAsync(wi.OrganizationId, wi.ProjectId, wi.StackId).AnyContext();
-                await _stackRepository.RemoveAsync(wi.StackId).AnyContext();
-                return;
+            using (Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(wi.ProjectId))) {
+                if (wi.Delete) {
+                    await _eventRepository.RemoveAllByStackIdAsync(wi.OrganizationId, wi.ProjectId, wi.StackId).AnyContext();
+                    await _stackRepository.RemoveAsync(wi.StackId).AnyContext();
+                    return;
+                }
+
+                if (wi.UpdateIsFixed)
+                    await _eventRepository.UpdateFixedByStackAsync(wi.OrganizationId, wi.ProjectId, wi.StackId, wi.IsFixed).AnyContext();
+
+                if (wi.UpdateIsHidden)
+                    await _eventRepository.UpdateHiddenByStackAsync(wi.OrganizationId, wi.ProjectId, wi.StackId, wi.IsHidden).AnyContext();
             }
-
-            if (wi.UpdateIsFixed)
-                await _eventRepository.UpdateFixedByStackAsync(wi.OrganizationId, wi.ProjectId, wi.StackId, wi.IsFixed).AnyContext();
-
-            if (wi.UpdateIsHidden)
-                await _eventRepository.UpdateHiddenByStackAsync(wi.OrganizationId, wi.ProjectId, wi.StackId, wi.IsHidden).AnyContext();
         }
     }
 }

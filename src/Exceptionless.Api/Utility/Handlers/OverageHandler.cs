@@ -8,8 +8,8 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Services;
-using Foundatio.Logging;
 using Foundatio.Metrics;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Utility {
     public sealed class OverageHandler : DelegatingHandler {
@@ -50,7 +50,10 @@ namespace Exceptionless.Api.Utility {
                 long size = request.Content.Headers.ContentLength.GetValueOrDefault();
                 await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
                 if (size > Settings.Current.MaximumEventPostSize) {
-                    _logger.Warn().Message("Event submission discarded for being too large: {0} bytes", size).Value(size).Tag(request.Content.Headers.ContentEncoding?.ToArray()).Project(request.GetDefaultProjectId()).Write();
+                    if (_logger.IsEnabled(LogLevel.Warning)) {
+                        using (_logger.BeginScope(new ExceptionlessState().Value(size).Tag(request.Content.Headers.ContentEncoding?.ToArray())))
+                            _logger.LogWarning("Event submission discarded for being too large: {@value} bytes.", size);
+                    }
                     await _metricsClient.CounterAsync(MetricNames.PostsDiscarded);
                     tooBig = true;
                 }

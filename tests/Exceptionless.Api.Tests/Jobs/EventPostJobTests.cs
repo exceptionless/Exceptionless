@@ -137,8 +137,9 @@ namespace Exceptionless.Api.Tests.Jobs {
                 ApiVersion = 2,
                 CharSet = "utf-8",
                 ContentEncoding = "gzip",
-                Data = await ev.GetBytes(_jsonSerializerSettings).CompressAsync(),
+                Data = ev.GetBytes(_jsonSerializerSettings).Compress(),
                 MediaType = "application/json",
+                OrganizationId = ev.OrganizationId,
                 ProjectId = ev.ProjectId,
                 UserAgent = "exceptionless-test",
             };

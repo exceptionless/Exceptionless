@@ -24,12 +24,12 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Api.Controllers {
@@ -229,14 +229,8 @@ namespace Exceptionless.Api.Controllers {
             try {
                 events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.Range.UtcStart, ti.Range.UtcEnd, o => o.PageNumber(page).PageLimit(limit));
             } catch (ApplicationException ex) {
-                _logger.Error().Exception(ex)
-                    .Message("An error has occurred. Please check your search filter.")
-                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Sort = sort, Time = ti, Page = page, Limit = limit })
-                    .Tag("Search")
-                    .Identity(CurrentUser.EmailAddress)
-                    .Property("User", CurrentUser)
-                    .SetActionContext(ActionContext)
-                    .Write();
+                using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                    _logger.LogError(ex, "An error has occurred. Please check your search filter.");
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
@@ -664,15 +658,10 @@ namespace Exceptionless.Api.Controllers {
                 if (close)
                     await _cache.SetAsync($"Project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
             } catch (Exception ex) {
-                _logger.Error().Exception(ex)
-                    .Message("Error enqueuing session heartbeat.")
-                    .Project(projectId)
-                    .Identity(CurrentUser?.EmailAddress)
-                    .Property("User", CurrentUser)
-                    .Property("Id", id)
-                    .Property("Close", close)
-                    .SetActionContext(ActionContext)
-                    .WriteIf(projectId != Settings.Current.InternalProjectId);
+                if (projectId != Settings.Current.InternalProjectId) {
+                    using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).Property("Id", id).Property("Close", close).SetActionContext(ActionContext)))
+                        _logger.LogError(ex, "Error enqueuing session heartbeat.");
+                }
 
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
@@ -804,17 +793,15 @@ namespace Exceptionless.Api.Controllers {
                     Data = ev.GetBytes(_jsonSerializerSettings),
                     IpAddress = Request.GetClientIpAddress(),
                     MediaType = Request.Content.Headers.ContentType?.MediaType,
-                    ProjectId = projectId,
+                    OrganizationId = project.OrganizationId,
+                    ProjectId = project.Id,
                     UserAgent = userAgent
                 }, _storage);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex)
-                    .Message("Error enqueuing event post.")
-                    .Project(projectId)
-                    .Identity(CurrentUser?.EmailAddress)
-                    .Property("User", CurrentUser)
-                    .SetActionContext(ActionContext)
-                    .WriteIf(projectId != Settings.Current.InternalProjectId);
+                if (projectId != Settings.Current.InternalProjectId) {
+                    using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                        _logger.LogError(ex, "Error enqueuing event post.");
+                }
 
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
@@ -902,7 +889,7 @@ namespace Exceptionless.Api.Controllers {
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
             bool isCompressed = contentEncoding == "gzip" || contentEncoding == "deflate";
             if (!isCompressed && data.Length > 1000) {
-                data = await data.CompressAsync();
+                data = data.Compress();
                 contentEncoding = "gzip";
             }
 
@@ -914,17 +901,15 @@ namespace Exceptionless.Api.Controllers {
                     Data = data,
                     IpAddress = Request.GetClientIpAddress(),
                     MediaType = Request.Content.Headers.ContentType?.MediaType,
-                    ProjectId = projectId,
+                    OrganizationId = project.OrganizationId,
+                    ProjectId = project.Id,
                     UserAgent = userAgent,
                 }, _storage);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex)
-                    .Message("Error enqueuing event post.")
-                    .Project(projectId)
-                    .Identity(CurrentUser?.EmailAddress)
-                    .Property("User", CurrentUser)
-                    .SetActionContext(ActionContext)
-                    .WriteIf(projectId != Settings.Current.InternalProjectId);
+                if (projectId != Settings.Current.InternalProjectId) {
+                    using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                        _logger.LogError(ex, "Error enqueuing event post.");
+                }
 
                 return StatusCode(HttpStatusCode.InternalServerError);
             }

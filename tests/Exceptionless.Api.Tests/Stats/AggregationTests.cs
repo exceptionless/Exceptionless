@@ -14,7 +14,7 @@ using Foundatio.Utility;
 using Nest;
 using Xunit;
 using Xunit.Abstractions;
-using LogLevel = Foundatio.Logging.LogLevel;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Api.Tests.Stats {
     public sealed class AggregationTests : ElasticTestBase {

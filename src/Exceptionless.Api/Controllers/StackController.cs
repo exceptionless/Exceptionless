@@ -22,11 +22,11 @@ using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using McSherry.SemanticVersioning;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Api.Controllers {
@@ -530,14 +530,8 @@ namespace Exceptionless.Api.Controllers {
 
                 return OkWithResourceLinks(stacks, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
             } catch (ApplicationException ex) {
-                _logger.Error().Exception(ex)
-                    .Message("An error has occurred. Please check your search filter.")
-                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Sort = sort, Time = ti, Page = page, Limit = limit })
-                    .Tag("Search")
-                    .Identity(CurrentUser.EmailAddress)
-                    .Property("User", CurrentUser)
-                    .SetActionContext(ActionContext)
-                    .Write();
+                using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                    _logger.LogError(ex, "An error has occurred. Please check your search filter.");
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
@@ -976,14 +970,8 @@ namespace Exceptionless.Api.Controllers {
 
                 return OkWithResourceLinks(stacks.Take(limit).ToList(), stacks.Count > limit, page);
             } catch (ApplicationException ex) {
-                _logger.Error().Exception(ex)
-                    .Message("An error has occurred. Please check your search filter.")
-                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit })
-                    .Tag("Search")
-                    .Identity(CurrentUser.EmailAddress)
-                    .Property("User", CurrentUser)
-                    .SetActionContext(ActionContext)
-                    .Write();
+                using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                    _logger.LogError(ex, "An error has occurred. Please check your search filter.");
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }

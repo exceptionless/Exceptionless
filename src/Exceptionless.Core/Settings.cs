@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Extensions;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core {
     public class Settings : SettingsBase<Settings> {
@@ -252,10 +252,7 @@ namespace Exceptionless.Core {
             }
         }
 
-        public const string JobBootstrappedServiceProvider = "Exceptionless.Insulation.Jobs.JobBootstrappedServiceProvider,Exceptionless.Insulation";
-
-
-        public LoggerFactory GetLoggerFactory() {
+        public ILoggerFactory GetLoggerFactory() {
             return new LoggerFactory();
         }
     }

@@ -11,9 +11,9 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Helpers;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories.Base;
-using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {

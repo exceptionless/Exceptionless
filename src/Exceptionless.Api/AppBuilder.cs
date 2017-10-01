@@ -22,11 +22,11 @@ using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Serializer;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Utility;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
+using Microsoft.Extensions.Logging;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Newtonsoft.Json;
@@ -40,14 +40,13 @@ using Swashbuckle.Application;
 namespace Exceptionless.Api {
     public static class AppBuilder {
         public static void Build(IAppBuilder app, Container container = null) {
-            var loggerFactory = Settings.Current.GetLoggerFactory();
-            var logger = loggerFactory.CreateLogger(nameof(AppBuilder));
+            var loggerFactory = GetLoggerFactory();
 
             var context = new OwinContext(app.Properties);
             var shutdownCancellationToken = context.Get<CancellationToken>("host.OnAppDisposing");
 
             if (container == null)
-                container = CreateContainer(loggerFactory, logger, shutdownCancellationToken);
+                container = CreateContainer(loggerFactory, shutdownCancellationToken);
 
             var config = new HttpConfiguration();
             config.Formatters.Remove(config.Formatters.XmlFormatter);
@@ -94,14 +93,15 @@ namespace Exceptionless.Api {
             SetupSwagger(config);
 
             container.RunStartupActionsAsync().GetAwaiter().GetResult();
-            RunJobs(container, loggerFactory, logger, shutdownCancellationToken);
 
-            logger.Info("Starting api...");
+            var logger = loggerFactory.CreateLogger(nameof(AppBuilder));
+            RunJobs(container, loggerFactory, logger, shutdownCancellationToken);
+            logger.LogInformation("Starting api...");
         }
 
-        private static void RunJobs(Container container, LoggerFactory loggerFactory, ILogger logger, CancellationToken token) {
+        private static void RunJobs(Container container, ILoggerFactory loggerFactory, ILogger logger, CancellationToken token) {
             if (!Settings.Current.RunJobsInProcess) {
-                logger.Info("Jobs running out of process.");
+                logger.LogInformation("Jobs running out of process.");
                 return;
             }
 
@@ -117,7 +117,7 @@ namespace Exceptionless.Api {
             new JobRunner(container.GetInstance<WorkItemJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2).RunInBackground(token);
             new JobRunner(container.GetInstance<MaintainIndexesJob>(), loggerFactory, initialDelay: SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)) - SystemClock.UtcNow, interval: TimeSpan.FromHours(1)).RunInBackground(token);
 
-            logger.Warn("Jobs running in process.");
+            logger.LogWarning("Jobs running in process.");
         }
 
         private static void EnableCors(HttpConfiguration config, IAppBuilder app) {
@@ -196,28 +196,20 @@ namespace Exceptionless.Api {
             await dataHelper.CreateDataAsync();
         }
 
-        public static Container CreateContainer(ILoggerFactory loggerFactory, ILogger logger, CancellationToken shutdownCancellationToken) {
+        private static ILoggerFactory GetLoggerFactory() {
+            var loggerFactory = Settings.Current.GetLoggerFactory();
+            Insulation.Bootstrapper.ConfigureLoggerFactory(loggerFactory);
+            return loggerFactory;
+        }
+
+        public static Container CreateContainer(ILoggerFactory loggerFactory, CancellationToken shutdownCancellationToken) {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
 
             Core.Bootstrapper.RegisterServices(container, loggerFactory, shutdownCancellationToken);
             Bootstrapper.RegisterServices(container, loggerFactory, shutdownCancellationToken);
-
-            Assembly insulationAssembly = null;
-            try {
-                insulationAssembly = Assembly.Load("Exceptionless.Insulation");
-            } catch (Exception ex) {
-                logger.Error(ex, "Unable to load the insulation assembly.");
-            }
-
-            if (insulationAssembly != null) {
-                var bootstrapperType = insulationAssembly.GetType("Exceptionless.Insulation.Bootstrapper");
-                if (bootstrapperType == null)
-                    return container;
-
-                bootstrapperType.GetMethod("RegisterServices", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[] { container, Settings.Current.RunJobsInProcess, loggerFactory, shutdownCancellationToken });
-            }
+            Insulation.Bootstrapper.RegisterServices(container, Settings.Current.RunJobsInProcess, loggerFactory, shutdownCancellationToken);
 
             return container;
         }

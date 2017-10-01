@@ -3,7 +3,7 @@ using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Data;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
@@ -120,7 +120,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             if (json.Length > 200000) {
-                _logger.Error().Project(projectId).Property("EventId", id).Message("__ExceptionInfo is Too Big: {0}", json.Length).Write();
+                _logger.LogError("__ExceptionInfo on {id} is Too Big: {Length}", id, json.Length);
                 return;
             }
 

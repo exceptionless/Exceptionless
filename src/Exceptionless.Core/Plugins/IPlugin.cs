@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins {
     public interface IPlugin {

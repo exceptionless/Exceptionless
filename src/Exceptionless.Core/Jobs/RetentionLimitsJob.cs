@@ -9,9 +9,9 @@ using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Deletes old events that are outside of a plans retention period.", InitialDelay = "15m", Interval = "1h")]
@@ -34,10 +34,12 @@ namespace Exceptionless.Core.Jobs {
             var results = await _organizationRepository.GetByRetentionDaysEnabledAsync(o => o.SnapshotPaging().PageLimit(100)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in results.Documents) {
-                    await EnforceEventCountLimitsAsync(organization).AnyContext();
+                    using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id))) {
+                        await EnforceEventCountLimitsAsync(organization).AnyContext();
 
-                    // Sleep so we are not hammering the backend.
-                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
+                        // Sleep so we are not hammering the backend.
+                        await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
+                    }
                 }
 
                 if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
@@ -51,7 +53,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task EnforceEventCountLimitsAsync(Organization organization) {
-            _logger.Info("Enforcing event count limits for organization '{0}' with Id: '{1}'", organization.Name, organization.Id);
+            _logger.LogInformation("Enforcing event count limits for organization '{OrganizationName}' with Id: '{organization}'", organization.Name, organization.Id);
 
             try {
                 int retentionDays = organization.RetentionDays;
@@ -66,7 +68,7 @@ namespace Exceptionless.Core.Jobs {
                 var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
                 await _eventRepository.RemoveAllByDateAsync(organization.Id, cutoff).AnyContext();
             } catch (Exception ex) {
-                _logger.Error(ex, "Error enforcing limits: org={0} id={1} message=\"{2}\"", organization.Name, organization.Id, ex.Message);
+                _logger.LogError(ex, "Error enforcing limits: org={OrganizationName} id={organization} message=\"{Message}\"", organization.Name, organization.Id, ex.Message);
             }
         }
     }

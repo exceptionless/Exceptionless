@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Helpers;
-using Foundatio.Logging;
 using Foundatio.Metrics;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     /// <summary>
@@ -95,14 +95,14 @@ namespace Exceptionless.Core.Pipeline {
             var actions = new List<IPipelineAction<TContext>>();
             foreach (var type in GetActionTypes()) {
                 if (Settings.Current.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {
-                    _logger.Warn(() => $"Pipeline Action {type.Name} is currently disabled and won't be executed.");
+                    _logger.LogWarning("Pipeline Action {Name} is currently disabled and won't be executed.", type.Name);
                     continue;
                 }
 
                 try {
                     actions.Add((IPipelineAction<TContext>)_dependencyResolver.GetService(type));
                 } catch (Exception ex) {
-                    _logger.Error(ex, "Unable to instantiate Pipeline Action of type \"{0}\": {1}", type.FullName, ex.Message);
+                    _logger.LogError(ex, "Unable to instantiate Pipeline Action of type \"{TypeFullName}\": {Message}", type.FullName, ex.Message);
                     throw;
                 }
             }

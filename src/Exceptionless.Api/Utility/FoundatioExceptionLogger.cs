@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Web.Http.ExceptionHandling;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Utility {
     public class FoundatioExceptionLogger : ExceptionLogger {
@@ -11,12 +11,8 @@ namespace Exceptionless.Api.Utility {
         }
 
         public override void Log(ExceptionLoggerContext context) {
-            _logger.Error()
-                .Exception(context.Exception)
-                .SetActionContext(context.ExceptionContext.ActionContext)
-                .MarkUnhandled("ExceptionLogger")
-                .Message("Unhandled: {0}", context.Exception.Message)
-                .Write();
+            using (_logger.BeginScope(new ExceptionlessState().MarkUnhandled("ExceptionLogger").SetActionContext(context.ExceptionContext.ActionContext)))
+                _logger.LogError(context.Exception, "Unhandled: {Message}", context.Exception.Message);
         }
     }
 }

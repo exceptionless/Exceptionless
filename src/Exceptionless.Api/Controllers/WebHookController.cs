@@ -14,8 +14,8 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
-using Foundatio.Logging;
 using Foundatio.Repositories;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
@@ -140,7 +140,7 @@ namespace Exceptionless.App.Controllers.API {
                 if (results.Documents.Any(h => h.OrganizationId != organizationId))
                     throw new ArgumentException("All OrganizationIds must be the same.");
 
-                _logger.Info(() => $"Removing {results.Documents.Count} zapier urls matching: {targetUrl}");
+                _logger.LogInformation("Removing {Count} zapier urls matching: {Url}", results.Documents.Count, targetUrl);
                 await _repository.RemoveAsync(results.Documents);
             }
 

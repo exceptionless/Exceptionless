@@ -1,21 +1,22 @@
 ﻿using System;
 using Exceptionless.Core;
-using Exceptionless.NLog;
 using Foundatio.Jobs;
-using Foundatio.Logging;
-using Foundatio.ServiceProviders;
+using Microsoft.Extensions.Logging;
 using SimpleInjector;
 using SimpleInjector.Lifestyles;
 using LogLevel = Exceptionless.Logging.LogLevel;
 
 namespace Exceptionless.Insulation.Jobs {
-    public class JobBootstrappedServiceProvider : BootstrappedServiceProviderBase {
-        protected override IServiceProvider BootstrapInternal(ILoggerFactory loggerFactory) {
+    public class JobServiceProvider {
+        public static IServiceProvider CreateServiceProvider(ILoggerFactory loggerFactory) {
+            loggerFactory.AddConsole();
+            loggerFactory.AddExceptionless();
+
             var shutdownCancellationToken = JobRunner.GetShutdownCancellationToken();
 
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
-                client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
+                //client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
                 client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
                 client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
                 client.Configuration.SetVersion(Settings.Current.Version);

@@ -4,9 +4,10 @@ using Exceptionless.Api.Tests.Authentication;
 using Exceptionless.Api.Tests.Mail;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
-using Foundatio.Logging;
 using Foundatio.Logging.Xunit;
 using Foundatio.Utility;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SimpleInjector;
 using Xunit.Abstractions;
 
@@ -42,7 +43,7 @@ namespace Exceptionless.Api.Tests {
         }
 
         public Container GetDefaultContainer() {
-            var container = AppBuilder.CreateContainer(Log, _logger, _disposedCancellationTokenSource.Token);
+            var container = AppBuilder.CreateContainer(Log, _disposedCancellationTokenSource.Token);
             RegisterServices(container);
             return container;
         }

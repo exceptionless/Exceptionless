@@ -11,9 +11,9 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using FluentValidation;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Microsoft.Extensions.Logging;
 
 #pragma warning disable 1998
 
@@ -196,7 +196,8 @@ namespace Exceptionless.Api.Controllers {
             try {
                 workIds = await DeleteModelsAsync(list) ?? new List<string>();
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
+                using (_logger.BeginScope(new ExceptionlessState().Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                    _logger.LogError(ex, ex.Message);
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 

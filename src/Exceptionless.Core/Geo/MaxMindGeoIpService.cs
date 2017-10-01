@@ -4,12 +4,12 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
 using MaxMind.GeoIP2.Responses;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Geo {
     public class MaxMindGeoIpService : IGeoIpService, IDisposable {
@@ -59,10 +59,10 @@ namespace Exceptionless.Core.Geo {
                 return result;
             } catch (Exception ex) {
                 if (ex is GeoIP2Exception) {
-                    _logger.Trace().Message(ex.Message).Write();
+                    _logger.LogTrace(ex, ex.Message);
                     await _localCache.SetAsync<GeoResult>(ip, null).AnyContext();
                 } else {
-                    _logger.Error(ex, "Unable to resolve geo location for ip: " + ip);
+                    _logger.LogError(ex, "Unable to resolve geo location for ip: {IP}", ip);
                 }
 
                 return null;
@@ -85,16 +85,16 @@ namespace Exceptionless.Core.Geo {
             _databaseLastChecked = SystemClock.UtcNow;
 
             if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH).AnyContext()) {
-                _logger.Warn("No GeoIP database was found.");
+                _logger.LogWarning("No GeoIP database was found.");
                 return null;
             }
 
-            _logger.Info("Loading GeoIP database.");
+            _logger.LogInformation("Loading GeoIP database.");
             try {
                 using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
                     _database = new DatabaseReader(stream);
             } catch (Exception ex) {
-                _logger.Error(ex, "Unable to open GeoIP database.");
+                _logger.LogError(ex, "Unable to open GeoIP database.");
             }
 
             return _database;

@@ -9,16 +9,16 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
+using Foundatio.AsyncEx;
 using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 using Nest;
-using Nito.AsyncEx;
 using Xunit;
 using Xunit.Abstractions;
-using LogLevel = Foundatio.Logging.LogLevel;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Api.Tests.Services {
     public sealed class UsageServiceTests : ElasticTestBase {
@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Tests.Services {
 
             var countdown = new AsyncCountdownEvent(2);
             await messageBus.SubscribeAsync<PlanOverage>(po => {
-                _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly})");
+                _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
                 countdown.Signal();
             });
 
@@ -110,7 +110,7 @@ namespace Exceptionless.Api.Tests.Services {
 
             var countdown = new AsyncCountdownEvent(2);
             await messageBus.SubscribeAsync<PlanOverage>(po => {
-                _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly})");
+                _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
                 countdown.Signal();
             });
             
@@ -158,7 +158,7 @@ namespace Exceptionless.Api.Tests.Services {
 
             var countdown = new AsyncCountdownEvent(2);
             await messageBus.SubscribeAsync<PlanOverage>(po => {
-                _logger.Info($"Plan Overage for {po.OrganizationId} (Hourly: {po.IsHourly}");
+                _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
                 countdown.Signal();
             });
 
@@ -223,7 +223,7 @@ namespace Exceptionless.Api.Tests.Services {
                 await _usageService.IncrementUsageAsync(org.Id, project.Id, false);
 
             sw.Stop();
-            _logger.Info($"Time: {sw.ElapsedMilliseconds}ms, Avg: ({sw.ElapsedTicks / iterations}ticks | {sw.ElapsedMilliseconds / iterations}ms)");
+            _logger.LogInformation("Time: {ElapsedMilliseconds}ms, Avg: ({AverageElapsedTicks}ticks | {AverageElapsedMilliseconds}ms)", sw.ElapsedMilliseconds, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
         }
 
         private string GetHourlyBlockedCacheKey(string organizationId, string projectId = null) {

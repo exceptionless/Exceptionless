@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Validation;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
-using Foundatio.Logging;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -35,7 +35,7 @@ namespace Exceptionless.Api.Tests.Validation {
             }
 
             sw.Stop();
-            _logger.Info($"Time: {sw.ElapsedMilliseconds}ms, Avg: ({sw.ElapsedTicks / iterations}ticks | {sw.ElapsedMilliseconds / iterations}ms)");
+            _logger.LogInformation("Time: {ElapsedMilliseconds}ms, Avg: ({AverageElapsedTicks}ticks | {AverageElapsedMilliseconds}ms)", sw.ElapsedMilliseconds, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
         }
 
         [Theory]

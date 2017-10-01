@@ -1,22 +1,20 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Extensions {
     public static class ByteArrayExtensions {
-        public static async Task<byte[]> DecompressAsync(this byte[] data, string encoding) {
+        public static byte[] Decompress(this byte[] data, string encoding) {
             byte[] decompressedData;
             using (var outputStream = new MemoryStream()) {
                 using (var inputStream = new MemoryStream(data)) {
                     if (encoding == "gzip")
                         using (var zip = new GZipStream(inputStream, CompressionMode.Decompress)) {
-                            await zip.CopyToAsync(outputStream).AnyContext();
+                            zip.CopyTo(outputStream);
                         }
                     else if (encoding == "deflate")
                         using (var zip = new DeflateStream(inputStream, CompressionMode.Decompress)) {
-                            await zip.CopyToAsync(outputStream).AnyContext();
+                            zip.CopyTo(outputStream);
                         }
                     else
                         throw new InvalidOperationException($"Unsupported encoding type \"{encoding}\".");
@@ -28,14 +26,14 @@ namespace Exceptionless.Core.Extensions {
             return decompressedData;
         }
 
-        public static async Task<byte[]> CompressAsync(this byte[] data, CancellationToken cancellationToken = default(CancellationToken)) {
+        public static byte[] Compress(this byte[] data) {
             byte[] compressesData;
             using (var outputStream = new MemoryStream()) {
                 using (var zip = new GZipStream(outputStream, CompressionMode.Compress, true)) {
-                    await zip.WriteAsync(data, 0, data.Length, cancellationToken).AnyContext();
+                    zip.Write(data, 0, data.Length);
                 }
 
-                await outputStream.FlushAsync(cancellationToken).AnyContext();
+                outputStream.Flush();
                 compressesData = outputStream.ToArray();
             }
 

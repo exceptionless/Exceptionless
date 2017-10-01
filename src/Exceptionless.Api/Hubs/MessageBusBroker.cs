@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Hubs {
     public sealed class MessageBusBroker {
@@ -29,25 +29,25 @@ namespace Exceptionless.Api.Hubs {
         }
 
         public async Task StartAsync(CancellationToken token) {
-            _logger.Debug("Subscribing to message bus notifications");
+            _logger.LogDebug("Subscribing to message bus notifications");
             await _subscriber.SubscribeAsync<ExtendedEntityChanged>(OnEntityChangedAsync, token);
             await _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync, token);
             await _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync, token);
             await _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync, token);
             await _subscriber.SubscribeAsync<ReleaseNotification>(OnReleaseNotificationAsync, token);
             await _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync, token);
-            _logger.Debug("Subscribed to message bus notifications");
+            _logger.LogDebug("Subscribed to message bus notifications");
         }
 
         private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default(CancellationToken)) {
             if (String.IsNullOrEmpty(userMembershipChanged?.OrganizationId)) {
-                _logger.Trace(() => $"Ignoring User Membership Changed message: No organization id.");
+                _logger.LogTrace("Ignoring User Membership Changed message: No organization id.");
                 return;
             }
 
             // manage user organization group membership
             var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userMembershipChanged.UserId);
-            _logger.Trace(() => $"Attempting to update user {userMembershipChanged.UserId} active groups for {userConnectionIds.Count} connections");
+            _logger.LogTrace("Attempting to update user {user} active groups for {UserConnectionCount} connections", userMembershipChanged.UserId, userConnectionIds.Count);
             foreach (string connectionId in userConnectionIds) {
                 if (userMembershipChanged.ChangeType == ChangeType.Added)
                     await _connectionMapping.GroupAddAsync(userMembershipChanged.OrganizationId, connectionId) ;
@@ -65,12 +65,12 @@ namespace Exceptionless.Api.Hubs {
             if (UserTypeName == entityChanged.Type) {
                 // It's pointless to send a user added message to the new user.
                 if (entityChanged.ChangeType == ChangeType.Added) {
-                    _logger.Trace(() => $"Ignoring {UserTypeName} message for added user: {entityChanged.Id}.");
+                    _logger.LogTrace("Ignoring {UserTypeName} message for added user: {user}.", UserTypeName, entityChanged.Id);
                     return;
                 }
 
                 var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(entityChanged.Id);
-                _logger.Trace(() => $"Sending {UserTypeName} message to user: {entityChanged.Id} (to {userConnectionIds.Count} connections)");
+                _logger.LogTrace("Sending {UserTypeName} message to user: {user} (to {UserConnectionCount} connections)", UserTypeName, entityChanged.Id, userConnectionIds.Count);
                 foreach (string connectionId in userConnectionIds)
                     await Context.Connection.TypedSendAsync(connectionId, entityChanged);
 
@@ -82,7 +82,7 @@ namespace Exceptionless.Api.Hubs {
                 string userId = entityChanged.Data.GetValueOrDefault<string>("UserId");
                 if (userId != null) {
                     var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
-                    _logger.Trace(() => $"Sending {TokenTypeName} message for added user: {userId} (to {userConnectionIds.Count} connections)");
+                    _logger.LogTrace("Sending {TokenTypeName} message for added user: {user} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
                     foreach (string connectionId in userConnectionIds)
                         await Context.Connection.TypedSendAsync(connectionId, entityChanged);
 
@@ -90,7 +90,7 @@ namespace Exceptionless.Api.Hubs {
                 }
 
                 if (entityChanged.Data.GetValueOrDefault<bool>("IsAuthenticationToken")) {
-                    _logger.Trace(() => $"Ignoring {TokenTypeName} Authentication Token message: {entityChanged.Id}.");
+                    _logger.LogTrace("Ignoring {TokenTypeName} Authentication Token message: {user}.", TokenTypeName, entityChanged.Id);
                     return;
                 }
 
@@ -98,14 +98,14 @@ namespace Exceptionless.Api.Hubs {
             }
 
             if (!String.IsNullOrEmpty(entityChanged.OrganizationId)) {
-                _logger.Trace(() => $"Sending {entityChanged.Type} message to organization: {entityChanged.OrganizationId})");
+                _logger.LogTrace("Sending {MessageType} message to organization: {organization}", entityChanged.Type, entityChanged.OrganizationId);
                 await GroupSendAsync(entityChanged.OrganizationId, entityChanged);
             }
         }
 
         private Task OnPlanOverageAsync(PlanOverage planOverage, CancellationToken cancellationToken = default(CancellationToken)) {
             if (planOverage != null) {
-                _logger.Trace(() => $"Sending plan overage message to organization: {planOverage.OrganizationId})");
+                _logger.LogTrace("Sending plan overage message to organization: {organization}", planOverage.OrganizationId);
                 return GroupSendAsync(planOverage.OrganizationId, planOverage);
             }
 
@@ -114,7 +114,7 @@ namespace Exceptionless.Api.Hubs {
 
         private Task OnPlanChangedAsync(PlanChanged planChanged, CancellationToken cancellationToken = default(CancellationToken)) {
             if (planChanged != null) {
-                _logger.Trace(() => $"Sending plan changed message to organization: {planChanged.OrganizationId})");
+                _logger.LogTrace("Sending plan changed message to organization: {organization}", planChanged.OrganizationId);
                 return GroupSendAsync(planChanged.OrganizationId, planChanged);
             }
 
@@ -122,19 +122,19 @@ namespace Exceptionless.Api.Hubs {
         }
 
         private Task OnReleaseNotificationAsync(ReleaseNotification notification, CancellationToken cancellationToken = default(CancellationToken)) {
-            _logger.Trace(() => $"Sending release notification message: {notification.Message})");
+            _logger.LogTrace("Sending release notification message: {Message}", notification.Message);
             return Context.Connection.TypedBroadcastAsync(notification);
         }
 
         private Task OnSystemNotificationAsync(SystemNotification notification, CancellationToken cancellationToken = default(CancellationToken)) {
-            _logger.Trace(() => $"Sending system notification message: {notification.Message})");
+            _logger.LogTrace("Sending system notification message: {Message}", notification.Message);
             return Context.Connection.TypedBroadcastAsync(notification);
         }
 
         private async Task GroupSendAsync(string group, object value) {
             var connectionIds = await _connectionMapping.GetGroupConnectionsAsync(group);
             if (connectionIds.Count == 0) {
-                _logger.Trace(() => $"Ignoring group message to {group}: No Connections");
+                _logger.LogTrace("Ignoring group message to {Group}: No Connections", group);
                 return;
             }
 

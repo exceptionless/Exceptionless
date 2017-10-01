@@ -3,12 +3,13 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Queries;
-using Foundatio.Logging;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Microsoft.Extensions.Logging;
 using Nest;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public class EventIndexType : DailyIndexType<PersistentEvent>, IHavePipelinedIndexType {
@@ -81,14 +82,15 @@ ctx.error.code = codes;";
             var response = await Configuration.Client.PutPipelineAsync(Pipeline, d => d.Processors(p => p
                 .Script(s => new ScriptProcessor { Inline = FLATTEN_ERRORS_SCRIPT.Replace("\r\n", String.Empty).Replace("    ", " ") })));
 
-            var logger = Configuration.LoggerFactory.CreateLogger(typeof(PersistentEvent));
-            logger.Trace(() => response.GetRequest());
+            var logger = Configuration.LoggerFactory.CreateLogger<EventIndexType>();
+            if (logger.IsEnabled(LogLevel.Trace))
+                logger.LogTrace(response.GetRequest());
+
             if (response.IsValid)
                 return;
 
-            string message = $"Error creating the pipeline {Pipeline}: {response.GetErrorMessage()}";
-            logger.Error().Exception(response.OriginalException).Message(message).Property("request", response.GetRequest()).Write();
-            throw new ApplicationException(message, response.OriginalException);
+            logger.LogError(response.OriginalException, "Error creating the pipeline {Pipeline}: {Message}", Pipeline, response.GetErrorMessage());
+            throw new ApplicationException($"Error creating the pipeline {Pipeline}: {response.GetErrorMessage()}", response.OriginalException);
         }
 
         protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {

@@ -18,11 +18,11 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using McSherry.SemanticVersioning;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -788,7 +788,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 totalEvents += events.Count;
             }
 
-            _logger.Info($"Took {sw.ElapsedMilliseconds}ms to process {totalEvents} with an average post size of {Math.Round(totalEvents * 1.0/totalBatches, 4)}");
+            _logger.LogInformation("Took {ElapsedMilliseconds}ms to process {EventCount} with an average post size of {AveragePostSize}", sw.ElapsedMilliseconds, totalEvents, Math.Round(totalEvents * 1.0 / totalBatches, 4));
         }
 
         [Fact(Skip = "Used to create performance data from the queue directory")]
@@ -808,7 +808,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 var eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(file.Path);
                 byte[] data = eventPostInfo.Data;
                 if (!String.IsNullOrEmpty(eventPostInfo.ContentEncoding))
-                    data = await data.DecompressAsync(eventPostInfo.ContentEncoding);
+                    data = data.Decompress(eventPostInfo.ContentEncoding);
 
                 var encoding = Encoding.UTF8;
                 if (!String.IsNullOrEmpty(eventPostInfo.CharSet))

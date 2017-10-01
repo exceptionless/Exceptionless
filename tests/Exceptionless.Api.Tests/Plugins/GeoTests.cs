@@ -10,8 +10,8 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.EventProcessor.Default;
 using Exceptionless.Core.Utility;
 using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Storage;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
