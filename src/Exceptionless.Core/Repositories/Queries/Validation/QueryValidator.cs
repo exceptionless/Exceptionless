@@ -5,6 +5,7 @@ using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.Core.Queries.Validation {
     public interface IQueryValidator {
@@ -23,7 +24,7 @@ namespace Exceptionless.Core.Queries.Validation {
 
         public QueryValidator(IQueryParser parser, ILoggerFactory loggerFactory) {
             _parser = parser;
-            _logger = loggerFactory.CreateLogger(GetType());
+            _logger = loggerFactory?.CreateLogger(GetType()) ?? NullLogger.Instance;
         }
 
         public async Task<QueryProcessResult> ValidateQueryAsync(string query) {
