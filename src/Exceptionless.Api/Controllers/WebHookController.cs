@@ -63,8 +63,8 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet]
         [Route("{id:objectid}", Name = "GetWebHookById")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(WebHook))]
-        public override Task<IActionResult> GetByIdAsync(string id) {
-            return base.GetByIdAsync(id);
+        public Task<IActionResult> GetByIdAsync(string id) {
+            return GetByIdImplAsync(id);
         }
 
         /// <summary>
@@ -75,8 +75,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="400">An error occurred while creating the web hook.</response>
         /// <response code="409">The web hook already exists.</response>
         [HttpPost]
-        public override Task<IActionResult> PostAsync(NewWebHook webhook) {
-            return base.PostAsync(webhook);
+        public Task<IActionResult> PostAsync(NewWebHook webhook) {
+            return PostImplAsync(webhook);
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpDelete]
         [Route("{ids:objectids}")]
         public Task<IActionResult> DeleteAsync(string ids) {
-            return base.DeleteAsync(ids.FromDelimitedString());
+            return DeleteImplAsync(ids.FromDelimitedString());
         }
 
         #endregion
@@ -116,7 +116,7 @@ namespace Exceptionless.App.Controllers.API {
             else
                 webHook.OrganizationId = Request.GetDefaultOrganizationId();
 
-            return PostAsync(webHook);
+            return PostImplAsync(webHook);
         }
 
         /// <summary>

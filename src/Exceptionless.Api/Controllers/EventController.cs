@@ -96,7 +96,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
-            return await base.GetCountAsync(sf, ti, filter, aggregations);
+            return await GetCountImplAsync(sf, ti, filter, aggregations);
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
             var sf = new ExceptionlessSystemFilter(organization);
-            return await base.GetCountAsync(sf, ti, filter, aggregations);
+            return await GetCountImplAsync(sf, ti, filter, aggregations);
         }
 
         /// <summary>
@@ -150,7 +150,7 @@ namespace Exceptionless.Api.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
             var sf = new ExceptionlessSystemFilter(project, organization);
-            return await base.GetCountAsync(sf, ti, filter, aggregations);
+            return await GetCountImplAsync(sf, ti, filter, aggregations);
         }
 
         /// <summary>
@@ -940,7 +940,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{ids:objectids}")]
         public Task<IActionResult> DeleteAsync(string ids) {
-            return base.DeleteAsync(ids.FromDelimitedString());
+            return DeleteImplAsync(ids.FromDelimitedString());
         }
 
         private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true) {

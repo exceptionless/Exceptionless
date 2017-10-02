@@ -60,8 +60,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id:objectid}", Name = "GetUserById")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewUser))]
-        public override Task<IActionResult> GetByIdAsync(string id) {
-            return base.GetByIdAsync(id);
+        public Task<IActionResult> GetByIdAsync(string id) {
+            return GetByIdImplAsync(id);
         }
 
         /// <summary>
@@ -111,8 +111,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
-        public override Task<IActionResult> PatchAsync(string id, Delta<UpdateUser> changes) {
-            return base.PatchAsync(id, changes);
+        public Task<IActionResult> PatchAsync(string id, Delta<UpdateUser> changes) {
+            return PatchImplAsync(id, changes);
         }
 
         /// <summary>

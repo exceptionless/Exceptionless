@@ -96,7 +96,7 @@ namespace Exceptionless.Api {
             });
             services.AddSwaggerGen(c => {
                 c.SwaggerDoc("v2", new Info {
-                    Title = "Exceptionless",
+                    Title = "Exceptionless API",
                     Version = "v2"
                 });
                 c.AddSecurityDefinition("access_token", new ApiKeyScheme {
