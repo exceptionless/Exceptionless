@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Queries.Validation;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Api.Controllers {
     [ApiExplorerSettings(IgnoreApi = true)]
-    [RoutePrefix(API_PREFIX)]
+    [Route(API_PREFIX)]
     public class UtilityController : ExceptionlessApiController {
         private readonly PersistentEventQueryValidator _validator;
 
@@ -25,14 +27,14 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("search/validate")]
         [Authorize(Roles = AuthorizationRoles.User)]
-        [ResponseType(typeof(QueryValidator.QueryProcessResult))]
-        public async Task<IHttpActionResult> ValidateAsync(string query) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(QueryValidator.QueryProcessResult))]
+        public async Task<IActionResult> ValidateAsync(string query) {
             return Ok(await _validator.ValidateQueryAsync(query));
         }
 
         [Route("notfound")]
         [HttpGet, HttpPut, HttpPatch, HttpPost, HttpHead]
-        public IHttpActionResult Http404(string link) {
+        public IActionResult Http404(string link) {
             return Ok(new {
                 Message = "Not found",
                 Url = "http://docs.exceptionless.io"
@@ -41,7 +43,7 @@ namespace Exceptionless.Api.Controllers {
 
         [Route("boom")]
         [HttpGet, HttpPut, HttpPatch, HttpPost, HttpHead]
-        public IHttpActionResult Boom() {
+        public IActionResult Boom() {
             throw new ApplicationException("Boom!");
         }
     }

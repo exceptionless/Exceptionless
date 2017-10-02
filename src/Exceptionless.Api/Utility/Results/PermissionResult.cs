@@ -1,12 +1,10 @@
 ﻿using System;
 using Microsoft.AspNetCore.Http;
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Api.Utility.Results {
     public class PermissionResult {
         public bool Allowed { get; set; }
-
         public string Id { get; set; }
-
         public string Message { get; set; }
 
         public int StatusCode { get; set; }
@@ -47,6 +45,16 @@ namespace Exceptionless.Api.Controllers {
                 Id = id,
                 Message = message,
                 StatusCode = StatusCodes.Status426UpgradeRequired
+            };
+        }
+
+
+        public static PermissionResult DenyWithPNotImplemented(string message, string id = null) {
+            return new PermissionResult {
+                Allowed = false,
+                Id = id,
+                Message = message,
+                StatusCode = StatusCodes.Status501NotImplemented
             };
         }
     }

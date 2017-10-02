@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Net;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Description;
-using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Messaging.Models;
@@ -14,9 +10,13 @@ using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX)]
+    [Route(API_PREFIX)]
     [ApiExplorerSettings(IgnoreApi = true)]
     public class StatusController : ExceptionlessApiController {
         private readonly ICacheClient _cacheClient;
@@ -27,7 +27,6 @@ namespace Exceptionless.Api.Controllers {
         private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHooksQueue;
         private readonly IQueue<EventUserDescription> _userDescriptionQueue;
-        private readonly IMetricsClient _metricsClient;
 
         private static HealthCheckResult _lastHealthCheckResult;
         private static DateTime _nextHealthCheckTimeUtc = DateTime.MinValue;
@@ -41,7 +40,6 @@ namespace Exceptionless.Api.Controllers {
             _notificationQueue = notificationQueue;
             _webHooksQueue = webHooksQueue;
             _userDescriptionQueue = userDescriptionQueue;
-            _metricsClient = metricsClient;
         }
 
         /// <summary>
@@ -50,14 +48,14 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="503">Contains a message detailing the service outage message.</response>
         [HttpGet]
         [Route("status")]
-        public async Task<IHttpActionResult> IndexAsync() {
+        public async Task<IActionResult> IndexAsync() {
             if (_lastHealthCheckResult == null || _nextHealthCheckTimeUtc < SystemClock.UtcNow) {
                 _nextHealthCheckTimeUtc = SystemClock.UtcNow.AddSeconds(5);
                 _lastHealthCheckResult = await _healthChecker.CheckAllAsync();
             }
 
             if (!_lastHealthCheckResult.IsHealthy)
-                return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, _lastHealthCheckResult.Message, _lastHealthCheckResult.Message);
+                return StatusCodeWithMessage(StatusCodes.Status503ServiceUnavailable, _lastHealthCheckResult.Message, _lastHealthCheckResult.Message);
 
             if (Settings.Current.HasAppScope) {
                 return Ok(new {
@@ -80,7 +78,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("queue-stats")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public async Task<IHttpActionResult> QueueStatsAsync() {
+        public async Task<IActionResult> QueueStatsAsync() {
             var eventQueueStats = await _eventQueue.GetQueueStatsAsync();
             var mailQueueStats = await _mailQueue.GetQueueStatsAsync();
             var userDescriptionQueueStats = await _userDescriptionQueue.GetQueueStatsAsync();
@@ -119,7 +117,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("notifications/release")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public async Task<IHttpActionResult> PostReleaseNotificationAsync([NakedBody]string message = null, bool critical = false) {
+        public async Task<IActionResult> PostReleaseNotificationAsync([FromBody]string message = null, bool critical = false) {
             var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message };
             await _messagePublisher.PublishAsync(notification);
             return Ok(notification);
@@ -130,8 +128,8 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         [HttpGet]
         [Route("notifications/system")]
-        [ResponseType(typeof(SystemNotification))]
-        public async Task<IHttpActionResult> GetSystemNotificationAsync() {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(SystemNotification))]
+        public async Task<IActionResult> GetSystemNotificationAsync() {
             var notification = await _cacheClient.GetAsync<SystemNotification>("system-notification");
             if (notification == null)
                 return Ok();
@@ -142,7 +140,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("notifications/system")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public async Task<IHttpActionResult> PostSystemNotificationAsync([NakedBody]string message) {
+        public async Task<IActionResult> PostSystemNotificationAsync([FromBody]string message) {
             if (String.IsNullOrWhiteSpace(message))
                 return NotFound();
 
@@ -156,7 +154,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("notifications/system")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public async Task<IHttpActionResult> RemoveSystemNotificationAsync() {
+        public async Task<IActionResult> RemoveSystemNotificationAsync() {
             await _cacheClient.RemoveAsync("system-notification");
             await _messagePublisher.PublishAsync(new SystemNotification { Date = SystemClock.UtcNow });
             return Ok();

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Threading;
 using Exceptionless.Api.Tests.Authentication;
 using Exceptionless.Api.Tests.Mail;
@@ -6,9 +7,7 @@ using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
 using Foundatio.Logging.Xunit;
 using Foundatio.Utility;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SimpleInjector;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Api.Tests {

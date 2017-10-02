@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Description;
 using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
@@ -16,10 +14,14 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.App.Controllers.API {
-    [RoutePrefix(API_PREFIX + "/tokens")]
+    [Route(API_PREFIX + "/tokens")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, UpdateToken> {
         private readonly IProjectRepository _projectRepository;
@@ -39,8 +41,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="404">The organization could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
-        [ResponseType(typeof(List<ViewToken>))]
-        public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewToken>))]
+        public async Task<IActionResult> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
@@ -60,8 +62,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
-        [ResponseType(typeof(List<ViewToken>))]
-        public async Task<IHttpActionResult> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewToken>))]
+        public async Task<IActionResult> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -80,8 +82,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens/default")]
-        [ResponseType(typeof(ViewToken))]
-        public async Task<IHttpActionResult> GetDefaultTokenAsync(string projectId) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewToken))]
+        public async Task<IActionResult> GetDefaultTokenAsync(string projectId) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -100,8 +102,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="404">The token could not be found.</response>
         [HttpGet]
         [Route("{id:token}", Name = "GetTokenById")]
-        [ResponseType(typeof(ViewToken))]
-        public override Task<IHttpActionResult> GetByIdAsync(string id) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewToken))]
+        public override Task<IActionResult> GetByIdAsync(string id) {
             return base.GetByIdAsync(id);
         }
 
@@ -114,10 +116,9 @@ namespace Exceptionless.App.Controllers.API {
         /// <param name="token">The token.</param>
         /// <response code="400">An error occurred while creating the token.</response>
         /// <response code="409">The token already exists.</response>
-        [Route]
         [HttpPost]
-        [ResponseType(typeof(ViewToken))]
-        public override Task<IHttpActionResult> PostAsync(NewToken token) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewToken))]
+        public override Task<IActionResult> PostAsync(NewToken token) {
             return base.PostAsync(token);
         }
 
@@ -135,8 +136,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="409">The token already exists.</response>
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
         [HttpPost]
-        [ResponseType(typeof(ViewToken))]
-        public async Task<IHttpActionResult> PostByProjectAsync(string projectId, NewToken token) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewToken))]
+        public async Task<IActionResult> PostByProjectAsync(string projectId, NewToken token) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -162,8 +163,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="409">The token already exists.</response>
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
         [HttpPost]
-        [ResponseType(typeof(ViewToken))]
-        public async Task<IHttpActionResult> PostByOrganizationAsync(string organizationId, NewToken token) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewToken))]
+        public async Task<IActionResult> PostByOrganizationAsync(string organizationId, NewToken token) {
             if (token == null)
                 token = new NewToken();
 
@@ -184,7 +185,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPatch]
         [HttpPut]
         [Route("{id:tokens}")]
-        public override Task<IHttpActionResult> PatchAsync(string id, Delta<UpdateToken> changes) {
+        public override Task<IActionResult> PatchAsync(string id, Delta<UpdateToken> changes) {
             return base.PatchAsync(id, changes);
         }
 
@@ -198,7 +199,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="500">An error occurred while deleting one or more tokens.</response>
         [HttpDelete]
         [Route("{ids:tokens}")]
-        public Task<IHttpActionResult> DeleteAsync(string ids) {
+        public Task<IActionResult> DeleteAsync(string ids) {
             return base.DeleteAsync(ids.FromDelimitedString());
         }
 

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
-using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility;
@@ -13,6 +11,8 @@ using Exceptionless.Core.Queries.Validation;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 #pragma warning disable 1998
@@ -21,7 +21,7 @@ namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : ISearchableRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
         public RepositoryApiController(TRepository repository, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {}
 
-        public virtual async Task<IHttpActionResult> PostAsync(TNewModel value) {
+        public virtual async Task<IActionResult> PostAsync(TNewModel value) {
             if (value == null)
                 return BadRequest();
 
@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Controllers {
             return Created(new Uri(GetEntityLink(model.Id)), await MapAsync<TViewModel>(model, true));
         }
 
-        protected async Task<IHttpActionResult> UpdateModelAsync(string id, Func<TModel, Task<TModel>> modelUpdateFunc) {
+        protected async Task<IActionResult> UpdateModelAsync(string id, Func<TModel, Task<TModel>> modelUpdateFunc) {
             var model = await GetModelAsync(id);
             if (model == null)
                 return NotFound();
@@ -63,7 +63,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok(await MapAsync<TViewModel>(model, true));
         }
 
-        protected async Task<IHttpActionResult> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc) {
+        protected async Task<IActionResult> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc) {
             var models = await GetModelsAsync(ids, false);
             if (models == null || models.Count == 0)
                 return NotFound();
@@ -129,7 +129,7 @@ namespace Exceptionless.Api.Controllers {
             return Task.FromResult(value);
         }
 
-        public virtual async Task<IHttpActionResult> PatchAsync(string id, Delta<TUpdateModel> changes) {
+        public virtual async Task<IActionResult> PatchAsync(string id, Delta<TUpdateModel> changes) {
             var original = await GetModelAsync(id, false);
             if (original == null)
                 return NotFound();
@@ -171,7 +171,7 @@ namespace Exceptionless.Api.Controllers {
             return Task.FromResult(value);
         }
 
-        public virtual async Task<IHttpActionResult> DeleteAsync(string[] ids) {
+        public virtual async Task<IActionResult> DeleteAsync(string[] ids) {
             var items = await GetModelsAsync(ids, false);
             if (items.Count == 0)
                 return NotFound();
@@ -196,9 +196,9 @@ namespace Exceptionless.Api.Controllers {
             try {
                 workIds = await DeleteModelsAsync(list) ?? new List<string>();
             } catch (Exception ex) {
-                using (_logger.BeginScope(new ExceptionlessState().Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                using (_logger.BeginScope(new ExceptionlessState().Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                     _logger.LogError(ex, ex.Message);
-                return StatusCode(HttpStatusCode.InternalServerError);
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
             if (results.Failure.Count == 0)

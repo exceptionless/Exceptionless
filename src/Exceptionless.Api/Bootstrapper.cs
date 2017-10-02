@@ -1,41 +1,64 @@
 ﻿using System;
-using System.Threading;
+using System.Threading.Tasks;
 using AutoMapper;
 using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Models;
+using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
+using Exceptionless.Api.Utility.Handlers;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
-using Foundatio.Caching;
-using Foundatio.Metrics;
-using Microsoft.AspNet.SignalR;
-using Microsoft.AspNet.SignalR.Infrastructure;
+using Foundatio.Jobs;
+using Foundatio.Messaging;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SimpleInjector;
-using SimpleInjector.Advanced;
 using Stripe;
-using PrincipalUserIdProvider = Exceptionless.Api.Hubs.PrincipalUserIdProvider;
 
 namespace Exceptionless.Api {
     public class Bootstrapper {
-        public static void RegisterServices(Container container, ILoggerFactory loggerFactory, CancellationToken shutdownCancellationToken) {
-            container.Register<IUserIdProvider, PrincipalUserIdProvider>();
-            container.Register<MessageBusConnection>();
-            container.AddSingleton<IConnectionMapping, ConnectionMapping>();
+        public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory, bool includeInsulation = false) {
+            var config = container.BuildServiceProvider().GetService<IConfiguration>();
+            Settings.Initialize(config);
+
+            container.AddSingleton<WebSocketConnectionManager>();
             container.AddSingleton<MessageBusBroker>();
+            container.AddSingleton<MessageBusBrokerMiddleware>();
+            container.AddSingleton<IConnectionMapping, ConnectionMapping>();
 
-            var resolver = new SimpleInjectorSignalRDependencyResolver(container);
-            container.AddSingleton<IDependencyResolver>(resolver);
-            container.AddSingleton<IConnectionManager>(() => new ConnectionManager(resolver));
+            container.AddSingleton<ApiKeyMiddleware>();
+            container.AddSingleton<OverageMiddleware>();
+            container.AddSingleton<ThrottlingMiddleware>();
 
-            container.AddSingleton<OverageHandler>();
-            container.AddSingleton<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), container.GetInstance<IMetricsClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+            container.AddTransient<Profile, ApiMappings>();
 
-            container.AppendToCollection(typeof(Profile), typeof(ApiMappings));
+            Core.Bootstrapper.RegisterServices(container, loggerFactory);
+            if (includeInsulation)
+                Insulation.Bootstrapper.RegisterServices(container, Settings.Current.RunJobsInProcess, loggerFactory);
+
+            if (Settings.Current.RunJobsInProcess)
+                container.AddSingleton<IHostedService, JobsHostedService>();
+
+            var logger = loggerFactory.CreateLogger<Startup>();
+            container.AddStartupAction<MessageBusBroker>();
+            container.AddStartupAction((sp, ct) => {
+                var subscriber = sp.GetRequiredService<IMessageSubscriber>();
+                return subscriber.SubscribeAsync<WorkItemStatus>(workItemStatus => {
+                    if (logger.IsEnabled(LogLevel.Trace))
+                        logger.LogTrace("WorkItem id:{WorkItemId} message:{Message} progress:{Progress}", workItemStatus.WorkItemId ?? "<NULL>", workItemStatus.Message ?? "<NULL>", workItemStatus.Progress);
+
+                    return Task.CompletedTask;
+                }, ct);
+            });
+
+            container.AddSingleton<EnqueueOrganizationNotificationOnPlanOverage>();
+            container.AddStartupAction<EnqueueOrganizationNotificationOnPlanOverage>();
         }
 
         public class ApiMappings : Profile {

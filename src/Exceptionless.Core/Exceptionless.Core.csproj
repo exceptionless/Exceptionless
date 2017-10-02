@@ -16,6 +16,7 @@
     <PackageReference Include="McSherry.SemanticVersioning" version="1.2.1" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" version="2.0.0" />
