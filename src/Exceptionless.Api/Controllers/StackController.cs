@@ -465,7 +465,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{ids:objectids}")]
         public Task<IActionResult> DeleteAsync(string ids) {
-            return base.DeleteAsync(ids.FromDelimitedString());
+            return DeleteImplAsync(ids.FromDelimitedString());
         }
 
         protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Stack> stacks) {

@@ -131,8 +131,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="409">The organization already exists.</response>
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewOrganization))]
-        public override Task<IActionResult> PostAsync(NewOrganization organization) {
-            return base.PostAsync(organization);
+        public Task<IActionResult> PostAsync(NewOrganization organization) {
+            return PostImplAsync(organization);
         }
 
         /// <summary>
@@ -145,8 +145,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
-        public override Task<IActionResult> PatchAsync(string id, Delta<NewOrganization> changes) {
-            return base.PatchAsync(id, changes);
+        public Task<IActionResult> PatchAsync(string id, Delta<NewOrganization> changes) {
+            return PatchImplAsync(id, changes);
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{ids:objectids}")]
         public Task<IActionResult> DeleteAsync(string ids) {
-            return base.DeleteAsync(ids.FromDelimitedString());
+            return DeleteImplAsync(ids.FromDelimitedString());
         }
 
         #endregion

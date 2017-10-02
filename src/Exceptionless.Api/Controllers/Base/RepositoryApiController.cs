@@ -21,7 +21,7 @@ namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : ISearchableRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
         public RepositoryApiController(TRepository repository, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {}
 
-        public virtual async Task<IActionResult> PostAsync(TNewModel value) {
+        protected async Task<IActionResult> PostImplAsync(TNewModel value) {
             if (value == null)
                 return BadRequest();
 
@@ -129,7 +129,7 @@ namespace Exceptionless.Api.Controllers {
             return Task.FromResult(value);
         }
 
-        public virtual async Task<IActionResult> PatchAsync(string id, Delta<TUpdateModel> changes) {
+        protected async Task<IActionResult> PatchImplAsync(string id, Delta<TUpdateModel> changes) {
             var original = await GetModelAsync(id, false);
             if (original == null)
                 return NotFound();
@@ -171,7 +171,7 @@ namespace Exceptionless.Api.Controllers {
             return Task.FromResult(value);
         }
 
-        public virtual async Task<IActionResult> DeleteAsync(string[] ids) {
+        protected async Task<IActionResult> DeleteImplAsync(string[] ids) {
             var items = await GetModelsAsync(ids, false);
             if (items.Count == 0)
                 return NotFound();

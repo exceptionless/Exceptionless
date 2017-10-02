@@ -122,8 +122,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="409">The project already exists.</response>
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewProject))]
-        public override Task<IActionResult> PostAsync(NewProject project) {
-            return base.PostAsync(project);
+        public Task<IActionResult> PostAsync(NewProject project) {
+            return PostImplAsync(project);
         }
 
         /// <summary>
@@ -136,8 +136,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
-        public override Task<IActionResult> PatchAsync(string id, Delta<UpdateProject> changes) {
-            return base.PatchAsync(id, changes);
+        public Task<IActionResult> PatchAsync(string id, Delta<UpdateProject> changes) {
+            return PatchImplAsync(id, changes);
         }
 
         /// <summary>
@@ -151,7 +151,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{ids:objectids}")]
         public Task<IActionResult> DeleteAsync(string ids) {
-            return base.DeleteAsync(ids.FromDelimitedString());
+            return DeleteImplAsync(ids.FromDelimitedString());
         }
 
         #endregion

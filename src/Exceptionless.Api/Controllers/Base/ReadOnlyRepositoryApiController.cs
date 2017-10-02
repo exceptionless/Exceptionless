@@ -32,7 +32,7 @@ namespace Exceptionless.Api.Controllers {
             _logger = loggerFactory.CreateLogger(GetType());
         }
 
-        public virtual async Task<IActionResult> GetByIdAsync(string id) {
+        protected async Task<IActionResult> GetByIdImplAsync(string id) {
             var model = await GetModelAsync(id);
             if (model == null)
                 return NotFound();
@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Controllers {
             return await OkModelAsync(model);
         }
 
-        protected virtual async Task<IActionResult> GetCountAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string aggregations = null) {
+        protected async Task<IActionResult> GetCountImplAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string aggregations = null) {
             var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);

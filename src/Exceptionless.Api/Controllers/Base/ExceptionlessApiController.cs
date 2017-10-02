@@ -86,23 +86,23 @@ namespace Exceptionless.Api.Controllers {
 
         protected User CurrentUser => Request.GetUser();
 
-        public bool CanAccessOrganization(string organizationId) {
+        protected bool CanAccessOrganization(string organizationId) {
             return Request.CanAccessOrganization(organizationId);
         }
 
-        public bool IsInOrganization(string organizationId) {
+        protected bool IsInOrganization(string organizationId) {
             if (String.IsNullOrEmpty(organizationId))
                 return false;
 
             return Request.IsInOrganization(organizationId);
         }
 
-        public ICollection<string> GetAssociatedOrganizationIds() {
+        protected ICollection<string> GetAssociatedOrganizationIds() {
             return Request.GetAssociatedOrganizationIds();
         }
 
         private static readonly IReadOnlyCollection<Organization> EmptyOrganizations = new List<Organization>(0).AsReadOnly();
-        public async Task<IReadOnlyCollection<Organization>> GetSelectedOrganizationsAsync(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, string filter = null) {
+        protected async Task<IReadOnlyCollection<Organization>> GetSelectedOrganizationsAsync(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, string filter = null) {
             var associatedOrganizationIds = GetAssociatedOrganizationIds();
             if (associatedOrganizationIds.Count == 0)
                 return EmptyOrganizations;
@@ -174,15 +174,15 @@ namespace Exceptionless.Api.Controllers {
             return StatusCode(StatusCodes.Status400BadRequest, results);
         }
 
-        public ObjectResult PlanLimitReached(string message) {
+        protected ObjectResult PlanLimitReached(string message) {
             return StatusCode(StatusCodes.Status426UpgradeRequired, new MessageContent(message));
         }
 
-        public ObjectResult NotImplemented(string message) {
+        protected ObjectResult NotImplemented(string message) {
             return StatusCode(StatusCodes.Status501NotImplemented, new MessageContent(message));
         }
 
-        public OkWithHeadersContentResult<T> OkWithLinks<T>(T content, params string[] links) {
+        protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, params string[] links) {
             var headers = new HeaderDictionary();
             foreach (string link in links.Where(l => l != null))
                 headers.Add("Link", link);
@@ -190,7 +190,7 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithHeadersContentResult<T>(content, headers);
         }
 
-        public OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, params Tuple<string, string>[] headers) {
+        protected OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, params Tuple<string, string>[] headers) {
             var headersToAdd = new HeaderDictionary();
             foreach (var kvp in headers.Where(l => l != null))
                 headersToAdd.Add(kvp.Item1, kvp.Item2);
@@ -198,7 +198,7 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithHeadersContentResult<T>(content, headersToAdd);
         }
 
-        public OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, params Tuple<string, string[]>[] headers) {
+        protected OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, params Tuple<string, string[]>[] headers) {
             var headersToAdd = new HeaderDictionary();
             foreach (var kvp in headers.Where(l => l != null))
                 headersToAdd.Add(kvp.Item1, kvp.Item2);
@@ -206,7 +206,7 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithHeadersContentResult<T>(content, headersToAdd);
         }
 
-        public OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers) {
+        protected OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers) {
             var headersToAdd = new HeaderDictionary();
             foreach (var kvp in headers)
                 headersToAdd.Add(kvp.Key, kvp.Value.ToArray());
@@ -214,7 +214,7 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithHeadersContentResult<T>(content, headersToAdd);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
+        protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
             var headersToAdd = new HeaderDictionary();
             foreach (var kvp in headers)
                 headersToAdd.Add(kvp.Key, kvp.Value.ToArray());
@@ -222,7 +222,7 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithResourceLinks<TEntity>(content, hasMore, null, pagePropertyAccessor, headersToAdd, isDescending);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
+        protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
             return new OkWithResourceLinks<TEntity>(content, hasMore, page, total);
         }
 

@@ -92,7 +92,7 @@ namespace Exceptionless.App.Controllers.API {
             if (token != null)
                 return await OkModelAsync(token);
 
-            return await PostAsync(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId});
+            return await PostImplAsync(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId});
         }
 
         /// <summary>
@@ -103,8 +103,8 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet]
         [Route("{id:token}", Name = "GetTokenById")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewToken))]
-        public override Task<IActionResult> GetByIdAsync(string id) {
-            return base.GetByIdAsync(id);
+        public Task<IActionResult> GetByIdAsync(string id) {
+            return GetByIdImplAsync(id);
         }
 
         /// <summary>
@@ -118,8 +118,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="409">The token already exists.</response>
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewToken))]
-        public override Task<IActionResult> PostAsync(NewToken token) {
-            return base.PostAsync(token);
+        public Task<IActionResult> PostAsync(NewToken token) {
+            return PostImplAsync(token);
         }
 
         /// <summary>
@@ -147,7 +147,7 @@ namespace Exceptionless.App.Controllers.API {
 
             token.OrganizationId = project.OrganizationId;
             token.ProjectId = projectId;
-            return await PostAsync(token);
+            return await PostImplAsync(token);
         }
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace Exceptionless.App.Controllers.API {
                 return BadRequest();
 
             token.OrganizationId = organizationId;
-            return await PostAsync(token);
+            return await PostImplAsync(token);
         }
 
         /// <summary>
@@ -185,8 +185,8 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPatch]
         [HttpPut]
         [Route("{id:tokens}")]
-        public override Task<IActionResult> PatchAsync(string id, Delta<UpdateToken> changes) {
-            return base.PatchAsync(id, changes);
+        public Task<IActionResult> PatchAsync(string id, Delta<UpdateToken> changes) {
+            return PatchImplAsync(id, changes);
         }
 
         /// <summary>
@@ -200,7 +200,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpDelete]
         [Route("{ids:tokens}")]
         public Task<IActionResult> DeleteAsync(string ids) {
-            return base.DeleteAsync(ids.FromDelimitedString());
+            return DeleteImplAsync(ids.FromDelimitedString());
         }
 
         #endregion
