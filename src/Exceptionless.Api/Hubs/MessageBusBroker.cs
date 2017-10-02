@@ -3,39 +3,38 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
-using Microsoft.AspNet.SignalR;
-using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Hubs {
-    public sealed class MessageBusBroker {
+    public sealed class MessageBusBroker : IStartupAction {
         private static readonly string TokenTypeName = typeof(Token).Name;
         private static readonly string UserTypeName = typeof(User).Name;
-        private readonly IConnectionManager _connectionManager;
+        private readonly WebSocketConnectionManager _connectionManager;
         private readonly IConnectionMapping _connectionMapping;
         private readonly IMessageSubscriber _subscriber;
         private readonly ILogger _logger;
 
-        public MessageBusBroker(IConnectionManager connectionManager, IConnectionMapping connectionMapping, IMessageSubscriber subscriber, ILogger<MessageBusBroker> logger) {
+        public MessageBusBroker(WebSocketConnectionManager connectionManager, IConnectionMapping connectionMapping, IMessageSubscriber subscriber, ILogger<MessageBusBroker> logger) {
             _connectionManager = connectionManager;
             _connectionMapping = connectionMapping;
             _subscriber = subscriber;
             _logger = logger;
         }
 
-        public async Task StartAsync(CancellationToken token) {
+        public async Task RunAsync(CancellationToken shutdownToken = default(CancellationToken)) {
             _logger.LogDebug("Subscribing to message bus notifications");
-            await _subscriber.SubscribeAsync<ExtendedEntityChanged>(OnEntityChangedAsync, token);
-            await _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync, token);
-            await _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync, token);
-            await _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync, token);
-            await _subscriber.SubscribeAsync<ReleaseNotification>(OnReleaseNotificationAsync, token);
-            await _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync, token);
+            await _subscriber.SubscribeAsync<ExtendedEntityChanged>(OnEntityChangedAsync, shutdownToken);
+            await _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync, shutdownToken);
+            await _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync, shutdownToken);
+            await _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync, shutdownToken);
+            await _subscriber.SubscribeAsync<ReleaseNotification>(OnReleaseNotificationAsync, shutdownToken);
+            await _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync, shutdownToken);
             _logger.LogDebug("Subscribed to message bus notifications");
         }
 
@@ -72,7 +71,7 @@ namespace Exceptionless.Api.Hubs {
                 var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(entityChanged.Id);
                 _logger.LogTrace("Sending {UserTypeName} message to user: {user} (to {UserConnectionCount} connections)", UserTypeName, entityChanged.Id, userConnectionIds.Count);
                 foreach (string connectionId in userConnectionIds)
-                    await Context.Connection.TypedSendAsync(connectionId, entityChanged);
+                    await TypedSendAsync(connectionId, entityChanged);
 
                 return;
             }
@@ -84,7 +83,7 @@ namespace Exceptionless.Api.Hubs {
                     var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
                     _logger.LogTrace("Sending {TokenTypeName} message for added user: {user} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
                     foreach (string connectionId in userConnectionIds)
-                        await Context.Connection.TypedSendAsync(connectionId, entityChanged);
+                        await TypedSendAsync(connectionId, entityChanged);
 
                     return;
                 }
@@ -123,12 +122,12 @@ namespace Exceptionless.Api.Hubs {
 
         private Task OnReleaseNotificationAsync(ReleaseNotification notification, CancellationToken cancellationToken = default(CancellationToken)) {
             _logger.LogTrace("Sending release notification message: {Message}", notification.Message);
-            return Context.Connection.TypedBroadcastAsync(notification);
+            return TypedBroadcastAsync(notification);
         }
 
         private Task OnSystemNotificationAsync(SystemNotification notification, CancellationToken cancellationToken = default(CancellationToken)) {
             _logger.LogTrace("Sending system notification message: {Message}", notification.Message);
-            return Context.Connection.TypedBroadcastAsync(notification);
+            return TypedBroadcastAsync(notification);
         }
 
         private async Task GroupSendAsync(string group, object value) {
@@ -138,23 +137,19 @@ namespace Exceptionless.Api.Hubs {
                 return;
             }
 
-            await Context.Connection.TypedSendAsync(connectionIds.ToList(), value);
+            await TypedSendAsync(connectionIds.ToList(), value);
         }
 
-        private IPersistentConnectionContext Context => _connectionManager.GetConnectionContext<MessageBusConnection>();
-    }
-
-    public static class MessageBrokerExtensions {
-        public static Task TypedSendAsync(this IConnection connection, string connectionId, object value) {
-            return connection.Send(connectionId, new TypedMessage { Type = GetMessageType(value), Message = value });
+        public Task TypedSendAsync(string connectionId, object value) {
+            return _connectionManager.SendMessageAsync(connectionId, new TypedMessage { Type = GetMessageType(value), Message = value });
         }
 
-        public static Task TypedSendAsync(this IConnection connection, IList<string> connectionIds, object value) {
-            return connection.Send(connectionIds, new TypedMessage { Type = GetMessageType(value), Message = value });
+        public Task TypedSendAsync(IList<string> connectionIds, object value) {
+            return _connectionManager.SendMessageAsync(connectionIds, new TypedMessage { Type = GetMessageType(value), Message = value });
         }
 
-        public static Task TypedBroadcastAsync(this IConnection connection, object value) {
-            return connection.Broadcast(new TypedMessage { Type = GetMessageType(value), Message = value });
+        public Task TypedBroadcastAsync(object value) {
+            return _connectionManager.SendMessageToAllAsync(new TypedMessage { Type = GetMessageType(value), Message = value });
         }
 
         private static string GetMessageType(object value) {

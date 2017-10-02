@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Description;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -16,9 +14,11 @@ using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Storage;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "/admin")]
+    [Route(API_PREFIX + "/admin")]
     [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
     [ApiExplorerSettings(IgnoreApi = true)]
     public class AdminController : ExceptionlessApiController {
@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("change-plan")]
-        public async Task<IHttpActionResult> ChangePlanAsync(string organizationId, string planId) {
+        public async Task<IActionResult> ChangePlanAsync(string organizationId, string planId) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -66,7 +66,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("set-bonus")]
-        public async Task<IHttpActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null) {
+        public async Task<IActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -83,7 +83,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("requeue")]
-        public async Task<IHttpActionResult> RequeueAsync(string path = null, bool archive = false) {
+        public async Task<IActionResult> RequeueAsync(string path = null, bool archive = false) {
             if (String.IsNullOrEmpty(path))
                 path = @"q\*";
 
@@ -98,7 +98,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("maintenance/{name:minlength(1)}")]
-        public async Task<IHttpActionResult> RunJobAsync(string name) {
+        public async Task<IActionResult> RunJobAsync(string name) {
             switch (name.ToLowerInvariant()) {
                 case "indexes":
                     if (!Settings.Current.DisableIndexConfiguration)

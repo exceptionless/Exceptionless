@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Description;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
@@ -29,11 +26,16 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 using Foundatio.Utility;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "/events")]
+    [Route(API_PREFIX + "/events")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, PersistentEvent, UpdateEvent> {
         private readonly IOrganizationRepository _organizationRepository;
@@ -86,8 +88,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route("count")]
-        [ResponseType(typeof(List<CountResult>))]
-        public async Task<IHttpActionResult> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<CountResult>))]
+        public async Task<IActionResult> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(CountResult.Empty);
@@ -108,8 +110,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/count")]
-        [ResponseType(typeof(List<CountResult>))]
-        public async Task<IHttpActionResult> GetCountByOrganizationAsync(string organizationId, string filter = null, string aggregations = null, string time = null, string offset = null) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<CountResult>))]
+        public async Task<IActionResult> GetCountByOrganizationAsync(string organizationId, string filter = null, string aggregations = null, string time = null, string offset = null) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
                 return NotFound();
@@ -133,8 +135,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/count")]
-        [ResponseType(typeof(List<CountResult>))]
-        public async Task<IHttpActionResult> GetCountByProjectAsync(string projectId, string filter = null, string aggregations = null, string time = null, string offset = null) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<CountResult>))]
+        public async Task<IActionResult> GetCountByProjectAsync(string projectId, string filter = null, string aggregations = null, string time = null, string offset = null) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -162,8 +164,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="426">Unable to view event occurrence due to plan limits.</response>
         [HttpGet]
         [Route("{id:objectid}", Name = "GetPersistentEventById")]
-        [ResponseType(typeof(PersistentEvent))]
-        public async Task<IHttpActionResult> GetByIdAsync(string id, string filter = null, string time = null, string offset = null) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(PersistentEvent))]
+        public async Task<IActionResult> GetByIdAsync(string id, string filter = null, string time = null, string offset = null) {
             var model = await GetModelAsync(id, false);
             if (model == null)
                 return NotFound();
@@ -200,9 +202,8 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
-        [Route]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
@@ -212,7 +213,7 @@ namespace Exceptionless.Api.Controllers {
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
 
-        private async Task<IHttpActionResult> GetInternalAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10, bool usesPremiumFeatures = false) {
+        private async Task<IActionResult> GetInternalAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10, bool usesPremiumFeatures = false) {
             page = GetPage(page);
             limit = GetLimit(limit);
             int skip = GetSkip(page, limit);
@@ -229,7 +230,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.Range.UtcStart, ti.Range.UtcEnd, o => o.PageNumber(page).PageLimit(limit));
             } catch (ApplicationException ex) {
-                using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                     _logger.LogError(ex, "An error has occurred. Please check your search filter.");
 
                 return BadRequest("An error has occurred. Please check your search filter.");
@@ -265,8 +266,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
                 return NotFound();
@@ -295,8 +296,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> GetByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -329,8 +330,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetByStackAsync(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> GetByStackAsync(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var stack = await GetStackAsync(stackId);
             if (stack == null)
                 return NotFound();
@@ -358,8 +359,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route("by-ref/{referenceId:identifier}")]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository);
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
@@ -383,8 +384,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}")]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetByReferenceIdAsync(string referenceId, string projectId, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> GetByReferenceIdAsync(string referenceId, string projectId, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -415,8 +416,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route("sessions/{sessionId:identifier}")]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
@@ -443,8 +444,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}")]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -474,8 +475,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Route("sessions")]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetSessionsAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> GetSessionsAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
@@ -501,8 +502,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/sessions")]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetSessionByOrganizationAsync(string organizationId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> GetSessionByOrganizationAsync(string organizationId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
                 return NotFound();
@@ -531,8 +532,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions")]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> GetSessionByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> GetSessionByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -561,11 +562,10 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("by-ref/{referenceId:identifier}/user-description")]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description")]
-        [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
-        [ResponseType(typeof(List<PersistentEvent>))]
-        public async Task<IHttpActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
+        public async Task<IActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
 
@@ -595,16 +595,15 @@ namespace Exceptionless.Api.Controllers {
             eventUserDescription.ReferenceId = referenceId;
 
             await _eventUserDescriptionQueue.EnqueueAsync(eventUserDescription);
-            return StatusCode(HttpStatusCode.Accepted);
+            return StatusCode(StatusCodes.Status202Accepted);
         }
 
         [HttpPatch]
         [Route("~/api/v1/error/{id:objectid}")]
-        [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IHttpActionResult> LegacyPatchAsync(string id, Delta<UpdateEvent> changes) {
+        public async Task<IActionResult> LegacyPatchAsync(string id, Delta<UpdateEvent> changes) {
             if (changes == null)
                 return Ok();
 
@@ -632,9 +631,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("~/api/v{version:int=2}/events/session/heartbeat")]
         [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/session/heartbeat")]
-        [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public async Task<IHttpActionResult> RecordHeartbeatAsync(string projectId = null, int version = 2, string id = null, bool close = false) {
+        public async Task<IActionResult> RecordHeartbeatAsync(string projectId = null, int version = 2, string id = null, bool close = false) {
             if (String.IsNullOrWhiteSpace(id) || Settings.Current.EventSubmissionDisabled)
                 return Ok();
 
@@ -659,11 +657,11 @@ namespace Exceptionless.Api.Controllers {
                     await _cache.SetAsync($"Project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
             } catch (Exception ex) {
                 if (projectId != Settings.Current.InternalProjectId) {
-                    using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).Property("Id", id).Property("Close", close).SetActionContext(ActionContext)))
+                    using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).Property("Id", id).Property("Close", close).SetHttpContext(HttpContext)))
                         _logger.LogError(ex, "Error enqueuing session heartbeat.");
                 }
 
-                return StatusCode(HttpStatusCode.InternalServerError);
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
             return Ok();
@@ -698,10 +696,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/api/v{version:int=2}/events/submit/{type:minlength(1)}")]
         [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/submit")]
         [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
-        [OverrideAuthorization]
         [ConfigurationResponseFilter]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public async Task<IHttpActionResult> GetSubmitEventAsync(string projectId = null, int version = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
+        public async Task<IActionResult> GetSubmitEventAsync(string projectId = null, int version = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
             if (parameters == null || parameters.Count == 0)
                 return Ok();
 
@@ -720,7 +717,7 @@ namespace Exceptionless.Api.Controllers {
             // Set the project for the configuration response filter.
             Request.SetProject(project);
 
-            string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
+            string contentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding);
             var ev = new Event { Type = !String.IsNullOrEmpty(type) ? type : Event.KnownTypes.Log };
 
             string identity = null;
@@ -786,24 +783,32 @@ namespace Exceptionless.Api.Controllers {
             ev.SetUserIdentity(identity, identityName);
 
             try {
+                string mediaType = String.Empty;
+                string charSet = String.Empty;
+                if (Request.ContentType != null) {
+                    var contentType = MediaTypeHeaderValue.Parse(Request.ContentType);
+                    mediaType = contentType.MediaType.ToString();
+                    charSet = contentType.Charset.ToString();
+                }
+
                 await _eventPostQueue.EnqueueAsync(new EventPostInfo {
                     ApiVersion = version,
-                    CharSet = Request.Content.Headers.ContentType?.CharSet,
+                    CharSet = charSet,
                     ContentEncoding = contentEncoding,
                     Data = ev.GetBytes(_jsonSerializerSettings),
                     IpAddress = Request.GetClientIpAddress(),
-                    MediaType = Request.Content.Headers.ContentType?.MediaType,
+                    MediaType = mediaType,
                     OrganizationId = project.OrganizationId,
                     ProjectId = project.Id,
                     UserAgent = userAgent
                 }, _storage);
             } catch (Exception ex) {
                 if (projectId != Settings.Current.InternalProjectId) {
-                    using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                    using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                         _logger.LogError(ex, "Error enqueuing event post.");
                 }
 
-                return StatusCode(HttpStatusCode.InternalServerError);
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
             return Ok();
@@ -864,12 +869,11 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/api/v{version:int=1}/error")]
         [Route("~/api/v{version:int=2}/events")]
         [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events")]
-        [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
-        public async Task <IHttpActionResult> PostAsync([NakedBody]byte[] data, string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
+        public async Task <IActionResult> PostAsync([FromBody]byte[] data, string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
             if (data == null || data.Length == 0)
-                return StatusCode(HttpStatusCode.Accepted);
+                return StatusCode(StatusCodes.Status202Accepted);
 
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();
@@ -886,7 +890,7 @@ namespace Exceptionless.Api.Controllers {
             // Set the project for the configuration response filter.
             Request.SetProject(project);
 
-            string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
+            string contentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding);
             bool isCompressed = contentEncoding == "gzip" || contentEncoding == "deflate";
             if (!isCompressed && data.Length > 1000) {
                 data = data.Compress();
@@ -894,27 +898,35 @@ namespace Exceptionless.Api.Controllers {
             }
 
             try {
+                string mediaType = String.Empty;
+                string charSet = String.Empty;
+                if (Request.ContentType != null) {
+                    var contentType = MediaTypeHeaderValue.Parse(Request.ContentType);
+                    mediaType = contentType.MediaType.ToString();
+                    charSet = contentType.Charset.ToString();
+                }
+
                 await _eventPostQueue.EnqueueAsync(new EventPostInfo {
                     ApiVersion = version,
-                    CharSet = Request.Content.Headers.ContentType?.CharSet,
+                    CharSet = charSet,
                     ContentEncoding = contentEncoding,
                     Data = data,
                     IpAddress = Request.GetClientIpAddress(),
-                    MediaType = Request.Content.Headers.ContentType?.MediaType,
+                    MediaType = mediaType,
                     OrganizationId = project.OrganizationId,
                     ProjectId = project.Id,
                     UserAgent = userAgent,
                 }, _storage);
             } catch (Exception ex) {
                 if (projectId != Settings.Current.InternalProjectId) {
-                    using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext)))
+                    using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                         _logger.LogError(ex, "Error enqueuing event post.");
                 }
 
-                return StatusCode(HttpStatusCode.InternalServerError);
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
-            return StatusCode(HttpStatusCode.Accepted);
+            return StatusCode(StatusCodes.Status202Accepted);
         }
 
         /// <summary>
@@ -927,7 +939,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="500">An error occurred while deleting one or more event occurrences.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public Task<IHttpActionResult> DeleteAsync(string ids) {
+        public Task<IActionResult> DeleteAsync(string ids) {
             return base.DeleteAsync(ids.FromDelimitedString());
         }
 

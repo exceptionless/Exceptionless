@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using AutoMapper;
 using AutoMapper.EquivalencyExpression;
 using Exceptionless.Core.Authentication;
@@ -22,6 +23,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.Caching;
@@ -35,10 +37,12 @@ using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch.Jobs;
 using Foundatio.Serializer;
 using Foundatio.Storage;
+using Foundatio.Utility;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Core {
     public class Bootstrapper {
@@ -48,9 +52,7 @@ namespace Exceptionless.Core {
                 DateParseHandling = DateParseHandling.DateTimeOffset
             };
 
-            var resolver = new DynamicTypeContractResolver(new LowerCaseUnderscorePropertyNamesContractResolver());
-            resolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOne.VersionOneWebHookStack), typeof(VersionOne.VersionOneWebHookEvent));
-
+            var resolver = GetJsonContractResolver();
             var settings = new JsonSerializerSettings {
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 DateParseHandling = DateParseHandling.DateTimeOffset,
@@ -70,6 +72,8 @@ namespace Exceptionless.Core {
             container.AddSingleton<ExceptionlessElasticConfiguration>();
             if (!Settings.Current.DisableIndexConfiguration)
                 container.AddStartupAction<ExceptionlessElasticConfiguration>();
+
+            container.AddStartupAction(CreateSampleDataAsync);
 
             container.AddSingleton<IQueueBehavior<EventPost>>(s => new MetricsQueueBehavior<EventPost>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<EventUserDescription>>(s => new MetricsQueueBehavior<EventUserDescription>(s.GetRequiredService<IMetricsClient>()));
@@ -159,6 +163,46 @@ namespace Exceptionless.Core {
 
                 return config.CreateMapper();
             });
+        }
+
+        private static async Task CreateSampleDataAsync(IServiceProvider container) {
+            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+                return;
+
+            var userRepository = container.GetRequiredService<IUserRepository>();
+            if (await userRepository.CountAsync().AnyContext() != 0)
+                return;
+
+            var dataHelper = container.GetRequiredService<SampleDataService>();
+            await dataHelper.CreateDataAsync().AnyContext();
+        }
+
+        public static void RunJobs(IServiceProvider container, ILoggerFactory loggerFactory, CancellationToken token) {
+            var logger = loggerFactory.CreateLogger("AppBuilder");
+            if (!Settings.Current.RunJobsInProcess) {
+                logger.LogInformation("Jobs running out of process.");
+                return;
+            }
+
+            new JobRunner(container.GetRequiredService<EventPostsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2)).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<EventUserDescriptionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(3)).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<EventNotificationsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<MailMessageJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<WebHooksJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<CloseInactiveSessionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(30), interval: TimeSpan.FromSeconds(30)).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<DailySummaryJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(1), interval: TimeSpan.FromHours(1)).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<DownloadGeoIPDatabaseJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.FromDays(1)).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<RetentionLimitsJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromHours(1)).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<WorkItemJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<MaintainIndexesJob>(), loggerFactory, initialDelay: SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)) - SystemClock.UtcNow, interval: TimeSpan.FromHours(1)).RunInBackground(token);
+
+            logger.LogWarning("Jobs running in process.");
+        }
+
+        public static DynamicTypeContractResolver GetJsonContractResolver() {
+            var resolver = new DynamicTypeContractResolver(new LowerCaseUnderscorePropertyNamesContractResolver());
+            resolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOne.VersionOneWebHookStack), typeof(VersionOne.VersionOneWebHookEvent));
+            return resolver;
         }
 
         private static IQueue<T> CreateQueue<T>(IServiceProvider container, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {

@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Description;
 using Exceptionless.Core.Billing;
-using Exceptionless.Api.Utility;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Stripe;
 #pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "/stripe")]
+    [Route(API_PREFIX + "/stripe")]
     [ApiExplorerSettings(IgnoreApi = true)]
     public class StripeController : ExceptionlessApiController {
         private readonly StripeEventHandler _stripeEventHandler;
@@ -20,10 +18,9 @@ namespace Exceptionless.Api.Controllers {
             _logger = logger;
         }
 
-        [Route]
         [HttpPost]
-        public async Task<IHttpActionResult> PostAsync([NakedBody]string json) {
-            using (_logger.BeginScope(new ExceptionlessState().SetActionContext(ActionContext))) {
+        public async Task<IActionResult> PostAsync([FromBody]string json) {
+            using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext))) {
                 StripeEvent stripeEvent;
                 try {
                     stripeEvent = StripeEventUtility.ParseEvent(json);

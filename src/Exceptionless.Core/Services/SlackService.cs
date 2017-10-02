@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Services {
             return false;
         }
 
-        public async Task SendMessageAsync(string organizationId, string projectId, string url, SlackMessage message) {
+        public Task SendMessageAsync(string organizationId, string projectId, string url, SlackMessage message) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
@@ -103,7 +103,7 @@ namespace Exceptionless.Core.Services {
                 Data = message
             };
 
-            await _webHookNotificationQueue.EnqueueAsync(notification).AnyContext();
+            return _webHookNotificationQueue.EnqueueAsync(notification);
         }
 
         public async Task<bool> SendEventNoticeAsync(PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
