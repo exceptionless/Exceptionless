@@ -14,6 +14,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
@@ -35,6 +36,7 @@ using Foundatio.Metrics;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Queues;
+using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Jobs;
 using Foundatio.Serializer;
 using Foundatio.Storage;
@@ -70,6 +72,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory }));
             container.AddSingleton<IMetricsClient>(s => new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = loggerFactory }));
 
+            container.AddSingleton<IElasticConfiguration, ExceptionlessElasticConfiguration>();
             container.AddSingleton<ExceptionlessElasticConfiguration>();
             if (!Settings.Current.DisableIndexConfiguration)
                 container.AddStartupAction<ExceptionlessElasticConfiguration>();
@@ -135,6 +138,8 @@ namespace Exceptionless.Core {
             container.AddSingleton(typeof(IValidator<>), typeof(Bootstrapper).Assembly);
             container.AddSingleton(typeof(IPipelineAction<EventContext>), typeof(Bootstrapper).Assembly);
             container.AddSingleton(typeof(IJob), typeof(Bootstrapper).Assembly, typeof(MailMessageJob).Assembly);
+            container.AddSingleton<WorkItemJob>();
+            container.AddSingleton<MaintainIndexesJob>();
 
             container.AddSingleton<IMailer, Mailer>();
             container.AddSingleton<IMailSender>(s => new InMemoryMailSender());
@@ -143,9 +148,12 @@ namespace Exceptionless.Core {
             container.AddTransient<StripeEventHandler>();
             container.AddSingleton<BillingManager>();
             container.AddSingleton<SampleDataService>();
+            container.AddSingleton<SemanticVersionParser>();
+            container.AddSingleton<EventParserPluginManager>();
             container.AddSingleton<EventPipeline>();
             container.AddSingleton<EventPluginManager>();
             container.AddSingleton<FormattingPluginManager>();
+            container.AddSingleton<WebHookDataPluginManager>();
             container.AddSingleton<UserAgentParser>();
             container.AddSingleton<SystemHealthChecker>();
             container.AddSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();

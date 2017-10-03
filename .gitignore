@@ -116,5 +116,5 @@ App_Data
 
 *.DS_Store
 *.orig
-src/Exceptionless.Api/Logs/*.txt
 *.nugetreferenceswitcher
+src/Exceptionless\.Web/storage/
