@@ -24,25 +24,30 @@ namespace Exceptionless.Api.Controllers {
         /// Validate a search query to ensure that it can successfully be searched by the api
         /// </remarks>
         /// <param name="query">The query you wish to validate.</param>
-        [HttpGet]
-        [Route("search/validate")]
+        [HttpGet("search/validate")]
         [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(QueryValidator.QueryProcessResult))]
-        public async Task<IActionResult> ValidateAsync(string query) {
+        public async Task<IActionResult> ValidateAsync([FromQuery] string query) {
             return Ok(await _validator.ValidateQueryAsync(query));
         }
 
-        [Route("notfound")]
-        [HttpGet, HttpPut, HttpPatch, HttpPost, HttpHead]
-        public IActionResult Http404(string link) {
+        [HttpGet("notfound")]
+        [HttpPut("notfound")]
+        [HttpPatch("notfound")]
+        [HttpPost("notfound")]
+        [HttpHead("notfound")]
+        public IActionResult Http404([FromQuery] string link) {
             return Ok(new {
                 Message = "Not found",
                 Url = "http://docs.exceptionless.io"
             });
         }
 
-        [Route("boom")]
-        [HttpGet, HttpPut, HttpPatch, HttpPost, HttpHead]
+        [HttpGet("boom")]
+        [HttpPut("boom")]
+        [HttpPatch("boom")]
+        [HttpPost("boom")]
+        [HttpHead("boom")]
         public IActionResult Boom() {
             throw new ApplicationException("Boom!");
         }

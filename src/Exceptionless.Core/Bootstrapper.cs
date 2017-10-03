@@ -17,6 +17,7 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
@@ -127,6 +128,10 @@ namespace Exceptionless.Core {
             container.AddSingleton<IGeocodeService, NullGeocodeService>();
 
             container.AddSingleton<IQueryParser>(s => new ElasticQueryParser());
+            container.AddSingleton<IQueryValidator, QueryValidator>();
+            container.AddSingleton<PersistentEventQueryValidator>();
+            container.AddSingleton<StackQueryValidator>();
+
             container.AddSingleton(typeof(IValidator<>), typeof(Bootstrapper).Assembly);
             container.AddSingleton(typeof(IPipelineAction<EventContext>), typeof(Bootstrapper).Assembly);
             container.AddSingleton(typeof(IJob), typeof(Bootstrapper).Assembly, typeof(MailMessageJob).Assembly);

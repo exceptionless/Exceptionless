@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Jobs {
 
                 var project = await _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache()).AnyContext();
                 if (project == null) {
-                    if (!isInternalProject) _logger.LogError("Unable to process EventPost \"{FilePath}\": Unable to load project: {project}", queueEntry.Value.FilePath, ep.ProjectId);
+                    if (!isInternalProject) _logger.LogError("Unable to process EventPost {FilePath}: Unable to load project: {project}", queueEntry.Value.FilePath, ep.ProjectId);
                     await CompleteEntryAsync(queueEntry, ep, SystemClock.UtcNow).AnyContext();
                     return JobResult.Success;
                 }
@@ -160,7 +160,7 @@ namespace Exceptionless.Core.Jobs {
                         if (!ctx.HasError)
                             continue;
 
-                        if (!isInternalProject) _logger.LogError(ctx.Exception, "Error processing EventPost {QueueEntryId} \"{FilePath}\": {Message}", queueEntry.Id, queueEntry.Value.FilePath, ctx.ErrorMessage);
+                        if (!isInternalProject) _logger.LogError(ctx.Exception, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", queueEntry.Id, queueEntry.Value.FilePath, ctx.ErrorMessage);
                         if (ctx.Exception is ValidationException)
                             continue;
 
@@ -171,7 +171,7 @@ namespace Exceptionless.Core.Jobs {
                         }
                     }
                 } catch (Exception ex) {
-                    if (!isInternalProject) _logger.LogError(ex, "Error processing EventPost {QueueEntryId} \"{FilePath}\": {Message}", queueEntry.Id, queueEntry.Value.FilePath, ex.Message);
+                    if (!isInternalProject) _logger.LogError(ex, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", queueEntry.Id, queueEntry.Value.FilePath, ex.Message);
                     if (ex is ArgumentException || ex is DocumentNotFoundException) {
                         await CompleteEntryAsync(queueEntry, ep, createdUtc).AnyContext();
                         return JobResult.Success;
@@ -233,7 +233,7 @@ namespace Exceptionless.Core.Jobs {
                     await _metricsClient.GaugeAsync(MetricNames.PostsEventCount, events.Count).AnyContext();
                 } catch (Exception ex) {
                     await _metricsClient.CounterAsync(MetricNames.PostsParseErrors).AnyContext();
-                    if (!isInternalProject) _logger.LogError(ex, "An error occurred while processing the EventPost '{QueueEntryId}': {Message}", queueEntryId, ex.Message);
+                    if (!isInternalProject) _logger.LogError(ex, "An error occurred while processing the EventPost {QueueEntryId}: {Message}", queueEntryId, ex.Message);
                 }
 
                 if(!isInternalProject && _logger.IsEnabled(LogLevel.Debug)) _logger.LogDebug("Parsed {ParsedCount} events from EventPost: {QueueEntryId}", events?.Count ?? 0, queueEntryId);
@@ -267,7 +267,7 @@ namespace Exceptionless.Core.Jobs {
                 } catch (Exception ex) {
                     if (!isInternalProject && _logger.IsEnabled(LogLevel.Critical)) {
                         using (_logger.BeginScope(new ExceptionlessState().Property("Event", new { ev.Date, ev.StackId, ev.Type, ev.Source, ev.Message, ev.Value, ev.Geo, ev.ReferenceId, ev.Tags })))
-                            _logger.LogCritical(ex, "Error while requeuing event post \"{FilePath}\": {Message}", queueEntry.Value.FilePath, ex.Message);
+                            _logger.LogCritical(ex, "Error while requeuing event post {FilePath}: {Message}", queueEntry.Value.FilePath, ex.Message);
                     }
 
                     await _metricsClient.CounterAsync(MetricNames.EventsRetryErrors).AnyContext();

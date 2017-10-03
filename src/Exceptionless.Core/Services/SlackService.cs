@@ -114,7 +114,7 @@ namespace Exceptionless.Core.Services {
             bool isCritical = ev.IsCritical();
             var message = _pluginManager.GetSlackEventNotificationMessage(ev, project, isCritical, isNew, isRegression);
             if (message == null) {
-                _logger.LogWarning("Unable to create event notification slack message for event \"{id}\".", ev.Id);
+                _logger.LogWarning("Unable to create event notification slack message for event {id}.", ev.Id);
                 return false;
             }
 

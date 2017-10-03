@@ -67,10 +67,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="model">The login model.</param>
         /// <response code="400">The login model is invalid.</response>
         /// <response code="401">Login failed.</response>
-        [HttpPost]
-        [Route("login")]
+        [HttpPost("login")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public async Task<IActionResult> LoginAsync(LoginModel model) {
+        public async Task<IActionResult> LoginAsync([FromBody] LoginModel model) {
             string email = model?.Email?.Trim().ToLowerInvariant();
             using (_logger.BeginScope(new ExceptionlessState().Tag("Login").Identity(email).SetHttpContext(HttpContext))) {
                 if (String.IsNullOrEmpty(email)) {
@@ -79,7 +78,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 if (String.IsNullOrWhiteSpace(model.Password)) {
-                    _logger.LogError("Login failed for \"{0}\": Password is required.", email);
+                    _logger.LogError("Login failed for {EmailAddress}: Password is required.", email);
                     return BadRequest("Password is required.");
                 }
 
@@ -92,12 +91,12 @@ namespace Exceptionless.Api.Controllers {
                 long ipLoginAttempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
                 if (userLoginAttempts > 5) {
-                    _logger.LogError("Login denied for \"{EmailAddress}\" for the {UserLoginAttempts} time.", email, userLoginAttempts);
+                    _logger.LogError("Login denied for {EmailAddress} for the {UserLoginAttempts} time.", email, userLoginAttempts);
                     return Unauthorized();
                 }
 
                 if (ipLoginAttempts > 15) {
-                    _logger.LogError("Login denied for \"{EmailAddress}\" for the {IPLoginAttempts} time.", Request.GetClientIpAddress(), ipLoginAttempts);
+                    _logger.LogError("Login denied for {EmailAddress} for the {IPLoginAttempts} time.", Request.GetClientIpAddress(), ipLoginAttempts);
                     return Unauthorized();
                 }
 
@@ -105,34 +104,34 @@ namespace Exceptionless.Api.Controllers {
                 try {
                     user = await _userRepository.GetByEmailAddressAsync(email);
                 } catch (Exception ex) {
-                    _logger.LogCritical(ex, "Login failed for \"{EmailAddress}\": {Message}", email, ex.Message);
+                    _logger.LogCritical(ex, "Login failed for {EmailAddress}: {Message}", email, ex.Message);
                     return Unauthorized();
                 }
 
                 if (user == null) {
-                    _logger.LogError("Login failed for \"{EmailAddress}\": User not found.", email);
+                    _logger.LogError("Login failed for {EmailAddress}: User not found.", email);
                     return Unauthorized();
                 }
 
                 if (!user.IsActive) {
-                    _logger.LogError("Login failed for \"{EmailAddress}\": The user is inactive.", user.EmailAddress);
+                    _logger.LogError("Login failed for {EmailAddress}: The user is inactive.", user.EmailAddress);
                     return Unauthorized();
                 }
 
                 if (!Settings.Current.EnableActiveDirectoryAuth) {
                     if (String.IsNullOrEmpty(user.Salt)) {
-                        _logger.LogError("Login failed for \"{EmailAddress}\": The user has no salt defined.", user.EmailAddress);
+                        _logger.LogError("Login failed for {EmailAddress}: The user has no salt defined.", user.EmailAddress);
                         return Unauthorized();
                     }
 
                     string encodedPassword = model.Password.ToSaltedHash(user.Salt);
                     if (!String.Equals(encodedPassword, user.Password)) {
-                        _logger.LogError("Login failed for \"{EmailAddress}\": Invalid Password.", user.EmailAddress);
+                        _logger.LogError("Login failed for {EmailAddress}: Invalid Password.", user.EmailAddress);
                         return Unauthorized();
                     }
                 } else {
                     if (!IsValidActiveDirectoryLogin(email, model.Password)) {
-                        _logger.LogError("Domain login failed for \"{EmailAddress}\": Invalid Password or Account.", user.EmailAddress);
+                        _logger.LogError("Domain login failed for {EmailAddress}: Invalid Password or Account.", user.EmailAddress);
                         return Unauthorized();
                     }
                 }
@@ -143,14 +142,13 @@ namespace Exceptionless.Api.Controllers {
                 await _cache.RemoveAsync(userLoginAttemptsCacheKey);
                 await _cache.IncrementAsync(ipLoginAttemptsCacheKey, -1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
-                _logger.LogInformation("\"{EmailAddress}\" logged in.", user.EmailAddress);
+                _logger.LogInformation("{EmailAddress} logged in.", user.EmailAddress);
                 return Ok(new TokenResult { Token = await GetTokenAsync(user) });
             }
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet]
-        [Route("logout")]
+        [HttpGet("logout")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public async Task<IActionResult> LogoutAsync() {
             if (User.IsTokenAuthType())
@@ -164,7 +162,7 @@ namespace Exceptionless.Api.Controllers {
                 await _tokenRepository.RemoveAsync(id);
             } catch (Exception ex) {
                 using (_logger.BeginScope(new ExceptionlessState().Tag("Logout").Identity(CurrentUser.EmailAddress).SetHttpContext(HttpContext)))
-                    _logger.LogCritical(ex, "Logout failed for \"{EmailAddress}\": {Message}", CurrentUser.EmailAddress, ex.Message);
+                    _logger.LogCritical(ex, "Logout failed for {EmailAddress}: {Message}", CurrentUser.EmailAddress, ex.Message);
             }
 
             return Ok();
@@ -176,10 +174,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="model">The sign up model.</param>
         /// <response code="400">The sign up model is invalid.</response>
         /// <response code="401">Sign up failed.</response>
-        [HttpPost]
-        [Route("signup")]
+        [HttpPost("signup")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public async Task<IActionResult> SignupAsync(SignupModel model) {
+        public async Task<IActionResult> SignupAsync([FromBody] SignupModel model) {
             bool valid = await IsAccountCreationEnabledAsync(model?.InviteToken);
             if (!valid)
                 return BadRequest("Account Creation is currently disabled.");
@@ -192,12 +189,12 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 if (String.IsNullOrWhiteSpace(model.Name)) {
-                    _logger.LogError("Signup failed for \"{EmailAddress}\": Name is required.", email);
+                    _logger.LogError("Signup failed for {EmailAddress}: Name is required.", email);
                     return BadRequest("Name is required.");
                 }
 
                 if (!IsValidPassword(model.Password)) {
-                    _logger.LogError("Signup failed for \"{EmailAddress}\": Invalid Password", email);
+                    _logger.LogError("Signup failed for {EmailAddress}: Invalid Password", email);
                     return BadRequest("Password must be at least 6 characters long.");
                 }
 
@@ -205,7 +202,7 @@ namespace Exceptionless.Api.Controllers {
                 try {
                     user = await _userRepository.GetByEmailAddressAsync(email);
                 } catch (Exception ex) {
-                    _logger.LogCritical(ex, "Signup failed for \"{EmailAddress}\": {Message}", email, ex.Message);
+                    _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, ex.Message);
                     return BadRequest();
                 }
 
@@ -218,13 +215,13 @@ namespace Exceptionless.Api.Controllers {
                     // Only allow 10 sign ups per hour period by a single ip.
                     long ipSignupAttempts = await _cache.IncrementAsync(ipSignupAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
                     if (ipSignupAttempts > 10) {
-                        _logger.LogError("Signup denied for \"{EmailAddress}\" for the {IPSignupAttempts} time.", email, ipSignupAttempts);
+                        _logger.LogError("Signup denied for {EmailAddress} for the {IPSignupAttempts} time.", email, ipSignupAttempts);
                         return BadRequest();
                     }
                 }
 
                 if (Settings.Current.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password)) {
-                    _logger.LogError("Signup failed for \"{EmailAddress}\": Active Directory authentication failed.", email);
+                    _logger.LogError("Signup failed for {EmailAddress}: Active Directory authentication failed.", email);
                     return BadRequest();
                 }
 
@@ -248,10 +245,10 @@ namespace Exceptionless.Api.Controllers {
                     user = await _userRepository.AddAsync(user, o => o.Cache());
                 } catch (ValidationException ex) {
                     string errors = String.Join(", ", ex.Errors);
-                    _logger.LogCritical(ex, "Signup failed for \"{EmailAddress}\": {Message}", email, errors);
+                    _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, errors);
                     return BadRequest(errors);
                 } catch (Exception ex) {
-                    _logger.LogCritical(ex, "Signup failed for \"{EmailAddress}\": {Message}", email, ex.Message);
+                    _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, ex.Message);
                     return BadRequest("An error occurred.");
                 }
 
@@ -261,40 +258,36 @@ namespace Exceptionless.Api.Controllers {
                 if (!user.IsEmailAddressVerified)
                     await _mailer.SendUserEmailVerifyAsync(user);
 
-                _logger.LogInformation("\"{EmailAddress}\" signed up.", user.EmailAddress);
+                _logger.LogInformation("{EmailAddress} signed up.", user.EmailAddress);
                 return Ok(new TokenResult { Token = await GetTokenAsync(user) });
             }
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpPost]
-        [Route("github")]
+        [HttpPost("github")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> GitHubAsync(JObject value) {
+        public Task<IActionResult> GitHubAsync([FromBody] JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), Settings.Current.GitHubAppId, Settings.Current.GitHubAppSecret, (f, c) => new GitHubClient(f, c));
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpPost]
-        [Route("google")]
+        [HttpPost("google")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> GoogleAsync(JObject value) {
+        public Task<IActionResult> GoogleAsync([FromBody] JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), Settings.Current.GoogleAppId, Settings.Current.GoogleAppSecret, (f, c) => new GoogleClient(f, c));
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpPost]
-        [Route("facebook")]
+        [HttpPost("facebook")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> FacebookAsync(JObject value) {
+        public Task<IActionResult> FacebookAsync([FromBody] JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), Settings.Current.FacebookAppId, Settings.Current.FacebookAppSecret, (f, c) => new FacebookClient(f, c));
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpPost]
-        [Route("live")]
+        [HttpPost("live")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> LiveAsync(JObject value) {
+        public Task<IActionResult> LiveAsync([FromBody] JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), Settings.Current.MicrosoftAppId, Settings.Current.MicrosoftAppSecret, (f, c) => new WindowsLiveClient(f, c));
         }
 
@@ -306,19 +299,18 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid provider name.</response>
         /// <response code="500">An error while saving the user account.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpPost]
-        [Route("unlink/{providerName:minlength(1)}")]
+        [HttpPost("unlink/{providerName:minlength(1)}")]
         [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public async Task<IActionResult> RemoveExternalLoginAsync(string providerName, [FromBody] string providerUserId) {
+        public async Task<IActionResult> RemoveExternalLoginAsync(string providerName, [FromQuery] string providerUserId) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("External Login", providerName).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Provider User Id", providerUserId).SetHttpContext(HttpContext))) {
                 if (String.IsNullOrWhiteSpace(providerName) || String.IsNullOrWhiteSpace(providerUserId)) {
-                    _logger.LogError("Remove external login failed for \"{EmailAddress}\": Invalid Provider Name or Provider User Id.", CurrentUser.EmailAddress);
+                    _logger.LogError("Remove external login failed for {EmailAddress}: Invalid Provider Name or Provider User Id.", CurrentUser.EmailAddress);
                     return BadRequest("Invalid Provider Name or Provider User Id.");
                 }
 
                 if (CurrentUser.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(CurrentUser.Password)) {
-                    _logger.LogError("Remove external login failed for \"{EmailAddress}\": You must set a local password before removing your external login.", CurrentUser.EmailAddress);
+                    _logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login.", CurrentUser.EmailAddress);
                     return BadRequest("You must set a local password before removing your external login.");
                 }
 
@@ -326,13 +318,13 @@ namespace Exceptionless.Api.Controllers {
                     if (CurrentUser.RemoveOAuthAccount(providerName, providerUserId))
                         await _userRepository.SaveAsync(CurrentUser, o => o.Cache());
                 } catch (Exception ex) {
-                    _logger.LogCritical(ex, "Error removing external login for \"{EmailAddress}\": {Message}", CurrentUser.EmailAddress, ex.Message);
+                    _logger.LogCritical(ex, "Error removing external login for {EmailAddress}: {Message}", CurrentUser.EmailAddress, ex.Message);
                     throw;
                 }
 
                 await ResetUserTokensAsync(CurrentUser, nameof(RemoveExternalLoginAsync));
 
-                _logger.LogInformation("\"{EmailAddress}\" removed an external login: \"{ProviderName}\"", CurrentUser.EmailAddress, providerName);
+                _logger.LogInformation("{EmailAddress} removed an external login: {ProviderName}", CurrentUser.EmailAddress, providerName);
                 return Ok(new TokenResult { Token = await GetTokenAsync(CurrentUser) });
             }
         }
@@ -342,27 +334,26 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="model">The change password model.</param>
         /// <response code="400">Invalid change password model.</response>
-        [HttpPost]
-        [Route("change-password")]
+        [HttpPost("change-password")]
         [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public async Task<IActionResult> ChangePasswordAsync(ChangePasswordModel model) {
+        public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordModel model) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("Change Password").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Password Length", model?.Password?.Length ?? 0).SetHttpContext(HttpContext))) {
                 if (model == null || !IsValidPassword(model.Password)) {
-                    _logger.LogError("Change password failed for \"{EmailAddress}\": The New Password must be at least 6 characters long.", CurrentUser.EmailAddress);
+                    _logger.LogError("Change password failed for {EmailAddress}: The New Password must be at least 6 characters long.", CurrentUser.EmailAddress);
                     return BadRequest("The New Password must be at least 6 characters long.");
                 }
 
                 // User has a local account..
                 if (!String.IsNullOrWhiteSpace(CurrentUser.Password)) {
                     if (String.IsNullOrWhiteSpace(model.CurrentPassword)) {
-                        _logger.LogError("Change password failed for \"{EmailAddress}\": The current password is incorrect.", CurrentUser.EmailAddress);
+                        _logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect.", CurrentUser.EmailAddress);
                         return BadRequest("The current password is incorrect.");
                     }
 
                     string encodedPassword = model.CurrentPassword.ToSaltedHash(CurrentUser.Salt);
                     if (!String.Equals(encodedPassword, CurrentUser.Password)) {
-                        _logger.LogError("Change password failed for \"{EmailAddress}\": The current password is incorrect.", CurrentUser.EmailAddress);
+                        _logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect.", CurrentUser.EmailAddress);
                         return BadRequest("The current password is incorrect.");
                     }
                 }
@@ -370,14 +361,13 @@ namespace Exceptionless.Api.Controllers {
                 await ChangePasswordAsync(CurrentUser, model.Password, nameof(ChangePasswordAsync));
                 await ResetUserTokensAsync(CurrentUser, nameof(ChangePasswordAsync));
 
-                _logger.LogInformation("\"{EmailAddress}\" changed their password.", CurrentUser.EmailAddress);
+                _logger.LogInformation("{EmailAddress} changed their password.", CurrentUser.EmailAddress);
                 return Ok(new TokenResult { Token = await GetTokenAsync(CurrentUser) });
             }
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet]
-        [Route("check-email-address/{email:minlength(1)}")]
+        [HttpGet("check-email-address/{email:minlength(1)}")]
         public async Task<IActionResult> IsEmailAddressAvailableAsync(string email) {
             if (String.IsNullOrWhiteSpace(email))
                 return StatusCode(StatusCodes.Status204NoContent);
@@ -401,8 +391,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="email">The email address.</param>
         /// <response code="400">Invalid email address.</response>
-        [HttpGet]
-        [Route("forgot-password/{email:minlength(1)}")]
+        [HttpGet("forgot-password/{email:minlength(1)}")]
         public async Task<IActionResult> ForgotPasswordAsync(string email) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("Forgot Password").Identity(email).SetHttpContext(HttpContext))) {
                 if (String.IsNullOrWhiteSpace(email)) {
@@ -413,7 +402,7 @@ namespace Exceptionless.Api.Controllers {
                 email = email.Trim().ToLowerInvariant();
                 var user = await _userRepository.GetByEmailAddressAsync(email);
                 if (user == null) {
-                    _logger.LogError("Forgot password failed for \"{EmailAddress}\": No user was found.", email);
+                    _logger.LogError("Forgot password failed for {EmailAddress}: No user was found.", email);
                     return Ok();
                 }
 
@@ -421,7 +410,7 @@ namespace Exceptionless.Api.Controllers {
                 await _userRepository.SaveAsync(user, o => o.Cache());
 
                 await _mailer.SendUserPasswordResetAsync(user);
-                _logger.LogInformation("\"{EmailAddress}\" forgot their password.", user.EmailAddress);
+                _logger.LogInformation("{EmailAddress} forgot their password.", user.EmailAddress);
                 return Ok();
             }
         }
@@ -431,9 +420,8 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="model">The reset password model.</param>
         /// <response code="400">Invalid reset password model.</response>
-        [HttpPost]
-        [Route("reset-password")]
-        public async Task<IActionResult> ResetPasswordAsync(ResetPasswordModel model) {
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordModel model) {
             if (String.IsNullOrEmpty(model?.PasswordResetToken)) {
                 using (_logger.BeginScope(new ExceptionlessState().Tag("Reset Password").SetHttpContext(HttpContext)))
                     _logger.LogError("Reset password failed: Invalid Password Reset Token.");
@@ -448,12 +436,12 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 if (!user.HasValidPasswordResetTokenExpiration()) {
-                    _logger.LogError("Reset password failed for \"{EmailAddress}\": Password Reset Token has expired.", user.EmailAddress);
+                    _logger.LogError("Reset password failed for {EmailAddress}: Password Reset Token has expired.", user.EmailAddress);
                     return BadRequest("Password Reset Token has expired.");
                 }
 
                 if (!IsValidPassword(model.Password)) {
-                    _logger.LogError("Reset password failed for \"{EmailAddress}\": The New Password must be at least 6 characters long.", user.EmailAddress);
+                    _logger.LogError("Reset password failed for {EmailAddress}: The New Password must be at least 6 characters long.", user.EmailAddress);
                     return BadRequest("The New Password must be at least 6 characters long.");
                 }
 
@@ -461,7 +449,7 @@ namespace Exceptionless.Api.Controllers {
                 await ChangePasswordAsync(user, model.Password, nameof(ResetPasswordAsync));
                 await ResetUserTokensAsync(user, nameof(ResetPasswordAsync));
 
-                _logger.LogInformation("\"{EmailAddress}\" reset their password.", user.EmailAddress);
+                _logger.LogInformation("{EmailAddress} reset their password.", user.EmailAddress);
                 return Ok();
             }
         }
@@ -471,8 +459,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="token">The password reset token.</param>
         /// <response code="400">Invalid password reset token.</response>
-        [HttpPost]
-        [Route("cancel-reset-password/{token:minlength(1)}")]
+        [HttpPost("cancel-reset-password/{token:minlength(1)}")]
         public async Task<IActionResult> CancelResetPasswordAsync(string token) {
             if (String.IsNullOrEmpty(token)) {
                 using (_logger.BeginScope(new ExceptionlessState().Tag("Cancel Reset Password").SetHttpContext(HttpContext)))
@@ -488,7 +475,7 @@ namespace Exceptionless.Api.Controllers {
             await _userRepository.SaveAsync(user, o => o.Cache());
 
             using (_logger.BeginScope(new ExceptionlessState().Tag("Cancel Reset Password").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext))) 
-                _logger.LogInformation("\"{EmailAddress}\" canceled the reset password", user.EmailAddress);
+                _logger.LogInformation("{EmailAddress} canceled the reset password", user.EmailAddress);
 
             return Ok();
         }
@@ -532,22 +519,22 @@ namespace Exceptionless.Api.Controllers {
                 try {
                     user = await FromExternalLoginAsync(userInfo);
                 } catch (ApplicationException ex) {
-                    _logger.LogCritical(ex, "External login failed for \"{EmailAddress}\": {Message}", userInfo.Email, ex.Message);
+                    _logger.LogCritical(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
                     return BadRequest("Account Creation is currently disabled.");
                 } catch (Exception ex) {
-                    _logger.LogCritical(ex, "External login failed for \"{EmailAddress}\": {Message}", userInfo.Email, ex.Message);
+                    _logger.LogCritical(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
                     return BadRequest("An error occurred while processing user info.");
                 }
 
                 if (user == null) {
-                    _logger.LogCritical("External login failed for \"{EmailAddress}\": Unable to process user info.", userInfo.Email);
+                    _logger.LogCritical("External login failed for {EmailAddress}: Unable to process user info.", userInfo.Email);
                     return BadRequest("Unable to process user info.");
                 }
 
                 if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
                     await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user);
 
-                _logger.LogInformation("\"{EmailAddress}\" logged in.", user.EmailAddress);
+                _logger.LogInformation("{EmailAddress} logged in.", user.EmailAddress);
                 return Ok(new TokenResult { Token = await GetTokenAsync(user) });
             }
         }
@@ -562,7 +549,7 @@ namespace Exceptionless.Api.Controllers {
                         // Existing user account is not the current user. Remove it and we'll add it to the current user below.
                         if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id)) {
                             using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").Identity(CurrentUser.EmailAddress).Property("User Info", userInfo).Property("User", CurrentUser).Property("ExistingUser", existingUser).SetHttpContext(HttpContext)))
-                                _logger.LogError("Unable to remove existing oauth account for existing user \"{EmailAddress}\"", existingUser.EmailAddress);
+                                _logger.LogError("Unable to remove existing oauth account for existing user {EmailAddress}", existingUser.EmailAddress);
 
                             return null;
                         }
@@ -632,18 +619,18 @@ namespace Exceptionless.Api.Controllers {
                 var organization = await _organizationRepository.GetByInviteTokenAsync(token);
                 var invite = organization?.GetInvite(token);
                 if (organization == null || invite == null) {
-                    _logger.LogInformation("Unable to add the invited user \"{EmailAddress}\". Invalid invite token: {Token}", user.EmailAddress, token);
+                    _logger.LogInformation("Unable to add the invited user {EmailAddress}. Invalid invite token: {Token}", user.EmailAddress, token);
                     return;
                 }
 
                 if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
-                    _logger.LogInformation("Marking the invited users email address \"{EmailAddress}\" as verified.", user.EmailAddress);
+                    _logger.LogInformation("Marking the invited users email address {EmailAddress} as verified.", user.EmailAddress);
                     user.MarkEmailAddressVerified();
                     await _userRepository.SaveAsync(user, o => o.Cache());
                 }
 
                 if (!user.OrganizationIds.Contains(organization.Id)) {
-                    _logger.LogInformation("\"{EmailAddress}\" joined from invite.", user.EmailAddress);
+                    _logger.LogInformation("{EmailAddress} joined from invite.", user.EmailAddress);
                     user.OrganizationIds.Add(organization.Id);
                     await _userRepository.SaveAsync(user, o => o.Cache());
                 }
@@ -663,9 +650,9 @@ namespace Exceptionless.Api.Controllers {
 
                 try {
                     await _userRepository.SaveAsync(user, o => o.Cache());
-                    _logger.LogInformation("Changed password for \"{EmailAddress}\"", user.EmailAddress);
+                    _logger.LogInformation("Changed password for {EmailAddress}", user.EmailAddress);
                 } catch (Exception ex) {
-                    _logger.LogCritical(ex, "Error changing password for \"{EmailAddress}\": {Message}", user.EmailAddress, ex.Message);
+                    _logger.LogCritical(ex, "Error changing password for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
                     throw;
                 }
             }
@@ -675,9 +662,9 @@ namespace Exceptionless.Api.Controllers {
             using (_logger.BeginScope(new ExceptionlessState().Tag(tag).Identity(user.EmailAddress).SetHttpContext(HttpContext))) {
                 try {
                     long total = await _tokenRepository.RemoveAllByUserIdAsync(user.Id, o => o.ImmediateConsistency(true));
-                    _logger.LogInformation("Removed user {TokenCount} tokens for \"{EmailAddress}\"", total, user.EmailAddress);
+                    _logger.LogInformation("Removed user {TokenCount} tokens for {EmailAddress}", total, user.EmailAddress);
                 } catch (Exception ex) {
-                    _logger.LogCritical(ex, "Error removing user tokens for \"{EmailAddress}\": {Message}", user.EmailAddress, ex.Message);
+                    _logger.LogCritical(ex, "Error removing user tokens for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
                 }
             }
         }

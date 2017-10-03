@@ -103,21 +103,21 @@ namespace Exceptionless.Core.Jobs {
             // TODO: Add slack daily summaries
             var userIds = project.NotificationSettings.Where(n => n.Value.SendDailySummary && !String.Equals(n.Key, Project.NotificationIntegrations.Slack)).Select(n => n.Key).ToList();
             if (userIds.Count == 0) {
-                _logger.LogInformation("Project \"{ProjectName}\" has no users to send summary to.", project.Name);
+                _logger.LogInformation("Project {ProjectName} has no users to send summary to.", project.Name);
                 return false;
             }
 
             var results = await _userRepository.GetByIdsAsync(userIds, o => o.Cache()).AnyContext();
             var users = results.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(project.OrganizationId)).ToList();
             if (users.Count == 0) {
-                _logger.LogInformation("Project \"{ProjectName}\" has no users to send summary to.", project.Name);
+                _logger.LogInformation("Project {ProjectName} has no users to send summary to.", project.Name);
                 return false;
             }
 
             // TODO: What should we do about suspended organizations.
             var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache()).AnyContext();
             if (organization == null) {
-                _logger.LogInformation("The organization \"{organization}\" for project \"{ProjectName}\" may have been deleted. No summaries will be sent.", project.OrganizationId, project.Name);
+                _logger.LogInformation("The organization {organization} for project {ProjectName} may have been deleted. No summaries will be sent.", project.OrganizationId, project.Name);
                 return false;
             }
 
@@ -152,7 +152,7 @@ namespace Exceptionless.Core.Jobs {
                 newest = (await _stackRepository.GetByFilterAsync(sf, filter, "-first", "first", data.UtcStartTime, data.UtcEndTime, o => o.PageLimit(3)).AnyContext()).Documents;
 
             foreach (var user in users) {
-                _logger.LogInformation("Queuing \"{ProjectName}\" daily summary email ({UtcStartTime}-{UtcEndTime}) for user {EmailAddress}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
+                _logger.LogInformation("Queuing {ProjectName} daily summary email ({UtcStartTime}-{UtcEndTime}) for user {EmailAddress}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
                 await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, data.UtcStartTime, hasSubmittedEvents, total, uniqueTotal, newTotal, fixedTotal, blockedTotal, tooBigTotal, isFreePlan).AnyContext();
             }
 

@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
 
                     return data;
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Error calling create from event {id} in plugin \"{PluginName}\": {Message}", context.Event.Id, plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling create from event {id} in plugin {PluginName}: {Message}", context.Event.Id, plugin.Name, ex.Message);
                 }
             }
 
@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
 
                     return data;
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Error calling create from stack {stack} in plugin \"{PluginName}\": {Message}", context.Stack.Id, plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling create from stack {stack} in plugin {PluginName}: {Message}", context.Stack.Id, plugin.Name, ex.Message);
                 }
             }
 

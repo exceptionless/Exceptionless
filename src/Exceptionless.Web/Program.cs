@@ -12,15 +12,15 @@ namespace Exceptionless.Web {
         public static void Main(string[] args) {
             var webHost = new WebHostBuilder()
                 .UseKestrel(o => {
-                    o.Listen(IPAddress.Loopback, 5000);
+                    o.Listen(IPAddress.Loopback, 50000);
 
-                    string certPath = Path.Combine(Directory.GetCurrentDirectory(), "dev.pfx");
-                    if (File.Exists(certPath)) {
-                        o.Listen(IPAddress.Loopback, 5100, listenOptions => {
-                            listenOptions.UseHttps(certPath, "contacts");
-                            listenOptions.UseConnectionLogging();
-                        });
-                    }
+                    //string certPath = Path.Combine(Directory.GetCurrentDirectory(), "dev.pfx");
+                    //if (File.Exists(certPath)) {
+                    //    o.Listen(IPAddress.Loopback, 51000, listenOptions => {
+                    //        listenOptions.UseHttps(certPath, "exceptionless");
+                    //        listenOptions.UseConnectionLogging();
+                    //    });
+                    //}
 
                     o.UseSystemd();
                 })

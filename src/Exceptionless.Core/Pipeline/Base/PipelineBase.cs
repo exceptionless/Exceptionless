@@ -103,7 +103,7 @@ namespace Exceptionless.Core.Pipeline {
                 try {
                     actions.Add((IPipelineAction<TContext>)_serviceProvider.GetService(type));
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Unable to instantiate Pipeline Action of type \"{TypeFullName}\": {Message}", type.FullName, ex.Message);
+                    _logger.LogError(ex, "Unable to instantiate Pipeline Action of type {TypeFullName}: {Message}", type.FullName, ex.Message);
                     throw;
                 }
             }

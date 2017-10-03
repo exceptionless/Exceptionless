@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                    await _metricsClient.TimeAsync(() => plugin.Upgrade(context), metricName).AnyContext();
                 } catch (Exception ex) {
                     using (_logger.BeginScope(new Dictionary<string, object> { { "Context", context } }))
-                        _logger.LogError(ex, "Error calling upgrade in plugin \"{PluginName}\": {Message}", plugin.Name, ex.Message);
+                        _logger.LogError(ex, "Error calling upgrade in plugin {PluginName}: {Message}", plugin.Name, ex.Message);
 
                     throw;
                 }

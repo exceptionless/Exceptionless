@@ -17,11 +17,11 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<MailMessage> context) {
-            _logger.LogTrace("Processing message '{Id}'.", context.QueueEntry.Id);
+            _logger.LogTrace("Processing message {Id}.", context.QueueEntry.Id);
 
             try {
                 await _mailSender.SendAsync(context.QueueEntry.Value).AnyContext();
-                _logger.LogInformation("Sent message: to={To} subject=\"{Subject}\"", context.QueueEntry.Value.To, context.QueueEntry.Value.Subject);
+                _logger.LogInformation("Sent message: to={To} subject={Subject}", context.QueueEntry.Value.To, context.QueueEntry.Value.Subject);
             } catch (Exception ex) {
                 return JobResult.FromException(ex);
             }

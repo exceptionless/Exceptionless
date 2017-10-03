@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
                     await _metricsClient.TimeAsync(() => plugin.StartupAsync(), metricName).AnyContext();
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Error calling startup in plugin \"{PluginName}\": {Message}", plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling startup in plugin {PluginName}: {Message}", plugin.Name, ex.Message);
                 }
             }
         }
@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Error calling event processing in plugin \"{PluginName}\": {Message}", plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling event processing in plugin {PluginName}: {Message}", plugin.Name, ex.Message);
                 }
             }
         }
@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                         break;
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Error calling event processed in plugin \"{PluginName}\": {Message}", plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling event processed in plugin {PluginName}: {Message}", plugin.Name, ex.Message);
                 }
             }
         }

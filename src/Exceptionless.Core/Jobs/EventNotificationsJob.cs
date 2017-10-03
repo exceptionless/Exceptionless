@@ -100,7 +100,7 @@ namespace Exceptionless.Core.Jobs {
                         var info = await _parser.ParseAsync(request.UserAgent).AnyContext();
                         if (info != null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns)) {
                             shouldReport = false;
-                            if (shouldLog) _logger.LogInformation("Skipping because event is from a bot \"{UserAgent}\".", request.UserAgent);
+                            if (shouldLog) _logger.LogInformation("Skipping because event is from a bot {UserAgent}.", request.UserAgent);
                         }
                     }
 

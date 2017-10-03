@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Extensions {
             try {
                 eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(path, cancellationToken).AnyContext();
             } catch (Exception ex) {
-                logger.LogError(ex, "Error retrieving event post data \"{Path}\".", path);
+                logger.LogError(ex, "Error retrieving event post data {Path}.", path);
                 return null;
             }
 
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Extensions {
 
                 return await storage.DeleteFileAsync(path).AnyContext();
             } catch (Exception ex) {
-                logger.LogError(ex, "Error archiving event post data \"{Path}\".", path);
+                logger.LogError(ex, "Error archiving event post data {Path}.", path);
                 return false;
             }
         }

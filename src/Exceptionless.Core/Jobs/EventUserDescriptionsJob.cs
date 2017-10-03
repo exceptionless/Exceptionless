@@ -28,10 +28,10 @@ namespace Exceptionless.Core.Jobs {
                 await ProcessUserDescriptionAsync(context.QueueEntry.Value).AnyContext();
                 _logger.LogInformation("Processed user description: id={Id}", context.QueueEntry.Id);
             } catch (DocumentNotFoundException ex){
-                _logger.LogError(ex, "An event with this reference id \"{ReferenceId}\" has not been processed yet or was deleted. Queue Id: {Id}", ex.Id, context.QueueEntry.Id);
+                _logger.LogError(ex, "An event with this reference id {ReferenceId} has not been processed yet or was deleted. Queue Id: {Id}", ex.Id, context.QueueEntry.Id);
                 return JobResult.FromException(ex);
             } catch (Exception ex) {
-                _logger.LogError(ex, "An error occurred while processing the EventUserDescription '{Id}': {Message}", context.QueueEntry.Id, ex.Message);
+                _logger.LogError(ex, "An error occurred while processing the EventUserDescription {Id}: {Message}", context.QueueEntry.Id, ex.Message);
                 return JobResult.FromException(ex);
             }
 

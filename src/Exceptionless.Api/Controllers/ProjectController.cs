@@ -36,7 +36,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly BillingManager _billingManager;
         private readonly SlackService _slackService;
 
-        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IEventRepository eventRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, SlackService slackService, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(projectRepository, mapper, validator, loggerFactory) {
+        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IEventRepository eventRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, SlackService slackService, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(projectRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
             _eventRepository = eventRepository;
             _workItemQueue = workItemQueue;
@@ -54,7 +54,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewProject>))]
-        public async Task<IActionResult> GetAsync(int page = 1, int limit = 10, string mode = null) {
+        public async Task<IActionResult> GetAsync([FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] string mode = null) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), o => o.PageNumber(page).PageLimit(limit));
@@ -74,10 +74,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         /// <response code="404">The organization could not be found.</response>
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
+        [HttpGet("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewProject>))]
-        public async Task<IActionResult> GetByOrganizationAsync(string organization, int page = 1, int limit = 10, string mode = null) {
+        public async Task<IActionResult> GetByOrganizationAsync(string organization, [FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] string mode = null) {
             if (String.IsNullOrEmpty(organization) || !CanAccessOrganization(organization))
                 return NotFound();
 
@@ -98,10 +97,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="id">The identifier of the project.</param>
         /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         /// <response code="404">The project could not be found.</response>
-        [HttpGet]
-        [Route("{id:objectid}", Name = "GetProjectById")]
+        [HttpGet("{id:objectid}", Name = "GetProjectById")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewProject))]
-        public async Task<IActionResult> GetByIdAsync(string id, string mode = null) {
+        public async Task<IActionResult> GetByIdAsync(string id, [FromQuery] string mode = null) {
             var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
@@ -121,8 +119,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">An error occurred while creating the project.</response>
         /// <response code="409">The project already exists.</response>
         [HttpPost]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewProject))]
-        public Task<IActionResult> PostAsync(NewProject project) {
+        [SwaggerResponse(StatusCodes.Status201Created, Type = typeof(ViewProject))]
+        public Task<IActionResult> PostAsync([FromBody] NewProject project) {
             return PostImplAsync(project);
         }
 
@@ -133,10 +131,10 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="changes">The changes</param>
         /// <response code="400">An error occurred while updating the project.</response>
         /// <response code="404">The project could not be found.</response>
-        [HttpPatch]
-        [HttpPut]
-        [Route("{id:objectid}")]
-        public Task<IActionResult> PatchAsync(string id, Delta<UpdateProject> changes) {
+        [HttpPatch("{id:objectid}")]
+        [HttpPut("{id:objectid}")]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewProject))]
+        public Task<IActionResult> PatchAsync(string id, [FromBody] Delta<UpdateProject> changes) {
             return PatchImplAsync(id, changes);
         }
 
@@ -148,8 +146,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">One or more validation errors occurred.</response>
         /// <response code="404">One or more projects were not found.</response>
         /// <response code="500">An error occurred while deleting one or more projects.</response>
-        [HttpDelete]
-        [Route("{ids:objectids}")]
+        [HttpDelete("{ids:objectids}")]
+        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
         public Task<IActionResult> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
@@ -163,13 +161,12 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="v">The client configuration version.</param>
         /// <response code="304">The client configuration version is the current version.</response>
         /// <response code="404">The project could not be found.</response>
-        [HttpGet]
-        [Route("config")]
-        [Route("{id:objectid}/config")]
-        [Route("~/api/v1/project/config")]
+        [HttpGet("config")]
+        [HttpGet("{id:objectid}/config")]
+        [HttpGet("~/api/v1/project/config")]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ClientConfiguration))]
-        public async Task<IActionResult> GetConfigAsync(string id = null, int? v = null) {
+        public async Task<IActionResult> GetConfigAsync(string id = null, [FromQuery] int? v = null) {
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();
 
@@ -191,9 +188,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="value">The configuration value.</param>
         /// <response code="400">Invalid configuration value.</response>
         /// <response code="404">The project could not be found.</response>
-        [HttpPost]
-        [Route("{id:objectid}/config")]
-        public async Task<IActionResult> SetConfigAsync(string id, string key, [FromBody] string value) {
+        [HttpPost("{id:objectid}/config")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
+        public async Task<IActionResult> SetConfigAsync(string id, [FromQuery] string key, [FromBody] string value) {
             if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value))
                 return BadRequest();
 
@@ -215,9 +212,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="key">The key name of the configuration object.</param>
         /// <response code="400">Invalid key value.</response>
         /// <response code="404">The project could not be found.</response>
-        [HttpDelete]
-        [Route("{id:objectid}/config")]
-        public async Task<IActionResult> DeleteConfigAsync(string id, string key) {
+        [HttpDelete("{id:objectid}/config")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
+        public async Task<IActionResult> DeleteConfigAsync(string id, [FromQuery] string key) {
             if (String.IsNullOrWhiteSpace(key))
                 return BadRequest();
 
@@ -238,8 +235,8 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the project.</param>
         /// <response code="404">The project could not be found.</response>
-        [HttpGet]
-        [Route("{id:objectid}/reset-data")]
+        [HttpGet("{id:objectid}/reset-data")]
+        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
         public async Task<IActionResult> ResetDataAsync(string id) {
             var project = await GetModelAsync(id);
             if (project == null)
@@ -254,8 +251,7 @@ namespace Exceptionless.Api.Controllers {
             return WorkInProgress(new [] { workItemId });
         }
 
-        [HttpGet]
-        [Route("{id:objectid}/notifications")]
+        [HttpGet("{id:objectid}/notifications")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> GetNotificationSettingsAsync(string id) {
@@ -272,8 +268,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="id">The identifier of the project.</param>
         /// <param name="userId">The identifier of the user.</param>
         /// <response code="404">The project could not be found.</response>
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
+        [HttpGet("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(NotificationSettings))]
         public async Task<IActionResult> GetNotificationSettingsAsync(string id, string userId) {
             var project = await GetModelAsync(id);
@@ -294,8 +289,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="integration">The identifier of the integration.</param>
         /// <response code="404">The project or integration could not be found.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet]
-        [Route("{id:objectid}/{integration:minlength(1)}/notifications")]
+        [HttpGet("{id:objectid}/{integration:minlength(1)}/notifications")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(NotificationSettings))]
         public async Task<IActionResult> GetIntegrationNotificationSettingsAsync(string id, string integration) {
             var project = await GetModelAsync(id);
@@ -315,10 +309,10 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="userId">The identifier of the user.</param>
         /// <param name="settings">The notification settings.</param>
         /// <response code="404">The project could not be found.</response>
-        [HttpPut]
-        [HttpPost]
-        [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
-        public async Task<IActionResult> SetNotificationSettingsAsync(string id, string userId, NotificationSettings settings) {
+        [HttpPut("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
+        [HttpPost("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
+        public async Task<IActionResult> SetNotificationSettingsAsync(string id, string userId, [FromBody] NotificationSettings settings) {
             var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
@@ -343,10 +337,10 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="settings">The notification settings.</param>
         /// <response code="404">The project or integration could not be found.</response>
         /// <response code="426">Please upgrade your plan to enable integrations.</response>
-        [HttpPut]
-        [HttpPost]
-        [Route("{id:objectid}/{integration:minlength(1)}/notifications")]
-        public async Task<IActionResult> SetIntegrationNotificationSettingsAsync(string id, string integration, NotificationSettings settings) {
+        [HttpPut("{id:objectid}/{integration:minlength(1)}/notifications")]
+        [HttpPost("{id:objectid}/{integration:minlength(1)}/notifications")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
+        public async Task<IActionResult> SetIntegrationNotificationSettingsAsync(string id, string integration, [FromBody] NotificationSettings settings) {
             if (!String.Equals(Project.NotificationIntegrations.Slack, integration))
                 return NotFound();
 
@@ -376,8 +370,8 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="id">The identifier of the project.</param>
         /// <param name="userId">The identifier of the user.</param>
         /// <response code="404">The project could not be found.</response>
-        [HttpDelete]
-        [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
+        [HttpDelete("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteNotificationSettingsAsync(string id, string userId) {
             var project = await GetModelAsync(id, false);
             if (project == null)
@@ -401,10 +395,10 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="name">The tab name.</param>
         /// <response code="400">Invalid tab name.</response>
         /// <response code="404">The project could not be found.</response>
-        [HttpPut]
-        [HttpPost]
-        [Route("{id:objectid}/promotedtabs")]
-        public async Task<IActionResult> PromoteTabAsync(string id, string name) {
+        [HttpPut("{id:objectid}/promotedtabs")]
+        [HttpPost("{id:objectid}/promotedtabs")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
+        public async Task<IActionResult> PromoteTabAsync(string id, [FromQuery] string name) {
             if (String.IsNullOrWhiteSpace(name))
                 return BadRequest();
 
@@ -427,9 +421,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="name">The tab name.</param>
         /// <response code="400">Invalid tab name.</response>
         /// <response code="404">The project could not be found.</response>
-        [HttpDelete]
-        [Route("{id:objectid}/promotedtabs")]
-        public async Task<IActionResult> DemoteTabAsync(string id, string name) {
+        [HttpDelete("{id:objectid}/promotedtabs")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
+        public async Task<IActionResult> DemoteTabAsync(string id, [FromQuery] string name) {
             if (String.IsNullOrWhiteSpace(name))
                 return BadRequest();
 
@@ -452,10 +446,10 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="organizationId">If set the check name will be scoped to a specific organization.</param>
         /// <response code="201">The project name is available.</response>
         /// <response code="204">The project name is not available.</response>
-        [HttpGet]
-        [Route("check-name")]
-        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects/check-name")]
-        public async Task<IActionResult> IsNameAvailableAsync(string name, string organizationId = null) {
+        [HttpGet("check-name")]
+        [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects/check-name")]
+        [SwaggerResponse(StatusCodes.Status201Created)]
+        public async Task<IActionResult> IsNameAvailableAsync([FromQuery] string name, string organizationId = null) {
             if (await IsProjectNameAvailableInternalAsync(organizationId, name))
                 return StatusCode(StatusCodes.Status204NoContent);
 
@@ -481,9 +475,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="value">Any string value.</param>
         /// <response code="400">Invalid key or value.</response>
         /// <response code="404">The project could not be found.</response>
-        [HttpPost]
-        [Route("{id:objectid}/data")]
-        public async Task<IActionResult> PostDataAsync(string id, string key, [FromBody]string value) {
+        [HttpPost("{id:objectid}/data")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
+        public async Task<IActionResult> PostDataAsync(string id, [FromQuery] string key, [FromBody] string value) {
             if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value) || key.StartsWith("-"))
                 return BadRequest();
 
@@ -504,9 +498,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="key">The key name of the data object.</param>
         /// <response code="400">Invalid key or value.</response>
         /// <response code="404">The project could not be found.</response>
-        [HttpDelete]
-        [Route("{id:objectid}/data")]
-        public async Task<IActionResult> DeleteDataAsync(string id, string key) {
+        [HttpDelete("{id:objectid}/data")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
+        public async Task<IActionResult> DeleteDataAsync(string id, [FromQuery] string key) {
             if (String.IsNullOrWhiteSpace(key) || key.StartsWith("-"))
                 return BadRequest();
 
@@ -528,9 +522,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid code or error contacting slack.</response>
         /// <response code="404">The project could not be found.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpPost]
-        [Route("{id:objectid}/slack")]
-        public async Task<IActionResult> AddSlackAsync(string id, string code) {
+        [HttpPost("{id:objectid}/slack")]
+        public async Task<IActionResult> AddSlackAsync(string id, [FromQuery] string code) {
             if (String.IsNullOrWhiteSpace(code))
                 return BadRequest();
 
@@ -564,8 +557,8 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the project.</param>
         /// <response code="404">The project could not be found.</response>
-        [HttpDelete]
-        [Route("{id:objectid}/slack")]
+        [HttpDelete("{id:objectid}/slack")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> RemoveSlackAsync(string id) {
             var project = await GetModelAsync(id, false);
             if (project == null)
