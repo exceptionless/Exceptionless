@@ -101,7 +101,7 @@ namespace Exceptionless.Core.Helpers {
                     types.AddRange(from implementingType in assembly.GetTypes() where implementingType.IsClass && !implementingType.IsNotPublic && !implementingType.IsAbstract && type.IsAssignableFrom(implementingType) select implementingType);
                 } catch (ReflectionTypeLoadException ex) {
                     string loaderMessages = String.Join(", ", ex.LoaderExceptions.ToList().Select(le => le.Message));
-                    Trace.TraceInformation("Unable to search types from assembly {AssemblyFullName} for plugins of type {TypeName}: {Message}", assembly.FullName, type.Name, loaderMessages);
+                    Trace.TraceInformation("Unable to search types from assembly {0} for plugins of type {1}: {2}", assembly.FullName, type.Name, loaderMessages);
                 }
             }
 

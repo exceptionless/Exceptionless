@@ -212,7 +212,7 @@ namespace Exceptionless.Core {
             settings.GitHubAppId = config.GetValue<string>(nameof(GitHubAppId));
             settings.GitHubAppSecret = config.GetValue<string>(nameof(GitHubAppSecret));
             settings.StripeApiKey = config.GetValue<string>(nameof(StripeApiKey));
-            settings.StorageFolder = config.GetValue<string>(nameof(StorageFolder));
+            settings.StorageFolder = config.GetValue<string>(nameof(StorageFolder), "|DataDirectory|\\storage");
             settings.BulkBatchSize = config.GetValue(nameof(BulkBatchSize), 1000);
 
             settings.EnableAccountCreation = config.GetValue(nameof(EnableAccountCreation), true);

@@ -11,7 +11,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Update="..\run.bat" CopyToOutputDirectory="Always" />
-
+    
     <None Include="..\appsettings.yml" Link="appsettings.yml" CopyToOutputDirectory="Always" />
     <None Include="..\appsettings.*.yml" Link="%(Filename).yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
   </ItemGroup>
