@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task EnforceEventCountLimitsAsync(Organization organization) {
-            _logger.LogInformation("Enforcing event count limits for organization '{OrganizationName}' with Id: '{organization}'", organization.Name, organization.Id);
+            _logger.LogInformation("Enforcing event count limits for organization {OrganizationName} with Id: {organization}", organization.Name, organization.Id);
 
             try {
                 int retentionDays = organization.RetentionDays;
@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Jobs {
                 var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
                 await _eventRepository.RemoveAllByDateAsync(organization.Id, cutoff).AnyContext();
             } catch (Exception ex) {
-                _logger.LogError(ex, "Error enforcing limits: org={OrganizationName} id={organization} message=\"{Message}\"", organization.Name, organization.Id, ex.Message);
+                _logger.LogError(ex, "Error enforcing limits: org={OrganizationName} id={organization} message={Message}", organization.Name, organization.Id, ex.Message);
             }
         }
     }

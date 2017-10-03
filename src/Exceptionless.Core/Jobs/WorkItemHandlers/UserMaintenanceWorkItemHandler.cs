@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
             string email = user.EmailAddress?.Trim().ToLowerInvariant();
             if (!String.Equals(user.EmailAddress, email)) {
-                Log.LogInformation("Normalizing user email address \"{EmailAddress}\" to \"{NewEmailAddress}\"", user.EmailAddress, email);
+                Log.LogInformation("Normalizing user email address {EmailAddress} to {NewEmailAddress}", user.EmailAddress, email);
                 user.EmailAddress = email;
             }
         }

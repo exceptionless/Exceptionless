@@ -5,6 +5,26 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Mail\Templates\event-notice.html" />
+    <None Remove="Mail\Templates\organization-added.html" />
+    <None Remove="Mail\Templates\organization-invited.html" />
+    <None Remove="Mail\Templates\organization-notice.html" />
+    <None Remove="Mail\Templates\organization-payment-failed.html" />
+    <None Remove="Mail\Templates\project-daily-summary.html" />
+    <None Remove="Mail\Templates\user-email-verify.html" />
+    <None Remove="Mail\Templates\user-password-reset.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Mail\Templates\event-notice.html" />
+    <EmbeddedResource Include="Mail\Templates\organization-added.html" />
+    <EmbeddedResource Include="Mail\Templates\organization-invited.html" />
+    <EmbeddedResource Include="Mail\Templates\organization-notice.html" />
+    <EmbeddedResource Include="Mail\Templates\organization-payment-failed.html" />
+    <EmbeddedResource Include="Mail\Templates\project-daily-summary.html" />
+    <EmbeddedResource Include="Mail\Templates\user-email-verify.html" />
+    <EmbeddedResource Include="Mail\Templates\user-password-reset.html" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="AutoMapper" version="6.1.1" />
     <PackageReference Include="AutoMapper.Collection" Version="3.1.2" />
     <PackageReference Include="FluentValidation" version="7.1.1" />

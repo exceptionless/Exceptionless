@@ -93,14 +93,14 @@ namespace Exceptionless.Api.Security {
             var tokenRecord = await _tokenRepository.GetByIdAsync(token, o => o.Cache());
             if (tokenRecord == null) {
                 using (_logger.BeginScope(new ExceptionlessState().Property("Headers", context.Request.Headers)))
-                    _logger.LogWarning("Token \"{Token}\" for \"{Path}\" not found.", token, context.Request.Path);
+                    _logger.LogWarning("Token {Token} for {Path} not found.", token, context.Request.Path);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return;
             }
 
             if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < SystemClock.UtcNow) {
                 using (_logger.BeginScope(new ExceptionlessState().Property("Headers", context.Request.Headers)))
-                    _logger.LogWarning("Token \"{Token}\" for \"{Path}\" expired on {TokenExpiresUtc}.", token, context.Request.Path, tokenRecord.ExpiresUtc.Value);
+                    _logger.LogWarning("Token {Token} for {Path} expired on {TokenExpiresUtc}.", token, context.Request.Path, tokenRecord.ExpiresUtc.Value);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return;
             }
@@ -109,7 +109,7 @@ namespace Exceptionless.Api.Security {
                 var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
                 if (user == null) {
                     using (_logger.BeginScope(new ExceptionlessState().Property("Headers", context.Request.Headers)))
-                        _logger.LogWarning("Could not find user for token \"{Token}\" with user \"{user}\" for \"{Path}\".", token, tokenRecord.UserId, context.Request.Path);
+                        _logger.LogWarning("Could not find user for token {Token} with user {user} for {Path}.", token, tokenRecord.UserId, context.Request.Path);
 
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     return;

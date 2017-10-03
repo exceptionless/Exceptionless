@@ -15,8 +15,8 @@ namespace Exceptionless.Api.Utility {
             if (context == null)
                 throw new ArgumentNullException(nameof(context));
 
-            var contentTypeHeader = MediaTypeHeaderValue.Parse(context.HttpContext.Request.ContentType);
-            var contentType = contentTypeHeader.MediaType.ToString();
+            var contentTypeHeader = context.HttpContext.Request.ContentType != null ? MediaTypeHeaderValue.Parse(context.HttpContext.Request.ContentType) : null;
+            var contentType = contentTypeHeader?.MediaType.ToString();
             if (String.IsNullOrEmpty(contentType) || contentType == "text/plain" ||
                 contentType == "application/octet-stream")
                 return true;
@@ -26,8 +26,8 @@ namespace Exceptionless.Api.Utility {
 
         public override Task<InputFormatterResult> ReadRequestBodyAsync(InputFormatterContext context) {
             var request = context.HttpContext.Request;
-            var contentTypeHeader = MediaTypeHeaderValue.Parse(request.ContentType);
-            var contentType = contentTypeHeader.MediaType.ToString();
+            var contentTypeHeader = request.ContentType != null ? MediaTypeHeaderValue.Parse(request.ContentType) : null;
+            string contentType = contentTypeHeader?.MediaType.ToString();
 
             if (String.IsNullOrEmpty(contentType) || contentType == "text/plain") {
                 using (var reader = new StreamReader(request.Body)) {

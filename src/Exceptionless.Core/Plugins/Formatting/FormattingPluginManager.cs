@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Error calling GetStackSummaryHtml for stack {stack} in plugin \"{PluginName}\": {Message}", stack.Id, plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling GetStackSummaryHtml for stack {stack} in plugin {PluginName}: {Message}", stack.Id, plugin.Name, ex.Message);
                 }
             }
 
@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Error calling GetEventSummaryHtml for Event {id} in plugin \"{PluginName}\": {Message}", ev.Id, plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling GetEventSummaryHtml for Event {id} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
                 }
             }
 
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (!String.IsNullOrEmpty(result))
                         return result;
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Error calling GetStackTitle for Event {id} in plugin \"{PluginName}\": {Message}", ev.Id, plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling GetStackTitle for Event {id} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
                 }
             }
 
@@ -70,7 +70,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Error calling GetEventNotificationMailMessage for Event {id} in plugin \"{PluginName}\": {Message}", ev.Id, plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling GetEventNotificationMailMessage for Event {id} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
                 }
             }
 
@@ -87,7 +87,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (message != null)
                         return message;
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Error calling GetSlackEventNotificationMessage for Event {id} in plugin \"{PluginName}\": {Message}", ev.Id, plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling GetSlackEventNotificationMessage for Event {id} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
                 }
             }
 

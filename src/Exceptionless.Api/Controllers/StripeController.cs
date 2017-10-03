@@ -19,7 +19,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostAsync([FromBody]string json) {
+        public async Task<IActionResult> PostAsync([FromBody] string json) {
             using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext))) {
                 StripeEvent stripeEvent;
                 try {

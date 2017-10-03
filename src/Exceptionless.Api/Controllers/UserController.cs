@@ -31,7 +31,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly ICacheClient _cache;
         private readonly IMailer _mailer;
 
-        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
             _cache = new ScopedCacheClient(cacheClient, "User");
             _mailer = mailer;
@@ -41,8 +41,7 @@ namespace Exceptionless.Api.Controllers {
         /// Get current user
         /// </summary>
         /// <response code="404">The current user could not be found.</response>
-        [HttpGet]
-        [Route("me")]
+        [HttpGet("me")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewCurrentUser))]
         public async Task<IActionResult> GetCurrentUserAsync() {
             var currentUser = await GetModelAsync(CurrentUser.Id);
@@ -57,8 +56,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the user.</param>
         /// <response code="404">The user could not be found.</response>
-        [HttpGet]
-        [Route("{id:objectid}", Name = "GetUserById")]
+        [HttpGet("{id:objectid}", Name = "GetUserById")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewUser))]
         public Task<IActionResult> GetByIdAsync(string id) {
             return GetByIdImplAsync(id);
@@ -71,10 +69,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="404">The organization could not be found.</response>
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/users")]
+        [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/users")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewUser>))]
-        public async Task<IActionResult> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
+        public async Task<IActionResult> GetByOrganizationAsync(string organizationId, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
@@ -108,10 +105,10 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="changes">The changes</param>
         /// <response code="400">An error occurred while updating the user.</response>
         /// <response code="404">The user could not be found.</response>
-        [HttpPatch]
-        [HttpPut]
-        [Route("{id:objectid}")]
-        public Task<IActionResult> PatchAsync(string id, Delta<UpdateUser> changes) {
+        [HttpPatch("{id:objectid}")]
+        [HttpPut("{id:objectid}")]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewUser))]
+        public Task<IActionResult> PatchAsync(string id, [FromBody] Delta<UpdateUser> changes) {
             return PatchImplAsync(id, changes);
         }
 
@@ -122,8 +119,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="email">The new email address.</param>
         /// <response code="400">An error occurred while updating the users email address.</response>
         /// <response code="404">The user could not be found.</response>
-        [HttpPost]
-        [Route("{id:objectid}/email-address/{email:minlength(1)}")]
+        [HttpPost("{id:objectid}/email-address/{email:minlength(1)}")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(UpdateEmailAddressResult))]
         public async Task<IActionResult> UpdateEmailAddressAsync(string id, string email) {
             var user = await GetModelAsync(id, false);
@@ -173,8 +169,8 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="token">The token identifier.</param>
         /// <response code="400">Verify Email Address Token has expired.</response>
         /// <response code="404">The user could not be found.</response>
-        [HttpGet]
-        [Route("verify-email-address/{token:token}")]
+        [HttpGet("verify-email-address/{token:token}")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> VerifyAsync(string token) {
             var user = await _repository.GetByVerifyEmailAddressTokenAsync(token);
             if (user == null) {
@@ -200,8 +196,8 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the user.</param>
         /// <response code="404">The user could not be found.</response>
-        [HttpGet]
-        [Route("{id:objectid}/resend-verification-email")]
+        [HttpGet("{id:objectid}/resend-verification-email")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> ResendVerificationEmailAsync(string id) {
             var user = await GetModelAsync(id, false);
             if (user == null)
@@ -216,8 +212,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        [HttpPost]
-        [Route("{id:objectid}/admin-role")]
+        [HttpPost("{id:objectid}/admin-role")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> AddAdminRoleAsync(string id) {
@@ -233,8 +228,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("{id:objectid}/admin-role")]
+        [HttpDelete("{id:objectid}/admin-role")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> DeleteAdminRoleAsync(string id) {

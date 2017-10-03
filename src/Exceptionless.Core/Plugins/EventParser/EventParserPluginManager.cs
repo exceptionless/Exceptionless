@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
 
                     return events;
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Error calling ParseEvents in plugin \"{PluginName}\": {Message}", plugin.Name, ex.Message);
+                    _logger.LogError(ex, "Error calling ParseEvents in plugin {PluginName}: {Message}", plugin.Name, ex.Message);
                 }
             }
 

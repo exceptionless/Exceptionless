@@ -103,7 +103,7 @@ namespace Exceptionless.Serializer {
 
                     return;
                 } catch (Exception) {
-                    _logger.LogInformation("Error deserializing known data type \"{Name}\": {Value}", p.Name, p.Value.ToString());
+                    _logger.LogInformation("Error deserializing known data type {Name}: {Value}", p.Name, p.Value.ToString());
                 }
             }
 
