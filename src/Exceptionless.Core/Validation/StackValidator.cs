@@ -26,6 +26,10 @@ namespace Exceptionless.Core.Validation {
             if (stack.Type != null && (stack.Type.Length < 1 || stack.Type.Length > 100))
                 result.Errors.Add(new ValidationFailure("Type", "Type must be specified and cannot be longer than 100 characters."));
 
+            // NOTE: We need to write a migration to cleanup all old stacks of 50 or more tags so there never is an error while saving.
+            //if (stack.Tags.Count > 50)
+            //    result.Errors.Add(new ValidationFailure("Tags", "Tags can't include more than 50 tags."));
+
             foreach (string tag in stack.Tags) {
                 if (String.IsNullOrEmpty(tag))
                     result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));
