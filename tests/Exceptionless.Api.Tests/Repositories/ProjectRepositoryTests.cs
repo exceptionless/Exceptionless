@@ -56,53 +56,27 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task GetByOrganizationIdsAsync() {
-            var project1 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, name: "One"));
-            var project2 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.SuspendedProjectId, organizationId: TestConstants.OrganizationId, name: "Two"));
-
-            Assert.Equal(0, _cache.Count);
-            Assert.Equal(0, _cache.Hits);
-            Assert.Equal(0, _cache.Misses);
+            var project1 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, name: "One"), o => o.ImmediateConsistency());
+            var project2 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.SuspendedProjectId, organizationId: TestConstants.OrganizationId, name: "Two"), o => o.ImmediateConsistency());
 
             Log.SetLogLevel<ProjectRepository>(LogLevel.Trace);
-            await _configuration.Client.RefreshAsync(Indices.All);
             var results = await _repository.GetByOrganizationIdsAsync(new[] { project1.OrganizationId, TestConstants.OrganizationId2 });
             Assert.NotNull(results);
             Assert.Equal(2, results.Documents.Count);
-            Assert.Equal(0, _cache.Count);
-            Assert.Equal(0, _cache.Hits);
-            Assert.Equal(0, _cache.Misses);
 
             results = await _repository.GetByOrganizationIdsAsync(new[] { project1.OrganizationId });
             Assert.NotNull(results);
             Assert.Equal(2, results.Documents.Count);
-            Assert.Equal(1, _cache.Count);
-            Assert.Equal(0, _cache.Hits);
-            Assert.Equal(1, _cache.Misses);
 
             results = await _repository.GetByOrganizationIdsAsync(new[] { project1.OrganizationId });
             Assert.NotNull(results);
             Assert.Equal(2, results.Documents.Count);
-            Assert.Equal(1, _cache.Count);
-            Assert.Equal(1, _cache.Hits);
-            Assert.Equal(1, _cache.Misses);
 
-            await _repository.RemoveAsync(project2.Id, o => o.Notifications(false));
-            Assert.Equal(0, _cache.Count);
-            Assert.Equal(1, _cache.Hits);
-            Assert.Equal(2, _cache.Misses);
-
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await _repository.RemoveAsync(project2.Id, o => o.Notifications(false).ImmediateConsistency());
             results = await _repository.GetByOrganizationIdsAsync(new[] { project1.OrganizationId });
             Assert.NotNull(results);
             Assert.Equal(1, results.Documents.Count);
-            Assert.Equal(1, _cache.Count);
-            Assert.Equal(1, _cache.Hits);
-            Assert.Equal(3, _cache.Misses);
-
             await _repository.RemoveAllAsync(o => o.Notifications(false));
-            Assert.Equal(0, _cache.Count);
-            Assert.Equal(1, _cache.Hits);
-            Assert.Equal(3, _cache.Misses);
         }
     }
 }

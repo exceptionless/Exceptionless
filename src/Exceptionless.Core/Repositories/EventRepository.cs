@@ -110,12 +110,13 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, ExceptionlessSystemFilter systemFilter, string userFilter, DateTime? utcStart, DateTime? utcEnd) {
-            string previous = await GetPreviousEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd).AnyContext();
-            string next = await GetNextEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd).AnyContext();
+            var previous = GetPreviousEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd);
+            var next = GetNextEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd);
+            await Task.WhenAll(previous, next).AnyContext();
 
             return new PreviousAndNextEventIdResult {
-                Previous = previous,
-                Next = next
+                Previous = previous.Result,
+                Next = next.Result
             };
         }
 
@@ -184,7 +185,7 @@ namespace Exceptionless.Core.Repositories {
 
             var results = await FindAsync(q => q
                 .DateRange(utcEventDate, utcEnd, (PersistentEvent e) => e.Date)
-                .Index(utcStart, utcEventDate)
+                .Index(utcEventDate, utcEnd)
                 .SortAscending(e => e.Date)
                 .Include(e => e.Id, e => e.Date)
                 .SystemFilter(systemFilter)
