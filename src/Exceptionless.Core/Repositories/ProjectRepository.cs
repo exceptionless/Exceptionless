@@ -31,11 +31,6 @@ namespace Exceptionless.Core.Repositories {
             if (organizationIds.Count == 0)
                 return Task.FromResult(new FindResults<Project>());
 
-            if (organizationIds.Count == 1) {
-                var commandOptions = options.Configure();
-                return GetByOrganizationIdAsync(organizationIds.First(), o => commandOptions.Cache());
-            }
-
             return FindAsync(q => q.Organizations(organizationIds), options);
         }
 
@@ -56,10 +51,9 @@ namespace Exceptionless.Core.Repositories {
             await InvalidateCacheAsync(projects).AnyContext();
         }
 
-        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<Project> documents, ICommandOptions options = null) {
+        protected override Task InvalidateCachedQueriesAsync(IReadOnlyCollection<Project> documents, ICommandOptions options = null) {
             var organizations = documents.Select(d => d.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
-            await Cache.RemoveAllAsync(organizations.Select(id => $"count:Organization:{id}")).AnyContext();
-            await base.InvalidateCachedQueriesAsync(documents, options).AnyContext();
+            return Task.WhenAll(Cache.RemoveAllAsync(organizations.Select(id => $"count:Organization:{id}")), base.InvalidateCachedQueriesAsync(documents, options));
         }
     }
 }
