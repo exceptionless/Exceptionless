@@ -5,6 +5,24 @@ using System.Linq;
 
 namespace Exceptionless.Core.Extensions {
     public static class DictionaryExtensions {
+        public static void Trim(this HashSet<string> items, Predicate<string> itemsToRemove, Predicate<string> itemsToAlwaysInclude, int maxLength) {
+            if (items == null)
+                return;
+
+            items.RemoveWhere(itemsToRemove);
+            if (maxLength > 0 && items.Count > maxLength) {
+                foreach (string item in items.ToList()) {
+                    if (items.Count <= maxLength)
+                        break;
+
+                    if (itemsToAlwaysInclude(item))
+                        continue;
+
+                    items.Remove(item);
+                }
+            }
+        }
+
         public static void AddItemIfNotEmpty(this IDictionary<string, string> dictionary, string key, string value) {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
