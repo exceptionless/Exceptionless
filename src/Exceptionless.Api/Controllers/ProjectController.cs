@@ -82,7 +82,7 @@ namespace Exceptionless.Api.Controllers {
 
             page = GetPage(page);
             limit = GetLimit(limit);
-            var projects = await _repository.GetByOrganizationIdAsync(organization, o => o.PageNumber(page).PageLimit(limit).Cache());
+            var projects = await _repository.GetByOrganizationIdAsync(organization, o => o.PageNumber(page).PageLimit(limit));
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
