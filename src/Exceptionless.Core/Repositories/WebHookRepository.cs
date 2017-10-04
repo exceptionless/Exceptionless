@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
@@ -36,24 +35,22 @@ namespace Exceptionless.Core.Repositories {
             public const string StackPromoted = "StackPromoted";
         }
 
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents, ICommandOptions options = null) {
+        protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents, ICommandOptions options = null) {
             if (!IsCacheEnabled)
-                return;
+                return Task.CompletedTask;
 
-            await Cache.RemoveAllAsync(documents.Select(d => d.Value)
-                .Union(documents.Select(d => d.Original).Where(d => d != null))
-                .Select(h => String.Concat("Organization:", h.OrganizationId, ":Project:", h.ProjectId))
-                .Distinct()).AnyContext();
-
-            await base.InvalidateCacheAsync(documents, options).AnyContext();
+            var keys = documents.Select(d => d.Value).Union(documents.Select(d => d.Original).Where(d => d != null)).Select(h => String.Concat("Organization:", h.OrganizationId, ":Project:", h.ProjectId)).Distinct();
+            return Task.WhenAll(Cache.RemoveAllAsync(keys), base.InvalidateCacheAsync(documents, options));
         }
 
-        protected override async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<WebHook> documents, ICommandOptions options = null) {
+        protected override Task InvalidateCachedQueriesAsync(IReadOnlyCollection<WebHook> documents, ICommandOptions options = null) {
             var keysToRemove = documents.Select(d => $"paged:Organization:{d.OrganizationId}:Project:{d.ProjectId}").Distinct();
+            var tasks = new List<Task>();
             foreach (string key in keysToRemove)
-                await Cache.RemoveByPrefixAsync(key).AnyContext();
+                tasks.Add(Cache.RemoveByPrefixAsync(key));
 
-            await base.InvalidateCachedQueriesAsync(documents, options).AnyContext();
+            tasks.Add(base.InvalidateCachedQueriesAsync(documents, options));
+            return Task.WhenAll(tasks);
         }
     }
 }

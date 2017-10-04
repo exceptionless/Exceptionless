@@ -61,22 +61,23 @@ namespace Exceptionless.Core.Repositories {
 
             var commandOptions = options.Configure();
             if (commandOptions.ShouldUseCache())
-                commandOptions.CacheKey(String.Concat("paged:Organization:", organizationId));
+                throw new Exception("Caching of paged queries is not allowed");
 
             var filter = Query<User>.Term(u => u.OrganizationIds, organizationId);
             return FindAsync(q => q.ElasticFilter(filter).SortAscending(u => u.EmailAddress.Suffix("keyword")), o => commandOptions);
         }
 
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents, ICommandOptions options = null) {
+        protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents, ICommandOptions options = null) {
             if (!IsCacheEnabled)
-                return;
+                return Task.CompletedTask;
 
             var users = documents.UnionOriginalAndModified();
             var keysToRemove = users.Select(u => String.Concat("Email:", u.EmailAddress.ToLowerInvariant().Trim())).Distinct().ToList();
-            await Cache.RemoveAllAsync(keysToRemove).AnyContext();
-
-            await InvalidateCachedQueriesAsync(users, options).AnyContext();
-            await base.InvalidateCacheAsync(documents, options).AnyContext();
+            return Task.WhenAll(
+                Cache.RemoveAllAsync(keysToRemove),
+                InvalidateCachedQueriesAsync(users, options),
+                base.InvalidateCacheAsync(documents, options)
+            );
         }
 
         private Task OnDocumentsAdded(object sender, DocumentsEventArgs<User> documents) {
@@ -86,10 +87,8 @@ namespace Exceptionless.Core.Repositories {
             return InvalidateCachedQueriesAsync(documents.Documents, documents.Options);
         }
 
-        protected virtual async Task InvalidateCachedQueriesAsync(IReadOnlyCollection<User> documents, ICommandOptions options = null) {
-            var organizations = documents.SelectMany(d => d.OrganizationIds).Distinct().Where(id => !String.IsNullOrEmpty(id));
-            foreach (string organizationId in organizations)
-                await Cache.RemoveByPrefixAsync($"paged:Organization:{organizationId}").AnyContext();
+        protected virtual Task InvalidateCachedQueriesAsync(IReadOnlyCollection<User> documents, ICommandOptions options = null) {
+            return Task.CompletedTask;
         }
     }
 }
