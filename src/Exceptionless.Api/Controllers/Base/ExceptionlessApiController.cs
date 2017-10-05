@@ -21,7 +21,7 @@ namespace Exceptionless.Api.Controllers {
     public abstract class ExceptionlessApiController : ApiController {
         public const string API_PREFIX = "api/v2";
         protected const int DEFAULT_LIMIT = 10;
-        protected const int MAXIMUM_LIMIT = 100;
+        protected const int MAXIMUM_LIMIT = 1000;
         protected const int MAXIMUM_SKIP = 1000;
 
         public ExceptionlessApiController() {
