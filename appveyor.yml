@@ -21,10 +21,10 @@ init:
   - ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
 
 before_build:
-  - nuget restore -verbosity quiet
-  - ps: .\build\Set-BuildVersion -Version $env:APPVEYOR_BUILD_VERSION -Suffix $env:VERSION_SUFFIX
+  - ps: .\build\Set-BuildVersion.ps1 -Version $env:APPVEYOR_BUILD_VERSION -Suffix $env:VERSION_SUFFIX
 
 build_script:
+  - dotnet --info
   - dotnet publish -c Release
 
 on_failure:
