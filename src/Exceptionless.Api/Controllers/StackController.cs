@@ -31,7 +31,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Api.Controllers {
     [Route(API_PREFIX + "/stacks")]
-    [Authorize(Roles = AuthorizationRoles.User)]
+    [Authorize(Roles = AuthorizationRoles.Client)]
     public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack> {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
@@ -69,6 +69,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.</param>
         /// <response code="404">The stack could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetStackById")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(Stack))]
         public async Task<IActionResult> GetByIdAsync(string id, [FromQuery] string offset = null) {
             var stack = await GetModelAsync(id);
@@ -85,6 +86,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="version">A version number that the stack was fixed in.</param>
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost("{ids:objectids}/mark-fixed")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
         public async Task<IActionResult> MarkFixedAsync(string ids, [FromQuery] string version = null) {
             version = version?.Trim();
@@ -122,7 +124,6 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         [HttpPost("~/api/v1/stack/markfixed")]
         [HttpPost("mark-fixed")]
-        [Authorize(Roles = AuthorizationRoles.Client)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> MarkFixedAsync([FromBody] JObject data) {
             string id = null;
@@ -149,6 +150,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid reference link.</response>
         /// <response code="404">The stack could not be found.</response>
         [HttpPost("{id:objectid}/add-link")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> AddLinkAsync(string id, [FromBody] string url) {
             if (String.IsNullOrWhiteSpace(url))
@@ -171,7 +173,6 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>=
         [HttpPost("~/api/v1/stack/addlink")]
         [HttpPost("add-link")]
-        [Authorize(Roles = AuthorizationRoles.Client)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> AddLinkAsync([FromBody] JObject data) {
             string id = null;
@@ -200,6 +201,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid reference link.</response>
         /// <response code="404">The stack could not be found.</response>
         [HttpPost("{id:objectid}/remove-link")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> RemoveLinkAsync(string id, [FromBody] string url) {
             if (String.IsNullOrWhiteSpace(url))
@@ -223,6 +225,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="ids">A comma delimited list of stack identifiers.</param>
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost("{ids:objectids}/mark-critical")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> MarkCriticalAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -247,6 +250,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="204">The stacks were marked as not critical.</response>
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete("{ids:objectids}/mark-critical")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> MarkNotCriticalAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -270,6 +274,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="ids">A comma delimited list of stack identifiers.</param>
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost("{ids:objectids}/notifications")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> EnableNotificationsAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -294,6 +299,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="204">Notifications are disabled for the stacks.</response>
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete("{ids:objectids}/notifications")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> DisableNotificationsAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -318,6 +324,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="204">The stacks were marked as not fixed.</response>
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete("{ids:objectids}/mark-fixed")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
         public async Task<IActionResult> MarkNotFixedAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -351,6 +358,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="ids">A comma delimited list of stack identifiers.</param>
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost("{ids:objectids}/mark-hidden")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
         public async Task<IActionResult> MarkHiddenAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -385,6 +393,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="204">The stacks were marked as not hidden.</response>
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete("{ids:objectids}/mark-hidden")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
         public async Task<IActionResult> MarkNotHiddenAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -420,6 +429,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="426">Promote to External is a premium feature used to promote an error stack to an external system.</response>
         /// <response code="501">"No promoted web hooks are configured for this project.</response>
         [HttpPost("{id:objectid}/promote")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> PromoteAsync(string id) {
             if (String.IsNullOrEmpty(id))
@@ -460,6 +470,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks were not found.</response>
         /// <response code="500">An error occurred while deleting one or more stacks.</response>
         [HttpDelete("{ids:objectids}")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
         public Task<IActionResult> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
@@ -491,6 +502,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetAsync([FromQuery] string filter = null, [FromQuery] string sort = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
@@ -546,6 +558,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The organization could not be found.</response>
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetByOrganizationAsync(string organizationId = null, [FromQuery] string filter = null, [FromQuery] string sort = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
@@ -575,6 +588,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The organization could not be found.</response>
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetByProjectAsync(string projectId = null, [FromQuery] string filter = null, [FromQuery] string sort = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var project = await GetProjectAsync(projectId);
@@ -604,6 +618,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="400">Invalid filter.</response>
         [HttpGet("new")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetNewAsync([FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
@@ -629,6 +644,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/new")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetNewByOrganizationAsync(string organizationId, [FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
@@ -657,6 +673,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetNewByProjectAsync(string projectId, [FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var project = await GetProjectAsync(projectId);
@@ -686,6 +703,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="400">Invalid filter.</response>
         [HttpGet("recent")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetRecentAsync([FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
@@ -711,6 +729,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/recent")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetRecentByOrganizationAsync(string organizationId, [FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
@@ -739,6 +758,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetRecentByProjectAsync(string projectId, [FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var project = await GetProjectAsync(projectId);
@@ -768,6 +788,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="400">Invalid filter.</response>
         [HttpGet("frequent")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetFrequentAsync([FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
@@ -793,6 +814,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/frequent")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetFrequentByOrganizationAsync(string organizationId, [FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery]  int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
@@ -821,6 +843,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetFrequentByProjectAsync(string projectId, [FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var project = await GetProjectAsync(projectId);
@@ -850,6 +873,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="400">Invalid filter.</response>
         [HttpGet("users")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetUsersAsync([FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
@@ -875,6 +899,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/users")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetUsersByOrganizationAsync(string organizationId, [FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
@@ -903,6 +928,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/users")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<IActionResult> GetUsersByProjectAsync(string projectId, [FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var project = await GetProjectAsync(projectId);

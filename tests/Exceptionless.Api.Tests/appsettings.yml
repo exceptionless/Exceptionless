@@ -26,9 +26,11 @@ AppSettings:
 
   # Runs the jobs in the current website process
   RunJobsInProcess: false
+  DisableBootstrapStartupActions: true
+  DisableWebSockets: true
 
   # Folder used to store event post data
-  StorageFolder: ..\..\..\..\Exceptionless.Web\storage
+  StorageFolder: ..\..\..\..\..\src\Exceptionless.Web\storage
 Logging:
   IncludeScopes: false
   Debug:

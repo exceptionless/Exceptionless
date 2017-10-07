@@ -88,7 +88,7 @@ namespace Exceptionless.Core {
 
         public bool EnableActiveDirectoryAuth { get; internal set; }
 
-        public bool EnableWebSockets { get; private set; }
+        public bool DisableWebSockets { get; private set; }
 
         public string Version { get; private set; }
 
@@ -246,7 +246,7 @@ namespace Exceptionless.Core {
             settings.LdapConnectionString = configRoot.GetConnectionString(nameof(LdapConnectionString));
             settings.EnableActiveDirectoryAuth = config.GetValue(nameof(EnableActiveDirectoryAuth), !String.IsNullOrEmpty(settings.LdapConnectionString));
 
-            settings.EnableWebSockets = config.GetValue(nameof(EnableWebSockets), true);
+            settings.DisableWebSockets = config.GetValue(nameof(DisableWebSockets), false);
             settings.Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
 
             Current = settings;

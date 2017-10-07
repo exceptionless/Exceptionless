@@ -30,7 +30,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             settings.Formatting = Formatting.Indented;
             object data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
             if (expectData) {
-                string filePath = $@"..\..\..\Plugins\WebHookData\v{version}.event.expected.json";
+                string filePath = Path.GetFullPath($@"..\..\..\Plugins\WebHookData\v{version}.event.expected.json");
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
             } else {
                 Assert.Null(data);
@@ -44,7 +44,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             settings.Formatting = Formatting.Indented;
             object data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
             if (expectData) {
-                string filePath = $@"..\..\..\Plugins\WebHookData\v{version}.stack.expected.json";
+                string filePath = Path.GetFullPath($@"..\..\..\Plugins\WebHookData\v{version}.stack.expected.json");
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
             } else {
                 Assert.Null(data);
