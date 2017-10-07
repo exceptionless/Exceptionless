@@ -44,6 +44,7 @@ ROBOCOPY "$releaseArtifactsDir\app" "$releaseTempDir\wwwroot" /XD "$releaseArtif
 Copy-Item -Path "$base_dir\build\Start-ElasticSearch.ps1" -Destination $releaseTempDir
 Copy-Item -Path "$base_dir\build\elasticsearch.yml" -Destination $releaseTempDir
 Copy-Item -Path "$base_dir\build\elasticsearch.prod.yml" -Destination $releaseTempDir
+Copy-Item -Path "$base_dir\build\jvm.options" -Destination $releaseTempDir
 Copy-Item -Path "$base_dir\build\Start-Website.ps1" -Destination $releaseTempDir
 "PowerShell .\Start-Elasticsearch.ps1`r`nPowerShell .\Start-Website.ps1" | Out-File "$releaseTempDir\Start.bat" -Encoding "ascii"
 Copy-Item -Path "$base_dir\build\readme.txt" -Destination $releaseTempDir
