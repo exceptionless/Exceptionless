@@ -7,6 +7,8 @@ pull_requests:
   do_not_increment_build_number: true
 
 environment:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
   JAVA_HOME: C:\Progra~1\Java\jdk1.8.0
   API_URL: https://#{api.hostheader}
   BUILD_REPO_URL:
@@ -19,12 +21,12 @@ init:
   - git config --global user.email "builds@exceptionless.io"
   - git config --global user.name "AppVeyor CI"
   - ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
+  - dotnet --info
 
 before_build:
   - ps: .\build\Set-BuildVersion.ps1 -Version $env:APPVEYOR_BUILD_VERSION -Suffix $env:VERSION_SUFFIX
 
 build_script:
-  - dotnet --info
   - dotnet publish -c Release
 
 on_failure:
