@@ -11,7 +11,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public ManualStackingTests(ITestOutputHelper output) : base(output) {}
 
         [Theory]
-        [MemberData("StackingData")]
+        [MemberData(nameof(StackingData))]
         public async Task AddManualStackSignatureData(string stackingKey, bool willAddManualStackSignature) {
             var ev = new PersistentEvent();
             ev.SetManualStackingKey(stackingKey);

@@ -501,7 +501,7 @@ namespace Exceptionless.Api.Controllers {
                 if (String.IsNullOrEmpty(appId) || String.IsNullOrEmpty(appSecret))
                     return NotFound();
 
-                var client = createClient(new RequestFactory(), new RuntimeClientConfiguration {
+                var client = createClient(new RequestFactory(), new OAuth2.Configuration.ClientConfiguration {
                     ClientId = appId,
                     ClientSecret = appSecret,
                     RedirectUri = authInfo.RedirectUri

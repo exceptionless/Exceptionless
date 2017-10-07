@@ -56,7 +56,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             Assert.Equal(2, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             var sessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
             Assert.Equal(0, sessionStarts.Sum(e => e.Value));
-            Assert.False(sessionStarts.Any(e => e.HasSessionEndTime()));
+            Assert.DoesNotContain(sessionStarts, e => e.HasSessionEndTime());
 
             var utcNow = SystemClock.UtcNow;
             await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractMinutes(1));
@@ -91,7 +91,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             Assert.Equal(2, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             var sessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
             Assert.Equal(0, sessionStarts.Sum(e => e.Value));
-            Assert.False(sessionStarts.Any(e => e.HasSessionEndTime()));
+            Assert.DoesNotContain(sessionStarts, e => e.HasSessionEndTime());
 
             var utcNow = SystemClock.UtcNow;
             await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractMinutes(1));
@@ -127,7 +127,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             await _configuration.Client.RefreshAsync(Indices.All);
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
-            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+            Assert.Single(events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
             var sessionStart = events.Documents.First(e => e.IsSessionStart());
             Assert.Equal(0, sessionStart.Value);
             Assert.False(sessionStart.HasSessionEndTime());

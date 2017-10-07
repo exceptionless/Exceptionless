@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -46,7 +45,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             var ev = GenerateEvent();
             Assert.NotNull(await EnqueueEventPostAsync(ev));
             Assert.Equal(1, (await _queue.GetQueueStatsAsync()).Enqueued);
-            Assert.Equal(1, (await _storage.GetFileListAsync()).Count());
+            Assert.Single(await _storage.GetFileListAsync());
 
             var result = await _job.RunAsync();
             Assert.True(result.IsSuccess);
@@ -67,7 +66,7 @@ namespace Exceptionless.Api.Tests.Jobs {
 
             Assert.NotNull(await EnqueueEventPostAsync(ev));
             Assert.Equal(1, (await _queue.GetQueueStatsAsync()).Enqueued);
-            Assert.Equal(1, (await _storage.GetFileListAsync()).Count());
+            Assert.Single(await _storage.GetFileListAsync());
 
             var result = await _job.RunAsync();
             Assert.False(result.IsSuccess);

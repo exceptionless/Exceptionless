@@ -199,7 +199,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         [Theory]
-        [MemberData("IPData")]
+        [MemberData(nameof(IPData))]
         public async Task CanResolveIpAsync(string ip, bool canResolve) {
             var resolver = await GetResolverAsync(Log);
             var result = await resolver.ResolveIpAsync(ip);

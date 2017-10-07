@@ -28,7 +28,7 @@ namespace Exceptionless {
                 if (!field.IsValidFieldName())
                     continue;
 
-                Type dataType = ev.Data[key].GetType();
+                var dataType = ev.Data[key].GetType();
                 if (dataType == typeof(bool)) {
                     ev.Idx[field + "-b"] = ev.Data[key];
                 } else if (dataType.IsNumeric()) {
@@ -70,6 +70,7 @@ namespace Exceptionless {
         /// <summary>
         /// Allows you to reference a parent event by it's <seealso cref="Event.ReferenceId" /> property. This allows you to have parent and child relationships.
         /// </summary>
+        /// <param name="ev">The event</param>
         /// <param name="name">Reference name</param>
         /// <param name="id">The reference id that points to a specific event</param>
         public static void SetEventReference(this PersistentEvent ev, string name, string id) {

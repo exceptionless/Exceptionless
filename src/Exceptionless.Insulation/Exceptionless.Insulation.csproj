@@ -9,7 +9,7 @@
     <PackageReference Include="Exceptionless.AspNetCore" version="4.1.1964-pre" />
     <PackageReference Include="Foundatio.AzureStorage" version="6.0.1467-pre" />
     <PackageReference Include="Foundatio.Redis" version="6.0.1485-pre" />
-    <PackageReference Include="Geocoding.net" version="3.6.1" />
+    <PackageReference Include="Geocoding.Google" version="4.0.0" />
     <PackageReference Include="MailKit" version="1.18.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />

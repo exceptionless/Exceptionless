@@ -6,10 +6,13 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ApprovalTests" Version="3.0.13" />
-    <PackageReference Include="Foundatio.Logging.Xunit" Version="5.1.1521" />
+    <PackageReference Include="Exceptionless.RandomData" Version="1.1.47" />
+    <PackageReference Include="FluentRest" Version="4.0.0.43" />
+    <PackageReference Include="Foundatio.Logging.Xunit" Version="6.0.1532-pre" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="2.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0-preview-20170923-02" />
-    <PackageReference Include="xunit" Version="2.3.0-beta5-build3769" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.0-beta5-build3769" />
+    <PackageReference Include="xunit" Version="2.3.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.0" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
   </ItemGroup>
   <ItemGroup>
@@ -18,7 +21,10 @@
   <ItemGroup>
     <None Update="**\*.json" CopyToOutputDirectory="Always" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
+  <Target Name="CopyAditionalFiles" AfterTargets="Build" Condition="'$(TargetFramework)'!=''">
+    <ItemGroup>
+      <DepsFilePaths Include="$([System.IO.Path]::ChangeExtension('%(_ResolvedProjectReferencePaths.FullPath)', '.deps.json'))" />
+    </ItemGroup>
+    <Copy SourceFiles="%(DepsFilePaths.FullPath)" DestinationFolder="$(OutputPath)" Condition="Exists('%(DepsFilePaths.FullPath)')" />
+  </Target>
 </Project>

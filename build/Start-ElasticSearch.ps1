@@ -1,5 +1,5 @@
 ﻿Param(
-    [string]$Version = "5.6.1",
+    [string]$Version = "5.6.2",
     [int]$NodeCount = 1,
     [switch]$SkipNodeStart = $false,
     [int]$StartPort = 9200,
@@ -36,6 +36,22 @@ If (-Not $SkipNodeStart) {
         Add-Type -assembly "system.io.compression.filesystem"
         [io.compression.zipfile]::ExtractToDirectory("$PSScriptRoot\elasticsearch-$Version.zip", $PSScriptRoot)
         Remove-Item elasticsearch-$Version.zip
+
+        Write-Output "Installing mapper-size plugin ..."
+        Invoke-Expression ".\elasticsearch-$Version\bin\elasticsearch-plugin.bat install mapper-size" | Out-Null
+        if ($LastExitCode -ne 0) {
+            $host.SetShouldExit($LastExitCode)
+            Return
+        }
+        Write-Output "Done installing mapper-size plugin."
+
+        Write-Output "Installing x-pack plugin..."
+        Invoke-Expression ".\elasticsearch-$Version\bin\elasticsearch-plugin.bat install x-pack --batch" | Out-Null
+        if ($LastExitCode -ne 0) {
+            $host.SetShouldExit($LastExitCode)
+            Return
+        }
+        Write-Output "Done installing x-pack plugin."
     } Else {
         Write-Output "Using already downloaded and extracted Elasticsearch $Version..."
     }
@@ -43,19 +59,12 @@ If (-Not $SkipNodeStart) {
     For ($i = 1; $i -le $NodeCount; $i++) {
         $nodePort = $StartPort + $i - 1
         Write-Output "Starting Elasticsearch $Version node $i port $nodePort"
-        
+
         If (-Not (Test-Path -Path ".\elasticsearch-$Version-node$i")) {
             Copy-Item .\elasticsearch-$Version .\elasticsearch-$Version-node$i -Recurse
             Copy-Item .\elasticsearch.yml .\elasticsearch-$Version-node$i\config -Force
             Copy-Item .\jvm.options .\elasticsearch-$Version-node$i\config -Force
             Add-Content .\elasticsearch-$Version-node$i\config\elasticsearch.yml "`nhttp.port: $nodePort"
-            
-            Invoke-Expression ".\elasticsearch-$Version-node$i\bin\elasticsearch-plugin.bat install mapper-size"
-            Invoke-Expression ".\elasticsearch-$Version-node$i\bin\elasticsearch-plugin.bat install x-pack --batch"
-            if ($LastExitCode -ne 0) {
-                $host.SetShouldExit($LastExitCode)
-                Return
-            }
         }
 
         Start-Process "elasticsearch-$Version-node$i\bin\elasticsearch.bat"
@@ -66,10 +75,10 @@ If (-Not $SkipNodeStart) {
             If ($attempts -gt 0) {
                 Start-Sleep -s 2
             }
-            
+
             Write-Host "Waiting for Elasticsearch $Version node $i to respond ($attempts)..."
             $res = $null
-            
+
             Try {
                 $res = Invoke-WebRequest http://localhost:$nodePort -UseBasicParsing
                 If ($res -ne $null -And $res.StatusCode -eq 200) {
@@ -118,10 +127,10 @@ If ($StartKibana -Or $OpenKibana) {
         If ($attempts -gt 0) {
             Start-Sleep -s 2
         }
-        
+
         Write-Host "Waiting for Kibana $Version to respond ($attempts)..."
         $res = $null
-        
+
         Try {
             $res = Invoke-WebRequest http://localhost:5601 -UseBasicParsing
             If ($res -ne $null -And $res.StatusCode -eq 200) {

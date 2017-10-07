@@ -122,7 +122,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var result = await _eventRepository.CountBySearchAsync(null, null, "terms:version");
             Assert.Equal(eventCount, result.Total);
             // NOTE: The events are created without a version.
-            Assert.Equal(result.Aggregations.Terms<string>("terms_version").Buckets.Count, 0);
+            Assert.Equal(0, result.Aggregations.Terms<string>("terms_version").Buckets.Count);
         }
 
         [Fact]
