@@ -56,6 +56,7 @@ namespace Exceptionless.Api.Tests
                     }
                 }
                 request.ContentData = content;
+                request.ContentType = "application/json";
             }
 
             return _client.SendAsync(request);
