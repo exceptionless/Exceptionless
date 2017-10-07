@@ -1,4 +1,4 @@
-﻿version: 4.1.{build}
+﻿version: 4.2.{build}
 os: Visual Studio 2017
 configuration: Release
 clone_depth: 2
@@ -21,7 +21,6 @@ init:
   - git config --global user.email "builds@exceptionless.io"
   - git config --global user.name "AppVeyor CI"
   - ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
-  - dotnet --info
 
 before_build:
   - ps: .\build\Set-BuildVersion.ps1 -Version $env:APPVEYOR_BUILD_VERSION -Suffix $env:VERSION_SUFFIX
