@@ -36,7 +36,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         };
 
         [Theory]
-        [MemberData("EventData")]
+        [MemberData(nameof(EventData))]
         public async Task ParseEventsAsync(string input, int expectedEvents, string[] expectedMessage, string expectedType) {
             var events = await _parser.ParseEventsAsync(input, 2, "exceptionless/2.0.0.0");
             Assert.Equal(expectedEvents, events.Count);
@@ -49,18 +49,18 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         [Theory]
-        [MemberData("Events")]
+        [MemberData(nameof(Events))]
         public async Task VerifyEventParserSerialization(string eventsFilePath) {
             string json = File.ReadAllText(eventsFilePath);
 
             var events = await _parser.ParseEventsAsync(json, 2, "exceptionless/2.0.0.0");
-            Assert.Equal(1, events.Count);
+            Assert.Single(events);
 
             ApprovalsUtility.VerifyFile(eventsFilePath, events.First().ToJson(Formatting.Indented, GetService<JsonSerializerSettings>()));
         }
 
         [Theory]
-        [MemberData("Events")]
+        [MemberData(nameof(Events))]
         public void CanDeserializeEvents(string eventsFilePath) {
             string json = File.ReadAllText(eventsFilePath);
 

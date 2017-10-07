@@ -1,37 +1,26 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Net.Http;
-using System.Security.Claims;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Results;
-using Exceptionless.Api.Controllers;
-using Exceptionless.Core.Authorization;
+using Exceptionless.Api.Tests.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
-using Foundatio.Metrics;
 using Foundatio.Queues;
-using Foundatio.Utility;
+using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
-using Microsoft.Owin;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using Run = Exceptionless.Api.Tests.Utility.Run;
-using User = Exceptionless.Core.Models.User;
 
 namespace Exceptionless.Api.Tests.Controllers {
-    public class EventControllerTests : ElasticTestBase {
-        private readonly EventController _eventController;
+    public class EventControllerTests : IntegrationTestsBase {
         private readonly IEventRepository _eventRepository;
         private readonly IQueue<EventPost> _eventQueue;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
@@ -41,7 +30,6 @@ namespace Exceptionless.Api.Tests.Controllers {
         public EventControllerTests(ITestOutputHelper output) : base(output) {
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();
-            _eventController = GetService<EventController>();
             _eventRepository = GetService<IEventRepository>();
             _eventQueue = GetService<IQueue<EventPost>>();
             _eventUserDescriptionQueue = GetService<IQueue<EventUserDescription>>();
@@ -51,20 +39,12 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostStringAsync() {
-            _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(new User {
-                EmailAddress = TestConstants.UserEmail,
-                Id = TestConstants.UserId,
-                OrganizationIds = new[] { TestConstants.OrganizationId },
-                Roles = new[] { AuthorizationRoles.Client }
-            }.ToIdentity(new Core.Models.Token { Id = TestConstants.TokenId, DefaultProjectId = TestConstants.ProjectId })), false, false);
-
-            var metricsClient = GetService<IMetricsClient>() as InMemoryMetricsClient;
-            Assert.NotNull(metricsClient);
-
-            Assert.True(await metricsClient.WaitForCounterAsync("eventpost.enqueued", work: async () => {
-                var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string"));
-                Assert.IsType<StatusCodeResult>(actionResult);
-            }));
+            await SendRequest(r => r
+                .Post()
+                .AppendPath("events")
+                .Content("simple string")
+                .StatusCodeShouldBeAccepted()
+            );
 
             Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
             Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
@@ -78,24 +58,13 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostCompressedStringAsync() {
-            _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(GetClientToken().ToIdentity()), true, false);
-            var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string").Compress());
-            Assert.IsType<StatusCodeResult>(actionResult);
-            Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
-            Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
+            await SendRequest(r => r
+               .Post()
+               .AppendPath("events")
+               .Content(Encoding.UTF8.GetBytes("simple string").Compress())
+               .StatusCodeShouldBeAccepted()
+            );
 
-            var processEventsJob = GetService<EventPostsJob>();
-            await processEventsJob.RunAsync();
-
-            Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Completed);
-            Assert.Equal(1, await EventCountAsync());
-        }
-
-        [Fact]
-        public async Task CanPostSingleEventAsync() {
-            _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(GetClientToken().ToIdentity()), true, false);
-            var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string").Compress());
-            Assert.IsType<StatusCodeResult>(actionResult);
             Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
             Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
 
@@ -108,9 +77,12 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostUserDescriptionAsync() {
-            _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(GetClientToken().ToIdentity()), true, false);
-            var actionResult = await _eventController.SetUserDescriptionAsync("TestReferenceId", new EventUserDescription { Description = "Test Description", EmailAddress = TestConstants.UserEmail });
-            Assert.IsType<StatusCodeResult>(actionResult);
+            await SendRequest(r => r
+               .Post()
+               .AppendPath("events/by-ref/TestReferenceId/user-description")
+               .Content(new EventUserDescription { Description = "Test Description", EmailAddress = TestConstants.UserEmail })
+               .StatusCodeShouldBeAccepted()
+            );
 
             var stats = await _eventUserDescriptionQueue.GetQueueStatsAsync();
             Assert.Equal(1, stats.Enqueued);
@@ -130,11 +102,15 @@ namespace Exceptionless.Api.Tests.Controllers {
             const int batchCount = 10;
 
             await Run.InParallelAsync(batchCount, async i => {
-                _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(GetClientToken().ToIdentity()), true, false);
                 var events = new RandomEventGenerator().Generate(batchSize);
                 var compressedEvents = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).Compress();
-                var actionResult = await _eventController.PostAsync(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0");
-                Assert.IsType<StatusCodeResult>(actionResult);
+
+                await SendRequest(r => r
+                   .Post()
+                   .AppendPath("events")
+                   .Content(compressedEvents)
+                   .StatusCodeShouldBeAccepted()
+                );
             });
 
             await _configuration.Client.RefreshAsync(Indices.All);
@@ -150,48 +126,20 @@ namespace Exceptionless.Api.Tests.Controllers {
             await _configuration.Client.RefreshAsync(Indices.All);
             var stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(batchCount, stats.Completed);
-            var minimum = batchSize * batchCount;
+            int minimum = batchSize * batchCount;
             Assert.InRange(await EventCountAsync(), minimum, minimum * 2);
         }
 
-        private HttpRequestMessage CreateRequestMessage(ClaimsPrincipal user, bool isCompressed, bool isJson, string charset = "utf-8") {
-            var request = new HttpRequestMessage();
-
-            var context = new OwinContext();
-            context.Request.User = Thread.CurrentPrincipal = user;
-            request.SetOwinContext(context);
-            request.SetConfiguration(new HttpConfiguration());
-            request.Content = new HttpMessageContent(new HttpRequestMessage(HttpMethod.Post, "/api/v2/events"));
-            if (isCompressed)
-                request.Content.Headers.ContentEncoding.Add("gzip");
-            request.Content.Headers.ContentType.MediaType = isJson ? "application/json" : "text/plain";
-            request.Content.Headers.ContentType.CharSet = charset;
-
-            return request;
-        }
-
-        private Core.Models.Token GetClientToken() {
-            var utcNow = SystemClock.UtcNow;
-            return new Core.Models.Token {
-                Id = StringExtensions.GetNewToken(),
-                Type = TokenType.Access,
-                CreatedBy = TestConstants.UserId,
-                CreatedUtc = utcNow,
-                UpdatedUtc = utcNow,
-                OrganizationId = TestConstants.OrganizationId,
-                ProjectId = TestConstants.ProjectId
-            };
-        }
-
-        public async Task<long> EventCountAsync() {
+        private async Task<long> EventCountAsync() {
             await _configuration.Client.RefreshAsync(Indices.All);
             return await _eventRepository.CountAsync();
         }
 
-        public async Task CreateOrganizationAndProjectsAsync() {
-            await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations());
-            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects());
-            await _configuration.Client.RefreshAsync(Indices.All);
+        private Task CreateOrganizationAndProjectsAsync() {
+            return Task.WhenAll(
+                _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(), o => o.ImmediateConsistency()),
+                _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency())
+            );
         }
     }
 }

@@ -31,7 +31,7 @@ namespace Exceptionless.Api.Tests.Validation {
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < iterations; i++) {
                 var result = _validator.Validate(_benchmarkEvent);
-                Assert.Equal(true, result.IsValid);
+                Assert.True(result.IsValid);
             }
 
             sw.Stop();

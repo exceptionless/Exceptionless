@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Queries.Validation {
 
         public QueryValidator(IQueryParser parser, ILoggerFactory loggerFactory) {
             _parser = parser;
-            _logger = loggerFactory?.CreateLogger(GetType()) ?? NullLogger.Instance;
+            _logger = loggerFactory?.CreateLogger(GetType());
         }
 
         public async Task<QueryProcessResult> ValidateQueryAsync(string query) {
