@@ -63,7 +63,6 @@ If (-Not $SkipNodeStart) {
         If (-Not (Test-Path -Path ".\elasticsearch-$Version-node$i")) {
             Copy-Item .\elasticsearch-$Version .\elasticsearch-$Version-node$i -Recurse
             Copy-Item .\elasticsearch.yml .\elasticsearch-$Version-node$i\config -Force
-            Copy-Item .\jvm.options .\elasticsearch-$Version-node$i\config -Force
             Add-Content .\elasticsearch-$Version-node$i\config\elasticsearch.yml "`nhttp.port: $nodePort"
         }
 
