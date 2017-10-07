@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq;
-using System.Threading;
 using Exceptionless.Core;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
@@ -20,17 +18,31 @@ using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
-using LogLevel = Exceptionless.Logging.LogLevel;
 
 namespace Exceptionless.Insulation {
     public class Bootstrapper {
-        public static void ConfigureLoggerFactory(ILoggerFactory loggerFactory) {
-            loggerFactory.AddConsole();
-            loggerFactory.AddExceptionless();
-        }
-
         public static void RegisterServices(IServiceCollection container, bool runMaintenanceTasks, ILoggerFactory loggerFactory) {
             var logger = loggerFactory.CreateLogger<Bootstrapper>();
+
+            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
+                var client = ExceptionlessClient.Default;
+                client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
+                client.Configuration.ApiKey = Settings.Current.ExceptionlessApiKey;
+
+                //client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
+                client.Configuration.SetDefaultMinLogLevel(Exceptionless.Logging.LogLevel.Warn);
+                client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
+                client.Configuration.SetVersion(Settings.Current.Version);
+                if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
+                    client.Configuration.Enabled = false;
+
+                client.Configuration.UseInMemoryStorage();
+                client.Configuration.UseReferenceIds();
+                loggerFactory.AddExceptionless(client);
+
+                container.AddSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
+                container.AddSingleton<ExceptionlessClient>(client);
+            }
 
             if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
                 container.AddSingleton<IGeocodeService>(s => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
@@ -90,28 +102,6 @@ namespace Exceptionless.Insulation {
                 container.AddSingleton<IFileStorage>(s => new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events"));
             else
                 logger.LogWarning("Azure Storage is NOT enabled.");
-
-            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
-                var client = ExceptionlessClient.Default;
-                container.AddSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
-                container.AddSingleton<ExceptionlessClient>(client);
-
-                // TODO...
-                //client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
-                client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
-                client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
-                client.Configuration.SetVersion(Settings.Current.Version);
-                if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
-                    client.Configuration.Enabled = false;
-
-                client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
-                client.Startup(Settings.Current.ExceptionlessApiKey);
-
-                // TODO...
-                //container.AddStartupAction(() => client.RegisterWebApi(container.GetInstance<HttpConfiguration>()));
-                client.Configuration.UseInMemoryStorage();
-                client.Configuration.UseReferenceIds();
-            }
         }
 
         private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, int retries = 2, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {

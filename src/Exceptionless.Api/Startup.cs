@@ -23,6 +23,9 @@ namespace Exceptionless.Api {
         }
 
         public void Configure(IApplicationBuilder app) {
+            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl))
+                app.UseExceptionless(ExceptionlessClient.Default);
+
             app.UseCors(c => c
                 .AllowAnyHeader()
                 .AllowAnyMethod()
@@ -55,16 +58,19 @@ namespace Exceptionless.Api {
             app.UseWebSockets();
             app.UseMiddleware<MessageBusBrokerMiddleware>();
 
-            var lifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
-            lifetime.ApplicationStarted.Register(() => {
-                // run startup actions registered in the container
-                if (!Settings.Current.DisableBootstrapStartupActions)
-                    app.ApplicationServices.RunStartupActionsAsync(lifetime.ApplicationStopping).GetAwaiter().GetResult();
-            });
+            // run startup actions registered in the container
+            if (!Settings.Current.DisableBootstrapStartupActions) {
+                var lifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
+                lifetime.ApplicationStarted.Register(() => app.ApplicationServices.RunStartupActionsAsync(lifetime.ApplicationStopping).GetAwaiter().GetResult());
+            }
         }
 
         public void ConfigureServices(IServiceCollection services) {
             ConfigureServicesInternal(services);
+        }
+
+        public void ConfigureProductionServices(IServiceCollection services) {
+            ConfigureServicesInternal(services, true);
         }
 
         private void ConfigureServicesInternal(IServiceCollection services, bool includeInsulation = false) {
@@ -118,10 +124,6 @@ namespace Exceptionless.Api {
                 MaxRequestsForUserIdentifierFunc = userIdentifier => Settings.Current.ApiThrottleLimit,
                 Period = TimeSpan.FromMinutes(15)
             });
-        }
-
-        public void ConfigureProductionServices(IServiceCollection services) {
-            ConfigureServicesInternal(services, true);
         }
     }
 }

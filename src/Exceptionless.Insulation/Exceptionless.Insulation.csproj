@@ -1,12 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\build\common.props" />
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Exceptionless.Extensions.Logging" version="4.1.1964-pre" />
-    <PackageReference Include="Exceptionless.AspNetCore" version="4.1.1964-pre" />
+    <PackageReference Include="Exceptionless.Extensions.Logging" version="4.1.1966-pre" />
     <PackageReference Include="Foundatio.AzureStorage" version="6.0.1467-pre" />
     <PackageReference Include="Foundatio.Redis" version="6.0.1485-pre" />
     <PackageReference Include="Geocoding.Google" version="4.0.0" />
@@ -19,8 +18,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
   </ItemGroup>
 </Project>
