@@ -14,8 +14,10 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Plugins;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventProcessor;
+using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queries.Validation;
@@ -50,6 +52,7 @@ using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 namespace Exceptionless.Core {
     public class Bootstrapper {
         public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory) {
+            container.AddSingleton<IServiceCollection>(container);
             container.RegisterLogger(loggerFactory);
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
                 DateParseHandling = DateParseHandling.DateTimeOffset
@@ -137,7 +140,13 @@ namespace Exceptionless.Core {
 
             container.AddSingleton(typeof(IValidator<>), typeof(Bootstrapper).Assembly);
             container.AddSingleton(typeof(IPipelineAction<EventContext>), typeof(Bootstrapper).Assembly);
-            container.AddSingleton(typeof(IJob), typeof(Bootstrapper).Assembly, typeof(MailMessageJob).Assembly);
+            container.AddSingleton(typeof(IPlugin), typeof(Bootstrapper).Assembly);
+            container.AddSingleton<EventParserPluginManager>();
+            container.AddSingleton<EventPluginManager>();
+            container.AddSingleton<EventUpgraderPluginManager>();
+            container.AddSingleton<FormattingPluginManager>();
+            container.AddSingleton<WebHookDataPluginManager>();
+            container.AddSingleton(typeof(IJob), typeof(Bootstrapper).Assembly);
             container.AddSingleton<WorkItemJob>();
             container.AddSingleton<MaintainIndexesJob>();
 
