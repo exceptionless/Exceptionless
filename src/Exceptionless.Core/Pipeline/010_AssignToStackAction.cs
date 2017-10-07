@@ -92,8 +92,9 @@ namespace Exceptionless.Core.Pipeline {
                         ctx.Stack.Tags = new TagSet();
 
                     var newTags = ctx.Event.Tags.Where(t => !ctx.Stack.Tags.Contains(t)).ToList();
-                    if (newTags.Count > 0) {
+                    if (newTags.Count > 0 || ctx.Stack.Tags.Count > 50 || ctx.Stack.Tags.Any(t => t.Length > 100)) {
                         ctx.Stack.Tags.AddRange(newTags);
+                        ctx.Stack.Tags.RemoveExcessTags();
                         // make sure the stack gets saved
                         if (!stacks.ContainsKey(ctx.Stack.SignatureHash))
                             stacks.Add(ctx.Stack.SignatureHash, Tuple.Create(true, ctx.Stack));

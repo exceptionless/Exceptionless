@@ -583,6 +583,61 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
+        public async Task RemoveTagsExceedingLimitsWhileKeepingKnownTags() {
+            string LargeRemovedTags = new String('x', 150);
+
+            var ev = GenerateEvent(SystemClock.UtcNow);
+            ev.Tags.Add(LargeRemovedTags);
+
+            var context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
+
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
+            Assert.NotNull(ev);
+            Assert.NotNull(ev.StackId);
+            Assert.Equal(0, ev.Tags.Count);
+
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
+            Assert.Equal(0 , stack.Tags.Count);
+
+            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
+            ev.Tags.AddRange(Enumerable.Range(0, 100).Select(i => i.ToString()));
+
+            await _configuration.Client.RefreshAsync(Indices.All);
+            context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
+
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
+            Assert.NotNull(ev);
+            Assert.NotNull(ev.StackId);
+            Assert.Equal(50, ev.Tags.Count);
+
+            stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
+            Assert.Equal(50, stack.Tags.Count);
+
+            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
+            ev.Tags.Add(new String('x', 150));
+            ev.Tags.AddRange(Enumerable.Range(100, 200).Select(i => i.ToString()));
+            ev.Tags.Add(Event.KnownTags.Critical);
+
+            await _configuration.Client.RefreshAsync(Indices.All);
+            context = await _pipeline.RunAsync(ev);
+            Assert.False(context.HasError, context.ErrorMessage);
+
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
+            Assert.NotNull(ev);
+            Assert.NotNull(ev.StackId);
+            Assert.Equal(50, ev.Tags.Count);
+            Assert.False(ev.Tags.Contains(new String('x', 150)));
+            Assert.True(ev.Tags.Contains(Event.KnownTags.Critical));
+
+            stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
+            Assert.Equal(50, stack.Tags.Count);
+            Assert.False(stack.Tags.Contains(new String('x', 150)));
+            Assert.True(stack.Tags.Contains(Event.KnownTags.Critical));
+        }
+
+        [Fact]
         public async Task EnsureSingleNewStackAsync() {
             string source = Guid.NewGuid().ToString();
             var contexts = new List<EventContext> {

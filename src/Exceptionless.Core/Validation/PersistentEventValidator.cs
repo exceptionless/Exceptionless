@@ -44,6 +44,10 @@ namespace Exceptionless.Core.Validation {
             if (!ev.HasValidReferenceId())
                 result.Errors.Add(new ValidationFailure("ReferenceId", "ReferenceId must contain between 8 and 100 alphanumeric or '-' characters."));
 
+            // NOTE: We need to write a migration to cleanup all old events of 50 or more tags so there never is an error while saving.
+            //if (ev.Tags.Count > 50)
+            //    result.Errors.Add(new ValidationFailure("Tags", "Tags can't include more than 50 tags."));
+
             foreach (string tag in ev.Tags) {
                 if (String.IsNullOrEmpty(tag))
                     result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));
