@@ -24,7 +24,7 @@ namespace Exceptionless.Api.Tests.Jobs {
         private readonly IProjectRepository _projectRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IQueue<EventPost> _queue;
-        private readonly UserRepository _userRepository;
+        private readonly IUserRepository _userRepository;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
 
         public EventPostJobTests(ITestOutputHelper output) : base(output) {
@@ -34,7 +34,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             _projectRepository = GetService<IProjectRepository>();
             _eventRepository = GetService<IEventRepository>();
             _queue = GetService <IQueue<EventPost>>();
-            _userRepository = GetService<UserRepository>();
+            _userRepository = GetService<IUserRepository>();
             _jsonSerializerSettings = GetService<JsonSerializerSettings>();
 
             CreateDataAsync().GetAwaiter().GetResult();

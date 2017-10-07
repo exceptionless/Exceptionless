@@ -24,7 +24,7 @@ namespace Exceptionless.Api.Tests.Jobs {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IEventRepository _eventRepository;
-        private readonly UserRepository _userRepository;
+        private readonly IUserRepository _userRepository;
         private readonly EventPipeline _pipeline;
 
         public CloseInactiveSessionsJobTests(ITestOutputHelper output) : base(output) {
@@ -33,7 +33,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();
             _eventRepository = GetService<IEventRepository>();
-            _userRepository = GetService<UserRepository>();
+            _userRepository = GetService<IUserRepository>();
             _pipeline = GetService<EventPipeline>();
 
             CreateDataAsync().GetAwaiter().GetResult();

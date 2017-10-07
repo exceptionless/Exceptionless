@@ -20,7 +20,7 @@ namespace Exceptionless.Api.Tests.Validation {
             _validator = new PersistentEventValidator();
 
             var parserPluginManager = GetService<EventParserPluginManager>();
-            var events = parserPluginManager.ParseEventsAsync(File.ReadAllText(@"..\..\Search\Data\event1.json"), 2, "exceptionless/2.0.0.0").GetAwaiter().GetResult();
+            var events = parserPluginManager.ParseEventsAsync(File.ReadAllText(@"..\..\..\Search\Data\event1.json"), 2, "exceptionless/2.0.0.0").GetAwaiter().GetResult();
             _benchmarkEvent = events.First();
         }
 
