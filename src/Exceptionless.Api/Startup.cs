@@ -34,8 +34,7 @@ namespace Exceptionless.Api {
                 .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
                 .WithExposedHeaders("ETag", "Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-Result-Count"));
 
-            //config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
-            //config.MessageHandlers.Add(container.GetInstance<EncodingDelegatingHandler>());
+            app.UseResponseCompression();
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
             app.UseMiddleware<ApiKeyMiddleware>();
@@ -55,7 +54,7 @@ namespace Exceptionless.Api {
                 s.InjectOnCompleteJavaScript("docs.js");
             });
 
-            if (Settings.Current.EnableWebSockets) {
+            if (!Settings.Current.DisableWebSockets) {
                 app.UseWebSockets();
                 app.UseMiddleware<MessageBusBrokerMiddleware>();
             }
@@ -77,6 +76,7 @@ namespace Exceptionless.Api {
 
         private void ConfigureServicesInternal(IServiceCollection services, bool includeInsulation = false) {
             services.AddCors();
+            services.AddResponseCompression();
             services.Configure<ForwardedHeadersOptions>(options => {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
                 options.RequireHeaderSymmetry = false;

@@ -69,7 +69,7 @@ namespace Exceptionless.Insulation {
                 else
                     container.AddSingleton<ICacheClient>(s => CreateRedisCacheClient(s, loggerFactory));
 
-                if (Settings.Current.EnableWebSockets)
+                if (!Settings.Current.DisableWebSockets)
                     container.AddSingleton<IConnectionMapping, RedisConnectionMapping>();
                 else
                     logger.LogWarning("Web Sockets is NOT enabled.");

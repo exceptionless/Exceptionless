@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Extensions;
@@ -40,44 +41,6 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         [Fact]
-        public async Task CanPostStringAsync() {
-            await SendTokenRequest(TestConstants.ApiKey, r => r
-                .Post()
-                .AppendPath("events")
-                .Content("simple string")
-                .StatusCodeShouldBeAccepted()
-            );
-
-            Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
-            Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
-
-            var processEventsJob = GetService<EventPostsJob>();
-            await processEventsJob.RunAsync();
-
-            Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Completed);
-            Assert.Equal(1, await EventCountAsync());
-        }
-
-        [Fact]
-        public async Task CanPostCompressedStringAsync() {
-            await SendTokenRequest(TestConstants.ApiKey, r => r
-               .Post()
-               .AppendPath("events")
-               .Content(Encoding.UTF8.GetBytes("simple string").Compress())
-               .StatusCodeShouldBeAccepted()
-            );
-
-            Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
-            Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
-
-            var processEventsJob = GetService<EventPostsJob>();
-            await processEventsJob.RunAsync();
-
-            Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Completed);
-            Assert.Equal(1, await EventCountAsync());
-        }
-
-        [Fact]
         public async Task CanPostUserDescriptionAsync() {
             await SendTokenRequest(TestConstants.ApiKey, r => r
                .Post()
@@ -96,6 +59,81 @@ namespace Exceptionless.Api.Tests.Controllers {
             stats = await _eventUserDescriptionQueue.GetQueueStatsAsync();
             Assert.Equal(1, stats.Dequeued);
             Assert.Equal(1, stats.Abandoned); // Event doesn't exist
+        }
+
+        [Fact]
+        public async Task CanPostStringAsync() {
+            const string message = "simple string";
+            await SendTokenRequest(TestConstants.ApiKey, r => r
+                .Post()
+                .AppendPath("events")
+                .Content(message)
+                .StatusCodeShouldBeAccepted()
+            );
+
+            var stats = await _eventQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Enqueued);
+            Assert.Equal(0, stats.Completed);
+
+            var processEventsJob = GetService<EventPostsJob>();
+            await processEventsJob.RunAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
+
+            stats = await _eventQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Completed);
+
+            var ev = (await _eventRepository.GetAllAsync()).Documents.Single();
+            Assert.Equal(message, ev.Message);
+        }
+
+        [Fact]
+        public async Task CanPostCompressedStringAsync() {
+            const string message = "simple string";
+            await SendTokenRequest(TestConstants.ApiKey, r => r
+               .Post()
+               .AppendPath("events")
+               .Content(Encoding.UTF8.GetBytes(message).Compress())
+               .StatusCodeShouldBeAccepted()
+            );
+
+            var stats = await _eventQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Enqueued);
+            Assert.Equal(0, stats.Completed);
+
+            var processEventsJob = GetService<EventPostsJob>();
+            await processEventsJob.RunAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
+
+            stats = await _eventQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Completed);
+
+            var ev = (await _eventRepository.GetAllAsync()).Documents.Single();
+            Assert.Equal(message, ev.Message);
+        }
+
+        [Fact]
+        public async Task CanPostEventAsync() {
+            var ev = new RandomEventGenerator().Generate();
+            await SendTokenRequest(TestConstants.ApiKey, r => r
+                .Post()
+                .AppendPath("events")
+                .Content(ev)
+                .StatusCodeShouldBeAccepted()
+            );
+
+            var stats = await _eventQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Enqueued);
+            Assert.Equal(0, stats.Completed);
+
+            var processEventsJob = GetService<EventPostsJob>();
+            await processEventsJob.RunAsync();
+            await _configuration.Client.RefreshAsync(Indices.All);
+
+            stats = await _eventQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Completed);
+
+            var actual = (await _eventRepository.GetAllAsync()).Documents.Single();
+            Assert.Equal(ev.Message, actual.Message);
         }
 
         [Fact]
@@ -129,13 +167,10 @@ namespace Exceptionless.Api.Tests.Controllers {
             var stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(batchCount, stats.Completed);
             int minimum = batchSize * batchCount;
-            Assert.InRange(await EventCountAsync(), minimum, minimum * 2);
+            Assert.InRange(await _eventRepository.CountAsync(), minimum, minimum * 2);
         }
 
-        private async Task<long> EventCountAsync() {
-            await _configuration.Client.RefreshAsync(Indices.All);
-            return await _eventRepository.CountAsync();
-        }
+        // TODO: Test GZIP, Configuration Response, authentication... and more...
 
         private Task CreateOrganizationAndProjectsAsync() {
             return Task.WhenAll(

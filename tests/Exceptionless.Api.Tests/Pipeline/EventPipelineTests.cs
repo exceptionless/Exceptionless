@@ -858,8 +858,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var mappedUsers = new Dictionary<string, UserInfo>();
             var mappedIPs = new Dictionary<string, string>();
 
-            var storage = new FolderFileStorage(Path.GetFullPath(@"..\..\..\"));
-            foreach (var file in await storage.GetFileListAsync(@"Exceptionless.Web\App_Data\storage\q\*")) {
+            var storage = new FolderFileStorage(Path.GetFullPath(@"..\..\..\src"));
+            foreach (var file in await storage.GetFileListAsync(@"Exceptionless.Web\storage\q\*")) {
                 var eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(file.Path);
                 byte[] data = eventPostInfo.Data;
                 if (!String.IsNullOrEmpty(eventPostInfo.ContentEncoding))
