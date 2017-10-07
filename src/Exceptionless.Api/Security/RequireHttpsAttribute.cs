@@ -76,7 +76,7 @@ namespace Exceptionless.Api.Security {
                     host = new HostString(host.Host);
                 }
 
-                var newUrl = string.Concat(
+                string newUrl = String.Concat(
                     "https://",
                     host.ToUriComponent(),
                     request.PathBase.ToUriComponent(),

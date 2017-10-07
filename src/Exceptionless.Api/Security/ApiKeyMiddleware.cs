@@ -31,7 +31,7 @@ namespace Exceptionless.Api.Security {
         }
 
         public async Task Invoke(HttpContext context) {
-            var authHeaderValue = context.Request.Headers.TryGetAndReturn("Authorization").FirstOrDefault();
+            string authHeaderValue = context.Request.Headers.TryGetAndReturn("Authorization").FirstOrDefault();
             AuthenticationHeaderValue authHeader = null;
             if (!String.IsNullOrEmpty(authHeaderValue))
                 authHeader = AuthenticationHeaderValue.Parse(authHeaderValue);

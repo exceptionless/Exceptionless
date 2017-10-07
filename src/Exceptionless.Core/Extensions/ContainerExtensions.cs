@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Extensions {
                 : TypeHelper.GetDerivedTypes(type, assemblies));
 
             foreach (var implementingType in implementingTypes) {
-                Type registrationType = type;
+                var registrationType = type;
                 if (type.IsGenericTypeDefinition)
                     registrationType = type.MakeGenericType(implementingType.BaseType.GenericTypeArguments);
 
@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Extensions {
             }
         }
 
-        public static async Task RunStartupActionsAsync(this IServiceProvider container, CancellationToken shutdownToken = default(CancellationToken)) {
+        public static async Task RunStartupActionsAsync(this IServiceProvider container, CancellationToken shutdownToken = default) {
             foreach (var startupAction in container.GetServices<StartupActionRegistration>().OrderBy(s => s.Priority))
                 await startupAction.RunAsync(container, shutdownToken).AnyContext();
         }
@@ -93,10 +93,10 @@ namespace Exceptionless.Core.Extensions {
 
             public int Priority { get; private set; }
 
-            public async Task RunAsync(IServiceProvider serviceProvider, CancellationToken shutdownToken = default(CancellationToken)) {
+            public async Task RunAsync(IServiceProvider serviceProvider, CancellationToken shutdownToken = default) {
                 if (_actionType != null) {
-                    var startup = serviceProvider.GetRequiredService(_actionType) as IStartupAction;
-                    await startup.RunAsync(shutdownToken).AnyContext();
+                    if (serviceProvider.GetRequiredService(_actionType) is IStartupAction startup)
+                        await startup.RunAsync(shutdownToken).AnyContext();
                 } else {
                     await _action(serviceProvider, shutdownToken).AnyContext();
                 }
@@ -105,6 +105,6 @@ namespace Exceptionless.Core.Extensions {
     }
 
     public interface IStartupAction {
-        Task RunAsync(CancellationToken shutdownToken = default(CancellationToken));
+        Task RunAsync(CancellationToken shutdownToken = default);
     }
 }

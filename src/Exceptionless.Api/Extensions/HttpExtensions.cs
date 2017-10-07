@@ -94,7 +94,7 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static string GetClientIpAddress(this HttpRequest request) {
-            return request.HttpContext.Connection.RemoteIpAddress.ToString();
+            return request.HttpContext.Connection.RemoteIpAddress?.ToString();
         }
 
         public static string GetQueryString(this HttpRequest request, string key) {

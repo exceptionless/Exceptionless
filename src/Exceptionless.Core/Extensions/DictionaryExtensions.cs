@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static TValue TryGetAndReturn<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) {
             if (!dictionary.TryGetValue(key, out var value))
-                value = default(TValue);
+                value = default;
 
             return value;
         }

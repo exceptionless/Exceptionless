@@ -55,8 +55,10 @@ namespace Exceptionless.Api {
                 s.InjectOnCompleteJavaScript("docs.js");
             });
 
-            app.UseWebSockets();
-            app.UseMiddleware<MessageBusBrokerMiddleware>();
+            if (Settings.Current.EnableWebSockets) {
+                app.UseWebSockets();
+                app.UseMiddleware<MessageBusBrokerMiddleware>();
+            }
 
             // run startup actions registered in the container
             if (!Settings.Current.DisableBootstrapStartupActions) {

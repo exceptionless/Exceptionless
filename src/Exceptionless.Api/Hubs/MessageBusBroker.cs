@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -27,18 +28,23 @@ namespace Exceptionless.Api.Hubs {
             _logger = logger;
         }
 
-        public async Task RunAsync(CancellationToken shutdownToken = default(CancellationToken)) {
+        public async Task RunAsync(CancellationToken shutdownToken = default) {
+            if (Settings.Current.EnableWebSockets)
+                return;
+
             _logger.LogDebug("Subscribing to message bus notifications");
-            await _subscriber.SubscribeAsync<ExtendedEntityChanged>(OnEntityChangedAsync, shutdownToken);
-            await _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync, shutdownToken);
-            await _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync, shutdownToken);
-            await _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync, shutdownToken);
-            await _subscriber.SubscribeAsync<ReleaseNotification>(OnReleaseNotificationAsync, shutdownToken);
-            await _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync, shutdownToken);
+            await Task.WhenAll(
+                _subscriber.SubscribeAsync<ExtendedEntityChanged>(OnEntityChangedAsync, shutdownToken),
+                _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync, shutdownToken),
+                _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync, shutdownToken),
+                _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync, shutdownToken),
+                _subscriber.SubscribeAsync<ReleaseNotification>(OnReleaseNotificationAsync, shutdownToken),
+                _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync, shutdownToken)
+            );
             _logger.LogDebug("Subscribed to message bus notifications");
         }
 
-        private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default(CancellationToken)) {
+        private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default) {
             if (String.IsNullOrEmpty(userMembershipChanged?.OrganizationId)) {
                 _logger.LogTrace("Ignoring User Membership Changed message: No organization id.");
                 return;
@@ -57,7 +63,7 @@ namespace Exceptionless.Api.Hubs {
             await GroupSendAsync(userMembershipChanged.OrganizationId, userMembershipChanged);
         }
 
-        private async Task OnEntityChangedAsync(ExtendedEntityChanged entityChanged, CancellationToken cancellationToken = default(CancellationToken)) {
+        private async Task OnEntityChangedAsync(ExtendedEntityChanged entityChanged, CancellationToken cancellationToken = default) {
             if (entityChanged == null)
                 return;
 
@@ -102,7 +108,7 @@ namespace Exceptionless.Api.Hubs {
             }
         }
 
-        private Task OnPlanOverageAsync(PlanOverage planOverage, CancellationToken cancellationToken = default(CancellationToken)) {
+        private Task OnPlanOverageAsync(PlanOverage planOverage, CancellationToken cancellationToken = default) {
             if (planOverage != null) {
                 _logger.LogTrace("Sending plan overage message to organization: {organization}", planOverage.OrganizationId);
                 return GroupSendAsync(planOverage.OrganizationId, planOverage);
@@ -111,7 +117,7 @@ namespace Exceptionless.Api.Hubs {
             return Task.CompletedTask;
         }
 
-        private Task OnPlanChangedAsync(PlanChanged planChanged, CancellationToken cancellationToken = default(CancellationToken)) {
+        private Task OnPlanChangedAsync(PlanChanged planChanged, CancellationToken cancellationToken = default) {
             if (planChanged != null) {
                 _logger.LogTrace("Sending plan changed message to organization: {organization}", planChanged.OrganizationId);
                 return GroupSendAsync(planChanged.OrganizationId, planChanged);
@@ -120,12 +126,12 @@ namespace Exceptionless.Api.Hubs {
             return Task.CompletedTask;
         }
 
-        private Task OnReleaseNotificationAsync(ReleaseNotification notification, CancellationToken cancellationToken = default(CancellationToken)) {
+        private Task OnReleaseNotificationAsync(ReleaseNotification notification, CancellationToken cancellationToken = default) {
             _logger.LogTrace("Sending release notification message: {Message}", notification.Message);
             return TypedBroadcastAsync(notification);
         }
 
-        private Task OnSystemNotificationAsync(SystemNotification notification, CancellationToken cancellationToken = default(CancellationToken)) {
+        private Task OnSystemNotificationAsync(SystemNotification notification, CancellationToken cancellationToken = default) {
             _logger.LogTrace("Sending system notification message: {Message}", notification.Message);
             return TypedBroadcastAsync(notification);
         }

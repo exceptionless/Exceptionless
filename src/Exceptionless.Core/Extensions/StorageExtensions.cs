@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions {
     public static class StorageExtensions {
-        public static async Task<EventPostInfo> GetEventPostAsync(this IFileStorage storage, string path, ILogger logger, CancellationToken cancellationToken = default(CancellationToken)) {
+        public static async Task<EventPostInfo> GetEventPostAsync(this IFileStorage storage, string path, ILogger logger, CancellationToken cancellationToken = default) {
             if (String.IsNullOrEmpty(path))
                 return null;
 
