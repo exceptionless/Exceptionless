@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Jobs {
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
         }
 
-        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
             return _lockProvider.AcquireAsync(nameof(DownloadGeoIPDatabaseJob), TimeSpan.FromHours(2), new CancellationToken(true));
         }
 

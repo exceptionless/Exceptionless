@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.Json;
 using FluentRest;
 using Xunit.Abstractions;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 
 namespace Exceptionless.Api.Tests
 {
@@ -70,8 +70,8 @@ namespace Exceptionless.Api.Tests
             return SendTokenRequest(token.Id, configure);
         }
 
-        protected async Task<FluentResponse> SendTokenRequest(string token, Action<SendBuilder> configure) {
-            return await SendRequest(s => {
+        protected Task<FluentResponse> SendTokenRequest(string token, Action<SendBuilder> configure) {
+            return SendRequest(s => {
                 s.BearerToken(token);
                 configure(s);
             });
@@ -82,8 +82,8 @@ namespace Exceptionless.Api.Tests
             return await DeserializeResponse<T>(response);
         }
 
-        protected async Task<FluentResponse> SendUserRequest(string username, string password, Action<SendBuilder> configure) {
-            return await SendRequest(s => {
+        protected Task<FluentResponse> SendUserRequest(string username, string password, Action<SendBuilder> configure) {
+            return SendRequest(s => {
                 s.BasicAuthorization(username, password);
                 configure(s);
             });
@@ -100,9 +100,7 @@ namespace Exceptionless.Api.Tests
             response.EnsureSuccessStatusCode();
 
             var reader = new JsonTextReader(new StringReader(json));
-            var result = _serializer.Deserialize<T>(reader);
-
-            return result;
+            return _serializer.Deserialize<T>(reader);
         }
 
         public override void Dispose() {

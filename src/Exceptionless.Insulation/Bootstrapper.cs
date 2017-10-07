@@ -69,8 +69,10 @@ namespace Exceptionless.Insulation {
                 else
                     container.AddSingleton<ICacheClient>(s => CreateRedisCacheClient(s, loggerFactory));
 
-                if (Settings.Current.EnableSignalR)
+                if (Settings.Current.EnableWebSockets)
                     container.AddSingleton<IConnectionMapping, RedisConnectionMapping>();
+                else
+                    logger.LogWarning("Web Sockets is NOT enabled.");
 
                 container.AddSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
                     Subscriber = s.GetRequiredService<ConnectionMultiplexer>().GetSubscriber(),

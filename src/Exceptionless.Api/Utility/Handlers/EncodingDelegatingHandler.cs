@@ -36,20 +36,17 @@ namespace Exceptionless.Api.Utility {
         private readonly string _encodingType;
 
         public CompressedContent(HttpContent content, string encodingType) {
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));
-
             if (encodingType == null)
                 throw new ArgumentNullException(nameof(encodingType));
 
-            _originalContent = content;
+            _originalContent = content ?? throw new ArgumentNullException(nameof(content));
             _encodingType = encodingType.ToLowerInvariant();
 
             if (_encodingType != "gzip" && _encodingType != "deflate")
                 throw new InvalidOperationException($"Encoding '{_encodingType}' is not supported. Only supports gzip or deflate encoding.");
 
             // copy the headers from the original content
-            foreach (KeyValuePair<string, IEnumerable<string>> header in _originalContent.Headers)
+            foreach (var header in _originalContent.Headers)
                 Headers.TryAddWithoutValidation(header.Key, header.Value);
 
             Headers.ContentEncoding.Clear();

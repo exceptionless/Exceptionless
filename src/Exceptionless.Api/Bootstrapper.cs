@@ -27,10 +27,12 @@ namespace Exceptionless.Api {
             var config = container.BuildServiceProvider().GetService<IConfiguration>();
             Settings.Initialize(config);
 
-            container.AddSingleton<WebSocketConnectionManager>();
-            container.AddSingleton<MessageBusBroker>();
-            container.AddSingleton<MessageBusBrokerMiddleware>();
-            container.AddSingleton<IConnectionMapping, ConnectionMapping>();
+            if (Settings.Current.EnableWebSockets) {
+                container.AddSingleton<WebSocketConnectionManager>();
+                container.AddSingleton<MessageBusBroker>();
+                container.AddSingleton<MessageBusBrokerMiddleware>();
+                container.AddSingleton<IConnectionMapping, ConnectionMapping>();
+            }
 
             container.AddSingleton<ApiKeyMiddleware>();
             container.AddSingleton<OverageMiddleware>();

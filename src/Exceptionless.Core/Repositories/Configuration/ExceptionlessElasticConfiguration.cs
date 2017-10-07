@@ -20,7 +20,7 @@ using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
-        private CancellationToken _shutdownToken = default(CancellationToken);
+        private CancellationToken _shutdownToken = default;
 
         public ExceptionlessElasticConfiguration(IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
             _logger.LogInformation("All new indexes will be created with {ElasticSearchNumberOfShards} Shards and {ElasticSearchNumberOfReplicas} Replicas", Settings.Current.ElasticSearchNumberOfShards, Settings.Current.ElasticSearchNumberOfReplicas);
@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddIndex(Organizations = new OrganizationIndex(this));
         }
 
-        public Task RunAsync(CancellationToken shutdownToken = default(CancellationToken)) {
+        public Task RunAsync(CancellationToken shutdownToken = default) {
             _shutdownToken = shutdownToken;
             return ConfigureIndexesAsync();
         }

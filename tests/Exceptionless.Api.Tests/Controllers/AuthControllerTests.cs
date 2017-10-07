@@ -44,7 +44,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 email = provider.GetEmailAddressFromUsername(email);
             }
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            await SendRequest(r => r
                 .Post()
                 .AppendPath("auth/signup")
                 .Content(new SignupModel {
@@ -55,8 +55,6 @@ namespace Exceptionless.Api.Tests.Controllers {
                 })
                 .StatusCodeShouldBeBadRequest()
             );
-
-            Assert.Null(result);
         }
 
         [Theory]
@@ -72,7 +70,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 email = provider.GetEmailAddressFromUsername(email);
             }
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            await SendRequest(r => r
                 .Post()
                 .AppendPath("auth/signup")
                 .Content(new SignupModel {
@@ -83,8 +81,6 @@ namespace Exceptionless.Api.Tests.Controllers {
                 })
                 .StatusCodeShouldBeBadRequest()
             );
-
-            Assert.Null(result);
         }
 
         [Theory]
@@ -147,7 +143,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
             Assert.NotNull(organization.GetInvite(invite.Token));
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            await SendRequest(r => r
                .Post()
                .AppendPath("auth/signup")
                .Content(new SignupModel {
@@ -158,8 +154,6 @@ namespace Exceptionless.Api.Tests.Controllers {
                })
                .StatusCodeShouldBeBadRequest()
             );
-
-            Assert.Null(result);
         }
 
         [Fact]
@@ -211,7 +205,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             Settings.Current.EnableAccountCreation = true;
             Settings.Current.EnableActiveDirectoryAuth = true;
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            await SendRequest(r => r
                .Post()
                .AppendPath("auth/signup")
                .Content(new SignupModel {
@@ -222,8 +216,6 @@ namespace Exceptionless.Api.Tests.Controllers {
                })
                .StatusCodeShouldBeBadRequest()
             );
-
-            Assert.Null(result);
         }
 
         [Fact]
@@ -310,7 +302,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
             Assert.NotNull(organization.GetInvite(invite.Token));
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            await SendRequest(r => r
                .Post()
                .AppendPath("auth/signup")
                .Content(new SignupModel {
@@ -321,8 +313,6 @@ namespace Exceptionless.Api.Tests.Controllers {
                })
                .StatusCodeShouldBeBadRequest()
             );
-
-            Assert.Null(result);
         }
 
         [Fact]
@@ -375,7 +365,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
             await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            await SendRequest(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -384,8 +374,6 @@ namespace Exceptionless.Api.Tests.Controllers {
                })
                .StatusCodeShouldBeUnauthorized()
             );
-
-            Assert.Null(result);
         }
 
         [Fact]
@@ -405,7 +393,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            await SendRequest(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -414,8 +402,6 @@ namespace Exceptionless.Api.Tests.Controllers {
                })
                .StatusCodeShouldBeUnauthorized()
             );
-
-            Assert.Null(result);
         }
 
         [Fact]
@@ -453,7 +439,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             var provider = new TestDomainLoginProvider();
             string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            await SendRequest(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -462,15 +448,13 @@ namespace Exceptionless.Api.Tests.Controllers {
                })
                .StatusCodeShouldBeUnauthorized()
             );
-
-            Assert.Null(result);
         }
 
         [Fact]
         public async Task LoginInvalidNonExistantActiveDirectoryAsync() {
             Settings.Current.EnableActiveDirectoryAuth = true;
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            await SendRequest(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -479,8 +463,6 @@ namespace Exceptionless.Api.Tests.Controllers {
                })
                .StatusCodeShouldBeUnauthorized()
             );
-
-            Assert.Null(result);
 
             // Verify that a user account was not added
             var provider = new TestDomainLoginProvider();
@@ -502,7 +484,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             };
             await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            await SendRequest(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -511,8 +493,6 @@ namespace Exceptionless.Api.Tests.Controllers {
                })
                .StatusCodeShouldBeUnauthorized()
             );
-
-            Assert.Null(result);
         }
 
         private Task CreateOrganizationAndProjectsAsync() {

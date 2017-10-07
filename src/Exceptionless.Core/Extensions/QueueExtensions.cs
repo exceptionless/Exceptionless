@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Extensions {
             return EnqueueAsync(queue, data, storage, Settings.Current.EnableArchive);
         }
 
-        public static async Task<string> EnqueueAsync(this IQueue<EventPost> queue, EventPostInfo data, IFileStorage storage, bool shouldArchive, CancellationToken cancellationToken = default(CancellationToken)) {
+        public static async Task<string> EnqueueAsync(this IQueue<EventPost> queue, EventPostInfo data, IFileStorage storage, bool shouldArchive, CancellationToken cancellationToken = default) {
             string path;
             if (shouldArchive)
                 path = $"archive\\{SystemClock.UtcNow:yy\\\\MM\\\\dd\\\\HH}\\{data.ProjectId}\\{Guid.NewGuid():N}.json";

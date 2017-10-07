@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Extensions {
                 return data.ToType<T>();
             } catch {}
 
-            return default(T);
+            return default;
         }
 
         public static void RemoveSensitiveData(this DataDictionary extendedData) {

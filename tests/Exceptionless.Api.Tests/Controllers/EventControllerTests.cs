@@ -26,10 +26,12 @@ namespace Exceptionless.Api.Tests.Controllers {
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly ITokenRepository _tokenRepository;
 
         public EventControllerTests(ITestOutputHelper output) : base(output) {
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();
+            _tokenRepository = GetService<ITokenRepository>();
             _eventRepository = GetService<IEventRepository>();
             _eventQueue = GetService<IQueue<EventPost>>();
             _eventUserDescriptionQueue = GetService<IQueue<EventUserDescription>>();
@@ -39,7 +41,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostStringAsync() {
-            await SendRequest(r => r
+            await SendTokenRequest(TestConstants.ApiKey, r => r
                 .Post()
                 .AppendPath("events")
                 .Content("simple string")
@@ -58,7 +60,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostCompressedStringAsync() {
-            await SendRequest(r => r
+            await SendTokenRequest(TestConstants.ApiKey, r => r
                .Post()
                .AppendPath("events")
                .Content(Encoding.UTF8.GetBytes("simple string").Compress())
@@ -77,7 +79,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostUserDescriptionAsync() {
-            await SendRequest(r => r
+            await SendTokenRequest(TestConstants.ApiKey, r => r
                .Post()
                .AppendPath("events/by-ref/TestReferenceId/user-description")
                .Content(new EventUserDescription { Description = "Test Description", EmailAddress = TestConstants.UserEmail })
@@ -105,7 +107,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 var events = new RandomEventGenerator().Generate(batchSize);
                 var compressedEvents = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).Compress();
 
-                await SendRequest(r => r
+                await SendTokenRequest(TestConstants.ApiKey, r => r
                    .Post()
                    .AppendPath("events")
                    .Content(compressedEvents)
@@ -138,7 +140,8 @@ namespace Exceptionless.Api.Tests.Controllers {
         private Task CreateOrganizationAndProjectsAsync() {
             return Task.WhenAll(
                 _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(), o => o.ImmediateConsistency()),
-                _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency())
+                _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency()),
+                _tokenRepository.AddAsync(TokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency())
             );
         }
     }
