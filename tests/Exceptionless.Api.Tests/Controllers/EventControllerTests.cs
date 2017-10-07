@@ -67,7 +67,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             await SendTokenRequest(TestConstants.ApiKey, r => r
                 .Post()
                 .AppendPath("events")
-                .Content(message)
+                .Content(message, "text/plain")
                 .StatusCodeShouldBeAccepted()
             );
 
@@ -92,7 +92,8 @@ namespace Exceptionless.Api.Tests.Controllers {
             await SendTokenRequest(TestConstants.ApiKey, r => r
                .Post()
                .AppendPath("events")
-               .Content(Encoding.UTF8.GetBytes(message).Compress())
+               .Content(Encoding.UTF8.GetBytes(message).Compress(), "text/plain")
+               .Header("Content-Encoding", "gzip")
                .StatusCodeShouldBeAccepted()
             );
 
@@ -137,7 +138,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         [Fact]
-        public async Task CanPostManyEventsAsync() {
+        public async Task CanPostManyCompressedEventsAsync() {
             const int batchSize = 250;
             const int batchCount = 10;
 
