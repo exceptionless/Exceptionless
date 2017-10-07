@@ -595,10 +595,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
             Assert.NotNull(ev.StackId);
-            Assert.Equal(0, ev.Tags.Count);
+            Assert.Empty(ev.Tags);
 
             var stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
-            Assert.Equal(0 , stack.Tags.Count);
+            Assert.Empty(stack.Tags);
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
             ev.Tags.AddRange(Enumerable.Range(0, 100).Select(i => i.ToString()));
@@ -628,13 +628,13 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.NotNull(ev);
             Assert.NotNull(ev.StackId);
             Assert.Equal(50, ev.Tags.Count);
-            Assert.False(ev.Tags.Contains(new String('x', 150)));
-            Assert.True(ev.Tags.Contains(Event.KnownTags.Critical));
+            Assert.DoesNotContain(new String('x', 150), ev.Tags);
+            Assert.Contains(Event.KnownTags.Critical, ev.Tags);
 
             stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(50, stack.Tags.Count);
-            Assert.False(stack.Tags.Contains(new String('x', 150)));
-            Assert.True(stack.Tags.Contains(Event.KnownTags.Critical));
+            Assert.DoesNotContain(new String('x', 150), stack.Tags);
+            Assert.Contains(Event.KnownTags.Critical, stack.Tags);
         }
 
         [Fact]
@@ -850,7 +850,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         public async Task GeneratePerformanceDataAsync() {
             int currentBatchCount = 0;
             var parserPluginManager = GetService<EventParserPluginManager>();
-            string dataDirectory = Path.GetFullPath(@"..\..\Pipeline\Data\");
+            string dataDirectory = Path.GetFullPath(@"..\..\..\Pipeline\Data\");
 
             foreach (string file in Directory.GetFiles(dataDirectory))
                 File.Delete(file);
@@ -859,7 +859,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var mappedIPs = new Dictionary<string, string>();
 
             var storage = new FolderFileStorage(Path.GetFullPath(@"..\..\..\"));
-            foreach (var file in await storage.GetFileListAsync(@"Api\App_Data\storage\q\*")) {
+            foreach (var file in await storage.GetFileListAsync(@"Exceptionless.Web\App_Data\storage\q\*")) {
                 var eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(file.Path);
                 byte[] data = eventPostInfo.Data;
                 if (!String.IsNullOrEmpty(eventPostInfo.ContentEncoding))

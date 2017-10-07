@@ -60,6 +60,8 @@ namespace Exceptionless.Api.Tests.Jobs {
 
         [Fact]
         public async Task CanRunJobWithMassiveEventAsync() {
+            await _storage.DeleteFilesAsync(await _storage.GetFileListAsync());
+
             var ev = GenerateEvent();
             for (int i = 1; i < 150; i++)
                 ev.Data[$"{i}MB"] = new string('0', 1024 * 1000);

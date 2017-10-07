@@ -11,14 +11,6 @@ namespace Exceptionless.Insulation.Jobs {
     public class JobServiceProvider {
         public static IServiceProvider CreateServiceProvider(ILoggerFactory loggerFactory) {
             loggerFactory.AddConsole();
-            loggerFactory.AddExceptionless();
-
-            var services = new ServiceCollection();
-            var config = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
-                .Build();
-            Settings.Initialize(config);
 
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
@@ -30,7 +22,15 @@ namespace Exceptionless.Insulation.Jobs {
 
                 client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
                 client.Startup(Settings.Current.ExceptionlessApiKey);
+                loggerFactory.AddExceptionless(client);
             }
+
+            var services = new ServiceCollection();
+            var config = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
+                .Build();
+            Settings.Initialize(config);
 
             Settings.Current.DisableIndexConfiguration = true;
             Core.Bootstrapper.RegisterServices(services, loggerFactory);

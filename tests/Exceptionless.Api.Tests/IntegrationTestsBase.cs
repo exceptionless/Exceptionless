@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Json;
 using FluentRest;
 using Xunit.Abstractions;
@@ -11,14 +12,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Exceptionless.Api.Tests
 {
-    public class IntegrationTestsBase : ElasticTestBase {
+    public class IntegrationTestsBase : TestBase {
+        protected readonly ExceptionlessElasticConfiguration _configuration;
         protected readonly TestServer _server;
         protected readonly FluentClient _client;
         protected readonly JsonSerializer _serializer;
 
         public IntegrationTestsBase(ITestOutputHelper output) : base(output) {
             var builder = new MvcWebApplicationBuilder<Startup>()
-                .UseSolutionRelativeContentRoot("Source/Api")
+                .UseSolutionRelativeContentRoot("src/Exceptionless.Api")
                 .ConfigureAfterStartup(RegisterServices)
                 .UseApplicationAssemblies();
 
@@ -27,8 +29,12 @@ namespace Exceptionless.Api.Tests
             var settings = GetService<Newtonsoft.Json.JsonSerializerSettings>();
             _serializer = GetService<JsonSerializer>();
             _client = new FluentClient(new JsonContentSerializer(settings), _server.CreateHandler()) {
-                BaseUri = new Uri(_server.BaseAddress + "api/v1")
+                BaseUri = new Uri(_server.BaseAddress + "api/v2")
             };
+
+            _configuration = GetService<ExceptionlessElasticConfiguration>();
+            _configuration.DeleteIndexesAsync().GetAwaiter().GetResult();
+            _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false).GetAwaiter().GetResult();
         }
 
         protected override TService GetService<TService>() {
@@ -100,8 +106,9 @@ namespace Exceptionless.Api.Tests
         }
 
         public override void Dispose() {
-            base.Dispose();
             _server?.Dispose();
+            _configuration.Dispose();
+            base.Dispose();
         }
     }
 }
