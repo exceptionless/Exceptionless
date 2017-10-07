@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool IsCritical => true;
 
         public override Task ProcessAsync(EventContext ctx) {
-            ctx.Event.Tags?.RemoveWhere(t => String.IsNullOrEmpty(t) || t.Length > 255);
+            ctx.Event.Tags?.RemoveExcessTags();
 
             if (ctx.Event.Message != null && ctx.Event.Message.Length > 2000)
                 ctx.Event.Message = ctx.Event.Message.Truncate(2000);

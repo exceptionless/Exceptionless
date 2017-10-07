@@ -52,6 +52,15 @@ namespace Exceptionless {
             return null;
         }
 
+        public static TagSet RemoveExcessTags(this TagSet tags) {
+            tags?.Trim(
+                t => String.IsNullOrEmpty(t) || t.Length > 100, 
+                t => String.Equals(t, Event.KnownTags.Critical, StringComparison.OrdinalIgnoreCase) || String.Equals(t, Event.KnownTags.Internal, StringComparison.OrdinalIgnoreCase), 
+                50);
+
+            return tags;
+        }
+
         /// <summary>
         /// Indicates whether the event has been marked as critical.
         /// </summary>
@@ -67,6 +76,7 @@ namespace Exceptionless {
                 ev.Tags = new TagSet();
 
             ev.Tags.Add(Event.KnownTags.Critical);
+            ev.Tags.RemoveExcessTags();
         }
 
         /// <summary>
