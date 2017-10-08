@@ -865,7 +865,7 @@ namespace Exceptionless.Api.Controllers {
         [ConfigurationResponseFilter]
         [SwaggerResponse(StatusCodes.Status202Accepted)]
         public async Task <IActionResult> PostAsync(string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
-            if (Request.ContentLength.GetValueOrDefault() <= 0)
+            if (Request.ContentLength.HasValue && Request.ContentLength.Value <= 0)
                 return StatusCode(StatusCodes.Status202Accepted);
 
             if (projectId == null)
