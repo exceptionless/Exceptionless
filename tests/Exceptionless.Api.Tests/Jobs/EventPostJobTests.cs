@@ -42,6 +42,8 @@ namespace Exceptionless.Api.Tests.Jobs {
 
         [Fact]
         public async Task CanRunJob() {
+            await _storage.DeleteFilesAsync(await _storage.GetFileListAsync());
+
             var ev = GenerateEvent();
             Assert.NotNull(await EnqueueEventPostAsync(ev));
             Assert.Equal(1, (await _queue.GetQueueStatsAsync()).Enqueued);
@@ -80,13 +82,13 @@ namespace Exceptionless.Api.Tests.Jobs {
 
         [Fact]
         public async Task CanRunJobWithNonExistingEventDataAsync() {
+            await _storage.DeleteFilesAsync(await _storage.GetFileListAsync());
+
             var ev = GenerateEvent();
             Assert.NotNull(await EnqueueEventPostAsync(ev));
             Assert.Equal(1, (await _queue.GetQueueStatsAsync()).Enqueued);
 
-            var files = await _storage.GetFileListAsync();
-            foreach (var file in files)
-                await _storage.DeleteFileAsync(file.Path);
+            await _storage.DeleteFilesAsync(await _storage.GetFileListAsync());
 
             var result = await _job.RunAsync();
             Assert.False(result.IsSuccess);

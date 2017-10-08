@@ -1,14 +1,14 @@
 ﻿using System;
-using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentRest;
+using Foundatio.Serializer;
 using Xunit.Abstractions;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 
 namespace Exceptionless.Api.Tests
 {
@@ -16,7 +16,8 @@ namespace Exceptionless.Api.Tests
         protected readonly ExceptionlessElasticConfiguration _configuration;
         protected readonly TestServer _server;
         protected readonly FluentClient _client;
-        protected readonly JsonSerializer _serializer;
+        protected readonly HttpClient _httpClient;
+        protected readonly ISerializer _serializer;
 
         public IntegrationTestsBase(ITestOutputHelper output) : base(output) {
             var builder = new MvcWebApplicationBuilder<Startup>()
@@ -27,9 +28,12 @@ namespace Exceptionless.Api.Tests
             _server = builder.Build();
 
             var settings = GetService<Newtonsoft.Json.JsonSerializerSettings>();
-            _serializer = GetService<JsonSerializer>();
+            _serializer = GetService<ISerializer>();
             _client = new FluentClient(new JsonContentSerializer(settings), _server.CreateHandler()) {
                 BaseUri = new Uri(_server.BaseAddress + "api/v2")
+            };
+            _httpClient = new HttpClient(_server.CreateHandler()) {
+                BaseAddress = new Uri(_server.BaseAddress + "api/v2/")
             };
 
             _configuration = GetService<ExceptionlessElasticConfiguration>();
@@ -47,16 +51,9 @@ namespace Exceptionless.Api.Tests
             configure(builder);
 
             if (request.ContentData != null && request.ContentData.GetType() != typeof(string)) {
-                string content;
-                using (var stringWriter = new StringWriter()) {
-                    using (var jsonTextWriter = new JsonTextWriter(stringWriter)) {
-                        _serializer.Serialize(jsonTextWriter, request.ContentData);
-                        jsonTextWriter.Flush();
-                        content = stringWriter.ToString();
-                    }
-                }
-                request.ContentData = content;
-                request.ContentType = "application/json";
+                request.ContentData = _serializer.SerializeToString(request.ContentData);
+                if (!String.IsNullOrEmpty(request.ContentType))
+                    request.ContentType = "application/json";
             }
 
             return _client.SendAsync(request);
@@ -97,11 +94,8 @@ namespace Exceptionless.Api.Tests
 
         protected async Task<T> DeserializeResponse<T>(FluentResponse response) {
             string json = await response.HttpContent.ReadAsStringAsync();
-
             response.EnsureSuccessStatusCode();
-
-            var reader = new JsonTextReader(new StringReader(json));
-            return _serializer.Deserialize<T>(reader);
+            return _serializer.Deserialize<T>(json);
         }
 
         public override void Dispose() {

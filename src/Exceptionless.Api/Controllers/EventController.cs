@@ -809,64 +809,63 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        /// <summary>
-        /// Create
-        /// </summary>
-        /// <remarks>
-        /// You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it
-        /// we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON
-        /// object into the events data collection.
-        ///
-        /// You can also post a multi-line string. We automatically split strings by the \n character and create a new log event for every line.
-        ///
-        /// Simple event:
-        /// <code>
-        ///     { "message": "Exceptionless is amazing!" }
-        /// </code>
+        ///  <summary>
+        ///  Create
+        ///  </summary>
+        ///  <remarks>
+        ///  You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it
+        ///  we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON
+        ///  object into the events data collection.
         /// 
-        /// Simple log event with user identity:
-        /// <code>
-        ///     {
-        ///         "type": "log",
-        ///         "message": "Exceptionless is amazing!",
-        ///         "date":"2020-01-01T12:00:00.0000000-05:00",
-        ///         "@user":{ "identity":"123456789", "name": "Test User" }
-        ///     }
-        /// </code>
-        ///
-        /// Multiple events from string content:
-        /// <code>
-        ///     Exceptionless is amazing!
-        ///     Exceptionless is really amazing!
-        /// </code>
-        ///
-        /// Simple error:
-        /// <code>
-        ///     {
-        ///         "type": "error",
-        ///         "date":"2020-01-01T12:00:00.0000000-05:00",
-        ///         "@simple_error": {
-        ///             "message": "Simple Exception",
-        ///             "type": "System.Exception",
-        ///             "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77"
-        ///         }
-        ///     }
-        /// </code>
-        /// </remarks>
-        /// <param name="data">The raw data.</param>
+        ///  You can also post a multi-line string. We automatically split strings by the \n character and create a new log event for every line.
+        /// 
+        ///  Simple event:
+        ///  <code>
+        ///      { "message": "Exceptionless is amazing!" }
+        ///  </code>
+        ///  
+        ///  Simple log event with user identity:
+        ///  <code>
+        ///      {
+        ///          "type": "log",
+        ///          "message": "Exceptionless is amazing!",
+        ///          "date":"2020-01-01T12:00:00.0000000-05:00",
+        ///          "@user":{ "identity":"123456789", "name": "Test User" }
+        ///      }
+        ///  </code>
+        /// 
+        ///  Multiple events from string content:
+        ///  <code>
+        ///      Exceptionless is amazing!
+        ///      Exceptionless is really amazing!
+        ///  </code>
+        /// 
+        ///  Simple error:
+        ///  <code>
+        ///      {
+        ///          "type": "error",
+        ///          "date":"2020-01-01T12:00:00.0000000-05:00",
+        ///          "@simple_error": {
+        ///              "message": "Simple Exception",
+        ///              "type": "System.Exception",
+        ///              "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77"
+        ///          }
+        ///      }
+        ///  </code>
+        ///  </remarks>
         /// <param name="projectId">The identifier of the project.</param>
-        /// <param name="version">The api version that should be used</param>
-        /// <param name="userAgent">The user agent that submitted the event.</param>
-        /// <response code="202">Accepted</response>
-        /// <response code="400">No project id specified and no default project was found.</response>
-        /// <response code="404">No project was found.</response>
+        ///  <param name="version">The api version that should be used</param>
+        ///  <param name="userAgent">The user agent that submitted the event.</param>
+        ///  <response code="202">Accepted</response>
+        ///  <response code="400">No project id specified and no default project was found.</response>
+        ///  <response code="404">No project was found.</response>
         [HttpPost("~/api/v{version:int=1}/error")]
         [HttpPost("~/api/v{version:int=2}/events")]
         [HttpPost("~/api/v{version:int=2}/projects/{projectId:objectid}/events")]
         [ConfigurationResponseFilter]
         [SwaggerResponse(StatusCodes.Status202Accepted)]
-        public async Task <IActionResult> PostAsync([FromBody] byte[] data, string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
-            if (data == null || data.Length == 0)
+        public async Task <IActionResult> PostAsync(string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
+            if (Request.ContentLength.GetValueOrDefault() <= 0)
                 return StatusCode(StatusCodes.Status202Accepted);
 
             if (projectId == null)
@@ -883,6 +882,10 @@ namespace Exceptionless.Api.Controllers {
             // TODO: We could save some overhead if we set the project in the overage handler...
             // Set the project for the configuration response filter.
             Request.SetProject(project);
+
+            var data = Request.Body.ReadAllBytes();
+            if (data.Length <= 0)
+                return StatusCode(StatusCodes.Status202Accepted);
 
             string contentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding);
             bool isCompressed = contentEncoding == "gzip" || contentEncoding == "deflate";
