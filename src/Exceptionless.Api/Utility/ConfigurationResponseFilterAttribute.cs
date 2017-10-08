@@ -11,7 +11,7 @@ namespace Exceptionless.Api.Utility {
             if (context == null)
                 throw new ArgumentNullException(nameof(context));
 
-            if (context.HttpContext.Response == null || context.HttpContext.Response.StatusCode != StatusCodes.Status202Accepted)
+            if (context.HttpContext.Response == null || (context.HttpContext.Response.StatusCode != StatusCodes.Status200OK && context.HttpContext.Response.StatusCode != StatusCodes.Status202Accepted))
                 return;
 
             var project = context.HttpContext.Request?.GetProject();

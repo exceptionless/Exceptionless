@@ -1,10 +1,15 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Extensions;
-using Exceptionless.Core.Extensions;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
@@ -15,7 +20,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
 using Nest;
-using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using Run = Exceptionless.Api.Tests.Utility.Run;
@@ -89,13 +93,27 @@ namespace Exceptionless.Api.Tests.Controllers {
         [Fact]
         public async Task CanPostCompressedStringAsync() {
             const string message = "simple string";
-            await SendTokenRequest(TestConstants.ApiKey, r => r
-               .Post()
-               .AppendPath("events")
-               .Content(Encoding.UTF8.GetBytes(message).Compress(), "text/plain")
-               .Header("Content-Encoding", "gzip")
-               .StatusCodeShouldBeAccepted()
-            );
+
+            byte[] data = Encoding.UTF8.GetBytes(message);
+            var ms = new MemoryStream();
+            using (GZipStream gzip = new GZipStream(ms, CompressionMode.Compress, true))
+                gzip.Write(data, 0, data.Length);
+            ms.Position = 0;
+
+            var content = new StreamContent(ms);
+            content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+            content.Headers.ContentEncoding.Add("gzip");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + TestConstants.ApiKey);
+            var response = await _httpClient.PostAsync("events", content);
+            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+            Assert.True(response.Headers.Contains(Headers.ConfigurationVersion));
+
+            //var response = await SendTokenRequest(TestConstants.ApiKey, r => r
+            //   .Post()
+            //   .AppendPath("events")
+            //   .Content(CompressString(message))
+            //   .StatusCodeShouldBeAccepted()
+            //);
 
             var stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(1, stats.Enqueued);
@@ -114,7 +132,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostEventAsync() {
-            var ev = new RandomEventGenerator().Generate();
+            var ev = new RandomEventGenerator().GeneratePersistent(false);
             await SendTokenRequest(TestConstants.ApiKey, r => r
                 .Post()
                 .AppendPath("events")
@@ -133,30 +151,30 @@ namespace Exceptionless.Api.Tests.Controllers {
             stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(1, stats.Completed);
 
-            var actual = (await _eventRepository.GetAllAsync()).Documents.Single();
-            Assert.Equal(ev.Message, actual.Message);
+            var actual = await _eventRepository.GetAllAsync();
+            Assert.Single(actual.Documents);
+            Assert.Equal(ev.Message, actual.Documents.Single().Message);
         }
 
         [Fact]
-        public async Task CanPostManyCompressedEventsAsync() {
-            const int batchSize = 250;
+        public async Task CanPostManyEventsAsync() {
+            const int batchSize = 50;
             const int batchCount = 10;
 
             await Run.InParallelAsync(batchCount, async i => {
-                var events = new RandomEventGenerator().Generate(batchSize);
-                var compressedEvents = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).Compress();
-
+                var events = new RandomEventGenerator().Generate(batchSize, false);
                 await SendTokenRequest(TestConstants.ApiKey, r => r
                    .Post()
                    .AppendPath("events")
-                   .Content(compressedEvents)
+                   .Content(events)
                    .StatusCodeShouldBeAccepted()
                 );
             });
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            Assert.Equal(batchCount, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
-            Assert.Equal(0, (await _eventQueue.GetQueueStatsAsync()).Completed);
+            var stats = await _eventQueue.GetQueueStatsAsync();
+            Assert.Equal(batchCount, stats.Enqueued);
+            Assert.Equal(0, stats.Completed);
 
             var processEventsJob = GetService<EventPostsJob>();
             var sw = Stopwatch.StartNew();
@@ -165,13 +183,40 @@ namespace Exceptionless.Api.Tests.Controllers {
             _logger.LogInformation(sw.Elapsed.ToString());
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            var stats = await _eventQueue.GetQueueStatsAsync();
+            stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(batchCount, stats.Completed);
-            int minimum = batchSize * batchCount;
-            Assert.InRange(await _eventRepository.CountAsync(), minimum, minimum * 2);
+            Assert.Equal(batchSize * batchCount, await _eventRepository.CountAsync());
         }
 
-        // TODO: Test GZIP, Configuration Response, authentication... and more...
+        //private ByteArrayContent CompressString(string data) {
+        //    byte[] bytes = Encoding.UTF8.GetBytes(data);
+        //    using (var stream = new MemoryStream()) {
+        //        using (var zipper = new GZipStream(stream, CompressionMode.Compress, true))
+        //            zipper.Write(bytes, 0, bytes.Length);
+
+        //        var content = new ByteArrayContent(stream.ToArray());
+        //        content.Headers.ContentType = new MediaTypeHeaderValue("text/plain") {
+        //            CharSet = "utf-8"
+        //        };
+        //        content.Headers.ContentEncoding.Add("gzip");
+        //        return content;
+        //    }
+        //}
+
+        //private ByteArrayContent JsonCompress(object data) {
+        //    byte[] bytes = Encoding.UTF8.GetBytes(_serializer.SerializeToString(data));
+        //    using (var stream = new MemoryStream()) {
+        //        using (var zipper = new GZipStream(stream, CompressionMode.Compress, true))
+        //            zipper.Write(bytes, 0, bytes.Length);
+
+        //        var content = new ByteArrayContent(stream.ToArray());
+        //        content.Headers.ContentType = new MediaTypeHeaderValue("application/json") {
+        //            CharSet = "utf-8"
+        //        };
+        //        content.Headers.ContentEncoding.Add("gzip");
+        //        return content;
+        //    }
+        //}
 
         private Task CreateOrganizationAndProjectsAsync() {
             return Task.WhenAll(

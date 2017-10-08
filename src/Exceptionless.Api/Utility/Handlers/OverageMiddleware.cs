@@ -52,8 +52,16 @@ namespace Exceptionless.Api.Utility {
 
             bool tooBig = false;
             if (String.Equals(context.Request.Method, "POST", StringComparison.OrdinalIgnoreCase) && context.Request.Headers != null) {
+                if (context.Request.Headers.ContentLength.HasValue && context.Request.Headers.ContentLength.Value <= 0) {
+                    //await _metricsClient.CounterAsync(MetricNames.PostsBlocked);
+                    context.Response.StatusCode = StatusCodes.Status411LengthRequired;
+                    return;
+                }
+
                 long size = context.Request.Headers.ContentLength.GetValueOrDefault();
-                await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
+                if (size > 0)
+                    await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
+
                 if (size > Settings.Current.MaximumEventPostSize) {
                     if (_logger.IsEnabled(LogLevel.Warning)) {
                         using (_logger.BeginScope(new ExceptionlessState().Value(size).Tag(context.Request.Headers.TryGetAndReturn(Headers.ContentEncoding))))
