@@ -23,8 +23,10 @@ namespace Exceptionless.Api.Tests.Plugins {
             _formatter = GetService<FormattingPluginManager>();
         }
 
+#if DEBUG
         [Theory]
         [MemberData(nameof(WebHookData))]
+#endif
         public async Task CreateFromEventAsync(Version version, bool expectData) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
@@ -37,8 +39,10 @@ namespace Exceptionless.Api.Tests.Plugins {
             }
         }
 
+#if DEBUG
         [Theory]
         [MemberData(nameof(WebHookData))]
+#endif
         public async Task CanCreateFromStackAsync(Version version, bool expectData) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;

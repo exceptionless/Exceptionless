@@ -19,8 +19,10 @@ namespace Exceptionless.Api.Tests.Plugins {
             _formatter = GetService<FormattingPluginManager>();
         }
 
+#if DEBUG
         [Theory]
         [MemberData(nameof(Events))]
+#endif
         public void EventSummaryData(string path) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
@@ -41,8 +43,10 @@ namespace Exceptionless.Api.Tests.Plugins {
             ApprovalsUtility.VerifyFile(Path.ChangeExtension(path, "summary.json"), JsonConvert.SerializeObject(summary, settings));
         }
 
+#if DEBUG
         [Theory]
         [MemberData(nameof(Stacks))]
+#endif
         public void StackSummaryData(string path) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
