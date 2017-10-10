@@ -12,19 +12,6 @@ namespace Exceptionless.Insulation.Jobs {
         public static IServiceProvider CreateServiceProvider(ILoggerFactory loggerFactory) {
             loggerFactory.AddConsole();
 
-            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
-                var client = ExceptionlessClient.Default;
-                //client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
-                client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
-                client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
-                client.Configuration.SetVersion(Settings.Current.Version);
-                client.Configuration.UseInMemoryStorage();
-
-                client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
-                client.Startup(Settings.Current.ExceptionlessApiKey);
-                loggerFactory.AddExceptionless(client);
-            }
-
             var services = new ServiceCollection();
             string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             if (String.IsNullOrEmpty(environment))
@@ -38,6 +25,19 @@ namespace Exceptionless.Insulation.Jobs {
                 .Build();
             Settings.Initialize(config);
             Settings.Current.DisableIndexConfiguration = true;
+
+            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
+                var client = ExceptionlessClient.Default;
+                //client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
+                client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
+                client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
+                client.Configuration.SetVersion(Settings.Current.Version);
+                client.Configuration.UseInMemoryStorage();
+
+                client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
+                client.Startup(Settings.Current.ExceptionlessApiKey);
+                loggerFactory.AddExceptionless(client);
+            }
 
             services.AddSingleton<IConfiguration>(config);
             Core.Bootstrapper.RegisterServices(services, loggerFactory);
