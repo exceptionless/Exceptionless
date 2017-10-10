@@ -183,8 +183,18 @@ namespace Exceptionless.Core {
             settings.InternalProjectId = config.GetValue(nameof(InternalProjectId), "54b56e480ef9605a88a13153");
             settings.ExceptionlessApiKey = config.GetValue<string>(nameof(ExceptionlessApiKey));
             settings.ExceptionlessServerUrl = config.GetValue<string>(nameof(ExceptionlessServerUrl));
-            settings.WebsiteMode = config.GetValue(nameof(WebsiteMode), WebsiteMode.Dev);
+
+            settings.WebsiteMode = config.GetValue(nameof(WebsiteMode), WebsiteMode.Production);
+            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (environment != null && environment.Equals("Development", StringComparison.OrdinalIgnoreCase))
+                settings.WebsiteMode = WebsiteMode.Dev;
+            else if (environment != null && environment.Equals("NonProduction", StringComparison.OrdinalIgnoreCase))
+                settings.WebsiteMode = WebsiteMode.QA;
+
             settings.AppScope = config.GetValue(nameof(AppScope), String.Empty);
+            string scope = Environment.GetEnvironmentVariable("SCOPE");
+            if (!String.IsNullOrEmpty(scope))
+                settings.AppScope = scope;
 
             settings.RunJobsInProcess = config.GetValue(nameof(RunJobsInProcess), true);
             settings.JobsIterationLimit = config.GetValue(nameof(JobsIterationLimit), -1);

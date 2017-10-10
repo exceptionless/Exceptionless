@@ -118,3 +118,4 @@ App_Data
 *.orig
 *.nugetreferenceswitcher
 src/Exceptionless\.Web/storage/
+artifacts
