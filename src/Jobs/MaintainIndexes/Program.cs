@@ -10,7 +10,7 @@ namespace MaintainIndexesJob {
         public static int Main() {
             AppDomain.CurrentDomain.SetDataDirectory();
 
-            var loggerFactory = Settings.Current.GetLoggerFactory();
+            var loggerFactory = Settings.GetLoggerFactory();
             var serviceProvider = JobServiceProvider.CreateServiceProvider(loggerFactory);
             var job = serviceProvider.GetService<Exceptionless.Core.Jobs.Elastic.MaintainIndexesJob>();
             return new JobRunner(job, loggerFactory, runContinuous: false).RunInConsole();
