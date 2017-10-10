@@ -11,7 +11,7 @@ namespace StackSnapshotJob {
         public static int Main() {
             AppDomain.CurrentDomain.SetDataDirectory();
 
-            var loggerFactory = Settings.Current.GetLoggerFactory();
+            var loggerFactory = Settings.GetLoggerFactory();
             var serviceProvider = JobServiceProvider.CreateServiceProvider(loggerFactory);
             if (Settings.Current.DisableSnapshotJobs) {
                 var logger = loggerFactory.CreateLogger(nameof(StackSnapshotJob));

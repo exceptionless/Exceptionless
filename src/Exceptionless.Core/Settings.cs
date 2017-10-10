@@ -274,7 +274,7 @@ namespace Exceptionless.Core {
             }
         }
 
-        public ILoggerFactory GetLoggerFactory() {
+        public static ILoggerFactory GetLoggerFactory() {
             return new LoggerFactory();
         }
     }

@@ -37,8 +37,9 @@ namespace Exceptionless.Insulation.Jobs {
                 .AddEnvironmentVariables()
                 .Build();
             Settings.Initialize(config);
-
             Settings.Current.DisableIndexConfiguration = true;
+
+            services.AddSingleton<IConfiguration>(config);
             Core.Bootstrapper.RegisterServices(services, loggerFactory);
             Bootstrapper.RegisterServices(services, true, loggerFactory);
 
