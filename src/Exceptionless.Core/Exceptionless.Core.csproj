@@ -28,9 +28,9 @@
     <PackageReference Include="AutoMapper" version="6.1.1" />
     <PackageReference Include="AutoMapper.Collection" Version="3.1.2" />
     <PackageReference Include="FluentValidation" version="7.2.0" />
-    <PackageReference Include="Foundatio" version="6.0.1532-pre" />
-    <PackageReference Include="Foundatio.Jobs.Commands" version="6.0.1532-pre" />
-    <PackageReference Include="Foundatio.Repositories.Elasticsearch" version="6.0.649-pre" />
+    <PackageReference Include="Foundatio" version="6.0.1546-pre" />
+    <PackageReference Include="Foundatio.Jobs.Commands" version="6.0.1545-pre" />
+    <PackageReference Include="Foundatio.Repositories.Elasticsearch" version="6.0.651-pre" />
     <PackageReference Include="Handlebars.Net" version="1.9.0" />
     <PackageReference Include="MaxMind.GeoIP2" version="2.8.0" />
     <PackageReference Include="McSherry.SemanticVersioning" version="1.2.1" />

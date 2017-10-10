@@ -6,11 +6,12 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Exceptionless.Extensions.Logging" version="4.1.1966-pre" />
-    <PackageReference Include="Foundatio.AzureStorage" version="6.0.1467-pre" />
-    <PackageReference Include="Foundatio.Redis" version="6.0.1485-pre" />
+    <PackageReference Include="Foundatio.AzureStorage" version="6.0.1470-pre" />
+    <PackageReference Include="Foundatio.Redis" version="6.0.1487-pre" />
     <PackageReference Include="Geocoding.Google" version="4.0.0" />
     <PackageReference Include="MailKit" version="1.18.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.0" />
     <PackageReference Include="MimeKit" version="1.18.1" />
