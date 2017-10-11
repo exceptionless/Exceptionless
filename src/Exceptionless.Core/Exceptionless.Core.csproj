@@ -25,31 +25,27 @@
     <EmbeddedResource Include="Mail\Templates\user-password-reset.html" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AutoMapper" version="6.1.1" />
+    <PackageReference Include="AutoMapper" Version="6.1.1" />
     <PackageReference Include="AutoMapper.Collection" Version="3.1.2" />
-    <PackageReference Include="FluentValidation" version="7.2.0" />
-    <PackageReference Include="Foundatio" version="6.0.1546-pre" />
-    <PackageReference Include="Foundatio.Jobs.Commands" version="6.0.1545-pre" />
-    <PackageReference Include="Foundatio.Repositories.Elasticsearch" version="6.0.651-pre" />
-    <PackageReference Include="Handlebars.Net" version="1.9.0" />
-    <PackageReference Include="MaxMind.GeoIP2" version="2.8.0" />
-    <PackageReference Include="McSherry.SemanticVersioning" version="1.2.1" />
-    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" version="1.1.1" />
+    <PackageReference Include="FluentValidation" Version="7.2.0" />
+    <PackageReference Include="Foundatio" Version="6.0.1546-pre" />
+    <PackageReference Include="Foundatio.Jobs.Commands" Version="6.0.1545-pre" />
+    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="6.0.651-pre" />
+    <PackageReference Include="Handlebars.Net" Version="1.9.0" />
+    <PackageReference Include="MaxMind.GeoIP2" Version="2.8.0" />
+    <PackageReference Include="McSherry.SemanticVersioning" Version="1.2.1" />
+    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" version="2.0.0" />
-    <PackageReference Include="NEST" version="5.5.0" />
-    <PackageReference Include="Newtonsoft.Json" version="10.0.3" />
-    <PackageReference Include="Stripe.net" version="10.4.0" />
-    
-    <PackageReference Include="System.Reflection.Emit.Lightweight" version="4.3.0" />
-    <PackageReference Include="UAParser" version="3.0.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.DirectoryServices">
-      <HintPath>..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7\System.DirectoryServices.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.0.0" />
+    <PackageReference Include="NEST" Version="5.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Stripe.net" Version="10.4.0" />
+
+    <PackageReference Include="System.DirectoryServices" Version="4.5.0-preview2-25707-02" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
+    <PackageReference Include="UAParser" Version="3.0.0" />
   </ItemGroup>
 </Project>
