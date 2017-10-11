@@ -14,7 +14,7 @@ namespace Exceptionless.Insulation.Jobs {
 
             var services = new ServiceCollection();
             string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-            if (String.IsNullOrEmpty(environment))
+            if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
             var config = new ConfigurationBuilder()

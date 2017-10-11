@@ -10,7 +10,7 @@ namespace Exceptionless.Web {
     public class Program {
         public static void Main(string[] args) {
             string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-            if (String.IsNullOrEmpty(environment))
+            if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
             var webHost = new WebHostBuilder()
