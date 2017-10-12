@@ -23,7 +23,7 @@ namespace Exceptionless.Api.Security {
         private readonly IUserRepository _userRepository;
         private readonly ILogger _logger;
 
-        public ApiKeyMiddleware(RequestDelegate next, IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ILogger<ApiKeyMiddleware> logger) {
+        public ApiKeyMiddleware(RequestDelegate next, IUserRepository userRepository, ITokenRepository tokenRepository, ILogger<ApiKeyMiddleware> logger) {
             _next = next;
             _tokenRepository = tokenRepository;
             _userRepository = userRepository;
