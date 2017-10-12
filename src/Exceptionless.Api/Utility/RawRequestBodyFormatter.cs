@@ -24,26 +24,26 @@ namespace Exceptionless.Api.Utility {
             return false;
         }
 
-        public override Task<InputFormatterResult> ReadRequestBodyAsync(InputFormatterContext context) {
+        public override async Task<InputFormatterResult> ReadRequestBodyAsync(InputFormatterContext context) {
             var request = context.HttpContext.Request;
             var contentTypeHeader = request.ContentType != null ? MediaTypeHeaderValue.Parse(request.ContentType) : null;
             string contentType = contentTypeHeader?.MediaType.ToString();
 
             if (String.IsNullOrEmpty(contentType) || contentType == "text/plain") {
                 using (var reader = new StreamReader(request.Body)) {
-                    var content = reader.ReadToEnd();
-                    return InputFormatterResult.SuccessAsync(content);
+                    var content = await reader.ReadToEndAsync();
+                    return await InputFormatterResult.SuccessAsync(content);
                 }
             }
             if (contentType == "application/octet-stream") {
                 using (var ms = new MemoryStream(2048)) {
-                    request.Body.CopyTo(ms);
+                    await request.Body.CopyToAsync(ms);
                     var content = ms.ToArray();
-                    return InputFormatterResult.SuccessAsync(content);
+                    return await InputFormatterResult.SuccessAsync(content);
                 }
             }
 
-            return InputFormatterResult.FailureAsync();
+            return await InputFormatterResult.FailureAsync();
         }
     }
 }

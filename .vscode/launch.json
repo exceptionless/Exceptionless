@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Web",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceRoot}/src/Exceptionless.Web/bin/Debug/netcoreapp2.0/Exceptionless.Web.dll",
+      "args": [],
+      "cwd": "${workspaceRoot}",
+      "stopAtEntry": false,
+      "console": "internalConsole"
+    },
+    {
+      "name": "Event Posts Job",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceRoot}/src/Jobs/EventPost/bin/Debug/netcoreapp2.0/EventPostsJob.dll",
+      "args": [],
+      "cwd": "${workspaceRoot}",
+      "stopAtEntry": false,
+      "console": "internalConsole"
+    }
+  ]
+}
