@@ -30,7 +30,7 @@ AppSettings:
   RunJobsInProcess: false
 
   # Folder used to store event post data
-  StorageFolder: ..\..\..\..\Exceptionless.Web\storage
+  StorageFolder: ..\..\Exceptionless.Web\storage
 Logging:
   IncludeScopes: false
   Debug:

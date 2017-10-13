@@ -67,14 +67,6 @@ namespace Exceptionless.Api {
         }
 
         public void ConfigureServices(IServiceCollection services) {
-            ConfigureServicesInternal(services);
-        }
-
-        public void ConfigureProductionServices(IServiceCollection services) {
-            ConfigureServicesInternal(services, true);
-        }
-
-        private void ConfigureServicesInternal(IServiceCollection services, bool includeInsulation = false) {
             services.AddCors();
             services.AddResponseCompression();
             services.Configure<ForwardedHeadersOptions>(options => {
@@ -115,12 +107,12 @@ namespace Exceptionless.Api {
                 c.AddSecurityDefinition("basic", new BasicAuthScheme {
                     Description = "Basic HTTP Authentication"
                 });
-                if (File.Exists($@"{AppDomain.CurrentDomain.BaseDirectory}\bin\Exceptionless.Api.xml"))
-                    c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\bin\Exceptionless.Api.xml");
+                if (File.Exists($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Api.xml"))
+                    c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Api.xml");
                 c.IgnoreObsoleteActions();
             });
 
-            Bootstrapper.RegisterServices(services, _loggerFactory, includeInsulation);
+            Bootstrapper.RegisterServices(services, _loggerFactory);
 
             services.AddSingleton(new ThrottlingOptions {
                 MaxRequestsForUserIdentifierFunc = userIdentifier => Settings.Current.ApiThrottleLimit,
