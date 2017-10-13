@@ -52,7 +52,7 @@ Write-Host "Merging configuration"
 $webConfig = "$releaseTempDir\wwwroot\web.config"
 
 $apiConfig = [xml](Get-Content $webConfig)
-$apiConfig.SelectSingleNode('//appSettings/add[@key="BaseURL"]/@value').'#text' = 'http://localhost:50000/#'
+$apiConfig.SelectSingleNode('//appSettings/add[@key="BaseURL"]/@value').'#text' = 'http://localhost:5000/#'
 $apiConfig.SelectSingleNode('//appSettings/add[@key="EnableDailySummary"]/@value').'#text' = 'true'
 $apiConfig.SelectSingleNode('//system.web/compilation/@debug').'#text' = 'false'
 

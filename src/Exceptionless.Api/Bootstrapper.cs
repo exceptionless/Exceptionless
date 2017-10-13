@@ -23,7 +23,7 @@ using Stripe;
 
 namespace Exceptionless.Api {
     public class Bootstrapper {
-        public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory, bool includeInsulation = false) {
+        public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory) {
             var config = container.BuildServiceProvider().GetService<IConfiguration>();
             Settings.Initialize(config);
 
@@ -39,6 +39,7 @@ namespace Exceptionless.Api {
             container.AddTransient<Profile, ApiMappings>();
 
             Core.Bootstrapper.RegisterServices(container, loggerFactory);
+            bool includeInsulation = Settings.Current.EnableRedis || Settings.Current.EnableAzureStorage || Settings.Current.EnableMetricsReporting;
             if (includeInsulation)
                 Insulation.Bootstrapper.RegisterServices(container, Settings.Current.RunJobsInProcess, loggerFactory);
 
