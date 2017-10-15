@@ -38,6 +38,8 @@ namespace Exceptionless.Api.Controllers {
     [Route(API_PREFIX + "/events")]
     [Authorize(Roles = AuthorizationRoles.Client)]
     public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, PersistentEvent, UpdateEvent> {
+        private static readonly HashSet<string> _ignoredKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "access_token", "api_key", "apikey" };
+
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
@@ -683,7 +685,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="version">The api version that should be used</param>
         /// <param name="type">The event type</param>
         /// <param name="userAgent">The user agent that submitted the event.</param>
-        /// <param name="parameters">Parameters that control what properties are set on the event</param>
+        /// <param name="parameters">Query String parameters that control what properties are set on the event</param>
         /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
@@ -694,7 +696,8 @@ namespace Exceptionless.Api.Controllers {
         [ConfigurationResponseFilter]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetSubmitEventAsync(string projectId = null, int version = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
-            if (parameters == null || parameters.Count == 0)
+            var filteredParameters = parameters?.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty) && !_ignoredKeys.Contains(p.Key)).ToList();
+            if (filteredParameters == null || filteredParameters.Count == 0)
                 return Ok();
 
             if (projectId == null)
@@ -719,7 +722,7 @@ namespace Exceptionless.Api.Controllers {
             string identityName = null;
 
             var exclusions = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions).ToList();
-            foreach (var kvp in parameters.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty))) {
+            foreach (var kvp in filteredParameters) {
                 switch (kvp.Key.ToLowerInvariant()) {
                     case "type":
                         ev.Type = kvp.Value.FirstOrDefault();
@@ -734,23 +737,19 @@ namespace Exceptionless.Api.Controllers {
                         ev.ReferenceId = kvp.Value.FirstOrDefault();
                         break;
                     case "date":
-                        DateTimeOffset dtValue;
-                        if (DateTimeOffset.TryParse(kvp.Value.FirstOrDefault(), out dtValue))
+                        if (DateTimeOffset.TryParse(kvp.Value.FirstOrDefault(), out var dtValue))
                             ev.Date = dtValue;
                         break;
                     case "count":
-                        int intValue;
-                        if (Int32.TryParse(kvp.Value.FirstOrDefault(), out intValue))
+                        if (Int32.TryParse(kvp.Value.FirstOrDefault(), out var intValue))
                             ev.Count = intValue;
                         break;
                     case "value":
-                        decimal decValue;
-                        if (Decimal.TryParse(kvp.Value.FirstOrDefault(), out decValue))
+                        if (Decimal.TryParse(kvp.Value.FirstOrDefault(), out var decValue))
                             ev.Value = decValue;
                         break;
                     case "geo":
-                        GeoResult geo;
-                        if (GeoResult.TryParse(kvp.Value.FirstOrDefault(), out geo))
+                        if (GeoResult.TryParse(kvp.Value.FirstOrDefault(), out var geo))
                             ev.Geo = geo.ToString();
                         break;
                     case "tags":
