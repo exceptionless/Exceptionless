@@ -242,7 +242,8 @@ namespace Exceptionless.Core {
             settings.AzureStorageConnectionString = configRoot.GetConnectionString(nameof(AzureStorageConnectionString));
             settings.EnableAzureStorage = config.GetValue(nameof(EnableAzureStorage), !String.IsNullOrEmpty(settings.AzureStorageConnectionString));
 
-            settings.DisableBootstrapStartupActions = config.GetValue(nameof(DisableIndexConfiguration), false);
+            settings.DisableWebSockets = config.GetValue(nameof(DisableWebSockets), false);
+            settings.DisableBootstrapStartupActions = config.GetValue(nameof(DisableBootstrapStartupActions), false);
             settings.DisableIndexConfiguration = config.GetValue(nameof(DisableIndexConfiguration), false);
             settings.DisableSnapshotJobs = config.GetValue(nameof(DisableSnapshotJobs), !String.IsNullOrEmpty(settings.AppScopePrefix));
             settings.ElasticSearchConnectionString = configRoot.GetConnectionString(nameof(ElasticSearchConnectionString)) ?? "http://localhost:9200";
@@ -256,7 +257,6 @@ namespace Exceptionless.Core {
             settings.LdapConnectionString = configRoot.GetConnectionString(nameof(LdapConnectionString));
             settings.EnableActiveDirectoryAuth = config.GetValue(nameof(EnableActiveDirectoryAuth), !String.IsNullOrEmpty(settings.LdapConnectionString));
 
-            settings.DisableWebSockets = config.GetValue(nameof(DisableWebSockets), false);
             settings.Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
 
             Current = settings;
