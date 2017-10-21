@@ -6,13 +6,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using LogLevel = Exceptionless.Logging.LogLevel;
+using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.Exceptionless;
+using ILogger = Serilog.ILogger;
 
 namespace Exceptionless.Insulation.Jobs {
     public class JobServiceProvider {
-        public static IServiceProvider CreateServiceProvider(ILoggerFactory loggerFactory) {
-            loggerFactory.AddConsole();
+        public static IServiceProvider GetServiceProvider() {
+            AppDomain.CurrentDomain.SetDataDirectory();
 
-            var services = new ServiceCollection();
             string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
@@ -23,28 +26,37 @@ namespace Exceptionless.Insulation.Jobs {
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
+
             Settings.Initialize(config);
             Settings.Current.DisableIndexConfiguration = true;
 
+            var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
+
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
-                //client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
                 client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
+                client.Configuration.UseLogger(new SelfLogLogger());
                 client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
                 client.Configuration.SetVersion(Settings.Current.Version);
                 client.Configuration.UseInMemoryStorage();
 
                 client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
                 client.Startup(Settings.Current.ExceptionlessApiKey);
-                loggerFactory.AddExceptionless(client);
+
+                loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Warning);
             }
 
+            Log.Logger = loggerConfig.CreateLogger();
+
+            var services = new ServiceCollection();
+            services.AddLogging(b => b.AddSerilog(Log.Logger));
             services.AddSingleton<IConfiguration>(config);
-            Core.Bootstrapper.RegisterServices(services, loggerFactory);
-            Bootstrapper.RegisterServices(services, true, loggerFactory);
+            Core.Bootstrapper.RegisterServices(services);
+            Bootstrapper.RegisterServices(services, true);
 
             var container = services.BuildServiceProvider();
 
+            Core.Bootstrapper.LogConfiguration(container, container.GetRequiredService<ILoggerFactory>());
             if (!Settings.Current.DisableBootstrapStartupActions)
                 container.RunStartupActionsAsync().GetAwaiter().GetResult();
 

@@ -92,6 +92,8 @@ namespace Exceptionless.Core {
 
         public string Version { get; private set; }
 
+        public string InformationalVersion { get; private set; }
+
         public bool EnableIntercom => !String.IsNullOrEmpty(IntercomAppSecret);
 
         public string IntercomAppSecret { get; private set; }
@@ -257,7 +259,11 @@ namespace Exceptionless.Core {
             settings.LdapConnectionString = configRoot.GetConnectionString(nameof(LdapConnectionString));
             settings.EnableActiveDirectoryAuth = config.GetValue(nameof(EnableActiveDirectoryAuth), !String.IsNullOrEmpty(settings.LdapConnectionString));
 
-            settings.Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
+            try {
+                var versionInfo = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location);
+                settings.Version = versionInfo.FileVersion;
+                settings.InformationalVersion = versionInfo.ProductVersion;
+            } catch { }
 
             Current = settings;
         }
@@ -272,10 +278,6 @@ namespace Exceptionless.Core {
                 default:
                     return SmtpEncryption.None;
             }
-        }
-
-        public static ILoggerFactory GetLoggerFactory() {
-            return new LoggerFactory();
         }
     }
 

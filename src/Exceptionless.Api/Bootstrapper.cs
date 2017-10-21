@@ -15,7 +15,6 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -24,9 +23,6 @@ using Stripe;
 namespace Exceptionless.Api {
     public class Bootstrapper {
         public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory) {
-            var config = container.BuildServiceProvider().GetService<IConfiguration>();
-            Settings.Initialize(config);
-
             container.AddSingleton<WebSocketConnectionManager>();
             container.AddSingleton<MessageBusBroker>();
             container.AddSingleton<MessageBusBrokerMiddleware>();
@@ -38,10 +34,10 @@ namespace Exceptionless.Api {
 
             container.AddTransient<Profile, ApiMappings>();
 
-            Core.Bootstrapper.RegisterServices(container, loggerFactory);
+            Core.Bootstrapper.RegisterServices(container);
             bool includeInsulation = Settings.Current.EnableRedis || Settings.Current.EnableAzureStorage || Settings.Current.EnableMetricsReporting;
             if (includeInsulation)
-                Insulation.Bootstrapper.RegisterServices(container, Settings.Current.RunJobsInProcess, loggerFactory);
+                Insulation.Bootstrapper.RegisterServices(container, Settings.Current.RunJobsInProcess);
 
             if (Settings.Current.RunJobsInProcess)
                 container.AddSingleton<IHostedService, JobsHostedService>();

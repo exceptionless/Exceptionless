@@ -23,6 +23,8 @@ namespace Exceptionless.Api {
         }
 
         public void Configure(IApplicationBuilder app) {
+            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, _loggerFactory);
+
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
 

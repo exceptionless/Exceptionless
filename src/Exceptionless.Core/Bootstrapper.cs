@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -51,32 +52,32 @@ using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Core {
     public class Bootstrapper {
-        public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory) {
+        public static void RegisterServices(IServiceCollection container) {
             container.AddSingleton<IServiceCollection>(container);
-            container.RegisterLogger(loggerFactory);
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
                 DateParseHandling = DateParseHandling.DateTimeOffset
             };
 
-            var resolver = GetJsonContractResolver();
-            var settings = new JsonSerializerSettings {
-                MissingMemberHandling = MissingMemberHandling.Ignore,
-                DateParseHandling = DateParseHandling.DateTimeOffset,
-                ContractResolver = resolver
-            };
+            container.AddSingleton<IContractResolver>(s => GetJsonContractResolver());
+            container.AddSingleton<JsonSerializerSettings>(s => {
+                var settings = new JsonSerializerSettings {
+                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                    DateParseHandling = DateParseHandling.DateTimeOffset,
+                    ContractResolver = s.GetRequiredService<IContractResolver>()
+                };
 
-            settings.AddModelConverters(loggerFactory.CreateLogger(nameof(Bootstrapper)));
+                settings.AddModelConverters(s.GetRequiredService<ILogger<Bootstrapper>>());
+                return settings;
+            });
 
-            container.AddSingleton<IContractResolver>(resolver);
-            container.AddSingleton<JsonSerializerSettings>(settings);
-            container.AddSingleton<JsonSerializer>(JsonSerializer.Create(settings));
-            container.AddSingleton<ISerializer>(new JsonNetSerializer(settings));
+            container.AddSingleton<JsonSerializer>(s => JsonSerializer.Create(s.GetRequiredService<JsonSerializerSettings>()));
+            container.AddSingleton<ISerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
 
-            container.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory }));
-            container.AddSingleton<IMetricsClient>(s => new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = loggerFactory }));
+            container.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
+            container.AddSingleton<IMetricsClient>(s => new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
 
-            container.AddSingleton<IElasticConfiguration, ExceptionlessElasticConfiguration>();
             container.AddSingleton<ExceptionlessElasticConfiguration>();
+            container.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
             if (!Settings.Current.DisableIndexConfiguration)
                 container.AddStartupAction<ExceptionlessElasticConfiguration>();
 
@@ -106,14 +107,14 @@ namespace Exceptionless.Core {
                 return handlers;
             });
 
-            container.AddSingleton(s => CreateQueue<EventPost>(s, loggerFactory: loggerFactory));
-            container.AddSingleton(s => CreateQueue<EventUserDescription>(s, loggerFactory: loggerFactory));
-            container.AddSingleton(s => CreateQueue<EventNotificationWorkItem>(s, loggerFactory: loggerFactory));
-            container.AddSingleton(s => CreateQueue<WebHookNotification>(s, loggerFactory: loggerFactory));
-            container.AddSingleton(s => CreateQueue<MailMessage>(s, loggerFactory: loggerFactory));
-            container.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1), loggerFactory));
+            container.AddSingleton(s => CreateQueue<EventPost>(s));
+            container.AddSingleton(s => CreateQueue<EventUserDescription>(s));
+            container.AddSingleton(s => CreateQueue<EventNotificationWorkItem>(s));
+            container.AddSingleton(s => CreateQueue<WebHookNotification>(s));
+            container.AddSingleton(s => CreateQueue<MailMessage>(s));
+            container.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));
 
-            container.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = loggerFactory }));
+            container.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
             container.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
             container.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
 
@@ -187,6 +188,42 @@ namespace Exceptionless.Core {
             });
         }
 
+        public static void LogConfiguration(IServiceProvider serviceProvider, ILoggerFactory loggerFactory) {
+            var logger = loggerFactory.CreateLogger<Bootstrapper>();
+            logger.LogInformation("Bootstrapping {ProcessName} version {InformationalVersion} on {MachineName} using {@Settings}", Process.GetCurrentProcess().ProcessName, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
+
+            if (!Settings.Current.EnableMetricsReporting)
+                logger.LogWarning("StatsD Metrics is NOT enabled on {MachineName}.", Environment.MachineName);
+
+            if (!Settings.Current.EnableRedis)
+                logger.LogWarning("Redis is NOT enabled on {MachineName}.", Environment.MachineName);
+
+            if (Settings.Current.DisableWebSockets)
+                logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
+
+            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+                logger.LogWarning("Emails will NOT be sent in Dev mode on {MachineName}", Environment.MachineName);
+
+            if (!Settings.Current.EnableAzureStorage)
+                logger.LogWarning("Azure Storage is NOT enabled on {MachineName}", Environment.MachineName);
+
+            var fileStorage = serviceProvider.GetRequiredService<IFileStorage>();
+            if (fileStorage is InMemoryFileStorage)
+                logger.LogWarning("Using in memory file storage on {MachineName}", Environment.MachineName);
+
+            if (Settings.Current.DisableBootstrapStartupActions)
+                logger.LogWarning("Startup Actions is NOT enabled on {MachineName}", Environment.MachineName);
+
+            if (Settings.Current.DisableIndexConfiguration)
+                logger.LogWarning("Index Configuration is NOT enabled on {MachineName}", Environment.MachineName);
+
+            if (Settings.Current.EventSubmissionDisabled)
+                logger.LogWarning("Event Submission is NOT enabled on {MachineName}", Environment.MachineName);
+
+            if (!Settings.Current.EnableAccountCreation)
+                logger.LogWarning("Account Creation is NOT enabled on {MachineName}", Environment.MachineName);
+        }
+
         private static async Task CreateSampleDataAsync(IServiceProvider container) {
             if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
                 return;
@@ -227,7 +264,9 @@ namespace Exceptionless.Core {
             return resolver;
         }
 
-        private static IQueue<T> CreateQueue<T>(IServiceProvider container, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
+        private static IQueue<T> CreateQueue<T>(IServiceProvider container, TimeSpan? workItemTimeout = null) where T : class {
+            var loggerFactory = container.GetRequiredService<ILoggerFactory>();
+
             var behaviours = container.GetServices<IQueueBehavior<T>>().ToList();
             behaviours.Add(new MetricsQueueBehavior<T>(container.GetRequiredService<IMetricsClient>(), null, TimeSpan.FromSeconds(2), loggerFactory));
 
