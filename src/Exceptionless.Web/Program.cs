@@ -14,7 +14,7 @@ namespace Exceptionless.Web {
                 environment = "Production";
 
             var webHost = new WebHostBuilder()
-                .UseKestrel()
+                .UseKestrel(c => c.AddServerHeader = false)
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .ConfigureAppConfiguration((hostingContext, config) => {
                     config.AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true);
@@ -27,6 +27,7 @@ namespace Exceptionless.Web {
                     logging.AddConsole();
                     logging.AddDebug();
                 })
+                .UseIISIntegration()
                 .UseStartup<Startup>()
                 .Build();
 
