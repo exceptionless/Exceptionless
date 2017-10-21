@@ -7,15 +7,9 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Helpers;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions {
     public static class ContainerExtensions {
-        public static void RegisterLogger(this IServiceCollection container, ILoggerFactory loggerFactory) {
-            container.AddSingleton<ILoggerFactory>(loggerFactory);
-            container.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
-        }
-
         public static void AddSingleton(this IServiceCollection services, Type type, params Assembly[] assemblies) {
             var implementingTypes = new List<Type>();
             implementingTypes.AddRange(type.IsGenericTypeDefinition

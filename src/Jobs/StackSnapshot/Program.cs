@@ -1,26 +1,32 @@
 ﻿using System;
+using Exceptionless;
 using Exceptionless.Core;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Jobs;
 using Foundatio.Jobs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace StackSnapshotJob {
     public class Program {
         public static int Main() {
-            AppDomain.CurrentDomain.SetDataDirectory();
+            try {
+                var serviceProvider = JobServiceProvider.GetServiceProvider();
 
-            var loggerFactory = Settings.GetLoggerFactory();
-            var serviceProvider = JobServiceProvider.CreateServiceProvider(loggerFactory);
-            if (Settings.Current.DisableSnapshotJobs) {
-                var logger = loggerFactory.CreateLogger(nameof(StackSnapshotJob));
-                logger.LogInformation("Snapshot Jobs are currently disabled.");
-                return 0;
+                if (Settings.Current.DisableSnapshotJobs) {
+                    Log.Logger.Information("Snapshot Jobs are currently disabled.");
+                    return 0;
+                }
+
+                var job = serviceProvider.GetService<Exceptionless.Core.Jobs.Elastic.StackSnapshotJob>();
+                return new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), runContinuous: false).RunInConsole();
+            } catch (Exception ex) {
+                Log.Fatal(ex, "Job terminated unexpectedly");
+                return 1;
+            } finally {
+                Log.CloseAndFlush();
+                ExceptionlessClient.Default.ProcessQueue();
             }
-
-            var job = serviceProvider.GetService<Exceptionless.Core.Jobs.Elastic.StackSnapshotJob>();
-            return new JobRunner(job, loggerFactory, runContinuous: false).RunInConsole();
         }
     }
 }

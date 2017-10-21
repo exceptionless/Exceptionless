@@ -16,7 +16,7 @@ AppSettings:
   # QA: Use this mode when deployed to staging. (Outbound emails restricted)
   # Production: Use this mode when deployed to production.
   WebsiteMode: Dev
-  
+
   # Controls whether users can signup.
   EnableAccountCreation: true
 
@@ -32,11 +32,22 @@ AppSettings:
 
   # Runs the jobs in the current website process
   RunJobsInProcess: true
-Logging:
-  IncludeScopes: false
-  Debug:
-    LogLevel:
-      Default: Warning
-  Console:
-    LogLevel:
-      Default: Warning
+
+Serilog:
+  Using:
+  - Serilog.Sinks.Console
+  - Serilog.Sinks.Exceptionless
+  MinimumLevel:
+    Default: Information
+    Override:
+      Microsoft: Warning
+      System: Warning
+      Foundatio.Utility.ScheduledTimer: Warning
+      Foundatio.Metrics: Warning
+  WriteTo:
+  - Name: Console
+  - Name: Exceptionless
+  Enrich:
+  - FromLogContext
+  - WithMachineName
+  - WithThreadId
