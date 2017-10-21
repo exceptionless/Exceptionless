@@ -51,7 +51,10 @@ namespace Exceptionless.Api.Tests {
 
         protected virtual IServiceProvider GetDefaultContainer() {
             var services = new ServiceCollection();
-            services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
+
+            var config = new ConfigurationBuilder().Build();
+            Settings.Initialize(config);
+            services.AddSingleton<IConfiguration>(config);
             Api.Bootstrapper.RegisterServices(services, Log);
             RegisterServices(services);
 
