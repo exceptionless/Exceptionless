@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
@@ -47,6 +48,7 @@ namespace Exceptionless.Insulation.Jobs {
             }
 
             Log.Logger = loggerConfig.CreateLogger();
+            Log.Information("Bootstrapping {ProcessName} version {InformationalVersion} on {MachineName} using {@Settings}", Process.GetCurrentProcess().ProcessName, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
 
             var services = new ServiceCollection();
             services.AddLogging(b => b.AddSerilog(Log.Logger));

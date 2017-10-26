@@ -190,7 +190,6 @@ namespace Exceptionless.Core {
 
         public static void LogConfiguration(IServiceProvider serviceProvider, ILoggerFactory loggerFactory) {
             var logger = loggerFactory.CreateLogger<Bootstrapper>();
-            logger.LogInformation("Bootstrapping {ProcessName} version {InformationalVersion} on {MachineName} using {@Settings}", Process.GetCurrentProcess().ProcessName, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
 
             if (!Settings.Current.EnableMetricsReporting)
                 logger.LogWarning("StatsD Metrics is NOT enabled on {MachineName}.", Environment.MachineName);

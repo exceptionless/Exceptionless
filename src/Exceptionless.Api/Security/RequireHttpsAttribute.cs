@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 
@@ -19,7 +20,8 @@ namespace Exceptionless.Api.Security {
             if (filterContext == null)
                 throw new ArgumentNullException(nameof(filterContext));
 
-            if (IsSecure(filterContext.HttpContext.Request))
+            var logger = filterContext.HttpContext.RequestServices.GetRequiredService<ILogger<RequireHttpsAttribute>>();
+            if (IsSecure(filterContext.HttpContext.Request, logger))
                 return;
 
             if (IgnoreLocalRequests && IsLocal(filterContext.HttpContext.Request))
@@ -28,10 +30,15 @@ namespace Exceptionless.Api.Security {
             HandleNonHttpsRequest(filterContext);
         }
 
-        private bool IsSecure(HttpRequest request) {
-            if (request.Headers.TryGetValue("X-Forwarded-Proto", out StringValues value) && value.FirstOrDefault() == Uri.UriSchemeHttps)
-                return true;
+        private bool IsSecure(HttpRequest request, ILogger logger) {
+            bool isLogTraceEnabled = logger.IsEnabled(LogLevel.Trace);
+            if (request.Headers.TryGetValue("X-Forwarded-Proto", out StringValues value)) {
+                if (isLogTraceEnabled) logger.LogTrace("X-Forwarded-Proto header present with value: {Value}", value.FirstOrDefault());
+                if (value.FirstOrDefault() == Uri.UriSchemeHttps)
+                    return true;
+            }
 
+            if (isLogTraceEnabled) logger.LogTrace("X-Forwarded-Proto not present");
             return request.IsHttps;
         }
 
@@ -58,9 +65,13 @@ namespace Exceptionless.Api.Security {
         }
 
         protected virtual void HandleNonHttpsRequest(AuthorizationFilterContext filterContext) {
+            var logger = filterContext.HttpContext.RequestServices.GetRequiredService<ILogger<RequireHttpsAttribute>>();
+            bool isLogInformationEnabled = logger.IsEnabled(LogLevel.Information);
+
             // only redirect for GET requests, otherwise the browser might not propagate the verb and request
             // body correctly.
             if (!String.Equals(filterContext.HttpContext.Request.Method, "GET", StringComparison.OrdinalIgnoreCase)) {
+                if(isLogInformationEnabled) logger.LogInformation("Unable to redirect to SSL for non-GET requests");
                 filterContext.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
             } else {
                 var optionsAccessor = filterContext.HttpContext.RequestServices.GetRequiredService<IOptions<MvcOptions>>();
@@ -83,6 +94,7 @@ namespace Exceptionless.Api.Security {
                     request.Path.ToUriComponent(),
                     request.QueryString.ToUriComponent());
 
+                if (isLogInformationEnabled) logger.LogInformation("Redirecting non-SSL request to {Url}", newUrl);
                 // redirect to HTTPS version of page
                 filterContext.Result = new RedirectResult(newUrl, Permanent);
             }
