@@ -819,7 +819,9 @@ namespace Exceptionless.Api.Tests.Pipeline {
             int totalEvents = 0;
 
             var sw = new Stopwatch();
-            foreach (string file in Directory.GetFiles(@"..\..\..\Pipeline\Data\", "*.json", SearchOption.AllDirectories)) {
+            
+            string path = Path.Combine("..", "..", "..", "Pipeline", "Data");
+            foreach (string file in Directory.GetFiles(path, "*.json", SearchOption.AllDirectories)) {
                 var events = await parserPluginManager.ParseEventsAsync(File.ReadAllText(file), 2, "exceptionless/2.0.0.0");
                 Assert.NotNull(events);
                 Assert.True(events.Count > 0);
@@ -850,16 +852,15 @@ namespace Exceptionless.Api.Tests.Pipeline {
         public async Task GeneratePerformanceDataAsync() {
             int currentBatchCount = 0;
             var parserPluginManager = GetService<EventParserPluginManager>();
-            string dataDirectory = Path.GetFullPath(@"..\..\..\Pipeline\Data\");
+            string dataDirectory = Path.GetFullPath(Path.Combine("..", "..", "..", "Pipeline", "Data"));
 
             foreach (string file in Directory.GetFiles(dataDirectory))
                 File.Delete(file);
 
             var mappedUsers = new Dictionary<string, UserInfo>();
             var mappedIPs = new Dictionary<string, string>();
-
-            var storage = new FolderFileStorage(Path.GetFullPath(@"..\..\..\src"));
-            foreach (var file in await storage.GetFileListAsync(@"Exceptionless.Web\storage\q\*")) {
+            var storage = new FolderFileStorage(Path.GetFullPath(Path.Combine("..", "..", "..", "src")));
+            foreach (var file in await storage.GetFileListAsync(Path.Combine("Exceptionless.Web", "storage", "q", "*"))) {
                 var eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(file.Path);
                 byte[] data = eventPostInfo.Data;
                 if (!String.IsNullOrEmpty(eventPostInfo.ContentEncoding))
@@ -936,7 +937,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         public static IEnumerable<object[]> Events {
             get {
                 var result = new List<object[]>();
-                foreach (string file in Directory.GetFiles(@"..\..\..\ErrorData\", "*.expected.json", SearchOption.AllDirectories))
+                foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "ErrorData"), "*.expected.json", SearchOption.AllDirectories))
                     result.Add(new object[] { file });
 
                 return result.ToArray();

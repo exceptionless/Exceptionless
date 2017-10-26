@@ -173,8 +173,9 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private async Task CreateDataAsync() {
+            string path = Path.Combine("..", "..", "..", "Search", "Data");
             var serializer = GetService<JsonSerializer>();
-            foreach (string file in Directory.GetFiles(@"..\..\..\Search\Data\", "stack*.json", SearchOption.AllDirectories)) {
+            foreach (string file in Directory.GetFiles(path, "stack*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
                     continue;
 
