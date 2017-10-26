@@ -929,7 +929,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 if (currentBatchCount % 10 == 0)
                     events.Insert(0, events[0].ToSessionStartEvent());
 
-                await storage.SaveObjectAsync($"{dataDirectory}\\{currentBatchCount++}.json", events);
+                await storage.SaveObjectAsync(Path.Combine(dataDirectory, $"{currentBatchCount++}.json"), events);
             }
         }
 
