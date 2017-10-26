@@ -14,6 +14,7 @@ using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 
 namespace Exceptionless.Api.Controllers {
     [RequireHttpsExceptLocal]
@@ -184,8 +185,9 @@ namespace Exceptionless.Api.Controllers {
 
         protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, params string[] links) {
             var headers = new HeaderDictionary();
-            foreach (string link in links.Where(l => l != null))
-                headers.Add("Link", link);
+            var linksToAdd = links.Where(l => l != null).ToArray();
+            if (linksToAdd.Length > 0)
+                headers.Add("Link", linksToAdd);
 
             return new OkWithHeadersContentResult<T>(content, headers);
         }
