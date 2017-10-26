@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using Exceptionless;
 using Exceptionless.Api;
@@ -34,7 +35,7 @@ namespace Exceptionless.Web {
             Log.Logger = loggerConfig.CreateLogger();
 
             try {
-                Log.Information("Starting web host in {Environment} with {Configuration}", environment, config);
+                Log.Information("Bootstrapping {ProcessName} version {InformationalVersion} on {MachineName} using {@Settings}", Process.GetCurrentProcess().ProcessName, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
 
                 var webHost = new WebHostBuilder()
                     .UseKestrel(c => c.AddServerHeader = false)
