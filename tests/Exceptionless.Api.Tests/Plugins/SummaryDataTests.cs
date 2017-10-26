@@ -70,7 +70,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public static IEnumerable<object[]> Events {
             get {
                 var result = new List<object[]>();
-                foreach (string file in Directory.GetFiles(@"..\..\..\Search\Data\", "event*.json", SearchOption.AllDirectories))
+                foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "Search", "Data"), "event*.json", SearchOption.AllDirectories))
                     if (!file.EndsWith("summary.json"))
                         result.Add(new object[] { Path.GetFullPath(file) });
 
@@ -81,7 +81,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public static IEnumerable<object[]> Stacks {
             get {
                 var result = new List<object[]>();
-                foreach (string file in Directory.GetFiles(@"..\..\..\Search\Data\", "stack*.json", SearchOption.AllDirectories))
+                foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "Search", "Data"), "stack*.json", SearchOption.AllDirectories))
                     if (!file.EndsWith("summary.json"))
                         result.Add(new object[] { Path.GetFullPath(file) });
 

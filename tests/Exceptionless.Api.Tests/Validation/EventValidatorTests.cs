@@ -19,8 +19,9 @@ namespace Exceptionless.Api.Tests.Validation {
         public EventValidatorTests(ITestOutputHelper output) : base(output) {
             _validator = new PersistentEventValidator();
 
+            string path = Path.Combine("..", "..", "..", "Search", "Data", "event1.json");
             var parserPluginManager = GetService<EventParserPluginManager>();
-            var events = parserPluginManager.ParseEventsAsync(File.ReadAllText(@"..\..\..\Search\Data\event1.json"), 2, "exceptionless/2.0.0.0").GetAwaiter().GetResult();
+            var events = parserPluginManager.ParseEventsAsync(File.ReadAllText(path), 2, "exceptionless/2.0.0.0").GetAwaiter().GetResult();
             _benchmarkEvent = events.First();
         }
 
