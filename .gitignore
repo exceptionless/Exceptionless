@@ -117,6 +117,7 @@ App_Data
 *.DS_Store
 *.orig
 *.nugetreferenceswitcher
-src/Exceptionless\.Web/storage/
 artifacts
 .idea
+src/Exceptionless\.Web/storage/
+tests/Exceptionless\.Api\.Tests/src/Exceptionless\.Web/storage/
