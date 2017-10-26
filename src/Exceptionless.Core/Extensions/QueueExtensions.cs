@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Queues.Models;
@@ -14,10 +15,12 @@ namespace Exceptionless.Core.Extensions {
 
         public static async Task<string> EnqueueAsync(this IQueue<EventPost> queue, EventPostInfo data, IFileStorage storage, bool shouldArchive, CancellationToken cancellationToken = default) {
             string path;
-            if (shouldArchive)
-                path = $"archive\\{SystemClock.UtcNow:yy\\\\MM\\\\dd\\\\HH}\\{data.ProjectId}\\{Guid.NewGuid():N}.json";
-            else
-                path = $"q\\{Guid.NewGuid():N}.json";
+            if (shouldArchive) {
+                var utcNow = SystemClock.UtcNow;
+                path = Path.Combine("archive", utcNow.ToString("yy"), utcNow.ToString("MM"), utcNow.ToString("dd"), utcNow.ToString("HH"), data.ProjectId, $"{Guid.NewGuid():N}.json");
+            } else {
+                path = Path.Combine("q", $"{Guid.NewGuid():N}.json");
+            }
 
             if (!await storage.SaveObjectAsync(path, data, cancellationToken).AnyContext())
                 return null;

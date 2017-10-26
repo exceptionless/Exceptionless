@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Extensions {
 
             try {
                 if (shouldArchive) {
-                    string archivePath = $"archive\\{created:yy\\\\MM\\\\dd\\\\HH}\\{projectId}\\{Path.GetFileName(path)}";
+                    string archivePath = Path.Combine("archive", created.ToString("yy"), created.ToString("MM"), created.ToString("dd"), created.ToString("HH"), projectId, Path.GetFileName(path));
                     return await storage.RenameFileAsync(path, archivePath).AnyContext();
                 }
 
