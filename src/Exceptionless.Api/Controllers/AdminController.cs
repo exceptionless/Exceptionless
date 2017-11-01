@@ -19,7 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Exceptionless.Api.Controllers {
     [Route(API_PREFIX + "/admin")]
-    [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     [ApiExplorerSettings(IgnoreApi = true)]
     public class AdminController : ExceptionlessApiController {
         private readonly ExceptionlessElasticConfiguration _configuration;

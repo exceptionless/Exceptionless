@@ -75,7 +75,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet("queue-stats")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         public async Task<IActionResult> QueueStatsAsync() {
             var eventQueueStats = await _eventQueue.GetQueueStatsAsync();
             var mailQueueStats = await _mailQueue.GetQueueStatsAsync();
@@ -113,7 +113,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost("notifications/release")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         public async Task<IActionResult> PostReleaseNotificationAsync([FromBody] string message = null, [FromQuery] bool critical = false) {
             var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message };
             await _messagePublisher.PublishAsync(notification);
@@ -134,7 +134,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost("notifications/system")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         public async Task<IActionResult> PostSystemNotificationAsync([FromBody] string message) {
             if (String.IsNullOrWhiteSpace(message))
                 return NotFound();
@@ -147,7 +147,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete("notifications/system")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         public async Task<IActionResult> RemoveSystemNotificationAsync() {
             await _cacheClient.RemoveAsync("system-notification");
             await _messagePublisher.PublishAsync(new SystemNotification { Date = SystemClock.UtcNow });
