@@ -5,7 +5,7 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Exceptionless.AspNetCore.Signed" Version="4.1.1967-pre" />
+    <PackageReference Include="Exceptionless.AspNetCore.Signed" Version="4.1.1968-pre" />
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="1.0.0" />
     <PackageReference Include="OAuth2" Version="0.9.8-pre" />
