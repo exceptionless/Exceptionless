@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Models;
-using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
 using Exceptionless.Api.Utility.Handlers;
 using Exceptionless.Core;
@@ -28,7 +27,6 @@ namespace Exceptionless.Api {
             container.AddSingleton<MessageBusBrokerMiddleware>();
             container.AddSingleton<IConnectionMapping, ConnectionMapping>();
 
-            container.AddSingleton<ApiKeyMiddleware>();
             container.AddSingleton<OverageMiddleware>();
             container.AddSingleton<ThrottlingMiddleware>();
 
