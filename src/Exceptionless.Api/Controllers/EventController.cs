@@ -606,7 +606,7 @@ namespace Exceptionless.Api.Controllers {
             if (changes == null)
                 return Ok();
 
-            if (changes.UnknownProperties.TryGetValue("UserEmail", out object value))
+            if (changes.UnknownProperties.TryGetValue("UserEmail", out var value))
                 changes.TrySetPropertyValue("EmailAddress", value);
             if (changes.UnknownProperties.TryGetValue("UserDescription", out value))
                 changes.TrySetPropertyValue("Description", value);
