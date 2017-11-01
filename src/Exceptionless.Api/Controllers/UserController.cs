@@ -25,7 +25,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Api.Controllers {
     [Route(API_PREFIX + "/users")]
-    [Authorize(Roles = AuthorizationRoles.User)]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, UpdateUser> {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly ICacheClient _cache;
@@ -213,7 +213,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost("{id:objectid}/admin-role")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> AddAdminRoleAsync(string id) {
             var user = await GetModelAsync(id, false);
@@ -229,7 +229,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete("{id:objectid}/admin-role")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> DeleteAdminRoleAsync(string id) {
             var user = await GetModelAsync(id, false);

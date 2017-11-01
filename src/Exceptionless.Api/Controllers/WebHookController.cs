@@ -22,7 +22,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.App.Controllers.API {
     [Route(API_PREFIX + "/webhooks")]
-    [Authorize(Roles = AuthorizationRoles.Client)]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     public class WebHookController : RepositoryApiController<IWebHookRepository, WebHook, WebHook, NewWebHook, NewWebHook> {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
@@ -42,7 +42,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="404">The project could not be found.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<WebHook>))]
         public async Task<IActionResult> GetByProjectAsync(string projectId, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var project = await GetProjectAsync(projectId);
@@ -61,7 +61,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <param name="id">The identifier of the web hook.</param>
         /// <response code="404">The web hook could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetWebHookById")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(WebHook))]
         public Task<IActionResult> GetByIdAsync(string id) {
             return GetByIdImplAsync(id);
@@ -75,7 +75,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="400">An error occurred while creating the web hook.</response>
         /// <response code="409">The web hook already exists.</response>
         [HttpPost]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public Task<IActionResult> PostAsync([FromBody] NewWebHook webhook) {
             return PostImplAsync(webhook);
         }
@@ -89,7 +89,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="404">One or more web hooks were not found.</response>
         /// <response code="500">An error occurred while deleting one or more web hooks.</response>
         [HttpDelete("{ids:objectids}")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
         public Task<IActionResult> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());

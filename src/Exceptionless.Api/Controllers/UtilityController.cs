@@ -25,7 +25,7 @@ namespace Exceptionless.Api.Controllers {
         /// </remarks>
         /// <param name="query">The query you wish to validate.</param>
         [HttpGet("search/validate")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(QueryValidator.QueryProcessResult))]
         public async Task<IActionResult> ValidateAsync([FromQuery] string query) {
             return Ok(await _validator.ValidateQueryAsync(query));

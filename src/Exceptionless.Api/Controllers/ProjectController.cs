@@ -28,7 +28,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Api.Controllers {
     [Route(API_PREFIX + "/projects")]
-    [Authorize(Roles = AuthorizationRoles.Client)]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IEventRepository _eventRepository;
@@ -53,7 +53,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         [HttpGet]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewProject>))]
         public async Task<IActionResult> GetAsync([FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] string mode = null) {
             page = GetPage(page);
@@ -76,7 +76,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         /// <response code="404">The organization could not be found.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewProject>))]
         public async Task<IActionResult> GetByOrganizationAsync(string organization, [FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] string mode = null) {
             if (String.IsNullOrEmpty(organization) || !CanAccessOrganization(organization))
@@ -100,7 +100,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         /// <response code="404">The project could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetProjectById")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewProject))]
         public async Task<IActionResult> GetByIdAsync(string id, [FromQuery] string mode = null) {
             var project = await GetModelAsync(id);
@@ -122,7 +122,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">An error occurred while creating the project.</response>
         /// <response code="409">The project already exists.</response>
         [HttpPost]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status201Created, Type = typeof(ViewProject))]
         public Task<IActionResult> PostAsync([FromBody] NewProject project) {
             return PostImplAsync(project);
@@ -137,7 +137,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpPatch("{id:objectid}")]
         [HttpPut("{id:objectid}")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewProject))]
         public Task<IActionResult> PatchAsync(string id, [FromBody] Delta<UpdateProject> changes) {
             return PatchImplAsync(id, changes);
@@ -152,7 +152,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more projects were not found.</response>
         /// <response code="500">An error occurred while deleting one or more projects.</response>
         [HttpDelete("{ids:objectids}")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
         public Task<IActionResult> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
@@ -194,7 +194,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid configuration value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpPost("{id:objectid}/config")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> SetConfigAsync(string id, [FromQuery] string key, [FromBody] string value) {
             if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value))
@@ -219,7 +219,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid key value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpDelete("{id:objectid}/config")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteConfigAsync(string id, [FromQuery] string key) {
             if (String.IsNullOrWhiteSpace(key))
@@ -243,7 +243,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="id">The identifier of the project.</param>
         /// <response code="404">The project could not be found.</response>
         [HttpGet("{id:objectid}/reset-data")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
         public async Task<IActionResult> ResetDataAsync(string id) {
             var project = await GetModelAsync(id);
@@ -260,7 +260,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet("{id:objectid}/notifications")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> GetNotificationSettingsAsync(string id) {
             var project = await GetModelAsync(id);
@@ -277,7 +277,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="userId">The identifier of the user.</param>
         /// <response code="404">The project could not be found.</response>
         [HttpGet("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(NotificationSettings))]
         public async Task<IActionResult> GetNotificationSettingsAsync(string id, string userId) {
             var project = await GetModelAsync(id);
@@ -299,7 +299,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project or integration could not be found.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{id:objectid}/{integration:minlength(1)}/notifications")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(NotificationSettings))]
         public async Task<IActionResult> GetIntegrationNotificationSettingsAsync(string id, string integration) {
             var project = await GetModelAsync(id);
@@ -321,7 +321,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpPut("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         [HttpPost("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> SetNotificationSettingsAsync(string id, string userId, [FromBody] NotificationSettings settings) {
             var project = await GetModelAsync(id, false);
@@ -350,7 +350,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="426">Please upgrade your plan to enable integrations.</response>
         [HttpPut("{id:objectid}/{integration:minlength(1)}/notifications")]
         [HttpPost("{id:objectid}/{integration:minlength(1)}/notifications")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> SetIntegrationNotificationSettingsAsync(string id, string integration, [FromBody] NotificationSettings settings) {
             if (!String.Equals(Project.NotificationIntegrations.Slack, integration))
@@ -383,7 +383,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="userId">The identifier of the user.</param>
         /// <response code="404">The project could not be found.</response>
         [HttpDelete("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteNotificationSettingsAsync(string id, string userId) {
             var project = await GetModelAsync(id, false);
@@ -410,7 +410,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpPut("{id:objectid}/promotedtabs")]
         [HttpPost("{id:objectid}/promotedtabs")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> PromoteTabAsync(string id, [FromQuery] string name) {
             if (String.IsNullOrWhiteSpace(name))
@@ -436,7 +436,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid tab name.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpDelete("{id:objectid}/promotedtabs")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> DemoteTabAsync(string id, [FromQuery] string name) {
             if (String.IsNullOrWhiteSpace(name))
@@ -463,7 +463,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="204">The project name is not available.</response>
         [HttpGet("check-name")]
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects/check-name")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status201Created)]
         public async Task<IActionResult> IsNameAvailableAsync([FromQuery] string name, string organizationId = null) {
             if (await IsProjectNameAvailableInternalAsync(organizationId, name))
@@ -492,7 +492,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid key or value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpPost("{id:objectid}/data")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> PostDataAsync(string id, [FromQuery] string key, [FromBody] string value) {
             if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value) || key.StartsWith("-"))
@@ -516,7 +516,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">Invalid key or value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpDelete("{id:objectid}/data")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteDataAsync(string id, [FromQuery] string key) {
             if (String.IsNullOrWhiteSpace(key) || key.StartsWith("-"))
@@ -541,7 +541,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The project could not be found.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{id:objectid}/slack")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<IActionResult> AddSlackAsync(string id, [FromQuery] string code) {
             if (String.IsNullOrWhiteSpace(code))
                 return BadRequest();
@@ -577,7 +577,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="id">The identifier of the project.</param>
         /// <response code="404">The project could not be found.</response>
         [HttpDelete("{id:objectid}/slack")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> RemoveSlackAsync(string id) {
             var project = await GetModelAsync(id, false);

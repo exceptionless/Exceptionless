@@ -22,7 +22,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.App.Controllers.API {
     [Route(API_PREFIX + "/tokens")]
-    [Authorize(Roles = AuthorizationRoles.User)]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, UpdateToken> {
         private readonly IProjectRepository _projectRepository;
 

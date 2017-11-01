@@ -37,7 +37,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Api.Controllers {
     [Route(API_PREFIX + "/organizations")]
-    [Authorize(Roles = AuthorizationRoles.User)]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class OrganizationController : RepositoryApiController<IOrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {
         private readonly ICacheClient _cacheClient;
         private readonly IEventRepository _eventRepository;
@@ -78,7 +78,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet("~/" + API_PREFIX + "/admin/organizations")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> GetForAdminsAsync([FromQuery] string criteria = null, [FromQuery] bool? paid = null, [FromQuery] bool? suspended = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] OrganizationSortBy sort = OrganizationSortBy.Newest) {
             page = GetPage(page);
@@ -93,7 +93,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet("~/" + API_PREFIX + "/admin/organizations/stats")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> PlanStatsAsync() {
             return Ok(await _repository.GetBillingPlanStatsAsync());
@@ -528,7 +528,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/suspend")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> SuspendAsync(string id, [FromQuery] SuspensionCode code, [FromQuery] string notes = null) {
             var organization = await GetModelAsync(id, false);
@@ -547,7 +547,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/suspend")]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> UnsuspendAsync(string id) {
             var organization = await GetModelAsync(id, false);

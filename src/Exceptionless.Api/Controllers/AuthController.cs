@@ -149,7 +149,7 @@ namespace Exceptionless.Api.Controllers {
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("logout")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<IActionResult> LogoutAsync() {
             if (User.IsTokenAuthType())
                 return Ok();
@@ -300,7 +300,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="500">An error while saving the user account.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("unlink/{providerName:minlength(1)}")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public async Task<IActionResult> RemoveExternalLoginAsync(string providerName, [FromQuery] string providerUserId) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("External Login", providerName).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Provider User Id", providerUserId).SetHttpContext(HttpContext))) {
@@ -335,7 +335,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="model">The change password model.</param>
         /// <response code="400">Invalid change password model.</response>
         [HttpPost("change-password")]
-        [Authorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordModel model) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("Change Password").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Password Length", model?.Password?.Length ?? 0).SetHttpContext(HttpContext))) {

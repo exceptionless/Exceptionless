@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IO;
+using System.Security.Claims;
 using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
 using Exceptionless.Api.Utility.Handlers;
 using Exceptionless.Core;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -36,10 +38,9 @@ namespace Exceptionless.Api {
                 .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
                 .WithExposedHeaders("ETag", "Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-Result-Count"));
 
-            app.UseResponseCompression();
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
-            app.UseMiddleware<ApiKeyMiddleware>();
+            app.UseAuthentication();
             // Reject event posts in organizations over their max event limits.
             app.UseMiddleware<OverageMiddleware>();
             // Throttle api calls to X every 15 minutes by IP address.
@@ -85,6 +86,13 @@ namespace Exceptionless.Api {
                 o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
                 o.SerializerSettings.Formatting = Formatting.Indented;
                 o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
+            });
+
+            services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
+            services.AddAuthorization(options => {
+                options.AddPolicy(AuthorizationRoles.ClientPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.Client));
+                options.AddPolicy(AuthorizationRoles.UserPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.User));
+                options.AddPolicy(AuthorizationRoles.GlobalAdminPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.GlobalAdmin));
             });
 
             services.AddRouting(r => {
