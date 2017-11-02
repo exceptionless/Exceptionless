@@ -8,10 +8,10 @@ using Exceptionless.Api.Utility.Handlers;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc.Cors.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -31,14 +31,7 @@ namespace Exceptionless.Api {
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
 
-            app.UseCors(c => c
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowAnyOrigin()
-                .AllowCredentials()
-                .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
-                .WithExposedHeaders("ETag", "Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-Result-Count"));
-
+            app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
             app.UseAuthentication();
@@ -71,13 +64,20 @@ namespace Exceptionless.Api {
         }
 
         public void ConfigureServices(IServiceCollection services) {
-            services.AddCors();
-            services.AddResponseCompression();
+            services.AddCors(b => b.AddPolicy("AllowAny", p => p
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowAnyOrigin()
+                .AllowCredentials()
+                .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
+                .WithExposedHeaders("ETag", "Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-Result-Count")));
+
             services.Configure<ForwardedHeadersOptions>(options => {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
                 options.RequireHeaderSymmetry = false;
             });
             services.AddMvc(o => {
+                o.Filters.Add(new CorsAuthorizationFilterFactory("AllowAny"));
                 o.Filters.Add<RequireHttpsExceptLocalAttribute>();
                 o.Filters.Add<ApiExceptionFilter>();
                 o.ModelBinderProviders.Add(new CustomAttributesModelBinderProvider());
