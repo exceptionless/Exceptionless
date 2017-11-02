@@ -17,7 +17,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             ev.SetManualStackingKey(stackingKey);
 
             var context = new EventContext(ev);
-            var plugin = new ManualStackingPlugin();
+            var plugin = GetService<ManualStackingPlugin>();
             await plugin.EventBatchProcessingAsync(new List<EventContext> { context });
             Assert.Equal(willAddManualStackSignature, context.StackSignatureData.Count > 0);
         }

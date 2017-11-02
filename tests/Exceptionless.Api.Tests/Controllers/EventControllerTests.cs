@@ -94,9 +94,9 @@ namespace Exceptionless.Api.Tests.Controllers {
         public async Task CanPostCompressedStringAsync() {
             const string message = "simple string";
 
-            byte[] data = Encoding.UTF8.GetBytes(message);
+            var data = Encoding.UTF8.GetBytes(message);
             var ms = new MemoryStream();
-            using (GZipStream gzip = new GZipStream(ms, CompressionMode.Compress, true))
+            using (var gzip = new GZipStream(ms, CompressionMode.Compress, true))
                 gzip.Write(data, 0, data.Length);
             ms.Position = 0;
 
@@ -132,7 +132,8 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostEventAsync() {
-            var ev = new RandomEventGenerator().GeneratePersistent(false);
+            var ev = new RandomEventGenerator().GeneratePersistent(false)
+            ;
             await SendTokenRequest(TestConstants.ApiKey, r => r
                 .Post()
                 .AppendPath("events")
