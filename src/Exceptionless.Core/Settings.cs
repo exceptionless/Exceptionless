@@ -34,6 +34,10 @@ namespace Exceptionless.Core {
 
         public string AppScopePrefix => HasAppScope ? AppScope + "-" : String.Empty;
 
+        public string QueueScope { get; set; }
+
+        public string QueueScopePrefix => !String.IsNullOrEmpty(QueueScope) ? QueueScope + "-" : AppScopePrefix;
+
         public bool RunJobsInProcess { get; private set; }
 
         public int JobsIterationLimit { get; set; }
@@ -175,6 +179,7 @@ namespace Exceptionless.Core {
             ExceptionlessServerUrl = GetString(nameof(ExceptionlessServerUrl));
             WebsiteMode = GetEnum<WebsiteMode>(nameof(WebsiteMode), WebsiteMode.Dev);
             AppScope = GetString(nameof(AppScope), String.Empty);
+            QueueScope = GetString(nameof(QueueScope), String.Empty);
 
             RunJobsInProcess = GetBool(nameof(RunJobsInProcess), true);
             JobsIterationLimit = GetInt(nameof(JobsIterationLimit), -1);
