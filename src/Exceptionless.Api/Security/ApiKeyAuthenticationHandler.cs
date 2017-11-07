@@ -126,8 +126,8 @@ namespace Exceptionless.Api.Security {
 
         private AuthenticationProperties CreateAuthenticationProperties(Token token) {
             return new AuthenticationProperties {
-                ExpiresUtc = token.ExpiresUtc,
-                IssuedUtc = token.CreatedUtc
+                ExpiresUtc = token?.ExpiresUtc ?? DateTime.UtcNow.AddHours(12),
+                IssuedUtc = token?.CreatedUtc ?? DateTime.UtcNow
             };
         }
     }
