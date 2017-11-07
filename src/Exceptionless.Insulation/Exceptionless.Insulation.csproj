@@ -18,7 +18,7 @@
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.0.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="2.4.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
-    <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="3.1.0-dev-00061" />
+    <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="3.1.0" />
     <PackageReference Include="YamlDotNet" Version="4.2.2" />
   </ItemGroup>
   <ItemGroup>
