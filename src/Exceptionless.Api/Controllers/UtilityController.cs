@@ -10,6 +10,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 namespace Exceptionless.Api.Controllers {
     [ApiExplorerSettings(IgnoreApi = true)]
     [Route(API_PREFIX)]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class UtilityController : ExceptionlessApiController {
         private readonly PersistentEventQueryValidator _validator;
 
@@ -25,31 +26,9 @@ namespace Exceptionless.Api.Controllers {
         /// </remarks>
         /// <param name="query">The query you wish to validate.</param>
         [HttpGet("search/validate")]
-        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(QueryValidator.QueryProcessResult))]
         public async Task<IActionResult> ValidateAsync([FromQuery] string query) {
             return Ok(await _validator.ValidateQueryAsync(query));
-        }
-
-        [HttpGet("notfound")]
-        [HttpPut("notfound")]
-        [HttpPatch("notfound")]
-        [HttpPost("notfound")]
-        [HttpHead("notfound")]
-        public IActionResult Http404([FromQuery] string link) {
-            return Ok(new {
-                Message = "Not found",
-                Url = "http://docs.exceptionless.io"
-            });
-        }
-
-        [HttpGet("boom")]
-        [HttpPut("boom")]
-        [HttpPatch("boom")]
-        [HttpPost("boom")]
-        [HttpHead("boom")]
-        public IActionResult Boom() {
-            throw new ApplicationException("Boom!");
         }
     }
 }
