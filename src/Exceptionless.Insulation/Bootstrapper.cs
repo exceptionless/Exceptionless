@@ -136,7 +136,7 @@ namespace Exceptionless.Insulation {
         }
 
         private static string GetQueueName<T>() {
-            return String.Concat(Settings.Current.AppScopePrefix, typeof(T).Name);
+            return String.Concat(Settings.Current.QueueScopePrefix, typeof(T).Name);
         }
 
         private static RedisCacheClient CreateRedisCacheClient(Container container, ILoggerFactory loggerFactory) {
