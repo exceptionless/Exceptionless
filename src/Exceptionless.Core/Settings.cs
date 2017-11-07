@@ -38,6 +38,10 @@ namespace Exceptionless.Core {
 
         public string AppScopePrefix => HasAppScope ? AppScope + "-" : String.Empty;
 
+        public string QueueScope { get; set; }
+
+        public string QueueScopePrefix => !String.IsNullOrEmpty(QueueScope) ? QueueScope + "-" : AppScopePrefix;
+
         public bool RunJobsInProcess { get; private set; }
 
         public int JobsIterationLimit { get; set; }
@@ -193,6 +197,7 @@ namespace Exceptionless.Core {
             else if (environment != null && environment.Equals("NonProduction", StringComparison.OrdinalIgnoreCase))
                 settings.WebsiteMode = WebsiteMode.QA;
 
+            settings.QueueScope = config.GetValue(nameof(QueueScope), String.Empty);
             settings.AppScope = config.GetValue(nameof(AppScope), String.Empty);
             string scope = Environment.GetEnvironmentVariable("SCOPE");
             if (!String.IsNullOrEmpty(scope))
