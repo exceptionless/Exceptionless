@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Stripe;
@@ -9,6 +10,7 @@ using Stripe;
 namespace Exceptionless.Api.Controllers {
     [Route(API_PREFIX + "/stripe")]
     [ApiExplorerSettings(IgnoreApi = true)]
+    [Authorize]
     public class StripeController : ExceptionlessApiController {
         private readonly StripeEventHandler _stripeEventHandler;
         private readonly ILogger _logger;
@@ -18,6 +20,7 @@ namespace Exceptionless.Api.Controllers {
             _logger = logger;
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> PostAsync([FromBody] string json) {
             using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext))) {

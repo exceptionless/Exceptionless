@@ -18,6 +18,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 namespace Exceptionless.Api.Controllers {
     [Route(API_PREFIX)]
     [ApiExplorerSettings(IgnoreApi = true)]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class StatusController : ExceptionlessApiController {
         private readonly ICacheClient _cacheClient;
         private readonly IMessagePublisher _messagePublisher;
@@ -46,6 +47,7 @@ namespace Exceptionless.Api.Controllers {
         /// Get the status of the API
         /// </summary>
         /// <response code="503">Contains a message detailing the service outage message.</response>
+        [AllowAnonymous]
         [HttpGet("status")]
         public async Task<IActionResult> IndexAsync() {
             if (_lastHealthCheckResult == null || _nextHealthCheckTimeUtc < SystemClock.UtcNow) {
