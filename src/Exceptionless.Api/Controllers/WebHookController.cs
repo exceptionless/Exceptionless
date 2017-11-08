@@ -111,6 +111,9 @@ namespace Exceptionless.App.Controllers.API {
                 Version = new Version(version >= 0 ? version : 0, 0)
             };
 
+            if (!webHook.Url.StartsWith("https://hooks.zapier.com"))
+                return Task.FromResult<IActionResult>(NotFound());
+
             if (User.GetProjectId() != null)
                 webHook.ProjectId = User.GetProjectId();
             else
@@ -130,7 +133,7 @@ namespace Exceptionless.App.Controllers.API {
             string targetUrl = data.GetValue("target_url").Value<string>();
 
             // don't let this anon method delete non-zapier hooks
-            if (!targetUrl.Contains("zapier"))
+            if (!targetUrl.StartsWith("https://hooks.zapier.com"))
                 return NotFound();
 
             var results = await _repository.GetByUrlAsync(targetUrl);

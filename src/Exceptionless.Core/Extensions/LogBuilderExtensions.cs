@@ -25,6 +25,9 @@ namespace Microsoft.Extensions.Logging {
         /// </summary>
         /// <param name="tags">The tags to be added to the event.</param>
         public ExceptionlessState Tag(params string[] tags) {
+            if (tags == null || tags.Length == 0)
+                return this;
+
             List<string> tagList = null;
             if (TryGetValue(Tags, out object v) && v is List<string> t)
                 tagList = t;
@@ -33,7 +36,7 @@ namespace Microsoft.Extensions.Logging {
                 tagList = new List<string>();
 
             foreach (string tag in tags) {
-                if (!tagList.Any(s => s.Equals(tag, StringComparison.OrdinalIgnoreCase)))
+                if (!String.IsNullOrEmpty(tag) && !tagList.Any(s => s.Equals(tag, StringComparison.OrdinalIgnoreCase)))
                     tagList.Add(tag);
             }
 
@@ -47,7 +50,9 @@ namespace Microsoft.Extensions.Logging {
         }
 
         public ExceptionlessState ManualStackingKey(string stackingKey) {
-            base["@stack"] = stackingKey;
+            if (!String.IsNullOrEmpty(stackingKey))
+                base["@stack"] = stackingKey;
+
             return this;
         }
 

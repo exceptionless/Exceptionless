@@ -36,7 +36,7 @@ namespace Exceptionless.Api.Tests.Validation {
             }
 
             sw.Stop();
-            _logger.LogInformation("Time: {ElapsedMilliseconds}ms, Avg: ({AverageElapsedTicks}ticks | {AverageElapsedMilliseconds}ms)", sw.ElapsedMilliseconds, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
+            _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
         }
 
         [Theory]

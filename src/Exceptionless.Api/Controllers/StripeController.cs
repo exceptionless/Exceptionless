@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,13 +24,19 @@ namespace Exceptionless.Api.Controllers {
         [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> PostAsync([FromBody] string json) {
+            if (String.IsNullOrEmpty(json))
+                return Ok();
+
+            if (!Request.Headers.TryGetValue("Stripe-Signature", out var signature) || String.IsNullOrEmpty(signature))
+                return Ok();
+
             using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext))) {
                 StripeEvent stripeEvent;
                 try {
-                    stripeEvent = StripeEventUtility.ParseEvent(json);
+                    stripeEvent = StripeEventUtility.ConstructEvent(json, signature, Settings.Current.StripeApiKey);
                 } catch (Exception ex) {
                     using (_logger.BeginScope(new ExceptionlessState().Property("event", json)))
-                        _logger.LogError(ex, "Unable to parse incoming event.");
+                        _logger.LogError(ex, "Unable to parse incoming event: {Message}", ex.Message);
 
                     return BadRequest("Unable to parse incoming event");
                 }
@@ -40,7 +47,6 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 await _stripeEventHandler.HandleEventAsync(stripeEvent);
-
                 return Ok();
             }
         }
