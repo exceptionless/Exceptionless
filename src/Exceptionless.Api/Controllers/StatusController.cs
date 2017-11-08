@@ -129,10 +129,10 @@ namespace Exceptionless.Api.Controllers {
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(SystemNotification))]
         public async Task<IActionResult> GetSystemNotificationAsync() {
             var notification = await _cacheClient.GetAsync<SystemNotification>("system-notification");
-            if (notification == null)
+            if (!notification.HasValue)
                 return Ok();
 
-            return Ok(notification);
+            return Ok(notification.Value);
         }
 
         [HttpPost("notifications/system")]
