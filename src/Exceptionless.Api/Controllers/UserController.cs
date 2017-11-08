@@ -87,6 +87,9 @@ namespace Exceptionless.Api.Controllers {
 
             var results = await _repository.GetByOrganizationIdAsync(organizationId, o => o.PageLimit(MAXIMUM_SKIP));
             var users = (await MapCollectionAsync<ViewUser>(results.Documents, true)).ToList();
+            if (!Request.IsGlobalAdmin())
+                users.ForEach(u => u.Roles.Remove(AuthorizationRoles.GlobalAdmin));
+
             if (organization.Invites.Any()) {
                 users.AddRange(organization.Invites.Select(i => new ViewUser {
                     EmailAddress = i.EmailAddress,
