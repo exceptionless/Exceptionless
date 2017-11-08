@@ -223,7 +223,7 @@ namespace Exceptionless.Api.Tests.Services {
                 await _usageService.IncrementUsageAsync(org.Id, project.Id, false);
 
             sw.Stop();
-            _logger.LogInformation("Time: {ElapsedMilliseconds}ms, Avg: ({AverageElapsedTicks}ticks | {AverageElapsedMilliseconds}ms)", sw.ElapsedMilliseconds, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
+            _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
         }
 
         private string GetHourlyBlockedCacheKey(string organizationId, string projectId = null) {

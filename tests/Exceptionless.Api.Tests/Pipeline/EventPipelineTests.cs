@@ -845,7 +845,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 totalEvents += events.Count;
             }
 
-            _logger.LogInformation("Took {ElapsedMilliseconds}ms to process {EventCount} with an average post size of {AveragePostSize}", sw.ElapsedMilliseconds, totalEvents, Math.Round(totalEvents * 1.0 / totalBatches, 4));
+            _logger.LogInformation("Took {Duration:g} to process {EventCount} with an average post size of {AveragePostSize}", sw.Elapsed, totalEvents, Math.Round(totalEvents * 1.0 / totalBatches, 4));
         }
 
         [Fact(Skip = "Used to create performance data from the queue directory")]

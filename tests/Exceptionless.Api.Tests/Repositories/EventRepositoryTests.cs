@@ -60,7 +60,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             }
 
             sw.Stop();
-            _logger.LogInformation(sw.ElapsedMilliseconds.ToString());
+            _logger.LogInformation("{Duration:g}", sw.Elapsed);
         }
 
         [Fact]
@@ -187,12 +187,12 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             var sw = Stopwatch.StartNew();
             await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, false, sendNotifications: false);
-            _logger.LogInformation("Time to mark not fixed events as not fixed: {ElapsedMilliseconds}ms", sw.ElapsedMilliseconds);
+            _logger.LogInformation("Time to mark not fixed events as not fixed: {Duration:g}", sw.Elapsed);
             await _configuration.Client.RefreshAsync(Indices.All);
             sw.Restart();
 
             await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, true, sendNotifications: false);
-            _logger.LogInformation("Time to mark not fixed events as fixed: {ElapsedMilliseconds}ms", sw.ElapsedMilliseconds);
+            _logger.LogInformation("Time to mark not fixed events as fixed: {Duration:g}", sw.Elapsed);
             await _configuration.Client.RefreshAsync(Indices.All);
             sw.Stop();
 

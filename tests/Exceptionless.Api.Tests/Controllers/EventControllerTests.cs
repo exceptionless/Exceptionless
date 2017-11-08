@@ -181,7 +181,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             var sw = Stopwatch.StartNew();
             processEventsJob.RunUntilEmpty();
             sw.Stop();
-            _logger.LogInformation(sw.Elapsed.ToString());
+            _logger.LogInformation("{Duration:g}", sw.Elapsed);
 
             await _configuration.Client.RefreshAsync(Indices.All);
             stats = await _eventQueue.GetQueueStatsAsync();
