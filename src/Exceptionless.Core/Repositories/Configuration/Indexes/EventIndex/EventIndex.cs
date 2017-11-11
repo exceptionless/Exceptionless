@@ -41,6 +41,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Analysis(BuildAnalysis)
                 .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
                 .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)
+                .Setting("index.mapping.total_fields.limit", Settings.Current.ElasticSearchFieldsLimit)
                 .Priority(1)));
         }
 

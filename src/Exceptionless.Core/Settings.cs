@@ -79,6 +79,7 @@ namespace Exceptionless.Core {
         public int ElasticSearchNumberOfShards { get; private set; }
 
         public int ElasticSearchNumberOfReplicas { get; private set; }
+        public int ElasticSearchFieldsLimit { get; private set; }
 
         public bool EnableElasticsearchMapperSizePlugin { get; private set; }
 
@@ -232,6 +233,7 @@ namespace Exceptionless.Core {
             ElasticSearchConnectionString = GetConnectionString(nameof(ElasticSearchConnectionString));
             ElasticSearchNumberOfShards = GetInt(nameof(ElasticSearchNumberOfShards), 1);
             ElasticSearchNumberOfReplicas = GetInt(nameof(ElasticSearchNumberOfReplicas), 0);
+            ElasticSearchFieldsLimit = GetInt(nameof(ElasticSearchFieldsLimit), 1000);
             EnableElasticsearchMapperSizePlugin = GetBool(nameof(EnableElasticsearchMapperSizePlugin));
 
             RedisConnectionString = GetConnectionString(nameof(RedisConnectionString));
