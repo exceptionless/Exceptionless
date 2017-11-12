@@ -3,34 +3,33 @@ ConnectionStrings:
   RedisConnectionString.off: 'localhost,abortConnect=false'
   ElasticsearchConnectionString.off: http://localhost:9200/
 
-AppSettings:
-  DisableIndexConfiguration: true
+DisableIndexConfiguration: true
 
-  # Base url for the ui used to build links in emails and other places.
-  BaseURL: 'http://localhost:9001/#!'
-  # Controls whether SSL is required. Only enable this if you have SSL configured.
-  EnableSSL: false
+# Base url for the ui used to build links in emails and other places.
+BaseURL: 'http://localhost:9001/#!'
+# Controls whether SSL is required. Only enable this if you have SSL configured.
+EnableSSL: false
 
-  # Dev: Use this mode when debugging. (Outbound emails will not be sent)
-  # QA: Use this mode when deployed to staging. (Outbound emails restricted)
-  # Production: Use this mode when deployed to production.
-  WebsiteMode: Dev
+# Development: Use this mode when debugging. (Outbound emails will not be sent)
+# Staging: Use this mode when deployed to staging. (Outbound emails restricted)
+# Production: Use this mode when deployed to production.
+AppMode: Development
 
-  # Controls whether daily summary emails are sent
-  EnableDailySummary: false
+# Controls whether daily summary emails are sent
+EnableDailySummary: false
 
-  # Controls whether daily summary emails are sent
-  # SmtpHost: domain.com
-  # SmtpPort: 587
-  # SmtpEncryption: StartTLS
-  # SmtpUser: user@domain.com
-  # SmtpPassword: ''
+# Controls whether daily summary emails are sent
+# SmtpHost: domain.com
+# SmtpPort: 587
+# SmtpEncryption: StartTLS
+# SmtpUser: user@domain.com
+# SmtpPassword: ''
 
-  # Runs the jobs in the current website process
-  RunJobsInProcess: false
+# Runs the jobs in the current website process
+RunJobsInProcess: false
 
-  # Folder used to store event post data
-  StorageFolder: ..\..\Exceptionless.Web\storage
+# Folder used to store event post data
+StorageFolder: ..\..\Exceptionless.Web\storage
 
 Serilog:
   Using:

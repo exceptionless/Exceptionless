@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-            if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
+            if (Settings.Current.AppMode == AppMode.Development)
                 return;
 
             var firstContext = contexts.First();

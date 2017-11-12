@@ -14,7 +14,7 @@ using Serilog.Sinks.Exceptionless;
 namespace Exceptionless.Web {
     public class Program {
         public static int Main(string[] args) {
-            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            string environment = Environment.GetEnvironmentVariable("AppMode");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
@@ -26,7 +26,7 @@ namespace Exceptionless.Web {
                 .AddCommandLine(args)
                 .Build();
 
-            Settings.Initialize(config);
+            Settings.Initialize(config, environment);
 
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey))
@@ -38,6 +38,7 @@ namespace Exceptionless.Web {
                 Log.Information("Bootstrapping {ProcessName} version {InformationalVersion} on {MachineName} using {@Settings}", Process.GetCurrentProcess().ProcessName, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
 
                 var webHost = new WebHostBuilder()
+                    .UseEnvironment(environment)
                     .UseKestrel(c => c.AddServerHeader = false)
                     .UseContentRoot(Directory.GetCurrentDirectory())
                     .UseConfiguration(config)

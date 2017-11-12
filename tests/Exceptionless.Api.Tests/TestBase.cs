@@ -36,7 +36,7 @@ namespace Exceptionless.Api.Tests {
 
         protected virtual void Configure(IServiceCollection serviceCollection) {
             var serviceProvider = serviceCollection.BuildServiceProvider();
-            Settings.Initialize(serviceProvider.GetRequiredService<IConfiguration>());
+            Settings.Initialize(serviceProvider.GetRequiredService<IConfiguration>(), "Development");
         }
 
         protected virtual void RegisterServices(IServiceCollection services) {
@@ -53,7 +53,7 @@ namespace Exceptionless.Api.Tests {
             var services = new ServiceCollection();
 
             var config = new ConfigurationBuilder().Build();
-            Settings.Initialize(config);
+            Settings.Initialize(config, "Development");
             services.AddSingleton<IConfiguration>(config);
             Api.Bootstrapper.RegisterServices(services, Log);
             RegisterServices(services);

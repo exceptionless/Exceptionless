@@ -17,7 +17,7 @@ namespace Exceptionless.Insulation.Jobs {
         public static IServiceProvider GetServiceProvider() {
             AppDomain.CurrentDomain.SetDataDirectory();
 
-            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            string environment = Environment.GetEnvironmentVariable("AppMode");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
@@ -28,7 +28,7 @@ namespace Exceptionless.Insulation.Jobs {
                 .AddEnvironmentVariables()
                 .Build();
 
-            Settings.Initialize(config);
+            Settings.Initialize(config, environment);
             Settings.Current.DisableIndexConfiguration = true;
 
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
