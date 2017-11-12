@@ -286,7 +286,7 @@ namespace Exceptionless.Core.Mail {
         }
 
         private static void CleanAddresses(MailMessage message) {
-            if (Settings.Current.WebsiteMode == WebsiteMode.Production)
+            if (Settings.Current.AppMode == AppMode.Production)
                 return;
 
             string address = message.To.ToLowerInvariant();

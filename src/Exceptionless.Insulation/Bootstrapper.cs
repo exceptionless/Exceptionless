@@ -47,7 +47,7 @@ namespace Exceptionless.Insulation {
             if (Settings.Current.EnableMetricsReporting)
                 container.AddSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions { ServerName = Settings.Current.MetricsServerName, Port = Settings.Current.MetricsServerPort, Prefix = "ex", LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
 
-            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+            if (Settings.Current.AppMode != AppMode.Development)
                 container.AddSingleton<IMailSender, MailKitMailSender>();
 
             if (Settings.Current.EnableRedis) {

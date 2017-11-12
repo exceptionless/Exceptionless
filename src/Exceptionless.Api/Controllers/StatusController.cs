@@ -63,7 +63,7 @@ namespace Exceptionless.Api.Controllers {
                     Message = "All Systems Check",
                     Settings.Current.InformationalVersion,
                     Settings.Current.AppScope,
-                    WebsiteMode = Settings.Current.WebsiteMode.ToString(),
+                    AppMode = Settings.Current.AppMode.ToString(),
                     Environment.MachineName
                 });
             }
@@ -71,7 +71,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new {
                 Message = "All Systems Check",
                 Settings.Current.InformationalVersion,
-                WebsiteMode = Settings.Current.WebsiteMode.ToString(),
+                AppMode = Settings.Current.AppMode.ToString(),
                 Environment.MachineName
             });
         }

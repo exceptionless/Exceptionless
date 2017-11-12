@@ -200,7 +200,7 @@ namespace Exceptionless.Core {
             if (Settings.Current.DisableWebSockets)
                 logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+            if (Settings.Current.AppMode != AppMode.Development)
                 logger.LogWarning("Emails will NOT be sent in Dev mode on {MachineName}", Environment.MachineName);
 
             if (!Settings.Current.EnableAzureStorage)
@@ -224,7 +224,7 @@ namespace Exceptionless.Core {
         }
 
         private static async Task CreateSampleDataAsync(IServiceProvider container) {
-            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+            if (Settings.Current.AppMode != AppMode.Development)
                 return;
 
             var userRepository = container.GetRequiredService<IUserRepository>();
