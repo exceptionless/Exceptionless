@@ -85,6 +85,7 @@ namespace Exceptionless.Core {
         public int ElasticSearchNumberOfShards { get; private set; }
 
         public int ElasticSearchNumberOfReplicas { get; private set; }
+
         public int ElasticSearchFieldsLimit { get; private set; }
 
         public bool EnableElasticsearchMapperSizePlugin { get; private set; }
@@ -282,9 +283,9 @@ namespace Exceptionless.Core {
     }
 
     public enum AppMode {
-        Production,
+        Development,
         Staging,
-        Development
+        Production
     }
 
     public enum SmtpEncryption {
