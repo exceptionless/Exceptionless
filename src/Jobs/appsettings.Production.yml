@@ -1,0 +1,16 @@
+---
+ConnectionStrings:
+  RedisConnectionString.off: localhost,abortConnect=false
+  ElasticsearchConnectionString.off: http://localhost:9200/
+
+  # Base url for the ui used to build links in emails and other places.
+BaseURL: 'https://be.exceptionless.io'
+# Controls whether SSL is required. Only enable this if you have SSL configured.
+EnableSSL: true
+
+# Controls whether daily summary emails are sent
+# SmtpHost: domain.com
+# SmtpPort: 587
+# SmtpEncryption: StartTLS
+# SmtpUser: user@domain.com
+# SmtpPassword: ''

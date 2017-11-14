@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "EventPostsJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

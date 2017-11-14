@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CleanupSnapshotJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

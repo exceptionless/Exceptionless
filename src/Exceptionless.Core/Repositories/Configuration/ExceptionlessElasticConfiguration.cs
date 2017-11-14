@@ -14,9 +14,11 @@ using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
@@ -46,18 +48,25 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public OrganizationIndex Organizations { get; }
 
         protected override IElasticClient CreateElasticClient() {
-            var settings = new ConnectionSettings(CreateConnectionPool(), s => new ElasticsearchJsonNetSerializer(s, _logger));
+            var connectionPool = CreateConnectionPool();
+            var settings = new ConnectionSettings(connectionPool, s => new ElasticsearchJsonNetSerializer(s, _logger));
             ConfigureSettings(settings);
             foreach (var index in Indexes)
                 index.ConfigureSettings(settings);
 
             var client = new ElasticClient(settings);
-            var startTime = DateTime.Now;
+            var nodes = connectionPool.Nodes.Select(n => n.Uri.ToString());
+            var startTime = SystemClock.UtcNow;
             while (!_shutdownToken.IsCancellationRequested && !client.Ping().IsValid) {
-                _logger.LogWarning("Waiting for Elasticsearch ({Duration})...", DateTime.Now.Subtract(startTime).ToWords(true));
+                if (_logger.IsEnabled(LogLevel.Trace))
+                    _logger.LogTrace("Waiting for Elasticsearch {Server} after {Duration:g}...", nodes, SystemClock.UtcNow.Subtract(startTime));
+
                 Thread.Sleep(1000);
-                if (DateTime.Now.Subtract(startTime) > TimeSpan.FromMinutes(2))
+                if (SystemClock.UtcNow.Subtract(startTime) > TimeSpan.FromMinutes(2)) {
+                    if (_logger.IsEnabled(LogLevel.Error))
+                        _logger.LogError("Unable to connect to Elasticsearch {Server} after attempting for {Duration:g}", nodes, SystemClock.UtcNow.Subtract(startTime));
                     break;
+                }
             }
 
             return client;

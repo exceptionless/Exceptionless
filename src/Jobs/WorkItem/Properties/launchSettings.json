@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WorkItemJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

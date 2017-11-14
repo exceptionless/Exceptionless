@@ -48,7 +48,7 @@ namespace Exceptionless.Insulation.Jobs {
             }
 
             Log.Logger = loggerConfig.CreateLogger();
-            Log.Information("Bootstrapping {ProcessName} version {InformationalVersion} on {MachineName} using {@Settings}", Process.GetCurrentProcess().ProcessName, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
+            Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Settings}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
 
             var services = new ServiceCollection();
             services.AddLogging(b => b.AddSerilog(Log.Logger));

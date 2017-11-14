@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "EventSnapshotJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

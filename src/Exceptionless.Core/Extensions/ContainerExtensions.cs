@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Helpers;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Exceptionless.Core.Extensions {
     public static class ContainerExtensions {
@@ -24,6 +25,26 @@ namespace Exceptionless.Core.Extensions {
                 services.AddSingleton(registrationType, implementingType);
                 services.AddSingleton(implementingType, implementingType);
             }
+        }
+
+        public static IServiceCollection ReplaceSingleton<T>(this IServiceCollection services, T instance) {
+            return services.Replace(new ServiceDescriptor(typeof(T), s => instance, ServiceLifetime.Singleton));
+        }
+
+        public static IServiceCollection ReplaceSingleton<T>(this IServiceCollection services, object instance) {
+            return services.Replace(new ServiceDescriptor(typeof(T), s => instance, ServiceLifetime.Singleton));
+        }
+
+        public static IServiceCollection ReplaceSingleton<T>(this IServiceCollection services, Func<IServiceProvider, object> factory) {
+            return services.Replace(new ServiceDescriptor(typeof(T), factory, ServiceLifetime.Singleton));
+        }
+
+        public static IServiceCollection ReplaceSingleton<T>(this IServiceCollection services, Func<IServiceProvider, T> factory) {
+            return services.Replace(new ServiceDescriptor(typeof(T), s => factory(s), ServiceLifetime.Singleton));
+        }
+
+        public static IServiceCollection ReplaceSingleton<TService, TInstance>(this IServiceCollection services) {
+            return services.Replace(new ServiceDescriptor(typeof(TService), typeof(TInstance), ServiceLifetime.Singleton));
         }
 
         public static async Task RunStartupActionsAsync(this IServiceProvider container, CancellationToken shutdownToken = default) {
