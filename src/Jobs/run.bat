@@ -1,6 +1,6 @@
 @echo off
 
-SET bindir=..\..\..\bin
+SET bindir=..\..\..\..\bin
 
 IF NOT EXIST %bindir% (
   SET bindir=%WEBROOT_PATH%\bin
