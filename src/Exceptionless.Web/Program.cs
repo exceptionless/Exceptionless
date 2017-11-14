@@ -35,7 +35,7 @@ namespace Exceptionless.Web {
             Log.Logger = loggerConfig.CreateLogger();
 
             try {
-                Log.Information("Bootstrapping {ProcessName} version {InformationalVersion} on {MachineName} using {@Settings}", Process.GetCurrentProcess().ProcessName, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
+                Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
 
                 var webHost = new WebHostBuilder()
                     .UseEnvironment(environment)

@@ -1,13 +1,23 @@
 ﻿---
 ConnectionStrings:
-  RedisConnectionString.off: 'localhost,abortConnect=false'
+  RedisConnectionString.off: localhost,abortConnect=false
   ElasticsearchConnectionString.off: http://localhost:9200/
+  LdapConnectionString.off: ''
+
+# Base url for the ui used to build links in emails and other places.
+BaseURL: 'http://localhost:9001/#!'
+# Controls whether SSL is required. Only enable this if you have SSL configured.
+EnableSSL: false
+
+# Runs the jobs in the current website process
+RunJobsInProcess: true
+
+# Controls whether daily summary emails are sent
+EnableDailySummary: false
 
 Serilog:
   MinimumLevel:
     Default: Debug
-    System: Information
-    Microsoft: Information
     Override:
       Microsoft: Information
       System: Information

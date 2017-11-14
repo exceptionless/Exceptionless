@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "EventNotificationsJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

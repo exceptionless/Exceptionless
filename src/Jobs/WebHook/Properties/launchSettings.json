@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WebHooksJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

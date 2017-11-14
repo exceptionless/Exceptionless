@@ -21,6 +21,5 @@
     <PackageOutputPath>$(SolutionDir)artifacts\</PackageOutputPath>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/exceptionless/exceptionless</RepositoryUrl>
-    <VersionSuffix Condition="'$(VersionSuffix)'!='' AND '$(BuildNumber)' != ''">$(VersionSuffix)-$(BuildNumber)</VersionSuffix>
   </PropertyGroup>
 </Project>

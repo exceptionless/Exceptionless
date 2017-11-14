@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "StackSnapshotJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

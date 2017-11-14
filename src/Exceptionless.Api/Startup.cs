@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Security.Claims;
+using System.Threading;
 using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
@@ -60,7 +61,16 @@ namespace Exceptionless.Api {
             // run startup actions registered in the container
             if (!Settings.Current.DisableBootstrapStartupActions) {
                 var lifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
-                lifetime.ApplicationStarted.Register(() => app.ApplicationServices.RunStartupActionsAsync(lifetime.ApplicationStopping).GetAwaiter().GetResult());
+                lifetime.ApplicationStarted.Register(() => {
+                    var shutdownSource = new CancellationTokenSource();
+                    Console.CancelKeyPress += (sender, args) => {
+                        shutdownSource.Cancel();
+                        args.Cancel = true;
+                    };
+
+                    var combined = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping, shutdownSource.Token);
+                    app.ApplicationServices.RunStartupActionsAsync(combined.Token).GetAwaiter().GetResult();
+                });
             }
         }
 
