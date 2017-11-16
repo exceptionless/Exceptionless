@@ -5,9 +5,9 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
-using Nest;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -436,6 +436,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("data.anumber:12", 1)]
         [InlineData("data.anumber:>11", 1)]
         [InlineData("data.anumber2:>11", 0)]
+        [InlineData("data.FriendlyErrorIdentifier:\"Foo-7967BB\"", 1)]
         [InlineData("data.some-date:>2015-01-01", 1)]
         [InlineData("data.some-date:<2015-01-01", 0)]
         public async Task GetByCustomDataAsync(string filter, int count) {
@@ -457,10 +458,8 @@ namespace Exceptionless.Api.Tests.Repositories {
                 foreach (var ev in events)
                     ev.CopyDataToIndex();
 
-                await _repository.AddAsync(events);
+                await _repository.AddAsync(events, o => o.ImmediateConsistency());
             }
-
-            await _configuration.Client.RefreshAsync(Indices.All);
         }
 
         private async Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
