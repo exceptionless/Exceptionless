@@ -1,6 +1,6 @@
 ﻿---
 ConnectionStrings:
-  RedisConnectionString.off: 'localhost,abortConnect=false'
+  RedisConnectionString.off: localhost,abortConnect=false
   ElasticsearchConnectionString.off: http://localhost:9200/
 
 # Base url for the ui used to build links in emails and other places.
@@ -8,20 +8,10 @@ BaseURL: 'http://localhost:9001/#!'
 # Controls whether SSL is required. Only enable this if you have SSL configured.
 EnableSSL: false
 
-# Dev: Use this mode when debugging. (Outbound emails will not be sent)
-# QA: Use this mode when deployed to staging. (Outbound emails restricted)
-# Production: Use this mode when deployed to production.
-WebsiteMode: Dev
+AppScope: test
 
 # Controls whether daily summary emails are sent
 EnableDailySummary: false
-
-# Controls whether daily summary emails are sent
-# SmtpHost: domain.com
-# SmtpPort: 587
-# SmtpEncryption: StartTLS
-# SmtpUser: user@domain.com
-# SmtpPassword: ''
 
 # Runs the jobs in the current website process
 RunJobsInProcess: false
