@@ -4,6 +4,7 @@ using Exceptionless.Api.Tests.Mail;
 using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
+using Exceptionless.Insulation.Configuration;
 using Foundatio.Logging.Xunit;
 using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
@@ -52,7 +53,12 @@ namespace Exceptionless.Api.Tests {
         protected virtual IServiceProvider GetDefaultContainer() {
             var services = new ServiceCollection();
 
-            var config = new ConfigurationBuilder().Build();
+            var config = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
             Settings.Initialize(config, "Development");
             services.AddSingleton<IConfiguration>(config);
             Api.Bootstrapper.RegisterServices(services, Log);
