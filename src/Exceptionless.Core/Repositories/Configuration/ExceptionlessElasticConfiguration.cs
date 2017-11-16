@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Serializer;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -57,12 +56,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
             var client = new ElasticClient(settings);
             var nodes = connectionPool.Nodes.Select(n => n.Uri.ToString());
             var startTime = SystemClock.UtcNow;
+            var maxWaitTime = TimeSpan.FromMinutes(1);
             while (!_shutdownToken.IsCancellationRequested && !client.Ping().IsValid) {
-                if (_logger.IsEnabled(LogLevel.Trace))
-                    _logger.LogTrace("Waiting for Elasticsearch {Server} after {Duration:g}...", nodes, SystemClock.UtcNow.Subtract(startTime));
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("Waiting for Elasticsearch {Server} after {Duration:g}...", nodes, SystemClock.UtcNow.Subtract(startTime));
 
                 Thread.Sleep(1000);
-                if (SystemClock.UtcNow.Subtract(startTime) > TimeSpan.FromMinutes(2)) {
+                if (SystemClock.UtcNow.Subtract(startTime) > maxWaitTime) {
                     if (_logger.IsEnabled(LogLevel.Error))
                         _logger.LogError("Unable to connect to Elasticsearch {Server} after attempting for {Duration:g}", nodes, SystemClock.UtcNow.Subtract(startTime));
                     break;
