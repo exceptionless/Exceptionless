@@ -10,6 +10,7 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Utility;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
@@ -36,6 +37,17 @@ namespace Exceptionless.Api.Controllers {
             _organizationRepository = organizationRepository;
             _eventPostQueue = eventPostQueue;
             _workItemQueue = workItemQueue;
+        }
+
+        [HttpGet("settings")]
+        public IActionResult SettingsRequest() {
+            return Ok(Settings.Current);
+        }
+
+        [HttpGet("assemblies")]
+        public IActionResult Assemblies() {
+            var details = AssemblyDetail.ExtractAll();
+            return Ok(details);
         }
 
         [HttpPost("change-plan")]
