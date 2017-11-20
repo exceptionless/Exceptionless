@@ -132,8 +132,10 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public async Task CanPostEventAsync() {
-            var ev = new RandomEventGenerator().GeneratePersistent(false)
-            ;
+            var ev = new RandomEventGenerator().GeneratePersistent(false);
+            if (String.IsNullOrEmpty(ev.Message))
+                ev.Message = "Generated message.";
+
             await SendTokenRequest(TestConstants.ApiKey, r => r
                 .Post()
                 .AppendPath("events")

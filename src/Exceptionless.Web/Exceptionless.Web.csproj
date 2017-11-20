@@ -22,7 +22,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Api\Exceptionless.Api.csproj" />
-    <ProjectReference Include="..\Exceptionless.Insulation\Exceptionless.Insulation.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.yml" CopyToOutputDirectory="Always" />
