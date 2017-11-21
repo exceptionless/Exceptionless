@@ -8,7 +8,7 @@ If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
 }
 
 Write-Host "Cloning repository into $($artifactsDir)..."
-git clone "$env:BUILD_REPO_URL" "$artifactsDir" --depth 1 -q 2>&1 | % { "$_" }
+git clone "$env:BUILD_REPO_URL" "$artifactsDir" -q 2>&1 | % { "$_" }
 
 If ($LastExitCode -ne 0) {
     Write-Error "An error occurred while cloning the repository."
