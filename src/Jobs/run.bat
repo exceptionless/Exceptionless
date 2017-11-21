@@ -12,7 +12,8 @@ FOR %%F IN (*Job.dll) DO (
 )
 :done
 
-robocopy %bindir% .\ /S /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy %bindir% .\ "Exceptionless.Core*" "Exceptionless.Insulation*" /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy %bindir% bin\ /S /NFL /NDL /NJH /NJS /nc /ns /np
 IF %ERRORLEVEL% GEQ 8 exit 1
 
 dotnet %jobname% %*
