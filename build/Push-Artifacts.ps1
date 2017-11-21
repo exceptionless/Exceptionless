@@ -81,6 +81,31 @@ If ($res.Trim() -eq "0") {
   Return 0
 }
 
+Write-Host "Pushing build to artifacts repository..."
+$tag = "build-$($env:APPVEYOR_BUILD_NUMBER)"
+git commit -a -m "Build: $env:APPVEYOR_BUILD_NUMBER Author: $env:APPVEYOR_REPO_COMMIT_AUTHOR Branch: $env:APPVEYOR_REPO_BRANCH Commit: $($env:APPVEYOR_REPO_NAME)@$($env:APPVEYOR_REPO_COMMIT)" 2>&1 | %{ "$_" }
+git push origin "$env:APPVEYOR_REPO_BRANCH" -q 2>&1 | %{ "$_" }
+If ($LastExitCode -ne 0) {
+  Write-Error "An error occurred while pushing the build."
+  Return $LastExitCode
+} Else {
+  Write-Host "Finished pushing the build."
+}
 
+Write-Host "Tagging $tag..."
+git tag $tag $env:APPVEYOR_REPO_BRANCH 2>&1
+If ($LastExitCode -ne 0) {
+  Write-Error "An error occurred while tagging the build."
+  Return $LastExitCode
+}
+
+git push --tags origin $env:APPVEYOR_REPO_BRANCH -q 2>&1 | %{ "$_" }
+
+If ($LastExitCode -ne 0) {
+  Write-Error "An error occurred while tagging the build."
+  Return $LastExitCode
+} Else {
+  Write-Host "Finished tagging the build."
+}
 
 Pop-Location
