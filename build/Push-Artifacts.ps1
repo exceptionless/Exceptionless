@@ -38,7 +38,6 @@ git rm -r * -q 2>&1 | %{ "$_" }
 Write-Host "Copying build artifacts..."
 ROBOCOPY "$sourceDir\Exceptionless.Web" "$artifactsDir" /XD "$sourceDir\Exceptionless.Web\bin" "$sourceDir\Exceptionless.Web\obj" "$sourceDir\Exceptionless.Web\Properties" /S /XF "*.nuspec" "*.settings" "*.cs" "*.Development.yml" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\Exceptionless.Web\bin\Release\netcoreapp2.0\publish" "$artifactsDir\bin" /XD "$sourceDir\Exceptionless.Web\bin\Release\netcoreapp2.0\publish\wwwroot" /S /XF "*.yml" "Web.config" /NFL /NDL /NJH /NJS /nc /ns /np
-ROBOCOPY "$sourceDir\Exceptionless.Insulation\bin\Release\netcoreapp2.0\publish" "$artifactsDir\bin" /XD /XF "Exceptionless.Insulation.*" /NFL /NDL /NJH /NJS /nc /ns /np
 
 Write-Host "Copying CleanupSnapshot job..."
 ROBOCOPY "$sourceDir\Jobs\CleanupSnapshot\bin\Release\netcoreapp2.0" "$artifactsDir\App_Data\jobs\triggered\CleanupSnapshot" /XD "$sourceDir\Jobs\CleanupSnapshot\bin\Release\netcoreapp2.0\publish" /S /NFL /NDL /NJH /NJS /nc /ns /np /XF "Exceptionless.*" "System.*"
