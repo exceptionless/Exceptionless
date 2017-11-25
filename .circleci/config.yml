@@ -60,7 +60,7 @@ jobs:
               #for image in {$API_DOCKER_IMAGE,$JOB_DOCKER_IMAGE}; do  
                 for tag in {$BUILD_TAG,latest}; do
                   (
-                    docker tag $image exceptionless/$API_DOCKER_IMAGE:$tag
+                    docker tag $API_DOCKER_IMAGE exceptionless/$API_DOCKER_IMAGE:$tag
                     docker push exceptionless/$API_DOCKER_IMAGE:$tag
                   ) &
                 done
