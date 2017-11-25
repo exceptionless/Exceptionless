@@ -28,15 +28,12 @@ jobs:
             </Project>" >| version.props
             cat version.props
       - run:
-          name: Set AppScope
-          command: get-appscope
-      - run:
           name: Build
           command: dotnet publish -c Release -o published -r debian-x64
       - run:
           name: Integration Tests
           working_directory: tests/Exceptionless.Api.Tests
-          command: dotnet test -c Release --no-build --no-restore --logger trx
+          command: dotnet test -c Release --logger trx
       - store_test_results:
           path: tests/Exceptionless.Api.Tests/TestResults
       - setup_remote_docker

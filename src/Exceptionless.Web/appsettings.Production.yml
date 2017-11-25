@@ -5,7 +5,7 @@ ConnectionStrings:
   LdapConnectionString.off: ''
 
   # Base url for the ui used to build links in emails and other places.
-BaseURL: 'https://be.exceptionless.io'
+BaseURL: https://be.exceptionless.io
 # Controls whether SSL is required. Only enable this if you have SSL configured.
 EnableSSL: true
 
