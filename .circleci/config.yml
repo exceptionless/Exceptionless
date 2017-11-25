@@ -57,14 +57,13 @@ jobs:
               echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
 
               # Tag and push docker image
-              # ,$JOB_DOCKER_IMAGE
-              for image in {$API_DOCKER_IMAGE}; do  
+              #for image in {$API_DOCKER_IMAGE,$JOB_DOCKER_IMAGE}; do  
                 for tag in {$BUILD_TAG,latest}; do
                   (
-                    docker tag $image exceptionless/$image:$tag
-                    docker push exceptionless/$image:$tag
+                    docker tag $image exceptionless/$API_DOCKER_IMAGE:$tag
+                    docker push exceptionless/$API_DOCKER_IMAGE:$tag
                   ) &
                 done
-              done
+              #done
               wait
             fi
