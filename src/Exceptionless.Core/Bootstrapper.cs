@@ -190,6 +190,8 @@ namespace Exceptionless.Core {
 
         public static void LogConfiguration(IServiceProvider serviceProvider, ILoggerFactory loggerFactory) {
             var logger = loggerFactory.CreateLogger<Bootstrapper>();
+            if (!logger.IsEnabled(LogLevel.Warning))
+                return;
 
             if (!Settings.Current.EnableMetricsReporting)
                 logger.LogWarning("StatsD Metrics is NOT enabled on {MachineName}.", Environment.MachineName);
@@ -200,8 +202,8 @@ namespace Exceptionless.Core {
             if (Settings.Current.DisableWebSockets)
                 logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (Settings.Current.AppMode != AppMode.Development)
-                logger.LogWarning("Emails will NOT be sent in Dev mode on {MachineName}", Environment.MachineName);
+            if (Settings.Current.AppMode == AppMode.Development)
+                logger.LogWarning("Emails will NOT be sent in Development mode on {MachineName}", Environment.MachineName);
 
             if (!Settings.Current.EnableAzureStorage)
                 logger.LogWarning("Azure Storage is NOT enabled on {MachineName}", Environment.MachineName);
