@@ -8,12 +8,12 @@
     <PackageReference Include="Foundatio.AzureStorage" Version="6.0.1472-pre" />
     <PackageReference Include="Foundatio.Redis" Version="6.0.1489-pre" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
-    <PackageReference Include="MailKit" Version="1.20.0" />
+    <PackageReference Include="MailKit" Version="1.22.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.0" />
-    <PackageReference Include="MimeKit" Version="1.20.0" />
+    <PackageReference Include="MimeKit" Version="1.22.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="2.0.2" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.0.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="2.4.0" />
