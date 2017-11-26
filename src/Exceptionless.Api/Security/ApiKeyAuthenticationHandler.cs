@@ -36,8 +36,9 @@ namespace Exceptionless.Api.Security {
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync() {
             string authHeaderValue = Request.Headers.TryGetAndReturn("Authorization").FirstOrDefault();
             AuthenticationHeaderValue authHeader = null;
-            if (!String.IsNullOrEmpty(authHeaderValue))
-                authHeader = AuthenticationHeaderValue.Parse(authHeaderValue);
+            if (!String.IsNullOrEmpty(authHeaderValue) && !AuthenticationHeaderValue.TryParse(authHeaderValue, out authHeader))
+                return AuthenticateResult.Fail("Unable to parse header");
+
             string scheme = authHeader?.Scheme.ToLower();
             string token = null;
             if (authHeader != null && (scheme == BearerScheme || scheme == TokenScheme)) {
