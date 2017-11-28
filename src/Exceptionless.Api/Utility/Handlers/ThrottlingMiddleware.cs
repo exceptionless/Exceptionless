@@ -90,7 +90,7 @@ namespace Exceptionless.Api.Utility.Handlers {
         }
 
         private bool IsUnthrottledRoute(HttpContext context) {
-            if (String.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+            if (!String.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
                 return false;
 
             string absolutePath = new Uri(context.Request.GetDisplayUrl()).AbsolutePath;
