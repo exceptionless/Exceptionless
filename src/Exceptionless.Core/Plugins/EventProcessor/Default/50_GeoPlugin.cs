@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             var tasks = new List<Task>();
             foreach (var group in geoGroups) {
                 if (GeoResult.TryParse(group.Key, out GeoResult result) && result.IsValid()) {
-                    group.ForEach(c => UpdateGeoAndlocation(c.Event, result, false));
+                    group.ForEach(c => UpdateGeoAndLocation(c.Event, result, false));
                     continue;
                 }
 
@@ -49,15 +49,15 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
         private async Task UpdateGeoInformationAsync(EventContext context, IEnumerable<string> ips) {
             var result = await GetGeoFromIpAddressesAsync(ips).AnyContext();
-            UpdateGeoAndlocation(context.Event, result);
+            UpdateGeoAndLocation(context.Event, result);
         }
 
         private async Task UpdateGeoInformationAsync(IEnumerable<EventContext> contexts, IEnumerable<string> ips) {
             var result = await GetGeoFromIpAddressesAsync(ips).AnyContext();
-            contexts.ForEach(c => UpdateGeoAndlocation(c.Event, result));
+            contexts.ForEach(c => UpdateGeoAndLocation(c.Event, result));
         }
 
-        private void UpdateGeoAndlocation(PersistentEvent ev, GeoResult result, bool isValidLocation = true) {
+        private void UpdateGeoAndLocation(PersistentEvent ev, GeoResult result, bool isValidLocation = true) {
             ev.Geo = result?.ToString();
 
             if (result != null && isValidLocation)
