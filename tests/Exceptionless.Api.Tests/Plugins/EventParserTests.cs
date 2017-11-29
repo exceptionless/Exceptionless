@@ -48,8 +48,10 @@ namespace Exceptionless.Api.Tests.Plugins {
             }
         }
 
+#if DEBUG
         [Theory]
         [MemberData(nameof(Events))]
+#endif
         public void VerifyEventParserSerialization(string eventsFilePath) {
             string json = File.ReadAllText(eventsFilePath);
 
