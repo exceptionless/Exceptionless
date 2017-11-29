@@ -13,14 +13,38 @@ EnableSSL: true
 RunJobsInProcess: false
 
 # Controls whether users can signup.
-# EnableAccountCreation: true
+EnableAccountCreation: true
 
 # Controls whether daily summary emails are sent
-# EnableDailySummary: true
+EnableDailySummary: true
 
-# Controls whether daily summary emails are sent
+# Email
 # SmtpHost: domain.com
 # SmtpPort: 587
 # SmtpEncryption: StartTLS
 # SmtpUser: user@domain.com
 # SmtpPassword: ''
+
+# Metrics
+EnableMetricsReporting: true
+MetricsServerName: 10.0.0.5
+
+# Elasticsearch
+ElasticSearchNumberOfShards: 1
+ElasticSearchNumberOfReplicas: 1
+EnableElasticsearchMapperSizePlugin: true
+ElasticSearchFieldsLimit: 1500
+DisableSnapshotJobs: false
+
+# Exceptionless Client Settings
+ExceptionlessServerUrl: https://collector.exceptionless.io
+InternalProjectId: 50ca6b2423d6c8493020b823
+
+ApiThrottleLimit: 3500
+MaximumEventPostSize: 200000
+FacebookAppId: 395178683904310
+GitHubAppId: 7ef1dd5bfbc4ccf7f5e
+GoogleAppId: 809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com
+MicrosoftAppId: 000000004C137E8B
+SlackAppId: 34500115540.177239122322
+StripePublishableApiKey: pk_live_QTiVo5Fqv7uNScqIpd1Ns9gX

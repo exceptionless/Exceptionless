@@ -5,9 +5,46 @@ ConnectionStrings:
   LdapConnectionString.off: ''
 
   # Base url for the ui used to build links in emails and other places.
-BaseURL: 'https://dev.exceptionless.io'
+BaseURL: https://dev.exceptionless.io
 # Controls whether SSL is required. Only enable this if you have SSL configured.
 EnableSSL: true
 
 # Runs the jobs in the current website process
 RunJobsInProcess: false
+
+# Controls whether users can signup.
+EnableAccountCreation: true
+
+# Controls whether daily summary emails are sent
+EnableDailySummary: false
+
+# Email
+# SmtpHost: domain.com
+# SmtpPort: 587
+# SmtpEncryption: StartTLS
+# SmtpUser: user@domain.com
+# SmtpPassword: ''
+
+# Metrics
+EnableMetricsReporting: true
+MetricsServerName: 10.0.0.5
+
+# Elasticsearch
+ElasticSearchNumberOfShards: 1
+ElasticSearchNumberOfReplicas: 0
+EnableElasticsearchMapperSizePlugin: true
+ElasticSearchFieldsLimit: 1500
+DisableSnapshotJobs: true
+
+# Exceptionless Client Settings
+ExceptionlessServerUrl: https://dev-api.exceptionless.io
+InternalProjectId: 50ca6b2423d6c8493020b823
+
+ApiThrottleLimit: 3500
+MaximumEventPostSize: 200000
+FacebookAppId: 395178683904310
+GitHubAppId: 7ef1dd5bfbc4ccf7f5ef
+GoogleAppId: enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com
+MicrosoftAppId: 000000004C137E8B
+SlackAppId: 34500115540.177239122322
+StripePublishableApiKey: pk_test_nStD8zuwsiyVjPhfxxxMEFeE
