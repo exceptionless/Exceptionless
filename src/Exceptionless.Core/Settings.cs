@@ -246,7 +246,6 @@ namespace Exceptionless.Core {
 
             settings.AzureStorageConnectionString = configRoot.GetConnectionString(nameof(AzureStorageConnectionString));
             settings.EnableAzureStorage = configRoot.GetValue(nameof(EnableAzureStorage), !String.IsNullOrEmpty(settings.AzureStorageConnectionString));
-            settings.ApplicationPerformanceTrackingApiKey = configRoot.GetValue<string>(nameof(ApplicationPerformanceTrackingApiKey));
 
             settings.DisableWebSockets = configRoot.GetValue(nameof(DisableWebSockets), false);
             settings.DisableBootstrapStartupActions = configRoot.GetValue(nameof(DisableBootstrapStartupActions), false);
