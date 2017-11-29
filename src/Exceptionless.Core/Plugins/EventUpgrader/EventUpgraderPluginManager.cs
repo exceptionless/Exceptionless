@@ -13,12 +13,12 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
         /// <summary>
         /// Runs all of the event upgrade plugins upgrade method.
         /// </summary>
-        public async Task UpgradeAsync(EventUpgraderContext context) {
-            string metricPrefix = String.Concat(_metricPrefix, nameof(UpgradeAsync).ToLower(), ".");
+        public void Upgrade(EventUpgraderContext context) {
+            string metricPrefix = String.Concat(_metricPrefix, nameof(Upgrade).ToLower(), ".");
             foreach (var plugin in Plugins.Values.ToList()) {
                 string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
                 try {
-                   await _metricsClient.TimeAsync(() => plugin.Upgrade(context), metricName).AnyContext();
+                   _metricsClient.Time(() => plugin.Upgrade(context), metricName);
                 } catch (Exception ex) {
                     using (_logger.BeginScope(new Dictionary<string, object> { { "Context", context } }))
                         _logger.LogError(ex, "Error calling upgrade in plugin {PluginName}: {Message}", plugin.Name, ex.Message);

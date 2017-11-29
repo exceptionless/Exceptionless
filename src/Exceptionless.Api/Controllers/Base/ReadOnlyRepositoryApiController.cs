@@ -24,7 +24,6 @@ namespace Exceptionless.Api.Controllers {
         protected readonly IQueryValidator _validator;
         protected readonly ILogger _logger;
 
-
         public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) {
             _repository = repository;
             _mapper = mapper;
