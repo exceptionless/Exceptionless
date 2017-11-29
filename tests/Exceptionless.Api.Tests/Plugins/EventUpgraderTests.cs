@@ -23,14 +23,14 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Theory]
         [MemberData(nameof(Errors))]
-        public async Task ParseErrorsAsync(string errorFilePath) {
+        public void ParseErrors(string errorFilePath) {
             string json = File.ReadAllText(errorFilePath);
             var ctx = new EventUpgraderContext(json);
 
-            await _upgrader.UpgradeAsync(ctx);
+            _upgrader.Upgrade(ctx);
             ApprovalsUtility.VerifyFile(Path.ChangeExtension(errorFilePath, ".expected.json"), ctx.Documents.First.ToString());
 
-            var events = await _parser.ParseEventsAsync(ctx.Documents.ToString(), 2, "exceptionless/2.0.0.0");
+            var events = _parser.ParseEvents(ctx.Documents.ToString(), 2, "exceptionless/2.0.0.0");
             Assert.Single(events);
         }
 

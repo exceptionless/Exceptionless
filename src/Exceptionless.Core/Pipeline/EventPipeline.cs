@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Pipeline {
             if (contexts == null || contexts.Count == 0)
                 return contexts ?? new List<EventContext>();
 
-            await _metricsClient.CounterAsync(MetricNames.EventsSubmitted, contexts.Count).AnyContext();
+            _metricsClient.Counter(MetricNames.EventsSubmitted, contexts.Count);
             try {
                 if (contexts.Any(c => !String.IsNullOrEmpty(c.Event.Id)))
                     throw new ArgumentException("All Event Ids should not be populated.");
@@ -75,14 +75,14 @@ namespace Exceptionless.Core.Pipeline {
 
                 int cancelled = contexts.Count(c => c.IsCancelled);
                 if (cancelled > 0)
-                    await _metricsClient.CounterAsync(MetricNames.EventsProcessCancelled, cancelled).AnyContext();
+                    _metricsClient.Counter(MetricNames.EventsProcessCancelled, cancelled);
 
                 // TODO: Log the errors out to the events project id.
                 int errors = contexts.Count(c => c.HasError);
                 if (errors > 0)
-                    await _metricsClient.CounterAsync(MetricNames.EventsProcessErrors, errors).AnyContext();
+                    _metricsClient.Counter(MetricNames.EventsProcessErrors, errors);
             } catch (Exception) {
-                await _metricsClient.CounterAsync(MetricNames.EventsProcessErrors, contexts.Count).AnyContext();
+                _metricsClient.Counter(MetricNames.EventsProcessErrors, contexts.Count);
                 throw;
             }
 
