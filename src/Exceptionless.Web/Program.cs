@@ -37,16 +37,19 @@ namespace Exceptionless.Web {
             try {
                 Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
 
-                var webHost = new WebHostBuilder()
+                var builder = new WebHostBuilder()
                     .UseEnvironment(environment)
                     .UseKestrel(c => c.AddServerHeader = false)
                     .UseContentRoot(Directory.GetCurrentDirectory())
                     .UseConfiguration(config)
                     .ConfigureLogging(b => b.AddSerilog(Log.Logger))
                     .UseIISIntegration()
-                    .UseStartup<Startup>()
-                    .Build();
+                    .UseStartup<Startup>();
 
+                if (Settings.Current.EnableApplicationPerformanceTracking)
+                    builder.UseApplicationInsights(Settings.Current.ApplicationPerformanceTrackingApiKey);
+
+                var webHost = builder.Build();
                 webHost.Run();
                 return 0;
             } catch (Exception ex) {

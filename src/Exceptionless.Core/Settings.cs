@@ -138,6 +138,9 @@ namespace Exceptionless.Core {
 
         public bool EnableAzureStorage { get; private set; }
 
+        public bool EnableApplicationPerformanceTracking => !String.IsNullOrEmpty(ApplicationPerformanceTrackingApiKey);
+        public string ApplicationPerformanceTrackingApiKey { get; private set; }
+
         public int BulkBatchSize { get; private set; }
 
         public bool EnableAccountCreation { get; internal set; }
@@ -243,6 +246,7 @@ namespace Exceptionless.Core {
 
             settings.AzureStorageConnectionString = configRoot.GetConnectionString(nameof(AzureStorageConnectionString));
             settings.EnableAzureStorage = configRoot.GetValue(nameof(EnableAzureStorage), !String.IsNullOrEmpty(settings.AzureStorageConnectionString));
+            settings.ApplicationPerformanceTrackingApiKey = configRoot.GetValue<string>(nameof(ApplicationPerformanceTrackingApiKey));
 
             settings.DisableWebSockets = configRoot.GetValue(nameof(DisableWebSockets), false);
             settings.DisableBootstrapStartupActions = configRoot.GetValue(nameof(DisableBootstrapStartupActions), false);
