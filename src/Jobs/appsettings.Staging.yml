@@ -4,6 +4,34 @@ ConnectionStrings:
   ElasticsearchConnectionString.off: http://localhost:9200/
 
   # Base url for the ui used to build links in emails and other places.
-BaseURL: 'https://dev.exceptionless.io'
+BaseURL: https://dev.exceptionless.io
 # Controls whether SSL is required. Only enable this if you have SSL configured.
 EnableSSL: true
+
+# Controls whether daily summary emails are sent
+EnableDailySummary: false
+
+# Email
+# SmtpHost: domain.com
+# SmtpPort: 587
+# SmtpEncryption: StartTLS
+# SmtpUser: user@domain.com
+# SmtpPassword: ''
+
+# Metrics
+EnableMetricsReporting: true
+MetricsServerName: 10.0.0.5
+
+# Elasticsearch
+ElasticSearchNumberOfShards: 1
+ElasticSearchNumberOfReplicas: 0
+EnableElasticsearchMapperSizePlugin: true
+ElasticSearchFieldsLimit: 1500
+DisableSnapshotJobs: true
+
+# Exceptionless Client Settings
+ExceptionlessServerUrl: https://dev-api.exceptionless.io
+InternalProjectId: 50ca6b2423d6c8493020b823
+
+MaximumEventPostSize: 200000
+SlackAppId: 34500115540.177239122322

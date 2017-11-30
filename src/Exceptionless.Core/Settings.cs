@@ -144,6 +144,9 @@ namespace Exceptionless.Core {
 
         public bool EnableAliyunStorage { get; private set; }
 
+        public bool EnableApplicationPerformanceTracking => !String.IsNullOrEmpty(ApplicationPerformanceTrackingApiKey);
+        public string ApplicationPerformanceTrackingApiKey { get; private set; }
+
         public int BulkBatchSize { get; private set; }
 
         public bool EnableAccountCreation { get; internal set; }

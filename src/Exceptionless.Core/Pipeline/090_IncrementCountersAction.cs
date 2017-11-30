@@ -21,10 +21,10 @@ namespace Exceptionless.Core.Pipeline {
 
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {
-                await _metricsClient.CounterAsync(MetricNames.EventsProcessed, contexts.Count).AnyContext();
+                _metricsClient.Counter(MetricNames.EventsProcessed, contexts.Count);
 
                 if (contexts.First().Organization.PlanId != BillingManager.FreePlan.Id)
-                    await _metricsClient.CounterAsync(MetricNames.EventsPaidProcessed, contexts.Count).AnyContext();
+                    _metricsClient.Counter(MetricNames.EventsPaidProcessed, contexts.Count);
             } catch (Exception ex) {
                 foreach (var context in contexts) {
                     bool cont = false;

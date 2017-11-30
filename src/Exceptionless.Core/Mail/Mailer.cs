@@ -279,10 +279,8 @@ namespace Exceptionless.Core.Mail {
 
         private Task QueueMessageAsync(MailMessage message, string metricsName) {
             CleanAddresses(message);
-            return Task.WhenAll(
-                _metrics.CounterAsync($"mailer.{metricsName}"),
-                _queue.EnqueueAsync(message)
-            );
+            _metrics.Counter($"mailer.{metricsName}");
+            return _queue.EnqueueAsync(message);
         }
 
         private static void CleanAddresses(MailMessage message) {
