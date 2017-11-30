@@ -53,14 +53,14 @@ namespace Exceptionless.Api.Utility {
             bool tooBig = false;
             if (String.Equals(context.Request.Method, "POST", StringComparison.OrdinalIgnoreCase) && context.Request.Headers != null) {
                 if (context.Request.Headers.ContentLength.HasValue && context.Request.Headers.ContentLength.Value <= 0) {
-                    //await _metricsClient.CounterAsync(MetricNames.PostsBlocked);
+                    //_metricsClient.Counter(MetricNames.PostsBlocked);
                     context.Response.StatusCode = StatusCodes.Status411LengthRequired;
                     return;
                 }
 
                 long size = context.Request.Headers.ContentLength.GetValueOrDefault();
                 if (size > 0)
-                    await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
+                    _metricsClient.Gauge(MetricNames.PostsSize, size);
 
                 if (size > Settings.Current.MaximumEventPostSize) {
                     if (_logger.IsEnabled(LogLevel.Warning)) {
@@ -68,7 +68,7 @@ namespace Exceptionless.Api.Utility {
                             _logger.LogWarning("Event submission discarded for being too large: {@value} bytes.", size);
                     }
 
-                    await _metricsClient.CounterAsync(MetricNames.PostsDiscarded);
+                    _metricsClient.Counter(MetricNames.PostsDiscarded);
                     tooBig = true;
                 }
             }
@@ -81,7 +81,7 @@ namespace Exceptionless.Api.Utility {
             }
 
             if (overLimit) {
-                await _metricsClient.CounterAsync(MetricNames.PostsBlocked);
+                _metricsClient.Counter(MetricNames.PostsBlocked);
                 context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
                 return;
             }

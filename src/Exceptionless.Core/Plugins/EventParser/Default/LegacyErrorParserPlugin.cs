@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
@@ -19,13 +18,13 @@ namespace Exceptionless.Core.Plugins.EventParser {
             _settings = settings;
         }
 
-        public async Task<List<PersistentEvent>> ParseEventsAsync(string input, int apiVersion, string userAgent) {
+        public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
             if (apiVersion != 1)
                 return null;
 
             try {
                 var ctx = new EventUpgraderContext(input);
-                await _manager.UpgradeAsync(ctx).AnyContext();
+                _manager.Upgrade(ctx);
 
                 return ctx.Documents.FromJson<PersistentEvent>(_settings);
             } catch (Exception ex) {

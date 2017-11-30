@@ -45,6 +45,7 @@ namespace Exceptionless.Web {
                     .ConfigureLogging(b => b.AddSerilog(Log.Logger))
                     .UseIISIntegration()
                     .UseStartup<Startup>()
+                    .UseApplicationInsights()
                     .Build();
 
                 webHost.Run();

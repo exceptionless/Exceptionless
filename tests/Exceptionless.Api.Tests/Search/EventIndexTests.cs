@@ -453,7 +453,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 if (file.EndsWith("summary.json"))
                     continue;
 
-                var events = await parserPluginManager.ParseEventsAsync(File.ReadAllText(file), 2, "exceptionless/2.0.0.0");
+                var events = parserPluginManager.ParseEvents(File.ReadAllText(file), 2, "exceptionless/2.0.0.0");
                 Assert.NotNull(events);
                 Assert.True(events.Count > 0);
                 foreach (var ev in events)
