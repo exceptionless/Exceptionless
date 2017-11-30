@@ -138,6 +138,12 @@ namespace Exceptionless.Core {
 
         public bool EnableAzureStorage { get; private set; }
 
+        public string AliyunStorageConnectionString { get; private set; }
+
+        public string AliyunBucketName { get; private set; }
+
+        public bool EnableAliyunStorage { get; private set; }
+
         public bool EnableApplicationPerformanceTracking => !String.IsNullOrEmpty(ApplicationPerformanceTrackingApiKey);
         public string ApplicationPerformanceTrackingApiKey { get; private set; }
 
@@ -246,6 +252,12 @@ namespace Exceptionless.Core {
 
             settings.AzureStorageConnectionString = configRoot.GetConnectionString(nameof(AzureStorageConnectionString));
             settings.EnableAzureStorage = configRoot.GetValue(nameof(EnableAzureStorage), !String.IsNullOrEmpty(settings.AzureStorageConnectionString));
+
+            settings.AliyunStorageConnectionString = configRoot.GetConnectionString(nameof(AliyunStorageConnectionString));
+            settings.AliyunBucketName = configRoot.GetValue<string>(nameof(AliyunBucketName));
+            settings.EnableAliyunStorage = configRoot.GetValue(nameof(EnableAliyunStorage), !String.IsNullOrEmpty(settings.AliyunStorageConnectionString));
+            if (settings.EnableAliyunStorage && String.IsNullOrEmpty(settings.AliyunBucketName))
+                throw new ArgumentException("The AliyunBucketName must be specified when the Aliyun storage enabled.");
 
             settings.DisableWebSockets = configRoot.GetValue(nameof(DisableWebSockets), false);
             settings.DisableBootstrapStartupActions = configRoot.GetValue(nameof(DisableBootstrapStartupActions), false);
