@@ -59,7 +59,7 @@ namespace Exceptionless.Insulation.Jobs {
             var container = services.BuildServiceProvider();
 
             Core.Bootstrapper.LogConfiguration(container, container.GetRequiredService<ILoggerFactory>());
-            if (!Settings.Current.DisableBootstrapStartupActions)
+            if (Settings.Current.EnableBootstrapStartupActions)
                 container.RunStartupActionsAsync().GetAwaiter().GetResult();
 
             return container;

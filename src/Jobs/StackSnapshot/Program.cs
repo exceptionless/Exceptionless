@@ -13,7 +13,7 @@ namespace StackSnapshotJob {
             try {
                 var serviceProvider = JobServiceProvider.GetServiceProvider();
 
-                if (Settings.Current.DisableSnapshotJobs) {
+                if (!Settings.Current.EnableSnapshotJobs) {
                     Log.Logger.Information("Snapshot Jobs are currently disabled.");
                     return 0;
                 }

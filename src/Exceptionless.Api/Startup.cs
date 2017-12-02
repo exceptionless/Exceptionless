@@ -53,13 +53,13 @@ namespace Exceptionless.Api {
                 s.InjectOnCompleteJavaScript("docs.js");
             });
 
-            if (!Settings.Current.DisableWebSockets) {
+            if (Settings.Current.EnableWebSockets) {
                 app.UseWebSockets();
                 app.UseMiddleware<MessageBusBrokerMiddleware>();
             }
 
             // run startup actions registered in the container
-            if (!Settings.Current.DisableBootstrapStartupActions) {
+            if (Settings.Current.EnableBootstrapStartupActions) {
                 var lifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
                 lifetime.ApplicationStarted.Register(() => {
                     var shutdownSource = new CancellationTokenSource();

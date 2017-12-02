@@ -5,13 +5,9 @@ ConnectionStrings:
 
   # Base url for the ui used to build links in emails and other places.
 BaseURL: https://be.exceptionless.io
-# Controls whether SSL is required. Only enable this if you have SSL configured.
-EnableSSL: true
-
-# Controls whether daily summary emails are sent
-EnableDailySummary: true
 
 # Email
+# SmtpFrom:Exceptionless <noreply@exceptionless.io>
 # SmtpHost: domain.com
 # SmtpPort: 587
 # SmtpEncryption: StartTLS
@@ -19,19 +15,10 @@ EnableDailySummary: true
 # SmtpPassword: ''
 
 # Metrics
-EnableMetricsReporting: true
 MetricsServerName: 10.0.0.5
-
-# Elasticsearch
-ElasticSearchNumberOfShards: 1
-ElasticSearchNumberOfReplicas: 1
-EnableElasticsearchMapperSizePlugin: true
-ElasticSearchFieldsLimit: 1500
-DisableSnapshotJobs: false
 
 # Exceptionless Client Settings
 ExceptionlessServerUrl: https://collector.exceptionless.io
 InternalProjectId: 50ca6b2423d6c8493020b823
 
-MaximumEventPostSize: 200000
 SlackAppId: 34500115540.177239122322

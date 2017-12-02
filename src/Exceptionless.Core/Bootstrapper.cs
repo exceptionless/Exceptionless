@@ -196,23 +196,23 @@ namespace Exceptionless.Core {
             if (!Settings.Current.EnableMetricsReporting)
                 logger.LogWarning("StatsD Metrics is NOT enabled on {MachineName}.", Environment.MachineName);
 
-            if (!Settings.Current.EnableRedis)
+            if (String.IsNullOrEmpty(Settings.Current.RedisConnectionString))
                 logger.LogWarning("Redis is NOT enabled on {MachineName}.", Environment.MachineName);
 
-            if (Settings.Current.DisableWebSockets)
+            if (!Settings.Current.EnableWebSockets)
                 logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
 
             if (Settings.Current.AppMode == AppMode.Development)
                 logger.LogWarning("Emails will NOT be sent in Development mode on {MachineName}", Environment.MachineName);
 
-            if (!Settings.Current.EnableAzureStorage)
+            if (String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString))
                 logger.LogWarning("Azure Storage is NOT enabled on {MachineName}", Environment.MachineName);
 
             var fileStorage = serviceProvider.GetRequiredService<IFileStorage>();
             if (fileStorage is InMemoryFileStorage)
                 logger.LogWarning("Using in memory file storage on {MachineName}", Environment.MachineName);
 
-            if (Settings.Current.DisableBootstrapStartupActions)
+            if (!Settings.Current.EnableBootstrapStartupActions)
                 logger.LogWarning("Startup Actions is NOT enabled on {MachineName}", Environment.MachineName);
 
             if (Settings.Current.DisableIndexConfiguration)
@@ -268,11 +268,11 @@ namespace Exceptionless.Core {
         private static IQueue<T> CreateQueue<T>(IServiceProvider container, TimeSpan? workItemTimeout = null) where T : class {
             var loggerFactory = container.GetRequiredService<ILoggerFactory>();
 
-            var behaviours = container.GetServices<IQueueBehavior<T>>().ToList();
-            behaviours.Add(new MetricsQueueBehavior<T>(container.GetRequiredService<IMetricsClient>(), null, TimeSpan.FromSeconds(2), loggerFactory));
+            var behaviors = container.GetServices<IQueueBehavior<T>>().ToList();
+            behaviors.Add(new MetricsQueueBehavior<T>(container.GetRequiredService<IMetricsClient>(), null, TimeSpan.FromSeconds(2), loggerFactory));
 
             return new InMemoryQueue<T>(new InMemoryQueueOptions<T> {
-                Behaviors = behaviours,
+                Behaviors = behaviors,
                 WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
                 Serializer = container.GetRequiredService<ISerializer>(),
                 LoggerFactory = loggerFactory

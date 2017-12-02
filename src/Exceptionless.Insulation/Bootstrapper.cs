@@ -51,7 +51,7 @@ namespace Exceptionless.Insulation {
             if (Settings.Current.AppMode != AppMode.Development)
                 container.ReplaceSingleton<IMailSender, MailKitMailSender>();
 
-            if (Settings.Current.EnableRedis) {
+            if (!String.IsNullOrEmpty(Settings.Current.RedisConnectionString)) {
                 container.AddSingleton<ConnectionMultiplexer>(s => {
                     var multiplexer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
                     multiplexer.PreserveAsyncOrder = false;
@@ -63,7 +63,7 @@ namespace Exceptionless.Insulation {
                 else
                     container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
 
-                if (!Settings.Current.DisableWebSockets)
+                if (Settings.Current.EnableWebSockets)
                     container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
 
                 container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
@@ -74,14 +74,14 @@ namespace Exceptionless.Insulation {
                 }));
             }
 
-            if (Settings.Current.EnableAzureStorage) {
+            if (!String.IsNullOrEmpty(Settings.Current.AzureStorageQueueConnectionString)) {
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<EventPost>(s, retries: 1));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<EventUserDescription>(s));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<EventNotificationWorkItem>(s));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<WebHookNotification>(s));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<MailMessage>(s));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<WorkItemData>(s, workItemTimeout: TimeSpan.FromHours(1)));
-            } else if (Settings.Current.EnableRedis) {
+            } else if (!String.IsNullOrEmpty(Settings.Current.RedisConnectionString)) {
                 container.ReplaceSingleton(s => CreateRedisQueue<EventPost>(s, runMaintenanceTasks, retries: 1));
                 container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, runMaintenanceTasks));
                 container.ReplaceSingleton(s => CreateRedisQueue<EventNotificationWorkItem>(s, runMaintenanceTasks));
@@ -90,15 +90,15 @@ namespace Exceptionless.Insulation {
                 container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
             }
 
-            if (Settings.Current.EnableAzureStorage)
+            if (!String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString))
                 container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events"));
-            else if (Settings.Current.EnableAliyunStorage)
+            else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString))
                 container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(Settings.Current.AliyunStorageConnectionString, Settings.Current.AliyunBucketName));
         }
 
         private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
             return new AzureStorageQueue<T>(new AzureStorageQueueOptions<T> {
-                ConnectionString = Settings.Current.AzureStorageConnectionString,
+                ConnectionString = Settings.Current.AzureStorageQueueConnectionString,
                 Name = GetQueueName<T>().ToLowerInvariant(),
                 Retries = retries,
                 Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
