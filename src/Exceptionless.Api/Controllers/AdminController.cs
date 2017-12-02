@@ -17,6 +17,7 @@ using Foundatio.Queues;
 using Foundatio.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace Exceptionless.Api.Controllers {
     [Route(API_PREFIX + "/admin")]
@@ -41,7 +42,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet("settings")]
         public IActionResult SettingsRequest() {
-            return Ok(Settings.Current);
+            return Ok(JsonConvert.SerializeObject(Settings.Current, Formatting.Indented));
         }
 
         [HttpGet("assemblies")]
