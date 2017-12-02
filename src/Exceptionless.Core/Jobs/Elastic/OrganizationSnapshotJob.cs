@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
         }
 
         public override Task<JobResult> RunAsync(CancellationToken cancellationToken = new CancellationToken()) {
-            if (Settings.Current.DisableSnapshotJobs)
+            if (!Settings.Current.EnableSnapshotJobs)
                 return Task.FromResult(JobResult.Success);
 
             return base.RunAsync(cancellationToken);

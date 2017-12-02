@@ -33,7 +33,11 @@ namespace Exceptionless.Api {
             container.AddTransient<Profile, ApiMappings>();
 
             Core.Bootstrapper.RegisterServices(container);
-            bool includeInsulation = Settings.Current.EnableRedis || Settings.Current.EnableAzureStorage || Settings.Current.EnableMetricsReporting;
+            bool includeInsulation = !String.IsNullOrEmpty(Settings.Current.RedisConnectionString) || 
+                !String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString) ||
+                !String.IsNullOrEmpty(Settings.Current.AzureStorageQueueConnectionString) ||
+                !String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString) ||
+                Settings.Current.EnableMetricsReporting;
             if (includeInsulation)
                 Insulation.Bootstrapper.RegisterServices(container, Settings.Current.RunJobsInProcess);
 
