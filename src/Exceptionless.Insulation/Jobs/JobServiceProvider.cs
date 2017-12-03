@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
@@ -21,8 +22,9 @@ namespace Exceptionless.Insulation.Jobs {
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
+            string currentDirectory = Directory.GetCurrentDirectory();
             var config = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
+                .SetBasePath(currentDirectory)
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
@@ -48,7 +50,7 @@ namespace Exceptionless.Insulation.Jobs {
             }
 
             Log.Logger = loggerConfig.CreateLogger();
-            Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Settings}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
+            Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current, currentDirectory);
 
             var services = new ServiceCollection();
             services.AddLogging(b => b.AddSerilog(Log.Logger));
