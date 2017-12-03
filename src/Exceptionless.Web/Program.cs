@@ -18,8 +18,9 @@ namespace Exceptionless.Web {
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
+            string currentDirectory = Directory.GetCurrentDirectory();
             var config = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
+                .SetBasePath(currentDirectory)
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
@@ -35,12 +36,12 @@ namespace Exceptionless.Web {
             Log.Logger = loggerConfig.CreateLogger();
 
             try {
-                Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current);
+                Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current, currentDirectory);
 
                 var webHost = new WebHostBuilder()
                     .UseEnvironment(environment)
                     .UseKestrel(c => c.AddServerHeader = false)
-                    .UseContentRoot(Directory.GetCurrentDirectory())
+                    .UseContentRoot(currentDirectory)
                     .UseConfiguration(config)
                     .ConfigureLogging(b => b.AddSerilog(Log.Logger))
                     .UseIISIntegration()
