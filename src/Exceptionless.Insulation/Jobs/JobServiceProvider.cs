@@ -22,7 +22,7 @@ namespace Exceptionless.Insulation.Jobs {
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
-            string currentDirectory = Directory.GetCurrentDirectory();
+            string currentDirectory = AppContext.BaseDirectory;
             var config = new ConfigurationBuilder()
                 .SetBasePath(currentDirectory)
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
