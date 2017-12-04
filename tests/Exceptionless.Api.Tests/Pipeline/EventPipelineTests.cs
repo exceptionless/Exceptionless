@@ -53,7 +53,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var localTime = SystemClock.UtcNow;
             var ev = GenerateEvent(localTime.AddMinutes(10));
 
-            var context = await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         private async Task CreateAutoSessionInternalAsync(DateTimeOffset date) {
             var ev = GenerateEvent(date, "blake@exceptionless.io");
-            var context = await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
@@ -91,7 +91,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var ev = GenerateEvent(startDate.AddMinutes(4), "blake@exceptionless.io");
 
-            var context = await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
@@ -109,7 +109,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         [Fact]
         public async Task IgnoreAutoSessionsWithoutIdentityAsync() {
             var ev = GenerateEvent(SystemClock.OffsetNow);
-            var context = await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
@@ -131,7 +131,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(firstEventDate.AddSeconds(30), "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.DoesNotContain(contexts, c => c.IsCancelled);
             Assert.Contains(contexts, c => c.IsProcessed);
@@ -158,7 +158,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.Session),
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.Equal(1, contexts.Count(c => c.IsCancelled));
             Assert.Contains(contexts, c => c.IsProcessed);
@@ -190,7 +190,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(lastEventDate, "eric@exceptionless.io")
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.DoesNotContain(contexts, c => c.IsCancelled);
             Assert.Contains(contexts, c => c.IsProcessed);
@@ -224,7 +224,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.DoesNotContain(contexts, c => c.IsCancelled);
             Assert.Contains(contexts, c => c.IsProcessed);
@@ -235,7 +235,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            contexts = await _pipeline.RunAsync(events);
+            contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.Equal(1, contexts.Count(c => c.IsCancelled));
             Assert.Equal(1, contexts.Count(c => c.IsProcessed));
@@ -259,7 +259,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionEnd)
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.Equal(2, contexts.Count(c => c.IsCancelled));
             Assert.False(contexts.All(c => c.IsProcessed));
@@ -276,7 +276,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.Equal(0, contexts.Count(c => c.IsCancelled));
             Assert.Equal(1, contexts.Count(c => c.IsProcessed));
@@ -306,7 +306,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         private async Task CreateManualSessionInternalAsync(DateTimeOffset start) {
             var ev = GenerateEvent(start, sessionId: "12345678");
-            var context = await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
@@ -329,7 +329,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var ev = GenerateEvent(startDate.AddMinutes(4), sessionId: "12345678");
 
-            var context = await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
@@ -354,7 +354,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(firstEventDate.AddSeconds(30), sessionId: "12345678"),
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.DoesNotContain(contexts, c => c.IsCancelled);
             Assert.Contains(contexts, c => c.IsProcessed);
@@ -381,7 +381,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(firstEventDate.AddSeconds(30), type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.Equal(1, contexts.Count(c => c.IsCancelled));
             Assert.Equal(3, contexts.Count(c => c.IsProcessed));
@@ -409,7 +409,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(lastEventDate, type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.DoesNotContain(contexts, c => c.IsCancelled);
             Assert.Contains(contexts, c => c.IsProcessed);
@@ -431,7 +431,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.DoesNotContain(contexts, c => c.IsCancelled);
             Assert.Contains(contexts, c => c.IsProcessed);
@@ -442,7 +442,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             };
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            contexts = await _pipeline.RunAsync(events);
+            contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.Equal(1, contexts.Count(c => c.IsCancelled));
             Assert.Contains(contexts, c => c.IsProcessed);
@@ -469,7 +469,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.Equal(2, contexts.Count(c => c.IsCancelled));
             Assert.False(contexts.All(c => c.IsProcessed));
@@ -486,7 +486,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
             };
 
-            var contexts = await _pipeline.RunAsync(events);
+            var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.Equal(0, contexts.Count(c => c.IsCancelled));
             Assert.Equal(1, contexts.Count(c => c.IsProcessed));
@@ -553,7 +553,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var ev = GenerateEvent(SystemClock.UtcNow);
             ev.Tags.Add(Tag1);
 
-            var context = await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
@@ -567,7 +567,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag2);
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            context = await _pipeline.RunAsync(ev);
+            context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
             stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(new [] { Tag1, Tag2 }, stack.Tags.ToArray());
@@ -576,7 +576,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag2_Lowercase);
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            context = await _pipeline.RunAsync(ev);
+            context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
             stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(new [] { Tag1, Tag2}, stack.Tags.ToArray());
@@ -589,7 +589,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var ev = GenerateEvent(SystemClock.UtcNow);
             ev.Tags.Add(LargeRemovedTags);
 
-            var context = await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
@@ -604,7 +604,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.AddRange(Enumerable.Range(0, 100).Select(i => i.ToString()));
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            context = await _pipeline.RunAsync(ev);
+            context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
@@ -621,7 +621,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Event.KnownTags.Critical);
 
             await _configuration.Client.RefreshAsync(Indices.All);
-            context = await _pipeline.RunAsync(ev);
+            context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
@@ -641,8 +641,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
         public async Task EnsureSingleNewStackAsync() {
             string source = Guid.NewGuid().ToString();
             var contexts = new List<EventContext> {
-                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log }),
-                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log}),
+                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
+                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
             };
 
             await _pipeline.RunAsync(contexts);
@@ -663,7 +663,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                     Date = SystemClock.UtcNow,
                     Type = Event.KnownTypes.Error,
                     Data = new DataDictionary { { "@error", new Error { Message = "Test Exception", Type = "Error" } } }
-                }),
+                }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
                 new EventContext(new PersistentEvent {
                     ProjectId = TestConstants.ProjectId,
                     OrganizationId = TestConstants.OrganizationId,
@@ -671,7 +671,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                     Date = SystemClock.UtcNow,
                     Type = Event.KnownTypes.Error,
                     Data = new DataDictionary { { "@error", new Error { Message = "Test Exception 2", Type = "Error" } } }
-                }),
+                }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
             };
 
             await _pipeline.RunAsync(contexts);
@@ -686,7 +686,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
         public async Task EnsureSingleRegressionAsync() {
             var utcNow = SystemClock.UtcNow;
             var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
-            var context = new EventContext(ev);
+            var context = new EventContext(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             await _pipeline.RunAsync(context);
 
             Assert.False(context.HasError, context.ErrorMessage);
@@ -702,8 +702,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _stackRepository.SaveAsync(stack, o => o.Cache());
 
             var contexts = new List<EventContext> {
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1))),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1)))
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1)), OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1)), OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject())
             };
 
             await _configuration.Client.RefreshAsync(Indices.All);
@@ -714,8 +714,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(contexts.All(c => c.Event.IsFixed));
 
             contexts = new List<EventContext> {
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1))),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)))
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject())
             };
 
             await _configuration.Client.RefreshAsync(Indices.All);
@@ -726,8 +726,8 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.True(contexts.All(c => !c.Event.IsFixed));
 
             contexts = new List<EventContext> {
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1))),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)))
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject())
             };
 
             await _configuration.Client.RefreshAsync(Indices.All);
@@ -740,8 +740,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
         [Fact]
         public async Task EnsureVersionedRegressionAsync() {
             var utcNow = SystemClock.UtcNow;
+            var organization = OrganizationData.GenerateSampleOrganization();
+            var project = ProjectData.GenerateSampleProject();
             var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
-            var context = new EventContext(ev);
+            var context = new EventContext(ev, organization, project);
             await _pipeline.RunAsync(context);
             await _configuration.Client.RefreshAsync(Indices.All);
 
@@ -758,9 +760,9 @@ namespace Exceptionless.Api.Tests.Pipeline {
             await _stackRepository.SaveAsync(stack, o => o.Cache());
 
             var contexts = new List<EventContext> {
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1))),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0")),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0-beta2"))
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), organization, project),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0"), organization, project),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0-beta2"), organization, project)
             };
 
             await _configuration.Client.RefreshAsync(Indices.All);
@@ -771,10 +773,10 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(3, contexts.Count(c => !c.IsRegression));
 
             contexts = new List<EventContext> {
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0")),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.1-rc1")),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.1-rc3")),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1), semver: "1.0.1-rc3"))
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0"), organization, project),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.1-rc1"), organization, project),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.1-rc3"), organization, project),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1), semver: "1.0.1-rc3"), organization, project)
             };
 
             await _configuration.Client.RefreshAsync(Indices.All);
@@ -804,7 +806,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 ev.OrganizationId = TestConstants.OrganizationId;
             }
 
-            var contexts = await pipeline.RunAsync(events);
+            var contexts = await pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.True(contexts.All(c => c.IsProcessed));
             Assert.True(contexts.All(c => !c.IsCancelled));
             Assert.True(contexts.All(c => !c.HasError));
@@ -833,7 +835,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 }
 
                 sw.Start();
-                var contexts = await pipeline.RunAsync(events);
+                var contexts = await pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
                 sw.Stop();
 
                 Assert.True(contexts.All(c => c.IsProcessed));
