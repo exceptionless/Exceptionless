@@ -115,10 +115,10 @@ namespace Exceptionless.Api.Tests.Jobs {
                     organization.SuspensionDate = SystemClock.UtcNow;
                 }
 
-                await _organizationRepository.AddAsync(organization, o => o.Cache());
+                await _organizationRepository.AddAsync(organization, o => o.Cache().ImmediateConsistency());
             }
 
-            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.Cache());
+            await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.Cache().ImmediateConsistency());
 
             foreach (var user in UserData.GenerateSampleUsers()) {
                 if (user.Id == TestConstants.UserId) {
@@ -129,10 +129,8 @@ namespace Exceptionless.Api.Tests.Jobs {
                 if (!user.IsEmailAddressVerified)
                     user.CreateVerifyEmailAddressToken();
 
-                await _userRepository.AddAsync(user, o => o.Cache());
+                await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
             }
-
-            await _configuration.Client.RefreshAsync(Indices.All);
         }
 
         private async Task<string> EnqueueEventPostAsync(PersistentEvent ev) {

@@ -74,7 +74,7 @@ namespace Exceptionless.Core.Jobs {
             }
 
             var projectTask = _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache());
-            var organizationTask = String.IsNullOrEmpty(ep.OrganizationId) ? _organizationRepository.GetByIdAsync(ep.OrganizationId, o => o.Cache()) : Task.FromResult<Organization>(null);
+            var organizationTask = !String.IsNullOrEmpty(ep.OrganizationId) ? _organizationRepository.GetByIdAsync(ep.OrganizationId, o => o.Cache()) : Task.FromResult<Organization>(null);
 
             using (_logger.BeginScope(new ExceptionlessState().Organization(ep.OrganizationId).Project(ep.ProjectId))) {
                 _metricsClient.Gauge(MetricNames.PostsCompressedSize, ep.Data.Length);
