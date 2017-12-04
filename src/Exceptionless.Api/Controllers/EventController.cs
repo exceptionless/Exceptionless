@@ -573,16 +573,16 @@ namespace Exceptionless.Api.Controllers {
             if (description == null)
                 return BadRequest("Description must be specified.");
 
-            var result = await _userDescriptionValidator.ValidateAsync(description);
-            if (!result.IsValid)
-                return BadRequest(result.Errors.ToErrorMessage());
-
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
+
+            var result = await _userDescriptionValidator.ValidateAsync(description);
+            if (!result.IsValid)
+                return BadRequest(result.Errors.ToErrorMessage());
 
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -649,10 +649,11 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null || organization.IsSuspended)
                 return Ok();
 
+            string hash = id.ToSHA1();
             try {
-                await _cache.SetAsync($"Project:{project.Id}:heartbeat:{id.ToSHA1()}", SystemClock.UtcNow, TimeSpan.FromHours(2));
+                await _cache.SetAsync($"Project:{project.Id}:heartbeat:{hash}", SystemClock.UtcNow, TimeSpan.FromHours(2));
                 if (close)
-                    await _cache.SetAsync($"Project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
+                    await _cache.SetAsync($"Project:{project.Id}:heartbeat:{hash}-close", true, TimeSpan.FromHours(2));
             } catch (Exception ex) {
                 if (projectId != Settings.Current.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).Property("Id", id).Property("Close", close).SetHttpContext(HttpContext)))
@@ -707,13 +708,19 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
-            var project = await GetProjectAsync(projectId);
+            var project = Request.GetProject();
+            if (!String.Equals(project?.Id, projectId)) {
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("Project {RequestProjectId} from request doesn't match project route id {RouteProjectId}", project?.Id, projectId);
+
+                project = await GetProjectAsync(projectId);
+
+                // Set the project for the configuration response filter.
+                Request.SetProject(project);
+            }
+
             if (project == null)
                 return NotFound();
-
-            // TODO: We could save some overhead if we set the project in the overage handler...
-            // Set the project for the configuration response filter.
-            Request.SetProject(project);
 
             string contentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding);
             var ev = new Event { Type = !String.IsNullOrEmpty(type) ? type : Event.KnownTypes.Log };
@@ -874,13 +881,19 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
-            var project = await GetProjectAsync(projectId);
+            var project = Request.GetProject();
+            if (!String.Equals(project?.Id, projectId)) {
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("Project {RequestProjectId} from request doesn't match project route id {RouteProjectId}", project?.Id, projectId);
+
+                project = await GetProjectAsync(projectId);
+
+                // Set the project for the configuration response filter.
+                Request.SetProject(project);
+            }
+
             if (project == null)
                 return NotFound();
-
-            // TODO: We could save some overhead if we set the project in the overage handler...
-            // Set the project for the configuration response filter.
-            Request.SetProject(project);
 
             var data = Request.Body.ReadAllBytes();
             if (data.Length <= 0)

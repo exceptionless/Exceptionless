@@ -4,21 +4,27 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Foundatio.Metrics;
+using Foundatio.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Utility {
     public sealed class OverageMiddleware {
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
         private readonly UsageService _usageService;
         private readonly IMetricsClient _metricsClient;
         private readonly ILogger _logger;
         private readonly RequestDelegate _next;
 
-        public OverageMiddleware(RequestDelegate next, UsageService usageService, IMetricsClient metricsClient, ILogger<OverageMiddleware> logger) {
+        public OverageMiddleware(RequestDelegate next, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, UsageService usageService, IMetricsClient metricsClient, ILogger<OverageMiddleware> logger) {
             _next = next;
+            _organizationRepository = organizationRepository;
+            _projectRepository = projectRepository;
             _usageService = usageService;
             _metricsClient = metricsClient;
             _logger = logger;
@@ -50,11 +56,18 @@ namespace Exceptionless.Api.Utility {
                 return;
             }
 
+            string organizationId = context.Request.GetDefaultOrganizationId();
+            var organizationTask = _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+
+            string projectId = context.Request.GetDefaultProjectId();
+            var projectTask = _projectRepository.GetByIdAsync(projectId, o => o.Cache());
+
             bool tooBig = false;
             if (String.Equals(context.Request.Method, "POST", StringComparison.OrdinalIgnoreCase) && context.Request.Headers != null) {
                 if (context.Request.Headers.ContentLength.HasValue && context.Request.Headers.ContentLength.Value <= 0) {
                     //_metricsClient.Counter(MetricNames.PostsBlocked);
                     context.Response.StatusCode = StatusCodes.Status411LengthRequired;
+                    await Task.WhenAll(organizationTask, projectTask);
                     return;
                 }
 
@@ -73,7 +86,10 @@ namespace Exceptionless.Api.Utility {
                 }
             }
 
-            bool overLimit = await _usageService.IncrementUsageAsync(context.Request.GetDefaultOrganizationId(), context.Request.GetDefaultProjectId(), tooBig);
+            var organization = await organizationTask;
+            var project = await projectTask;
+            bool overLimit = await _usageService.IncrementUsageAsync(organization, project, tooBig);
+
             // block large submissions, client should break them up or remove some of the data.
             if (tooBig) {
                 context.Response.StatusCode = StatusCodes.Status413RequestEntityTooLarge;
@@ -86,6 +102,8 @@ namespace Exceptionless.Api.Utility {
                 return;
             }
 
+            context.Request.SetOrganization(organization);
+            context.Request.SetProject(project);
             await _next(context);
         }
     }

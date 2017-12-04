@@ -172,10 +172,17 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet("~/api/v1/project/config")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ClientConfiguration))]
         public async Task<IActionResult> GetConfigAsync(string id = null, [FromQuery] int? v = null) {
+            var project = Request.GetProject();
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();
 
-            var project = await GetModelAsync(id);
+            if (!String.Equals(project?.Id, id)) {
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("Project {RequestProjectId} from request doesn't match project route id {RouteProjectId}", project?.Id, id);
+
+                project = await GetModelAsync(id);
+            }
+
             if (project == null)
                 return NotFound();
 

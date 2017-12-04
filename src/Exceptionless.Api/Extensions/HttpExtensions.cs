@@ -19,7 +19,8 @@ namespace Exceptionless.Api.Extensions {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            request.HttpContext.Items["User"] = user;
+            if (user != null)
+                request.HttpContext.Items["User"] = user;
         }
 
         public static Organization GetOrganization(this HttpRequest request) {
@@ -27,7 +28,8 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static void SetOrganization(this HttpRequest request, Organization organization) {
-            request.HttpContext.Items["Organization"] = organization;
+            if (organization != null)
+                request.HttpContext.Items["Organization"] = organization;
         }
 
         public static Project GetProject(this HttpRequest request) {
@@ -35,7 +37,8 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static void SetProject(this HttpRequest request, Project project) {
-            request.HttpContext.Items["Project"] = project;
+            if (project != null)
+                request.HttpContext.Items["Project"] = project;
         }
 
         public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequest request) {
@@ -100,13 +103,6 @@ namespace Exceptionless.Api.Extensions {
         public static string GetQueryString(this HttpRequest request, string key) {
             if (request.Query.TryGetValue(key, out StringValues queryStrings))
                 return queryStrings.FirstOrDefault();
-
-            return null;
-        }
-
-        public static string GetCookie(this HttpRequest request, string cookieName) {
-            if (request.Cookies.TryGetValue(cookieName, out string value))
-                return value;
 
             return null;
         }

@@ -53,7 +53,7 @@ namespace Exceptionless.Api.Tests.Services {
             Assert.InRange(o.GetHourlyEventLimit(), 1, 750);
 
             int totalToIncrement = o.GetHourlyEventLimit() - 1;
-            Assert.False(await _usageService.IncrementUsageAsync(o.Id, project.Id, false, totalToIncrement));
+            Assert.False(await _usageService.IncrementUsageAsync(o, project, false, totalToIncrement));
             await _configuration.Client.RefreshAsync(Indices.All);
             o = await _organizationRepository.GetByIdAsync(o.Id);
 
@@ -68,7 +68,7 @@ namespace Exceptionless.Api.Tests.Services {
             Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
             Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id, project.Id), 0));
 
-            Assert.True(await _usageService.IncrementUsageAsync(o.Id, project.Id, false, 2));
+            Assert.True(await _usageService.IncrementUsageAsync(o, project, false, 2));
             await _configuration.Client.RefreshAsync(Indices.All);
             o = await _organizationRepository.GetByIdAsync(o.Id);
 
@@ -89,7 +89,7 @@ namespace Exceptionless.Api.Tests.Services {
 
             await _cache.RemoveAllAsync();
             totalToIncrement = o.GetHourlyEventLimit() + 20;
-            Assert.True(await _usageService.IncrementUsageAsync(o.Id, project.Id, false, totalToIncrement));
+            Assert.True(await _usageService.IncrementUsageAsync(o, project, false, totalToIncrement));
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
             Assert.Equal(0, countdown.CurrentCount);
@@ -121,7 +121,7 @@ namespace Exceptionless.Api.Tests.Services {
             await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(limit, o.GetHourlyEventLimit());
 
-            Assert.False(await _usageService.IncrementUsageAsync(o.Id, project.Id, false, limit));
+            Assert.False(await _usageService.IncrementUsageAsync(o, project, false, limit));
             await _configuration.Client.RefreshAsync(Indices.All);
             o = await _organizationRepository.GetByIdAsync(o.Id);
 
@@ -136,7 +136,7 @@ namespace Exceptionless.Api.Tests.Services {
             Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id), 0));
             Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id, project.Id), 0));
 
-            Assert.True(await _usageService.IncrementUsageAsync(o.Id, project.Id, false, 2));
+            Assert.True(await _usageService.IncrementUsageAsync(o, project, false, 2));
             await _configuration.Client.RefreshAsync(Indices.All);
             o = await _organizationRepository.GetByIdAsync(o.Id);
 
@@ -164,7 +164,7 @@ namespace Exceptionless.Api.Tests.Services {
 
             var o = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.SmallPlan.Id }, opt => opt.Cache());
             var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = o.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, opt => opt.Cache());
-            Assert.False(await _usageService.IncrementUsageAsync(o.Id, project.Id, false, 5));
+            Assert.False(await _usageService.IncrementUsageAsync(o, project, false, 5));
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
             Assert.Equal(2, countdown.CurrentCount);
@@ -183,7 +183,7 @@ namespace Exceptionless.Api.Tests.Services {
             o.SuspensionCode = SuspensionCode.Billing;
             o = await _organizationRepository.SaveAsync(o, opt => opt.Cache());
 
-            Assert.True(await _usageService.IncrementUsageAsync(o.Id, project.Id, false, 4995));
+            Assert.True(await _usageService.IncrementUsageAsync(o, project, false, 4995));
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
             Assert.Equal(1, countdown.CurrentCount);
@@ -199,7 +199,7 @@ namespace Exceptionless.Api.Tests.Services {
             o.RemoveSuspension();
             o = await _organizationRepository.SaveAsync(o, opt => opt.Cache());
 
-            Assert.False(await _usageService.IncrementUsageAsync(o.Id, project.Id, false, 1));
+            Assert.False(await _usageService.IncrementUsageAsync(o, project, false, 1));
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
             Assert.Equal(1, countdown.CurrentCount);
             Assert.Equal(5001, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(o.Id), 0));
@@ -220,7 +220,7 @@ namespace Exceptionless.Api.Tests.Services {
 
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < iterations; i++)
-                await _usageService.IncrementUsageAsync(org.Id, project.Id, false);
+                await _usageService.IncrementUsageAsync(org, project, false);
 
             sw.Stop();
             _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);

@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             var event1 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
             var event2 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId, sessionId: "123456789");
 
-            var contexts = await _pipeline.RunAsync(new []{ event1, event2 });
+            var contexts = await _pipeline.RunAsync(new []{ event1, event2 }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.True(contexts.All(c => !c.HasError));
             Assert.True(contexts.All(c => !c.IsCancelled));
             Assert.True(contexts.All(c => c.IsProcessed));
@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             var event1 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
             var event2 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId, sessionId: sessionId);
 
-            var contexts = await _pipeline.RunAsync(new[] { event1, event2 });
+            var contexts = await _pipeline.RunAsync(new[] { event1, event2 }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.True(contexts.All(c => !c.HasError));
             Assert.True(contexts.All(c => !c.IsCancelled));
             Assert.True(contexts.All(c => c.IsProcessed));
@@ -119,7 +119,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             const string userId = "blake@exceptionless.io";
             var ev = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
 
-            var context = await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);

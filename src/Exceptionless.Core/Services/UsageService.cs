@@ -29,39 +29,31 @@ namespace Exceptionless.Core.Services {
             _logger = loggerFactory.CreateLogger<UsageService>();
         }
 
-        public async Task<bool> IncrementUsageAsync(string organizationId, string projectId, bool tooBig, int count = 1, bool applyHourlyLimit = true) {
-            if (String.IsNullOrEmpty(organizationId) || String.IsNullOrEmpty(projectId) || count == 0)
+        public async Task<bool> IncrementUsageAsync(Organization organization, Project project, bool tooBig, int count = 1, bool applyHourlyLimit = true) {
+            if (organization == null || organization.MaxEventsPerMonth < 0 || project == null || count == 0)
                 return false;
 
-            var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache()).AnyContext();
-            if (project == null)
-                return false;
-
-            var org = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache()).AnyContext();
-            if (org == null || org.MaxEventsPerMonth < 0)
-                return false;
-
-            var orgUsage = await GetUsageAsync(org, tooBig, count).AnyContext();
-            double totalBlocked = GetTotalBlocked(org, count, orgUsage, applyHourlyLimit);
+            var orgUsage = await GetUsageAsync(organization, tooBig, count).AnyContext();
+            double totalBlocked = GetTotalBlocked(organization, count, orgUsage, applyHourlyLimit);
             bool overLimit = totalBlocked > 0;
             if (overLimit) {
-                orgUsage.HourlyBlocked = await _cache.IncrementAsync(GetHourlyBlockedCacheKey(org.Id), (int)totalBlocked, TimeSpan.FromMinutes(61), (uint)orgUsage.HourlyBlocked).AnyContext();
-                orgUsage.MonthlyBlocked = await _cache.IncrementAsync(GetMonthlyBlockedCacheKey(org.Id), (int)totalBlocked, TimeSpan.FromDays(32), (uint)orgUsage.MonthlyBlocked).AnyContext();
+                orgUsage.HourlyBlocked = await _cache.IncrementAsync(GetHourlyBlockedCacheKey(organization.Id), (int)totalBlocked, TimeSpan.FromMinutes(61), (uint)orgUsage.HourlyBlocked).AnyContext();
+                orgUsage.MonthlyBlocked = await _cache.IncrementAsync(GetMonthlyBlockedCacheKey(organization.Id), (int)totalBlocked, TimeSpan.FromDays(32), (uint)orgUsage.MonthlyBlocked).AnyContext();
             }
 
-            bool justWentOverHourly = orgUsage.HourlyTotal > org.GetHourlyEventLimit() && orgUsage.HourlyTotal <= org.GetHourlyEventLimit() + count;
-            bool justWentOverMonthly = orgUsage.MonthlyTotal > org.GetMaxEventsPerMonthWithBonus() && orgUsage.MonthlyTotal <= org.GetMaxEventsPerMonthWithBonus() + count;
-            var projectUsage = await GetUsageAsync(org, project, tooBig, count, overLimit, (int)totalBlocked).AnyContext();
+            bool justWentOverHourly = orgUsage.HourlyTotal > organization.GetHourlyEventLimit() && orgUsage.HourlyTotal <= organization.GetHourlyEventLimit() + count;
+            bool justWentOverMonthly = orgUsage.MonthlyTotal > organization.GetMaxEventsPerMonthWithBonus() && orgUsage.MonthlyTotal <= organization.GetMaxEventsPerMonthWithBonus() + count;
+            var projectUsage = await GetUsageAsync(organization, project, tooBig, count, overLimit, (int)totalBlocked).AnyContext();
 
             var tasks = new List<Task>(3) {
-                SaveUsageAsync(org, justWentOverHourly, justWentOverMonthly, orgUsage),
-                SaveUsageAsync(org, project, justWentOverHourly, justWentOverMonthly, projectUsage)
+                SaveUsageAsync(organization, justWentOverHourly, justWentOverMonthly, orgUsage),
+                SaveUsageAsync(organization, project, justWentOverHourly, justWentOverMonthly, projectUsage)
             };
 
             if (justWentOverMonthly)
-                tasks.Add(_messagePublisher.PublishAsync(new PlanOverage { OrganizationId = org.Id }));
+                tasks.Add(_messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organization.Id }));
             else if (justWentOverHourly)
-                tasks.Add(_messagePublisher.PublishAsync(new PlanOverage { OrganizationId = org.Id, IsHourly = true }));
+                tasks.Add(_messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organization.Id, IsHourly = true }));
 
             await Task.WhenAll(tasks).AnyContext();
             return overLimit;
@@ -147,16 +139,16 @@ namespace Exceptionless.Core.Services {
             }
         }
 
-        private async Task<bool> ShouldSaveUsageAsync(Organization org, Project project, bool justWentOverHourly, bool justWentOverMonthly) {
+        private async Task<bool> ShouldSaveUsageAsync(Organization organization, Project project, bool justWentOverHourly, bool justWentOverMonthly) {
             // save usages if we just went over one of the limits
             bool shouldSaveUsage = justWentOverHourly || justWentOverMonthly;
             if (shouldSaveUsage)
                 return true;
 
-            var lastCounterSavedDate = await _cache.GetAsync<DateTime>(GetUsageSavedCacheKey(org.Id, project?.Id)).AnyContext();
+            var lastCounterSavedDate = await _cache.GetAsync<DateTime>(GetUsageSavedCacheKey(organization.Id, project?.Id)).AnyContext();
             // don't save on the 1st increment, but set the last saved date so we will save in 5 minutes
             if (!lastCounterSavedDate.HasValue)
-                await _cache.SetAsync(GetUsageSavedCacheKey(org.Id, project?.Id), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
+                await _cache.SetAsync(GetUsageSavedCacheKey(organization.Id, project?.Id), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
 
             // TODO: If the save period is in the next hour we will lose all data in the past five minutes.
             // save usages if the last time we saved them is more than 5 minutes ago
@@ -166,12 +158,11 @@ namespace Exceptionless.Core.Services {
             return shouldSaveUsage;
         }
 
-        public async Task<int> GetRemainingEventLimitAsync(string organizationId) {
-            var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache()).AnyContext();
+        public async Task<int> GetRemainingEventLimitAsync(Organization organization) {
             if (organization == null || organization.MaxEventsPerMonth < 0)
                 return Int32.MaxValue;
 
-            string monthlyCacheKey = GetMonthlyTotalCacheKey(organizationId);
+            string monthlyCacheKey = GetMonthlyTotalCacheKey(organization.Id);
             long monthlyEventCount = await _cache.GetAsync<long>(monthlyCacheKey, 0).AnyContext();
             return Math.Max(0, organization.GetMaxEventsPerMonthWithBonus() - (int)monthlyEventCount);
         }

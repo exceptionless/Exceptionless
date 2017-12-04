@@ -5,31 +5,22 @@ using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Helpers;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Core.Repositories.Base;
 using Foundatio.Metrics;
-using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
-        private readonly IOrganizationRepository _organizationRepository;
-        private readonly IProjectRepository _projectRepository;
+        public EventPipeline(IServiceProvider serviceProvider, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(serviceProvider, metricsClient, loggerFactory) {}
 
-        public EventPipeline(IServiceProvider serviceProvider, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(serviceProvider, metricsClient, loggerFactory) {
-            _organizationRepository = organizationRepository;
-            _projectRepository = projectRepository;
+        public Task<EventContext> RunAsync(PersistentEvent ev, Organization organization, Project project, EventPostInfo epi = null) {
+            return RunAsync(new EventContext(ev, organization, project, epi));
         }
 
-        public Task<EventContext> RunAsync(PersistentEvent ev, EventPostInfo epi = null) {
-            return RunAsync(new EventContext(ev, epi));
-        }
-
-        public Task<ICollection<EventContext>> RunAsync(IEnumerable<PersistentEvent> events, EventPostInfo epi = null) {
-            return RunAsync(events.Select(ev => new EventContext(ev, epi)).ToList());
+        public Task<ICollection<EventContext>> RunAsync(IEnumerable<PersistentEvent> events, Organization organization, Project project, EventPostInfo epi = null) {
+            return RunAsync(events.Select(ev => new EventContext(ev, organization, project, epi)).ToList());
         }
 
         public override async Task<ICollection<EventContext>> RunAsync(ICollection<EventContext> contexts) {
@@ -41,29 +32,15 @@ namespace Exceptionless.Core.Pipeline {
                 if (contexts.Any(c => !String.IsNullOrEmpty(c.Event.Id)))
                     throw new ArgumentException("All Event Ids should not be populated.");
 
-                string projectId = contexts.First().Event.ProjectId;
-                if (String.IsNullOrEmpty(projectId))
+                var project = contexts.First().Project;
+                if (String.IsNullOrEmpty(project.Id))
                     throw new ArgumentException("All Project Ids must be populated.");
 
-                if (contexts.Any(c => c.Event.ProjectId != projectId))
+                if (contexts.Any(c => c.Event.ProjectId != project.Id))
                     throw new ArgumentException("All Project Ids must be the same for a batch of events.");
 
-                var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache()).AnyContext();
-                if (project == null)
-                    throw new DocumentNotFoundException(projectId, $"Unable to load project: \"{projectId}\"");
-
-                contexts.ForEach(c => c.Project = project);
-
-                var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache()).AnyContext();
-                if (organization == null)
-                    throw new DocumentNotFoundException(project.OrganizationId, $"Unable to load organization: \"{project.OrganizationId}\"");
-
-                contexts.ForEach(c => {
-                    c.Organization = organization;
-                    c.Event.OrganizationId = organization.Id;
-                });
-
                 // load organization settings into the context
+                var organization = contexts.First().Organization;
                 foreach (string key in organization.Data.Keys)
                     contexts.ForEach(c => c.SetProperty(key, organization.Data[key]));
 
