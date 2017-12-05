@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
-using Exceptionless;
 using Exceptionless.Api;
 using Exceptionless.Core;
 using Exceptionless.Insulation.Configuration;
@@ -40,7 +38,11 @@ namespace Exceptionless.Web {
 
                 var webHost = new WebHostBuilder()
                     .UseEnvironment(environment)
-                    .UseKestrel(c => c.AddServerHeader = false)
+                    .UseKestrel(c => {
+                        c.AddServerHeader = false;
+                        if (Settings.Current.MaximumEventPostSize > 0)
+                            c.Limits.MaxRequestBodySize = Settings.Current.MaximumEventPostSize;
+                    })
                     .UseContentRoot(currentDirectory)
                     .UseConfiguration(config)
                     .ConfigureLogging(b => b.AddSerilog(Log.Logger))
