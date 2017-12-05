@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -19,12 +20,12 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Services;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -43,11 +44,10 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly IQueue<EventPost> _eventPostQueue;
+        private readonly EventPostService _eventPostService;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
         private readonly IValidator<UserDescription> _userDescriptionValidator;
         private readonly FormattingPluginManager _formattingPluginManager;
-        private readonly IFileStorage _storage;
         private readonly ICacheClient _cache;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
 
@@ -55,11 +55,10 @@ namespace Exceptionless.Api.Controllers {
             IOrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
             IStackRepository stackRepository,
-            IQueue<EventPost> eventPostQueue,
+            EventPostService eventPostService,
             IQueue<EventUserDescription> eventUserDescriptionQueue,
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
-            IFileStorage storage,
             ICacheClient cacheClient,
             JsonSerializerSettings jsonSerializerSettings,
             IMapper mapper,
@@ -68,11 +67,10 @@ namespace Exceptionless.Api.Controllers {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
-            _eventPostQueue = eventPostQueue;
+            _eventPostService = eventPostService;
             _eventUserDescriptionQueue = eventUserDescriptionQueue;
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
-            _storage = storage;
             _cache = cacheClient;
             _jsonSerializerSettings = jsonSerializerSettings;
 
@@ -786,23 +784,22 @@ namespace Exceptionless.Api.Controllers {
             try {
                 string mediaType = String.Empty;
                 string charSet = String.Empty;
-                if (Request.ContentType != null) {
-                    var contentType = MediaTypeHeaderValue.Parse(Request.ContentType);
-                    mediaType = contentType.MediaType.ToString();
-                    charSet = contentType.Charset.ToString();
+                if (Request.ContentType != null && MediaTypeHeaderValue.TryParse(Request.ContentType, out var contentTypeHeader)) {
+                    mediaType = contentTypeHeader.MediaType.ToString();
+                    charSet = contentTypeHeader.Charset.ToString();
                 }
 
-                await _eventPostQueue.EnqueueAsync(new EventPostInfo {
+                var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings));
+                await _eventPostService.EnqueueAsync(new EventPost {
                     ApiVersion = version,
                     CharSet = charSet,
                     ContentEncoding = contentEncoding,
-                    Data = ev.GetBytes(_jsonSerializerSettings),
                     IpAddress = Request.GetClientIpAddress(),
                     MediaType = mediaType,
                     OrganizationId = project.OrganizationId,
                     ProjectId = project.Id,
                     UserAgent = userAgent
-                }, _storage);
+                }, stream);
             } catch (Exception ex) {
                 if (projectId != Settings.Current.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
@@ -895,17 +892,6 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            var data = Request.Body.ReadAllBytes();
-            if (data.Length <= 0)
-                return StatusCode(StatusCodes.Status202Accepted);
-
-            string contentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding);
-            bool isCompressed = contentEncoding == "gzip" || contentEncoding == "deflate";
-            if (!isCompressed && data.Length > 1000) {
-                data = data.Compress();
-                contentEncoding = "gzip";
-            }
-
             try {
                 string mediaType = String.Empty;
                 string charSet = String.Empty;
@@ -915,17 +901,16 @@ namespace Exceptionless.Api.Controllers {
                     charSet = contentType.Charset.ToString();
                 }
 
-                await _eventPostQueue.EnqueueAsync(new EventPostInfo {
+                await _eventPostService.EnqueueAsync(new EventPost {
                     ApiVersion = version,
                     CharSet = charSet,
-                    ContentEncoding = contentEncoding,
-                    Data = data,
+                    ContentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding),
                     IpAddress = Request.GetClientIpAddress(),
                     MediaType = mediaType,
                     OrganizationId = project.OrganizationId,
                     ProjectId = project.Id,
                     UserAgent = userAgent,
-                }, _storage);
+                }, Request.Body);
             } catch (Exception ex) {
                 if (projectId != Settings.Current.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))

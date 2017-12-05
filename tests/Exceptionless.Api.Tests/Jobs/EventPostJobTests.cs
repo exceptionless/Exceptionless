@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -6,6 +8,7 @@ using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Storage;
@@ -26,14 +29,16 @@ namespace Exceptionless.Api.Tests.Jobs {
         private readonly IQueue<EventPost> _queue;
         private readonly IUserRepository _userRepository;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
+        private readonly EventPostService _eventPostService;
 
         public EventPostJobTests(ITestOutputHelper output) : base(output) {
             _job = GetService<EventPostsJob>();
+            _queue = GetService <IQueue<EventPost>>();
             _storage = GetService<IFileStorage>();
+            _eventPostService = new EventPostService(_queue, _storage, Log);
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();
             _eventRepository = GetService<IEventRepository>();
-            _queue = GetService <IQueue<EventPost>>();
             _userRepository = GetService<IUserRepository>();
             _jsonSerializerSettings = GetService<JsonSerializerSettings>();
 
@@ -47,7 +52,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             var ev = GenerateEvent();
             Assert.NotNull(await EnqueueEventPostAsync(ev));
             Assert.Equal(1, (await _queue.GetQueueStatsAsync()).Enqueued);
-            Assert.Single(await _storage.GetFileListAsync());
+            Assert.Equal(2, (await _storage.GetFileListAsync()).Count());
 
             var result = await _job.RunAsync();
             Assert.True(result.IsSuccess);
@@ -70,7 +75,7 @@ namespace Exceptionless.Api.Tests.Jobs {
 
             Assert.NotNull(await EnqueueEventPostAsync(ev));
             Assert.Equal(1, (await _queue.GetQueueStatsAsync()).Enqueued);
-            Assert.Single(await _storage.GetFileListAsync());
+            Assert.Equal(2, (await _storage.GetFileListAsync()).Count());
 
             var result = await _job.RunAsync();
             Assert.False(result.IsSuccess);
@@ -134,18 +139,18 @@ namespace Exceptionless.Api.Tests.Jobs {
         }
 
         private async Task<string> EnqueueEventPostAsync(PersistentEvent ev) {
-            var eventPostInfo = new EventPostInfo {
+            var eventPostInfo = new EventPost {
+                OrganizationId = ev.OrganizationId,
+                ProjectId = ev.ProjectId,
                 ApiVersion = 2,
                 CharSet = "utf-8",
                 ContentEncoding = "gzip",
-                Data = ev.GetBytes(_jsonSerializerSettings).Compress(),
                 MediaType = "application/json",
-                OrganizationId = ev.OrganizationId,
-                ProjectId = ev.ProjectId,
                 UserAgent = "exceptionless-test",
             };
 
-            return await _queue.EnqueueAsync(eventPostInfo, _storage).AnyContext();
+            var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings).Compress());
+            return await _eventPostService.EnqueueAsync(eventPostInfo, stream).AnyContext();
         }
 
         private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
