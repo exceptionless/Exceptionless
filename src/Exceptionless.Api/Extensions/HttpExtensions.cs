@@ -96,7 +96,7 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static string GetQueryString(this HttpRequest request, string key) {
-            if (request.Query.TryGetValue(key, out StringValues queryStrings))
+            if (request.Query.TryGetValue(key, out var queryStrings))
                 return queryStrings;
 
             return null;

@@ -86,7 +86,7 @@ namespace Exceptionless.Api.Utility {
     }
 
     public static class ValueProviderFactoriesExtensions {
-        public static void AddDelimitedValueProviderFactory(this IList<IValueProviderFactory> valueProviderFactories, params char[] delimiters) {
+        public static void AddDelimitedValueProviderFactory(this IList<IValueProviderFactory> valueProviderFactories, char[] delimiters) {
             var queryStringValueProviderFactory = valueProviderFactories.OfType<QueryStringValueProviderFactory>().FirstOrDefault();
 
             if (queryStringValueProviderFactory == null) {

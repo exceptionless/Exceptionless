@@ -23,23 +23,19 @@ namespace Microsoft.Extensions.Logging {
         /// <summary>
         /// Adds one or more tags to the event.
         /// </summary>
-        /// <param name="tags">The tags to be added to the event.</param>
-        public ExceptionlessState Tag(params string[] tags) {
-            if (tags == null || tags.Length == 0)
+        /// <param name="tag">The tag to be added to the event.</param>
+        public ExceptionlessState Tag(string tag) {
+            if (String.IsNullOrEmpty(tag))
                 return this;
 
-            List<string> tagList = null;
-            if (TryGetValue(Tags, out object v) && v is List<string> t)
+            HashSet<string> tagList = null;
+            if (TryGetValue(Tags, out var v) && v is HashSet<string> t)
                 tagList = t;
 
             if (tagList == null)
-                tagList = new List<string>();
+                tagList = new HashSet<string>();
 
-            foreach (string tag in tags) {
-                if (!String.IsNullOrEmpty(tag) && !tagList.Any(s => s.Equals(tag, StringComparison.OrdinalIgnoreCase)))
-                    tagList.Add(tag);
-            }
-
+            tagList.Add(tag);
             base[Tags] = tagList;
             return this;
         }

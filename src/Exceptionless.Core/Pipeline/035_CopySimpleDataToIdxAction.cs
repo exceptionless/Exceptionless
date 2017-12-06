@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Pipeline {
                 return Task.CompletedTask;
 
             // TODO: Do we need a pipeline action to trim keys and remove null values that may be sent by other native clients.
-            ctx.Event.CopyDataToIndex();
+            ctx.Event.CopyDataToIndex(Array.Empty<string>());
 
             return Task.CompletedTask;
         }

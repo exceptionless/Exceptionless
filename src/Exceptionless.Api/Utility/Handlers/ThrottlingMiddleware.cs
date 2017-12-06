@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Utility.Handlers {
         }
 
         private string GetCacheKey(string userIdentifier) {
-            return String.Concat("api", ":", userIdentifier, ":", SystemClock.UtcNow.Floor(_options.Period).Ticks);
+            return String.Concat("api:", userIdentifier, ":", SystemClock.UtcNow.Floor(_options.Period).Ticks);
         }
 
         public async Task Invoke(HttpContext context) {
