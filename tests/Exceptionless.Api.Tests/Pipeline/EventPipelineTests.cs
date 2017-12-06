@@ -527,7 +527,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Data.Add("Address", new { State = "Texas" });
             ev.SetSessionId("123456789");
 
-            ev.CopyDataToIndex();
+            ev.CopyDataToIndex(Array.Empty<string>());
 
             Assert.False(ev.Idx.ContainsKey("first-name-s"));
             Assert.True(ev.Idx.ContainsKey("isverified-b"));
