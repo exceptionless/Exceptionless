@@ -31,13 +31,14 @@ namespace Exceptionless.Api.Utility {
         }
 
         private bool IsEventPost(HttpContext context) {
-            if (String.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
-                return new Uri(context.Request.GetDisplayUrl()).AbsolutePath.Contains("/events/submit");
+            string method = context.Request.Method;
+            if (String.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+                return context.Request.Path.Value.Contains("/events/submit");
 
-            if (!String.Equals(context.Request.Method, "POST", StringComparison.OrdinalIgnoreCase))
+            if (!String.Equals(method, "POST", StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            string absolutePath = new Uri(context.Request.GetDisplayUrl()).AbsolutePath;
+            string absolutePath = context.Request.Path.Value;
             if (absolutePath.EndsWith("/"))
                 absolutePath = absolutePath.Substring(0, absolutePath.Length - 1);
 

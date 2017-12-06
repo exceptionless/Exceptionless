@@ -47,7 +47,7 @@ namespace Exceptionless.Api.Extensions {
 
         public static AuthType GetAuthType(this HttpRequest request) {
             var principal = request.GetClaimsPrincipal();
-            return principal?.GetAuthType() ?? AuthType.Anonymous;
+            return principal.GetAuthType();
         }
 
         public static bool CanAccessOrganization(this HttpRequest request, string organizationId) {
@@ -70,30 +70,25 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequest request) {
-            var user = request.GetUser();
-            if (user != null)
-                return user.OrganizationIds;
-
             var principal = request.GetClaimsPrincipal();
-            return principal.GetOrganizationIds();
+            return principal?.GetOrganizationIds();
+        }
+
+        public static string GetTokenOrganizationId(this HttpRequest request) {
+            var principal = request.GetClaimsPrincipal();
+            return principal?.GetTokenOrganizationId();
         }
 
         public static string GetDefaultOrganizationId(this HttpRequest request) {
-            // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated organizations.
             return request?.GetAssociatedOrganizationIds().FirstOrDefault();
         }
 
         public static string GetDefaultProjectId(this HttpRequest request) {
             // TODO: Use project id from url. E.G., /api/v{version:int=2}/projects/{projectId:objectid}/events
-            //var path = message.RequestUri.AbsolutePath;
+            //var path = request.Path.Value;
 
             var principal = request.GetClaimsPrincipal();
             return principal?.GetDefaultProjectId();
-        }
-
-        public static string[] GetUserRoles(this HttpRequest request) {
-            var principal = request.GetClaimsPrincipal();
-            return principal.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToArray();
         }
 
         public static string GetClientIpAddress(this HttpRequest request) {
@@ -102,18 +97,17 @@ namespace Exceptionless.Api.Extensions {
 
         public static string GetQueryString(this HttpRequest request, string key) {
             if (request.Query.TryGetValue(key, out StringValues queryStrings))
-                return queryStrings.FirstOrDefault();
+                return queryStrings;
 
             return null;
         }
 
         public static AuthInfo GetBasicAuth(this HttpRequest request) {
-            string authHeader = request.Headers.TryGetAndReturn("Authorization").FirstOrDefault();
+            string authHeader = request.Headers.TryGetAndReturn("Authorization");
             if (authHeader == null || !authHeader.StartsWith("basic", StringComparison.OrdinalIgnoreCase))
                 return null;
 
-            string token = authHeader.Substring("Basic ".Length).Trim();
-
+            string token = authHeader.Substring(6).Trim();
             string credentialstring = Encoding.UTF8.GetString(Convert.FromBase64String(token));
             var credentials = credentialstring.Split(':', StringSplitOptions.RemoveEmptyEntries);
             if (credentials.Length != 2)
