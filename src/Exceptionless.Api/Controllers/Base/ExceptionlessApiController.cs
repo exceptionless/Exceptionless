@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected TimeSpan GetOffset(string offset) {
-            if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out TimeSpan? value) && value.HasValue)
+            if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out var value) && value.HasValue)
                 return value.Value;
 
             return TimeSpan.Zero;
@@ -159,10 +159,6 @@ namespace Exceptionless.Api.Controllers {
             return StatusCode(permission.StatusCode, new MessageContent(permission.Id, permission.Message));
         }
 
-        protected OkPaginatedResult OkPaginated(object content, bool hasMore, int page, long? total = null, IHeaderDictionary headers = null) {
-            return new OkPaginatedResult(content, hasMore, page, total, headers);
-        }
-
         protected ObjectResult StatusCodeWithMessage(int statusCode, string message, string reason = null) {
             return StatusCode(statusCode, new MessageContent(message, reason));
         }
@@ -183,37 +179,17 @@ namespace Exceptionless.Api.Controllers {
             return StatusCode(StatusCodes.Status501NotImplemented, new MessageContent(message));
         }
 
-        protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, params string[] links) {
+        protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string link) {
+            return OkWithLinks(content, new[] { link });
+        }
+
+        protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string[] links) {
             var headers = new HeaderDictionary();
             var linksToAdd = links.Where(l => l != null).ToArray();
             if (linksToAdd.Length > 0)
                 headers.Add("Link", linksToAdd);
 
             return new OkWithHeadersContentResult<T>(content, headers);
-        }
-
-        protected OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, params Tuple<string, string>[] headers) {
-            var headersToAdd = new HeaderDictionary();
-            foreach (var kvp in headers.Where(l => l != null))
-                headersToAdd.Add(kvp.Item1, kvp.Item2);
-
-            return new OkWithHeadersContentResult<T>(content, headersToAdd);
-        }
-
-        protected OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, params Tuple<string, string[]>[] headers) {
-            var headersToAdd = new HeaderDictionary();
-            foreach (var kvp in headers.Where(l => l != null))
-                headersToAdd.Add(kvp.Item1, kvp.Item2);
-
-            return new OkWithHeadersContentResult<T>(content, headersToAdd);
-        }
-
-        protected OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers) {
-            var headersToAdd = new HeaderDictionary();
-            foreach (var kvp in headers)
-                headersToAdd.Add(kvp.Key, kvp.Value.ToArray());
-
-            return new OkWithHeadersContentResult<T>(content, headersToAdd);
         }
 
         protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
@@ -226,13 +202,6 @@ namespace Exceptionless.Api.Controllers {
 
         protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
             return new OkWithResourceLinks<TEntity>(content, hasMore, page, total);
-        }
-
-        protected Dictionary<string, IEnumerable<string>> GetLimitedByPlanHeader(long totalLimitedByPlan) {
-            var headers = new Dictionary<string, IEnumerable<string>>();
-            if (totalLimitedByPlan > 0)
-                headers.Add(Headers.LimitedByPlan, new[] { totalLimitedByPlan.ToString() });
-            return headers;
         }
 
         protected string GetResourceLink(string url, string type) {
