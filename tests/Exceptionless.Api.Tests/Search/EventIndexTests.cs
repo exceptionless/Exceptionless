@@ -457,7 +457,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 Assert.NotNull(events);
                 Assert.True(events.Count > 0);
                 foreach (var ev in events)
-                    ev.CopyDataToIndex();
+                    ev.CopyDataToIndex(Array.Empty<string>());
 
                 await _repository.AddAsync(events, o => o.ImmediateConsistency());
             }
