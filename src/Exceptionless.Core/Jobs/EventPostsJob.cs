@@ -59,27 +59,20 @@ namespace Exceptionless.Core.Jobs {
             var entry = context.QueueEntry;
             var ep = entry.Value;
             string payloadPath = Path.ChangeExtension(entry.Value.FilePath, ".payload");
-            
-            var fileInfoTask = _metrics.TimeAsync(() => _storage.GetFileInfoAsync(payloadPath), MetricNames.PostsFileInfoTime);
+            var payloadTask = _metrics.TimeAsync(() => _eventPostService.GetEventPostPayloadAsync(payloadPath, context.CancellationToken), MetricNames.PostsMarkFileActiveTime);
             var projectTask = _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache());
             var organizationTask = _organizationRepository.GetByIdAsync(ep.OrganizationId, o => o.Cache());
 
-            var fileInfo = await fileInfoTask.AnyContext();
-            if (fileInfo == null) {
-                await Task.WhenAll(_metrics.TimeAsync(() => entry.AbandonAsync(), MetricNames.PostsAbandonTime), projectTask, organizationTask).AnyContext();
-                return JobResult.FailedWithMessage($"Unable to retrieve post data payload info: '{payloadPath}'.");
-            }
-
-            _metrics.Gauge(MetricNames.PostsMessageSize, fileInfo.Size);
-            if (fileInfo.Size > _maximumEventPostFileSize) {
-                await Task.WhenAll(_metrics.TimeAsync(() => entry.CompleteAsync(), MetricNames.PostsCompleteTime), projectTask, organizationTask).AnyContext();
-                return JobResult.FailedWithMessage($"Unable to process payload '{payloadPath}' ({fileInfo.Size} bytes): Maximum event post size limit ({Settings.Current.MaximumEventPostSize} bytes) reached.");
-            }
-
-            var payload = await _metrics.TimeAsync(() => _eventPostService.GetEventPostPayloadAsync(payloadPath, context.CancellationToken), MetricNames.PostsMarkFileActiveTime).AnyContext();
+            var payload = await payloadTask.AnyContext();
             if (payload == null) {
                 await Task.WhenAll(AbandonEntryAsync(entry), projectTask, organizationTask).AnyContext();
                 return JobResult.FailedWithMessage($"Unable to retrieve payload '{payloadPath}'.");
+            }
+
+            _metrics.Gauge(MetricNames.PostsMessageSize, payload.LongLength);
+            if (payload.LongLength > _maximumEventPostFileSize) {
+                await Task.WhenAll(_metrics.TimeAsync(() => entry.CompleteAsync(), MetricNames.PostsCompleteTime), projectTask, organizationTask).AnyContext();
+                return JobResult.FailedWithMessage($"Unable to process payload '{payloadPath}' ({payload.LongLength} bytes): Maximum event post size limit ({Settings.Current.MaximumEventPostSize} bytes) reached.");
             }
 
             using (_logger.BeginScope(new ExceptionlessState().Organization(ep.OrganizationId).Project(ep.ProjectId))) {
@@ -88,7 +81,7 @@ namespace Exceptionless.Core.Jobs {
                 bool isDebugLogLevelEnabled = _logger.IsEnabled(LogLevel.Debug);
                 bool isInternalProject = ep.ProjectId == Settings.Current.InternalProjectId;
                 if (!isInternalProject && _logger.IsEnabled(LogLevel.Information)) {
-                    using (_logger.BeginScope(new ExceptionlessState().Tag("processing", "compressed", ep.ContentEncoding).Value(payload.Length)))
+                    using (_logger.BeginScope(new ExceptionlessState().Tag("processing").Tag("compressed").Tag(ep.ContentEncoding).Value(payload.Length)))
                         _logger.LogInformation("Processing post: id={QueueEntryId} path={FilePath} project={project} ip={IpAddress} v={ApiVersion} agent={UserAgent}", entry.Id, payloadPath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent);
                 }
 
@@ -99,15 +92,11 @@ namespace Exceptionless.Core.Jobs {
                     return JobResult.Success;
                 }
 
-                // The organization id will be null for legacy event posts.
-                if (String.IsNullOrEmpty(ep.OrganizationId))
-                    organizationTask = _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
-
                 long maxEventPostSize = Settings.Current.MaximumEventPostSize;
-                byte[] uncompressedData = payload;
+                var uncompressedData = payload;
                 if (!String.IsNullOrEmpty(ep.ContentEncoding)) {
                     if (!isInternalProject && isDebugLogLevelEnabled) {
-                        using (_logger.BeginScope(new ExceptionlessState().Tag("decompressing", ep.ContentEncoding)))
+                        using (_logger.BeginScope(new ExceptionlessState().Tag("decompressing").Tag(ep.ContentEncoding)))
                             _logger.LogDebug("Decompressing EventPost: {QueueEntryId} ({CompressedBytes} bytes)", entry.Id, payload.Length);
                     }
 
@@ -123,7 +112,7 @@ namespace Exceptionless.Core.Jobs {
                     }
                 }
 
-                _metrics.Gauge(MetricNames.PostsUncompressedSize, fileInfo.Size);
+                _metrics.Gauge(MetricNames.PostsUncompressedSize, payload.LongLength);
                 if (uncompressedData.Length > maxEventPostSize) {
                     await Task.WhenAll(CompleteEntryAsync(entry, ep, SystemClock.UtcNow), organizationTask).AnyContext();
                     return JobResult.FailedWithMessage($"Unable to process decompressed EventPost data '{payloadPath}' ({payload.Length} bytes compressed, {uncompressedData.Length} bytes): Maximum uncompressed event post size limit ({maxEventPostSize} bytes) reached.");
