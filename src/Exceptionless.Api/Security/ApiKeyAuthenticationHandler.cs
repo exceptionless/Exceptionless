@@ -126,9 +126,10 @@ namespace Exceptionless.Api.Security {
         }
 
         private AuthenticationProperties CreateAuthenticationProperties(Token token) {
+            var utcNow = Foundatio.Utility.SystemClock.UtcNow;
             return new AuthenticationProperties {
-                ExpiresUtc = token?.ExpiresUtc ?? DateTime.UtcNow.AddHours(12),
-                IssuedUtc = token?.CreatedUtc ?? DateTime.UtcNow
+                ExpiresUtc = token?.ExpiresUtc ?? utcNow.AddHours(12),
+                IssuedUtc = token?.CreatedUtc ?? utcNow
             };
         }
     }

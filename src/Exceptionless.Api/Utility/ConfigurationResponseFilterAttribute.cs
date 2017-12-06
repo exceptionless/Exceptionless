@@ -19,7 +19,7 @@ namespace Exceptionless.Api.Utility {
                 return;
 
             string headerName = Headers.ConfigurationVersion;
-            if (new Uri(context.HttpContext.Request.GetDisplayUrl()).AbsolutePath.StartsWith("/api/v1"))
+            if (context.HttpContext.Request.Path.Value.StartsWith("/api/v1"))
                 headerName = Headers.LegacyConfigurationVersion;
 
             // add the current configuration version to the response headers so the client will know if it should update its config.

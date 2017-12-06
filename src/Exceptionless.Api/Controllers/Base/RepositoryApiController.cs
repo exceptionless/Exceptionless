@@ -26,9 +26,8 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             var mapped = await MapAsync<TModel>(value);
-            var orgModel = mapped as IOwnedByOrganization;
             // if no organization id is specified, default to the user's 1st associated org.
-            if (!_isOrganization && orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
+            if (!_isOrganization && mapped is IOwnedByOrganization orgModel && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
                 orgModel.OrganizationId = Request.GetDefaultOrganizationId();
 
             var permission = await CanAddAsync(mapped);

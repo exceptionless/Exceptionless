@@ -114,8 +114,9 @@ namespace Exceptionless.App.Controllers.API {
             if (!webHook.Url.StartsWith("https://hooks.zapier.com"))
                 return Task.FromResult<IActionResult>(NotFound());
 
-            if (User.GetProjectId() != null)
-                webHook.ProjectId = User.GetProjectId();
+            string projectId = User.GetProjectId();
+            if (projectId != null)
+                webHook.ProjectId = projectId;
             else
                 webHook.OrganizationId = Request.GetDefaultOrganizationId();
 

@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Utility.Handlers {
         protected virtual string GetUserIdentifier(HttpRequest request) {
             var authType = request.GetAuthType();
             if (authType == AuthType.Token)
-                return request.GetDefaultOrganizationId();
+                return request.GetTokenOrganizationId();
 
             if (authType == AuthType.User) {
                 var user = request.GetUser();
@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Utility.Handlers {
         }
 
         private string GetCacheKey(string userIdentifier) {
-            return String.Concat("api", ":", userIdentifier, ":", DateTime.UtcNow.Floor(_options.Period).Ticks);
+            return String.Concat("api", ":", userIdentifier, ":", SystemClock.UtcNow.Floor(_options.Period).Ticks);
         }
 
         public async Task Invoke(HttpContext context) {
@@ -93,7 +93,7 @@ namespace Exceptionless.Api.Utility.Handlers {
             if (!String.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            string absolutePath = new Uri(context.Request.GetDisplayUrl()).AbsolutePath;
+            string absolutePath = context.Request.Path.Value;
             if (absolutePath.EndsWith("/"))
                 absolutePath = absolutePath.Substring(0, absolutePath.Length - 1);
 
