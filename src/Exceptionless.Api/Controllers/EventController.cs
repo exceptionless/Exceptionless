@@ -634,7 +634,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
         [HttpGet]
-        [Route("/session/heartbeat")]
+        [Route("session/heartbeat")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         public async Task<IHttpActionResult> RecordHeartbeatAsync(string id = null, bool close = false) {
