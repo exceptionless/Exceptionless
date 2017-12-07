@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -40,9 +41,17 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
                     if (workItem.IncrementConfigurationVersion)
                         project.Configuration.IncrementVersion();
+
+                    if (workItem.RemoveOldUsageStats) {
+                        foreach (var usage in project.OverageHours.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(3))).ToList())
+                            project.OverageHours.Remove(usage);
+
+                        foreach (var usage in project.Usage.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(366))).ToList())
+                            project.Usage.Remove(usage);
+                    }
                 }
 
-                if (workItem.UpdateDefaultBotList)
+                if (workItem.UpdateDefaultBotList || workItem.IncrementConfigurationVersion || workItem.RemoveOldUsageStats)
                     await _projectRepository.SaveAsync(results.Documents).AnyContext();
 
                 // Sleep so we are not hammering the backend.
