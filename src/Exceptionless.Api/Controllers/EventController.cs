@@ -618,40 +618,28 @@ namespace Exceptionless.Api.Controllers {
         /// <summary>
         /// Submit heartbeat
         /// </summary>
-        /// <param name="projectId">The identifier of the project.</param>
-        /// <param name="version">The api version that should be used.</param>
         /// <param name="id">The session id or user id.</param>
         /// <param name="close">If true, the session will be closed.</param>
         /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
-        [HttpGet("~/api/v{version:int=2}/events/session/heartbeat")]
-        [HttpGet("~/api/v{version:int=2}/projects/{projectId:objectid}/events/session/heartbeat")]
+        [HttpGet("/session/heartbeat")]
         [SwaggerResponse(StatusCodes.Status200OK)]
-        public async Task<IActionResult> RecordHeartbeatAsync(string projectId = null, int version = 2, [FromQuery] string id = null, [FromQuery] bool close = false) {
-            if (String.IsNullOrWhiteSpace(id) || Settings.Current.EventSubmissionDisabled)
+        public async Task<IActionResult> RecordHeartbeatAsync([FromQuery] string id = null, [FromQuery] bool close = false) {
+            if (Settings.Current.EventSubmissionDisabled || String.IsNullOrEmpty(id))
                 return Ok();
 
-            if (projectId == null)
-                projectId = Request.GetDefaultProjectId();
-
-            // must have a project id
+            string projectId = Request.GetDefaultProjectId();
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
-            var project = await GetProjectAsync(projectId);
-            if (project == null)
-                return NotFound();
-
-            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
-            if (organization == null || organization.IsSuspended)
-                return Ok();
-
-            string hash = id.ToSHA1();
+            string identityHash = id.ToSHA1();
+            string heartbeatCacheKey = String.Concat("Project:", projectId, ":heartbeat:", identityHash);
             try {
-                await _cache.SetAsync($"Project:{project.Id}:heartbeat:{hash}", SystemClock.UtcNow, TimeSpan.FromHours(2));
-                if (close)
-                    await _cache.SetAsync($"Project:{project.Id}:heartbeat:{hash}-close", true, TimeSpan.FromHours(2));
+                await Task.WhenAll(
+                    _cache.SetAsync(heartbeatCacheKey, SystemClock.UtcNow, TimeSpan.FromHours(2)),
+                    close ? _cache.SetAsync(String.Concat(heartbeatCacheKey, "-close"), true, TimeSpan.FromHours(2)) : Task.CompletedTask
+                );
             } catch (Exception ex) {
                 if (projectId != Settings.Current.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).Property("Id", id).Property("Close", close).SetHttpContext(HttpContext)))
