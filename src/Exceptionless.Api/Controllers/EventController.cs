@@ -628,41 +628,30 @@ namespace Exceptionless.Api.Controllers {
         /// <summary>
         /// Submit heartbeat
         /// </summary>
-        /// <param name="projectId">The identifier of the project.</param>
-        /// <param name="version">The api version that should be used.</param>
         /// <param name="id">The session id or user id.</param>
         /// <param name="close">If true, the session will be closed.</param>
         /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
         [HttpGet]
-        [Route("~/api/v{version:int=2}/events/session/heartbeat")]
-        [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events/session/heartbeat")]
+        [Route("/session/heartbeat")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public async Task<IHttpActionResult> RecordHeartbeatAsync(string projectId = null, int version = 2, string id = null, bool close = false) {
-            if (String.IsNullOrWhiteSpace(id) || Settings.Current.EventSubmissionDisabled)
+        public async Task<IHttpActionResult> RecordHeartbeatAsync(string id = null, bool close = false) {
+            if (String.IsNullOrEmpty(id) || Settings.Current.EventSubmissionDisabled)
                 return Ok();
 
-            if (projectId == null)
-                projectId = Request.GetDefaultProjectId();
-
-            // must have a project id
+            string projectId = Request.GetDefaultProjectId();
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
-            var project = await GetProjectAsync(projectId);
-            if (project == null)
-                return NotFound();
-
-            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
-            if (organization == null || organization.IsSuspended)
-                return Ok();
-
+            string identityHash = id.ToSHA1();
+            string heartbeatCacheKey = String.Concat("Project:", projectId, ":heartbeat:", identityHash);
             try {
-                await _cache.SetAsync($"Project:{project.Id}:heartbeat:{id.ToSHA1()}", SystemClock.UtcNow, TimeSpan.FromHours(2));
-                if (close)
-                    await _cache.SetAsync($"Project:{project.Id}:heartbeat:{id.ToSHA1()}-close", true, TimeSpan.FromHours(2));
+                await Task.WhenAll(
+                    _cache.SetAsync(heartbeatCacheKey, SystemClock.UtcNow, TimeSpan.FromHours(2)),
+                    close ? _cache.SetAsync(String.Concat(heartbeatCacheKey, "-close"), true, TimeSpan.FromHours(2)) : Task.CompletedTask
+                );
             } catch (Exception ex) {
                 _logger.Error().Exception(ex)
                     .Message("Error enqueuing session heartbeat.")
@@ -836,7 +825,7 @@ namespace Exceptionless.Api.Controllers {
         /// <code>
         ///     { "message": "Exceptionless is amazing!" }
         /// </code>
-        /// 
+        ///
         /// Simple log event with user identity:
         /// <code>
         ///     {
