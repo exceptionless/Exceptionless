@@ -87,7 +87,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static void SetHourlyOverage(this Project project, double total, double blocked, double tooBig, int hourlyLimit) {
             var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-            project.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, hourlyLimit, TimeSpan.FromDays(32));
+            project.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, hourlyLimit, TimeSpan.FromDays(3));
         }
 
         public static void SetMonthlyUsage(this Project project, double total, double blocked, double tooBig, int monthlyLimit) {
