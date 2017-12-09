@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Pipeline {
             ContinueOnError = true;
         }
 
-        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+        public override Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {
                 _metricsClient.Counter(MetricNames.EventsProcessed, contexts.Count);
 
@@ -36,6 +36,8 @@ namespace Exceptionless.Core.Pipeline {
                         context.SetError(ex.Message, ex);
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         public override Task ProcessAsync(EventContext ctx) {

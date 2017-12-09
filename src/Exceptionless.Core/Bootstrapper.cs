@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -71,7 +70,8 @@ namespace Exceptionless.Core {
             });
 
             container.AddSingleton<JsonSerializer>(s => JsonSerializer.Create(s.GetRequiredService<JsonSerializerSettings>()));
-            container.AddSingleton<ISerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
+            container.AddSingleton<ISerializer>(s => new MessagePackSerializer());
+            container.AddSingleton<ITextSerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
 
             container.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
             container.AddSingleton<IMetricsClient>(s => new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
