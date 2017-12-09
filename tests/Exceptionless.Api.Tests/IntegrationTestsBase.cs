@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Tests
             _server = builder.Build();
 
             var settings = GetService<Newtonsoft.Json.JsonSerializerSettings>();
-            _serializer = GetService<ISerializer>();
+            _serializer = GetService<ITextSerializer>();
             _client = new FluentClient(new JsonContentSerializer(settings), _server.CreateHandler()) {
                 BaseUri = new Uri(_server.BaseAddress + "api/v2")
             };
