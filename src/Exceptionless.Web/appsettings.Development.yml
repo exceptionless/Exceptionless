@@ -11,7 +11,8 @@ Serilog:
   MinimumLevel:
     Default: Debug
     Override:
-      Microsoft: Information
-      System: Information
+      Microsoft: Warning
+      System: Warning
+      Exceptionless.Api.Security.ApiKeyAuthenticationHandler: Warning
       Foundatio.Utility.ScheduledTimer: Warning
       Foundatio.Metrics: Warning
