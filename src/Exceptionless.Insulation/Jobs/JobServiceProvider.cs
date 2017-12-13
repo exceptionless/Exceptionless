@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
-using System.IO;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
@@ -11,7 +9,6 @@ using LogLevel = Exceptionless.Logging.LogLevel;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
-using ILogger = Serilog.ILogger;
 
 namespace Exceptionless.Insulation.Jobs {
     public class JobServiceProvider {
@@ -46,7 +43,7 @@ namespace Exceptionless.Insulation.Jobs {
                 client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
                 client.Startup(Settings.Current.ExceptionlessApiKey);
 
-                loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Warning);
+                loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
             }
 
             Log.Logger = loggerConfig.CreateLogger();

@@ -10,7 +10,6 @@ StorageFolder: ..\..\Exceptionless.Web\storage
 Serilog:
   Using:
   - Serilog.Sinks.Console
-  - Serilog.Sinks.Exceptionless
   MinimumLevel:
     Default: Information
     Override:
@@ -20,7 +19,6 @@ Serilog:
       Foundatio.Metrics: Warning
   WriteTo:
   - Name: Console
-  - Name: Exceptionless
   Enrich:
   - FromLogContext
   - WithMachineName

@@ -29,7 +29,7 @@ namespace Exceptionless.Web {
 
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey))
-                loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Warning);
+                loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
             Log.Logger = loggerConfig.CreateLogger();
 
