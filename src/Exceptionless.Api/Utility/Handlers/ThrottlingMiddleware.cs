@@ -6,7 +6,6 @@ using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 
 namespace Exceptionless.Api.Utility.Handlers {
     public class ThrottlingOptions {

@@ -37,10 +37,12 @@ namespace Exceptionless.Api {
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
             app.UseAuthentication();
-            // Reject event posts in organizations over their max event limits.
-            app.UseMiddleware<OverageMiddleware>();
+            app.UseMiddleware<ProjectConfigMiddleware>();
+            app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
             // Throttle api calls to X every 15 minutes by IP address.
             app.UseMiddleware<ThrottlingMiddleware>();
+            // Reject event posts in organizations over their max event limits.
+            app.UseMiddleware<OverageMiddleware>();
             app.UseFileServer();
             app.UseMvc();
             app.UseSwagger(c => {

@@ -9,7 +9,6 @@ using Exceptionless.Core.Services;
 using Foundatio.Metrics;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Utility {
