@@ -623,7 +623,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
-        [HttpGet("/session/heartbeat")]
+        [HttpGet("session/heartbeat")]
         [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> RecordHeartbeatAsync([FromQuery] string id = null, [FromQuery] bool close = false) {
             if (Settings.Current.EventSubmissionDisabled || String.IsNullOrEmpty(id))
