@@ -70,7 +70,7 @@ namespace Exceptionless.Core {
             });
 
             container.AddSingleton<JsonSerializer>(s => JsonSerializer.Create(s.GetRequiredService<JsonSerializerSettings>()));
-            container.AddSingleton<ISerializer>(s => new MessagePackSerializer());
+            container.AddSingleton<ISerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
             container.AddSingleton<ITextSerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
 
             container.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
@@ -119,9 +119,9 @@ namespace Exceptionless.Core {
             container.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
 
             if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
-                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(Settings.Current.StorageFolder));
+                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(Settings.Current.StorageFolder, s.GetRequiredService<ITextSerializer>()));
             else
-                container.AddSingleton<IFileStorage>(s => new InMemoryFileStorage());
+                container.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(s.GetRequiredService<ITextSerializer>()));
 
             container.AddSingleton<IStackRepository, StackRepository>();
             container.AddSingleton<IEventRepository, EventRepository>();

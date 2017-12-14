@@ -91,9 +91,9 @@ namespace Exceptionless.Insulation {
             }
 
             if (!String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString))
-                container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events"));
+                container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events", s.GetRequiredService<ITextSerializer>()));
             else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString))
-                container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(Settings.Current.AliyunStorageConnectionString, Settings.Current.AliyunBucketName));
+                container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(Settings.Current.AliyunStorageConnectionString, Settings.Current.AliyunBucketName, s.GetRequiredService<ITextSerializer>()));
         }
 
         private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
