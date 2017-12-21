@@ -99,7 +99,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             var actualToken = actual.GetSlackToken();
             Assert.Equal(token.AccessToken, actualToken?.AccessToken);
 
-            var actualCache = await _cache.GetAsync<Project>(project.Id);
+            var actualCache = await _cache.GetAsync<Project>("Project:" + project.Id);
             Assert.Equal(project.Name, actualCache.Value?.Name);
             var actualCacheToken = actual.GetSlackToken();
             Assert.Equal(token.AccessToken, actualCacheToken?.AccessToken);
