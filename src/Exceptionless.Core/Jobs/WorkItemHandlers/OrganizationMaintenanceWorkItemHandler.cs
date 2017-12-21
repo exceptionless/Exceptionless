@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
@@ -38,9 +39,17 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 foreach (var organization in results.Documents) {
                     if (wi.UpgradePlans)
                         UpgradePlan(organization);
+
+                    if (wi.RemoveOldUsageStats) {
+                        foreach (var usage in organization.OverageHours.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(3))).ToList())
+                            organization.OverageHours.Remove(usage);
+
+                        foreach (var usage in organization.Usage.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(366))).ToList())
+                            organization.Usage.Remove(usage);
+                    }
                 }
 
-                if (wi.UpgradePlans)
+                if (wi.UpgradePlans || wi.RemoveOldUsageStats)
                     await _organizationRepository.SaveAsync(results.Documents).AnyContext();
 
                 // Sleep so we are not hammering the backend.
