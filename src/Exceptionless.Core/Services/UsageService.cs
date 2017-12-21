@@ -104,7 +104,7 @@ namespace Exceptionless.Core.Services {
 
             try {
                 org = await _organizationRepository.GetByIdAsync(org.Id).AnyContext();
-                org.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig); ;
+                org.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig);
                 if (usage.HourlyBlocked > 0 || usage.HourlyTooBig > 0)
                     org.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig);
 

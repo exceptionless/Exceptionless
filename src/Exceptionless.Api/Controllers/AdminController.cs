@@ -116,11 +116,17 @@ namespace Exceptionless.Api.Controllers {
                 case "update-organization-plans":
                     await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { UpgradePlans = true });
                     break;
+                case "remove-old-organization-usage":
+                    await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { RemoveOldUsageStats = true });
+                    break;
                 case "update-project-default-bot-lists":
                     await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { UpdateDefaultBotList = true, IncrementConfigurationVersion = true });
                     break;
                 case "increment-project-configuration-version":
                     await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { IncrementConfigurationVersion = true });
+                    break;
+                case "remove-old-project-usage":
+                    await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { RemoveOldUsageStats = true });
                     break;
                 case "normalize-user-email-address":
                     await _workItemQueue.EnqueueAsync(new UserMaintenanceWorkItem { Normalize = true });
