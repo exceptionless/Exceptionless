@@ -6,8 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Foundatio.Aliyun" Version="7.0.12-pre" />
-    <PackageReference Include="Foundatio.AzureStorage" Version="6.0.1472-pre" />
-    <PackageReference Include="Foundatio.Redis" Version="6.0.1489-pre" />
     <PackageReference Include="Foundatio.AzureStorage" Version="7.0.1487-pre" />
     <PackageReference Include="Foundatio.Redis" Version="7.0.1517-pre" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
