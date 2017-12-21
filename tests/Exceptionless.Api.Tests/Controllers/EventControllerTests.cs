@@ -181,7 +181,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
             var processEventsJob = GetService<EventPostsJob>();
             var sw = Stopwatch.StartNew();
-            processEventsJob.RunUntilEmpty();
+            await processEventsJob.RunUntilEmptyAsync();
             sw.Stop();
             _logger.LogInformation("{Duration:g}", sw.Elapsed);
 

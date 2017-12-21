@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Models {
 
         public string GetString(string name, string @default) {
 
-            if (TryGetValue(name, out string value))
+            if (TryGetValue(name, out var value))
                 return value;
 
             return @default;
@@ -29,11 +29,11 @@ namespace Exceptionless.Core.Models {
 
         public bool GetBoolean(string name, bool @default) {
 
-            bool result = TryGetValue(name, out string temp);
+            bool result = TryGetValue(name, out var temp);
             if (!result)
                 return @default;
 
-            result = bool.TryParse(temp, out bool value);
+            result = Boolean.TryParse(temp, out var value);
             return result ? value : @default;
         }
 
@@ -43,11 +43,11 @@ namespace Exceptionless.Core.Models {
 
         public int GetInt32(string name, int @default) {
 
-            bool result = TryGetValue(name, out string temp);
+            bool result = TryGetValue(name, out var temp);
             if (!result)
                 return @default;
 
-            result = int.TryParse(temp, out int value);
+            result = Int32.TryParse(temp, out var value);
             return result ? value : @default;
         }
 
@@ -57,21 +57,21 @@ namespace Exceptionless.Core.Models {
 
         public long GetInt64(string name, long @default) {
 
-            bool result = TryGetValue(name, out string temp);
+            bool result = TryGetValue(name, out var temp);
             if (!result)
                 return @default;
 
-            result = long.TryParse(temp, out long value);
+            result = Int64.TryParse(temp, out var value);
             return result ? value : @default;
         }
 
         public double GetDouble(string name, double @default = 0d) {
 
-            bool result = TryGetValue(name, out string temp);
+            bool result = TryGetValue(name, out var temp);
             if (!result)
                 return @default;
 
-            result = double.TryParse(temp, out double value);
+            result = Double.TryParse(temp, out var value);
             return result ? value : @default;
         }
 
@@ -81,11 +81,11 @@ namespace Exceptionless.Core.Models {
 
         public DateTime GetDateTime(string name, DateTime @default) {
 
-            bool result = TryGetValue(name, out string temp);
+            bool result = TryGetValue(name, out var temp);
             if (!result)
                 return @default;
 
-            result = DateTime.TryParse(temp, out DateTime value);
+            result = DateTime.TryParse(temp, out var value);
             return result ? value : @default;
         }
 
@@ -95,11 +95,11 @@ namespace Exceptionless.Core.Models {
 
         public DateTimeOffset GetDateTimeOffset(string name, DateTimeOffset @default) {
 
-            bool result = TryGetValue(name, out string temp);
+            bool result = TryGetValue(name, out var temp);
             if (!result)
                 return @default;
 
-            result = DateTimeOffset.TryParse(temp, out DateTimeOffset value);
+            result = DateTimeOffset.TryParse(temp, out var value);
             return result ? value : @default;
         }
 
@@ -109,7 +109,7 @@ namespace Exceptionless.Core.Models {
 
         public Guid GetGuid(string name, Guid @default) {
 
-            bool result = TryGetValue(name, out string temp);
+            bool result = TryGetValue(name, out var temp);
             return result ? new Guid(temp) : @default;
         }
 
@@ -123,7 +123,7 @@ namespace Exceptionless.Core.Models {
             if (String.IsNullOrEmpty(value))
                 return new List<string>();
 
-            string[] values = value.Split(new[] { ",", ";", Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+            var values = value.Split(new[] { ",", ";", Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
 
             for (int i = 0; i < values.Length; i++)
                 values[i] = values[i].Trim();

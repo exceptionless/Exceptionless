@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string BuildFilter(this IList<Project> projects) {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             for (int index = 0; index < projects.Count; index++) {
                 if (index > 0)
                     builder.Append(" OR ");
@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Extensions {
         /// Gets the slack token from extended data.
         /// </summary>
         public static SlackToken GetSlackToken(this Project project) {
-            return project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out object value) ? value as SlackToken : null;
+            return project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out var value) ? value as SlackToken : null;
         }
 
         public static int GetCurrentHourlyTotal(this Project project) {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless;
 using Exceptionless.Core;
 using Exceptionless.Insulation.Jobs;
@@ -9,7 +10,7 @@ using Serilog;
 
 namespace EventSnapshotJob {
     public class Program {
-        public static int Main() {
+        public static async Task<int> Main() {
             try {
                 var serviceProvider = JobServiceProvider.GetServiceProvider();
                 if (!Settings.Current.EnableSnapshotJobs) {
@@ -18,13 +19,13 @@ namespace EventSnapshotJob {
                 }
 
                 var job = serviceProvider.GetService<Exceptionless.Core.Jobs.Elastic.EventSnapshotJob>();
-                return new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), runContinuous: false).RunInConsole();
+                return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), runContinuous: false).RunInConsoleAsync();
             } catch (Exception ex) {
                 Log.Fatal(ex, "Job terminated unexpectedly");
                 return 1;
             } finally {
                 Log.CloseAndFlush();
-                ExceptionlessClient.Default.ProcessQueue();
+                await ExceptionlessClient.Default.ProcessQueueAsync();
             }
         }
     }
