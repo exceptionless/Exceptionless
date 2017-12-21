@@ -8,7 +8,7 @@
     <PackageReference Include="ApprovalTests" Version="3.0.13" />
     <PackageReference Include="Exceptionless.RandomData" Version="1.1.47" />
     <PackageReference Include="FluentRest" Version="4.0.0.45" />
-    <PackageReference Include="Foundatio.Logging.Xunit" Version="7.0.1605-pre" />
+    <PackageReference Include="Foundatio.Logging.Xunit" Version="7.0.1629-pre" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="2.0.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
     <PackageReference Include="xunit" Version="2.3.1" />

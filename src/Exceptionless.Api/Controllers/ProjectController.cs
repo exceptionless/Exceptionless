@@ -287,7 +287,7 @@ namespace Exceptionless.Api.Controllers {
             if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
                 return NotFound();
 
-            return Ok(project.NotificationSettings.TryGetValue(userId, out NotificationSettings settings) ? settings : new NotificationSettings());
+            return Ok(project.NotificationSettings.TryGetValue(userId, out var settings) ? settings : new NotificationSettings());
         }
 
 
@@ -309,7 +309,7 @@ namespace Exceptionless.Api.Controllers {
             if (!String.Equals(Project.NotificationIntegrations.Slack, integration))
                 return NotFound();
 
-            return Ok(project.NotificationSettings.TryGetValue(Project.NotificationIntegrations.Slack, out NotificationSettings settings) ? settings : new NotificationSettings());
+            return Ok(project.NotificationSettings.TryGetValue(Project.NotificationIntegrations.Slack, out var settings) ? settings : new NotificationSettings());
         }
 
         /// <summary>
