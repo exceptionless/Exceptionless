@@ -66,7 +66,8 @@ namespace Exceptionless.Core.Pipeline {
                             TotalOccurrences = 1,
                             FirstOccurrence = ctx.Event.Date.UtcDateTime,
                             LastOccurrence = ctx.Event.Date.UtcDateTime,
-                            IsHidden = ctx.Event.IsHidden
+                            IsHidden = ctx.Event.IsHidden,
+                            OccurrencesAreCritical = ctx.Event.IsCritical() && ctx.Project.Configuration.Settings.GetBoolean("OccurrencesAreCritical")
                         };
 
                         ctx.Stack = stack;
