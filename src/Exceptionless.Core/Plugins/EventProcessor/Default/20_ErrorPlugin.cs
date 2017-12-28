@@ -5,7 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(20)]
@@ -28,11 +28,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             string[] commonUserMethods = { "DataContext.SubmitChanges", "Entities.SaveChanges" };
             if (context.HasProperty("CommonMethods"))
-                commonUserMethods = context.GetProperty<string>("CommonMethods").SplitAndTrim(',');
+                commonUserMethods = context.GetProperty<string>("CommonMethods").SplitAndTrim(new [] { ',' });
 
             string[] userNamespaces = null;
             if (context.HasProperty("UserNamespaces"))
-                userNamespaces = context.GetProperty<string>("UserNamespaces").SplitAndTrim(',');
+                userNamespaces = context.GetProperty<string>("UserNamespaces").SplitAndTrim(new [] { ',' });
 
             var signature = new ErrorSignature(error, userCommonMethods: commonUserMethods, userNamespaces: userNamespaces);
             if (signature.SignatureInfo.Count <= 0)
@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
 
-            foreach (var key in signature.SignatureInfo.Keys)
+            foreach (string key in signature.SignatureInfo.Keys)
                 context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
 
             return Task.CompletedTask;

@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Extensions {
             if (String.IsNullOrEmpty(ip) || String.Equals(ip, "::1"))
                 return ip;
 
-            string[] parts = ip.Split(new [] {':' }, 9);
+            var parts = ip.Split(new [] {':' }, 9);
             if (parts.Length == 2)  // 1.2.3.4:port
                 return parts[0];
             if (parts.Length > 8) // 1:2:3:4:5:6:7:8:port
@@ -126,13 +126,12 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string ToSaltedHash(this string password, string salt) {
-            byte[] passwordBytes = Encoding.Unicode.GetBytes(password);
-            byte[] saltBytes = Convert.FromBase64String(salt);
-
-            var hashStrategy = HashAlgorithm.Create("HMACSHA256") as KeyedHashAlgorithm;
-            if (hashStrategy.Key.Length == saltBytes.Length)
+            var passwordBytes = Encoding.Unicode.GetBytes(password);
+            var saltBytes = Convert.FromBase64String(salt);
+            var hashStrategy = new HMACSHA256();
+            if (hashStrategy.Key.Length == saltBytes.Length) {
                 hashStrategy.Key = saltBytes;
-            else if (hashStrategy.Key.Length < saltBytes.Length) {
+            } else if (hashStrategy.Key.Length < saltBytes.Length) {
                 var keyBytes = new byte[hashStrategy.Key.Length];
                 Buffer.BlockCopy(saltBytes, 0, keyBytes, 0, keyBytes.Length);
                 hashStrategy.Key = keyBytes;
@@ -145,7 +144,8 @@ namespace Exceptionless.Core.Extensions {
                 }
                 hashStrategy.Key = keyBytes;
             }
-            byte[] result = hashStrategy.ComputeHash(passwordBytes);
+
+            var result = hashStrategy.ComputeHash(passwordBytes);
             return Convert.ToBase64String(result);
         }
 
@@ -308,7 +308,7 @@ namespace Exceptionless.Core.Extensions {
             return builder.ToString();
         }
 
-        public static string[] SplitAndTrim(this string s, params char[] separator) {
+        public static string[] SplitAndTrim(this string s, char[] separator) {
             if (s.IsNullOrEmpty())
                 return new string[0];
 
@@ -337,7 +337,7 @@ namespace Exceptionless.Core.Extensions {
         public static int HexToInt(string input) {
             int num = 0;
             input = input.ToUpperInvariant();
-            char[] chArray = input.ToCharArray();
+            var chArray = input.ToCharArray();
             for (int index = chArray.Length - 1; index >= 0; --index) {
                 if ((int)chArray[index] >= 48 && (int)chArray[index] <= 57)
                     num += ((int)chArray[index] - 48) * (int)Math.Pow(16.0, (double)(chArray.Length - 1 - index));

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "OrganizationSnapshotJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Core;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;

@@ -13,10 +13,7 @@ namespace Exceptionless.Serializer {
         private readonly IContractResolver _resolver;
 
         public DynamicTypeContractResolver(IContractResolver resolver, IContractResolver defaultResolver = null) {
-            if (resolver == null)
-                throw new ArgumentNullException(nameof(resolver));
-
-            _resolver = resolver;
+            _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
             _defaultResolver = defaultResolver ?? new DefaultContractResolver();
         }
 

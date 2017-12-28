@@ -16,10 +16,10 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
 
 1. Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/master/CONTRIBUTING.md).
 2. Please follow the steps below to start configuring your Exceptionless development environment.
-  1. You will need to have [Visual Studio 2017](http://www.visualstudio.com/products/visual-studio-community-vs) installed.
-  2. Start `Elasticsearch` by running `StartBackendServers.bat`.
+  1. You will need to have an IDE like [Visual Studio Code](https://code.visualstudio.com) installed.
+  2. Start `Elasticsearch` by running the `.\build\Start-Elasticsearch.ps1` [PowerShell script] (https://github.com/PowerShell/PowerShell#get-powershell).
   3. Open the `Exceptionless.sln` Visual Studio solution file.
-  4. Select `Exceptionless.Api` as startup projects.
+  4. Select `Exceptionless.Web` as startup projects.
   5. Run the project by pressing `F5` to start the server.
   6. We have a prebuilt [Exceptionless UI](https://github.com/exceptionless/Exceptionless.UI) that's configured to talk to the localhost server instance. Just navigate to [http://local-app.exceptionless.io](http://local-app.exceptionless.io) to get started.
 

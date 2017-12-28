@@ -8,10 +8,10 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase {
@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             const int LIMIT = 100;
 
             var workItem = context.GetData<UserMaintenanceWorkItem>();
-            Log.Info("Received user maintenance work item. Normalize: {0}", workItem.Normalize);
+            Log.LogInformation("Received user maintenance work item. Normalize: {Normalize}", workItem.Normalize);
 
             var results = await _userRepository.GetAllAsync(o => o.PageLimit(LIMIT)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
             string email = user.EmailAddress?.Trim().ToLowerInvariant();
             if (!String.Equals(user.EmailAddress, email)) {
-                Log.Info().Message("Normalizing user email address \"{0}\" to \"{1}\"", user.EmailAddress, email).Write();
+                Log.LogInformation("Normalizing user email address {EmailAddress} to {NewEmailAddress}", user.EmailAddress, email);
                 user.EmailAddress = email;
             }
         }

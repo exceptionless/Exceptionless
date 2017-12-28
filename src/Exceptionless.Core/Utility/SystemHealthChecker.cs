@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Storage;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Utility {
     public class SystemHealthChecker {
@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Cache Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                _logger.Trace("Checking cache took {0}ms", sw.ElapsedMilliseconds);
+                _logger.LogTrace("Checking cache took {Duration:g}", sw.Elapsed);
             }
 
             return HealthCheckResult.Healthy;
@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Elasticsearch Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                _logger.Trace("Checking Elasticsearch took {0}ms", sw.ElapsedMilliseconds);
+                _logger.LogTrace("Checking Elasticsearch took {Duration:g}", sw.Elapsed);
             }
 
             return HealthCheckResult.Healthy;
@@ -66,7 +66,7 @@ namespace Exceptionless.Core.Utility {
                 return HealthCheckResult.NotHealthy("Storage Not Working: " + ex.Message);
             } finally {
                 sw.Stop();
-                _logger.Trace("Checking storage took {0}ms", sw.ElapsedMilliseconds);
+                _logger.LogTrace("Checking storage took {Duration:g}", sw.Elapsed);
             }
 
             return HealthCheckResult.Healthy;

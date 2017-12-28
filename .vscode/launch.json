@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Api",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceRoot}/src/Exceptionless.Web/bin/Debug/netcoreapp2.0/Exceptionless.Web.dll",
+      "args": [],
+      "cwd": "${workspaceRoot}/src/Exceptionless.Web",
+      "stopAtEntry": false,
+      "console": "integratedTerminal",
+      "launchBrowser": {
+        "enabled": true,
+        "args": "${auto-detect-url}",
+        "windows": {
+          "command": "cmd.exe",
+          "args": "/C start ${auto-detect-url}"
+        },
+        "osx": {
+          "command": "open"
+        },
+        "linux": {
+          "command": "xdg-open"
+        }
+      },
+      "env": {
+        "AppMode": "Development"
+      }
+    },
+    {
+      "name": "Event Posts Job",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceRoot}/src/Jobs/EventPost/bin/Debug/netcoreapp2.0/EventPostsJob.dll",
+      "args": [],
+      "cwd": "${workspaceRoot}/src/Jobs/EventPost",
+      "stopAtEntry": false,
+      "console": "integratedTerminal",
+      "env": {
+        "AppMode": "Development"
+      }
+    }
+  ]
+}

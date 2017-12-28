@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CloseInactiveSessionsJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

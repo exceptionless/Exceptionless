@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Models {
         /// The tick count that represents the next time the daily summary job should run. This time is set to midnight of the
         /// projects local time.
         /// </summary>
-        public Int64 NextSummaryEndOfDayTicks { get; set; }
+        public long NextSummaryEndOfDayTicks { get; set; }
 
         public DateTime CreatedUtc { get; set; }
         public DateTime UpdatedUtc { get; set; }

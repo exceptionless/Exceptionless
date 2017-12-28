@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DailySummaryJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

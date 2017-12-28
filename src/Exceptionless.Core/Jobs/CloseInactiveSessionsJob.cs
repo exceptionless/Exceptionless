@@ -10,9 +10,9 @@ using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Closes inactive user sessions.", InitialDelay = "30s", Interval = "30s")]
@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Jobs {
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(1));
         }
 
-        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
             return _lockProvider.AcquireAsync(nameof(CloseInactiveSessionsJob), TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 

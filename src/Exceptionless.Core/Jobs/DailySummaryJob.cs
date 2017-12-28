@@ -15,10 +15,10 @@ using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Sends daily summary emails.", InitialDelay = "1m", Interval = "1h")]
@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Jobs {
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
         }
 
-        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default(CancellationToken)) {
+        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
             return _lockProvider.AcquireAsync(nameof(DailySummaryJob), TimeSpan.FromHours(1), new CancellationToken(true));
         }
 
@@ -51,32 +51,34 @@ namespace Exceptionless.Core.Jobs {
 
             var results = await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
-                _logger.Trace("Got {0} projects to process. ", results.Documents.Count);
+                _logger.LogTrace("Got {Count} projects to process. ", results.Documents.Count);
 
                 var projectsToBulkUpdate = new List<Project>(results.Documents.Count);
                 var processSummariesNewerThan = SystemClock.UtcNow.Date.SubtractDays(2);
                 foreach (var project in results.Documents) {
-                    var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
-                    if (utcStartTime < processSummariesNewerThan) {
-                        _logger.Info().Project(project.Id).Message("Skipping daily summary older than two days for project: {0}", project.Name).Write();
-                        projectsToBulkUpdate.Add(project);
-                        continue;
-                    }
+                    using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id))) {
+                        var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
+                        if (utcStartTime < processSummariesNewerThan) {
+                            _logger.LogInformation("Skipping daily summary older than two days for project: {Name}", project.Name);
+                            projectsToBulkUpdate.Add(project);
+                            continue;
+                        }
 
-                    var notification = new SummaryNotification {
-                        Id = project.Id,
-                        UtcStartTime = utcStartTime,
-                        UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
-                    };
+                        var notification = new SummaryNotification {
+                            Id = project.Id,
+                            UtcStartTime = utcStartTime,
+                            UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
+                        };
 
-                    bool summarySent = await SendSummaryNotificationAsync(project, notification).AnyContext();
-                    if (summarySent) {
-                        await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }).AnyContext();
+                        bool summarySent = await SendSummaryNotificationAsync(project, notification).AnyContext();
+                        if (summarySent) {
+                            await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }).AnyContext();
 
-                        // Sleep so we are not hammering the backend as we just generated a report.
-                        await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
-                    } else {
-                        projectsToBulkUpdate.Add(project);
+                            // Sleep so we are not hammering the backend as we just generated a report.
+                            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
+                        } else {
+                            projectsToBulkUpdate.Add(project);
+                        }
                     }
                 }
 
@@ -101,25 +103,25 @@ namespace Exceptionless.Core.Jobs {
             // TODO: Add slack daily summaries
             var userIds = project.NotificationSettings.Where(n => n.Value.SendDailySummary && !String.Equals(n.Key, Project.NotificationIntegrations.Slack)).Select(n => n.Key).ToList();
             if (userIds.Count == 0) {
-                _logger.Info().Project(project.Id).Message("Project \"{0}\" has no users to send summary to.", project.Name).Write();
+                _logger.LogInformation("Project {ProjectName} has no users to send summary to.", project.Name);
                 return false;
             }
 
             var results = await _userRepository.GetByIdsAsync(userIds, o => o.Cache()).AnyContext();
             var users = results.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(project.OrganizationId)).ToList();
             if (users.Count == 0) {
-                _logger.Info().Project(project.Id).Message("Project \"{0}\" has no users to send summary to.", project.Name);
+                _logger.LogInformation("Project {ProjectName} has no users to send summary to.", project.Name);
                 return false;
             }
 
             // TODO: What should we do about suspended organizations.
             var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache()).AnyContext();
             if (organization == null) {
-                _logger.Info().Project(project.Id).Message("The organization \"{0}\" for project \"{1}\" may have been deleted. No summaries will be sent.", project.OrganizationId, project.Name);
+                _logger.LogInformation("The organization {organization} for project {ProjectName} may have been deleted. No summaries will be sent.", project.OrganizationId, project.Name);
                 return false;
             }
 
-            _logger.Info("Sending daily summary: users={0} project={1}", users.Count, project.Id);
+            _logger.LogInformation("Sending daily summary: users={UserCount} project={project}", users.Count, project.Id);
             var sf = new ExceptionlessSystemFilter(project, organization);
             var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(sf).DateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).Index(data.UtcStartTime, data.UtcEndTime);
             string filter = $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error} {EventIndexType.Alias.IsHidden}:false {EventIndexType.Alias.IsFixed}:false";
@@ -150,11 +152,11 @@ namespace Exceptionless.Core.Jobs {
                 newest = (await _stackRepository.GetByFilterAsync(sf, filter, "-first", "first", data.UtcStartTime, data.UtcEndTime, o => o.PageLimit(3)).AnyContext()).Documents;
 
             foreach (var user in users) {
-                _logger.Info().Project(project.Id).Message("Queuing \"{0}\" daily summary email ({1}-{2}) for user {3}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
+                _logger.LogInformation("Queuing {ProjectName} daily summary email ({UtcStartTime}-{UtcEndTime}) for user {EmailAddress}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
                 await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, data.UtcStartTime, hasSubmittedEvents, total, uniqueTotal, newTotal, fixedTotal, blockedTotal, tooBigTotal, isFreePlan).AnyContext();
             }
 
-            _logger.Info().Project(project.Id).Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Name, total);
+            _logger.LogInformation("Done sending daily summary: users={UserCount} project={ProjectName} events={EventCount}", users.Count, project.Name, total);
             return true;
         }
     }

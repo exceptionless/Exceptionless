@@ -7,8 +7,8 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Messaging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class RemoveProjectWorkItemHandler : WorkItemHandlerBase {
@@ -29,39 +29,41 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         }
 
         public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
-            var cacheKey = $"{nameof(RemoveProjectWorkItemHandler)}:{((RemoveProjectWorkItem)workItem).ProjectId}";
+            string cacheKey = $"{nameof(RemoveProjectWorkItemHandler)}:{((RemoveProjectWorkItem)workItem).ProjectId}";
             return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         public override async Task HandleItemAsync(WorkItemContext context) {
-            var workItem = context.GetData<RemoveProjectWorkItem>();
-            Log.Info("Received remove project work item for: {0} Reset Data: {1}", workItem.ProjectId, workItem.Reset);
+            var wi = context.GetData<RemoveProjectWorkItem>();
+            using (Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(wi.ProjectId))) {
+                Log.LogInformation("Received remove project work item for: {0} Reset Data: {1}", wi.ProjectId, wi.Reset);
 
-            await context.ReportProgressAsync(0, "Starting deletion...").AnyContext();
-            var project = await _projectRepository.GetByIdAsync(workItem.ProjectId).AnyContext();
-            if (project == null) {
-                await context.ReportProgressAsync(100, workItem.Reset ? "Project data reset" : "Project deleted").AnyContext();
-                return;
+                await context.ReportProgressAsync(0, "Starting deletion...").AnyContext();
+                var project = await _projectRepository.GetByIdAsync(wi.ProjectId).AnyContext();
+                if (project == null) {
+                    await context.ReportProgressAsync(100, wi.Reset ? "Project data reset" : "Project deleted").AnyContext();
+                    return;
+                }
+
+                if (!wi.Reset) {
+                    await context.ReportProgressAsync(20, "Removing tokens").AnyContext();
+                    await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
+
+                    await context.ReportProgressAsync(40, "Removing web hooks").AnyContext();
+                    await _webHookRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
+                }
+
+                await context.ReportProgressAsync(60, "Resetting project data").AnyContext();
+                await _eventRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
+                await _stackRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
+
+                if (!wi.Reset) {
+                    await context.ReportProgressAsync(80, "Removing project").AnyContext();
+                    await _projectRepository.RemoveAsync(project.Id).AnyContext();
+                }
+
+                await context.ReportProgressAsync(100, wi.Reset ? "Project data reset" : "Project deleted").AnyContext();
             }
-
-            if (!workItem.Reset) {
-                await context.ReportProgressAsync(20, "Removing tokens").AnyContext();
-                await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
-
-                await context.ReportProgressAsync(40, "Removing web hooks").AnyContext();
-                await _webHookRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
-            }
-
-            await context.ReportProgressAsync(60, "Resetting project data").AnyContext();
-            await _eventRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
-            await _stackRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
-
-            if (!workItem.Reset) {
-                await context.ReportProgressAsync(80, "Removing project").AnyContext();
-                await _projectRepository.RemoveAsync(project.Id).AnyContext();
-            }
-
-            await context.ReportProgressAsync(100, workItem.Reset ? "Project data reset" : "Project deleted").AnyContext();
         }
     }
 }

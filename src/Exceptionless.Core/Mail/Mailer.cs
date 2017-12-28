@@ -9,11 +9,11 @@ using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Logging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using HandlebarsDotNet;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Mail {
     public class Mailer : IMailer {
@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Mail {
             bool isCritical = ev.IsCritical();
             var result = _pluginManager.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
             if (result == null || result.Data.Count == 0) {
-                _logger.Warn("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", ev.Id, user.EmailAddress);
+                _logger.LogWarning("Unable to create event notification mail message for event \"{user}\". User: \"{EmailAddress}\"", ev.Id, user.EmailAddress);
                 return false;
             }
 
@@ -279,14 +279,12 @@ namespace Exceptionless.Core.Mail {
 
         private Task QueueMessageAsync(MailMessage message, string metricsName) {
             CleanAddresses(message);
-            return Task.WhenAll(
-                _metrics.CounterAsync($"mailer.{metricsName}"),
-                _queue.EnqueueAsync(message)
-            );
+            _metrics.Counter($"mailer.{metricsName}");
+            return _queue.EnqueueAsync(message);
         }
 
         private static void CleanAddresses(MailMessage message) {
-            if (Settings.Current.WebsiteMode == WebsiteMode.Production)
+            if (Settings.Current.AppMode == AppMode.Production)
                 return;
 
             string address = message.To.ToLowerInvariant();

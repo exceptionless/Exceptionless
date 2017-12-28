@@ -1,0 +1,29 @@
+﻿---
+ConnectionStrings:
+  RedisConnectionString.off: localhost,abortConnect=false
+  ElasticsearchConnectionString.off: http://localhost:9200/
+
+# Base url for the ui used to build links in emails and other places.
+BaseURL: 'http://localhost:9001/#!'
+
+AppScope: test
+
+# Controls whether daily summary emails are sent
+EnableDailySummary: false
+
+# Runs the jobs in the current website process
+RunJobsInProcess: false
+EnableBootstrapStartupActions: false
+EnableWebSockets: false
+
+# Folder used to store event post data
+StorageFolder: ..\..\..\src\Exceptionless.Web\storage
+
+Logging:
+  IncludeScopes: false
+  Debug:
+    LogLevel:
+      Default: Warning
+  Console:
+    LogLevel:
+      Default: Warning

@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Description;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
@@ -18,19 +15,23 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.DateTimeExtensions;
 using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "/users")]
-    [Authorize(Roles = AuthorizationRoles.User)]
+    [Route(API_PREFIX + "/users")]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, UpdateUser> {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly ICacheClient _cache;
         private readonly IMailer _mailer;
 
-        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
             _cache = new ScopedCacheClient(cacheClient, "User");
             _mailer = mailer;
@@ -40,10 +41,9 @@ namespace Exceptionless.Api.Controllers {
         /// Get current user
         /// </summary>
         /// <response code="404">The current user could not be found.</response>
-        [HttpGet]
-        [Route("me")]
-        [ResponseType(typeof(ViewCurrentUser))]
-        public async Task<IHttpActionResult> GetCurrentUserAsync() {
+        [HttpGet("me")]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewCurrentUser))]
+        public async Task<IActionResult> GetCurrentUserAsync() {
             var currentUser = await GetModelAsync(CurrentUser.Id);
             if (currentUser == null)
                 return NotFound();
@@ -56,11 +56,10 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the user.</param>
         /// <response code="404">The user could not be found.</response>
-        [HttpGet]
-        [Route("{id:objectid}", Name = "GetUserById")]
-        [ResponseType(typeof(ViewUser))]
-        public override Task<IHttpActionResult> GetByIdAsync(string id) {
-            return base.GetByIdAsync(id);
+        [HttpGet("{id:objectid}", Name = "GetUserById")]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewUser))]
+        public Task<IActionResult> GetByIdAsync(string id) {
+            return GetByIdImplAsync(id);
         }
 
         /// <summary>
@@ -70,10 +69,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="404">The organization could not be found.</response>
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/users")]
-        [ResponseType(typeof(List<ViewUser>))]
-        public async Task<IHttpActionResult> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
+        [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/users")]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewUser>))]
+        public async Task<IActionResult> GetByOrganizationAsync(string organizationId, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
@@ -89,6 +87,9 @@ namespace Exceptionless.Api.Controllers {
 
             var results = await _repository.GetByOrganizationIdAsync(organizationId, o => o.PageLimit(MAXIMUM_SKIP));
             var users = (await MapCollectionAsync<ViewUser>(results.Documents, true)).ToList();
+            if (!Request.IsGlobalAdmin())
+                users.ForEach(u => u.Roles.Remove(AuthorizationRoles.GlobalAdmin));
+
             if (organization.Invites.Any()) {
                 users.AddRange(organization.Invites.Select(i => new ViewUser {
                     EmailAddress = i.EmailAddress,
@@ -107,11 +108,11 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="changes">The changes</param>
         /// <response code="400">An error occurred while updating the user.</response>
         /// <response code="404">The user could not be found.</response>
-        [HttpPatch]
-        [HttpPut]
-        [Route("{id:objectid}")]
-        public override Task<IHttpActionResult> PatchAsync(string id, Delta<UpdateUser> changes) {
-            return base.PatchAsync(id, changes);
+        [HttpPatch("{id:objectid}")]
+        [HttpPut("{id:objectid}")]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewUser))]
+        public Task<IActionResult> PatchAsync(string id, [FromBody] Delta<UpdateUser> changes) {
+            return PatchImplAsync(id, changes);
         }
 
         /// <summary>
@@ -121,10 +122,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="email">The new email address.</param>
         /// <response code="400">An error occurred while updating the users email address.</response>
         /// <response code="404">The user could not be found.</response>
-        [HttpPost]
-        [Route("{id:objectid}/email-address/{email:minlength(1)}")]
-        [ResponseType(typeof(UpdateEmailAddressResult))]
-        public async Task<IHttpActionResult> UpdateEmailAddressAsync(string id, string email) {
+        [HttpPost("{id:objectid}/email-address/{email:minlength(1)}")]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(UpdateEmailAddressResult))]
+        public async Task<IActionResult> UpdateEmailAddressAsync(string id, string email) {
             var user = await GetModelAsync(id, false);
             if (user == null)
                 return NotFound();
@@ -155,7 +155,8 @@ namespace Exceptionless.Api.Controllers {
             } catch (ValidationException ex) {
                 return BadRequest(String.Join(", ", ex.Errors));
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Property("User", user).SetActionContext(ActionContext).Write();
+                using (_logger.BeginScope(new ExceptionlessState().Property("User", user).SetHttpContext(HttpContext)))
+                    _logger.LogError(ex, ex.Message);
                 return BadRequest("An error occurred.");
             }
 
@@ -171,9 +172,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="token">The token identifier.</param>
         /// <response code="400">Verify Email Address Token has expired.</response>
         /// <response code="404">The user could not be found.</response>
-        [HttpGet]
-        [Route("verify-email-address/{token:token}")]
-        public async Task<IHttpActionResult> VerifyAsync(string token) {
+        [HttpGet("verify-email-address/{token:token}")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
+        public async Task<IActionResult> VerifyAsync(string token) {
             var user = await _repository.GetByVerifyEmailAddressTokenAsync(token);
             if (user == null) {
                 // The user may already be logged in and verified.
@@ -198,9 +199,9 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the user.</param>
         /// <response code="404">The user could not be found.</response>
-        [HttpGet]
-        [Route("{id:objectid}/resend-verification-email")]
-        public async Task<IHttpActionResult> ResendVerificationEmailAsync(string id) {
+        [HttpGet("{id:objectid}/resend-verification-email")]
+        [SwaggerResponse(StatusCodes.Status200OK)]
+        public async Task<IActionResult> ResendVerificationEmailAsync(string id) {
             var user = await GetModelAsync(id, false);
             if (user == null)
                 return NotFound();
@@ -214,12 +215,10 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        [HttpPost]
-        [Route("{id:objectid}/admin-role")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [HttpPost("{id:objectid}/admin-role")]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IHttpActionResult> AddAdminRoleAsync(string id) {
+        public async Task<IActionResult> AddAdminRoleAsync(string id) {
             var user = await GetModelAsync(id, false);
             if (user == null)
                 return NotFound();
@@ -232,12 +231,10 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("{id:objectid}/admin-role")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [HttpDelete("{id:objectid}/admin-role")]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IHttpActionResult> DeleteAdminRoleAsync(string id) {
+        public async Task<IActionResult> DeleteAdminRoleAsync(string id) {
             var user = await GetModelAsync(id, false);
             if (user == null)
                 return NotFound();
@@ -247,7 +244,7 @@ namespace Exceptionless.Api.Controllers {
                 await _repository.SaveAsync(user, o => o.Cache());
             }
 
-            return StatusCode(HttpStatusCode.NoContent);
+            return StatusCode(StatusCodes.Status204NoContent);
         }
 
         private async Task<bool> IsEmailAddressAvailableInternalAsync(string email) {

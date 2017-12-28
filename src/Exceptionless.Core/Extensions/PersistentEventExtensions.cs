@@ -7,7 +7,7 @@ using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless {
     public static class PersistentEventExtensions {
-        public static void CopyDataToIndex(this PersistentEvent ev, params string[] keysToCopy) {
+        public static void CopyDataToIndex(this PersistentEvent ev, string[] keysToCopy) {
             keysToCopy = keysToCopy?.Length > 0 ? keysToCopy : ev.Data.Keys.ToArray();
 
             foreach (string key in keysToCopy.Where(k => !String.IsNullOrEmpty(k) && ev.Data.ContainsKey(k))) {
@@ -28,7 +28,7 @@ namespace Exceptionless {
                 if (!field.IsValidFieldName())
                     continue;
 
-                Type dataType = ev.Data[key].GetType();
+                var dataType = ev.Data[key].GetType();
                 if (dataType == typeof(bool)) {
                     ev.Idx[field + "-b"] = ev.Data[key];
                 } else if (dataType.IsNumeric()) {
@@ -46,13 +46,13 @@ namespace Exceptionless {
                     if (input[0] == '"')
                         input = input.TrimStart('"').TrimEnd('"');
 
-                    if (Boolean.TryParse(input, out bool value))
+                    if (Boolean.TryParse(input, out var value))
                         ev.Idx[field + "-b"] = value;
-                    else if (DateTimeOffset.TryParse(input, out DateTimeOffset dtoValue))
+                    else if (DateTimeOffset.TryParse(input, out var dtoValue))
                         ev.Idx[field + "-d"] = dtoValue;
-                    else if (Decimal.TryParse(input, out decimal decValue))
+                    else if (Decimal.TryParse(input, out var decValue))
                         ev.Idx[field + "-n"] = decValue;
-                    else if (Double.TryParse(input, out double dblValue))
+                    else if (Double.TryParse(input, out var dblValue))
                         ev.Idx[field + "-n"] = dblValue;
                     else
                         ev.Idx[field + "-s"] = input;
@@ -70,6 +70,7 @@ namespace Exceptionless {
         /// <summary>
         /// Allows you to reference a parent event by it's <seealso cref="Event.ReferenceId" /> property. This allows you to have parent and child relationships.
         /// </summary>
+        /// <param name="ev">The event</param>
         /// <param name="name">Reference name</param>
         /// <param name="id">The reference id that points to a specific event</param>
         public static void SetEventReference(this PersistentEvent ev, string name, string id) {
@@ -113,7 +114,7 @@ namespace Exceptionless {
             if (ev == null || !ev.IsSessionStart())
                 return null;
 
-            if (ev.Data.TryGetValue(Event.KnownDataKeys.SessionEnd, out object end) && end is DateTime)
+            if (ev.Data.TryGetValue(Event.KnownDataKeys.SessionEnd, out var end) && end is DateTime)
                 return (DateTime)end;
 
             return null;
@@ -136,7 +137,7 @@ namespace Exceptionless {
             ev.Value = duration;
             if (isSessionEnd) {
                 ev.Data[Event.KnownDataKeys.SessionEnd] = lastActivityUtc;
-                ev.CopyDataToIndex(Event.KnownDataKeys.SessionEnd);
+                ev.CopyDataToIndex(new [] { Event.KnownDataKeys.SessionEnd });
             } else {
                 ev.Data.Remove(Event.KnownDataKeys.SessionEnd);
                 ev.Idx.Remove(Event.KnownDataKeys.SessionEnd + "-d");
@@ -198,7 +199,7 @@ namespace Exceptionless {
                 startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
 
             if (hasPremiumFeatures)
-                startEvent.CopyDataToIndex();
+                startEvent.CopyDataToIndex(Array.Empty<string>());
 
             return startEvent;
         }

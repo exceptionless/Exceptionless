@@ -1,84 +1,52 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.10
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Core", "src\Exceptionless.Core\Exceptionless.Core.csproj", "{3E5B39D5-7ACD-486B-9F90-59116B67952D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{98A5A2F7-BBA9-4B65-91C9-88E18D474341}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		appveyor.yml = appveyor.yml
 		CONTRIBUTING.md = CONTRIBUTING.md
 		build\elasticsearch.prod.yml = build\elasticsearch.prod.yml
 		build\elasticsearch.yml = build\elasticsearch.yml
+		global.json = global.json
 		LICENSE.txt = LICENSE.txt
+		NuGet.Config = NuGet.Config
 		README.md = README.md
+		Rebracer.xml = Rebracer.xml
 		build\Start-ElasticSearch.ps1 = build\Start-ElasticSearch.ps1
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Api", "src\Exceptionless.Api\Exceptionless.Api.csproj", "{50717168-44E5-4E69-95EC-EED839630323}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Api.Tests", "tests\Exceptionless.Api.Tests\Exceptionless.Api.Tests.csproj", "{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Insulation", "src\Exceptionless.Insulation\Exceptionless.Insulation.csproj", "{75D9D89F-09F2-43A6-8B53-E1518E9FA822}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Jobs", "Jobs", "{4F070E46-F0D4-4134-A04E-BD1CB3B4AEA3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailMessageJob", "src\Jobs\MailMessage\MailMessageJob.csproj", "{95CA459C-111E-4248-BC37-C6345CCFB40D}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventPostsJob", "src\Jobs\EventPost\EventPostsJob.csproj", "{FD2FF108-158B-410D-AF72-C2BA3B555546}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventUserDescriptionsJob", "src\Jobs\EventUserDescription\EventUserDescriptionsJob.csproj", "{BDA9F1D6-F941-42F0-8B12-FDEA17A5F354}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebHooksJob", "src\Jobs\WebHook\WebHooksJob.csproj", "{62C680F1-B27A-4802-BD88-D182F03F12D4}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorkItemJob", "src\Jobs\WorkItem\WorkItemJob.csproj", "{51840A88-8415-4A2C-9C93-343B95770D29}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventNotificationsJob", "src\Jobs\EventNotification\EventNotificationsJob.csproj", "{8BC64C87-4A8C-4259-B1B2-7F6A8857CE6C}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DailySummaryJob", "src\Jobs\DailySummary\DailySummaryJob.csproj", "{B0B479F6-A4B1-401A-A93D-7393877A4400}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DownloadGeoIPDatabaseJob", "src\Jobs\DownloadGeoIPDatabase\DownloadGeoIPDatabaseJob.csproj", "{BE383D44-18A2-4145-9D04-95F715D5E500}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RetentionLimitsJob", "src\Jobs\RetentionLimit\RetentionLimitsJob.csproj", "{1A8C938F-D7F4-4E2F-8789-9053156E9077}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloseInactiveSessionsJob", "src\Jobs\CloseInactiveSession\CloseInactiveSessionsJob.csproj", "{FA2A4275-9180-43A4-AAE6-12BF83DC1252}"
-	ProjectSection(ProjectDependencies) = postProject
-		{75D9D89F-09F2-43A6-8B53-E1518E9FA822} = {75D9D89F-09F2-43A6-8B53-E1518E9FA822}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CleanupSnapshotJob", "src\Jobs\CleanupSnapshot\CleanupSnapshotJob.csproj", "{5DC34AD7-3363-43F7-90AA-9380A44748DD}"
 EndProject
@@ -90,14 +58,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrganizationSnapshotJob", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StackSnapshotJob", "src\Jobs\StackSnapshot\StackSnapshotJob.csproj", "{2B4EB8F1-D73A-4F43-A25A-4194A55CC0B6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Web", "src\Exceptionless.Web\Exceptionless.Web.csproj", "{39353DAF-044D-4AF6-84DA-6EF178F70E50}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
-		Debug|Mixed Platforms = Debug|Mixed Platforms
-		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
-		Release|Mixed Platforms = Release|Mixed Platforms
-		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{3E5B39D5-7ACD-486B-9F90-59116B67952D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -320,6 +286,18 @@ Global
 		{2B4EB8F1-D73A-4F43-A25A-4194A55CC0B6}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{2B4EB8F1-D73A-4F43-A25A-4194A55CC0B6}.Release|x86.ActiveCfg = Release|Any CPU
 		{2B4EB8F1-D73A-4F43-A25A-4194A55CC0B6}.Release|x86.Build.0 = Release|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Debug|x86.Build.0 = Debug|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Release|x86.ActiveCfg = Release|Any CPU
+		{39353DAF-044D-4AF6-84DA-6EF178F70E50}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -340,5 +318,8 @@ Global
 		{94868E31-26EF-4705-93C0-F4E1E75F0B07} = {4F070E46-F0D4-4134-A04E-BD1CB3B4AEA3}
 		{25BAB233-B1B6-4888-BE57-263E1D5A0CE6} = {4F070E46-F0D4-4134-A04E-BD1CB3B4AEA3}
 		{2B4EB8F1-D73A-4F43-A25A-4194A55CC0B6} = {4F070E46-F0D4-4134-A04E-BD1CB3B4AEA3}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1A90AFA5-B81C-4B1B-9DFA-2D90F8CA0EF0}
 	EndGlobalSection
 EndGlobal

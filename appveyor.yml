@@ -1,4 +1,4 @@
-﻿version: 4.1.{build}
+﻿version: 4.2.{build}
 os: Visual Studio 2017
 configuration: Release
 clone_depth: 2
@@ -7,6 +7,8 @@ pull_requests:
   do_not_increment_build_number: true
 
 environment:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
   JAVA_HOME: C:\Progra~1\Java\jdk1.8.0
   API_URL: https://#{api.hostheader}
   BUILD_REPO_URL:
@@ -20,27 +22,22 @@ init:
   - git config --global user.name "AppVeyor CI"
   - ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
 
-assembly_info:
-  patch: true
-  file: src\GlobalAssemblyInfo.cs
-  assembly_version: "{version}.0"
-  assembly_file_version: "{version}.0"
-  assembly_informational_version: "{version} $(GIT_HASH)"
-
 before_build:
-  - nuget restore -verbosity quiet
-  - ps: .\build\Start-ElasticSearch.ps1 -NodeCount 1 -StartKibana $false
+  - ps: .\build\Set-BuildVersion.ps1 -Version $env:APPVEYOR_BUILD_VERSION -Suffix $env:VERSION_SUFFIX
 
-build:
-  parallel: true
-  verbosity: quiet
+build_script:
+  - dotnet publish -c Release
+
+on_failure:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 before_test:
-  #- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  - ps: .\build\Start-ElasticSearch.ps1
 
-test:
-  assemblies:
-    - '**\*.Tests.dll'
+test_script:
+  - ps: Push-Location .\tests\Exceptionless.Api.Tests
+  - ps: dotnet test -c Release --no-build
+  - ps: Pop-Location
 
 after_test:
   - ps: .\build\Push-Artifacts.ps1

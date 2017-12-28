@@ -50,18 +50,20 @@ Copy-Item -Path "$base_dir\build\readme.txt" -Destination $releaseTempDir
 
 Write-Host "Merging configuration"
 $webConfig = "$releaseTempDir\wwwroot\web.config"
-
 $apiConfig = [xml](Get-Content $webConfig)
-$apiConfig.SelectSingleNode('//appSettings/add[@key="BaseURL"]/@value').'#text' = 'http://localhost:50000/#'
-$apiConfig.SelectSingleNode('//appSettings/add[@key="EnableDailySummary"]/@value').'#text' = 'true'
-$apiConfig.SelectSingleNode('//system.web/compilation/@debug').'#text' = 'false'
 
 # Copy settings from app web.config
 $appConfig = [xml](Get-Content "$releaseArtifactsDir\app\web.config")
 $apiConfig.SelectSingleNode("configuration").AppendChild($apiConfig.ImportNode($appConfig.SelectSingleNode("configuration/location"), $true)) | Out-Null
 $apiConfig.SelectSingleNode("configuration/system.webServer").AppendChild($apiConfig.CreateComment($apiConfig.ImportNode($appConfig.SelectSingleNode("configuration/system.webServer/rewrite"), $true).OuterXml)) | Out-Null
-
 $apiConfig.Save($webConfig)
+
+$appProdSettings = "$releaseTempDir\wwwroot\appsettings.Production.yml"
+$prodConfig = (Get-Content $appProdSettings)
+$prodConfig = $prodConfig -Replace "BaseURL: 'https://be.exceptionless.io'", "BaseURL: 'http://localhost:50000/#!'"
+$prodConfig = $prodConfig -Replace "EnableSSL: true", "EnableSSL: false"
+$prodConfig = $prodConfig -Replace "RunJobsInProcess: false", "RunJobsInProcess: true"
+Set-Content -Path $appProdSettings -Value $prodConfig
 
 Write-Host "Zipping release"
 If (Test-Path -Path "$releaseDir\Exceptionless.$($env:APPVEYOR_BUILD_VERSION).zip") {

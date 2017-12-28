@@ -2,19 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
-using Foundatio.Logging;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Elasticsearch.Queries;
-using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Queries;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Api.Controllers {
     public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> : ExceptionlessApiController where TRepository : ISearchableReadOnlyRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() {
@@ -27,7 +24,6 @@ namespace Exceptionless.Api.Controllers {
         protected readonly IQueryValidator _validator;
         protected readonly ILogger _logger;
 
-
         public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) {
             _repository = repository;
             _mapper = mapper;
@@ -35,7 +31,7 @@ namespace Exceptionless.Api.Controllers {
             _logger = loggerFactory.CreateLogger(GetType());
         }
 
-        public virtual async Task<IHttpActionResult> GetByIdAsync(string id) {
+        protected async Task<IActionResult> GetByIdImplAsync(string id) {
             var model = await GetModelAsync(id);
             if (model == null)
                 return NotFound();
@@ -43,7 +39,7 @@ namespace Exceptionless.Api.Controllers {
             return await OkModelAsync(model);
         }
 
-        protected virtual async Task<IHttpActionResult> GetCountAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string aggregations = null) {
+        protected async Task<IActionResult> GetCountImplAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string aggregations = null) {
             var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
@@ -62,14 +58,8 @@ namespace Exceptionless.Api.Controllers {
             try {
                 result = await _repository.CountBySearchAsync(query, filter, aggregations);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex)
-                    .Message("An error has occurred. Please check your filter or aggregations.")
-                    .Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations })
-                    .Tag("Search")
-                    .Identity(CurrentUser.EmailAddress)
-                    .Property("User", CurrentUser)
-                    .SetActionContext(ActionContext)
-                    .Write();
+                using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                    _logger.LogError(ex, "An error has occurred. Please check your filter or aggregations.");
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
@@ -77,7 +67,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok(result);
         }
 
-        protected async Task<IHttpActionResult> OkModelAsync(TModel model) {
+        protected async Task<IActionResult> OkModelAsync(TModel model) {
             return Ok(await MapAsync<TViewModel>(model, true));
         }
 

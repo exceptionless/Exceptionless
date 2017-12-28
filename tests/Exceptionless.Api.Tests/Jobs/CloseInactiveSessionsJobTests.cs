@@ -24,7 +24,7 @@ namespace Exceptionless.Api.Tests.Jobs {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IEventRepository _eventRepository;
-        private readonly UserRepository _userRepository;
+        private readonly IUserRepository _userRepository;
         private readonly EventPipeline _pipeline;
 
         public CloseInactiveSessionsJobTests(ITestOutputHelper output) : base(output) {
@@ -33,7 +33,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();
             _eventRepository = GetService<IEventRepository>();
-            _userRepository = GetService<UserRepository>();
+            _userRepository = GetService<IUserRepository>();
             _pipeline = GetService<EventPipeline>();
 
             CreateDataAsync().GetAwaiter().GetResult();
@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             var event1 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
             var event2 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId, sessionId: "123456789");
 
-            var contexts = await _pipeline.RunAsync(new []{ event1, event2 });
+            var contexts = await _pipeline.RunAsync(new []{ event1, event2 }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.True(contexts.All(c => !c.HasError));
             Assert.True(contexts.All(c => !c.IsCancelled));
             Assert.True(contexts.All(c => c.IsProcessed));
@@ -56,7 +56,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             Assert.Equal(2, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             var sessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
             Assert.Equal(0, sessionStarts.Sum(e => e.Value));
-            Assert.False(sessionStarts.Any(e => e.HasSessionEndTime()));
+            Assert.DoesNotContain(sessionStarts, e => e.HasSessionEndTime());
 
             var utcNow = SystemClock.UtcNow;
             await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractMinutes(1));
@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             var event1 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
             var event2 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId, sessionId: sessionId);
 
-            var contexts = await _pipeline.RunAsync(new[] { event1, event2 });
+            var contexts = await _pipeline.RunAsync(new[] { event1, event2 }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.True(contexts.All(c => !c.HasError));
             Assert.True(contexts.All(c => !c.IsCancelled));
             Assert.True(contexts.All(c => c.IsProcessed));
@@ -91,7 +91,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             Assert.Equal(2, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             var sessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
             Assert.Equal(0, sessionStarts.Sum(e => e.Value));
-            Assert.False(sessionStarts.Any(e => e.HasSessionEndTime()));
+            Assert.DoesNotContain(sessionStarts, e => e.HasSessionEndTime());
 
             var utcNow = SystemClock.UtcNow;
             await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractMinutes(1));
@@ -119,7 +119,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             const string userId = "blake@exceptionless.io";
             var ev = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
 
-            var context = await _pipeline.RunAsync(ev);
+            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
@@ -127,7 +127,7 @@ namespace Exceptionless.Api.Tests.Jobs {
             await _configuration.Client.RefreshAsync(Indices.All);
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
-            Assert.Equal(1, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
+            Assert.Single(events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
             var sessionStart = events.Documents.First(e => e.IsSessionStart());
             Assert.Equal(0, sessionStart.Value);
             Assert.False(sessionStart.HasSessionEndTime());

@@ -14,6 +14,9 @@ namespace Exceptionless.Core.Utility {
             if (String.IsNullOrEmpty(path))
                 return path;
 
+            path = path.Replace('\\', Path.DirectorySeparatorChar);
+            path = path.Replace('/', Path.DirectorySeparatorChar);
+
             if (!path.StartsWith(DATA_DIRECTORY, StringComparison.OrdinalIgnoreCase))
                 return Path.GetFullPath(path);
 
@@ -51,7 +54,7 @@ namespace Exceptionless.Core.Utility {
                 dataDirectory = AppDomain.CurrentDomain.GetData("DataDirectory") as string;
 
             if (String.IsNullOrEmpty(dataDirectory))
-                dataDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                dataDirectory = AppContext.BaseDirectory;
 
             return !String.IsNullOrEmpty(dataDirectory) ? Path.GetFullPath(dataDirectory) : null;
         }

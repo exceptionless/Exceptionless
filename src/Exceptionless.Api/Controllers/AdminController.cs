@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Description;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -12,14 +10,18 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Utility;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Storage;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "/admin")]
-    [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+    [Route(API_PREFIX + "/admin")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     [ApiExplorerSettings(IgnoreApi = true)]
     public class AdminController : ExceptionlessApiController {
         private readonly ExceptionlessElasticConfiguration _configuration;
@@ -38,9 +40,19 @@ namespace Exceptionless.Api.Controllers {
             _workItemQueue = workItemQueue;
         }
 
-        [HttpPost]
-        [Route("change-plan")]
-        public async Task<IHttpActionResult> ChangePlanAsync(string organizationId, string planId) {
+        [HttpGet("settings")]
+        public IActionResult SettingsRequest() {
+            return Ok(JsonConvert.SerializeObject(Settings.Current, Formatting.Indented));
+        }
+
+        [HttpGet("assemblies")]
+        public IActionResult Assemblies() {
+            var details = AssemblyDetail.ExtractAll();
+            return Ok(details);
+        }
+
+        [HttpPost("change-plan")]
+        public async Task<IActionResult> ChangePlanAsync([FromQuery] string organizationId, [FromQuery] string planId) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -64,9 +76,8 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new { Success = true });
         }
 
-        [HttpPost]
-        [Route("set-bonus")]
-        public async Task<IHttpActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null) {
+        [HttpPost("set-bonus")]
+        public async Task<IActionResult> SetBonusAsync([FromQuery] string organizationId, [FromQuery] int bonusEvents, [FromQuery] DateTime? expires = null) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -81,9 +92,8 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new { Success = true });
         }
 
-        [HttpGet]
-        [Route("requeue")]
-        public async Task<IHttpActionResult> RequeueAsync(string path = null, bool archive = false) {
+        [HttpGet("requeue")]
+        public async Task<IActionResult> RequeueAsync([FromQuery] string path = null, [FromQuery] bool archive = false) {
             if (String.IsNullOrEmpty(path))
                 path = @"q\*";
 
@@ -96,9 +106,8 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new { Enqueued = enqueued });
         }
 
-        [HttpGet]
-        [Route("maintenance/{name:minlength(1)}")]
-        public async Task<IHttpActionResult> RunJobAsync(string name) {
+        [HttpGet("maintenance/{name:minlength(1)}")]
+        public async Task<IActionResult> RunJobAsync(string name) {
             switch (name.ToLowerInvariant()) {
                 case "indexes":
                     if (!Settings.Current.DisableIndexConfiguration)

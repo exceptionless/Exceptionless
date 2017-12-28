@@ -36,9 +36,9 @@ namespace Exceptionless.Api.Tests.Plugins {
         };
 
         [Theory]
-        [MemberData("EventData")]
-        public async Task ParseEventsAsync(string input, int expectedEvents, string[] expectedMessage, string expectedType) {
-            var events = await _parser.ParseEventsAsync(input, 2, "exceptionless/2.0.0.0");
+        [MemberData(nameof(EventData))]
+        public void ParseEvents(string input, int expectedEvents, string[] expectedMessage, string expectedType) {
+            var events = _parser.ParseEvents(input, 2, "exceptionless/2.0.0.0");
             Assert.Equal(expectedEvents, events.Count);
             for (int index = 0; index < events.Count; index++) {
                 var ev = events[index];
@@ -48,19 +48,21 @@ namespace Exceptionless.Api.Tests.Plugins {
             }
         }
 
+#if DEBUG
         [Theory]
-        [MemberData("Events")]
-        public async Task VerifyEventParserSerialization(string eventsFilePath) {
+        [MemberData(nameof(Events))]
+#endif
+        public void VerifyEventParserSerialization(string eventsFilePath) {
             string json = File.ReadAllText(eventsFilePath);
 
-            var events = await _parser.ParseEventsAsync(json, 2, "exceptionless/2.0.0.0");
-            Assert.Equal(1, events.Count);
+            var events = _parser.ParseEvents(json, 2, "exceptionless/2.0.0.0");
+            Assert.Single(events);
 
             ApprovalsUtility.VerifyFile(eventsFilePath, events.First().ToJson(Formatting.Indented, GetService<JsonSerializerSettings>()));
         }
 
         [Theory]
-        [MemberData("Events")]
+        [MemberData(nameof(Events))]
         public void CanDeserializeEvents(string eventsFilePath) {
             string json = File.ReadAllText(eventsFilePath);
 
@@ -71,7 +73,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public static IEnumerable<object[]> Events {
             get {
                 var result = new List<object[]>();
-                foreach (string file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories))
+                foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "Search", "Data"), "event*.json", SearchOption.AllDirectories))
                     if (!file.EndsWith("summary.json"))
                         result.Add(new object[] { Path.GetFullPath(file) });
 

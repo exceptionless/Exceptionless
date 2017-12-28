@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Net;
+using Microsoft.AspNetCore.Http;
 
 namespace Exceptionless.Api.Controllers {
     public class PermissionResult {
@@ -9,17 +9,17 @@ namespace Exceptionless.Api.Controllers {
 
         public string Message { get; set; }
 
-        public HttpStatusCode StatusCode { get; set; }
+        public int StatusCode { get; set; }
 
-        public static PermissionResult Allow = new PermissionResult { Allowed = true, StatusCode = HttpStatusCode.OK };
+        public static PermissionResult Allow = new PermissionResult { Allowed = true, StatusCode = StatusCodes.Status200OK };
 
-        public static PermissionResult Deny = new PermissionResult { Allowed = false, StatusCode = HttpStatusCode.BadRequest };
+        public static PermissionResult Deny = new PermissionResult { Allowed = false, StatusCode = StatusCodes.Status400BadRequest };
 
         public static PermissionResult DenyWithNotFound(string id = null) {
             return new PermissionResult {
                 Allowed = false,
                 Id = id,
-                StatusCode = HttpStatusCode.NotFound
+                StatusCode = StatusCodes.Status404NotFound
             };
         }
 
@@ -28,11 +28,11 @@ namespace Exceptionless.Api.Controllers {
                 Allowed = false,
                 Id = id,
                 Message = message,
-                StatusCode = HttpStatusCode.BadRequest
+                StatusCode = StatusCodes.Status400BadRequest
             };
         }
 
-        public static PermissionResult DenyWithStatus(HttpStatusCode statusCode, string message = null, string id = null) {
+        public static PermissionResult DenyWithStatus(int statusCode, string message = null, string id = null) {
             return new PermissionResult {
                 Allowed = false,
                 Id = id,
@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Controllers {
                 Allowed = false,
                 Id = id,
                 Message = message,
-                StatusCode = HttpStatusCode.UpgradeRequired
+                StatusCode = StatusCodes.Status426UpgradeRequired
             };
         }
     }

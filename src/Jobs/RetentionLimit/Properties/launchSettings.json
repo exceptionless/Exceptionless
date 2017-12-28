@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "RetentionLimitsJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

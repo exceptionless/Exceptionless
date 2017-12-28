@@ -1,0 +1,25 @@
+---
+DisableIndexConfiguration: true
+
+# Runs the jobs in the current website process
+RunJobsInProcess: false
+
+# Folder used to store event post data
+StorageFolder: ..\..\Exceptionless.Web\storage
+
+Serilog:
+  Using:
+  - Serilog.Sinks.Console
+  MinimumLevel:
+    Default: Information
+    Override:
+      Microsoft: Warning
+      System: Warning
+      Foundatio.Utility.ScheduledTimer: Warning
+      Foundatio.Metrics: Warning
+  WriteTo:
+  - Name: Console
+  Enrich:
+  - FromLogContext
+  - WithMachineName
+  - WithThreadId

@@ -38,30 +38,30 @@ namespace Exceptionless.Core.Repositories.Queries {
                 return Task.CompletedTask;
             }
 
-            node.Field = GetCustomFieldName(node.Field, node.Term);
+            node.Field = GetCustomFieldName(node.Field, new [] { node.Term });
             return Task.CompletedTask;
         }
 
         public override Task VisitAsync(TermRangeNode node, IQueryVisitorContext context) {
-            node.Field = GetCustomFieldName(node.Field, node.Min, node.Max);
+            node.Field = GetCustomFieldName(node.Field, new [] { node.Min, node.Max });
             return Task.CompletedTask;
         }
 
         public override Task VisitAsync(ExistsNode node, IQueryVisitorContext context) {
-            node.Field = GetCustomFieldName(node.Field);
+            node.Field = GetCustomFieldName(node.Field, Array.Empty<string>());
             return Task.CompletedTask;
         }
 
         public override Task VisitAsync(MissingNode node, IQueryVisitorContext context) {
-            node.Field = GetCustomFieldName(node.Field);
+            node.Field = GetCustomFieldName(node.Field, Array.Empty<string>());
             return Task.CompletedTask;
         }
 
-        private string GetCustomFieldName(string field, params string[] terms) {
+        private string GetCustomFieldName(string field, string[] terms) {
             if (String.IsNullOrEmpty(field))
                 return null;
 
-            string[] parts = field.Split('.');
+            var parts = field.Split('.');
             if (parts.Length != 2 || (parts.Length == 2 && parts[1].StartsWith("@")))
                 return field;
 
@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             return field;
         }
 
-        private static string GetTermType(params string[] terms) {
+        private static string GetTermType(string[] terms) {
             string termType = "s";
 
             var trimmedTerms = terms.Where(t => t != null).Distinct().ToList();
@@ -90,11 +90,11 @@ namespace Exceptionless.Core.Repositories.Queries {
                 if (term.StartsWith("*"))
                     continue;
 
-                if (Boolean.TryParse(term, out bool boolResult))
+                if (Boolean.TryParse(term, out var boolResult))
                     termType = "b";
                 else if (term.IsNumeric())
                     termType = "n";
-                else if (DateTime.TryParse(term, out DateTime dateResult))
+                else if (DateTime.TryParse(term, out var dateResult))
                     termType = "d";
 
                 break;

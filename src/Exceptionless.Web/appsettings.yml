@@ -1,0 +1,18 @@
+﻿---
+Serilog:
+  Using:
+  - Serilog.Sinks.Console
+  MinimumLevel:
+    Default: Information
+    Override:
+      Microsoft: Warning
+      System: Warning
+      Exceptionless.Api.Security.ApiKeyAuthenticationHandler: Warning
+      Foundatio.Utility.ScheduledTimer: Warning
+      Foundatio.Metrics: Warning
+  WriteTo:
+  - Name: Console
+  Enrich:
+  - FromLogContext
+  - WithMachineName
+  - WithThreadId

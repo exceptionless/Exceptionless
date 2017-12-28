@@ -23,28 +23,32 @@ namespace Exceptionless.Api.Tests.Plugins {
             _formatter = GetService<FormattingPluginManager>();
         }
 
+#if DEBUG
         [Theory]
-        [MemberData("WebHookData")]
+        [MemberData(nameof(WebHookData))]
+#endif
         public async Task CreateFromEventAsync(Version version, bool expectData) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
-            var data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
+            object data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
             if (expectData) {
-                string filePath = $@"..\..\Plugins\WebHookData\v{version}.event.expected.json";
+                string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"v{version}.event.expected.json"));
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
             } else {
                 Assert.Null(data);
             }
         }
 
+#if DEBUG
         [Theory]
-        [MemberData("WebHookData")]
+        [MemberData(nameof(WebHookData))]
+#endif
         public async Task CanCreateFromStackAsync(Version version, bool expectData) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
-            var data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
+            object data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
             if (expectData) {
-                string filePath = $@"..\..\Plugins\WebHookData\v{version}.stack.expected.json";
+                string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"v{version}.stack.expected.json"));
                 ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
             } else {
                 Assert.Null(data);
@@ -59,7 +63,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         }.ToArray();
 
         private WebHookDataContext GetWebHookDataContext(Version version) {
-            var json = File.ReadAllText(Path.GetFullPath(@"..\..\ErrorData\1477.expected.json"));
+            string json = File.ReadAllText(Path.GetFullPath(Path.Combine("..", "..", "..", "ErrorData", "1477.expected.json")));
 
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
@@ -70,8 +74,9 @@ namespace Exceptionless.Api.Tests.Plugins {
             ev.StackId = TestConstants.StackId;
             ev.Id = TestConstants.EventId;
 
-            var context = new WebHookDataContext(version, ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
-            context.Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: _formatter.GetStackTitle(ev), signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc");
+            var context = new WebHookDataContext(version, ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()) {
+                Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: _formatter.GetStackTitle(ev), signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc")
+            };
             context.Stack.Tags = new TagSet { "Test" };
             context.Stack.FirstOccurrence = context.Stack.LastOccurrence = ev.Date.UtcDateTime;
 

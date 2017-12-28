@@ -8,7 +8,7 @@ using Exceptionless.Core.Reflection;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Serializer;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static void RemoveAll(this JObject target, params string[] names) {
-            foreach (var name in names)
+            foreach (string name in names)
                 target.Remove(name);
         }
 
@@ -72,7 +72,7 @@ namespace Exceptionless.Core.Extensions {
             if (target[currentName] == null)
                 return false;
 
-            JProperty p = target.Property(currentName);
+            var p = target.Property(currentName);
             p.Replace(new JProperty(newName, p.Value));
 
             return true;
@@ -83,7 +83,7 @@ namespace Exceptionless.Core.Extensions {
                 return false;
 
             bool isNullOrEmpty = target.IsPropertyNullOrEmpty(currentName);
-            JProperty p = target.Property(currentName);
+            var p = target.Property(currentName);
             if (isNullOrEmpty) {
                 target.Remove(p.Name);
                 return false;
@@ -94,12 +94,12 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static void MoveOrRemoveIfNullOrEmpty(this JObject target, JObject source, params string[] names) {
-            foreach (var name in names) {
+            foreach (string name in names) {
                 if (source[name] == null)
                     continue;
 
                 bool isNullOrEmpty = source.IsPropertyNullOrEmpty(name);
-                JProperty p = source.Property(name);
+                var p = source.Property(name);
                 source.Remove(p.Name);
 
                 if (isNullOrEmpty)
@@ -112,8 +112,7 @@ namespace Exceptionless.Core.Extensions {
         public static bool RenameAll(this JObject target, string currentName, string newName) {
             var properties = target.Descendants().OfType<JProperty>().Where(t => t.Name == currentName).ToList();
             foreach (var p in properties) {
-                var parent = p.Parent as JObject;
-                if (parent != null)
+                if (p.Parent is JObject parent)
                     parent.Rename(currentName, newName);
             }
 
@@ -129,7 +128,7 @@ namespace Exceptionless.Core.Extensions {
 
 
         public static string GetPropertyStringValueAndRemove(this JObject target, string name) {
-            var value = target.GetPropertyStringValue(name);
+            string value = target.GetPropertyStringValue(name);
             target.Remove(name);
             return value;
         }
@@ -159,7 +158,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string ToJson<T>(this T data, Formatting formatting = Formatting.None, JsonSerializerSettings settings = null) {
-            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+            var serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
             serializer.Formatting = formatting;
 
             using (var sw = new StringWriter()) {
@@ -169,12 +168,12 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static List<T> FromJson<T>(this JArray data, JsonSerializerSettings settings = null) {
-            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+            var serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
             return data.ToObject<List<T>>(serializer);
         }
 
         public static T FromJson<T>(this string data, JsonSerializerSettings settings = null) {
-            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+            var serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
 
             using (var sw = new StringReader(data))
             using (var sr = new JsonTextReader(sw))
@@ -186,19 +185,18 @@ namespace Exceptionless.Core.Extensions {
                 value = data.FromJson<T>(settings);
                 return true;
             } catch (Exception) {
-                value = default(T);
+                value = default;
                 return false;
             }
         }
 
         private static readonly ConcurrentDictionary<Type, IMemberAccessor> _countAccessors = new ConcurrentDictionary<Type, IMemberAccessor>();
         public static bool IsValueEmptyCollection(this JsonProperty property, object target) {
-            var value = property.ValueProvider.GetValue(target);
+            object value = property.ValueProvider.GetValue(target);
             if (value == null)
                 return true;
 
-            var collection = value as ICollection;
-            if (collection != null)
+            if (value is ICollection collection)
                 return collection.Count == 0;
 
             if (!_countAccessors.ContainsKey(property.PropertyType)) {
@@ -217,7 +215,7 @@ namespace Exceptionless.Core.Extensions {
             if (countAccessor == null)
                 return false;
 
-            var count = (int)countAccessor.GetValue(value);
+            int count = (int)countAccessor.GetValue(value);
             return count == 0;
         }
 

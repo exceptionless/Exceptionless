@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using System.Security.Principal;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using IIdentity = System.Security.Principal.IIdentity;
@@ -18,12 +17,12 @@ namespace Exceptionless.Core.Extensions {
 
         public static ClaimsIdentity ToIdentity(this Token token) {
             if (token == null || token.Type != TokenType.Access)
-                return WindowsIdentity.GetAnonymous();
+                return new ClaimsIdentity();
 
             if (!String.IsNullOrEmpty(token.UserId))
                 throw new ApplicationException("Can't create token type identity for user token.");
 
-            var claims = new List<Claim> {
+            var claims = new List<Claim>(5 + token.Scopes.Count) {
                 new Claim(ClaimTypes.NameIdentifier, token.Id),
                 new Claim(OrganizationIdsClaim, token.OrganizationId)
             };
@@ -34,22 +33,24 @@ namespace Exceptionless.Core.Extensions {
             if (!String.IsNullOrEmpty(token.DefaultProjectId))
                 claims.Add(new Claim(DefaultProjectIdClaim, token.DefaultProjectId));
 
-            if (token.Scopes.Count > 0)
-                claims.AddRange(token.Scopes.Select(scope => new Claim(ClaimTypes.Role, scope)));
-            else
+            if (token.Scopes.Count > 0) {
+                foreach (string scope in token.Scopes)
+                    claims.Add(new Claim(ClaimTypes.Role, scope));
+            } else {
                 claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.Client));
+            }
 
             return new ClaimsIdentity(claims, TokenAuthenticationType);
         }
 
         public static ClaimsIdentity ToIdentity(this User user, Token token = null) {
             if (user == null)
-                return WindowsIdentity.GetAnonymous();
+                return new ClaimsIdentity();
 
-            var claims = new List<Claim> {
+            var claims = new List<Claim>(7 + user.Roles.Count) {
                     new Claim(ClaimTypes.Name, user.EmailAddress),
                     new Claim(ClaimTypes.NameIdentifier, user.Id),
-                    new Claim(OrganizationIdsClaim, String.Join(",", user.OrganizationIds.ToArray()))
+                    new Claim(OrganizationIdsClaim, String.Join(",", user.OrganizationIds))
                 };
 
             if (token != null) {
@@ -59,16 +60,16 @@ namespace Exceptionless.Core.Extensions {
                     claims.Add(new Claim(DefaultProjectIdClaim, token.DefaultProjectId));
             }
 
-            var userRoles = new HashSet<string>(user.Roles.ToArray());
-            if (userRoles.Any()) {
+            if (user.Roles.Count > 0) {
                 // add implied scopes
-                if (userRoles.Contains(AuthorizationRoles.GlobalAdmin))
-                    userRoles.Add(AuthorizationRoles.User);
+                if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+                    user.Roles.Add(AuthorizationRoles.User);
 
-                if (userRoles.Contains(AuthorizationRoles.User))
-                    userRoles.Add(AuthorizationRoles.Client);
+                if (user.Roles.Contains(AuthorizationRoles.User))
+                    user.Roles.Add(AuthorizationRoles.Client);
 
-                claims.AddRange(userRoles.Select(scope => new Claim(ClaimTypes.Role, scope)));
+                foreach (string role in user.Roles)
+                    claims.Add(new Claim(ClaimTypes.Role, role));
             } else {
                 claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.Client));
                 claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.User));
@@ -77,14 +78,14 @@ namespace Exceptionless.Core.Extensions {
             return new ClaimsIdentity(claims, UserAuthenticationType);
         }
 
-        public static AuthType GetAuthType(this IPrincipal principal) {
+        public static AuthType GetAuthType(this ClaimsPrincipal principal) {
             if (principal?.Identity == null || !principal.Identity.IsAuthenticated)
                 return AuthType.Anonymous;
 
             return IsTokenAuthType(principal) ? AuthType.Token : AuthType.User;
         }
 
-        public static bool IsTokenAuthType(this IPrincipal principal) {
+        public static bool IsTokenAuthType(this ClaimsPrincipal principal) {
             var identity = GetClaimsIdentity(principal);
             if (identity == null)
                 return false;
@@ -92,7 +93,7 @@ namespace Exceptionless.Core.Extensions {
             return identity.AuthenticationType == TokenAuthenticationType;
         }
 
-        public static bool IsUserAuthType(this IPrincipal principal) {
+        public static bool IsUserAuthType(this ClaimsPrincipal principal) {
             var identity = GetClaimsIdentity(principal);
             if (identity == null)
                 return false;
@@ -100,16 +101,11 @@ namespace Exceptionless.Core.Extensions {
             return identity.AuthenticationType == UserAuthenticationType;
         }
 
-        public static ClaimsPrincipal GetClaimsPrincipal(this IPrincipal principal) {
-            return principal as ClaimsPrincipal;
+        public static ClaimsIdentity GetClaimsIdentity(this ClaimsPrincipal principal) {
+            return principal?.Identity as ClaimsIdentity;
         }
 
-        public static ClaimsIdentity GetClaimsIdentity(this IPrincipal principal) {
-            var claimsPrincipal = GetClaimsPrincipal(principal);
-            return claimsPrincipal?.Identity as ClaimsIdentity;
-        }
-
-        public static string GetUserId(this IPrincipal principal) {
+        public static string GetUserId(this ClaimsPrincipal principal) {
             return IsUserAuthType(principal) ? GetClaimValue(principal, ClaimTypes.NameIdentifier) : null;
         }
 
@@ -118,32 +114,33 @@ namespace Exceptionless.Core.Extensions {
         /// </summary>
         /// <param name="principal"></param>
         /// <returns></returns>
-        public static string GetLoggedInUsersTokenId(this IPrincipal principal) {
+        public static string GetLoggedInUsersTokenId(this ClaimsPrincipal principal) {
             return IsUserAuthType(principal) ? GetClaimValue(principal, LoggedInUsersTokenId) : null;
         }
 
-        public static string[] GetOrganizationIds(this IPrincipal principal) {
-            string orgIds =  GetClaimValue(principal, OrganizationIdsClaim);
-            if (String.IsNullOrEmpty(orgIds))
-                return new string[] { };
-
-            return orgIds.Split(new [] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        public static string GetTokenOrganizationId(this ClaimsPrincipal principal) {
+            return GetClaimValue(principal, OrganizationIdsClaim);
         }
 
-        public static string GetProjectId(this IPrincipal principal) {
+        public static string[] GetOrganizationIds(this ClaimsPrincipal principal) {
+            string ids = GetClaimValue(principal, OrganizationIdsClaim);
+            if (String.IsNullOrEmpty(ids))
+                return new string[] { };
+
+            return ids.Split(new [] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        public static string GetProjectId(this ClaimsPrincipal principal) {
             return GetClaimValue(principal, ProjectIdClaim);
         }
 
-        public static string GetDefaultProjectId(this IPrincipal principal) {
+        public static string GetDefaultProjectId(this ClaimsPrincipal principal) {
             // if this claim is for a specific project, then that is always the default project.
             return GetClaimValue(principal, ProjectIdClaim) ?? GetClaimValue(principal, DefaultProjectIdClaim);
         }
 
-        public static string GetClaimValue(this IPrincipal principal, string type) {
-            if (principal == null)
-                return null;
-
-            var identity = principal.GetClaimsIdentity();
+        public static string GetClaimValue(this ClaimsPrincipal principal, string type) {
+            var identity = principal?.GetClaimsIdentity();
             if (identity == null)
                 return null;
 
@@ -151,15 +148,11 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string GetClaimValue(this IIdentity identity, string type) {
-            var claimsIdentity = identity as ClaimsIdentity;
-            if (claimsIdentity == null)
+            if (!(identity is ClaimsIdentity claimsIdentity))
                 return null;
 
             var claim = claimsIdentity.FindAll(type).FirstOrDefault();
-            if (claim == null)
-                return null;
-
-            return claim.Value;
+            return claim?.Value;
         }
     }
 

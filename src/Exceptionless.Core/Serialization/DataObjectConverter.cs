@@ -6,7 +6,7 @@ using System.Reflection;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Reflection;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -103,7 +103,7 @@ namespace Exceptionless.Serializer {
 
                     return;
                 } catch (Exception) {
-                    _logger.Info("Error deserializing known data type \"{0}\": {1}", p.Name, p.Value.ToString());
+                    _logger.LogInformation("Error deserializing known data type {Name}: {Value}", p.Name, p.Value.ToString());
                 }
             }
 

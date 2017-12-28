@@ -16,8 +16,8 @@ namespace Exceptionless.Insulation.Geo {
             _geocoder = new GoogleGeocoder(apiKey);
         }
 
-        public async Task<GeoResult> ReverseGeocodeAsync(double latitude, double longitude, CancellationToken cancellationToken = new CancellationToken()) {
-            var addresses = await _geocoder.ReverseGeocodeAsync(latitude, longitude, cancellationToken).AnyContext();
+        public async Task<GeoResult> ReverseGeocodeAsync(double latitude, double longitude, CancellationToken cancellationToken = default) {
+            var addresses = await _geocoder.ReverseGeocodeAsync(latitude, longitude).AnyContext();
             var address = addresses.FirstOrDefault();
             if (address == null)
                 return null;

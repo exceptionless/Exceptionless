@@ -7,8 +7,8 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Queues;
+using Microsoft.Extensions.Logging;
 
 #pragma warning disable 1998
 
@@ -22,16 +22,16 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventUserDescription> context) {
-            _logger.Trace("Processing user description: id={0}", context.QueueEntry.Id);
+            _logger.LogTrace("Processing user description: id={0}", context.QueueEntry.Id);
 
             try {
                 await ProcessUserDescriptionAsync(context.QueueEntry.Value).AnyContext();
-                _logger.Info("Processed user description: id={0}", context.QueueEntry.Id);
+                _logger.LogInformation("Processed user description: id={Id}", context.QueueEntry.Id);
             } catch (DocumentNotFoundException ex){
-                _logger.Error(ex, "An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, context.QueueEntry.Id);
+                _logger.LogError(ex, "An event with this reference id {ReferenceId} has not been processed yet or was deleted. Queue Id: {Id}", ex.Id, context.QueueEntry.Id);
                 return JobResult.FromException(ex);
             } catch (Exception ex) {
-                _logger.Error(ex, "An error occurred while processing the EventUserDescription '{0}': {1}", context.QueueEntry.Id, ex.Message);
+                _logger.LogError(ex, "An error occurred while processing the EventUserDescription {Id}: {Message}", context.QueueEntry.Id, ex.Message);
                 return JobResult.FromException(ex);
             }
 

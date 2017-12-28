@@ -7,9 +7,9 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class SetProjectIsConfiguredWorkItemHandler : WorkItemHandlerBase {
@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<SetProjectIsConfiguredWorkItem>();
-            Log.Info("Setting Is Configured for project: {0}", workItem.ProjectId);
+            Log.LogInformation("Setting Is Configured for project: {project}", workItem.ProjectId);
 
             var project = await _projectRepository.GetByIdAsync(workItem.ProjectId).AnyContext();
             if (project == null || project.IsConfigured.GetValueOrDefault())

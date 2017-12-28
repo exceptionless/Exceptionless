@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Validation;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
-using Foundatio.Logging;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -19,8 +19,9 @@ namespace Exceptionless.Api.Tests.Validation {
         public EventValidatorTests(ITestOutputHelper output) : base(output) {
             _validator = new PersistentEventValidator();
 
+            string path = Path.Combine("..", "..", "..", "Search", "Data", "event1.json");
             var parserPluginManager = GetService<EventParserPluginManager>();
-            var events = parserPluginManager.ParseEventsAsync(File.ReadAllText(@"..\..\Search\Data\event1.json"), 2, "exceptionless/2.0.0.0").GetAwaiter().GetResult();
+            var events = parserPluginManager.ParseEvents(File.ReadAllText(path), 2, "exceptionless/2.0.0.0");
             _benchmarkEvent = events.First();
         }
 
@@ -31,11 +32,11 @@ namespace Exceptionless.Api.Tests.Validation {
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < iterations; i++) {
                 var result = _validator.Validate(_benchmarkEvent);
-                Assert.Equal(true, result.IsValid);
+                Assert.True(result.IsValid);
             }
 
             sw.Stop();
-            _logger.Info($"Time: {sw.ElapsedMilliseconds}ms, Avg: ({sw.ElapsedTicks / iterations}ticks | {sw.ElapsedMilliseconds / iterations}ms)");
+            _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
         }
 
         [Theory]

@@ -7,8 +7,12 @@ using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     public class EventContext : ExtensibleObject, IPipelineContext {
-        public EventContext(PersistentEvent ev, EventPostInfo epi = null) {
+        public EventContext(PersistentEvent ev, Organization organization, Project project, EventPostInfo epi = null) {
+            Organization = organization;
+            Project = project;
             Event = ev;
+            Event.OrganizationId = organization.Id;
+            Event.ProjectId = project.Id;
             EventPostInfo = epi;
             StackSignatureData = new Dictionary<string, string>();
         }

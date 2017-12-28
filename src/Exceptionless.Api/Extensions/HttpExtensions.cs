@@ -1,131 +1,121 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 
 namespace Exceptionless.Api.Extensions {
     public static class HttpExtensions {
-        public static User GetUser(this HttpRequestMessage message) {
-            return message?.GetOwinContext().Get<User>("User");
+        public static User GetUser(this HttpRequest request) {
+            return request.HttpContext.Items.TryGetAndReturn("User") as User;
         }
 
-        public static void SetUser(this HttpRequestMessage message, User user) {
-            message?.GetOwinContext().Set("User", user);
+        public static void SetUser(this HttpRequest request, User user) {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            if (user != null)
+                request.HttpContext.Items["User"] = user;
         }
 
-        public static Project GetProject(this HttpRequestMessage message) {
-            return message?.GetOwinContext().Get<Project>("Project");
+        public static Organization GetOrganization(this HttpRequest request) {
+            return request?.HttpContext.Items.TryGetAndReturn("Organization") as Organization;
         }
 
-        public static void SetProject(this HttpRequestMessage message, Project project) {
-            message?.GetOwinContext().Set("Project", project);
+        public static void SetOrganization(this HttpRequest request, Organization organization) {
+            if (organization != null)
+                request.HttpContext.Items["Organization"] = organization;
         }
 
-        public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequestMessage message) {
-            var context = message?.GetOwinContext();
-            return context?.Request?.User?.GetClaimsPrincipal();
+        public static Project GetProject(this HttpRequest request) {
+            return request?.HttpContext.Items.TryGetAndReturn("Project") as Project;
         }
 
-        public static AuthType GetAuthType(this HttpRequestMessage message) {
-            if (message == null)
-                return AuthType.Anonymous;
-
-            var principal = message.GetClaimsPrincipal();
-            return principal?.GetAuthType() ?? AuthType.Anonymous;
+        public static void SetProject(this HttpRequest request, Project project) {
+            if (project != null)
+                request.HttpContext.Items["Project"] = project;
         }
 
-        public static bool CanAccessOrganization(this HttpRequestMessage message, string organizationId) {
-            if (message == null)
-                return false;
+        public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequest request) {
+            return request.HttpContext.User;
+        }
 
-            if (message.IsInOrganization(organizationId))
+        public static AuthType GetAuthType(this HttpRequest request) {
+            var principal = request.GetClaimsPrincipal();
+            return principal.GetAuthType();
+        }
+
+        public static bool CanAccessOrganization(this HttpRequest request, string organizationId) {
+            if (request.IsInOrganization(organizationId))
                 return true;
 
-            return message.IsGlobalAdmin();
+            return request.IsGlobalAdmin();
         }
 
-        public static bool IsGlobalAdmin(this HttpRequestMessage message) {
-            if (message == null)
-                return false;
-
-            var principal = message.GetClaimsPrincipal();
+        public static bool IsGlobalAdmin(this HttpRequest request) {
+            var principal = request.GetClaimsPrincipal();
             return principal != null && principal.IsInRole(AuthorizationRoles.GlobalAdmin);
         }
 
-        public static bool IsInOrganization(this HttpRequestMessage message, string organizationId) {
-            if (message == null)
-                return false;
-
+        public static bool IsInOrganization(this HttpRequest request, string organizationId) {
             if (String.IsNullOrEmpty(organizationId))
                 return false;
 
-            return message.GetAssociatedOrganizationIds().Contains(organizationId);
+            return request.GetAssociatedOrganizationIds().Contains(organizationId);
         }
 
-        public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequestMessage message) {
-            if (message == null)
-                return new List<string>();
-
-            var user = message.GetUser();
-            if (user != null)
-                return user.OrganizationIds;
-
-            var principal = message.GetClaimsPrincipal();
-            return principal.GetOrganizationIds();
+        public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequest request) {
+            var principal = request.GetClaimsPrincipal();
+            return principal?.GetOrganizationIds();
         }
 
-        public static string GetDefaultOrganizationId(this HttpRequestMessage message) {
-            // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated organizations.
-            return message?.GetAssociatedOrganizationIds().FirstOrDefault();
+        public static string GetTokenOrganizationId(this HttpRequest request) {
+            var principal = request.GetClaimsPrincipal();
+            return principal?.GetTokenOrganizationId();
         }
 
-        public static string GetDefaultProjectId(this HttpRequestMessage message) {
+        public static string GetDefaultOrganizationId(this HttpRequest request) {
+            return request?.GetAssociatedOrganizationIds().FirstOrDefault();
+        }
+
+        public static string GetDefaultProjectId(this HttpRequest request) {
             // TODO: Use project id from url. E.G., /api/v{version:int=2}/projects/{projectId:objectid}/events
-            //var path = message.RequestUri.AbsolutePath;
+            //var path = request.Path.Value;
 
-            var principal = message.GetClaimsPrincipal();
+            var principal = request.GetClaimsPrincipal();
             return principal?.GetDefaultProjectId();
         }
 
-        public static string GetClientIpAddress(this HttpRequestMessage request) {
-            var context = request?.GetOwinContext();
-            return context?.Request.RemoteIpAddress;
+        public static string GetClientIpAddress(this HttpRequest request) {
+            return request.HttpContext.Connection.RemoteIpAddress?.ToString();
         }
 
-        public static string GetQueryString(this HttpRequestMessage request, string key) {
-            var queryStrings = request?.GetQueryNameValuePairs();
-            if (queryStrings == null)
-                return null;
+        public static string GetQueryString(this HttpRequest request, string key) {
+            if (request.Query.TryGetValue(key, out var queryStrings))
+                return queryStrings;
 
-            var match = queryStrings.FirstOrDefault(kv => kv.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
-            if (String.IsNullOrEmpty(match.Value))
-                return null;
-
-            return match.Value;
+            return null;
         }
 
-        public static AuthInfo GetBasicAuth(this HttpRequestMessage request) {
-            var authHeader = request?.Headers.Authorization;
-
-            if (authHeader == null || authHeader.Scheme.ToLowerInvariant() != "basic")
+        public static AuthInfo GetBasicAuth(this HttpRequest request) {
+            string authHeader = request.Headers.TryGetAndReturn("Authorization");
+            if (authHeader == null || !authHeader.StartsWith("basic", StringComparison.OrdinalIgnoreCase))
                 return null;
 
-            string data = Encoding.UTF8.GetString(Convert.FromBase64String(authHeader.Parameter));
-            if (String.IsNullOrEmpty(data))
-                return null;
-
-            string[] authParts = data.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
-            if (authParts.Length != 2)
+            string token = authHeader.Substring(6).Trim();
+            string credentialstring = Encoding.UTF8.GetString(Convert.FromBase64String(token));
+            var credentials = credentialstring.Split(':', StringSplitOptions.RemoveEmptyEntries);
+            if (credentials.Length != 2)
                 return null;
 
             return new AuthInfo {
-                Username = authParts[0],
-                Password = authParts[1]
+                Username = credentials[0],
+                Password = credentials[1]
             };
         }
     }

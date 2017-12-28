@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Exceptionless.Api.Utility.Results;
 using Xunit;
 using Xunit.Abstractions;
@@ -28,11 +27,11 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
 
             Assert.Equal(expectedLinkCount, links.Count);
             if (expectPrevious)
-                Assert.True(links.Any(l => l.Contains("previous")));
+                Assert.Contains(links, l => l.Contains("previous"));
             if (expectNext)
-                Assert.True(links.Any(l => l.Contains("next")));
+                Assert.Contains(links, l => l.Contains("next"));
 
-            foreach (var link in links)
+            foreach (string link in links)
                 Console.WriteLine(link);
         }
 
@@ -52,11 +51,11 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
 
             Assert.Equal(expectedLinkCount, links.Count);
             if (expectPrevious)
-                Assert.True(links.Any(l => l.Contains("previous")));
+                Assert.Contains(links, l => l.Contains("previous"));
             if (expectNext)
-                Assert.True(links.Any(l => l.Contains("next")));
+                Assert.Contains(links, l => l.Contains("next"));
 
-            foreach (var link in links)
+            foreach (string link in links)
                 Console.WriteLine(link);
         }
     }

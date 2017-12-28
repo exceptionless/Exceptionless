@@ -11,5 +11,10 @@ namespace Exceptionless.Api.Tests {
             _configuration.DeleteIndexesAsync().GetAwaiter().GetResult();
             _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false).GetAwaiter().GetResult();
         }
+
+        public override void Dispose() {
+            _configuration.Dispose();
+            base.Dispose();
+        }
     }
 }

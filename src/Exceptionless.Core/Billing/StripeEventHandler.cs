@@ -4,9 +4,9 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 using Stripe;
 
 namespace Exceptionless.Core.Billing {
@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Billing {
                     break;
                 }
                 default: {
-                        _logger.Trace("Unhandled stripe webhook called. Type: {0} Id: {1} Account: {2}", stripeEvent.Type, stripeEvent.Id, stripeEvent.Account);
+                    _logger.LogTrace("Unhandled stripe webhook called. Type: {Type} Id: {Id} Account: {Account}", stripeEvent.Type, stripeEvent.Id, stripeEvent.Account);
                     break;
                 }
             }
@@ -55,11 +55,11 @@ namespace Exceptionless.Core.Billing {
         private async Task SubscriptionUpdatedAsync(StripeSubscription sub) {
             var org = await _organizationRepository.GetByStripeCustomerIdAsync(sub.CustomerId).AnyContext();
             if (org == null) {
-                _logger.Error("Unknown customer id in updated subscription: {0}", sub.CustomerId);
+                _logger.LogError("Unknown customer id in updated subscription: {CustomerId}", sub.CustomerId);
                 return;
             }
 
-            _logger.Info("Stripe subscription updated. Customer: {0} Org: {1} Org Name: {2}", sub.CustomerId, org.Id, org.Name);
+            _logger.LogInformation("Stripe subscription updated. Customer: {CustomerId} Org: {organization} Org Name: {OrganizationName}", sub.CustomerId, org.Id, org.Name);
 
             BillingStatus? status = null;
             switch (sub.Status) {
@@ -106,11 +106,11 @@ namespace Exceptionless.Core.Billing {
         private async Task SubscriptionDeletedAsync(StripeSubscription sub) {
             var org = await _organizationRepository.GetByStripeCustomerIdAsync(sub.CustomerId).AnyContext();
             if (org == null) {
-                _logger.Error("Unknown customer id in deleted subscription: {0}", sub.CustomerId);
+                _logger.LogError("Unknown customer id in deleted subscription: {CustomerId}", sub.CustomerId);
                 return;
             }
 
-            _logger.Info("Stripe subscription deleted. Customer: {0} Org: {1} Org Name: {2}", sub.CustomerId, org.Id, org.Name);
+            _logger.LogInformation("Stripe subscription deleted. Customer: {CustomerId} Org: {organization} Org Name: {OrganizationName}", sub.CustomerId, org.Id, org.Name);
 
             org.BillingStatus = BillingStatus.Canceled;
             org.IsSuspended = true;
@@ -126,33 +126,33 @@ namespace Exceptionless.Core.Billing {
         private async Task InvoicePaymentSucceededAsync(StripeInvoice inv) {
             var org = await _organizationRepository.GetByStripeCustomerIdAsync(inv.CustomerId).AnyContext();
             if (org == null) {
-                _logger.Error("Unknown customer id in payment succeeded notification: {0}", inv.CustomerId);
+                _logger.LogError("Unknown customer id in payment succeeded notification: {CustomerId}", inv.CustomerId);
                 return;
             }
 
             var user = await _userRepository.GetByIdAsync(org.BillingChangedByUserId).AnyContext();
             if (user == null) {
-                _logger.Error("Unable to find billing user: {0}", org.BillingChangedByUserId);
+                _logger.LogError("Unable to find billing user: {user}", org.BillingChangedByUserId);
                 return;
             }
 
-            _logger.Info("Stripe payment succeeded. Customer: {0} Org: {1} Org Name: {2}", inv.CustomerId, org.Id, org.Name);
+            _logger.LogInformation("Stripe payment succeeded. Customer: {CustomerId} Org: {organization} Org Name: {OrganizationName}", inv.CustomerId, org.Id, org.Name);
         }
 
         private async Task InvoicePaymentFailedAsync(StripeInvoice inv) {
             var org = await _organizationRepository.GetByStripeCustomerIdAsync(inv.CustomerId).AnyContext();
             if (org == null) {
-                _logger.Error("Unknown customer id in payment failed notification: {0}", inv.CustomerId);
+                _logger.LogError("Unknown customer id in payment failed notification: {CustomerId}", inv.CustomerId);
                 return;
             }
 
             var user = await _userRepository.GetByIdAsync(org.BillingChangedByUserId).AnyContext();
             if (user == null) {
-                _logger.Error("Unable to find billing user: {0}", org.BillingChangedByUserId);
+                _logger.LogError("Unable to find billing user: {0}", org.BillingChangedByUserId);
                 return;
             }
 
-            _logger.Info("Stripe payment failed. Customer: {0} Org: {1} Org Name: {2} Email: {3}", inv.CustomerId, org.Id, org.Name, user.EmailAddress);
+            _logger.LogInformation("Stripe payment failed. Customer: {CustomerId} Org: {organization} Org Name: {OrganizationName} Email: {EmailAddress}", inv.CustomerId, org.Id, org.Name, user.EmailAddress);
             await _mailer.SendOrganizationPaymentFailedAsync(user, org).AnyContext();
         }
     }
