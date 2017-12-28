@@ -29,38 +29,39 @@ namespace Exceptionless.Api.Hubs {
                 return;
             }
 
-            var socket = await context.WebSockets.AcceptWebSocketAsync();
-            string connectionId = _connectionManager.AddWebSocket(socket);
-            await OnConnected(context, socket, connectionId);
-            bool disconnected = false;
+            using(var socket = await context.WebSockets.AcceptWebSocketAsync()) {
+                string connectionId = _connectionManager.AddWebSocket(socket);
+                await OnConnected(context, socket, connectionId);
+                bool disconnected = false;
 
-            try {
-                await Receive(socket, async (result, data) => {
-                    switch (result.MessageType) {
-                        case WebSocketMessageType.Text:
-                            if (_logger.IsEnabled(LogLevel.Trace))
-                                _logger.LogTrace("WebSocket got message {ConnectionId}", connectionId);
-                            // ignore incoming messages
-                            return;
-                        case WebSocketMessageType.Close:
-                            await OnDisconnected(context, socket, connectionId);
-                            await _connectionManager.RemoveWebSocketAsync(connectionId);
-                            disconnected = true;
-                            return;
-                    }
-                });
-            } catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) { }
+                try {
+                    await ReceiveAsync(socket, async (result, data) => {
+                        switch (result.MessageType) {
+                            case WebSocketMessageType.Text:
+                                if (_logger.IsEnabled(LogLevel.Trace))
+                                    _logger.LogTrace("WebSocket got message {ConnectionId}", connectionId);
+                                // ignore incoming messages
+                                return;
+                            case WebSocketMessageType.Close:
+                                await OnDisconnected(context, socket, connectionId);
+                                await _connectionManager.RemoveWebSocketAsync(connectionId);
+                                disconnected = true;
+                                return;
+                        }
+                    });
+                } catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) { }
 
-            // This will be hit when the connection is lost.
-            if (!disconnected) {
-                await OnDisconnected(context, socket, connectionId);
-                await _connectionManager.RemoveWebSocketAsync(connectionId);
+                // This will be hit when the connection is lost.
+                if (!disconnected) {
+                    await OnDisconnected(context, socket, connectionId);
+                    await _connectionManager.RemoveWebSocketAsync(connectionId);
+                }
             }
         }
 
         private async Task OnConnected(HttpContext context, WebSocket socket, string connectionId) {
             if (_logger.IsEnabled(LogLevel.Trace))
-                _logger.LogTrace("WebSocket connected {ConnectionId}", connectionId);
+                _logger.LogTrace("WebSocket connected {ConnectionId} ({State})", connectionId, socket?.State);
 
             try {
                 foreach (string organizationId in context.User.GetOrganizationIds())
@@ -75,7 +76,7 @@ namespace Exceptionless.Api.Hubs {
 
         private async Task OnDisconnected(HttpContext context, WebSocket socket, string connectionId) {
             if (_logger.IsEnabled(LogLevel.Trace))
-                _logger.LogTrace("WebSocket disconnected {ConnectionId}", connectionId);
+                _logger.LogTrace("WebSocket disconnected {ConnectionId} ({State})", connectionId, socket?.State);
 
             try {
                 foreach (string organizationId in context.User.GetOrganizationIds())
@@ -88,7 +89,7 @@ namespace Exceptionless.Api.Hubs {
             }
         }
 
-        private async Task Receive(WebSocket socket, Action<WebSocketReceiveResult, string> handleMessage) {
+        private async Task ReceiveAsync(WebSocket socket, Action<WebSocketReceiveResult, string> handleMessage) {
             var buffer = new ArraySegment<byte>(new byte[1024 * 4]);
             var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
             LogFrame(result, buffer.Array);

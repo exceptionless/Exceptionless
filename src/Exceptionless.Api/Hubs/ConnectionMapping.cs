@@ -43,7 +43,7 @@ namespace Exceptionless.Api.Hubs {
             if (!shouldRemove)
                 return Task.CompletedTask;
 
-            if (_connections.TryRemove(key, out HashSet<string> connections) && connections.Count > 0)
+            if (_connections.TryRemove(key, out var connections) && connections.Count > 0)
                 _connections.TryAdd(key, connections);
 
             return Task.CompletedTask;
