@@ -52,7 +52,7 @@ namespace Exceptionless.Api.Hubs {
 
             // manage user organization group membership
             var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userMembershipChanged.UserId);
-            _logger.LogTrace("Attempting to update user {user} active groups for {UserConnectionCount} connections", userMembershipChanged.UserId, userConnectionIds.Count);
+            _logger.LogTrace("Attempting to update user {User} active groups for {UserConnectionCount} connections", userMembershipChanged.UserId, userConnectionIds.Count);
             foreach (string connectionId in userConnectionIds) {
                 if (userMembershipChanged.ChangeType == ChangeType.Added)
                     await _connectionMapping.GroupAddAsync(userMembershipChanged.OrganizationId, connectionId) ;
