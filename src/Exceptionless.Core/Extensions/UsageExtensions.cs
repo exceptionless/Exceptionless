@@ -6,11 +6,11 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Core.Extensions {
     public static class UsageExtensions {
-        public static void SetUsage(this ICollection<UsageInfo> usages, DateTime date, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge = null) {
-            var usageInfo = usages.FirstOrDefault(o => o.Date == date);
+        public static void SetUsage(this ICollection<UsageInfo> usages, DateTime dateUtc, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge = null) {
+            var usageInfo = usages.FirstOrDefault(o => o.Date == dateUtc);
             if (usageInfo == null) {
                 usageInfo = new UsageInfo {
-                    Date = date,
+                    Date = dateUtc,
                     Total = total,
                     Blocked = blocked,
                     Limit = limit,

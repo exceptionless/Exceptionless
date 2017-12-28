@@ -135,7 +135,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static void SetHourlyOverage(this Organization organization, double total, double blocked, double tooBig) {
             var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-            organization.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetHourlyEventLimit(), TimeSpan.FromDays(32));
+            organization.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetHourlyEventLimit(), TimeSpan.FromDays(3));
         }
 
         public static void SetMonthlyUsage(this Organization organization, double total, double blocked, double tooBig) {
