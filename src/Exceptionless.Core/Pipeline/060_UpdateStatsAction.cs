@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Pipeline {
                 int count = stackContexts.Count;
                 DateTime minDate = stackContexts.Min(s => s.Event.Date.UtcDateTime);
                 DateTime maxDate = stackContexts.Max(s => s.Event.Date.UtcDateTime);
-                await _stackRepository.IncrementEventCounterAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count).AnyContext();
+                await _stackRepository.IncrementEventCounterAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count, Settings.Current.EnableSignalR).AnyContext();
 
                 // Update stacks in memory since they are used in notifications.
                 foreach (var ctx in stackContexts) {
