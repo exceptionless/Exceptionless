@@ -28,7 +28,7 @@ namespace Exceptionless.Api.Tests {
             var ev = json.FromJson<Event>(settings);
             Assert.Equal(8, ev.Data.Count);
             Assert.Equal("Hi", ev.Data["SomeString"]);
-            Assert.Equal(false, ev.Data["SomeBool"]);
+            Assert.False((bool)ev.Data["SomeBool"]);
             Assert.Equal(1L, ev.Data["SomeNum"]);
             Assert.Equal(typeof(JObject), ev.Data["UnknownProp"].GetType());
             Assert.Equal(typeof(JObject), ev.Data["UnknownSerializedProp"].GetType());
@@ -38,12 +38,12 @@ namespace Exceptionless.Api.Tests {
             Assert.Equal("SomeVal", ((SomeModel)ev.Data["Some"]).Blah);
             Assert.Equal(typeof(Error), ev.Data[Event.KnownDataKeys.Error].GetType());
             Assert.Equal("SomeVal", ((Error)ev.Data[Event.KnownDataKeys.Error]).Message);
-            Assert.Equal(1, ((Error)ev.Data[Event.KnownDataKeys.Error]).Data.Count);
+            Assert.Single(((Error)ev.Data[Event.KnownDataKeys.Error]).Data);
             Assert.Equal("SomeVal", ((Error)ev.Data[Event.KnownDataKeys.Error]).Data["SomeProp"]);
             Assert.Equal("Hello", ev.Message);
             Assert.Equal(2, ev.Tags.Count);
-            Assert.True(ev.Tags.Contains("One"));
-            Assert.True(ev.Tags.Contains("Two"));
+            Assert.Contains("One", ev.Tags);
+            Assert.Contains("Two", ev.Tags);
             Assert.Equal("12", ev.ReferenceId);
 
             const string expectedjson = @"{""Tags"":[""One"",""Two""],""Message"":""Hello"",""Data"":{""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""@error"":{""Modules"":[],""Message"":""SomeVal"",""Data"":{""SomeProp"":""SomeVal""},""StackTrace"":[]},""Some2"":{""Blah"":""SomeVal""},""UnknownSerializedProp"":{""Blah"":""SomeVal""}},""ReferenceId"":""12""}";
@@ -61,7 +61,7 @@ namespace Exceptionless.Api.Tests {
                 { "Some", typeof(SomeModel) },
                 { "@Some", typeof(SomeModel) },
                 { "_@Some", typeof(SomeModel) },
-                { "@string", typeof(String) }
+                { "@string", typeof(string) }
             };
             settings.Converters.Add(new DataObjectConverter<Event>(_logger, knownDataTypes));
 
@@ -87,7 +87,7 @@ namespace Exceptionless.Api.Tests {
             settings.Converters.Add(new DataObjectConverter<Event>(_logger));
 
             var ev = json.FromJson<Event>(settings);
-            Assert.Equal(1, ev.Data.Count);
+            Assert.Single(ev.Data);
             Assert.Equal("Hello", ev.Message);
             Assert.Equal("SomeVal", ev.Data["Blah"]);
         }

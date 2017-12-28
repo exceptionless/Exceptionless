@@ -9,10 +9,10 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
+using Microsoft.Extensions.Logging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
@@ -88,7 +88,7 @@ ctx._source.total_occurrences += params.count;";
 
             var result = await _client.UpdateAsync<Stack>(request).AnyContext();
             if (!result.IsValid) {
-                _logger.Error(result.OriginalException, "Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError?.Error);
+                _logger.LogError(result.OriginalException, "Error occurred incrementing total event occurrences on stack {stack}. Error: {Message}", stackId, result.ServerError?.Error);
                 return;
             }
 

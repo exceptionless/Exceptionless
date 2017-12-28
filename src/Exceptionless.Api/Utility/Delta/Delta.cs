@@ -16,7 +16,6 @@ namespace Exceptionless.Api.Utility {
     /// A class the tracks changes (i.e. the Delta) for a particular <typeparamref name="TEntityType" />.
     /// </summary>
     /// <typeparam name="TEntityType">TEntityType is the base type of entity this delta tracks changes for.</typeparam>
-    [NonValidatingParameterBinding]
     public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType : class {
         // cache property accessors for this type and all its derived types.
         private static ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>> _propertyCache = new ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>>();

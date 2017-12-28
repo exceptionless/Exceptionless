@@ -4,12 +4,12 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
-using Foundatio.Logging;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
 using MaxMind.GeoIP2.Responses;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Geo {
     public class MaxMindGeoIpService : IGeoIpService, IDisposable {
@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Geo {
                 return null;
 
             try {
-                if (database.TryCity(ip, out CityResponse city) && city?.Location != null) {
+                if (database.TryCity(ip, out var city) && city?.Location != null) {
                     result = new GeoResult {
                         Latitude = city.Location.Latitude,
                         Longitude = city.Location.Longitude,
@@ -59,10 +59,10 @@ namespace Exceptionless.Core.Geo {
                 return result;
             } catch (Exception ex) {
                 if (ex is GeoIP2Exception) {
-                    _logger.Trace().Message(ex.Message).Write();
+                    if (_logger.IsEnabled(LogLevel.Trace)) _logger.LogTrace(ex, ex.Message);
                     await _localCache.SetAsync<GeoResult>(ip, null).AnyContext();
-                } else {
-                    _logger.Error(ex, "Unable to resolve geo location for ip: " + ip);
+                } else if (_logger.IsEnabled(LogLevel.Error)) {
+                    _logger.LogError(ex, "Unable to resolve geo location for ip: {IP}", ip);
                 }
 
                 return null;
@@ -85,16 +85,16 @@ namespace Exceptionless.Core.Geo {
             _databaseLastChecked = SystemClock.UtcNow;
 
             if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH).AnyContext()) {
-                _logger.Warn("No GeoIP database was found.");
+                if (_logger.IsEnabled(LogLevel.Warning)) _logger.LogWarning("No GeoIP database was found.");
                 return null;
             }
 
-            _logger.Info("Loading GeoIP database.");
+            if (_logger.IsEnabled(LogLevel.Information)) _logger.LogInformation("Loading GeoIP database.");
             try {
                 using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
                     _database = new DatabaseReader(stream);
             } catch (Exception ex) {
-                _logger.Error(ex, "Unable to open GeoIP database.");
+                if (_logger.IsEnabled(LogLevel.Error)) _logger.LogError(ex, "Unable to open GeoIP database.");
             }
 
             return _database;

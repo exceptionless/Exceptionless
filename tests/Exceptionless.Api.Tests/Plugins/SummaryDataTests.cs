@@ -19,13 +19,15 @@ namespace Exceptionless.Api.Tests.Plugins {
             _formatter = GetService<FormattingPluginManager>();
         }
 
+#if DEBUG
         [Theory]
-        [MemberData("Events")]
+        [MemberData(nameof(Events))]
+#endif
         public void EventSummaryData(string path) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
 
-            var json = File.ReadAllText(path);
+            string json = File.ReadAllText(path);
 
             var ev = json.FromJson<PersistentEvent>(settings);
             Assert.NotNull(ev);
@@ -41,13 +43,15 @@ namespace Exceptionless.Api.Tests.Plugins {
             ApprovalsUtility.VerifyFile(Path.ChangeExtension(path, "summary.json"), JsonConvert.SerializeObject(summary, settings));
         }
 
+#if DEBUG
         [Theory]
-        [MemberData("Stacks")]
+        [MemberData(nameof(Stacks))]
+#endif
         public void StackSummaryData(string path) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
 
-            var json = File.ReadAllText(path);
+            string json = File.ReadAllText(path);
             var stack = json.FromJson<Stack>(settings);
             Assert.NotNull(stack);
 
@@ -66,7 +70,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public static IEnumerable<object[]> Events {
             get {
                 var result = new List<object[]>();
-                foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories))
+                foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "Search", "Data"), "event*.json", SearchOption.AllDirectories))
                     if (!file.EndsWith("summary.json"))
                         result.Add(new object[] { Path.GetFullPath(file) });
 
@@ -77,7 +81,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public static IEnumerable<object[]> Stacks {
             get {
                 var result = new List<object[]>();
-                foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "stack*.json", SearchOption.AllDirectories))
+                foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "Search", "Data"), "stack*.json", SearchOption.AllDirectories))
                     if (!file.EndsWith("summary.json"))
                         result.Add(new object[] { Path.GetFullPath(file) });
 

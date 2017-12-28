@@ -10,15 +10,15 @@ namespace Exceptionless.Helpers {
         public DateTime? MinDate { get; set; }
         public DateTime? MaxDate { get; set; }
 
-        public List<Event> Generate(int count) {
+        public List<Event> Generate(int count, bool setUserIdentity = true) {
             var events = new List<Event>();
             for (int i = 0; i < count; i++)
-                events.Add(Generate());
+                events.Add(Generate(setUserIdentity));
 
             return events;
         }
 
-        public PersistentEvent GeneratePersistent() {
+        public PersistentEvent GeneratePersistent(bool setUserIdentity = true) {
             var ev = new PersistentEvent {
                 OrganizationId = "1ecd0826e447ad1e78877555",
                 ProjectId = "1ecd0826e447ad1e78877ab2",
@@ -26,17 +26,17 @@ namespace Exceptionless.Helpers {
                 Date = SystemClock.UtcNow
             };
 
-            PopulateEvent(ev);
+            PopulateEvent(ev, setUserIdentity);
             return ev;
         }
 
-        public Event Generate() {
+        public Event Generate(bool setUserIdentity = true) {
             var ev = new Event();
-            PopulateEvent(ev);
+            PopulateEvent(ev, setUserIdentity);
             return ev;
         }
 
-        public void PopulateEvent(Event ev) {
+        public void PopulateEvent(Event ev, bool setUserIdentity = true) {
             if (MinDate.HasValue || MaxDate.HasValue)
                 ev.Date = RandomData.GetDateTime(MinDate ?? DateTime.MinValue, MaxDate ?? DateTime.MaxValue);
 
@@ -60,7 +60,9 @@ namespace Exceptionless.Helpers {
             if (RandomData.GetBool(20))
                 ev.Value = RandomData.GetInt(0, 10000);
 
-            ev.SetUserIdentity(Identities.Random());
+            if (setUserIdentity)
+                ev.SetUserIdentity(Identities.Random());
+
             ev.SetVersion(RandomData.GetVersion("2.0", "4.0"));
 
             ev.AddRequestInfo(new RequestInfo {

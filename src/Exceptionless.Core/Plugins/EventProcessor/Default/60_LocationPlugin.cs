@@ -9,8 +9,8 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Queues;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(60)]

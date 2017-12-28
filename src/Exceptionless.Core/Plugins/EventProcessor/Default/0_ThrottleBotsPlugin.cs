@@ -8,9 +8,9 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Queues;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(0)]
@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-            if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
+            if (Settings.Current.AppMode == AppMode.Development)
                 return;
 
             var firstContext = contexts.First();
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 if (requestCount < Settings.Current.BotThrottleLimit)
                     return;
 
-                _logger.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", clientIpAddressGroup.Key, SystemClock.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId).Project(firstContext.Event.ProjectId).Write();
+                _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Project: {project}", clientIpAddressGroup.Key, SystemClock.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId);
 
                 // The throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
                 await _workItemQueue.EnqueueAsync(new ThrottleBotsWorkItem {

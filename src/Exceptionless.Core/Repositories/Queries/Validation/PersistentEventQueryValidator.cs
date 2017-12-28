@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 using Exceptionless.Core.Repositories.Configuration;
-using Foundatio.Logging;
 using Foundatio.Parsers.ElasticQueries.Visitors;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Queries.Validation {
     public sealed class PersistentEventQueryValidator : QueryValidator {

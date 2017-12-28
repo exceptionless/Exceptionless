@@ -1,19 +1,27 @@
 ﻿using System;
+using System.Threading.Tasks;
+using Exceptionless;
 using Exceptionless.Core;
-using Exceptionless.Core.Extensions;
-using Foundatio.Utility;
+using Exceptionless.Insulation.Jobs;
 using Foundatio.Jobs;
-using Foundatio.ServiceProviders;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace EventUserDescriptionsJob {
     public class Program {
-        public static int Main() {
-            AppDomain.CurrentDomain.SetDataDirectory();
-
-            var loggerFactory = Settings.Current.GetLoggerFactory();
-            var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
-            var job = serviceProvider.GetService<Exceptionless.Core.Jobs.EventUserDescriptionsJob>();
-            return new JobRunner(job, loggerFactory, initialDelay: TimeSpan.FromSeconds(3), interval: TimeSpan.Zero, iterationLimit: Settings.Current.JobsIterationLimit).RunInConsole();
+        public static async Task<int> Main() {
+            try {
+                var serviceProvider = JobServiceProvider.GetServiceProvider();
+                var job = serviceProvider.GetService<Exceptionless.Core.Jobs.EventUserDescriptionsJob>();
+                return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), initialDelay: TimeSpan.FromSeconds(3), interval: TimeSpan.Zero, iterationLimit: Settings.Current.JobsIterationLimit).RunInConsoleAsync();
+            } catch (Exception ex) {
+                Log.Fatal(ex, "Job terminated unexpectedly");
+                return 1;
+            } finally {
+                Log.CloseAndFlush();
+                await ExceptionlessClient.Default.ProcessQueueAsync();
+            }
         }
     }
 }

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "EventUserDescriptionsJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

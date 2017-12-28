@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Models.Collections {
             bool success = _dictionary.Remove(key);
 
             if (success)
-                OnChanged(new ChangedEventArgs<KeyValuePair<TKey, TValue>>(new KeyValuePair<TKey, TValue>(key, default(TValue)), ChangedAction.Remove));
+                OnChanged(new ChangedEventArgs<KeyValuePair<TKey, TValue>>(new KeyValuePair<TKey, TValue>(key, default), ChangedAction.Remove));
 
             return success;
         }

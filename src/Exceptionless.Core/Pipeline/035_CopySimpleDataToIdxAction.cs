@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Pipeline {
                 return Task.CompletedTask;
 
             // TODO: Do we need a pipeline action to trim keys and remove null values that may be sent by other native clients.
-            ctx.Event.CopyDataToIndex();
+            ctx.Event.CopyDataToIndex(Array.Empty<string>());
 
             return Task.CompletedTask;
         }

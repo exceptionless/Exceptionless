@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Description;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
@@ -24,19 +21,23 @@ using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Stripe;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 #pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "/organizations")]
-    [Authorize(Roles = AuthorizationRoles.User)]
+    [Route(API_PREFIX + "/organizations")]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class OrganizationController : RepositoryApiController<IOrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {
         private readonly ICacheClient _cacheClient;
         private readonly IEventRepository _eventRepository;
@@ -47,7 +48,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IMailer _mailer;
         private readonly IMessagePublisher _messagePublisher;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IEventRepository eventRepository, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(organizationRepository, mapper, validator, loggerFactory) {
+        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IEventRepository eventRepository, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(organizationRepository, mapper, validator, loggerFactory) {
             _cacheClient = cacheClient;
             _eventRepository = eventRepository;
             _userRepository = userRepository;
@@ -65,9 +66,8 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         [HttpGet]
-        [Route]
-        [ResponseType(typeof(List<ViewOrganization>))]
-        public async Task<IHttpActionResult> GetAsync(string mode = null) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewOrganization>))]
+        public async Task<IActionResult> GetAsync([FromQuery] string mode = null) {
             var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
             var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations, true);
 
@@ -77,12 +77,10 @@ namespace Exceptionless.Api.Controllers {
             return Ok(viewOrganizations);
         }
 
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/admin/organizations")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [HttpGet("~/" + API_PREFIX + "/admin/organizations")]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IHttpActionResult> GetForAdminsAsync(string criteria = null, bool? paid = null, bool? suspended = null, string mode = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest) {
+        public async Task<IActionResult> GetForAdminsAsync([FromQuery] string criteria = null, [FromQuery] bool? paid = null, [FromQuery] bool? suspended = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] OrganizationSortBy sort = OrganizationSortBy.Newest) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var organizations = await _repository.GetByCriteriaAsync(criteria, o => o.PageNumber(page).PageLimit(limit), sort, paid, suspended);
@@ -94,12 +92,10 @@ namespace Exceptionless.Api.Controllers {
             return OkWithResourceLinks(viewOrganizations, organizations.HasMore, page, organizations.Total);
         }
 
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/admin/organizations/stats")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [HttpGet("~/" + API_PREFIX + "/admin/organizations/stats")]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IHttpActionResult> PlanStatsAsync() {
+        public async Task<IActionResult> PlanStatsAsync() {
             return Ok(await _repository.GetBillingPlanStatsAsync());
         }
 
@@ -109,10 +105,9 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="id">The identifier of the organization.</param>
         /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         /// <response code="404">The organization could not be found.</response>
-        [HttpGet]
-        [Route("{id:objectid}", Name = "GetOrganizationById")]
-        [ResponseType(typeof(ViewOrganization))]
-        public async Task<IHttpActionResult> GetByIdAsync(string id, string mode = null) {
+        [HttpGet("{id:objectid}", Name = "GetOrganizationById")]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewOrganization))]
+        public async Task<IActionResult> GetByIdAsync(string id, [FromQuery] string mode = null) {
             var organization = await GetModelAsync(id);
             if (organization == null)
                 return NotFound();
@@ -132,10 +127,9 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="400">An error occurred while creating the organization.</response>
         /// <response code="409">The organization already exists.</response>
         [HttpPost]
-        [Route]
-        [ResponseType(typeof(ViewOrganization))]
-        public override Task<IHttpActionResult> PostAsync(NewOrganization organization) {
-            return base.PostAsync(organization);
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewOrganization))]
+        public Task<IActionResult> PostAsync([FromBody] NewOrganization organization) {
+            return PostImplAsync(organization);
         }
 
         /// <summary>
@@ -148,8 +142,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
-        public override Task<IHttpActionResult> PatchAsync(string id, Delta<NewOrganization> changes) {
-            return base.PatchAsync(id, changes);
+        public Task<IActionResult> PatchAsync(string id, [FromBody] Delta<NewOrganization> changes) {
+            return PatchImplAsync(id, changes);
         }
 
         /// <summary>
@@ -162,8 +156,9 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="500">An error occurred while deleting one or more organizations.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public Task<IHttpActionResult> DeleteAsync(string ids) {
-            return base.DeleteAsync(ids.FromDelimitedString());
+        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        public Task<IActionResult> DeleteAsync(string ids) {
+            return DeleteImplAsync(ids.FromDelimitedString());
         }
 
         #endregion
@@ -175,8 +170,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The invoice was not found.</response>
         [HttpGet]
         [Route("invoice/{id:minlength(10)}")]
-        [ResponseType(typeof(Invoice))]
-        public async Task<IHttpActionResult> GetInvoiceAsync(string id) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(Invoice))]
+        public async Task<IActionResult> GetInvoiceAsync(string id) {
             if (!Settings.Current.EnableBilling)
                 return NotFound();
 
@@ -188,7 +183,8 @@ namespace Exceptionless.Api.Controllers {
                 var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
                 stripeInvoice = await invoiceService.GetAsync(id);
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
+                using (_logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                    _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}", id);
             }
 
             if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
@@ -245,8 +241,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The organization was not found.</response>
         [HttpGet]
         [Route("{id:objectid}/invoices")]
-        [ResponseType(typeof(List<Invoice>))]
-        public async Task<IHttpActionResult> GetInvoicesAsync(string id, string before = null, string after = null, int limit = 12) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Invoice>))]
+        public async Task<IActionResult> GetInvoicesAsync(string id, [FromQuery] string before = null, [FromQuery] string after = null, [FromQuery] int limit = 12) {
             if (!Settings.Current.EnableBilling)
                 return NotFound();
 
@@ -279,8 +275,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The organization was not found.</response>
         [HttpGet]
         [Route("{id:objectid}/plans")]
-        [ResponseType(typeof(List<BillingPlan>))]
-        public async Task<IHttpActionResult> GetPlansAsync(string id) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<BillingPlan>))]
+        public async Task<IActionResult> GetPlansAsync(string id) {
             var organization = await GetModelAsync(id);
             if (organization == null)
                 return NotFound();
@@ -324,8 +320,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The organization was not found.</response>
         [HttpPost]
         [Route("{id:objectid}/change-plan")]
-        [ResponseType(typeof(ChangePlanResult))]
-        public async Task<IHttpActionResult> ChangePlanAsync(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ChangePlanResult))]
+        public async Task<IActionResult> ChangePlanAsync(string id, [FromQuery] string planId, [FromQuery] string stripeToken = null, [FromQuery] string last4 = null, [FromQuery] string couponId = null) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 return NotFound();
 
@@ -419,9 +415,11 @@ namespace Exceptionless.Api.Controllers {
                 BillingManager.ApplyBillingPlan(organization, plan, CurrentUser);
                 await _repository.SaveAsync(organization, o => o.Cache());
                 await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
-            } catch (Exception e) {
-                _logger.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
-                return Ok(ChangePlanResult.FailWithMessage(e.Message));
+            } catch (Exception ex) {
+                using (_logger.BeginScope(new ExceptionlessState().Tag("Change Plan").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                    _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {Message}", ex.Message);
+
+                return Ok(ChangePlanResult.FailWithMessage(ex.Message));
             }
 
             return Ok(new ChangePlanResult { Success = true });
@@ -436,8 +434,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="426">Please upgrade your plan to add an additional user.</response>
         [HttpPost]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
-        [ResponseType(typeof(User))]
-        public async Task<IHttpActionResult> AddUserAsync(string id, string email) {
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(User))]
+        public async Task<IActionResult> AddUserAsync(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return NotFound();
 
@@ -488,7 +486,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The organization was not found.</response>
         [HttpDelete]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
-        public async Task<IHttpActionResult> RemoveUserAsync(string id, string email) {
+        public async Task<IActionResult> RemoveUserAsync(string id, string email) {
             var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
@@ -530,10 +528,9 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/suspend")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IHttpActionResult> SuspendAsync(string id, SuspensionCode code, string notes = null) {
+        public async Task<IActionResult> SuspendAsync(string id, [FromQuery] SuspensionCode code, [FromQuery] string notes = null) {
             var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
@@ -550,10 +547,9 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/suspend")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IHttpActionResult> UnsuspendAsync(string id) {
+        public async Task<IActionResult> UnsuspendAsync(string id) {
             var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
@@ -577,7 +573,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The organization was not found.</response>
         [HttpPost]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
-        public async Task<IHttpActionResult> PostDataAsync(string id, string key, string value) {
+        public async Task<IActionResult> PostDataAsync(string id, string key, [FromBody] string value) {
             var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
@@ -596,7 +592,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">The organization was not found.</response>
         [HttpDelete]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
-        public async Task<IHttpActionResult> DeleteDataAsync(string id, string key) {
+        public async Task<IActionResult> DeleteDataAsync(string id, string key) {
             var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
@@ -615,11 +611,11 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="204">The organization name is not available.</response>
         [HttpGet]
         [Route("check-name")]
-        public async Task<IHttpActionResult> IsNameAvailableAsync(string name) {
+        public async Task<IActionResult> IsNameAvailableAsync([FromQuery] string name) {
             if (await IsOrganizationNameAvailableInternalAsync(name))
-                return StatusCode(HttpStatusCode.NoContent);
+                return StatusCode(StatusCodes.Status204NoContent);
 
-            return StatusCode(HttpStatusCode.Created);
+            return StatusCode(StatusCodes.Status201Created);
         }
 
         private async Task<bool> IsOrganizationNameAvailableInternalAsync(string name) {
@@ -682,7 +678,9 @@ namespace Exceptionless.Api.Controllers {
         protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
             var workItems = new List<string>();
             foreach (var organization in organizations) {
-                _logger.Info().Message("User {0} deleting organization {1}.", CurrentUser.Id, organization.Id).Property("User", CurrentUser).SetActionContext(ActionContext).Write();
+                using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                    _logger.LogInformation("User {user} deleting organization {organization}.", CurrentUser.Id, organization.Id);
+
                 workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveOrganizationWorkItem {
                     OrganizationId = organization.Id,
                     CurrentUserId = CurrentUser.Id,

@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
-using Foundatio.Logging;
 using Foundatio.Metrics;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin> {
-        public WebHookDataPluginManager(IDependencyResolver dependencyResolver = null, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(dependencyResolver, metricsClient, loggerFactory) {}
+        public WebHookDataPluginManager(IServiceProvider serviceProvider, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, metricsClient, loggerFactory) {}
 
         /// <summary>
         /// Runs all of the event plugins create method.
@@ -24,7 +23,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
 
                     return data;
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling create from event in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("Event", context.Event).Write();
+                    _logger.LogError(ex, "Error calling create from event {id} in plugin {PluginName}: {Message}", context.Event.Id, plugin.Name, ex.Message);
                 }
             }
 
@@ -46,7 +45,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
 
                     return data;
                 } catch (Exception ex) {
-                    _logger.Error().Exception(ex).Message("Error calling create from stack in plugin \"{0}\": {1}", plugin.Name, ex.Message).Property("Stack", context.Stack).Write();
+                    _logger.LogError(ex, "Error calling create from stack {stack} in plugin {PluginName}: {Message}", context.Stack.Id, plugin.Name, ex.Message);
                 }
             }
 

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DownloadGeoIPDatabaseJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

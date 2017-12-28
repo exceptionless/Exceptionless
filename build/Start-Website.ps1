@@ -3,12 +3,12 @@
     If (!(Test-Path -Path $iisExpressExe)) {
         $iisExpressExe =  "${env:programfiles(x86)}\IIS Express\iisexpress.exe"
     }
-    
+
     If (!(Test-Path -Path $iisExpressExe)) {
         Write-Error "Please install IIS Express to continue"
         Return;
     }
-    
+
     Write-host "Starting site on port: $port"
     cmd /c start cmd /k "$iisExpressExe" "/port:$port" "/path:$path"
     Start-Sleep -m 1000

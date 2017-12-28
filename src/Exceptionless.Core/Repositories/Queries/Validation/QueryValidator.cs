@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Foundatio.Logging;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.Core.Queries.Validation {
     public interface IQueryValidator {
@@ -23,7 +24,7 @@ namespace Exceptionless.Core.Queries.Validation {
 
         public QueryValidator(IQueryParser parser, ILoggerFactory loggerFactory) {
             _parser = parser;
-            _logger = loggerFactory.CreateLogger(GetType());
+            _logger = loggerFactory?.CreateLogger(GetType());
         }
 
         public async Task<QueryProcessResult> ValidateQueryAsync(string query) {
@@ -34,7 +35,7 @@ namespace Exceptionless.Core.Queries.Validation {
             try {
                 parsedResult = await _parser.ParseAsync(query, QueryType.Query).AnyContext();
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Message("Error parsing query").Property("Query", query).Write();
+                _logger.LogError(ex, "Error parsing query: {Query}", query);
                 return new QueryProcessResult { Message = ex.Message };
             }
 
@@ -58,7 +59,7 @@ namespace Exceptionless.Core.Queries.Validation {
             try {
                 parsedResult = await _parser.ParseAsync(aggs, QueryType.Aggregation).AnyContext();
             } catch (Exception ex) {
-                _logger.Error().Exception(ex).Message("Error parsing aggregation").Property("Aggregation", aggs).Write();
+                _logger.LogError(ex, "Error parsing aggregation: {Aggregation}", aggs);
                 return new QueryProcessResult { Message = ex.Message };
             }
 

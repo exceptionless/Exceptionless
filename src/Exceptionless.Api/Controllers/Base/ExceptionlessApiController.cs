@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Results;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
@@ -15,10 +12,13 @@ using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 
 namespace Exceptionless.Api.Controllers {
     [RequireHttpsExceptLocal]
-    public abstract class ExceptionlessApiController : ApiController {
+    public abstract class ExceptionlessApiController : Controller {
         public const string API_PREFIX = "api/v2";
         protected const int DEFAULT_LIMIT = 10;
         protected const int MAXIMUM_LIMIT = 100;
@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected TimeSpan GetOffset(string offset) {
-            if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out TimeSpan? value) && value.HasValue)
+            if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out var value) && value.HasValue)
                 return value.Value;
 
             return TimeSpan.Zero;
@@ -87,23 +87,23 @@ namespace Exceptionless.Api.Controllers {
 
         protected User CurrentUser => Request.GetUser();
 
-        public bool CanAccessOrganization(string organizationId) {
+        protected bool CanAccessOrganization(string organizationId) {
             return Request.CanAccessOrganization(organizationId);
         }
 
-        public bool IsInOrganization(string organizationId) {
+        protected bool IsInOrganization(string organizationId) {
             if (String.IsNullOrEmpty(organizationId))
                 return false;
 
             return Request.IsInOrganization(organizationId);
         }
 
-        public ICollection<string> GetAssociatedOrganizationIds() {
+        protected ICollection<string> GetAssociatedOrganizationIds() {
             return Request.GetAssociatedOrganizationIds();
         }
 
         private static readonly IReadOnlyCollection<Organization> EmptyOrganizations = new List<Organization>(0).AsReadOnly();
-        public async Task<IReadOnlyCollection<Organization>> GetSelectedOrganizationsAsync(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, string filter = null) {
+        protected async Task<IReadOnlyCollection<Organization>> GetSelectedOrganizationsAsync(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, string filter = null) {
             var associatedOrganizationIds = GetAssociatedOrganizationIds();
             if (associatedOrganizationIds.Count == 0)
                 return EmptyOrganizations;
@@ -155,59 +155,53 @@ namespace Exceptionless.Api.Controllers {
             return !hasOrganizationOrProjectOrStackFilter;
         }
 
-        protected StatusCodeActionResult StatusCodeWithMessage(HttpStatusCode statusCode, string message, string reason = null) {
-            return new StatusCodeActionResult(statusCode, Request, message, reason);
+        protected ObjectResult Permission(PermissionResult permission) {
+            return StatusCode(permission.StatusCode, new MessageContent(permission.Id, permission.Message));
         }
 
-        protected IHttpActionResult WorkInProgress(IEnumerable<string> workers) {
-            return new NegotiatedContentResult<WorkInProgressResult>(HttpStatusCode.Accepted, new WorkInProgressResult(workers), this);
+        protected ObjectResult StatusCodeWithMessage(int statusCode, string message, string reason = null) {
+            return StatusCode(statusCode, new MessageContent(message, reason));
         }
 
-        protected IHttpActionResult BadRequest(ModelActionResults results) {
-            return new NegotiatedContentResult<ModelActionResults>(HttpStatusCode.BadRequest, results, this);
+        protected ObjectResult WorkInProgress(IEnumerable<string> workers) {
+            return StatusCode(StatusCodes.Status202Accepted, new WorkInProgressResult(workers));
+            }
+
+        protected ObjectResult BadRequest(ModelActionResults results) {
+            return StatusCode(StatusCodes.Status400BadRequest, results);
         }
 
-        public PermissionActionResult Permission(PermissionResult permission) {
-            return new PermissionActionResult(permission, Request);
+        protected ObjectResult PlanLimitReached(string message) {
+            return StatusCode(StatusCodes.Status426UpgradeRequired, new MessageContent(message));
         }
 
-        public PlanLimitReachedActionResult PlanLimitReached(string message) {
-            return new PlanLimitReachedActionResult(message, Request);
+        protected ObjectResult NotImplemented(string message) {
+            return StatusCode(StatusCodes.Status501NotImplemented, new MessageContent(message));
         }
 
-        public NotImplementedActionResult NotImplemented(string message) {
-            return new NotImplementedActionResult(message, Request);
+        protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string link) {
+            return OkWithLinks(content, new[] { link });
         }
 
-        public OkWithHeadersContentResult<T> OkWithLinks<T>(T content, params string[] links) {
-            return new OkWithHeadersContentResult<T>(content, this, links.Where(l => l != null).Select(l => new KeyValuePair<string, IEnumerable<string>>("Link", new[] { l })));
+        protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string[] links) {
+            var headers = new HeaderDictionary();
+            var linksToAdd = links.Where(l => l != null).ToArray();
+            if (linksToAdd.Length > 0)
+                headers.Add("Link", linksToAdd);
+
+            return new OkWithHeadersContentResult<T>(content, headers);
         }
 
-        public OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, params Tuple<string, string>[] headers) {
-            return new OkWithHeadersContentResult<T>(content, this, headers.Where(h => h != null).Select(h => new KeyValuePair<string, IEnumerable<string>>(h.Item1, new[] { h.Item2 })));
+        protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
+            var headersToAdd = new HeaderDictionary();
+            foreach (var kvp in headers)
+                headersToAdd.Add(kvp.Key, kvp.Value.ToArray());
+
+            return new OkWithResourceLinks<TEntity>(content, hasMore, null, pagePropertyAccessor, headersToAdd, isDescending);
         }
 
-        public OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, params Tuple<string, string[]>[] headers) {
-            return new OkWithHeadersContentResult<T>(content, this, headers.Select(h => new KeyValuePair<string, IEnumerable<string>>(h.Item1, h.Item2)));
-        }
-
-        public OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers) {
-            return new OkWithHeadersContentResult<T>(content, this, headers);
-        }
-
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
-            return new OkWithResourceLinks<TEntity>(content, this, hasMore, null, pagePropertyAccessor, headers, isDescending);
-        }
-
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
-            return new OkWithResourceLinks<TEntity>(content, this, hasMore, page, total);
-        }
-
-        protected Dictionary<string, IEnumerable<string>> GetLimitedByPlanHeader(long totalLimitedByPlan) {
-            var headers = new Dictionary<string, IEnumerable<string>>();
-            if (totalLimitedByPlan > 0)
-                headers.Add(ExceptionlessHeaders.LimitedByPlan, new[] { totalLimitedByPlan.ToString() });
-            return headers;
+        protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
+            return new OkWithResourceLinks<TEntity>(content, hasMore, page, total);
         }
 
         protected string GetResourceLink(string url, string type) {

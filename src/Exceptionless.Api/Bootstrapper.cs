@@ -1,41 +1,63 @@
 ﻿using System;
-using System.Threading;
+using System.Threading.Tasks;
 using AutoMapper;
 using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
+using Exceptionless.Api.Utility.Handlers;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
-using Foundatio.Caching;
-using Foundatio.Logging;
-using Foundatio.Metrics;
-using Microsoft.AspNet.SignalR;
-using Microsoft.AspNet.SignalR.Infrastructure;
-using SimpleInjector;
-using SimpleInjector.Advanced;
+using Foundatio.Jobs;
+using Foundatio.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Stripe;
-using PrincipalUserIdProvider = Exceptionless.Api.Hubs.PrincipalUserIdProvider;
 
 namespace Exceptionless.Api {
     public class Bootstrapper {
-        public static void RegisterServices(Container container, ILoggerFactory loggerFactory, CancellationToken shutdownCancellationToken) {
-            container.Register<IUserIdProvider, PrincipalUserIdProvider>();
-            container.Register<MessageBusConnection>();
-            container.RegisterSingleton<IConnectionMapping, ConnectionMapping>();
-            container.RegisterSingleton<MessageBusBroker>();
+        public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory) {
+            container.AddSingleton<WebSocketConnectionManager>();
+            container.AddSingleton<MessageBusBroker>();
+            container.AddSingleton<MessageBusBrokerMiddleware>();
+            container.AddSingleton<IConnectionMapping, ConnectionMapping>();
 
-            var resolver = new SimpleInjectorSignalRDependencyResolver(container);
-            container.RegisterSingleton<IDependencyResolver>(resolver);
-            container.RegisterSingleton<IConnectionManager>(() => new ConnectionManager(resolver));
+            container.AddSingleton<OverageMiddleware>();
+            container.AddSingleton<ThrottlingMiddleware>();
 
-            container.RegisterSingleton<OverageHandler>();
-            container.RegisterSingleton<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), container.GetInstance<IMetricsClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+            container.AddTransient<Profile, ApiMappings>();
 
-            container.AppendToCollection(typeof(Profile), typeof(ApiMappings));
+            Core.Bootstrapper.RegisterServices(container);
+            bool includeInsulation = !String.IsNullOrEmpty(Settings.Current.RedisConnectionString) || 
+                !String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString) ||
+                !String.IsNullOrEmpty(Settings.Current.AzureStorageQueueConnectionString) ||
+                !String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString) ||
+                Settings.Current.EnableMetricsReporting;
+            if (includeInsulation)
+                Insulation.Bootstrapper.RegisterServices(container, Settings.Current.RunJobsInProcess);
+
+            if (Settings.Current.RunJobsInProcess)
+                container.AddSingleton<IHostedService, JobsHostedService>();
+
+            var logger = loggerFactory.CreateLogger<Startup>();
+            container.AddStartupAction<MessageBusBroker>();
+            container.AddStartupAction((sp, ct) => {
+                var subscriber = sp.GetRequiredService<IMessageSubscriber>();
+                return subscriber.SubscribeAsync<WorkItemStatus>(workItemStatus => {
+                    if (logger.IsEnabled(LogLevel.Trace))
+                        logger.LogTrace("WorkItem id:{WorkItemId} message:{Message} progress:{Progress}", workItemStatus.WorkItemId ?? "<NULL>", workItemStatus.Message ?? "<NULL>", workItemStatus.Progress);
+
+                    return Task.CompletedTask;
+                }, ct);
+            });
+
+            container.AddSingleton<EnqueueOrganizationNotificationOnPlanOverage>();
+            container.AddStartupAction<EnqueueOrganizationNotificationOnPlanOverage>();
         }
 
         public class ApiMappings : Profile {

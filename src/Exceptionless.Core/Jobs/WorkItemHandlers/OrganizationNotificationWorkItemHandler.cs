@@ -10,13 +10,13 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Logging;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
-    public class EnqueueOrganizationNotificationOnPlanOverage {
+    public class EnqueueOrganizationNotificationOnPlanOverage : IStartupAction {
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly IMessageSubscriber _subscriber;
         private readonly ILogger _logger;
@@ -28,13 +28,15 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         }
 
         public Task RunAsync(CancellationToken token) {
-            return _subscriber.SubscribeAsync<PlanOverage>(async overage => {
-                _logger.Info("Enqueueing plan overage work item for organization: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
-                await _workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
+            return _subscriber.SubscribeAsync<PlanOverage>(overage => {
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("Enqueueing plan overage work item for organization: {OrganizationId} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
+
+                return _workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
                     OrganizationId = overage.OrganizationId,
                     IsOverHourlyLimit = overage.IsHourly,
                     IsOverMonthlyLimit = !overage.IsHourly
-                }).AnyContext();
+                });
             }, token);
         }
     }
@@ -59,7 +61,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<OrganizationNotificationWorkItem>();
-            Log.Info("Received organization notification work item for: {0} IsOverHourlyLimit: {1} IsOverMonthlyLimit: {2}", workItem.OrganizationId, workItem.IsOverHourlyLimit, workItem.IsOverMonthlyLimit);
+            Log.LogInformation("Received organization notification work item for: {organization} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", workItem.OrganizationId, workItem.IsOverHourlyLimit, workItem.IsOverMonthlyLimit);
 
             var organization = await _organizationRepository.GetByIdAsync(workItem.OrganizationId, o => o.Cache()).AnyContext();
             if (organization == null)
@@ -73,20 +75,20 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             var results = await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
             foreach (var user in results.Documents) {
                 if (!user.IsEmailAddressVerified) {
-                    Log.Info("User {0} with email address {1} has not been verified.", user.Id, user.EmailAddress);
+                    Log.LogInformation("User {user} with email address {EmailAddress} has not been verified.", user.Id, user.EmailAddress);
                     continue;
                 }
 
                 if (!user.EmailNotificationsEnabled) {
-                    Log.Info().Message("User {0} with email address {1} has email notifications disabled.", user.Id, user.EmailAddress);
+                    Log.LogInformation("User {user} with email address {EmailAddress} has email notifications disabled.", user.Id, user.EmailAddress);
                     continue;
                 }
 
-                Log.Trace("Sending email to {0}...", user.EmailAddress);
+                Log.LogTrace("Sending email to {EmailAddress}...", user.EmailAddress);
                 await _mailer.SendOrganizationNoticeAsync(user, organization, isOverMonthlyLimit, isOverHourlyLimit).AnyContext();
             }
 
-            Log.Trace().Message("Done sending email.");
+            Log.LogTrace("Done sending email.");
         }
     }
 }

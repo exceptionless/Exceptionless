@@ -18,6 +18,7 @@ x64/
 build/
 [Bb]in/
 [Oo]bj/
+published/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/
@@ -116,5 +117,8 @@ App_Data
 
 *.DS_Store
 *.orig
-src/Exceptionless.Api/Logs/*.txt
 *.nugetreferenceswitcher
+artifacts
+.idea
+src/Exceptionless\.Web/storage/
+tests/Exceptionless\.Api\.Tests/src/Exceptionless\.Web/storage/

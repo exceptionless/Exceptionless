@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Description;
 using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
@@ -14,18 +12,22 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
-using Foundatio.Logging;
 using Foundatio.Repositories;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.App.Controllers.API {
-    [RoutePrefix(API_PREFIX + "/webhooks")]
-    [Authorize(Roles = AuthorizationRoles.User)]
+    [Route(API_PREFIX + "/webhooks")]
+    [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     public class WebHookController : RepositoryApiController<IWebHookRepository, WebHook, WebHook, NewWebHook, NewWebHook> {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
 
-        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, IMapper mapper, QueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
+        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
             _projectRepository = projectRepository;
             _billingManager = billingManager;
         }
@@ -39,10 +41,10 @@ namespace Exceptionless.App.Controllers.API {
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="404">The project could not be found.</response>
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
-        [ResponseType(typeof(List<WebHook>))]
-        public async Task<IHttpActionResult> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
+        [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<WebHook>))]
+        public async Task<IActionResult> GetByProjectAsync(string projectId, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -58,11 +60,11 @@ namespace Exceptionless.App.Controllers.API {
         /// </summary>
         /// <param name="id">The identifier of the web hook.</param>
         /// <response code="404">The web hook could not be found.</response>
-        [HttpGet]
-        [Route("{id:objectid}", Name = "GetWebHookById")]
-        [ResponseType(typeof(WebHook))]
-        public override Task<IHttpActionResult> GetByIdAsync(string id) {
-            return base.GetByIdAsync(id);
+        [HttpGet("{id:objectid}", Name = "GetWebHookById")]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(WebHook))]
+        public Task<IActionResult> GetByIdAsync(string id) {
+            return GetByIdImplAsync(id);
         }
 
         /// <summary>
@@ -72,10 +74,10 @@ namespace Exceptionless.App.Controllers.API {
         /// <returns></returns>
         /// <response code="400">An error occurred while creating the web hook.</response>
         /// <response code="409">The web hook already exists.</response>
-        [Route]
         [HttpPost]
-        public override Task<IHttpActionResult> PostAsync(NewWebHook webhook) {
-            return base.PostAsync(webhook);
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+        public Task<IActionResult> PostAsync([FromBody] NewWebHook webhook) {
+            return PostImplAsync(webhook);
         }
 
         /// <summary>
@@ -86,10 +88,11 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="400">One or more validation errors occurred.</response>
         /// <response code="404">One or more web hooks were not found.</response>
         /// <response code="500">An error occurred while deleting one or more web hooks.</response>
-        [HttpDelete]
-        [Route("{ids:objectids}")]
-        public Task<IHttpActionResult> DeleteAsync(string ids) {
-            return base.DeleteAsync(ids.FromDelimitedString());
+        [HttpDelete("{ids:objectids}")]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        public Task<IActionResult> DeleteAsync(string ids) {
+            return DeleteImplAsync(ids.FromDelimitedString());
         }
 
         #endregion
@@ -97,41 +100,41 @@ namespace Exceptionless.App.Controllers.API {
         /// <summary>
         /// This controller action is called by zapier to create a hook subscription.
         /// </summary>
-        [HttpPost]
-        [Route("subscribe")]
-        [Route("~/api/v{version:int=2}/webhooks/subscribe")]
-        [Route("~/api/v1/projecthook/subscribe")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Client)]
+        [HttpPost("subscribe")]
+        [HttpPost("~/api/v{version:int=2}/webhooks/subscribe")]
+        [HttpPost("~/api/v1/projecthook/subscribe")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public Task<IHttpActionResult> SubscribeAsync(JObject data, int version = 1) {
+        public Task<IActionResult> SubscribeAsync([FromBody] JObject data, int version = 1) {
             var webHook = new NewWebHook {
                 EventTypes = new[] { data.GetValue("event").Value<string>() },
                 Url = data.GetValue("target_url").Value<string>(),
                 Version = new Version(version >= 0 ? version : 0, 0)
             };
 
-            if (User.GetProjectId() != null)
-                webHook.ProjectId = User.GetProjectId();
+            if (!webHook.Url.StartsWith("https://hooks.zapier.com"))
+                return Task.FromResult<IActionResult>(NotFound());
+
+            string projectId = User.GetProjectId();
+            if (projectId != null)
+                webHook.ProjectId = projectId;
             else
                 webHook.OrganizationId = Request.GetDefaultOrganizationId();
 
-            return PostAsync(webHook);
+            return PostImplAsync(webHook);
         }
 
         /// <summary>
         /// This controller action is called by zapier to remove a hook subscription.
         /// </summary>
-        [HttpPost]
         [AllowAnonymous]
-        [Route("unsubscribe")]
-        [Route("~/api/v1/projecthook/unsubscribe")]
+        [HttpPost("unsubscribe")]
+        [HttpPost("~/api/v1/projecthook/unsubscribe")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IHttpActionResult> UnsubscribeAsync(JObject data) {
+        public async Task<IActionResult> UnsubscribeAsync([FromBody] JObject data) {
             string targetUrl = data.GetValue("target_url").Value<string>();
 
             // don't let this anon method delete non-zapier hooks
-            if (!targetUrl.Contains("zapier"))
+            if (!targetUrl.StartsWith("https://hooks.zapier.com"))
                 return NotFound();
 
             var results = await _repository.GetByUrlAsync(targetUrl);
@@ -140,7 +143,7 @@ namespace Exceptionless.App.Controllers.API {
                 if (results.Documents.Any(h => h.OrganizationId != organizationId))
                     throw new ArgumentException("All OrganizationIds must be the same.");
 
-                _logger.Info(() => $"Removing {results.Documents.Count} zapier urls matching: {targetUrl}");
+                _logger.LogInformation("Removing {Count} zapier urls matching: {Url}", results.Documents.Count, targetUrl);
                 await _repository.RemoveAsync(results.Documents);
             }
 
@@ -150,14 +153,12 @@ namespace Exceptionless.App.Controllers.API {
         /// <summary>
         /// This controller action is called by zapier to test auth.
         /// </summary>
-        [HttpGet]
-        [HttpPost]
-        [Route("test")]
-        [Route("~/api/v1/projecthook/test")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Client)]
+        [HttpGet("test")]
+        [HttpPost("test")]
+        [HttpGet("~/api/v1/projecthook/test")]
+        [HttpPost("~/api/v1/projecthook/test")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public IHttpActionResult Test() {
+        public IActionResult Test() {
             return Ok(new[] {
                 new { id = 1, Message = "Test message 1." },
                 new { id = 2, Message = "Test message 2." }

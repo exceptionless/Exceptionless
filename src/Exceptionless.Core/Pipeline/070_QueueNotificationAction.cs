@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -7,8 +8,8 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
-using Foundatio.Logging;
 using Foundatio.Queues;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(70)]
@@ -58,7 +59,8 @@ namespace Exceptionless.Core.Pipeline {
                 };
 
                 await _webHookNotificationQueue.EnqueueAsync(notification).AnyContext();
-                _logger.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Property("Web Hook Notification", notification).Write();
+                using (_logger.BeginScope(new Dictionary<string, object> { { "Web Hook Notification", notification } }))
+                    _logger.LogTrace("Web hook queued: project={project} url={Url}", ctx.Event.ProjectId, hook.Url);
             }
         }
 

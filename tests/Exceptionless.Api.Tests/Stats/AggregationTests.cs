@@ -14,7 +14,7 @@ using Foundatio.Utility;
 using Nest;
 using Xunit;
 using Xunit.Abstractions;
-using LogLevel = Foundatio.Logging.LogLevel;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Api.Tests.Stats {
     public sealed class AggregationTests : ElasticTestBase {
@@ -122,7 +122,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var result = await _eventRepository.CountBySearchAsync(null, null, "terms:version");
             Assert.Equal(eventCount, result.Total);
             // NOTE: The events are created without a version.
-            Assert.Equal(result.Aggregations.Terms<string>("terms_version").Buckets.Count, 0);
+            Assert.Equal(0, result.Aggregations.Terms<string>("terms_version").Buckets.Count);
         }
 
         [Fact]
@@ -203,7 +203,7 @@ namespace Exceptionless.Api.Tests.Stats {
         private async Task CreateEventsAsync(int eventCount, string[] projectIds, decimal? value = -1) {
             var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: SystemClock.OffsetUtcNow.SubtractDays(3), endDate: SystemClock.OffsetUtcNow, value: value);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
-                await _pipeline.RunAsync(eventGroup);
+                await _pipeline.RunAsync(eventGroup, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
 
             await _configuration.Client.RefreshAsync(Indices.All);
         }
@@ -219,7 +219,7 @@ namespace Exceptionless.Api.Tests.Stats {
                 EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(50), userIdentity: "3")
             };
 
-            await _pipeline.RunAsync(events);
+            await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             await _configuration.Client.RefreshAsync(Indices.All);
 
             var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);

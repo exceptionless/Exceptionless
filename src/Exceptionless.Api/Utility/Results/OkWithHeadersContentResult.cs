@@ -2,74 +2,69 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Formatting;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Results;
+using System.Web;
 using Exceptionless.Core.Extensions;
 using Foundatio.Repositories.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Exceptionless.Api.Utility.Results {
-    public class OkWithHeadersContentResult<T> : OkNegotiatedContentResult<T> {
-        public OkWithHeadersContentResult(T content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
-
-        public OkWithHeadersContentResult(T content, ApiController controller, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null)
-            : base(content, controller) {
-            Headers = headers;
-        }
-
-        public IEnumerable<KeyValuePair<string, IEnumerable<string>>> Headers { get; set; }
-
-        public async override Task<HttpResponseMessage> ExecuteAsync(CancellationToken cancellationToken) {
-            HttpResponseMessage response = await base.ExecuteAsync(cancellationToken);
-
-            if (Headers != null)
-                foreach (var header in Headers)
-                    response.Headers.Add(header.Key, header.Value);
-
-            return response;
+    public class OkWithHeadersContentResult<T> : ObjectWithHeadersResult {
+        public OkWithHeadersContentResult(T content, IHeaderDictionary headers = null) : base(content, headers) {
+            StatusCode = StatusCodes.Status200OK;
         }
     }
 
     public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerable<TEntity>> where TEntity : class {
-        public OkWithResourceLinks(IEnumerable<TEntity> content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
+        //public OkWithResourceLinks(IEnumerable<TEntity> content, IHeaderDictionary headers = null) : base(content, headers) { }
 
-        public OkWithResourceLinks(IEnumerable<TEntity> content, ApiController controller, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) : this(content, controller, hasMore, page, null, pagePropertyAccessor, headers, isDescending) {}
+        public OkWithResourceLinks(IEnumerable<TEntity> content, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IHeaderDictionary headers = null, bool isDescending = false) 
+            : this(content, hasMore, page, null, pagePropertyAccessor, headers, isDescending) {}
 
-        public OkWithResourceLinks(IEnumerable<TEntity> content, ApiController controller, bool hasMore, int? page = null, long? total = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) : base(content, controller) {
-            if (content == null)
-                return;
+        public OkWithResourceLinks(IEnumerable<TEntity> content, bool hasMore, int? page = null, long? total = null, Func<TEntity, string> pagePropertyAccessor = null, IHeaderDictionary headers = null, bool isDescending = false) : base(content, headers) {
+            Content = content;
+            HasMore = hasMore;
+            IsDescending = isDescending;
+            Page = page;
+            Total = total;
+            PagePropertyAccessor = pagePropertyAccessor;
+        }
 
-            List<string> links;
-            if (page.HasValue)
-                links = GetPagedLinks(Request.RequestUri, page.Value, hasMore);
-            else
-                links = GetBeforeAndAfterLinks(Request.RequestUri, content, isDescending, hasMore, pagePropertyAccessor);
+        public IEnumerable<TEntity> Content { get; }
+        public bool HasMore { get; }
+        public bool IsDescending { get; }
+        public int? Page { get; }
+        public long? Total { get; }
+        public Func<TEntity, string> PagePropertyAccessor { get; }
 
-            var headerItems = new Dictionary<string, IEnumerable<string>>();
-            if (links.Count > 0)
-                headerItems.Add("Link", links.ToArray());
+        public override void OnFormatting(ActionContext context) {
+            if (Content != null) {
+                List<string> links;
+                if (Page.HasValue)
+                    links = GetPagedLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Page.Value, HasMore);
+                else
+                    links = GetBeforeAndAfterLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Content, IsDescending, HasMore, PagePropertyAccessor);
 
-            if (total.HasValue)
-                headerItems.Add("X-Result-Count", new[] { total.ToString() });
+                if (links.Count > 0)
+                    Headers.Add("Link", links.ToArray());
 
-            if (headers != null)
-                foreach (var header in headers)
-                    headerItems.Add(header.Key, header.Value);
+                if (Total.HasValue)
+                    Headers.Add("X-Result-Count", Total.ToString());
+            }
 
-            Headers = headerItems;
+            base.OnFormatting(context);
         }
 
         public static List<string> GetPagedLinks(Uri url, int page, bool hasMore) {
             bool includePrevious = page > 1;
             bool includeNext = hasMore;
 
-            var previousParameters = url.ParseQueryString();
+            var previousParameters = HttpUtility.ParseQueryString(url.Query);
             previousParameters["page"] = (page - 1).ToString();
-            var nextParameters = new NameValueCollection(previousParameters);
-            nextParameters["page"] = (page + 1).ToString();
+            var nextParameters = new NameValueCollection(previousParameters) {
+                ["page"] = (page + 1).ToString()
+            };
 
             string baseUrl = url.GetBaseUrl();
 
@@ -99,7 +94,7 @@ namespace Exceptionless.Api.Utility.Results {
             bool hasBefore = false;
             bool hasAfter = false;
 
-            var previousParameters = url.ParseQueryString();
+            var previousParameters = HttpUtility.ParseQueryString(url.Query);
             if (previousParameters["before"] != null)
                 hasBefore = true;
             previousParameters.Remove("before");

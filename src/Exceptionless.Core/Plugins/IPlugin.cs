@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.Core.Plugins {
     public interface IPlugin {
@@ -15,7 +16,7 @@ namespace Exceptionless.Core.Plugins {
             var type = GetType();
             Name = type.Name;
             Enabled = !Settings.Current.DisabledPlugins.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase);
-            _logger = loggerFactory.CreateLogger(type);
+            _logger = loggerFactory?.CreateLogger(type);
         }
 
         public string Name { get; }

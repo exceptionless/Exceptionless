@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Extensions {
         public static void AddOrUpdate<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, TValue value) {
             dictionary.AddOrUpdate(key, value, (oldkey, oldvalue) => value);
         }
-        
+
         public static bool ContainsKeyWithValue<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, params TValue[] values) {
             if (dictionary == null || values == null || values.Length == 0)
                 return false;
@@ -52,7 +52,14 @@ namespace Exceptionless.Core.Extensions {
 
             return values.Any(v => v.Equals(temp));
         }
-        
+
+        public static TValue TryGetAndReturn<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) {
+            if (!dictionary.TryGetValue(key, out var value))
+                value = default;
+
+            return value;
+        }
+
         public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) {
             dictionary.TryGetValue(key, out TValue obj);
             return obj;

@@ -1,0 +1,18 @@
+﻿---
+ConnectionStrings:
+  RedisConnectionString.off: localhost,abortConnect=false
+  ElasticsearchConnectionString.off: http://localhost:9200/
+  LdapConnectionString.off: ''
+
+# Base url for the ui used to build links in emails and other places.
+BaseURL: 'http://localhost:9001/#!'
+
+Serilog:
+  MinimumLevel:
+    Default: Debug
+    Override:
+      Microsoft: Warning
+      System: Warning
+      Exceptionless.Api.Security.ApiKeyAuthenticationHandler: Warning
+      Foundatio.Utility.ScheduledTimer: Warning
+      Foundatio.Metrics: Warning

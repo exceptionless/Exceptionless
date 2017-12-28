@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "MailMessageJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
@@ -7,15 +9,15 @@ using Xunit;
 using Xunit.Abstractions;
 using Foundatio.Repositories;
 using Nest;
-using LogLevel = Foundatio.Logging.LogLevel;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public sealed class ProjectRepositoryTests : ElasticTestBase {
-        private readonly InMemoryCacheClient _cache;
+        private readonly ICacheClient _cache;
         private readonly IProjectRepository _repository;
 
         public ProjectRepositoryTests(ITestOutputHelper output) : base(output) {
-            _cache = _configuration.Cache as InMemoryCacheClient;
+            _cache = _configuration.Cache;
             _repository = GetService<IProjectRepository>();
             Log.MinimumLevel = LogLevel.Trace;
         }
@@ -77,6 +79,30 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(results);
             Assert.Equal(1, results.Documents.Count);
             await _repository.RemoveAllAsync(o => o.Notifications(false));
+        }
+
+        [Fact]
+        public async Task CanRoundTripWithCaching() {
+            var token = new SlackToken {
+                AccessToken = "MY KEY",
+                IncomingWebhook = new SlackToken.IncomingWebHook {
+                    Url = "MY Url"
+                }
+            };
+
+            var project = ProjectData.GenerateSampleProject();
+            project.Data[Project.KnownDataKeys.SlackToken] = token;
+
+            await _repository.AddAsync(project, o => o.ImmediateConsistency());
+            var actual = await _repository.GetByIdAsync(project.Id, o => o.Cache());
+            Assert.Equal(project.Name, actual?.Name);
+            var actualToken = actual.GetSlackToken();
+            Assert.Equal(token.AccessToken, actualToken?.AccessToken);
+
+            var actualCache = await _cache.GetAsync<Project>("Project:" + project.Id);
+            Assert.Equal(project.Name, actualCache.Value?.Name);
+            var actualCacheToken = actual.GetSlackToken();
+            Assert.Equal(token.AccessToken, actualCacheToken?.AccessToken);
         }
     }
 }

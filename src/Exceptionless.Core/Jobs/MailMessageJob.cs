@@ -4,8 +4,8 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
 using Foundatio.Jobs;
-using Foundatio.Logging;
 using Foundatio.Queues;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Sends queued email messages.", InitialDelay = "5s")]
@@ -17,11 +17,11 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<MailMessage> context) {
-            _logger.Trace("Processing message '{0}'.", context.QueueEntry.Id);
+            _logger.LogTrace("Processing message {Id}.", context.QueueEntry.Id);
 
             try {
                 await _mailSender.SendAsync(context.QueueEntry.Value).AnyContext();
-                _logger.Info("Sent message: to={0} subject=\"{1}\"", context.QueueEntry.Value.To, context.QueueEntry.Value.Subject);
+                _logger.LogInformation("Sent message: to={To} subject={Subject}", context.QueueEntry.Value.To, context.QueueEntry.Value.Subject);
             } catch (Exception ex) {
                 return JobResult.FromException(ex);
             }

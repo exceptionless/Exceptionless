@@ -1,19 +1,26 @@
 ﻿using System;
-using Exceptionless.Core;
-using Exceptionless.Core.Extensions;
-using Foundatio.Utility;
+using System.Threading.Tasks;
+using Exceptionless;
+using Exceptionless.Insulation.Jobs;
 using Foundatio.Jobs;
-using Foundatio.ServiceProviders;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace DownloadGeoIPDatabaseJob {
     public class Program {
-        public static int Main() {
-            AppDomain.CurrentDomain.SetDataDirectory();
-
-            var loggerFactory = Settings.Current.GetLoggerFactory();
-            var serviceProvider = ServiceProvider.GetServiceProvider(Settings.JobBootstrappedServiceProvider, loggerFactory);
-            var job = serviceProvider.GetService<Exceptionless.Core.Jobs.DownloadGeoIPDatabaseJob>();
-            return new JobRunner(job, loggerFactory, runContinuous: false).RunInConsole();
+        public static async Task<int> Main() {
+            try {
+                var serviceProvider = JobServiceProvider.GetServiceProvider();
+                var job = serviceProvider.GetService<Exceptionless.Core.Jobs.DownloadGeoIPDatabaseJob>();
+                return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), runContinuous: false).RunInConsoleAsync();
+            } catch (Exception ex) {
+                Log.Fatal(ex, "Job terminated unexpectedly");
+                return 1;
+            } finally {
+                Log.CloseAndFlush();
+                await ExceptionlessClient.Default.ProcessQueueAsync();
+            }
         }
     }
 }

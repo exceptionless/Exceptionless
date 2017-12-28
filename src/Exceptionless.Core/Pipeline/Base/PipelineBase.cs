@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Helpers;
-using Foundatio.Logging;
 using Foundatio.Metrics;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Exceptionless.Core.Pipeline {
     /// <summary>
@@ -23,19 +24,19 @@ namespace Exceptionless.Core.Pipeline {
     /// </remarks>
     public abstract class PipelineBase<TContext, TAction> where TAction : class, IPipelineAction<TContext> where TContext : IPipelineContext {
         protected static readonly ConcurrentDictionary<Type, IList<Type>> _actionTypeCache = new ConcurrentDictionary<Type, IList<Type>>();
-        private readonly IDependencyResolver _dependencyResolver;
+        private readonly IServiceProvider _serviceProvider;
         private readonly IList<IPipelineAction<TContext>> _actions;
         protected readonly string _metricPrefix;
         protected readonly IMetricsClient _metricsClient;
         protected readonly ILogger _logger;
 
-        public PipelineBase(IDependencyResolver dependencyResolver = null, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
-            _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
+        public PipelineBase(IServiceProvider serviceProvider, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
+            _serviceProvider = serviceProvider;
 
             var type = GetType();
             _metricPrefix = String.Concat(type.Name.ToLower(), ".");
             _metricsClient = metricsClient ?? new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = loggerFactory });
-            _logger = loggerFactory.CreateLogger(type);
+            _logger = loggerFactory?.CreateLogger(type);
 
             _actions = LoadDefaultActions();
         }
@@ -95,14 +96,14 @@ namespace Exceptionless.Core.Pipeline {
             var actions = new List<IPipelineAction<TContext>>();
             foreach (var type in GetActionTypes()) {
                 if (Settings.Current.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {
-                    _logger.Warn(() => $"Pipeline Action {type.Name} is currently disabled and won't be executed.");
+                    _logger.LogWarning("Pipeline Action {Name} is currently disabled and won't be executed.", type.Name);
                     continue;
                 }
 
                 try {
-                    actions.Add((IPipelineAction<TContext>)_dependencyResolver.GetService(type));
+                    actions.Add((IPipelineAction<TContext>)_serviceProvider.GetService(type));
                 } catch (Exception ex) {
-                    _logger.Error(ex, "Unable to instantiate Pipeline Action of type \"{0}\": {1}", type.FullName, ex.Message);
+                    _logger.LogError(ex, "Unable to instantiate Pipeline Action of type {TypeFullName}: {Message}", type.FullName, ex.Message);
                     throw;
                 }
             }

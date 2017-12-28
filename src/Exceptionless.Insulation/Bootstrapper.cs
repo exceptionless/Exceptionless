@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Threading;
-using System.Web.Http;
+using System.Linq;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
@@ -10,128 +9,115 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
 using Exceptionless.Insulation.Mail;
 using Exceptionless.Insulation.Redis;
-using Exceptionless.NLog;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using Foundatio.Logging;
-using Foundatio.Logging.NLog;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Foundatio.Storage;
-using SimpleInjector;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
-using LogLevel = Exceptionless.Logging.LogLevel;
 
 namespace Exceptionless.Insulation {
     public class Bootstrapper {
-        public static void RegisterServices(Container container, bool runMaintenanceTasks, ILoggerFactory loggerFactory, CancellationToken shutdownCancellationToken) {
-            loggerFactory.AddNLog();
-            var logger = loggerFactory.CreateLogger<Bootstrapper>();
+        public static void RegisterServices(IServiceCollection container, bool runMaintenanceTasks) {
+            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
+                var client = ExceptionlessClient.Default;
+                client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
+                client.Configuration.ApiKey = Settings.Current.ExceptionlessApiKey;
+
+                //client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
+                client.Configuration.SetDefaultMinLogLevel(Logging.LogLevel.Warn);
+                client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
+                client.Configuration.SetVersion(Settings.Current.Version);
+                if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
+                    client.Configuration.Enabled = false;
+
+                client.Configuration.UseInMemoryStorage();
+                client.Configuration.UseReferenceIds();
+
+                container.ReplaceSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
+                container.AddSingleton<ExceptionlessClient>(client);
+            }
 
             if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
-                container.RegisterSingleton<IGeocodeService>(() => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
+                container.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
 
             if (Settings.Current.EnableMetricsReporting)
-                container.RegisterSingleton<IMetricsClient>(() => new StatsDMetricsClient(new StatsDMetricsClientOptions { ServerName = Settings.Current.MetricsServerName, Port = Settings.Current.MetricsServerPort, Prefix = "ex", LoggerFactory = loggerFactory }));
-            else
-                logger.Warn("StatsD Metrics is NOT enabled.");
+                container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions { ServerName = Settings.Current.MetricsServerName, Port = Settings.Current.MetricsServerPort, Prefix = "ex", LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
 
-            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
-                container.RegisterSingleton<IMailSender, MailKitMailSender>();
-            else
-                logger.Warn("Emails will NOT be sent in Dev mode.");
+            if (Settings.Current.AppMode != AppMode.Development)
+                container.ReplaceSingleton<IMailSender, MailKitMailSender>();
 
-            if (Settings.Current.EnableRedis) {
-                container.RegisterSingleton<ConnectionMultiplexer>(() => {
+            if (!String.IsNullOrEmpty(Settings.Current.RedisConnectionString)) {
+                container.AddSingleton<ConnectionMultiplexer>(s => {
                     var multiplexer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
                     multiplexer.PreserveAsyncOrder = false;
                     return multiplexer;
                 });
 
                 if (Settings.Current.HasAppScope)
-                    container.RegisterSingleton<ICacheClient>(() => new ScopedCacheClient(CreateRedisCacheClient(container, loggerFactory), Settings.Current.AppScope));
+                    container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), Settings.Current.AppScope));
                 else
-                    container.RegisterSingleton<ICacheClient>(() => CreateRedisCacheClient(container, loggerFactory));
+                    container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
 
-                if (Settings.Current.EnableSignalR)
-                    container.RegisterSingleton<IConnectionMapping, RedisConnectionMapping>();
+                if (Settings.Current.EnableWebSockets)
+                    container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
 
-                container.RegisterSingleton<IMessageBus>(() => new RedisMessageBus(new RedisMessageBusOptions {
-                    Subscriber = container.GetInstance<ConnectionMultiplexer>().GetSubscriber(),
+                container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
+                    Subscriber = s.GetRequiredService<ConnectionMultiplexer>().GetSubscriber(),
                     Topic = $"{Settings.Current.AppScopePrefix}messages",
-                    Serializer = container.GetInstance<ISerializer>(),
-                    LoggerFactory = loggerFactory
+                    Serializer = s.GetRequiredService<ISerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
-            } else {
-                logger.Warn("Redis is NOT enabled.");
             }
 
-            if (Settings.Current.EnableAzureStorage) {
-                container.RegisterSingleton(() => CreateAzureStorageQueue<EventPost>(container, retries: 1, loggerFactory: loggerFactory));
-                container.RegisterSingleton(() => CreateAzureStorageQueue<EventUserDescription>(container, loggerFactory: loggerFactory));
-                container.RegisterSingleton(() => CreateAzureStorageQueue<EventNotificationWorkItem>(container, loggerFactory: loggerFactory));
-                container.RegisterSingleton(() => CreateAzureStorageQueue<WebHookNotification>(container, loggerFactory: loggerFactory));
-                container.RegisterSingleton(() => CreateAzureStorageQueue<MailMessage>(container, loggerFactory: loggerFactory));
-                container.RegisterSingleton(() => CreateAzureStorageQueue<WorkItemData>(container, workItemTimeout: TimeSpan.FromHours(1), loggerFactory: loggerFactory));
-            } else if (Settings.Current.EnableRedis) {
-                container.RegisterSingleton(() => CreateRedisQueue<EventPost>(container, runMaintenanceTasks, retries: 1, loggerFactory: loggerFactory));
-                container.RegisterSingleton(() => CreateRedisQueue<EventUserDescription>(container, runMaintenanceTasks, loggerFactory: loggerFactory));
-                container.RegisterSingleton(() => CreateRedisQueue<EventNotificationWorkItem>(container, runMaintenanceTasks, loggerFactory: loggerFactory));
-                container.RegisterSingleton(() => CreateRedisQueue<WebHookNotification>(container, runMaintenanceTasks, loggerFactory: loggerFactory));
-                container.RegisterSingleton(() => CreateRedisQueue<MailMessage>(container, runMaintenanceTasks, loggerFactory: loggerFactory));
-                container.RegisterSingleton(() => CreateRedisQueue<WorkItemData>(container, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1), loggerFactory: loggerFactory));
+            if (!String.IsNullOrEmpty(Settings.Current.AzureStorageQueueConnectionString)) {
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventPost>(s, retries: 1));
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventUserDescription>(s));
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventNotificationWorkItem>(s));
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<WebHookNotification>(s));
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<MailMessage>(s));
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<WorkItemData>(s, workItemTimeout: TimeSpan.FromHours(1)));
+            } else if (!String.IsNullOrEmpty(Settings.Current.RedisConnectionString)) {
+                container.ReplaceSingleton(s => CreateRedisQueue<EventPost>(s, runMaintenanceTasks, retries: 1));
+                container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<EventNotificationWorkItem>(s, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<WebHookNotification>(s, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<MailMessage>(s, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
             }
 
-            if (Settings.Current.EnableAzureStorage)
-                container.RegisterSingleton<IFileStorage>(() => new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events"));
-            else
-                logger.Warn("Azure Storage is NOT enabled.");
-
-            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
-                var client = ExceptionlessClient.Default;
-                container.RegisterSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
-                container.RegisterSingleton<ExceptionlessClient>(() => client);
-
-                client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
-                client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
-                client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
-                client.Configuration.SetVersion(Settings.Current.Version);
-                if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
-                    client.Configuration.Enabled = false;
-
-                client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
-                client.Startup(Settings.Current.ExceptionlessApiKey);
-
-                container.AddStartupAction(() => client.RegisterWebApi(container.GetInstance<HttpConfiguration>()));
-                client.Configuration.UseInMemoryStorage();
-                client.Configuration.UseReferenceIds();
-            }
+            if (!String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString))
+                container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events", s.GetRequiredService<ITextSerializer>()));
+            else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString))
+                container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(Settings.Current.AliyunStorageConnectionString, Settings.Current.AliyunBucketName, s.GetRequiredService<ITextSerializer>()));
         }
 
-        private static IQueue<T> CreateAzureStorageQueue<T>(Container container, int retries = 2, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
+        private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
             return new AzureStorageQueue<T>(new AzureStorageQueueOptions<T> {
-                ConnectionString = Settings.Current.AzureStorageConnectionString,
+                ConnectionString = Settings.Current.AzureStorageQueueConnectionString,
                 Name = GetQueueName<T>().ToLowerInvariant(),
                 Retries = retries,
-                Behaviors = container.GetAllInstances<IQueueBehavior<T>>(),
+                Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
                 WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
-                Serializer = container.GetInstance<ISerializer>(),
-                LoggerFactory = loggerFactory
+                Serializer = container.GetRequiredService<ISerializer>(),
+                LoggerFactory = container.GetRequiredService<ILoggerFactory>()
             });
         }
 
-        private static IQueue<T> CreateRedisQueue<T>(Container container, bool runMaintenanceTasks, int retries = 2, TimeSpan? workItemTimeout = null, ILoggerFactory loggerFactory = null) where T : class {
+        private static IQueue<T> CreateRedisQueue<T>(IServiceProvider container, bool runMaintenanceTasks, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
             return new RedisQueue<T>(new RedisQueueOptions<T> {
-                ConnectionMultiplexer = container.GetInstance<ConnectionMultiplexer>(),
+                ConnectionMultiplexer = container.GetRequiredService<ConnectionMultiplexer>(),
                 Name = GetQueueName<T>(),
                 Retries = retries,
-                Behaviors = container.GetAllInstances<IQueueBehavior<T>>(),
+                Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
                 WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
                 RunMaintenanceTasks = runMaintenanceTasks,
-                Serializer = container.GetInstance<ISerializer>(),
-                LoggerFactory = loggerFactory
+                Serializer = container.GetRequiredService<ISerializer>(),
+                LoggerFactory = container.GetRequiredService<ILoggerFactory>()
             });
         }
 
@@ -139,11 +125,11 @@ namespace Exceptionless.Insulation {
             return String.Concat(Settings.Current.QueueScopePrefix, typeof(T).Name);
         }
 
-        private static RedisCacheClient CreateRedisCacheClient(Container container, ILoggerFactory loggerFactory) {
+        private static RedisCacheClient CreateRedisCacheClient(IServiceProvider container) {
             return new RedisCacheClient(new RedisCacheClientOptions {
-                ConnectionMultiplexer = container.GetInstance<ConnectionMultiplexer>(),
-                Serializer = container.GetInstance<ISerializer>(),
-                LoggerFactory = loggerFactory
+                ConnectionMultiplexer = container.GetRequiredService<ConnectionMultiplexer>(),
+                Serializer = container.GetRequiredService<ISerializer>(),
+                LoggerFactory = container.GetRequiredService<ILoggerFactory>()
             });
         }
     }

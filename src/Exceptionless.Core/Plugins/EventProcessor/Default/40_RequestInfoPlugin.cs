@@ -7,7 +7,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Utility;
-using Foundatio.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(40)]
@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         }
 
         private async Task SetBrowserOsAndDeviceFromUserAgent(RequestInfo request, EventContext context) {
-            var info = await _parser.ParseAsync(request.UserAgent, context.Project.Id).AnyContext();
+            var info = await _parser.ParseAsync(request.UserAgent).AnyContext();
             if (info != null) {
                 if (!String.Equals(info.UserAgent.Family, "Other")) {
                     request.Data[RequestInfo.KnownDataKeys.Browser] = info.UserAgent.Family;

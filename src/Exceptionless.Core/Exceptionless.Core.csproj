@@ -1,484 +1,52 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\build\common.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Exceptionless.Core</RootNamespace>
-    <AssemblyName>Exceptionless.Core</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(MSBuildProjectDirectory)\..\..\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
-    <CodeAnalysisAdditionalOptions>/assemblyCompareMode:StrongNameIgnoringVersion</CodeAnalysisAdditionalOptions>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <CodeAnalysisRuleSet>ManagedMinimumRules.ruleset</CodeAnalysisRuleSet>
-    <NoWarn>1591</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
-    <CodeAnalysisRuleSet>ManagedMinimumRules.ruleset</CodeAnalysisRuleSet>
-    <NoWarn>1591</NoWarn>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AutoMapper, Version=6.1.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\AutoMapper.6.1.1\lib\net45\AutoMapper.dll</HintPath>
-    </Reference>
-    <Reference Include="Elasticsearch.Net, Version=5.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Elasticsearch.Net.5.4.0\lib\net46\Elasticsearch.Net.dll</HintPath>
-    </Reference>
-    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.2.75.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.2.75\lib\net461\Exceptionless.DateTimeExtensions.dll</HintPath>
-    </Reference>
-    <Reference Include="FluentValidation, Version=7.0.0.0, Culture=neutral, PublicKeyToken=7de548da2fbae0f0, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\FluentValidation.7.1.0\lib\net45\FluentValidation.dll</HintPath>
-    </Reference>
-    <Reference Include="Foundatio, Version=5.1.1457.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.5.1.1457\lib\net46\Foundatio.dll</HintPath>
-    </Reference>
-    <Reference Include="Foundatio.Jobs.Commands, Version=5.1.1457.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Jobs.Commands.5.1.1457\lib\net46\Foundatio.Jobs.Commands.dll</HintPath>
-    </Reference>
-    <Reference Include="Foundatio.Parsers.ElasticQueries, Version=5.0.336.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.ElasticQueries.5.0.336\lib\net461\Foundatio.Parsers.ElasticQueries.dll</HintPath>
-    </Reference>
-    <Reference Include="Foundatio.Parsers.LuceneQueries, Version=5.0.336.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Parsers.LuceneQueries.5.0.336\lib\net461\Foundatio.Parsers.LuceneQueries.dll</HintPath>
-    </Reference>
-    <Reference Include="Foundatio.Repositories, Version=5.0.598.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.5.0.598\lib\net461\Foundatio.Repositories.dll</HintPath>
-    </Reference>
-    <Reference Include="Foundatio.Repositories.Elasticsearch, Version=5.0.598.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Foundatio.Repositories.Elasticsearch.5.0.598\lib\net461\Foundatio.Repositories.Elasticsearch.dll</HintPath>
-    </Reference>
-    <Reference Include="Handlebars, Version=1.8.1.0, Culture=neutral, PublicKeyToken=22225d0bf33cd661, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Handlebars.Net.1.9.0\lib\net40\Handlebars.dll</HintPath>
-    </Reference>
-    <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\MaxMind.Db.2.2.0\lib\net45\MaxMind.Db.dll</HintPath>
-    </Reference>
-    <Reference Include="MaxMind.GeoIP2, Version=2.6.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\MaxMind.GeoIP2.2.8.0\lib\net45\MaxMind.GeoIP2.dll</HintPath>
-    </Reference>
-    <Reference Include="McSherry.SemanticVersioning, Version=1.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\McSherry.SemanticVersioning.1.2.1\lib\net46\McSherry.SemanticVersioning.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.CommandLineUtils, Version=1.1.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Extensions.CommandLineUtils.1.1.1\lib\net451\Microsoft.Extensions.CommandLineUtils.dll</HintPath>
-    </Reference>
-    <Reference Include="Nest, Version=5.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NEST.5.4.0\lib\net46\Nest.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Coordination, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.AsyncEx.Coordination.1.0.2\lib\net46\Nito.AsyncEx.Coordination.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Tasks, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.AsyncEx.Tasks.1.1.0\lib\net46\Nito.AsyncEx.Tasks.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.Collections.Deque, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.Collections.Deque.1.0.0\lib\portable45-net45+win8+wp8+wpa81\Nito.Collections.Deque.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.Disposables, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Nito.Disposables.1.1.0\lib\portable45-net45+win8+wp8+wpa81\Nito.Disposables.dll</HintPath>
-    </Reference>
-    <Reference Include="Pegasus.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=28c69b6c6d100f4a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Pegasus.4.0.0\lib\net40\Pegasus.Common.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="RestSharp, Version=105.2.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\RestSharp.105.2.3\lib\net46\RestSharp.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="SimpleInjector, Version=4.0.8.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SimpleInjector.4.0.8\lib\net45\SimpleInjector.dll</HintPath>
-    </Reference>
-    <Reference Include="Stripe.net, Version=10.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Stripe.net.10.2.0\lib\net45\Stripe.net.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Collections.Immutable.1.3.1\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data.Linq" />
-    <Reference Include="System.DirectoryServices" />
-    <Reference Include="System.Net" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net.Http.WebRequest" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Web" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-    <Reference Include="UAParser, Version=2.1.0.0, Culture=neutral, PublicKeyToken=f7377bf021646069, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\UAParser.2.1.0.0\lib\net40-Client\UAParser.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
+    <None Remove="Mail\Templates\event-notice.html" />
+    <None Remove="Mail\Templates\organization-added.html" />
+    <None Remove="Mail\Templates\organization-invited.html" />
+    <None Remove="Mail\Templates\organization-notice.html" />
+    <None Remove="Mail\Templates\organization-payment-failed.html" />
+    <None Remove="Mail\Templates\project-daily-summary.html" />
+    <None Remove="Mail\Templates\user-email-verify.html" />
+    <None Remove="Mail\Templates\user-password-reset.html" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\GlobalAssemblyInfo.cs">
-      <Link>Properties\GlobalAssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="Authentication\ActiveDirectoryLoginProvider.cs" />
-    <Compile Include="Authentication\IDomainLoginProvider.cs" />
-    <Compile Include="Authorization\AuthorizationRoles.cs" />
-    <Compile Include="Billing\BillingManager.cs" />
-    <Compile Include="Billing\StripeEventHandler.cs" />
-    <Compile Include="Extensions\AppDomainExtensions.cs" />
-    <Compile Include="Extensions\EventExtensions.cs" />
-    <Compile Include="Extensions\NumericExtensions.cs" />
-    <Compile Include="Extensions\PersistentEventExtensions.cs" />
-    <Compile Include="Extensions\UriExtensions.cs" />
-    <Compile Include="Extensions\UsageExtensions.cs" />
-    <Compile Include="Geo\IGeocodeService.cs" />
-    <Compile Include="Geo\NullGeocodeService.cs" />
-    <Compile Include="Jobs\CloseInactiveSessionsJob.cs" />
-    <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
-    <Compile Include="Jobs\Elastic\CleanupSnapshotJob.cs" />
-    <Compile Include="Jobs\Elastic\EventSnapshotJob.cs" />
-    <Compile Include="Jobs\Elastic\MaintainIndexesJob.cs" />
-    <Compile Include="Jobs\Elastic\OrganizationSnapshotJob.cs" />
-    <Compile Include="Jobs\Elastic\StackSnapshotJob.cs" />
-    <Compile Include="Jobs\WorkItemHandlers\OrganizationNotificationWorkItemHandler.cs" />
-    <Compile Include="Jobs\WorkItemHandlers\SetProjectIsConfiguredWorkItemHandler.cs" />
-    <Compile Include="Jobs\WorkItemHandlers\RemoveProjectWorkItemHandler.cs" />
-    <Compile Include="Jobs\WorkItemHandlers\RemoveOrganizationWorkItemHandler.cs" />
-    <Compile Include="Jobs\WorkItemHandlers\StackWorkItemHandler.cs" />
-    <Compile Include="Jobs\WorkItemHandlers\SetLocationFromGeoWorkItemHandler.cs" />
-    <Compile Include="Jobs\WorkItemHandlers\ThrottleBotsWorkItemHandler.cs" />
-    <Compile Include="Jobs\WorkItemHandlers\OrganizationMaintenanceWorkItemHandler.cs" />
-    <Compile Include="Jobs\WorkItemHandlers\ProjectMaintenanceWorkItemHandler.cs" />
-    <Compile Include="Jobs\WorkItemHandlers\UserMaintenanceWorkItemHandler.cs" />
-    <Compile Include="Models\Billing\ChangePlanResult.cs" />
-    <Compile Include="Models\ClientConfiguration.cs" />
-    <Compile Include="Models\Collections\DataDictionary.cs" />
-    <Compile Include="Models\Collections\GenericArguments.cs" />
-    <Compile Include="Models\Collections\ModuleCollection.cs" />
-    <Compile Include="Models\Collections\ObservableDictionary.cs" />
-    <Compile Include="Models\Collections\ParameterCollection.cs" />
-    <Compile Include="Models\Collections\SettingsDictionary.cs" />
-    <Compile Include="Models\Collections\StackFrameCollection.cs" />
-    <Compile Include="Models\Collections\TagSet.cs" />
-    <Compile Include="Models\CoreMappings.cs" />
-    <Compile Include="Models\Data\EnvironmentInfo.cs" />
-    <Compile Include="Models\Data\Error.cs" />
-    <Compile Include="Models\Data\InnerError.cs" />
-    <Compile Include="Models\Data\Location.cs" />
-    <Compile Include="Models\Data\Method.cs" />
-    <Compile Include="Models\Data\Module.cs" />
-    <Compile Include="Models\Data\Parameter.cs" />
-    <Compile Include="Models\Data\RequestInfo.cs" />
-    <Compile Include="Models\Data\SimpleError.cs" />
-    <Compile Include="Models\Data\StackFrame.cs" />
-    <Compile Include="Models\Data\ManualStackingInfo.cs" />
-    <Compile Include="Models\Data\UserDescription.cs" />
-    <Compile Include="Models\Data\UserInfo.cs" />
-    <Compile Include="Models\Enums\NotificationMode.cs" />
-    <Compile Include="Models\Enums\ResponseStatusType.cs" />
-    <Compile Include="Models\Enums\SuspensionCode.cs" />
-    <Compile Include="Models\Event.cs" />
-    <Compile Include="Models\Exceptions\RateLimitException.cs" />
-    <Compile Include="Models\Exceptions\WebHookException.cs" />
-    <Compile Include="Models\Interfaces\IData.cs" />
-    <Compile Include="Models\Interfaces\IOwnedByOrganization.cs" />
-    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProject.cs" />
-    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProjectAndStack.cs" />
-    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProjectAndStackWithIdentity.cs" />
-    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProjectWithIdentity.cs" />
-    <Compile Include="Models\Interfaces\IOwnedByOrganizationWithIdentity.cs" />
-    <Compile Include="Models\Interfaces\IOwnedByProject.cs" />
-    <Compile Include="Models\Interfaces\IOwnedByStack.cs" />
-    <Compile Include="Models\Invite.cs" />
-    <Compile Include="Models\MailMessageData.cs" />
-    <Compile Include="Models\Messaging\ReleaseNotification.cs" />
-    <Compile Include="Models\Messaging\SystemNotification.cs" />
-    <Compile Include="Models\NotificationSettings.cs" />
-    <Compile Include="Models\OAuthAccount.cs" />
-    <Compile Include="Models\Organization.cs" />
-    <Compile Include="Models\PersistentEvent.cs" />
-    <Compile Include="Models\Project.cs" />
-    <Compile Include="Models\EventPreviousAndNextIdResult.cs" />
-    <Compile Include="Models\SessionInfo.cs" />
-    <Compile Include="Models\SlackToken.cs" />
-    <Compile Include="Models\Stack.cs" />
-    <Compile Include="Models\StackSummaryModel.cs" />
-    <Compile Include="Models\Token.cs" />
-    <Compile Include="Models\UsageInfo.cs" />
-    <Compile Include="Models\User.cs" />
-    <Compile Include="Models\WebHook.cs" />
-    <Compile Include="Models\WorkItems\OrganizationNotificationWorkItem.cs" />
-    <Compile Include="Models\WorkItems\RemoveOrganizationWorkItem.cs" />
-    <Compile Include="Models\WorkItems\RemoveProjectWorkItem.cs" />
-    <Compile Include="Models\WorkItems\SetLocationFromGeoWorkItem.cs" />
-    <Compile Include="Models\WorkItems\SetProjectIsConfiguredWorkItem.cs" />
-    <Compile Include="Models\WorkItems\StackWorkItem.cs" />
-    <Compile Include="Models\WorkItems\ThrottleBotsWorkItem.cs" />
-    <Compile Include="Models\WorkItems\OrganizationMaintenanceWorkItem.cs" />
-    <Compile Include="Models\WorkItems\ProjectMaintenanceWorkItem.cs" />
-    <Compile Include="Models\WorkItems\UserMaintenanceWorkItem.cs" />
-    <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
-    <Compile Include="Pipeline\050_MarkProjectConfiguredAction.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\05_CheckForDuplicateReferenceIdPlugin.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\03_ManualStackingPlugin.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\80_AngularPlugin.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\60_LocationPlugin.cs" />
-    <Compile Include="Plugins\Formatting\Default\05_ManualStackingFormattingPlugin.cs" />
-    <Compile Include="Plugins\IPlugin.cs" />
-    <Compile Include="Repositories\Base\RepositoryBase.cs" />
-    <Compile Include="Repositories\Configuration\ExceptionlessElasticConfiguration.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\EventIndex\EventIndex.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\EventIndex\EventIndexType.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\OrganizationIndex.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\OrganizationIndexType.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\ProjectIndexType.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\TokenIndexType.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\UserIndexType.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex\WebHookIndexType.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\StackIndex\StackIndex.cs" />
-    <Compile Include="Repositories\Configuration\Indexes\StackIndex\StackIndexType.cs" />
-    <Compile Include="Repositories\Queries\EventFieldsQueryVisitor.cs" />
-    <Compile Include="Repositories\Queries\ProjectQuery.cs" />
-    <Compile Include="Repositories\Queries\StackDateFixedQueryVisitor.cs" />
-    <Compile Include="Repositories\Queries\StackQuery.cs" />
-    <Compile Include="Repositories\Queries\OrganizationQuery.cs" />
-    <Compile Include="Repositories\Queries\ExceptionlessSystemFilter.cs" />
-    <Compile Include="Repositories\Queries\Validation\PersistentEventQueryValidator.cs" />
-    <Compile Include="Repositories\Queries\Validation\QueryValidator.cs" />
-    <Compile Include="Repositories\Queries\Validation\StackQueryValidator.cs" />
-    <Compile Include="Serialization\DynamicTypeContractResolver.cs" />
-    <Compile Include="Serialization\ElasticDynamicTypeContractResolver.cs" />
-    <Compile Include="Serialization\ElasticLowerCaseUnderscorePropertyNamesContractResolver.cs" />
-    <Compile Include="Services\SlackService.cs" />
-    <Compile Include="Services\UsageService.cs" />
-    <Compile Include="Utility\IConnectionMapping.cs" />
-    <Compile Include="Utility\SemanticVersionParser.cs" />
-    <Compile Include="Utility\SettingsBase.cs" />
-    <Compile Include="Utility\SingletonBase.cs" />
-    <Compile Include="Utility\LastReferenceIdManager.cs" />
-    <Compile Include="Utility\MetricNames.cs" />
-    <Compile Include="Bootstrapper.cs" />
-    <Compile Include="Dependency\DefaultDependencyResolver.cs" />
-    <Compile Include="Dependency\IDependencyResolver.cs" />
-    <Compile Include="Extensions\TaskExtensions.cs" />
-    <Compile Include="Extensions\UserExtensions.cs" />
-    <Compile Include="Extensions\DictionaryExtensions.cs" />
-    <Compile Include="Extensions\EnumerableExtensions.cs" />
-    <Compile Include="Extensions\EnumHelper.cs" />
-    <Compile Include="Extensions\HashExtensions.cs" />
-    <Compile Include="Extensions\HttpClientExtensions.cs" />
-    <Compile Include="Extensions\ILGeneratorExtensions.cs" />
-    <Compile Include="Extensions\NameValueCollectionExtensions.cs" />
-    <Compile Include="Extensions\QueueExtensions.cs" />
-    <Compile Include="Extensions\StorageExtensions.cs" />
-    <Compile Include="Extensions\TypeExtensions.cs" />
-    <Compile Include="Geo\IGeoIpService.cs" />
-    <Compile Include="Geo\GeoResult.cs" />
-    <Compile Include="Geo\MaxMindGeoIpService.cs" />
-    <Compile Include="Jobs\EventNotificationsJob.cs" />
-    <Compile Include="Jobs\WebHooksJob.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\50_GeoPlugin.cs" />
-    <Compile Include="Models\Messaging\UserMembershipChanged.cs" />
-    <Compile Include="Pipeline\Base\PipelineActionBase.cs" />
-    <Compile Include="Pipeline\Base\PipelineBase.cs" />
-    <Compile Include="Pipeline\Base\PipelineContextBase.cs" />
-    <Compile Include="Pipeline\Base\PriorityAttribute.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\70_SessionPlugin.cs" />
-    <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
-    <Compile Include="Extensions\RequestInfoExtensions.cs" />
-    <Compile Include="Mail\IMailSender.cs" />
-    <Compile Include="Mail\InMemoryMailSender.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\40_RequestInfoPlugin.cs" />
-    <Compile Include="Repositories\Exceptions\DocumentNotFoundException.cs" />
-    <Compile Include="Extensions\ValidationExtensions.cs" />
-    <Compile Include="Jobs\EventUserDescriptionsJob.cs" />
-    <Compile Include="Jobs\MailMessageJob.cs" />
-    <Compile Include="Models\Messaging\ExtendedEntityChanged.cs" />
-    <Compile Include="Models\Messaging\PlanChanged.cs" />
-    <Compile Include="Models\Messaging\PlanOverage.cs" />
-    <Compile Include="Models\Billing\BillingPlanStats.cs" />
-    <Compile Include="Models\EventSummaryModel.cs" />
-    <Compile Include="Models\SummaryData.cs" />
-    <Compile Include="Pipeline\001_CheckEventDateAction.cs" />
-    <Compile Include="Pipeline\006_TruncateFieldsAction.cs" />
-    <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
-    <Compile Include="Plugins\EventParser\Default\LegacyErrorParserPlugin.cs" />
-    <Compile Include="Plugins\Formatting\Default\50_SessionFormattingPlugin.cs" />
-    <Compile Include="Plugins\Formatting\Default\40_UsageFormattingPlugin.cs" />
-    <Compile Include="Plugins\Formatting\Default\99_DefaultFormattingPlugin.cs" />
-    <Compile Include="Plugins\Formatting\Default\10_SimpleErrorFormattingPlugin.cs" />
-    <Compile Include="Plugins\WebHook\Default\LoadDefaults.cs" />
-    <Compile Include="Plugins\WebHook\Default\V2_WebHookDataPlugin.cs" />
-    <Compile Include="Plugins\WebHook\Default\V1_WebHookDataPlugin.cs" />
-    <Compile Include="Plugins\WebHook\WebHookDataContext.cs" />
-    <Compile Include="Plugins\WebHook\WebHookDataPluginManager.cs" />
-    <Compile Include="Plugins\WebHook\WebHookDataPluginBase.cs" />
-    <Compile Include="Plugins\WebHook\IWebHookDataPlugin.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\30_SimpleErrorPlugin.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\10_NotFoundPlugin.cs" />
-    <Compile Include="Extensions\ByteArrayExtensions.cs" />
-    <Compile Include="Extensions\IdentityUtils.cs" />
-    <Compile Include="Plugins\EventParser\Default\JsonEventParserPlugin.cs" />
-    <Compile Include="Plugins\EventParser\EventParserPluginManager.cs" />
-    <Compile Include="Plugins\EventParser\IEventParserPlugin.cs" />
-    <Compile Include="Plugins\EventUpgrader\Default\GetVersion.cs" />
-    <Compile Include="Plugins\EventUpgrader\Default\V1R844_EventUpgrade.cs" />
-    <Compile Include="Plugins\EventUpgrader\Default\V2_EventUpgrade.cs" />
-    <Compile Include="Plugins\EventUpgrader\Default\V1R850_EventUpgrade.cs" />
-    <Compile Include="Plugins\EventUpgrader\Default\V1R500_EventUpgrade.cs" />
-    <Compile Include="Plugins\Formatting\Default\20_ErrorFormattingPlugin.cs" />
-    <Compile Include="Plugins\Formatting\Default\30_NotFoundFormattingPlugin.cs" />
-    <Compile Include="Plugins\Formatting\FormattingPluginBase.cs" />
-    <Compile Include="Plugins\Formatting\FormattingPluginManager.cs" />
-    <Compile Include="Plugins\Formatting\IFormattingPlugin.cs" />
-    <Compile Include="Extensions\CacheClientExtensions.cs" />
-    <Compile Include="Extensions\ContainerExtensions.cs" />
-    <Compile Include="Extensions\ErrorExtensions.cs" />
-    <Compile Include="Extensions\DataDictionaryExtensions.cs" />
-    <Compile Include="Extensions\LogBuilderExtensions.cs" />
-    <Compile Include="Extensions\MethodExtensions.cs" />
-    <Compile Include="Extensions\OrganizationExtensions.cs" />
-    <Compile Include="Extensions\StackExtensions.cs" />
-    <Compile Include="Extensions\JsonExtensions.cs" />
-    <Compile Include="Extensions\ProjectExtensions.cs" />
-    <Compile Include="Extensions\StringExtensions.cs" />
-    <Compile Include="Jobs\DailySummaryJob.cs" />
-    <Compile Include="Jobs\EventPostsJob.cs" />
-    <Compile Include="Jobs\RetentionLimitsJob.cs" />
-    <Compile Include="Models\Queues\EventUserDescription.cs" />
-    <Compile Include="Models\Queues\MailMessage.cs" />
-    <Compile Include="Repositories\Base\RepositoryOwnedByOrganizationAndProject.cs" />
-    <Compile Include="Repositories\Base\RepositoryOwnedByOrganization.cs" />
-    <Compile Include="Repositories\EventRepository.cs" />
-    <Compile Include="Serialization\DataObjectConverter.cs" />
-    <Compile Include="Utility\PathHelper.cs" />
-    <Compile Include="Utility\Reflection\DelegateFactory.cs" />
-    <Compile Include="Utility\Reflection\FieldAccessor.cs" />
-    <Compile Include="Utility\Reflection\IMemberAccessor.cs" />
-    <Compile Include="Utility\Reflection\LateBinder.cs" />
-    <Compile Include="Utility\Reflection\MemberAccessor.cs" />
-    <Compile Include="Utility\Reflection\PropertyAccessor.cs" />
-    <Compile Include="Utility\Reflection\TypeAccessor.cs" />
-    <Compile Include="Utility\SystemHealthChecker.cs" />
-    <Compile Include="Utility\TypeHelper.cs" />
-    <Compile Include="Utility\UserAgentParser.cs" />
-    <Compile Include="Validation\IsObjectIdValidator.cs" />
-    <Compile Include="Validation\OrganizationValidator.cs" />
-    <Compile Include="Validation\PersistentEventValidator.cs" />
-    <Compile Include="Validation\ProjectValidator.cs" />
-    <Compile Include="Validation\StackValidator.cs" />
-    <Compile Include="Validation\TokenValidator.cs" />
-    <Compile Include="Validation\UserDescriptionValidator.cs" />
-    <Compile Include="Validation\UserValidator.cs" />
-    <Compile Include="Validation\WebHookValidator.cs" />
-    <Compile Include="Models\Billing\BillingPlan.cs" />
-    <Compile Include="Models\Queues\EventPostInfo.cs" />
-    <Compile Include="Models\WebHookStack.cs" />
-    <Compile Include="Models\WebHookEvent.cs" />
-    <Compile Include="Pipeline\100_RunEventProcessedPluginsAction.cs" />
-    <Compile Include="Pipeline\005_RunEventProcessingPluginsAction.cs" />
-    <Compile Include="Pipeline\090_IncrementCountersAction.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\0_ThrottleBotsPlugin.cs" />
-    <Compile Include="Plugins\EventProcessor\EventContext.cs" />
-    <Compile Include="Plugins\EventProcessor\EventProcessorPluginBase.cs" />
-    <Compile Include="Plugins\PluginManagerBase.cs" />
-    <Compile Include="Plugins\EventUpgrader\IEventUpgraderPlugin.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Plugins\EventUpgrader\EventUpgraderContext.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Plugins\EventUpgrader\EventUpgraderPluginManager.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Models\Queues\WebHookNotification.cs" />
-    <Compile Include="Models\Queues\SummaryNotification.cs" />
-    <Compile Include="Repositories\Interfaces\IRepositoryOwnedByOrganizationAndProject.cs" />
-    <Compile Include="Repositories\Interfaces\IRepositoryOwnedByProject.cs" />
-    <Compile Include="Repositories\Interfaces\ITokenRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IWebHookRepository.cs" />
-    <Compile Include="Repositories\TokenRepository.cs" />
-    <Compile Include="Repositories\WebHookRepository.cs" />
-    <Compile Include="Serialization\LowerCaseUnderscorePropertyNamesContractResolver.cs" />
-    <Compile Include="Settings.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\20_ErrorPlugin.cs" />
-    <Compile Include="Plugins\EventProcessor\EventPluginManager.cs" />
-    <Compile Include="Plugins\EventProcessor\IEventProcessorPlugin.cs" />
-    <Compile Include="Utility\SampleDataService.cs" />
-    <Compile Include="Utility\SimpleInjectorDependencyResolver.cs" />
-    <Compile Include="Mail\IMailer.cs" />
-    <Compile Include="Mail\Mailer.cs" />
-    <Compile Include="Pipeline\010_AssignToStackAction.cs" />
-    <Compile Include="Pipeline\020_MarkAsCriticalAction.cs" />
-    <Compile Include="Pipeline\030_CheckForRegressionAction.cs" />
-    <Compile Include="Pipeline\EventPipeline.cs" />
-    <Compile Include="Pipeline\EventPipelineActionBase.cs" />
-    <Compile Include="Pipeline\070_QueueNotificationAction.cs" />
-    <Compile Include="Pipeline\040_SaveEventAction.cs" />
-    <Compile Include="Pipeline\060_UpdateStatsAction.cs" />
-    <Compile Include="Models\Queues\EventNotification.cs" />
-    <Compile Include="Repositories\Interfaces\IRepositoryOwnedByOrganization.cs" />
-    <Compile Include="Repositories\Interfaces\IOrganizationRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IEventRepository.cs" />
-    <Compile Include="Utility\ExtensibleObject.cs" />
-    <Compile Include="Repositories\Interfaces\IStackRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IUserRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IProjectRepository.cs" />
-    <Compile Include="Utility\ErrorSignature.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Repositories\StackRepository.cs" />
-    <Compile Include="Repositories\OrganizationRepository.cs" />
-    <Compile Include="Repositories\ProjectRepository.cs" />
-    <Compile Include="Repositories\UserRepository.cs" />
     <EmbeddedResource Include="Mail\Templates\event-notice.html" />
     <EmbeddedResource Include="Mail\Templates\organization-added.html" />
     <EmbeddedResource Include="Mail\Templates\organization-invited.html" />
     <EmbeddedResource Include="Mail\Templates\organization-notice.html" />
     <EmbeddedResource Include="Mail\Templates\organization-payment-failed.html" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Mail\Templates\project-daily-summary.html" />
     <EmbeddedResource Include="Mail\Templates\user-email-verify.html" />
     <EmbeddedResource Include="Mail\Templates\user-password-reset.html" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\..\packages\Pegasus.4.0.0\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.4.0.0\build\Pegasus.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\Pegasus.4.0.0\build\Pegasus.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Pegasus.4.0.0\build\Pegasus.targets'))" />
-  </Target>
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="6.2.2" />
+    <PackageReference Include="AutoMapper.Collection" Version="3.1.3" />
+    <PackageReference Include="FluentValidation" Version="7.3.3" />
+    <PackageReference Include="Foundatio" Version="7.0.1629-pre" />
+    <PackageReference Include="Foundatio.Jobs.Commands" Version="7.0.1629-pre" />
+    <PackageReference Include="Foundatio.JsonNet" Version="7.0.1629-pre" />
+    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="5.6.681-pre" />
+    <PackageReference Include="Handlebars.Net" Version="1.9.0" />
+    <PackageReference Include="MaxMind.GeoIP2" Version="2.9.0" />
+    <PackageReference Include="McSherry.SemanticVersioning" Version="1.2.1" />
+    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.0.0" />
+    <PackageReference Include="NEST" Version="5.6.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Stripe.net" Version="11.10.0" />
+
+    <PackageReference Include="System.DirectoryServices" Version="4.5.0-preview2-25707-02" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
+    <PackageReference Include="UAParser" Version="3.0.0" />
+  </ItemGroup>
 </Project>

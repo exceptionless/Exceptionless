@@ -6,8 +6,8 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
-using Foundatio.Logging;
 using Foundatio.Metrics;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(90)]
@@ -19,12 +19,12 @@ namespace Exceptionless.Core.Pipeline {
             ContinueOnError = true;
         }
 
-        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+        public override Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {
-                await _metricsClient.CounterAsync(MetricNames.EventsProcessed, contexts.Count).AnyContext();
+                _metricsClient.Counter(MetricNames.EventsProcessed, contexts.Count);
 
                 if (contexts.First().Organization.PlanId != BillingManager.FreePlan.Id)
-                    await _metricsClient.CounterAsync(MetricNames.EventsPaidProcessed, contexts.Count).AnyContext();
+                    _metricsClient.Counter(MetricNames.EventsPaidProcessed, contexts.Count);
             } catch (Exception ex) {
                 foreach (var context in contexts) {
                     bool cont = false;
@@ -36,6 +36,8 @@ namespace Exceptionless.Core.Pipeline {
                         context.SetError(ex.Message, ex);
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         public override Task ProcessAsync(EventContext ctx) {
