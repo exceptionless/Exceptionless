@@ -29,16 +29,20 @@ namespace Exceptionless.Core.Services {
                 ? GetArchivePath(SystemClock.UtcNow, data.ProjectId, $"{Guid.NewGuid():N}.json")
                 : Path.Combine("q", $"{Guid.NewGuid():N}.json");
 
-            if (!await _storage.SaveFileAsync(Path.ChangeExtension(data.FilePath, ".payload"), stream, cancellationToken).AnyContext()) {
-                using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
-                    _logger.LogError("Unable to save event post payload");
+            var saveTask = _storage.SaveObjectAsync(data.FilePath, (EventPostInfo)data, cancellationToken);
+            var savePayloadTask = _storage.SaveFileAsync(Path.ChangeExtension(data.FilePath, ".payload"), stream, cancellationToken);
 
+            if (!await saveTask.AnyContext()) {
+                using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
+                    _logger.LogError("Unable to save event post info");
+
+                await savePayloadTask.AnyContext();
                 return null;
             }
 
-            if (!await _storage.SaveObjectAsync(data.FilePath, (EventPostInfo)data, cancellationToken).AnyContext()) {
+            if (!await savePayloadTask.AnyContext()) {
                 using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
-                    _logger.LogError("Unable to save event post info");
+                    _logger.LogError("Unable to save event post payload");
 
                 return null;
             }
