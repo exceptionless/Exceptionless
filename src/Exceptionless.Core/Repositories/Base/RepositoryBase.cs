@@ -19,6 +19,7 @@ namespace Exceptionless.Core.Repositories {
         public RepositoryBase(IIndexType<T> indexType, IValidator<T> validator) : base(indexType, validator) {}
 
         protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null, TimeSpan? delay = null) {
+            if(!Settings.Current.EnableWebSockets) return Task.CompletedTask;
             return PublishMessageAsync(new ExtendedEntityChanged {
                 ChangeType = changeType,
                 Id = document?.Id,
@@ -31,7 +32,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected override Task SendQueryNotificationsAsync(ChangeType changeType, IRepositoryQuery query, ICommandOptions options) {
-            if (!NotificationsEnabled || !options.ShouldNotify())
+            if (!Settings.Current.EnableWebSockets || !NotificationsEnabled || !options.ShouldNotify())
                 return Task.CompletedTask;
 
             var delay = TimeSpan.FromSeconds(1.5);
