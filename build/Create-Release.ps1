@@ -60,9 +60,10 @@ $apiConfig.Save($webConfig)
 
 $appProdSettings = "$releaseTempDir\wwwroot\appsettings.Production.yml"
 $prodConfig = (Get-Content $appProdSettings)
-$prodConfig = $prodConfig -Replace "BaseURL: 'https://be.exceptionless.io'", "BaseURL: 'http://localhost:50000/#!'"
-$prodConfig = $prodConfig -Replace "EnableSSL: true", "EnableSSL: false"
-$prodConfig = $prodConfig -Replace "RunJobsInProcess: false", "RunJobsInProcess: true"
+$prodConfig = $prodConfig -Replace "BaseURL: https://be.exceptionless.io", "BaseURL: 'http://localhost:50000/#!'"
+$prodConfig = $prodConfig -Replace "MetricsServerName", "# MetricsServerName"
+$prodConfig = $prodConfig -Replace "ExceptionlessServerUrl", "# ExceptionlessServerUrl"
+$prodConfig = $prodConfig -Replace "InternalProjectId", "# InternalProjectId"
 Set-Content -Path $appProdSettings -Value $prodConfig
 
 Write-Host "Zipping release"
