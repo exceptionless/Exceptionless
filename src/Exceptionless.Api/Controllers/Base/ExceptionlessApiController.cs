@@ -194,8 +194,10 @@ namespace Exceptionless.Api.Controllers {
 
         protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
             var headersToAdd = new HeaderDictionary();
-            foreach (var kvp in headers)
-                headersToAdd.Add(kvp.Key, kvp.Value.ToArray());
+            if (headers != null) {
+                foreach (var kvp in headers)
+                    headersToAdd.Add(kvp.Key, kvp.Value.ToArray());
+            }
 
             return new OkWithResourceLinks<TEntity>(content, hasMore, null, pagePropertyAccessor, headersToAdd, isDescending);
         }
