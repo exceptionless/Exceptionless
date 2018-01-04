@@ -4,16 +4,16 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
-using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(60)]
     public class UpdateStatsAction : EventPipelineActionBase {
-        private readonly IStackRepository _stackRepository;
+        private readonly StackService _stackService;
 
-        public UpdateStatsAction(IStackRepository stackRepository, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
-            _stackRepository = stackRepository;
+        public UpdateStatsAction(StackService stackService, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+            _stackService = stackService;
         }
 
         protected override bool IsCritical => true;
@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Pipeline {
                 int count = stackContexts.Count;
                 DateTime minDate = stackContexts.Min(s => s.Event.Date.UtcDateTime);
                 DateTime maxDate = stackContexts.Max(s => s.Event.Date.UtcDateTime);
-                await _stackRepository.IncrementEventCounterAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count).AnyContext();
+                await _stackService.IncrementStackUsageAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count).AnyContext();
 
                 // Update stacks in memory since they are used in notifications.
                 foreach (var ctx in stackContexts) {

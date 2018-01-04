@@ -76,7 +76,6 @@ if (parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.maxOccurren
 ctx._source.total_occurrences += params.count;";
 
             var request = new UpdateRequest<Stack, Stack>(GetIndexById(stackId), ElasticType.Type, stackId) {
-                RetryOnConflict = 1,
                 Script = new InlineScript(script.Replace("\r\n", String.Empty).Replace("    ", " ")) {
                     Params = new Dictionary<string, object>(3) {
                         { "minOccurrenceDateUtc", minOccurrenceDateUtc },
