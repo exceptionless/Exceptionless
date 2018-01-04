@@ -12,7 +12,6 @@ namespace StackEventCountJob {
         public static async Task<int> Main() {
             try {
                 var serviceProvider = JobServiceProvider.GetServiceProvider();
-                var job = serviceProvider.GetService<Exceptionless.Core.Jobs.StackEventCountJob>();
                 return await new JobRunner(
                     serviceProvider.GetService<Exceptionless.Core.Jobs.StackEventCountJob>(), 
                     serviceProvider.GetRequiredService<ILoggerFactory>(), 
