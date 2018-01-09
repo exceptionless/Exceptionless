@@ -56,22 +56,22 @@ namespace Exceptionless.Core.Services {
                 string occurrenceCountCacheKey = GetStackOccurrenceCountCacheKey(organizationId, projectId, stackId),
                     occurrenceMinDateCacheKey = GetStackOccurrenceMinDateCacheKey(organizationId, projectId, stackId),
                     occurrenceMaxDateCacheKey = GetStackOccurrenceMaxDateCacheKey(organizationId, projectId, stackId);
-                var occurrenceCount = await _cache.GetAsync<long>(occurrenceCountCacheKey, 0).AnyContext();
-                if (occurrenceCount == 0) return;
+                var occurrenceCount = _cache.GetAsync<long>(occurrenceCountCacheKey, 0);
                 var occurrenceMinDate = _cache.GetAsync(occurrenceMinDateCacheKey, SystemClock.UtcNow);
                 var occurrenceMaxDate = _cache.GetAsync(occurrenceMaxDateCacheKey, SystemClock.UtcNow);
 
-                await Task.WhenAll(occurrenceMinDate, occurrenceMaxDate).AnyContext();
+                await Task.WhenAll(occurrenceCount, occurrenceMinDate, occurrenceMaxDate).AnyContext();
+                if (occurrenceCount.Result == 0) continue;
+                await _cache.RemoveAllAsync(new[] { occurrenceCountCacheKey, occurrenceMinDateCacheKey, occurrenceMaxDateCacheKey }).AnyContext();
 
-                await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result, (int)occurrenceCount, sendNotifications).AnyContext();
-
-                var tasks = new List<Task> {
-                    _cache.RemoveAllAsync(new[] { occurrenceCountCacheKey, occurrenceMinDateCacheKey, occurrenceMaxDateCacheKey }),
-                    _cache.SetRemoveAsync(occurrenceSetCacheKey, tuple)
-                };
-                await Task.WhenAll(tasks).AnyContext();
-
-                _logger.LogTrace($"Increment event count {occurrenceCount} for organization:{organizationId} project:{projectId} stack:{stackId} with occurrenceMinDate:{occurrenceMinDate.Result} occurrenceMaxDate:{occurrenceMaxDate.Result}");
+                try {
+                    await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result, (int)occurrenceCount.Result, sendNotifications).AnyContext();
+                    _logger.LogTrace($"Increment event count {occurrenceCount} for organization:{organizationId} project:{projectId} stack:{stackId} with occurrenceMinDate:{occurrenceMinDate.Result} occurrenceMaxDate:{occurrenceMaxDate.Result}");
+                }
+                catch {
+                    await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result, (int)occurrenceCount.Result).AnyContext();
+                    throw;
+                }
             }
         }
 
