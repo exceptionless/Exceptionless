@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
@@ -31,11 +32,11 @@ namespace Exceptionless.Core.Services {
                 occurrenceSetCacheKey = GetStackOccurrenceSetCacheKey();
 
             var cachedOccurrenceMinDateUtc = await _cache.GetAsync<DateTime>(occurrenceMinDateCacheKey).AnyContext();
-            if (!cachedOccurrenceMinDateUtc.HasValue || cachedOccurrenceMinDateUtc.IsNull || cachedOccurrenceMinDateUtc.Value > minOccurrenceDateUtc)
+            if (!cachedOccurrenceMinDateUtc.HasValue || cachedOccurrenceMinDateUtc.Value.IsAfter(minOccurrenceDateUtc))
                 tasks.Add(_cache.SetAsync(occurrenceMinDateCacheKey, minOccurrenceDateUtc));
 
             var cachedOccurrenceMaxDateUtc = await _cache.GetAsync<DateTime>(occurrenceMaxDateCacheKey).AnyContext();
-            if (!cachedOccurrenceMaxDateUtc.HasValue || cachedOccurrenceMinDateUtc.IsNull || cachedOccurrenceMaxDateUtc.Value < maxOccurrenceDateUtc)
+            if (!cachedOccurrenceMaxDateUtc.HasValue || cachedOccurrenceMaxDateUtc.Value.IsBefore(maxOccurrenceDateUtc))
                 tasks.Add(_cache.SetAsync(occurrenceMaxDateCacheKey, maxOccurrenceDateUtc));
 
             tasks.Add(_cache.IncrementAsync(occurenceCountCacheKey, count));
