@@ -22,8 +22,15 @@ namespace Exceptionless.Core.Services {
         }
 
         public async Task IncrementStackUsageAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count) {
-            if (String.IsNullOrEmpty(organizationId) || String.IsNullOrEmpty(projectId) || String.IsNullOrEmpty(stackId) || count == 0)
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException(nameof(organizationId));
+            if (String.IsNullOrEmpty(projectId))
+                throw new ArgumentNullException(nameof(projectId));
+            if (String.IsNullOrEmpty(stackId))
+                throw new ArgumentNullException(nameof(stackId));
+            if (count == 0)
                 return;
+
             var tasks = new List<Task>(4);
 
             string occurenceCountCacheKey = GetStackOccurrenceCountCacheKey(organizationId, projectId, stackId),
