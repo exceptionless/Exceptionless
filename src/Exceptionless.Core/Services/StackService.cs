@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -24,7 +23,6 @@ namespace Exceptionless.Core.Services {
         public async Task IncrementStackUsageAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count) {
             if (String.IsNullOrEmpty(organizationId) || String.IsNullOrEmpty(projectId) || String.IsNullOrEmpty(stackId) || count == 0)
                 return;
-            var expireTimeout = TimeSpan.FromDays(1);
             var tasks = new List<Task>(4);
 
             string occurenceCountCacheKey = GetStackOccurrenceCountCacheKey(organizationId, projectId, stackId),
@@ -34,14 +32,14 @@ namespace Exceptionless.Core.Services {
 
             var cachedOccurrenceMinDateUtc = await _cache.GetAsync<DateTime>(occurrenceMinDateCacheKey).AnyContext();
             if (!cachedOccurrenceMinDateUtc.HasValue || cachedOccurrenceMinDateUtc.IsNull || cachedOccurrenceMinDateUtc.Value > minOccurrenceDateUtc)
-                tasks.Add(_cache.SetAsync(occurrenceMinDateCacheKey, minOccurrenceDateUtc, expireTimeout));
+                tasks.Add(_cache.SetAsync(occurrenceMinDateCacheKey, minOccurrenceDateUtc));
 
             var cachedOccurrenceMaxDateUtc = await _cache.GetAsync<DateTime>(occurrenceMaxDateCacheKey).AnyContext();
             if (!cachedOccurrenceMaxDateUtc.HasValue || cachedOccurrenceMinDateUtc.IsNull || cachedOccurrenceMaxDateUtc.Value < maxOccurrenceDateUtc)
-                tasks.Add(_cache.SetAsync(occurrenceMaxDateCacheKey, maxOccurrenceDateUtc, expireTimeout));
+                tasks.Add(_cache.SetAsync(occurrenceMaxDateCacheKey, maxOccurrenceDateUtc));
 
-            tasks.Add(_cache.IncrementAsync(occurenceCountCacheKey, count, expireTimeout));
-            tasks.Add(_cache.SetAddAsync(occurrenceSetCacheKey, Tuple.Create(organizationId, projectId, stackId), expireTimeout));
+            tasks.Add(_cache.IncrementAsync(occurenceCountCacheKey, count));
+            tasks.Add(_cache.SetAddAsync(occurrenceSetCacheKey, Tuple.Create(organizationId, projectId, stackId)));
 
             await Task.WhenAll(tasks).AnyContext();
         }
@@ -68,7 +66,7 @@ namespace Exceptionless.Core.Services {
 
                 var tasks = new List<Task> {
                     _cache.RemoveAllAsync(new[] { occurrenceCountCacheKey, occurrenceMinDateCacheKey, occurrenceMaxDateCacheKey }),
-                    _cache.SetRemoveAsync(occurrenceSetCacheKey, tuple, TimeSpan.FromHours(24))
+                    _cache.SetRemoveAsync(occurrenceSetCacheKey, tuple)
                 };
                 await Task.WhenAll(tasks).AnyContext();
 
