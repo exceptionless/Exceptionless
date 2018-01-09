@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Services {
 
                 try {
                     await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result, (int)occurrenceCount.Result, sendNotifications).AnyContext();
-                    _logger.LogTrace($"Increment event count {occurrenceCount} for organization:{organizationId} project:{projectId} stack:{stackId} with occurrenceMinDate:{occurrenceMinDate.Result} occurrenceMaxDate:{occurrenceMaxDate.Result}");
+                    _logger.LogTrace("Increment event count {occurrenceCount} for organization:{organizationId} project:{projectId} stack:{stackId} with occurrenceMinDate:{occurrenceMinDate} occurrenceMaxDate:{occurrenceMaxDate}", occurrenceCount.Result, organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result);
                 }
                 catch {
                     await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result, (int)occurrenceCount.Result).AnyContext();
