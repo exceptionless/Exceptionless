@@ -54,19 +54,20 @@ namespace Exceptionless.Core.Services {
                 if (cancellationToken.IsCancellationRequested) break;
 
                 string organizationId = tuple.Item1, projectId = tuple.Item2, stackId = tuple.Item3;
-                string occurenceCountCacheKey = GetStackOccurrenceCountCacheKey(organizationId, projectId, stackId),
+                string occurrenceCountCacheKey = GetStackOccurrenceCountCacheKey(organizationId, projectId, stackId),
                     occurrenceMinDateCacheKey = GetStackOccurrenceMinDateCacheKey(organizationId, projectId, stackId),
                     occurrenceMaxDateCacheKey = GetStackOccurrenceMaxDateCacheKey(organizationId, projectId, stackId);
-                var occurrenceCount = await _cache.GetAsync<long>(occurenceCountCacheKey, 0).AnyContext();
+                var occurrenceCount = await _cache.GetAsync<long>(occurrenceCountCacheKey, 0).AnyContext();
                 if (occurrenceCount == 0) return;
                 var occurrenceMinDate = _cache.GetAsync(occurrenceMinDateCacheKey, SystemClock.UtcNow);
                 var occurrenceMaxDate = _cache.GetAsync(occurrenceMaxDateCacheKey, SystemClock.UtcNow);
 
                 await Task.WhenAll(occurrenceMinDate, occurrenceMaxDate).AnyContext();
 
+                await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result, (int)occurrenceCount, sendNotifications).AnyContext();
+
                 var tasks = new List<Task> {
-                    _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result, (int)occurrenceCount, sendNotifications),
-                    _cache.RemoveAllAsync(new[] { occurenceCountCacheKey, occurrenceMinDateCacheKey, occurrenceMaxDateCacheKey }),
+                    _cache.RemoveAllAsync(new[] { occurrenceCountCacheKey, occurrenceMinDateCacheKey, occurrenceMaxDateCacheKey }),
                     _cache.SetRemoveAsync(occurrenceSetCacheKey, tuple, TimeSpan.FromHours(24))
                 };
                 await Task.WhenAll(tasks).AnyContext();
