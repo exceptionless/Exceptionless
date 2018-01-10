@@ -14,6 +14,7 @@ namespace Exceptionless.Core.Services {
         private readonly ILogger<UsageService> _logger;
         private readonly IStackRepository _stackRepository;
         private readonly ICacheClient _cache;
+        private readonly TimeSpan _expireTimeout = TimeSpan.FromHours(12);
 
         public StackService(IStackRepository stackRepository, ICacheClient cache, ILoggerFactory loggerFactory = null) {
             _stackRepository = stackRepository;
@@ -40,13 +41,13 @@ namespace Exceptionless.Core.Services {
 
             var cachedOccurrenceMinDateUtc = await _cache.GetAsync<DateTime>(occurrenceMinDateCacheKey).AnyContext();
             if (!cachedOccurrenceMinDateUtc.HasValue || cachedOccurrenceMinDateUtc.Value.IsAfter(minOccurrenceDateUtc))
-                tasks.Add(_cache.SetAsync(occurrenceMinDateCacheKey, minOccurrenceDateUtc));
+                tasks.Add(_cache.SetAsync(occurrenceMinDateCacheKey, minOccurrenceDateUtc, _expireTimeout));
 
             var cachedOccurrenceMaxDateUtc = await _cache.GetAsync<DateTime>(occurrenceMaxDateCacheKey).AnyContext();
             if (!cachedOccurrenceMaxDateUtc.HasValue || cachedOccurrenceMaxDateUtc.Value.IsBefore(maxOccurrenceDateUtc))
-                tasks.Add(_cache.SetAsync(occurrenceMaxDateCacheKey, maxOccurrenceDateUtc));
+                tasks.Add(_cache.SetAsync(occurrenceMaxDateCacheKey, maxOccurrenceDateUtc, _expireTimeout));
 
-            tasks.Add(_cache.IncrementAsync(occurenceCountCacheKey, count));
+            tasks.Add(_cache.IncrementAsync(occurenceCountCacheKey, count, _expireTimeout));
             tasks.Add(_cache.SetAddAsync(occurrenceSetCacheKey, Tuple.Create(organizationId, projectId, stackId)));
 
             await Task.WhenAll(tasks).AnyContext();
@@ -63,22 +64,17 @@ namespace Exceptionless.Core.Services {
                 string occurrenceCountCacheKey = GetStackOccurrenceCountCacheKey(organizationId, projectId, stackId),
                     occurrenceMinDateCacheKey = GetStackOccurrenceMinDateCacheKey(organizationId, projectId, stackId),
                     occurrenceMaxDateCacheKey = GetStackOccurrenceMaxDateCacheKey(organizationId, projectId, stackId);
-                var occurrenceCount = _cache.GetAsync<long>(occurrenceCountCacheKey, 0);
+                var occurrenceCountTask = _cache.GetAsync<long>(occurrenceCountCacheKey, 0);
                 var occurrenceMinDate = _cache.GetAsync(occurrenceMinDateCacheKey, SystemClock.UtcNow);
                 var occurrenceMaxDate = _cache.GetAsync(occurrenceMaxDateCacheKey, SystemClock.UtcNow);
 
-                await Task.WhenAll(occurrenceCount, occurrenceMinDate, occurrenceMaxDate).AnyContext();
-                if (occurrenceCount.Result == 0) continue;
-                await _cache.RemoveAllAsync(new[] { occurrenceCountCacheKey, occurrenceMinDateCacheKey, occurrenceMaxDateCacheKey }).AnyContext();
+                await Task.WhenAll(occurrenceCountTask, occurrenceMinDate, occurrenceMaxDate).AnyContext();
+                var occurrenceCount = (int)occurrenceCountTask.Result;
+                if (occurrenceCount == 0) continue;
 
-                try {
-                    await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result, (int)occurrenceCount.Result, sendNotifications).AnyContext();
-                    _logger.LogTrace("Increment event count {occurrenceCount} for organization:{organizationId} project:{projectId} stack:{stackId} with occurrenceMinDate:{occurrenceMinDate} occurrenceMaxDate:{occurrenceMaxDate}", occurrenceCount.Result, organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result);
-                }
-                catch {
-                    await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result, (int)occurrenceCount.Result).AnyContext();
-                    throw;
-                }
+                await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result, occurrenceCount, sendNotifications).AnyContext();
+                await _cache.DecrementAsync(occurrenceCountCacheKey, occurrenceCount, _expireTimeout).AnyContext();
+                _logger.LogTrace("Increment event count {occurrenceCount} for organization:{organizationId} project:{projectId} stack:{stackId} with occurrenceMinDate:{occurrenceMinDate} occurrenceMaxDate:{occurrenceMaxDate}", occurrenceCount, organizationId, projectId, stackId, occurrenceMinDate.Result, occurrenceMaxDate.Result);
             }
         }
 
