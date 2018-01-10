@@ -134,12 +134,7 @@ namespace Exceptionless.Api.Tests.Services {
             await _stackService.SaveStackUsagesAsync(false);
 
             // Assert state in cache after save stack usage
-            Assert.Equal(DateTime.MinValue, await _cache.GetAsync(GetStackOccurrenceMinDateCacheKey(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), DateTime.MinValue));
-            Assert.Equal(DateTime.MinValue, await _cache.GetAsync(GetStackOccurrenceMaxDateCacheKey(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), DateTime.MinValue));
             Assert.Equal(0, await _cache.GetAsync<long>(GetStackOccurrenceCountCacheKey(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), 0));
-
-            Assert.Equal(DateTime.MinValue, await _cache.GetAsync(GetStackOccurrenceMinDateCacheKey(TestConstants.OrganizationId, TestConstants.ProjectId, stack2.Id), DateTime.MinValue));
-            Assert.Equal(DateTime.MinValue, await _cache.GetAsync(GetStackOccurrenceMaxDateCacheKey(TestConstants.OrganizationId, TestConstants.ProjectId, stack2.Id), DateTime.MinValue));
             Assert.Equal(0, await _cache.GetAsync<long>(GetStackOccurrenceCountCacheKey(TestConstants.OrganizationId, TestConstants.ProjectId, stack2.Id), 0));
 
             // Assert stack state after save stack usage
