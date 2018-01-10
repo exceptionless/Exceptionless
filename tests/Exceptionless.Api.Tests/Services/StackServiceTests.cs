@@ -142,9 +142,6 @@ namespace Exceptionless.Api.Tests.Services {
             Assert.Equal(DateTime.MinValue, await _cache.GetAsync(GetStackOccurrenceMaxDateCacheKey(TestConstants.OrganizationId, TestConstants.ProjectId, stack2.Id), DateTime.MinValue));
             Assert.Equal(0, await _cache.GetAsync<long>(GetStackOccurrenceCountCacheKey(TestConstants.OrganizationId, TestConstants.ProjectId, stack2.Id), 0));
 
-            var occurrenceSet = await _cache.GetSetAsync<Tuple<string, string, string>>(GetStackOccurrenceSetCacheKey());
-            Assert.True(occurrenceSet.IsNull || !occurrenceSet.HasValue || occurrenceSet.Value.Count == 0);
-
             // Assert stack state after save stack usage
             stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
             Assert.Equal(10, stack.TotalOccurrences);
