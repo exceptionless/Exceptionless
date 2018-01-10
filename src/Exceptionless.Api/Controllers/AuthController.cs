@@ -270,7 +270,14 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost("github")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public Task<IActionResult> GitHubAsync([FromBody] JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), Settings.Current.GitHubAppId, Settings.Current.GitHubAppSecret, (f, c) => new GitHubClient(f, c));
+            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), 
+                Settings.Current.GitHubAppId, 
+                Settings.Current.GitHubAppSecret, 
+                (f, c) => {
+                    c.Scope = "user:email";
+                    return new GitHubClient(f, c);
+                }
+            );
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -278,7 +285,14 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost("google")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public Task<IActionResult> GoogleAsync([FromBody] JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), Settings.Current.GoogleAppId, Settings.Current.GoogleAppSecret, (f, c) => new GoogleClient(f, c));
+            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), 
+                Settings.Current.GoogleAppId, 
+                Settings.Current.GoogleAppSecret, 
+                (f, c) => {
+                    c.Scope = "profile email";
+                    return new GoogleClient(f, c);
+                }
+            );
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -286,7 +300,14 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost("facebook")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public Task<IActionResult> FacebookAsync([FromBody] JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), Settings.Current.FacebookAppId, Settings.Current.FacebookAppSecret, (f, c) => new FacebookClient(f, c));
+            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), 
+                Settings.Current.FacebookAppId, 
+                Settings.Current.FacebookAppSecret, 
+                (f, c) => {
+                    c.Scope = "email";
+                    return new FacebookClient(f, c);
+                }
+            );
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -294,7 +315,14 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost("live")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public Task<IActionResult> LiveAsync([FromBody] JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), Settings.Current.MicrosoftAppId, Settings.Current.MicrosoftAppSecret, (f, c) => new WindowsLiveClient(f, c));
+            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), 
+                Settings.Current.MicrosoftAppId, 
+                Settings.Current.MicrosoftAppSecret, 
+                (f, c) => {
+                    c.Scope = "wl.emails";
+                    return new WindowsLiveClient(f, c);
+                }
+            );
         }
 
         /// <summary>
