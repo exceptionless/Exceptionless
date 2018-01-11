@@ -26,7 +26,7 @@ ExceptionlessServerUrl: https://collector.exceptionless.io
 InternalProjectId: 50ca6b2423d6c8493020b823
 
 FacebookAppId: 395178683904310
-GitHubAppId: 7ef1dd5bfbc4ccf7f5e
+GitHubAppId: 7ef1dd5bfbc4ccf7f5ef
 GoogleAppId: 809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com
 MicrosoftAppId: 000000004C137E8B
 SlackAppId: 34500115540.177239122322
