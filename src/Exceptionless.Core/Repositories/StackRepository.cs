@@ -54,7 +54,7 @@ namespace Exceptionless.Core.Repositories {
             return String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
         }
 
-        public async Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
+        public async Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
             const string script = @"
@@ -88,7 +88,7 @@ ctx._source.total_occurrences += params.count;";
             var result = await _client.UpdateAsync<Stack>(request).AnyContext();
             if (!result.IsValid) {
                 _logger.LogError(result.OriginalException, "Error occurred incrementing total event occurrences on stack {stack}. Error: {Message}", stackId, result.ServerError?.Error);
-                return;
+                return false;
             }
 
             if (IsCacheEnabled)
@@ -103,6 +103,7 @@ ctx._source.total_occurrences += params.count;";
                     Type = EntityTypeName
                 }, TimeSpan.FromSeconds(1.5)).AnyContext();
             }
+            return true;
         }
 
         public async Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {

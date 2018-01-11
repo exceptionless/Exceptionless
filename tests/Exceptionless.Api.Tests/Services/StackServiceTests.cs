@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Billing;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
-using Foundatio.Repositories;
 using Foundatio.Utility;
 using Nest;
 using Xunit;
