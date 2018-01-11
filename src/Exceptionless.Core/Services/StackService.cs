@@ -13,6 +13,7 @@ namespace Exceptionless.Core.Services {
         private readonly IStackRepository _stackRepository;
         private readonly ICacheClient _cache;
         private readonly TimeSpan _expireTimeout = TimeSpan.FromHours(12);
+        private readonly DateTime _unixTimeStampOrigin = new DateTime(2000, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
         public StackService(IStackRepository stackRepository, ICacheClient cache, ILoggerFactory loggerFactory = null) {
             _stackRepository = stackRepository;
@@ -33,8 +34,8 @@ namespace Exceptionless.Core.Services {
             await Task.WhenAll(
                 _cache.SetAddAsync(GetStackOccurrenceSetCacheKey(), Tuple.Create(organizationId, projectId, stackId)),
                 _cache.IncrementAsync(GetStackOccurrenceCountCacheKey(organizationId, projectId, stackId), count, _expireTimeout),
-                _cache.SetIfLowerAsync(GetStackOccurrenceMinDateCacheKey(organizationId, projectId, stackId), minOccurrenceDateUtc.Ticks, _expireTimeout),
-                _cache.SetIfHigherAsync(GetStackOccurrenceMaxDateCacheKey(organizationId, projectId, stackId), maxOccurrenceDateUtc.Ticks, _expireTimeout)
+                _cache.SetIfLowerAsync(GetStackOccurrenceMinDateCacheKey(organizationId, projectId, stackId), ConvertToUnixTimeStamp(minOccurrenceDateUtc), _expireTimeout),
+                _cache.SetIfHigherAsync(GetStackOccurrenceMaxDateCacheKey(organizationId, projectId, stackId), ConvertToUnixTimeStamp(maxOccurrenceDateUtc), _expireTimeout)
             ).AnyContext();
         }
 
@@ -50,14 +51,14 @@ namespace Exceptionless.Core.Services {
                     occurrenceMinDateCacheKey = GetStackOccurrenceMinDateCacheKey(organizationId, projectId, stackId),
                     occurrenceMaxDateCacheKey = GetStackOccurrenceMaxDateCacheKey(organizationId, projectId, stackId);
                 var occurrenceCountTask = _cache.GetAsync<long>(occurrenceCountCacheKey, 0);
-                var occurrenceMinDateTask = _cache.GetAsync<double>(occurrenceMinDateCacheKey, SystemClock.UtcNow.Ticks);
-                var occurrenceMaxDateTask = _cache.GetAsync<double>(occurrenceMaxDateCacheKey, SystemClock.UtcNow.Ticks);
+                var occurrenceMinDateTask = _cache.GetAsync<double>(occurrenceMinDateCacheKey);
+                var occurrenceMaxDateTask = _cache.GetAsync<double>(occurrenceMaxDateCacheKey);
 
                 await Task.WhenAll(occurrenceCountTask, occurrenceMinDateTask, occurrenceMaxDateTask).AnyContext();
                 var occurrenceCount = (int)occurrenceCountTask.Result;
                 if (occurrenceCount == 0) continue;
-                var occurrenceMinDate = new DateTime((long)occurrenceMinDateTask.Result);
-                var occurrenceMaxDate = new DateTime((long)occurrenceMaxDateTask.Result);
+                var occurrenceMinDate = occurrenceMinDateTask.Result.HasValue ? ConvertFromUnixTimeStamp(occurrenceMinDateTask.Result.Value) : SystemClock.UtcNow;
+                var occurrenceMaxDate = occurrenceMaxDateTask.Result.HasValue ? ConvertFromUnixTimeStamp(occurrenceMaxDateTask.Result.Value) : SystemClock.UtcNow;
 
                 await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount, sendNotifications).AnyContext();
                 await _cache.DecrementAsync(occurrenceCountCacheKey, occurrenceCount, _expireTimeout).AnyContext();
@@ -65,19 +66,27 @@ namespace Exceptionless.Core.Services {
             }
         }
 
-        private string GetStackOccurrenceSetCacheKey() {
+        internal double ConvertToUnixTimeStamp(DateTime dateUtc) {
+            return (dateUtc - _unixTimeStampOrigin).Ticks;
+        }
+
+        internal DateTime ConvertFromUnixTimeStamp(double? timestamp) {
+            return timestamp.HasValue && timestamp > 0 ? _unixTimeStampOrigin.AddTicks((long)timestamp.Value) : DateTime.MinValue;
+        }
+
+        internal string GetStackOccurrenceSetCacheKey() {
             return "usage:occurrences";
         }
 
-        private string GetStackOccurrenceCountCacheKey(string organizationId, string projectId, string stackId) {
+        internal string GetStackOccurrenceCountCacheKey(string organizationId, string projectId, string stackId) {
             return $"usage:occurrences:count:{organizationId}:{projectId}:{stackId}";
         }
 
-        private string GetStackOccurrenceMinDateCacheKey(string organizationId, string projectId, string stackId) {
+        internal string GetStackOccurrenceMinDateCacheKey(string organizationId, string projectId, string stackId) {
             return $"usage:occurrences:mindate:{organizationId}:{projectId}:{stackId}";
         }
 
-        private string GetStackOccurrenceMaxDateCacheKey(string organizationId, string projectId, string stackId) {
+        internal string GetStackOccurrenceMaxDateCacheKey(string organizationId, string projectId, string stackId) {
             return $"usage:occurrences:maxdate:{organizationId}:{projectId}:{stackId}";
         }
     }
