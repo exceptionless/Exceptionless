@@ -11,6 +11,6 @@ namespace Exceptionless.Core.Repositories {
         Task<FindResults<Stack>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null);
 
         Task MarkAsRegressedAsync(string stackId);
-        Task IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true);
+        Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true);
     }
 }
