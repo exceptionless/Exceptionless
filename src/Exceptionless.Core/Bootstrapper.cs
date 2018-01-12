@@ -171,6 +171,7 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<UsageService>();
             container.AddSingleton<SlackService>();
+            container.AddSingleton<StackService>();
 
             container.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
 
@@ -256,6 +257,7 @@ namespace Exceptionless.Core {
             new JobRunner(container.GetRequiredService<RetentionLimitsJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromHours(1)).RunInBackground(token);
             new JobRunner(container.GetRequiredService<WorkItemJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2).RunInBackground(token);
             new JobRunner(container.GetRequiredService<MaintainIndexesJob>(), loggerFactory, initialDelay: SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)) - SystemClock.UtcNow, interval: TimeSpan.FromHours(1)).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<StackEventCountJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), interval: TimeSpan.FromSeconds(5)).RunInBackground(token);
 
             logger.LogWarning("Jobs running in process.");
         }
