@@ -77,7 +77,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit) {
-            if (apiThrottleLimit < 0 || apiThrottleLimit == int.MaxValue) return false;
+            if (apiThrottleLimit == int.MaxValue) return false;
             string cacheKey = String.Concat("api", ":", organizationId, ":", SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
             var limit = await cacheClient.GetAsync<long>(cacheKey).AnyContext();
             return limit.HasValue && limit.Value >= apiThrottleLimit;

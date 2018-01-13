@@ -187,7 +187,11 @@ namespace Exceptionless.Core {
             settings.RunJobsInProcess = configRoot.GetValue(nameof(RunJobsInProcess), settings.AppMode == AppMode.Development);
             settings.JobsIterationLimit = configRoot.GetValue(nameof(JobsIterationLimit), -1);
             settings.BotThrottleLimit = configRoot.GetValue(nameof(BotThrottleLimit), 25);
+
             settings.ApiThrottleLimit = configRoot.GetValue(nameof(ApiThrottleLimit), settings.AppMode == AppMode.Development ? Int32.MaxValue : 3500);
+            if (settings.ApiThrottleLimit == -1)
+                settings.ApiThrottleLimit = int.MaxValue;
+
             settings.EnableArchive = configRoot.GetValue(nameof(EnableArchive), true);
             settings.EventSubmissionDisabled = configRoot.GetValue(nameof(EventSubmissionDisabled), false);
             settings.DisabledPipelineActions = configRoot.GetValueList(nameof(DisabledPipelineActions), String.Empty);
