@@ -60,7 +60,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StackSnapshotJob", "src\Job
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exceptionless.Web", "src\Exceptionless.Web\Exceptionless.Web.csproj", "{39353DAF-044D-4AF6-84DA-6EF178F70E50}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StackEventCountJob", "src\Jobs\StackEventCountJob\StackEventCountJob.csproj", "{BF78AB22-5303-4BA0-AEC5-BF9643A0BF7C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StackEventCountJob", "src\Jobs\StackEventCount\StackEventCountJob.csproj", "{BF78AB22-5303-4BA0-AEC5-BF9643A0BF7C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

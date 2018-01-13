@@ -37,8 +37,8 @@ git rm -r * -q 2>&1 | %{ "$_" }
 
 Write-Host "Copying build artifacts..."
 ROBOCOPY "$sourceDir\Exceptionless.Web" "$artifactsDir" /XD "$sourceDir\Exceptionless.Web\bin" "$sourceDir\Exceptionless.Web\obj" "$sourceDir\Exceptionless.Web\Properties" /S /XF "*.nuspec" "*.settings" "*.cs" "*.Development.yml" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" /NFL /NDL /NJH /NJS /nc /ns /np
-ROBOCOPY "$sourceDir\Jobs\EventPost\bin\Release\netcoreapp2.0\publish" "$artifactsDir\bin" /S /XF "*.yml" "Web.config" /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\Exceptionless.Web\bin\Release\netcoreapp2.0\publish" "$artifactsDir\bin" /XD "$sourceDir\Exceptionless.Web\bin\Release\netcoreapp2.0\publish\wwwroot" /S /XF "*.yml" "Web.config" /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$sourceDir\Jobs\EventPost\bin\Release\netcoreapp2.0\publish" "$artifactsDir\jobs" /S /XF "*.yml" "Web.config" /NFL /NDL /NJH /NJS /nc /ns /np
 
 Write-Host "Copying CleanupSnapshot job..."
 ROBOCOPY "$sourceDir\Jobs\CleanupSnapshot\bin\Release\netcoreapp2.0\publish" "$artifactsDir\App_Data\jobs\triggered\CleanupSnapshot" "CleanupSnapshot*" "appsettings*.yml" "run.bat" "settings.job" /NFL /NDL /NJH /NJS /nc /ns /np
@@ -67,6 +67,8 @@ Write-Host "Copying OrganizationSnapshot job..."
 ROBOCOPY "$sourceDir\Jobs\OrganizationSnapshot\bin\Release\netcoreapp2.0\publish" "$artifactsDir\App_Data\jobs\triggered\OrganizationSnapshot" "OrganizationSnapshot*" "appsettings*.yml" "run.bat" "settings.job" /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying RetentionLimit job..."
 ROBOCOPY "$sourceDir\Jobs\RetentionLimit\bin\Release\netcoreapp2.0\publish" "$artifactsDir\App_Data\jobs\continuous\RetentionLimit" "RetentionLimit*" "appsettings*.yml" "run.bat" /NFL /NDL /NJH /NJS /nc /ns /np
+Write-Host "Copying StackEventCount job..."
+ROBOCOPY "$sourceDir\Jobs\StackEventCount\bin\Release\netcoreapp2.0\publish" "$artifactsDir\App_Data\jobs\continuous\StackEventCount" "StackEventCount*" "appsettings*.yml" "run.bat" /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying StackSnapshot job..."
 ROBOCOPY "$sourceDir\Jobs\StackSnapshot\bin\Release\netcoreapp2.0\publish" "$artifactsDir\App_Data\jobs\triggered\StackSnapshot" "StackSnapshot*" "appsettings*.yml" "run.bat" "settings.job" /NFL /NDL /NJH /NJS /nc /ns /np
 Write-Host "Copying WebHook job..."
