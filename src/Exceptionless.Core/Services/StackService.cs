@@ -6,6 +6,7 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.Core.Services {
     public class StackService {
@@ -13,12 +14,11 @@ namespace Exceptionless.Core.Services {
         private readonly IStackRepository _stackRepository;
         private readonly ICacheClient _cache;
         private readonly TimeSpan _expireTimeout = TimeSpan.FromHours(12);
-        private readonly DateTime _unixTimeStampOrigin = new DateTime(2000, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
         public StackService(IStackRepository stackRepository, ICacheClient cache, ILoggerFactory loggerFactory = null) {
             _stackRepository = stackRepository;
             _cache = cache;
-            _logger = loggerFactory.CreateLogger<UsageService>();
+            _logger = loggerFactory?.CreateLogger<UsageService>() ?? NullLogger<UsageService>.Instance;
         }
 
         public async Task IncrementStackUsageAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count) {
@@ -28,92 +28,88 @@ namespace Exceptionless.Core.Services {
                 throw new ArgumentNullException(nameof(projectId));
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
-            if (count == 0)
+            if (count <= 0)
                 return;
 
             await Task.WhenAll(
-                _cache.SetAddAsync(GetStackOccurrenceSetCacheKey(), Tuple.Create(organizationId, projectId, stackId)),
-                _cache.IncrementAsync(GetStackOccurrenceCountCacheKey(organizationId, projectId, stackId), count, _expireTimeout),
-                _cache.SetIfLowerAsync(GetStackOccurrenceMinDateCacheKey(organizationId, projectId, stackId), ConvertToUnixTimeStamp(minOccurrenceDateUtc), _expireTimeout),
-                _cache.SetIfHigherAsync(GetStackOccurrenceMaxDateCacheKey(organizationId, projectId, stackId), ConvertToUnixTimeStamp(maxOccurrenceDateUtc), _expireTimeout)
+                _cache.SetAddAsync(GetStackOccurrenceSetCacheKey(), (organizationId, projectId, stackId)),
+                _cache.IncrementAsync(GetStackOccurrenceCountCacheKey(stackId), count, _expireTimeout),
+                _cache.SetIfLowerAsync(GetStackOccurrenceMinDateCacheKey(stackId), minOccurrenceDateUtc, _expireTimeout),
+                _cache.SetIfHigherAsync(GetStackOccurrenceMaxDateCacheKey(stackId), maxOccurrenceDateUtc, _expireTimeout)
             ).AnyContext();
         }
 
         public async Task SaveStackUsagesAsync(bool sendNotifications = true, CancellationToken cancellationToken = default) {
             var occurrenceSetCacheKey = GetStackOccurrenceSetCacheKey();
-            var stackUsageSet = await _cache.GetSetAsync<Tuple<string, string, string>>(occurrenceSetCacheKey).AnyContext();
-            if (!stackUsageSet.HasValue || stackUsageSet.IsNull) return;
-            foreach (var tuple in stackUsageSet.Value) {
-                if (cancellationToken.IsCancellationRequested) break;
+            var stackUsageSet = await _cache.GetSetAsync<(string OrganizationId, string ProjectId, string StackId)>(occurrenceSetCacheKey).AnyContext();
+            if (!stackUsageSet.HasValue) 
+                return;
 
-                string organizationId = tuple.Item1, projectId = tuple.Item2, stackId = tuple.Item3;
-                string occurrenceCountCacheKey = GetStackOccurrenceCountCacheKey(organizationId, projectId, stackId),
-                    occurrenceMinDateCacheKey = GetStackOccurrenceMinDateCacheKey(organizationId, projectId, stackId),
-                    occurrenceMaxDateCacheKey = GetStackOccurrenceMaxDateCacheKey(organizationId, projectId, stackId);
-                var occurrenceCountTask = _cache.GetAsync<long>(occurrenceCountCacheKey, 0);
-                var occurrenceMinDateTask = _cache.GetAsync<double>(occurrenceMinDateCacheKey);
-                var occurrenceMaxDateTask = _cache.GetAsync<double>(occurrenceMaxDateCacheKey);
+            foreach (var (organizationId, projectId, stackId) in stackUsageSet.Value) {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
 
-                await Task.WhenAll(
-                    occurrenceCountTask, occurrenceMinDateTask, occurrenceMaxDateTask,
-                    _cache.SetRemoveAsync(occurrenceSetCacheKey, tuple)
-                ).AnyContext();
-                var occurrenceCount = (int)occurrenceCountTask.Result;
-                if (occurrenceCount == 0) continue;
+                var removeFromSetTask = _cache.SetRemoveAsync(occurrenceSetCacheKey, (organizationId, projectId, stackId));
+                string countCacheKey = GetStackOccurrenceCountCacheKey(stackId);
+                var countTask = _cache.GetAsync<long>(countCacheKey, 0);
+                string minDateCacheKey = GetStackOccurrenceMinDateCacheKey(stackId);
+                var minDateTask = _cache.GetUnixTimeMillisecondsAsync(minDateCacheKey, SystemClock.UtcNow);
+                string maxDateCacheKey = GetStackOccurrenceMaxDateCacheKey(stackId);
+                var maxDateTask = _cache.GetUnixTimeMillisecondsAsync(maxDateCacheKey, SystemClock.UtcNow);
 
                 await Task.WhenAll(
-                    _cache.DecrementAsync(occurrenceCountCacheKey, occurrenceCount, _expireTimeout),
-                    _cache.RemoveAllAsync(new []{ occurrenceMinDateCacheKey, occurrenceMaxDateCacheKey })
+                    removeFromSetTask,
+                    countTask, 
+                    minDateTask, 
+                    maxDateTask
                 ).AnyContext();
 
-                var occurrenceMinDate = occurrenceMinDateTask.Result.HasValue ? ConvertFromUnixTimeStamp(occurrenceMinDateTask.Result.Value) : SystemClock.UtcNow;
-                var occurrenceMaxDate = occurrenceMaxDateTask.Result.HasValue ? ConvertFromUnixTimeStamp(occurrenceMaxDateTask.Result.Value) : SystemClock.UtcNow;
-                var reggressing = false;
+                int occurrenceCount = (int)countTask.Result;
+                if (occurrenceCount <= 0) {
+                    if (occurrenceCount < 0)
+                        System.Diagnostics.Debugger.Break();
+
+                    await _cache.RemoveAllAsync(new[] { minDateCacheKey, maxDateCacheKey }).AnyContext();
+                    continue;
+                }
+
+                await Task.WhenAll(
+                    _cache.RemoveAllAsync(new []{ minDateCacheKey, maxDateCacheKey }),
+                    _cache.DecrementAsync(countCacheKey, occurrenceCount, _expireTimeout)
+                ).AnyContext();
+
+                var occurrenceMinDate = minDateTask.Result;
+                var occurrenceMaxDate = maxDateTask.Result;
+                bool shouldRetry = false;
                 try {
                     if (!await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount, sendNotifications).AnyContext()) {
-                        reggressing = true;
-                        await IncrementStackUsage().AnyContext();
+                        shouldRetry = true;
+                        await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount).AnyContext();
+                    } else if (_logger.IsEnabled(LogLevel.Trace)) {
+                        _logger.LogTrace("Increment event count {OccurrenceCount} for organization:{OrganizationId} project:{ProjectId} stack:{StackId} with Min Date:{OccurrenceMinDate} Max Date:{OccurrenceMaxDate}", occurrenceCount, organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate);
                     }
-                    else {
-                        _logger.LogTrace("Increment event count {occurrenceCount} for organization:{organizationId} project:{projectId} stack:{stackId} with occurrenceMinDate:{occurrenceMinDate} occurrenceMaxDate:{occurrenceMaxDate}", occurrenceCount, organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate);
-                    }
-                }
-                catch(Exception ex) {
-                    _logger.LogError(ex, "Error to increment event count for organization: {organization} project:{projectId} stack:{stackId}", organizationId, projectId, stackId);
-                    if (!reggressing) {
-                        await IncrementStackUsage().AnyContext();
-                    }
-                    throw;
-                }
-
-                Task IncrementStackUsage() {
-                    return IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount);
+                } catch(Exception ex) {
+                    _logger.LogError(ex, "Error incrementing event count for organization: {OrganizationId} project:{ProjectId} stack:{StackId}", organizationId, projectId, stackId);
+                    if (!shouldRetry)
+                        await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount).AnyContext();
                 }
             }
-        }
-
-        internal double ConvertToUnixTimeStamp(DateTime dateUtc) {
-            return (dateUtc - _unixTimeStampOrigin).Ticks;
-        }
-
-        internal DateTime ConvertFromUnixTimeStamp(double? timestamp) {
-            return timestamp.HasValue && timestamp > 0 ? _unixTimeStampOrigin.AddTicks((long)timestamp.Value) : DateTime.MinValue;
         }
 
         internal string GetStackOccurrenceSetCacheKey() {
             return "usage:occurrences";
         }
 
-        internal string GetStackOccurrenceCountCacheKey(string organizationId, string projectId, string stackId) {
-            return $"usage:occurrences:count:{organizationId}:{projectId}:{stackId}";
+        internal string GetStackOccurrenceCountCacheKey(string stackId) {
+            return String.Concat("usage:occurrences:count:", stackId);
         }
 
-        internal string GetStackOccurrenceMinDateCacheKey(string organizationId, string projectId, string stackId) {
-            return $"usage:occurrences:mindate:{organizationId}:{projectId}:{stackId}";
+        internal string GetStackOccurrenceMinDateCacheKey( string stackId) {
+            return String.Concat("usage:occurrences:min:", stackId);
         }
 
-        internal string GetStackOccurrenceMaxDateCacheKey(string organizationId, string projectId, string stackId) {
-            return $"usage:occurrences:maxdate:{organizationId}:{projectId}:{stackId}";
+        internal string GetStackOccurrenceMaxDateCacheKey(string stackId) {
+            return String.Concat("usage:occurrences:max:", stackId);
         }
     }
 }
