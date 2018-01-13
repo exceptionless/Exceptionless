@@ -5,9 +5,9 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Foundatio.Aliyun" Version="7.0.15-pre" />
-    <PackageReference Include="Foundatio.AzureStorage" Version="7.0.1490-pre" />
-    <PackageReference Include="Foundatio.Redis" Version="7.0.1531-pre" />
+    <PackageReference Include="Foundatio.Aliyun" Version="7.0.17-pre" />
+    <PackageReference Include="Foundatio.AzureStorage" Version="7.0.1492-pre" />
+    <PackageReference Include="Foundatio.Redis" Version="7.0.1536-pre" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MailKit" Version="2.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.0.0" />
