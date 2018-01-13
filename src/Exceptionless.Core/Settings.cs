@@ -186,18 +186,15 @@ namespace Exceptionless.Core {
             settings.AppScope = configRoot.GetValue(nameof(AppScope), String.Empty);
             settings.RunJobsInProcess = configRoot.GetValue(nameof(RunJobsInProcess), settings.AppMode == AppMode.Development);
             settings.JobsIterationLimit = configRoot.GetValue(nameof(JobsIterationLimit), -1);
-            settings.BotThrottleLimit = configRoot.GetValue(nameof(BotThrottleLimit), 25);
+            settings.BotThrottleLimit = configRoot.GetValue(nameof(BotThrottleLimit), 25).NormalizeValue();
 
-            settings.ApiThrottleLimit = configRoot.GetValue(nameof(ApiThrottleLimit), settings.AppMode == AppMode.Development ? Int32.MaxValue : 3500);
-            if (settings.ApiThrottleLimit == -1)
-                settings.ApiThrottleLimit = int.MaxValue;
-
+            settings.ApiThrottleLimit = configRoot.GetValue(nameof(ApiThrottleLimit), settings.AppMode == AppMode.Development ? Int32.MaxValue : 3500).NormalizeValue();
             settings.EnableArchive = configRoot.GetValue(nameof(EnableArchive), true);
             settings.EventSubmissionDisabled = configRoot.GetValue(nameof(EventSubmissionDisabled), false);
             settings.DisabledPipelineActions = configRoot.GetValueList(nameof(DisabledPipelineActions), String.Empty);
             settings.DisabledPlugins = configRoot.GetValueList(nameof(DisabledPlugins), String.Empty);
-            settings.MaximumEventPostSize = configRoot.GetValue(nameof(MaximumEventPostSize), 200000);
-            settings.MaximumRetentionDays = configRoot.GetValue(nameof(MaximumRetentionDays), 180);
+            settings.MaximumEventPostSize = configRoot.GetValue(nameof(MaximumEventPostSize), 200000).NormalizeValue();
+            settings.MaximumRetentionDays = configRoot.GetValue(nameof(MaximumRetentionDays), 180).NormalizeValue();
             settings.MetricsServerName = configRoot.GetValue<string>(nameof(MetricsServerName));
             settings.MetricsServerPort = configRoot.GetValue(nameof(MetricsServerPort), 8125);
             settings.EnableMetricsReporting = configRoot.GetValue(nameof(EnableMetricsReporting), !String.IsNullOrEmpty(settings.MetricsServerName));

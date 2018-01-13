@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Services {
         }
 
         public async Task SaveStackUsagesAsync(bool sendNotifications = true, CancellationToken cancellationToken = default) {
-            var occurrenceSetCacheKey = GetStackOccurrenceSetCacheKey();
+            string occurrenceSetCacheKey = GetStackOccurrenceSetCacheKey();
             var stackUsageSet = await _cache.GetSetAsync<(string OrganizationId, string ProjectId, string StackId)>(occurrenceSetCacheKey).AnyContext();
             if (!stackUsageSet.HasValue) 
                 return;
@@ -66,9 +66,6 @@ namespace Exceptionless.Core.Services {
 
                 int occurrenceCount = (int)countTask.Result;
                 if (occurrenceCount <= 0) {
-                    if (occurrenceCount < 0)
-                        System.Diagnostics.Debugger.Break();
-
                     await _cache.RemoveAllAsync(new[] { minDateCacheKey, maxDateCacheKey }).AnyContext();
                     continue;
                 }
