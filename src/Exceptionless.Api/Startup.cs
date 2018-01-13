@@ -39,8 +39,12 @@ namespace Exceptionless.Api {
             app.UseAuthentication();
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
-            // Throttle api calls to X every 15 minutes by IP address.
-            app.UseMiddleware<ThrottlingMiddleware>();
+
+            if (Settings.Current.ApiThrottleLimit != int.MaxValue) {
+                // Throttle api calls to X every 15 minutes by IP address.
+                app.UseMiddleware<ThrottlingMiddleware>();
+            }
+
             // Reject event posts in organizations over their max event limits.
             app.UseMiddleware<OverageMiddleware>();
             app.UseFileServer();
