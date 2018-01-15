@@ -10,8 +10,9 @@ using Serilog;
 namespace MaintainIndexesJob {
     public class Program {
         public static async Task<int> Main() {
+            IServiceProvider serviceProvider = null;
             try {
-                var serviceProvider = JobServiceProvider.GetServiceProvider();
+                serviceProvider = JobServiceProvider.GetServiceProvider();
                 var job = serviceProvider.GetService<Exceptionless.Core.Jobs.Elastic.MaintainIndexesJob>();
                 return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), runContinuous: false).RunInConsoleAsync();
             } catch (Exception ex) {
@@ -19,6 +20,8 @@ namespace MaintainIndexesJob {
                 return 1;
             } finally {
                 Log.CloseAndFlush();
+                if (serviceProvider is IDisposable disposable) 
+                    disposable.Dispose(); 
                 await ExceptionlessClient.Default.ProcessQueueAsync();
             }
         }

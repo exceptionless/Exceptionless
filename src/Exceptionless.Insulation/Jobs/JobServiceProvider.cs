@@ -36,9 +36,11 @@ namespace Exceptionless.Insulation.Jobs {
                 var client = ExceptionlessClient.Default;
                 client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
                 client.Configuration.UseLogger(new SelfLogLogger());
-                client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
                 client.Configuration.SetVersion(Settings.Current.Version);
                 client.Configuration.UseInMemoryStorage();
+
+                if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
+                    client.Configuration.Enabled = false;
 
                 client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
                 client.Startup(Settings.Current.ExceptionlessApiKey);

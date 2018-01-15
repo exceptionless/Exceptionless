@@ -18,6 +18,7 @@ using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Serilog.Sinks.Exceptionless;
 using StackExchange.Redis;
 
 namespace Exceptionless.Insulation {
@@ -28,9 +29,8 @@ namespace Exceptionless.Insulation {
                 client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
                 client.Configuration.ApiKey = Settings.Current.ExceptionlessApiKey;
 
-                //client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
                 client.Configuration.SetDefaultMinLogLevel(Logging.LogLevel.Warn);
-                client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
+                client.Configuration.UseLogger(new SelfLogLogger());
                 client.Configuration.SetVersion(Settings.Current.Version);
                 if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
                     client.Configuration.Enabled = false;
