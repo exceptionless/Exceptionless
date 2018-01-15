@@ -38,10 +38,9 @@ namespace Exceptionless.Core.Jobs {
         private readonly UsageService _usageService;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly IFileStorage _storage;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metrics, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage, JsonSerializerSettings jsonSerializerSettings, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metrics, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventPostService = eventPostService;
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
@@ -49,7 +48,6 @@ namespace Exceptionless.Core.Jobs {
             _usageService = usageService;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
-            _storage = storage;
             _jsonSerializerSettings = jsonSerializerSettings;
 
             AutoComplete = false;
