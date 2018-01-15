@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Services {
                 ? GetArchivePath(SystemClock.UtcNow, data.ProjectId, $"{Guid.NewGuid():N}.json")
                 : Path.Combine("q", $"{Guid.NewGuid():N}.json");
 
-            var saveTask = _storage.SaveObjectAsync(data.FilePath, (EventPostInfo)data, cancellationToken);
+            var saveTask = Settings.Current.EnableArchive ? _storage.SaveObjectAsync(data.FilePath, (EventPostInfo)data, cancellationToken) : Task.FromResult(true);
             var savePayloadTask = _storage.SaveFileAsync(Path.ChangeExtension(data.FilePath, ".payload"), stream, cancellationToken);
 
             if (!await saveTask.AnyContext()) {
