@@ -19,15 +19,15 @@ namespace Exceptionless.Core.Jobs {
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromSeconds(5));
         }
 
+        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
+            return _lockProvider.AcquireAsync(nameof(StackEventCountJob), TimeSpan.FromSeconds(5), new CancellationToken(true));
+        }
+
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             _logger.LogTrace("Start save stack event counts.");
             await _stackService.SaveStackUsagesAsync(cancellationToken: context.CancellationToken).AnyContext();
             _logger.LogTrace("Finished save stack event counts.");
             return JobResult.Success;
-        }
-
-        protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
-            return _lockProvider.AcquireAsync(nameof(StackEventCountJob), TimeSpan.FromSeconds(5), new CancellationToken(true));
         }
     }
 }

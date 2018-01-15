@@ -10,8 +10,9 @@ using Serilog;
 namespace DailySummaryJob {
     public class Program {
         public static async Task<int> Main() {
+            IServiceProvider serviceProvider = null;
             try {
-                var serviceProvider = JobServiceProvider.GetServiceProvider();
+                serviceProvider = JobServiceProvider.GetServiceProvider();
                 var job = serviceProvider.GetService<Exceptionless.Core.Jobs.DailySummaryJob>();
                 return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), initialDelay: TimeSpan.FromMinutes(1), interval: TimeSpan.FromHours(1)).RunInConsoleAsync();
             } catch (Exception ex) {
@@ -19,6 +20,8 @@ namespace DailySummaryJob {
                 return 1;
             } finally {
                 Log.CloseAndFlush();
+                if (serviceProvider is IDisposable disposable) 
+                    disposable.Dispose(); 
                 await ExceptionlessClient.Default.ProcessQueueAsync();
             }
         }
