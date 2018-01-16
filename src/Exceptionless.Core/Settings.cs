@@ -89,6 +89,8 @@ namespace Exceptionless.Core {
 
         public bool EnableActiveDirectoryAuth { get; internal set; }
 
+        public bool EnableRepositoryNotifications { get; private set; }
+
         public bool EnableWebSockets { get; private set; }
 
         public string Version { get; private set; }
@@ -214,6 +216,7 @@ namespace Exceptionless.Core {
             settings.StorageFolder = configRoot.GetValue<string>(nameof(StorageFolder), "|DataDirectory|\\storage");
             settings.BulkBatchSize = configRoot.GetValue(nameof(BulkBatchSize), 1000);
 
+            settings.EnableRepositoryNotifications = configRoot.GetValue(nameof(EnableRepositoryNotifications), true);
             settings.EnableWebSockets = configRoot.GetValue(nameof(EnableWebSockets), true);
             settings.EnableBootstrapStartupActions = configRoot.GetValue(nameof(EnableBootstrapStartupActions), true);
             settings.EnableAccountCreation = configRoot.GetValue(nameof(EnableAccountCreation), true);

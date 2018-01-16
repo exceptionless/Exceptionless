@@ -63,9 +63,7 @@ namespace Exceptionless.Insulation {
                 else
                     container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
 
-                if (Settings.Current.EnableWebSockets)
-                    container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
-
+                container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
                 container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
                     Subscriber = s.GetRequiredService<ConnectionMultiplexer>().GetSubscriber(),
                     Topic = $"{Settings.Current.AppScopePrefix}messages",
