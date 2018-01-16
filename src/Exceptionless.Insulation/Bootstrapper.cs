@@ -90,10 +90,21 @@ namespace Exceptionless.Insulation {
                 container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
             }
 
-            if (!String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString))
-                container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events", s.GetRequiredService<ITextSerializer>()));
-            else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString))
-                container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(Settings.Current.AliyunStorageConnectionString, Settings.Current.AliyunBucketName, s.GetRequiredService<ITextSerializer>()));
+            if (!String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString)) {
+                container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions {
+                    ConnectionString = Settings.Current.AzureStorageConnectionString,
+                    ContainerName =  $"{Settings.Current.AppScopePrefix}ex-events",
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            } else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString)) {
+                container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions {
+                    ConnectionString = Settings.Current.AliyunStorageConnectionString,
+                    Bucket = Settings.Current.AliyunBucketName,
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            }
         }
 
         private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {

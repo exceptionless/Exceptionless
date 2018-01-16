@@ -5,14 +5,15 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Foundatio.Aliyun" Version="7.0.17-pre" />
-    <PackageReference Include="Foundatio.AzureStorage" Version="7.0.1492-pre" />
-    <PackageReference Include="Foundatio.Redis" Version="7.0.1536-pre" />
+    <PackageReference Include="Foundatio.Aliyun" Version="7.0.18-pre" />
+    <PackageReference Include="Foundatio.AzureStorage" Version="7.0.1494-pre" />
+    <PackageReference Include="Foundatio.Redis" Version="7.0.1538-pre" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MailKit" Version="2.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.0.3" /> 
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.0" />
     <PackageReference Include="MimeKit" Version="2.0.1" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="2.0.2" />

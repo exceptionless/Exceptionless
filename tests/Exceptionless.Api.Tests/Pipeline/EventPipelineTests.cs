@@ -123,7 +123,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CreateAutoSessionStartEventsAsync() {
-            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io"),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
@@ -152,7 +152,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task UpdateAutoMultipleSessionStartEventDurationsAsync() {
-            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.Session),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.Session),
@@ -218,7 +218,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CloseExistingAutoSessionAsync() {
-            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io"),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
@@ -253,7 +253,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task IgnoreDuplicateAutoEndSessionsAsync() {
-            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionEnd)
@@ -425,7 +425,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task CloseExistingManualSessionAsync() {
-            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
@@ -463,7 +463,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task IgnoreDuplicateManualEndSessionsAsync() {
-            DateTimeOffset firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+            var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
             var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
@@ -584,7 +584,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public async Task RemoveTagsExceedingLimitsWhileKeepingKnownTags() {
-            string LargeRemovedTags = new String('x', 150);
+            string LargeRemovedTags = new string('x', 150);
 
             var ev = GenerateEvent(SystemClock.UtcNow);
             ev.Tags.Add(LargeRemovedTags);
@@ -616,7 +616,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(50, stack.Tags.Count);
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
-            ev.Tags.Add(new String('x', 150));
+            ev.Tags.Add(new string('x', 150));
             ev.Tags.AddRange(Enumerable.Range(100, 200).Select(i => i.ToString()));
             ev.Tags.Add(Event.KnownTags.Critical);
 
@@ -628,12 +628,12 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.NotNull(ev);
             Assert.NotNull(ev.StackId);
             Assert.Equal(50, ev.Tags.Count);
-            Assert.DoesNotContain(new String('x', 150), ev.Tags);
+            Assert.DoesNotContain(new string('x', 150), ev.Tags);
             Assert.Contains(Event.KnownTags.Critical, ev.Tags);
 
             stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(50, stack.Tags.Count);
-            Assert.DoesNotContain(new String('x', 150), stack.Tags);
+            Assert.DoesNotContain(new string('x', 150), stack.Tags);
             Assert.Contains(Event.KnownTags.Critical, stack.Tags);
         }
 
@@ -861,7 +861,11 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var mappedUsers = new Dictionary<string, UserInfo>();
             var mappedIPs = new Dictionary<string, string>();
-            var storage = new FolderFileStorage(Path.GetFullPath(Path.Combine("..", "..", "..", "src")));
+            var storage = new FolderFileStorage(new FolderFileStorageOptions {
+                Folder = Path.GetFullPath(Path.Combine("..", "..", "..", "src")),
+                LoggerFactory = Log
+            });
+
             foreach (var file in await storage.GetFileListAsync(Path.Combine("Exceptionless.Web", "storage", "q", "*"))) {
                 var data = await storage.GetFileContentsRawAsync(Path.ChangeExtension(file.Path, ".payload"));
                 var eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(file.Path);
