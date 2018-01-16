@@ -234,7 +234,7 @@ namespace Exceptionless.Core.Jobs {
                             if (!String.IsNullOrEmpty(ev.Id) && String.IsNullOrEmpty(ev.ReferenceId))
                                 ev.ReferenceId = ev.Id;
 
-                            // the event id, stack id and organization id should never be set for posted events
+                            // the event id and stack id should never be set for posted events
                             ev.Id = ev.StackId = null;
                         }
                     }, MetricNames.PostsParsingTime);
