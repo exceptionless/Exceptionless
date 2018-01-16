@@ -227,8 +227,7 @@ namespace Exceptionless.Core.Jobs {
                         events = _eventParserPluginManager.ParseEvents(input, ep.ApiVersion, ep.UserAgent) ?? new List<PersistentEvent>(0);
                         foreach (var ev in events) {
                             ev.CreatedUtc = createdUtc;
-
-                            // set the project id on all events
+                            ev.OrganizationId = ep.OrganizationId;
                             ev.ProjectId = ep.ProjectId;
 
                             // set the reference id to the event id if one was defined.
@@ -236,7 +235,7 @@ namespace Exceptionless.Core.Jobs {
                                 ev.ReferenceId = ev.Id;
 
                             // the event id, stack id and organization id should never be set for posted events
-                            ev.Id = ev.StackId = ev.OrganizationId = null;
+                            ev.Id = ev.StackId = null;
                         }
                     }, MetricNames.PostsParsingTime);
                     _metrics.Counter(MetricNames.PostsParsed);

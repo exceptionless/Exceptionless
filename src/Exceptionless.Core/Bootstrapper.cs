@@ -118,10 +118,18 @@ namespace Exceptionless.Core {
             container.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
             container.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
 
-            if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
-                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(Settings.Current.StorageFolder, s.GetRequiredService<ITextSerializer>()));
-            else
-                container.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(s.GetRequiredService<ITextSerializer>()));
+            if (!String.IsNullOrEmpty(Settings.Current.StorageFolder)) {
+                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions {
+                    Folder = Settings.Current.StorageFolder,
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            } else {
+                container.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(new InMemoryFileStorageOptions {
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            }
 
             container.AddSingleton<IStackRepository, StackRepository>();
             container.AddSingleton<IEventRepository, EventRepository>();
