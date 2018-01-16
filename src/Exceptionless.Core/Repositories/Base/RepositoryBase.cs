@@ -16,9 +16,14 @@ using DataDictionary = Foundatio.Utility.DataDictionary;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : class, IIdentity, new() {
-        public RepositoryBase(IIndexType<T> indexType, IValidator<T> validator) : base(indexType, validator) {}
+        public RepositoryBase(IIndexType<T> indexType, IValidator<T> validator) : base(indexType, validator) {
+            NotificationsEnabled = Settings.Current.EnableRepositoryNotifications;
+        }
 
         protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null, TimeSpan? delay = null) {
+            if (!NotificationsEnabled)
+                return Task.CompletedTask;
+
             return PublishMessageAsync(new ExtendedEntityChanged {
                 ChangeType = changeType,
                 Id = document?.Id,
@@ -28,6 +33,13 @@ namespace Exceptionless.Core.Repositories {
                 Type = EntityTypeName,
                 Data = new DataDictionary(data ?? new Dictionary<string, object>())
             }, delay);
+        }
+
+        protected override Task PublishMessageAsync(EntityChanged message, TimeSpan? delay = null) {
+            if (!NotificationsEnabled)
+                return Task.CompletedTask;
+
+            return base.PublishMessageAsync(message, delay);
         }
 
         protected override Task SendQueryNotificationsAsync(ChangeType changeType, IRepositoryQuery query, ICommandOptions options) {

@@ -11,7 +11,6 @@ using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Core.Utility;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +24,6 @@ namespace Exceptionless.Api {
             container.AddSingleton<WebSocketConnectionManager>();
             container.AddSingleton<MessageBusBroker>();
             container.AddSingleton<MessageBusBrokerMiddleware>();
-            container.AddSingleton<IConnectionMapping, ConnectionMapping>();
 
             container.AddSingleton<OverageMiddleware>();
             container.AddSingleton<ThrottlingMiddleware>();

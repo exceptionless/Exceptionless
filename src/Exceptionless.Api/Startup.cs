@@ -40,7 +40,7 @@ namespace Exceptionless.Api {
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
 
-            if (Settings.Current.ApiThrottleLimit != Int32.MaxValue) {
+            if (Settings.Current.ApiThrottleLimit < Int32.MaxValue) {
                 // Throttle api calls to X every 15 minutes by IP address.
                 app.UseMiddleware<ThrottlingMiddleware>();
             }

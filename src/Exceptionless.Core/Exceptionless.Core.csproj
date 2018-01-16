@@ -31,7 +31,7 @@
     <PackageReference Include="Foundatio" Version="7.0.1650-pre" />
     <PackageReference Include="Foundatio.Jobs.Commands" Version="7.0.1650-pre" />
     <PackageReference Include="Foundatio.JsonNet" Version="7.0.1650-pre" />
-    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="5.6.694-pre" />
+    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="5.6.695-pre" />
     <PackageReference Include="Handlebars.Net" Version="1.9.0" />
     <PackageReference Include="MaxMind.GeoIP2" Version="2.9.0" />
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.2.1" />

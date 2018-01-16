@@ -114,6 +114,9 @@ namespace Exceptionless.Core {
             container.AddSingleton(s => CreateQueue<MailMessage>(s));
             container.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));
 
+            container.AddSingleton<IConnectionMapping, ConnectionMapping>();
+            container.AddSingleton<MessageService>();
+            container.AddStartupAction<MessageService>();
             container.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
             container.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
             container.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
