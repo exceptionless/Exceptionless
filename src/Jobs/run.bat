@@ -1,5 +1,6 @@
-@echo off
+@echo on
 
+echo running run.bat from directory: %cd%
 SET jobsdir=..\..\..\..\jobs
 
 IF NOT EXIST %jobsdir% (
