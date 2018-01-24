@@ -1,11 +1,9 @@
-@echo off
-
-echo running run.bat from directory: %cd%
+echo Running run.bat from directory: %cd%
 SET jobsdir=..\..\jobs
 
 IF NOT EXIST %jobsdir% (
   SET jobsdir=%WEBROOT_PATH%\App_Data\jobs\bin
-  echo Job artifact directory not found. Falling back to: %jobsdir%
+  echo Job artifact directory not found.
 )
 
 FOR %%F IN (*Job.dll) DO (
@@ -14,7 +12,7 @@ FOR %%F IN (*Job.dll) DO (
 )
 :done
 
-echo Copying job artifacts to: %jobsdir%
+echo Copying job artifacts from: %jobsdir%
 ROBOCOPY %jobsdir% .\ /S /NFL /NDL /NJH /NJS /nc /ns /np
 IF %ERRORLEVEL% GEQ 8 exit 1
 
