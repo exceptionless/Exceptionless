@@ -1,10 +1,10 @@
-@echo on
+@echo off
 
 echo running run.bat from directory: %cd%
-SET jobsdir=..\..\..\..\jobs
+SET jobsdir=..\..\jobs
 
 IF NOT EXIST %jobsdir% (
-  SET jobsdir=%WEBROOT_PATH%\jobs
+  SET jobsdir=%WEBROOT_PATH%\App_Data\jobs\bin
   echo Job artifact directory not found. Falling back to: %jobsdir%
 )
 
