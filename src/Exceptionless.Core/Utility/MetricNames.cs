@@ -10,6 +10,7 @@ namespace Exceptionless.Core.AppStats {
         public const string EventsProcessCancelled = "events.processing.cancelled";
         public const string EventsRetryCount = "events.retry.count";
         public const string EventsRetryErrors = "events.retry.errors";
+        public const string EventsFieldCount = "events.field.count";
 
         public const string PostsParsed = "posts.parsed";
         public const string PostsEventCount = "posts.eventcount";
