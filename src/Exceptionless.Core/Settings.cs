@@ -137,8 +137,6 @@ namespace Exceptionless.Core {
 
         public string AliyunStorageConnectionString { get; private set; }
 
-        public string AliyunBucketName { get; private set; }
-
         public int BulkBatchSize { get; private set; }
 
         public bool EnableAccountCreation { get; internal set; }
@@ -235,11 +233,7 @@ namespace Exceptionless.Core {
 
             settings.AzureStorageConnectionString = configRoot.GetConnectionString(nameof(AzureStorageConnectionString));
             settings.AzureStorageQueueConnectionString = configRoot.GetConnectionString(nameof(AzureStorageQueueConnectionString));
-
             settings.AliyunStorageConnectionString = configRoot.GetConnectionString(nameof(AliyunStorageConnectionString));
-            settings.AliyunBucketName = configRoot.GetValue<string>(nameof(AliyunBucketName));
-            if (!String.IsNullOrEmpty(settings.AliyunStorageConnectionString) && String.IsNullOrEmpty(settings.AliyunBucketName))
-                throw new ArgumentException($"The {nameof(AliyunBucketName)} must be specified when using Aliyun storage.");
 
             settings.DisableIndexConfiguration = configRoot.GetValue(nameof(DisableIndexConfiguration), false);
             settings.EnableSnapshotJobs = configRoot.GetValue(nameof(EnableSnapshotJobs), String.IsNullOrEmpty(settings.AppScopePrefix) && settings.AppMode == AppMode.Production);
