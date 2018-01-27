@@ -98,7 +98,6 @@ namespace Exceptionless.Insulation {
             } else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString)) {
                 container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions {
                     ConnectionString = Settings.Current.AliyunStorageConnectionString,
-                    Bucket = Settings.Current.AliyunBucketName,
                     Serializer = s.GetRequiredService<ITextSerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
