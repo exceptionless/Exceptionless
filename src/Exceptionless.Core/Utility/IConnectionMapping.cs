@@ -81,6 +81,10 @@ namespace Exceptionless.Core.Utility {
         public static Task<ICollection<string>> GetGroupConnectionsAsync(this IConnectionMapping map, string group) {
             return map.GetConnectionsAsync(GroupPrefix + group);
         }
+        
+        public static Task<int> GetGroupConnectionCountAsync(this IConnectionMapping map, string group) {
+            return map.GetConnectionCountAsync(GroupPrefix + group);
+        }
 
         public static Task UserIdAddAsync(this IConnectionMapping map, string userId, string connectionId) {
             return map.AddAsync(UserIdPrefix + userId, connectionId);
