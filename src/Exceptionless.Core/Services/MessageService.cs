@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Services {
             if (!(message is ExtendedEntityChanged entityChanged) || String.IsNullOrEmpty(entityChanged.OrganizationId))
                 return Task.FromResult(1); // Return 1 as we have no idea if people are listening.
 
-            return _connectionMapping.GetConnectionCountAsync(entityChanged.OrganizationId);
+            return _connectionMapping.GetGroupConnectionCountAsync(entityChanged.OrganizationId);
         }
 
         public void Dispose() {
