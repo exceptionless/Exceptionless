@@ -2,6 +2,7 @@
 using System.IO;
 using System.Security.Claims;
 using System.Threading;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
@@ -50,7 +51,8 @@ namespace Exceptionless.Api {
             });
             app.UseSwaggerUI(s => {
                 s.RoutePrefix = "docs";
-                s.SwaggerEndpoint("/docs/v2/swagger.json", "Exceptionless API");
+                s.SwaggerEndpoint("/docs/v2/swagger.json", "Exceptionless API V2");
+                s.SwaggerEndpoint("/docs/v1/swagger.json", "Exceptionless API V1");
                 s.InjectStylesheet("docs.css");
                 s.InjectOnCompleteJavaScript("docs.js");
             });
@@ -121,9 +123,14 @@ namespace Exceptionless.Api {
             });
             services.AddSwaggerGen(c => {
                 c.SwaggerDoc("v2", new Info {
-                    Title = "Exceptionless API",
+                    Title = "Exceptionless API V2",
                     Version = "v2"
                 });
+                c.SwaggerDoc("v1", new Info {
+                    Title = "Exceptionless API V1",
+                    Version = "v1"
+                });
+
                 c.AddSecurityDefinition("access_token", new ApiKeyScheme {
                     Name = "access_token",
                     In = "header",
@@ -135,6 +142,7 @@ namespace Exceptionless.Api {
                 if (File.Exists($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Api.xml"))
                     c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Api.xml");
                 c.IgnoreObsoleteActions();
+                c.AddAutoVersioningSupport();
             });
 
             Bootstrapper.RegisterServices(services, _loggerFactory);
