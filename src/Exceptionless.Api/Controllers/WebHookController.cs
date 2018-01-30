@@ -101,14 +101,14 @@ namespace Exceptionless.App.Controllers.API {
         /// This controller action is called by zapier to create a hook subscription.
         /// </summary>
         [HttpPost("subscribe")]
-        [HttpPost("~/api/v{version:int=2}/webhooks/subscribe")]
+        [HttpPost("~/api/v{apiVersion:int=2}/webhooks/subscribe")]
         [HttpPost("~/api/v1/projecthook/subscribe")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public Task<IActionResult> SubscribeAsync([FromBody] JObject data, int version = 1) {
+        public Task<IActionResult> SubscribeAsync([FromBody] JObject data, int apiVersion = 1) {
             var webHook = new NewWebHook {
                 EventTypes = new[] { data.GetValue("event").Value<string>() },
                 Url = data.GetValue("target_url").Value<string>(),
-                Version = new Version(version >= 0 ? version : 0, 0)
+                Version = new Version(apiVersion >= 0 ? apiVersion : 0, 0)
             };
 
             if (!webHook.Url.StartsWith("https://hooks.zapier.com"))
