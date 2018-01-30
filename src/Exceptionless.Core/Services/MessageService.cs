@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Services {
         }
 
         private Task<int> GetNumberOfListeners(EntityChanged message) {
-            var entityChanged = ExtendedEntityChanged.Create(message);
+            var entityChanged = ExtendedEntityChanged.Create(message, false);
             if (String.IsNullOrEmpty(entityChanged.OrganizationId))
                 return Task.FromResult(1); // Return 1 as we have no idea if people are listening.
 
