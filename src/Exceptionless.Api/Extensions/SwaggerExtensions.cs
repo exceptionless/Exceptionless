@@ -44,15 +44,25 @@ namespace Exceptionless.Api.Extensions {
                     var key = item.Key.Replace("v{apiVersion}", doc.Info.Version);
                     var toAdd = item.Value;
 
+                    var operations = typeof(PathItem)
+                        .GetProperties()
+                        .Where(p => p.PropertyType == typeof(Operation))
+                        .ToDictionary(p => p, p => (Operation)p.GetValue(toAdd))
+                        .Where(kvp => kvp.Value != null)
+                        .ToList();
+
+                    operations.ForEach(o => o.Value.OperationId = o.Value.OperationId.Replace("V{apiVersion", doc.Info.Version.ToUpper()));
+
                     if (!doc.Paths.ContainsKey(key)) {
                         doc.Paths[key] = toAdd;
                         continue;
                     }
 
-                    Operation UpsertOperation(string v, Operation existingOp, Operation newOp) {
-                        if (existingOp != null && newOp != null)
+                    Operation UpsertOperation(string v, Operation existing, Operation current) {
+                        if (existing != null && current != null)
                             throw new InvalidOperationException($"Two operations with the same path ({key}) and verb ({v}) is not supported.");
-                        return existingOp ?? newOp;
+
+                        return existing ?? current;
                     }
 
                     var toUpdate = doc.Paths[key];
