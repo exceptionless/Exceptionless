@@ -599,7 +599,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPatch("~/api/v1/error/{id:objectid}")]
         [ConfigurationResponseFilter]
-        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> LegacyPatchAsync(string id, [FromBody] Delta<UpdateEvent> changes) {
             if (changes == null)
                 return Ok();
@@ -803,7 +802,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost("~/api/v1/error")]
         [ConfigurationResponseFilter]
-        [ApiExplorerSettings(IgnoreApi = true)]
         public Task<IActionResult> LegacyPostAsync([UserAgent] string userAgent = null) {
             return PostAsync(null, 1, userAgent);
         }
