@@ -38,6 +38,8 @@ namespace Exceptionless.Api.Extensions {
             public void Apply(SwaggerDocument doc, DocumentFilterContext context) {
                 foreach (var item in doc.Paths.Where(kvp => kvp.Key.Contains("{apiVersion}")).ToArray()) {
                     doc.Paths.Remove(item.Key);
+                    if (doc.Info.Version == "v1")
+                        continue;
 
                     var key = item.Key.Replace("v{apiVersion}", doc.Info.Version);
                     var toAdd = item.Value;
