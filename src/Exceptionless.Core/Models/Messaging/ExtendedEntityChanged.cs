@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Messaging.Models {
         public string ProjectId { get; private set; }
         public string StackId { get; private set; }
 
-        public static ExtendedEntityChanged Create(EntityChanged entityChanged) {
+        public static ExtendedEntityChanged Create(EntityChanged entityChanged, bool removeWhenSettingProperties = true) {
             var model = new ExtendedEntityChanged {
                 Id = entityChanged.Id,
                 Type = entityChanged.Type,
@@ -21,17 +21,20 @@ namespace Exceptionless.Core.Messaging.Models {
 
             if (model.Data.TryGetValue(KnownKeys.OrganizationId, out var organizationId)) {
                 model.OrganizationId = organizationId.ToString();
-                model.Data.Remove(KnownKeys.OrganizationId);
+                if (removeWhenSettingProperties)
+                    model.Data.Remove(KnownKeys.OrganizationId);
             }
 
             if (model.Data.TryGetValue(KnownKeys.ProjectId, out var projectId)) {
                 model.ProjectId = projectId.ToString();
-                model.Data.Remove(KnownKeys.ProjectId);
+                if (removeWhenSettingProperties)
+                    model.Data.Remove(KnownKeys.ProjectId);
             }
 
             if (model.Data.TryGetValue(KnownKeys.StackId, out var stackId)) {
                 model.StackId = stackId.ToString();
-                model.Data.Remove(KnownKeys.StackId);
+                if (removeWhenSettingProperties)
+                    model.Data.Remove(KnownKeys.StackId);
             }
 
             return model;
