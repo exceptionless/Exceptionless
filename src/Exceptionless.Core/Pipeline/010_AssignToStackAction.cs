@@ -114,11 +114,13 @@ namespace Exceptionless.Core.Pipeline {
             if (stacksToAdd.Count > 0) {
                 await _stackRepository.AddAsync(stacksToAdd, o => o.Cache().Notifications(stacksToAdd.Count == 1)).AnyContext();
                 if (stacksToAdd.Count > 1) {
-                    await _publisher.PublishAsync(new ExtendedEntityChanged {
+                    await _publisher.PublishAsync(new EntityChanged {
                         ChangeType = ChangeType.Added,
                         Type = StackTypeName,
-                        OrganizationId = contexts.First().Organization.Id,
-                        ProjectId = contexts.First().Project.Id
+                        Data = {
+                            { ExtendedEntityChanged.KnownKeys.OrganizationId, contexts.First().Organization.Id },
+                            { ExtendedEntityChanged.KnownKeys.ProjectId, contexts.First().Project.Id }
+                        }
                     }).AnyContext();
                 }
             }

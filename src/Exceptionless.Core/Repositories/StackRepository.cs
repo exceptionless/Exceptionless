@@ -94,15 +94,9 @@ ctx._source.total_occurrences += params.count;";
             if (IsCacheEnabled)
                 await Cache.RemoveAsync(stackId).AnyContext();
 
-            if (sendNotifications) {
-                await PublishMessageAsync(new ExtendedEntityChanged {
-                    ChangeType = ChangeType.Saved,
-                    Id = stackId,
-                    OrganizationId = organizationId,
-                    ProjectId = projectId,
-                    Type = EntityTypeName
-                }, TimeSpan.FromSeconds(1.5)).AnyContext();
-            }
+            if (sendNotifications)
+                await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId), TimeSpan.FromSeconds(1.5)).AnyContext();
+
             return true;
         }
 
