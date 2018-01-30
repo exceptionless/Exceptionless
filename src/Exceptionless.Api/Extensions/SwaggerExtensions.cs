@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -22,7 +20,7 @@ namespace Exceptionless.Api.Extensions {
                     if (urlVersion == version)
                         return true;
                 }
-                return apiDescription.RelativePath.Contains("{version}");
+                return apiDescription.RelativePath.Contains("{apiVersion}");
             });
             c.OperationFilter<RemoveVersionParameters>();
             c.DocumentFilter<SetVersionInPaths>();
@@ -30,7 +28,7 @@ namespace Exceptionless.Api.Extensions {
 
         private class RemoveVersionParameters : IOperationFilter {
             public void Apply(Operation operation, OperationFilterContext context) {
-                var versionParameter = operation.Parameters?.SingleOrDefault(p => p.Name == "version");
+                var versionParameter = operation.Parameters?.SingleOrDefault(p => p.Name == "apiVersion");
                 if (versionParameter != null)
                     operation.Parameters.Remove(versionParameter);
             }
@@ -38,10 +36,10 @@ namespace Exceptionless.Api.Extensions {
 
         private class SetVersionInPaths : IDocumentFilter {
             public void Apply(SwaggerDocument doc, DocumentFilterContext context) {
-                foreach (var item in doc.Paths.Where(kvp => kvp.Key.Contains("{version}")).ToArray()) {
+                foreach (var item in doc.Paths.Where(kvp => kvp.Key.Contains("{apiVersion}")).ToArray()) {
                     doc.Paths.Remove(item.Key);
 
-                    var key = item.Key.Replace("v{version}", doc.Info.Version);
+                    var key = item.Key.Replace("v{apiVersion}", doc.Info.Version);
                     var toAdd = item.Value;
 
                     if (!doc.Paths.ContainsKey(key)) {
