@@ -34,7 +34,7 @@ namespace Exceptionless.Api.Hubs {
 
             _logger.LogDebug("Subscribing to message bus notifications");
             await Task.WhenAll(
-                _subscriber.SubscribeAsync<ExtendedEntityChanged>(OnEntityChangedAsync, shutdownToken),
+                _subscriber.SubscribeAsync<EntityChanged>(OnEntityChangedAsync, shutdownToken),
                 _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync, shutdownToken),
                 _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync, shutdownToken),
                 _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync, shutdownToken),
@@ -63,10 +63,11 @@ namespace Exceptionless.Api.Hubs {
             await GroupSendAsync(userMembershipChanged.OrganizationId, userMembershipChanged);
         }
 
-        private async Task OnEntityChangedAsync(ExtendedEntityChanged entityChanged, CancellationToken cancellationToken = default) {
-            if (entityChanged == null)
+        private async Task OnEntityChangedAsync(EntityChanged ec, CancellationToken cancellationToken = default) {
+            if (ec == null)
                 return;
 
+            var entityChanged = ExtendedEntityChanged.Create(ec);
             if (UserTypeName == entityChanged.Type) {
                 // It's pointless to send a user added message to the new user.
                 if (entityChanged.ChangeType == ChangeType.Added) {
@@ -84,7 +85,7 @@ namespace Exceptionless.Api.Hubs {
 
             // Only allow specific token messages to be sent down to the client.
             if (TokenTypeName == entityChanged.Type) {
-                string userId = entityChanged.Data.GetValueOrDefault<string>("UserId");
+                string userId = entityChanged.Data.GetValueOrDefault<string>(ExtendedEntityChanged.KnownKeys.UserId);
                 if (userId != null) {
                     var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
                     _logger.LogTrace("Sending {TokenTypeName} message for added user: {user} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
@@ -94,7 +95,7 @@ namespace Exceptionless.Api.Hubs {
                     return;
                 }
 
-                if (entityChanged.Data.GetValueOrDefault<bool>("IsAuthenticationToken")) {
+                if (entityChanged.Data.GetValueOrDefault<bool>(ExtendedEntityChanged.KnownKeys.IsAuthenticationToken)) {
                     _logger.LogTrace("Ignoring {TokenTypeName} Authentication Token message: {user}.", TokenTypeName, entityChanged.Id);
                     return;
                 }

@@ -49,7 +49,8 @@ namespace Exceptionless.Core.Services {
         }
 
         private Task<int> GetNumberOfListeners(EntityChanged message) {
-            if (!(message is ExtendedEntityChanged entityChanged) || String.IsNullOrEmpty(entityChanged.OrganizationId))
+            var entityChanged = ExtendedEntityChanged.Create(message);
+            if (String.IsNullOrEmpty(entityChanged.OrganizationId))
                 return Task.FromResult(1); // Return 1 as we have no idea if people are listening.
 
             return _connectionMapping.GetGroupConnectionCountAsync(entityChanged.OrganizationId);
