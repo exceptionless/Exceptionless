@@ -11,13 +11,14 @@ using Serilog;
 namespace EventSnapshotJob {
     public class Program {
         public static async Task<int> Main() {
+            IServiceProvider serviceProvider = null;
             try {
-                var serviceProvider = JobServiceProvider.GetServiceProvider();
                 if (!Settings.Current.EnableSnapshotJobs) {
                     Log.Logger.Information("Snapshot Jobs are currently disabled.");
                     return 0;
                 }
 
+                serviceProvider = JobServiceProvider.GetServiceProvider();
                 var job = serviceProvider.GetService<Exceptionless.Core.Jobs.Elastic.EventSnapshotJob>();
                 return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), runContinuous: false).RunInConsoleAsync();
             } catch (Exception ex) {
@@ -25,6 +26,8 @@ namespace EventSnapshotJob {
                 return 1;
             } finally {
                 Log.CloseAndFlush();
+                if (serviceProvider is IDisposable disposable) 
+                    disposable.Dispose(); 
                 await ExceptionlessClient.Default.ProcessQueueAsync();
             }
         }

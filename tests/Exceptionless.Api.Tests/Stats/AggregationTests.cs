@@ -6,6 +6,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
@@ -23,6 +24,7 @@ namespace Exceptionless.Api.Tests.Stats {
         private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly StackService _stackService;
 
         public AggregationTests(ITestOutputHelper output) : base(output) {
             _pipeline = GetService<EventPipeline>();
@@ -30,6 +32,7 @@ namespace Exceptionless.Api.Tests.Stats {
             _stackRepository = GetService<IStackRepository>();
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();
+            _stackService = GetService<StackService>();
         }
 
         [Fact]
@@ -204,6 +207,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: SystemClock.OffsetUtcNow.SubtractDays(3), endDate: SystemClock.OffsetUtcNow, value: value);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
                 await _pipeline.RunAsync(eventGroup, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
+            await _stackService.SaveStackUsagesAsync();
 
             await _configuration.Client.RefreshAsync(Indices.All);
         }

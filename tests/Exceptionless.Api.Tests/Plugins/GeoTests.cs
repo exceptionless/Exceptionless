@@ -27,7 +27,10 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         private async Task<IGeoIpService> GetResolverAsync(ILoggerFactory loggerFactory) {
             string dataDirectory = PathHelper.ExpandPath(".\\");
-            var storage = new FolderFileStorage(dataDirectory);
+            var storage = new FolderFileStorage(new FolderFileStorageOptions {
+                Folder = dataDirectory, 
+                LoggerFactory = loggerFactory
+            });
 
             if (!await storage.ExistsAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH)) {
                 var job = new DownloadGeoIPDatabaseJob(GetService<ICacheClient>(), storage, loggerFactory);
@@ -163,7 +166,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             if (service is NullGeocodeService)
                 return;
 
-            Assert.True(GeoResult.TryParse(GREEN_BAY_COORDINATES, out GeoResult coordinates));
+            Assert.True(GeoResult.TryParse(GREEN_BAY_COORDINATES, out var coordinates));
             var location = await service.ReverseGeocodeAsync(coordinates.Latitude.GetValueOrDefault(), coordinates.Longitude.GetValueOrDefault());
             Assert.Equal("US", location?.Country);
             Assert.Equal("WI", location?.Level1);

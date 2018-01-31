@@ -696,7 +696,7 @@ namespace Exceptionless.Api.Controllers {
 
             var viewOrganizations = models.OfType<ViewOrganization>().ToList();
             foreach (var viewOrganization in viewOrganizations) {
-                DateTime usageRetention = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
+                var usageRetention = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
                 viewOrganization.Usage = viewOrganization.Usage.Where(u => u.Date > usageRetention).ToList();
                 viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > usageRetention).ToList();
                 viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, Settings.Current.ApiThrottleLimit);

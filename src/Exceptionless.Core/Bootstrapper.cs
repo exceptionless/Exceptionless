@@ -114,14 +114,25 @@ namespace Exceptionless.Core {
             container.AddSingleton(s => CreateQueue<MailMessage>(s));
             container.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));
 
+            container.AddSingleton<IConnectionMapping, ConnectionMapping>();
+            container.AddSingleton<MessageService>();
+            container.AddStartupAction<MessageService>();
             container.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
             container.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
             container.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
 
-            if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
-                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(Settings.Current.StorageFolder, s.GetRequiredService<ITextSerializer>()));
-            else
-                container.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(s.GetRequiredService<ITextSerializer>()));
+            if (!String.IsNullOrEmpty(Settings.Current.StorageFolder)) {
+                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions {
+                    Folder = Settings.Current.StorageFolder,
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            } else {
+                container.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(new InMemoryFileStorageOptions {
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            }
 
             container.AddSingleton<IStackRepository, StackRepository>();
             container.AddSingleton<IEventRepository, EventRepository>();
@@ -171,6 +182,7 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<UsageService>();
             container.AddSingleton<SlackService>();
+            container.AddSingleton<StackService>();
 
             container.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
 
@@ -256,6 +268,7 @@ namespace Exceptionless.Core {
             new JobRunner(container.GetRequiredService<RetentionLimitsJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromHours(1)).RunInBackground(token);
             new JobRunner(container.GetRequiredService<WorkItemJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2).RunInBackground(token);
             new JobRunner(container.GetRequiredService<MaintainIndexesJob>(), loggerFactory, initialDelay: SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)) - SystemClock.UtcNow, interval: TimeSpan.FromHours(1)).RunInBackground(token);
+            new JobRunner(container.GetRequiredService<StackEventCountJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), interval: TimeSpan.FromSeconds(5)).RunInBackground(token);
 
             logger.LogWarning("Jobs running in process.");
         }

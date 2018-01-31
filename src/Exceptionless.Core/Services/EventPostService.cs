@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Services {
                 ? GetArchivePath(SystemClock.UtcNow, data.ProjectId, $"{Guid.NewGuid():N}.json")
                 : Path.Combine("q", $"{Guid.NewGuid():N}.json");
 
-            var saveTask = _storage.SaveObjectAsync(data.FilePath, (EventPostInfo)data, cancellationToken);
+            var saveTask = data.ShouldArchive ? _storage.SaveObjectAsync(data.FilePath, (EventPostInfo)data, cancellationToken) : Task.FromResult(true);
             var savePayloadTask = _storage.SaveFileAsync(Path.ChangeExtension(data.FilePath, ".payload"), stream, cancellationToken);
 
             if (!await saveTask.AnyContext()) {
@@ -50,21 +50,6 @@ namespace Exceptionless.Core.Services {
             return await _queue.EnqueueAsync(data).AnyContext();
         }
 
-        public async Task<EventPostInfo> GetEventPostInfoAsync(string path, CancellationToken cancellationToken = default) {
-            if (String.IsNullOrEmpty(path))
-                return null;
-
-            EventPostInfo eventPostInfo;
-            try {
-                eventPostInfo = await _storage.GetObjectAsync<EventPostInfo>(path, cancellationToken).AnyContext();
-            } catch (Exception ex) {
-                _logger.LogError(ex, "Error retrieving event post data: {Path}.", path);
-                return null;
-            }
-
-            return eventPostInfo;
-        }
-
         public async Task<byte[]> GetEventPostPayloadAsync(string path, CancellationToken cancellationToken = default) {
             if (String.IsNullOrEmpty(path))
                 return null;
@@ -80,7 +65,6 @@ namespace Exceptionless.Core.Services {
             return data;
         }
 
-
         public async Task<bool> CompleteEventPostAsync(string path, string projectId, DateTime created, bool shouldArchive = true) {
             if (String.IsNullOrEmpty(path))
                 return false;
@@ -92,11 +76,12 @@ namespace Exceptionless.Core.Services {
             try {
                 if (shouldArchive) {
                     string archivePath = GetArchivePath(created, projectId, Path.GetFileName(path));
-                    return await _storage.RenameFileAsync(path, archivePath).AnyContext() && 
-                           await _storage.RenameFileAsync(Path.ChangeExtension(path, ".payload"), Path.ChangeExtension(archivePath, ".payload")).AnyContext();
+                    var renameTask = _storage.RenameFileAsync(path, archivePath);
+                    var renamePayLoadTask = _storage.RenameFileAsync(Path.ChangeExtension(path, ".payload"), Path.ChangeExtension(archivePath, ".payload"));
+                    return await renameTask.AnyContext() && await renamePayLoadTask.AnyContext();
                 }
 
-                return await _storage.DeleteFileAsync(path).AnyContext() && await _storage.DeleteFileAsync(Path.ChangeExtension(path, ".payload")).AnyContext();
+                return await _storage.DeleteFileAsync(Path.ChangeExtension(path, ".payload")).AnyContext();
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error archiving event post data {Path}.", path);
                 return false;

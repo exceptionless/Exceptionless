@@ -84,7 +84,7 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static string GetDefaultProjectId(this HttpRequest request) {
-            // TODO: Use project id from url. E.G., /api/v{version:int=2}/projects/{projectId:objectid}/events
+            // TODO: Use project id from url. E.G., /api/v{apiVersion:int=2}/projects/{projectId:objectid}/events
             //var path = request.Path.Value;
 
             var principal = request.GetClaimsPrincipal();

@@ -89,6 +89,8 @@ namespace Exceptionless.Core {
 
         public bool EnableActiveDirectoryAuth { get; internal set; }
 
+        public bool EnableRepositoryNotifications { get; private set; }
+
         public bool EnableWebSockets { get; private set; }
 
         public string Version { get; private set; }
@@ -134,8 +136,6 @@ namespace Exceptionless.Core {
         public string AzureStorageQueueConnectionString { get; private set; }
 
         public string AliyunStorageConnectionString { get; private set; }
-
-        public string AliyunBucketName { get; private set; }
 
         public int BulkBatchSize { get; private set; }
 
@@ -186,14 +186,15 @@ namespace Exceptionless.Core {
             settings.AppScope = configRoot.GetValue(nameof(AppScope), String.Empty);
             settings.RunJobsInProcess = configRoot.GetValue(nameof(RunJobsInProcess), settings.AppMode == AppMode.Development);
             settings.JobsIterationLimit = configRoot.GetValue(nameof(JobsIterationLimit), -1);
-            settings.BotThrottleLimit = configRoot.GetValue(nameof(BotThrottleLimit), 25);
-            settings.ApiThrottleLimit = configRoot.GetValue(nameof(ApiThrottleLimit), settings.AppMode == AppMode.Development ? Int32.MaxValue : 3500);
+            settings.BotThrottleLimit = configRoot.GetValue(nameof(BotThrottleLimit), 25).NormalizeValue();
+
+            settings.ApiThrottleLimit = configRoot.GetValue(nameof(ApiThrottleLimit), settings.AppMode == AppMode.Development ? Int32.MaxValue : 3500).NormalizeValue();
             settings.EnableArchive = configRoot.GetValue(nameof(EnableArchive), true);
             settings.EventSubmissionDisabled = configRoot.GetValue(nameof(EventSubmissionDisabled), false);
             settings.DisabledPipelineActions = configRoot.GetValueList(nameof(DisabledPipelineActions), String.Empty);
             settings.DisabledPlugins = configRoot.GetValueList(nameof(DisabledPlugins), String.Empty);
-            settings.MaximumEventPostSize = configRoot.GetValue(nameof(MaximumEventPostSize), 200000);
-            settings.MaximumRetentionDays = configRoot.GetValue(nameof(MaximumRetentionDays), 180);
+            settings.MaximumEventPostSize = configRoot.GetValue(nameof(MaximumEventPostSize), 200000).NormalizeValue();
+            settings.MaximumRetentionDays = configRoot.GetValue(nameof(MaximumRetentionDays), 180).NormalizeValue();
             settings.MetricsServerName = configRoot.GetValue<string>(nameof(MetricsServerName));
             settings.MetricsServerPort = configRoot.GetValue(nameof(MetricsServerPort), 8125);
             settings.EnableMetricsReporting = configRoot.GetValue(nameof(EnableMetricsReporting), !String.IsNullOrEmpty(settings.MetricsServerName));
@@ -213,6 +214,7 @@ namespace Exceptionless.Core {
             settings.StorageFolder = configRoot.GetValue<string>(nameof(StorageFolder), "|DataDirectory|\\storage");
             settings.BulkBatchSize = configRoot.GetValue(nameof(BulkBatchSize), 1000);
 
+            settings.EnableRepositoryNotifications = configRoot.GetValue(nameof(EnableRepositoryNotifications), true);
             settings.EnableWebSockets = configRoot.GetValue(nameof(EnableWebSockets), true);
             settings.EnableBootstrapStartupActions = configRoot.GetValue(nameof(EnableBootstrapStartupActions), true);
             settings.EnableAccountCreation = configRoot.GetValue(nameof(EnableAccountCreation), true);
@@ -231,11 +233,7 @@ namespace Exceptionless.Core {
 
             settings.AzureStorageConnectionString = configRoot.GetConnectionString(nameof(AzureStorageConnectionString));
             settings.AzureStorageQueueConnectionString = configRoot.GetConnectionString(nameof(AzureStorageQueueConnectionString));
-
             settings.AliyunStorageConnectionString = configRoot.GetConnectionString(nameof(AliyunStorageConnectionString));
-            settings.AliyunBucketName = configRoot.GetValue<string>(nameof(AliyunBucketName));
-            if (!String.IsNullOrEmpty(settings.AliyunStorageConnectionString) && String.IsNullOrEmpty(settings.AliyunBucketName))
-                throw new ArgumentException($"The {nameof(AliyunBucketName)} must be specified when using Aliyun storage.");
 
             settings.DisableIndexConfiguration = configRoot.GetValue(nameof(DisableIndexConfiguration), false);
             settings.EnableSnapshotJobs = configRoot.GetValue(nameof(EnableSnapshotJobs), String.IsNullOrEmpty(settings.AppScopePrefix) && settings.AppMode == AppMode.Production);

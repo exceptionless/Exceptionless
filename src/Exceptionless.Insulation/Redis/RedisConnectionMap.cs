@@ -32,6 +32,13 @@ namespace Exceptionless.Insulation.Redis {
             return values.Select(v => v.ToString()).ToList();
         }
 
+        public async Task<int> GetConnectionCountAsync(string key) {
+            if (key == null)
+                return 0;
+
+            return (int)await Database.SetLengthAsync(String.Concat(KeyPrefix, key)).AnyContext();
+        }
+
         public Task RemoveAsync(string key, string connectionId) {
             if (key == null)
                 return Task.CompletedTask;

@@ -5,9 +5,9 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Foundatio.Aliyun" Version="7.0.15-pre" />
-    <PackageReference Include="Foundatio.AzureStorage" Version="7.0.1490-pre" />
-    <PackageReference Include="Foundatio.Redis" Version="7.0.1531-pre" />
+    <PackageReference Include="Foundatio.Aliyun" Version="7.0.20-pre" />
+    <PackageReference Include="Foundatio.AzureStorage" Version="7.0.1495-pre" />
+    <PackageReference Include="Foundatio.Redis" Version="7.0.1539-pre" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MailKit" Version="2.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.0.0" />
@@ -21,7 +21,7 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="2.4.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="3.1.0" />
-    <PackageReference Include="YamlDotNet" Version="4.2.3" />
+    <PackageReference Include="YamlDotNet" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj" />

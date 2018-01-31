@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "StackEventCountJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}
