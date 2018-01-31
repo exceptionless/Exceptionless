@@ -18,6 +18,7 @@ using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Serilog.Sinks.Exceptionless;
 using StackExchange.Redis;
 
 namespace Exceptionless.Insulation {
@@ -28,9 +29,8 @@ namespace Exceptionless.Insulation {
                 client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
                 client.Configuration.ApiKey = Settings.Current.ExceptionlessApiKey;
 
-                //client.Configuration.UseLogger(new NLogExceptionlessLog(LogLevel.Warn));
                 client.Configuration.SetDefaultMinLogLevel(Logging.LogLevel.Warn);
-                client.Configuration.UpdateSettingsWhenIdleInterval = TimeSpan.FromSeconds(15);
+                client.Configuration.UseLogger(new SelfLogLogger());
                 client.Configuration.SetVersion(Settings.Current.Version);
                 if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
                     client.Configuration.Enabled = false;
@@ -63,9 +63,7 @@ namespace Exceptionless.Insulation {
                 else
                     container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
 
-                if (Settings.Current.EnableWebSockets)
-                    container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
-
+                container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
                 container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
                     Subscriber = s.GetRequiredService<ConnectionMultiplexer>().GetSubscriber(),
                     Topic = $"{Settings.Current.AppScopePrefix}messages",
@@ -90,10 +88,20 @@ namespace Exceptionless.Insulation {
                 container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
             }
 
-            if (!String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString))
-                container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(Settings.Current.AzureStorageConnectionString, $"{Settings.Current.AppScopePrefix}ex-events", s.GetRequiredService<ITextSerializer>()));
-            else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString))
-                container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(Settings.Current.AliyunStorageConnectionString, Settings.Current.AliyunBucketName, s.GetRequiredService<ITextSerializer>()));
+            if (!String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString)) {
+                container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions {
+                    ConnectionString = Settings.Current.AzureStorageConnectionString,
+                    ContainerName =  $"{Settings.Current.AppScopePrefix}ex-events",
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            } else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString)) {
+                container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions {
+                    ConnectionString = Settings.Current.AliyunStorageConnectionString,
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            }
         }
 
         private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {

@@ -38,10 +38,9 @@ namespace Exceptionless.Core.Jobs {
         private readonly UsageService _usageService;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly IFileStorage _storage;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metrics, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage, JsonSerializerSettings jsonSerializerSettings, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metrics, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventPostService = eventPostService;
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
@@ -49,7 +48,6 @@ namespace Exceptionless.Core.Jobs {
             _usageService = usageService;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
-            _storage = storage;
             _jsonSerializerSettings = jsonSerializerSettings;
 
             AutoComplete = false;
@@ -229,16 +227,15 @@ namespace Exceptionless.Core.Jobs {
                         events = _eventParserPluginManager.ParseEvents(input, ep.ApiVersion, ep.UserAgent) ?? new List<PersistentEvent>(0);
                         foreach (var ev in events) {
                             ev.CreatedUtc = createdUtc;
-
-                            // set the project id on all events
+                            ev.OrganizationId = ep.OrganizationId;
                             ev.ProjectId = ep.ProjectId;
 
                             // set the reference id to the event id if one was defined.
                             if (!String.IsNullOrEmpty(ev.Id) && String.IsNullOrEmpty(ev.ReferenceId))
                                 ev.ReferenceId = ev.Id;
 
-                            // the event id, stack id and organization id should never be set for posted events
-                            ev.Id = ev.StackId = ev.OrganizationId = null;
+                            // the event id and stack id should never be set for posted events
+                            ev.Id = ev.StackId = null;
                         }
                     }, MetricNames.PostsParsingTime);
                     _metrics.Counter(MetricNames.PostsParsed);

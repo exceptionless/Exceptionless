@@ -599,7 +599,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPatch("~/api/v1/error/{id:objectid}")]
         [ConfigurationResponseFilter]
-        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> LegacyPatchAsync(string id, [FromBody] Delta<UpdateEvent> changes) {
             if (changes == null)
                 return Ok();
@@ -669,20 +668,20 @@ namespace Exceptionless.Api.Controllers {
         /// <code><![CDATA[/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
         /// </remarks>
         /// <param name="projectId">The identifier of the project.</param>
-        /// <param name="version">The api version that should be used</param>
+        /// <param name="apiVersion">The api version that should be used</param>
         /// <param name="type">The event type</param>
         /// <param name="userAgent">The user agent that submitted the event.</param>
         /// <param name="parameters">Query String parameters that control what properties are set on the event</param>
         /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
-        [HttpGet("~/api/v{version:int=2}/events/submit")]
-        [HttpGet("~/api/v{version:int=2}/events/submit/{type:minlength(1)}")]
-        [HttpGet("~/api/v{version:int=2}/projects/{projectId:objectid}/events/submit")]
-        [HttpGet("~/api/v{version:int=2}/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
+        [HttpGet("~/api/v{apiVersion:int=2}/events/submit")]
+        [HttpGet("~/api/v{apiVersion:int=2}/events/submit/{type:minlength(1)}")]
+        [HttpGet("~/api/v{apiVersion:int=2}/projects/{projectId:objectid}/events/submit")]
+        [HttpGet("~/api/v{apiVersion:int=2}/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
         [ConfigurationResponseFilter]
         [SwaggerResponse(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetSubmitEventAsync(string projectId = null, int version = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
+        public async Task<IActionResult> GetSubmitEventAsync(string projectId = null, int apiVersion = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
             var filteredParameters = parameters?.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty) && !_ignoredKeys.Contains(p.Key)).ToList();
             if (filteredParameters == null || filteredParameters.Count == 0)
                 return Ok();
@@ -779,7 +778,7 @@ namespace Exceptionless.Api.Controllers {
 
                 var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings));
                 await _eventPostService.EnqueueAsync(new EventPost {
-                    ApiVersion = version,
+                    ApiVersion = apiVersion,
                     CharSet = charSet,
                     ContentEncoding = contentEncoding,
                     IpAddress = Request.GetClientIpAddress(),
@@ -798,6 +797,13 @@ namespace Exceptionless.Api.Controllers {
             }
 
             return Ok();
+        }
+
+
+        [HttpPost("~/api/v1/error")]
+        [ConfigurationResponseFilter]
+        public Task<IActionResult> LegacyPostAsync([UserAgent] string userAgent = null) {
+            return PostAsync(null, 1, userAgent);
         }
 
         ///  <summary>
@@ -845,17 +851,16 @@ namespace Exceptionless.Api.Controllers {
         ///  </code>
         ///  </remarks>
         /// <param name="projectId">The identifier of the project.</param>
-        ///  <param name="version">The api version that should be used</param>
+        ///  <param name="apiVersion">The api version that should be used</param>
         ///  <param name="userAgent">The user agent that submitted the event.</param>
         ///  <response code="202">Accepted</response>
         ///  <response code="400">No project id specified and no default project was found.</response>
         ///  <response code="404">No project was found.</response>
-        [HttpPost("~/api/v{version:int=1}/error")]
-        [HttpPost("~/api/v{version:int=2}/events")]
-        [HttpPost("~/api/v{version:int=2}/projects/{projectId:objectid}/events")]
+        [HttpPost("~/api/v{apiVersion:int=2}/events")]
+        [HttpPost("~/api/v{apiVersion:int=2}/projects/{projectId:objectid}/events")]
         [ConfigurationResponseFilter]
         [SwaggerResponse(StatusCodes.Status202Accepted)]
-        public async Task <IActionResult> PostAsync(string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
+        public async Task <IActionResult> PostAsync(string projectId = null, int apiVersion = 2, [UserAgent]string userAgent = null) {
             if (Request.ContentLength.HasValue && Request.ContentLength.Value <= 0)
                 return StatusCode(StatusCodes.Status202Accepted);
 
@@ -890,7 +895,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 await _eventPostService.EnqueueAsync(new EventPost {
-                    ApiVersion = version,
+                    ApiVersion = apiVersion,
                     CharSet = charSet,
                     ContentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding),
                     IpAddress = Request.GetClientIpAddress(),

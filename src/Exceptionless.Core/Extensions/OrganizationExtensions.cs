@@ -21,7 +21,6 @@ namespace Exceptionless.Core.Extensions {
             return organization.GetRetentionUtcCutoff(project.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3)));
         }
 
-
         public static DateTime GetRetentionUtcCutoff(this Organization organization, Stack stack) {
             return organization.GetRetentionUtcCutoff(stack.FirstOccurrence);
         }
@@ -77,6 +76,9 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit) {
+            if (apiThrottleLimit == Int32.MaxValue)
+                return false;
+
             string cacheKey = String.Concat("api", ":", organizationId, ":", SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
             var limit = await cacheClient.GetAsync<long>(cacheKey).AnyContext();
             return limit.HasValue && limit.Value >= apiThrottleLimit;
