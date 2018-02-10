@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Services {
             try {
                 args.Cancel = await GetNumberOfListeners(args.Message).AnyContext() == 0;
                 if (args.Cancel && _logger.IsEnabled(LogLevel.Trace))
-                    _logger.LogTrace("Cancelled Stack Entity Changed Message: {@Message}", args.Message);
+                    _logger.LogWarning("Cancelled Stack Entity Changed Message: {@Message}", args.Message);
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error occurred while getting stack changed listener count.");
             }
@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Services {
             try {
                 args.Cancel = await GetNumberOfListeners(args.Message).AnyContext() == 0;
                 if (args.Cancel && _logger.IsEnabled(LogLevel.Trace))
-                    _logger.LogTrace("Cancelled Event Entity Changed Message: {@Message}", args.Message);
+                    _logger.LogWarning("Cancelled Event Entity Changed Message: {@Message}", args.Message);
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error occurred while getting event changed listener count.");
             }
