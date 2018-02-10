@@ -165,7 +165,8 @@ namespace Exceptionless.Core {
             container.AddSingleton<IMailer, Mailer>();
             container.AddSingleton<IMailSender>(s => new InMemoryMailSender());
 
-            container.AddSingleton<ILockProvider, CacheLockProvider>();
+            container.AddSingleton<CacheLockProvider>(s => new CacheLockProvider(s.GetRequiredService<ICacheClient>(), s.GetRequiredService<IMessageBus>(), s.GetRequiredService<ILoggerFactory>()));
+            container.AddSingleton<ILockProvider>(s => s.GetRequiredService<CacheLockProvider>());
             container.AddTransient<StripeEventHandler>();
             container.AddSingleton<BillingManager>();
             container.AddSingleton<EventPostService>();

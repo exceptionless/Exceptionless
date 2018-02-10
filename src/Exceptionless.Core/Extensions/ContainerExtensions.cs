@@ -6,12 +6,68 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Helpers;
 using Exceptionless.Core.Pipeline;
+using Foundatio.Repositories.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions {
     public static class ContainerExtensions {
-        public static void AddSingleton(this IServiceCollection services, Type type, params Assembly[] assemblies) {
+        public static object GetInstance(this IServiceProvider container, IHaveData target, string key, ILogger logger) {
+            string typeName = target.Data[key].ToString();
+            if (String.IsNullOrWhiteSpace(typeName))
+                return null;
+
+            try {
+                var configuratorType = Type.GetType(typeName);
+                if (configuratorType == null)
+                    return null;
+
+                return container.GetRequiredService(configuratorType);
+            }
+            catch (Exception exception) {
+                logger.LogError(exception, "Error creating instance of type: {TypeName} with key: {Key}", typeName, key);
+                return null;
+            }
+        }
+
+        public static IEnumerable<object> GetInstances(this IServiceProvider container, IHaveData target, string key, ILogger logger) {
+            var types = target.Data[key] as string[];
+            var instances = new List<object>();
+
+            if (types == null || types.Length == 0)
+                return Enumerable.Empty<object>();
+
+            foreach (string typeName in types) {
+                try {
+                    var configuratorType = Type.GetType(typeName);
+                    if (configuratorType == null)
+                        continue;
+
+                    object instance = container.GetRequiredService(configuratorType);
+                    instances.Add(instance);
+                }
+                catch (Exception exception) {
+                    logger.LogError(exception, "Error creating instance of type: {TypeName} with key: {Key}", typeName, key);
+                }
+            }
+
+            return instances;
+        }
+
+        public static IServiceCollection AddScoped(this IServiceCollection services, Type type, params Assembly[] assemblies) {
+            return Add(services, type, ServiceLifetime.Scoped, assemblies);
+        }
+
+        public static IServiceCollection AddSingleton(this IServiceCollection services, Type type, params Assembly[] assemblies) {
+            return Add(services, type, ServiceLifetime.Singleton, assemblies);
+        }
+
+        public static IServiceCollection AddTransient(this IServiceCollection services, Type type, params Assembly[] assemblies) {
+            return Add(services, type, ServiceLifetime.Transient, assemblies);
+        }
+
+        public static IServiceCollection Add(this IServiceCollection services, Type type, ServiceLifetime lifetime, params Assembly[] assemblies) {
             var implementingTypes = new List<Type>();
             implementingTypes.AddRange(type.IsGenericTypeDefinition
                 ? TypeHelper.GetAllTypesImplementingOpenGenericType(type, assemblies)
@@ -19,12 +75,22 @@ namespace Exceptionless.Core.Extensions {
 
             foreach (var implementingType in implementingTypes) {
                 var registrationType = type;
-                if (type.IsGenericTypeDefinition)
-                    registrationType = type.MakeGenericType(implementingType.BaseType.GenericTypeArguments);
+                if (type.IsGenericTypeDefinition) {
+                    if (type.IsInterface)
+                        registrationType = type.MakeGenericType(implementingType.GetInterface(type.Name).GenericTypeArguments);
+                    else
+                        registrationType = type.MakeGenericType(implementingType.BaseType.GenericTypeArguments);
+                }
 
-                services.AddSingleton(registrationType, implementingType);
-                services.AddSingleton(implementingType, implementingType);
+                services.Add(new ServiceDescriptor(registrationType, implementingType, lifetime));
+                services.Add(new ServiceDescriptor(implementingType, implementingType, lifetime));
             }
+
+            return services;
+        }
+
+        public static IServiceCollection AddSingleton<T>(this IServiceCollection services, params Assembly[] assemblies) {
+            return AddSingleton(services, typeof(T), assemblies);
         }
 
         public static IServiceCollection ReplaceSingleton<T>(this IServiceCollection services, T instance) {
