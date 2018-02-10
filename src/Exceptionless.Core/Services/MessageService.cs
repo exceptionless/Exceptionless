@@ -37,23 +37,15 @@ namespace Exceptionless.Core.Services {
         }
 
         private async Task BeforePublishStackEntityChanged(object sender, BeforePublishEntityChangedEventArgs<Stack> args) {
-            try {
-                args.Cancel = await GetNumberOfListeners(args.Message).AnyContext() == 0;
-                if (args.Cancel && _logger.IsEnabled(LogLevel.Warning))
-                    _logger.LogWarning("Cancelled Stack Entity Changed Message: {@Message}", args.Message);
-            } catch (Exception ex) {
-                _logger.LogError(ex, "Error occurred while getting stack changed listener count.");
-            }
+            args.Cancel = await GetNumberOfListeners(args.Message).AnyContext() == 0;
+            if (args.Cancel && _logger.IsEnabled(LogLevel.Trace))
+                _logger.LogTrace("Cancelled Stack Entity Changed Message: {@Message}", args.Message);
         }
 
         private async Task BeforePublishEventEntityChanged(object sender, BeforePublishEntityChangedEventArgs<PersistentEvent> args) {
-            try {
-                args.Cancel = await GetNumberOfListeners(args.Message).AnyContext() == 0;
-                if (args.Cancel && _logger.IsEnabled(LogLevel.Warning))
-                    _logger.LogWarning("Cancelled Event Entity Changed Message: {@Message}", args.Message);
-            } catch (Exception ex) {
-                _logger.LogError(ex, "Error occurred while getting event changed listener count.");
-            }
+            args.Cancel = await GetNumberOfListeners(args.Message).AnyContext() == 0;
+            if (args.Cancel && _logger.IsEnabled(LogLevel.Trace))
+                _logger.LogTrace("Cancelled Persistent Event Entity Changed Message: {@Message}", args.Message);
         }
 
         private Task<int> GetNumberOfListeners(EntityChanged message) {
