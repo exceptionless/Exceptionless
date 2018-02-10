@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models {
     public class DataDictionary : Dictionary<string, object> {
@@ -31,8 +32,14 @@ namespace Exceptionless.Core.Models {
             if (!TryGetValue(name, out object value))
                 return @default;
 
-            if (value is string)
-                return (string)value;
+            if (value is string s)
+                return s;
+
+            if (value != null) {
+                try {
+                    return value.ToType<string>();
+                } catch { }
+            }
 
             return String.Empty;
         }
