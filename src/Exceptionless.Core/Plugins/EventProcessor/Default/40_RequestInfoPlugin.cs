@@ -48,21 +48,23 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             }
         }
 
-        private void AddClientIpAddress(RequestInfo request, string clientIpAddress) {
-            if (String.IsNullOrEmpty(clientIpAddress))
-                return;
-
-            if (clientIpAddress.IsLocalHost())
-                clientIpAddress = "127.0.0.1";
-
+        private void AddClientIpAddress(RequestInfo request, string requestIpAddress) {
             var ips = (request.ClientIpAddress ?? String.Empty)
                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(ip => ip.Trim())
-                .Where(ip => !ip.IsLocalHost())
                 .ToList();
 
-            if (ips.Count == 0 || !clientIpAddress.IsLocalHost())
-                ips.Add(clientIpAddress);
+            request.Data.Remove(RequestInfo.KnownDataKeys.RequestIpAddress);
+            if (!String.IsNullOrEmpty(requestIpAddress)) {
+                bool requestIpIsLocal = requestIpAddress.IsLocalHost();
+                if (requestIpIsLocal)
+                    requestIpAddress = "127.0.0.1";
+
+                if (ips.Count == 0 || (!requestIpIsLocal && ips.Count(ip => !ip.IsLocalHost()) == 0))
+                    ips.Add(requestIpAddress);
+
+                request.Data[RequestInfo.KnownDataKeys.RequestIpAddress] = requestIpAddress.Trim();
+            }
 
             request.ClientIpAddress = ips.Distinct().ToDelimitedString();
         }
