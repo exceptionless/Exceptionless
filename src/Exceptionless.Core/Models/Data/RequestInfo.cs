@@ -114,6 +114,11 @@ namespace Exceptionless.Core.Models.Data {
             public const string OSMajorVersion = "@os_major_version";
 
             public const string IsBot = "@is_bot";
+
+            /// <summary>
+            /// The IP address that submitted the event to our api.
+            /// </summary>
+            public const string RequestIpAddress = "@request_ip";
         }
     }
 }
