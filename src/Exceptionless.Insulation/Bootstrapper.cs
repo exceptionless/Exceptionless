@@ -101,6 +101,12 @@ namespace Exceptionless.Insulation {
                     Serializer = s.GetRequiredService<ITextSerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
+            } else if (!String.IsNullOrEmpty(Settings.Current.MinioStorageConnectionString)) {
+                container.ReplaceSingleton<IFileStorage>(s => new MinioFileStorage(new MinioFileStorageOptions {
+                    ConnectionString = Settings.Current.MinioStorageConnectionString,
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
             }
         }
 
