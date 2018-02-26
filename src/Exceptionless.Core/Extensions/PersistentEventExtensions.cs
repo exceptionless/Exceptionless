@@ -222,10 +222,6 @@ namespace Exceptionless {
                 foreach (string ip in ei.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     yield return ip.Trim();
             }
-
-            var submissionClient = ev.GetSubmissionClient();
-            if (!String.IsNullOrEmpty(submissionClient?.IpAddress))
-                yield return submissionClient?.IpAddress;
         }
 
         public static bool HasValidReferenceId(this PersistentEvent ev) {
