@@ -41,29 +41,24 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 if (request == null)
                     continue;
 
-                AddClientIpAddress(request, context.EventPostInfo?.IpAddress);
+                var submissionClient = context.Event.GetSubmissionClient();
+                AddClientIpAddress(request, submissionClient);
                 await SetBrowserOsAndDeviceFromUserAgent(request, context).AnyContext();
                 
                 context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
             }
         }
 
-        private void AddClientIpAddress(RequestInfo request, string requestIpAddress) {
+        private void AddClientIpAddress(RequestInfo request, SubmissionClient submissionClient) {
             var ips = (request.ClientIpAddress ?? String.Empty)
                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(ip => ip.Trim())
                 .ToList();
 
-            request.Data.Remove(RequestInfo.KnownDataKeys.RequestIpAddress);
-            if (!String.IsNullOrEmpty(requestIpAddress)) {
-                bool requestIpIsLocal = requestIpAddress.IsLocalHost();
-                if (requestIpIsLocal)
-                    requestIpAddress = "127.0.0.1";
-
-                if (ips.Count == 0 || (!requestIpIsLocal && ips.Count(ip => !ip.IsLocalHost()) == 0))
-                    ips.Add(requestIpAddress);
-
-                request.Data[RequestInfo.KnownDataKeys.RequestIpAddress] = requestIpAddress.Trim();
+            if (!String.IsNullOrEmpty(submissionClient.IpAddress) && submissionClient.IsJavaScriptClient()) {
+                bool requestIpIsLocal = submissionClient.IpAddress.IsLocalHost();
+                if (ips.Count == 0 || !requestIpIsLocal && ips.Count(ip => !ip.IsLocalHost()) == 0)
+                    ips.Add(submissionClient.IpAddress);
             }
 
             request.ClientIpAddress = ips.Distinct().ToDelimitedString();
