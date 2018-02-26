@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -11,10 +13,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     public sealed class SubmissionClientPlugin : EventProcessorPluginBase {
         public SubmissionClientPlugin(ILoggerFactory loggerFactory = null) : base(loggerFactory) { }
 
-        public override Task EventProcessingAsync(EventContext context) {
-            context.Event.Data.Remove(Event.KnownDataKeys.SubmissionClient);
+        public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
+            contexts.ForEach(c => c.Event.Data.Remove(Event.KnownDataKeys.SubmissionClient));
 
-            var epi = context.EventPostInfo;
+            var epi = contexts.FirstOrDefault()?.EventPostInfo;
             if (epi == null)
                 return Task.CompletedTask;
 
@@ -35,7 +37,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 submissionClient.UserAgent = epi.UserAgent.Trim().ToLowerInvariant();
             }
 
-            context.Event.SetSubmissionClient(submissionClient);
+            contexts.ForEach(c => c.Event.SetSubmissionClient(submissionClient));
             return Task.CompletedTask;
         }
     }
