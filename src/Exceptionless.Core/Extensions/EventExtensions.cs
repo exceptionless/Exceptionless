@@ -161,6 +161,10 @@ namespace Exceptionless {
             ev.Data[Event.KnownDataKeys.Version] = version.Trim();
         }
 
+        public static SubmissionClient GetSubmissionClient(this Event ev) {
+            return ev.Data.TryGetValue(Event.KnownDataKeys.SubmissionClient, out object value) ? value as SubmissionClient : null;
+        }
+
         public static Location GetLocation(this Event ev) {
             return ev.Data.TryGetValue(Event.KnownDataKeys.Location, out object value) ? value as Location : null;
         }
@@ -171,6 +175,12 @@ namespace Exceptionless {
 
         public static string GetSubmissionMethod(this Event ev) {
             return ev.Data.TryGetValue(Event.KnownDataKeys.SubmissionMethod, out object value) ? value as string : null;
+        }
+        public static void SetSubmissionClient(this Event ev, SubmissionClient client) {
+            if (client == null)
+                return;
+
+            ev.Data[Event.KnownDataKeys.SubmissionClient] = client;
         }
 
         public static void SetLocation(this Event ev, Location location) {
