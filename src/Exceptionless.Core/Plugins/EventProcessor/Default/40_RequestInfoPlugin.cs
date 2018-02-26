@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 var submissionClient = context.Event.GetSubmissionClient();
                 AddClientIpAddress(request, submissionClient);
                 await SetBrowserOsAndDeviceFromUserAgent(request, context).AnyContext();
-                
+
                 context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
             }
         }

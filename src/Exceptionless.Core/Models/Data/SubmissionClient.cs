@@ -11,19 +11,19 @@ namespace Exceptionless.Core.Models.Data {
 
     public static class SubmissionClientExtensions {
         public static bool IsDotNetClient(this SubmissionClient submissionClient) {
-            return submissionClient?.UserAgent?.StartsWith("exceptionless/") ?? false;
+            return submissionClient?.UserAgent?.Equals("exceptionless") ?? false;
         }
 
         public static bool IsJavaScriptClient(this SubmissionClient submissionClient) {
-            return submissionClient?.UserAgent?.StartsWith("exceptionless-js/") ?? false;
+            return submissionClient?.UserAgent?.Equals("exceptionless-js") ?? false;
         }
 
         public static bool IsJavaScriptUniversalClient(this SubmissionClient submissionClient) {
-            return submissionClient?.UserAgent?.StartsWith("exceptionless-universal-js/") ?? false;
+            return submissionClient?.UserAgent?.Equals("exceptionless-universal-js") ?? false;
         }
 
         public static bool IsJavaScriptNodeClient(this SubmissionClient submissionClient) {
-            return submissionClient?.UserAgent?.StartsWith("exceptionless-node/") ?? false;
+            return submissionClient?.UserAgent?.Equals("exceptionless-node") ?? false;
         }
     }
 }
