@@ -176,6 +176,7 @@ namespace Exceptionless {
         public static string GetSubmissionMethod(this Event ev) {
             return ev.Data.TryGetValue(Event.KnownDataKeys.SubmissionMethod, out object value) ? value as string : null;
         }
+
         public static void SetSubmissionClient(this Event ev, SubmissionClient client) {
             if (client == null)
                 return;
