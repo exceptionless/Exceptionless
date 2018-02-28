@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Extensions {
             if (String.IsNullOrEmpty(ip))
                 return false;
 
-            return String.Equals(ip, "::1") || String.Equals(ip, "127.0.0.1");
+            return String.Equals(ip, "127.0.0.1") || String.Equals(ip, "::1");
         }
 
         /// <summary>

@@ -130,6 +130,9 @@ ctx.error.code = codes;";
             public const string BrowserMajorVersion = "browser.major";
             public const string RequestIsBot = "bot";
 
+            public const string ClientVersion = "client.version";
+            public const string ClientUserAgent = "client.useragent";
+
             public const string Device = "device";
 
             public const string OperatingSystem = "os";
@@ -176,6 +179,7 @@ ctx.error.code = codes;";
                 .AddVersionMapping()
                 .AddLevelMapping()
                 .AddSubmissionMethodMapping()
+                .AddSubmissionClientMapping()
                 .AddLocationMapping()
                 .AddRequestInfoMapping()
                 .AddErrorMapping()
@@ -195,6 +199,13 @@ ctx.error.code = codes;";
 
         private static PropertiesDescriptor<DataDictionary> AddSubmissionMethodMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.SubmissionMethod).RootAlias(EventIndexType.Alias.SubmissionMethod).AddKeywordField());
+        }
+
+        private static PropertiesDescriptor<DataDictionary> AddSubmissionClientMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+            return descriptor.Object<SubmissionClient>(f2 => f2.Name(Event.KnownDataKeys.SubmissionClient).Properties(p3 => p3
+                .Text(f3 => f3.Name(r => r.IpAddress).CopyTo(fd => fd.Field(EventIndexType.Alias.IpAddress)).Index(false).IncludeInAll())
+                .Text(f3 => f3.Name(r => r.UserAgent).RootAlias(EventIndexType.Alias.ClientUserAgent).AddKeywordField())
+                .Text(f3 => f3.Name(r => r.Version).RootAlias(EventIndexType.Alias.ClientVersion).AddKeywordField())));
         }
 
         private static PropertiesDescriptor<DataDictionary> AddLocationMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
