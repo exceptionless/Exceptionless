@@ -226,6 +226,7 @@ namespace Exceptionless.Core.Extensions {
                 { Event.KnownDataKeys.Location, typeof(Location) },
                 { Event.KnownDataKeys.RequestInfo, typeof(RequestInfo) },
                 { Event.KnownDataKeys.SimpleError, typeof(SimpleError) },
+                { Event.KnownDataKeys.SubmissionClient, typeof(SubmissionClient) },
                 { Event.KnownDataKeys.ManualStackingInfo, typeof(ManualStackingInfo) },
                 { Event.KnownDataKeys.UserDescription, typeof(UserDescription) },
                 { Event.KnownDataKeys.UserInfo, typeof(UserInfo) }
