@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
@@ -224,6 +225,7 @@ namespace Exceptionless.Core.Services {
             return projectId == null ? key : String.Concat(key, ":", projectId);
         }
 
+        [DebuggerDisplay("MonthlyTotal: {MonthlyTotal}, HourlyTotal: {HourlyTotal}, MonthlyBlocked: {MonthlyBlocked}, HourlyBlocked: {HourlyBlocked}, MonthlyTooBig: {MonthlyTooBig}, HourlyTooBig: {HourlyTooBig}")]
         private struct Usage {
             public double MonthlyTotal { get; set; }
             public double HourlyTotal { get; set; }
