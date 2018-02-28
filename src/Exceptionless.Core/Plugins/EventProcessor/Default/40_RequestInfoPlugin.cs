@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 .Select(ip => ip.Trim())
                 .ToList();
 
-            if (!String.IsNullOrEmpty(submissionClient.IpAddress) && submissionClient.IsJavaScriptClient()) {
+            if (!String.IsNullOrEmpty(submissionClient?.IpAddress) && submissionClient.IsJavaScriptClient()) {
                 bool requestIpIsLocal = submissionClient.IpAddress.IsLocalHost();
                 if (ips.Count == 0 || !requestIpIsLocal && ips.Count(ip => !ip.IsLocalHost()) == 0)
                     ips.Add(submissionClient.IpAddress);
