@@ -207,7 +207,7 @@ namespace Exceptionless.Api.Controllers {
                 var item = new InvoiceLineItem { Amount = line.Amount / 100.0 };
 
                 if (line.Plan != null)
-                    item.Description = $"Exceptionless - {line.Plan.Name} Plan ({(line.Plan.Amount / 100.0):c}/{line.Plan.Interval})";
+                    item.Description = $"Exceptionless - {line.Plan.Nickname} Plan ({(line.Plan.Amount / 100.0):c}/{line.Plan.Interval})";
                 else
                     item.Description = line.Description;
 

@@ -57,8 +57,7 @@ namespace Exceptionless.Api {
                 s.RoutePrefix = "docs";
                 s.SwaggerEndpoint("/docs/v2/swagger.json", "Exceptionless API V2");
                 s.SwaggerEndpoint("/docs/v1/swagger.json", "Exceptionless API V1");
-                s.InjectStylesheet("docs.css");
-                s.InjectOnCompleteJavaScript("docs.js");
+                s.InjectStylesheet("/docs.css");
             });
 
             if (Settings.Current.EnableWebSockets) {
