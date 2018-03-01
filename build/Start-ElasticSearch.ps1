@@ -1,5 +1,5 @@
 ﻿Param(
-    [string]$Version = "5.6.5",
+    [string]$Version = "5.6.8",
     [int]$NodeCount = 1,
     [switch]$SkipNodeStart = $false,
     [int]$StartPort = 9200,

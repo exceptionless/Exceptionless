@@ -1,32 +1,15 @@
-﻿.swagger-section #header {
-  background-color: #333333;
+﻿/*
+.topbar-wrapper a {
+    position: relative;
 }
 
-.swagger-section #header form#api_selector .input a#explore {
-  background-color: #696969;
-}
-
-.swagger-section #header form#api_selector .input a#explore:hover {
-  background-color: #797979;
-}
-
-.swagger-section #header a#logo {
-  background: transparent url(/content/logo.png) no-repeat left center;
-}
-
-.footer {
+.topbar-wrapper a > img, span {
     display: none;
 }
 
-.info_title {
-    display: none;
+.topbar-wrapper a:after {
+    padding-left: 30px;
+    content: 'Exceptionless Api';
+    background: transparent url(/favicon.ico) no-repeat left center;
 }
-
-.swagger-section #header a#logo {
-    padding: 20px 0 20px 200px;
-    display: none;
-}
-
-#header .swagger-ui-wrap {
-    min-height: 25px;
-}
+*/
