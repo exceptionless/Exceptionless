@@ -52,8 +52,10 @@ namespace Exceptionless.Api.Tests
             var builder = new SendBuilder(request);
             configure(builder);
 
-            if (request.ContentData != null && request.ContentData.GetType() != typeof(string))
-                request.ContentData = new StringContent(_serializer.SerializeToString(request.ContentData), Encoding.UTF8, "application/json");
+            if (request.ContentData != null && !(request.ContentData is HttpContent)) {
+                string mediaType = !String.IsNullOrEmpty(request.ContentType) ? request.ContentType : "application/json";
+                request.ContentData = new StringContent(_serializer.SerializeToString(request.ContentData), Encoding.UTF8, mediaType);
+            }
 
             return _client.SendAsync(request);
         }
