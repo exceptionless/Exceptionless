@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Models;
@@ -51,11 +52,8 @@ namespace Exceptionless.Api.Tests
             var builder = new SendBuilder(request);
             configure(builder);
 
-            if (request.ContentData != null && request.ContentData.GetType() != typeof(string)) {
-                request.ContentData = _serializer.SerializeToString(request.ContentData);
-                if (!String.IsNullOrEmpty(request.ContentType))
-                    request.ContentType = "application/json";
-            }
+            if (request.ContentData != null && request.ContentData.GetType() != typeof(string))
+                request.ContentData = new StringContent(_serializer.SerializeToString(request.ContentData), Encoding.UTF8, "application/json");
 
             return _client.SendAsync(request);
         }
