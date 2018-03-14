@@ -25,9 +25,12 @@ namespace Exceptionless.Core.Services {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
-            data.FilePath = data.ShouldArchive
-                ? GetArchivePath(SystemClock.UtcNow, data.ProjectId, $"{Guid.NewGuid():N}.json")
-                : Path.Combine("q", $"{Guid.NewGuid():N}.json");
+            if (data.ShouldArchive) {
+                data.FilePath = GetArchivePath(SystemClock.UtcNow, data.ProjectId, $"{Guid.NewGuid():N}.json");
+            } else {
+                var fileId = Guid.NewGuid().ToString("N");
+                data.FilePath = Path.Combine("q", fileId.Substring(0, 3), $"{fileId}.json");
+            }
 
             var saveTask = data.ShouldArchive ? _storage.SaveObjectAsync(data.FilePath, (EventPostInfo)data, cancellationToken) : Task.FromResult(true);
             var savePayloadTask = _storage.SaveFileAsync(Path.ChangeExtension(data.FilePath, ".payload"), stream, cancellationToken);
