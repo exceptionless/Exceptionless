@@ -145,7 +145,7 @@ namespace Exceptionless.Api.Controllers {
                 await _cache.IncrementAsync(ipLoginAttemptsCacheKey, -1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
                 _logger.LogInformation("{EmailAddress} logged in.", user.EmailAddress);
-                return Ok(new TokenResult { Token = await GetTokenAsync(user) });
+                return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(user) });
             }
         }
 
@@ -261,7 +261,7 @@ namespace Exceptionless.Api.Controllers {
                     await _mailer.SendUserEmailVerifyAsync(user);
 
                 _logger.LogInformation("{EmailAddress} signed up.", user.EmailAddress);
-                return Ok(new TokenResult { Token = await GetTokenAsync(user) });
+                return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(user) });
             }
         }
 
@@ -358,7 +358,7 @@ namespace Exceptionless.Api.Controllers {
                 await ResetUserTokensAsync(CurrentUser, nameof(RemoveExternalLoginAsync));
 
                 _logger.LogInformation("{EmailAddress} removed an external login: {ProviderName}", CurrentUser.EmailAddress, providerName);
-                return Ok(new TokenResult { Token = await GetTokenAsync(CurrentUser) });
+                return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(CurrentUser) });
             }
         }
 
@@ -394,7 +394,7 @@ namespace Exceptionless.Api.Controllers {
                 await ResetUserTokensAsync(CurrentUser, nameof(ChangePasswordAsync));
 
                 _logger.LogInformation("{EmailAddress} changed their password.", CurrentUser.EmailAddress);
-                return Ok(new TokenResult { Token = await GetTokenAsync(CurrentUser) });
+                return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(CurrentUser) });
             }
         }
 
@@ -571,7 +571,7 @@ namespace Exceptionless.Api.Controllers {
                     await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user);
 
                 _logger.LogInformation("{EmailAddress} logged in.", user.EmailAddress);
-                return Ok(new TokenResult { Token = await GetTokenAsync(user) });
+                return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(user) });
             }
         }
 
@@ -705,9 +705,9 @@ namespace Exceptionless.Api.Controllers {
             }
         }
 
-        private async Task<string> GetTokenAsync(User user) {
-            var userTokens = await _tokenRepository.GetByUserIdAsync(user.Id);
-            var validAccessToken = userTokens.Documents.FirstOrDefault(t => (!t.ExpiresUtc.HasValue || t.ExpiresUtc > SystemClock.UtcNow) && t.Type == TokenType.Access);
+        private async Task<string> GetOrCreateAccessTokenAsync(User user) {
+            var userTokens = await _tokenRepository.GetByTypeAndUserIdAsync(TokenType.Access, user.Id);
+            var validAccessToken = userTokens.Documents.FirstOrDefault(t => (!t.ExpiresUtc.HasValue || t.ExpiresUtc > SystemClock.UtcNow));
             if (validAccessToken != null)
                 return validAccessToken.Id;
 
