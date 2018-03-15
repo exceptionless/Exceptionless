@@ -8,9 +8,9 @@
     <PackageReference Include="ApprovalTests" Version="3.0.13" />
     <PackageReference Include="Exceptionless.RandomData" Version="1.1.47" />
     <PackageReference Include="FluentRest" Version="4.0.0.47" />
-    <PackageReference Include="Foundatio.Logging.Xunit" Version="7.0.1688-pre" />
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="2.0.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.0" />
+    <PackageReference Include="Foundatio.Logging.Xunit" Version="7.0.1693-pre" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="2.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.1" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
