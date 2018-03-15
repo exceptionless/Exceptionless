@@ -16,8 +16,8 @@ namespace Exceptionless.Core.Repositories {
             : base(configuration.Organizations.Token, validator) {
         }
 
-        public Task<FindResults<Token>> GetByUserIdAsync(string userId, CommandOptionsDescriptor<Token> options = null) {
-            var filter = Query<Token>.Term(e => e.UserId, userId);
+        public Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token> options = null) {
+            var filter = Query<Token>.Term(e => e.UserId, userId) && Query<Token>.Term(t => t.Type, type);
             return FindAsync(q => q.ElasticFilter(filter), options);
         }
 

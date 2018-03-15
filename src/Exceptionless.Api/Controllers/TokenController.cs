@@ -209,7 +209,7 @@ namespace Exceptionless.App.Controllers.API {
             if (!String.IsNullOrEmpty(model.OrganizationId) && !IsInOrganization(model.OrganizationId))
                 return null;
 
-            if (!String.IsNullOrEmpty(model.UserId) && model.UserId != CurrentUser.Id)
+            if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && !String.IsNullOrEmpty(model.UserId) && model.UserId != CurrentUser.Id)
                 return null;
 
             if (model.Type != TokenType.Access)
@@ -224,6 +224,11 @@ namespace Exceptionless.App.Controllers.API {
         protected override async Task<PermissionResult> CanAddAsync(Token value) {
             // We only allow users to create organization scoped tokens.
             if (String.IsNullOrEmpty(value.OrganizationId))
+                return PermissionResult.Deny;
+
+            bool hasUserRole = User.IsInRole(AuthorizationRoles.User);
+            bool hasGlobalAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin);
+            if (!hasGlobalAdminRole && !String.IsNullOrEmpty(value.UserId) && value.UserId != CurrentUser.Id)
                 return PermissionResult.Deny;
 
             if (!String.IsNullOrEmpty(value.ProjectId) && !String.IsNullOrEmpty(value.UserId))
@@ -242,13 +247,13 @@ namespace Exceptionless.App.Controllers.API {
             if (value.Scopes.Count == 0)
                 value.Scopes.Add(AuthorizationRoles.Client);
 
-            if (value.Scopes.Contains(AuthorizationRoles.Client) && !User.IsInRole(AuthorizationRoles.User))
+            if (value.Scopes.Contains(AuthorizationRoles.Client) && !hasUserRole)
                 return PermissionResult.Deny;
 
-            if (value.Scopes.Contains(AuthorizationRoles.User) && !User.IsInRole(AuthorizationRoles.User) )
+            if (value.Scopes.Contains(AuthorizationRoles.User) && !hasUserRole)
                 return PermissionResult.Deny;
 
-            if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin) && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
+            if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin) && !hasGlobalAdminRole)
                 return PermissionResult.Deny;
 
             if (!String.IsNullOrEmpty(value.ProjectId)) {
@@ -286,6 +291,9 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override async Task<PermissionResult> CanDeleteAsync(Token value) {
+            if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && !String.IsNullOrEmpty(value.UserId) &&  value.UserId != CurrentUser.Id)
+                return PermissionResult.DenyWithMessage("Can only delete tokens created by you.");
+
             if (!String.IsNullOrEmpty(value.ProjectId) && !await IsInProjectAsync(value.ProjectId))
                 return PermissionResult.DenyWithNotFound(value.Id);
 

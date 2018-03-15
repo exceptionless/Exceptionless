@@ -17,6 +17,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(e => e.ProjectId))
                     .Keyword(f => f.Name(e => e.DefaultProjectId))
                     .Keyword(f => f.Name(e => e.UserId))
+                    .Keyword(f => f.Name(u => u.CreatedBy))
                     .Keyword(f => f.Name(e => e.Refresh))
                     .Keyword(f => f.Name(e => e.Scopes))
                     .Number(f => f.Name(e => e.Type).Type(NumberType.Byte)));
