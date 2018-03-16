@@ -12,7 +12,7 @@
       "commandName": "IISExpress",
       "launchBrowser": true,
       "environmentVariables": {
-        "AppMode": "Production"
+        "AppMode": "Development"
       }
     },
     "Exceptionless.Web": {
