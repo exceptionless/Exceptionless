@@ -1,11 +1,10 @@
 ﻿---
 ConnectionStrings:
-  RedisConnectionString.off: localhost,abortConnect=false
-  ElasticsearchConnectionString.off: http://localhost:9200/
-  LdapConnectionString.off: ''
+  RedisConnectionString: localhost,abortConnect=false
+  ElasticsearchConnectionString: http://localhost:9200/
 
 # Base url for the ui used to build links in emails and other places.
-BaseURL: 'http://localhost:9001/#!'
+BaseURL: 'http://log.edward.cn'
 
 Serilog:
   MinimumLevel:

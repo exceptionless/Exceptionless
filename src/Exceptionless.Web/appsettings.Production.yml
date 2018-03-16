@@ -1,11 +1,10 @@
 ﻿---
 ConnectionStrings:
-  RedisConnectionString.off: localhost,abortConnect=false
-  ElasticsearchConnectionString.off: http://localhost:9200/
-  LdapConnectionString.off: ''
+  RedisConnectionString: localhost,abortConnect=false
+  ElasticsearchConnectionString: http://localhost:9200/
 
   # Base url for the ui used to build links in emails and other places.
-BaseURL: https://be.exceptionless.io
+BaseURL: http://log.edward.cn
 
 # Controls whether users can signup.
 EnableAccountCreation: true
@@ -19,15 +18,28 @@ EnableAccountCreation: true
 # SmtpPassword: ''
 
 # Metrics
-MetricsServerName: 10.0.0.5
+#MetricsServerName: 10.0.0.5
 
 # Exceptionless Client Settings
-ExceptionlessServerUrl: https://collector.exceptionless.io
-InternalProjectId: 50ca6b2423d6c8493020b823
+#ExceptionlessServerUrl: https://collector.exceptionless.io
+#InternalProjectId: 50ca6b2423d6c8493020b823
 
-FacebookAppId: 395178683904310
-GitHubAppId: 7ef1dd5bfbc4ccf7f5ef
-GoogleAppId: 809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com
-MicrosoftAppId: 000000004C137E8B
-SlackAppId: 34500115540.177239122322
-StripePublishableApiKey: pk_live_QTiVo5Fqv7uNScqIpd1Ns9gX
+#FacebookAppId: 395178683904310
+#GitHubAppId: 7ef1dd5bfbc4ccf7f5ef
+#GoogleAppId: 809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com
+#MicrosoftAppId: 000000004C137E8B
+#SlackAppId: 34500115540.177239122322
+#StripePublishableApiKey: pk_live_QTiVo5Fqv7uNScqIpd1Ns9gX
+
+RunJobsInProcess: false
+EnableArchive: false
+EnableSnapshotJobs: false
+ApiThrottleLimit: -1
+MaximumRetentionDays: 30
+ElasticSearchNumberOfReplicas: 0
+EnableRepositoryNotifications: false
+#EnableMetricsReporting: true
+#MetricsServerName: 192.168.4.107
+#MetricsServerPort: 8125
+EnableElasticsearchMapperSizePlugin: true
+EnableWebSockets: true
