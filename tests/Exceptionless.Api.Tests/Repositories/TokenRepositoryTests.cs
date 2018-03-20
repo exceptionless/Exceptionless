@@ -10,7 +10,6 @@ using Foundatio.Utility;
 using Nest;
 using Xunit;
 using Xunit.Abstractions;
-using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Api.Tests.Repositories {
@@ -61,6 +60,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Fact]
         public async Task GetAndRemoveByByUserIdAsync() {
             await _repository.AddAsync(new List<Token> {
+                new Token { OrganizationId = TestConstants.OrganizationId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken(), Type = TokenType.Access },
                 new Token { OrganizationId = TestConstants.OrganizationId, UserId = TestConstants.UserId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken(), Type = TokenType.Access },
                 new Token { OrganizationId = TestConstants.OrganizationId, UserId = TestConstants.UserId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken(), Type = TokenType.Authentication }
             }, o => o.ImmediateConsistency());
@@ -71,6 +71,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             await _configuration.Client.RefreshAsync(Indices.All);
             Assert.Equal(0, (await _repository.GetByTypeAndUserIdAsync(TokenType.Access, TestConstants.UserId)).Total);
             Assert.Equal(0, (await _repository.GetByTypeAndUserIdAsync(TokenType.Authentication, TestConstants.UserId)).Total);
+            Assert.Equal(1, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);
         }
     }
 }

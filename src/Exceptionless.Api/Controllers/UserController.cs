@@ -28,11 +28,13 @@ namespace Exceptionless.Api.Controllers {
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, UpdateUser> {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly ITokenRepository _tokenRepository;
         private readonly ICacheClient _cache;
         private readonly IMailer _mailer;
 
-        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
+            _tokenRepository = tokenRepository;
             _cache = new ScopedCacheClient(cacheClient, "User");
             _mailer = mailer;
         }
@@ -113,6 +115,31 @@ namespace Exceptionless.Api.Controllers {
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewUser))]
         public Task<IActionResult> PatchAsync(string id, [FromBody] Delta<UpdateUser> changes) {
             return PatchImplAsync(id, changes);
+        }
+
+        /// <summary>
+        /// Delete current user
+        /// </summary>
+        /// <response code="404">The current user could not be found.</response>
+        [HttpDelete("me")]
+        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        public Task<IActionResult> DeleteCurrentUserAsync() {
+            return DeleteImplAsync(new [] { CurrentUser.Id });
+        }
+
+        /// <summary>
+        /// Remove
+        /// </summary>
+        /// <param name="ids">A comma delimited list of user identifiers.</param>
+        /// <response code="204">No Content.</response>
+        /// <response code="400">One or more validation errors occurred.</response>
+        /// <response code="404">One or more users were not found.</response>
+        /// <response code="500">An error occurred while deleting one or more users.</response>
+        [HttpDelete("{ids:objectids}")]
+        [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        public Task<IActionResult> DeleteAsync(string ids) {
+            return DeleteImplAsync(ids.FromDelimitedString());
         }
 
         /// <summary>
@@ -270,6 +297,25 @@ namespace Exceptionless.Api.Controllers {
                 return base.GetModelsAsync(ids, useCache);
 
             return base.GetModelsAsync(ids.Where(id => String.Equals(CurrentUser.Id, id)).ToArray(), useCache);
+        }
+
+        protected override async Task<PermissionResult> CanDeleteAsync(User value) {
+            if (value.OrganizationIds.Count > 0)
+                return PermissionResult.DenyWithMessage("Please delete or leave any organizations before deleting your account.");
+
+            if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && value.Id != CurrentUser.Id)
+                return PermissionResult.Deny;
+
+            return await base.CanDeleteAsync(value);
+        }
+
+        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<User> values) {
+            foreach (var user in values) {
+                long removed = await _tokenRepository.RemoveAllByUserIdAsync(user.Id);
+                _logger.LogInformation("Removed {RemovedCount} tokens for user: {UserId}", removed, user.Id);
+            }
+
+            return await base.DeleteModelsAsync(values);
         }
     }
 }
