@@ -19,8 +19,11 @@ namespace Exceptionless.Core.Repositories {
             DisableCache();
             BatchNotifications = true;
             DefaultExcludes.Add(ElasticType.GetFieldName(e => e.Idx));
+            // copy to fields
             DefaultExcludes.Add(EventIndexType.Alias.IpAddress);
+            DefaultExcludes.Add(EventIndexType.Alias.OperatingSystem);
             DefaultExcludes.Add("error");
+
             FieldsRequiredForRemove.Add(ElasticType.GetFieldName(e => e.Date));
         }
 
