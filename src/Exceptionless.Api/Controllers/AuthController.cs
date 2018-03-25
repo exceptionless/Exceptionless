@@ -433,6 +433,14 @@ namespace Exceptionless.Api.Controllers {
                     return BadRequest("Please specify a valid Email Address.");
                 }
 
+                // Only allow 3 checks attempts per hour period by a single ip.
+                string ipResetPasswordAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:password:attempts";
+                long attempts = await _cache.IncrementAsync(ipResetPasswordAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+                if (attempts > 3) {
+                    _logger.LogError("Login denied for {EmailAddress} for the {ResetPasswordAttempts} time.", email, attempts);
+                    return Ok();
+                }
+
                 email = email.Trim().ToLowerInvariant();
                 var user = await _userRepository.GetByEmailAddressAsync(email);
                 if (user == null) {

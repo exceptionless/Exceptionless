@@ -1,4 +1,5 @@
 ﻿using System;
+using Exceptionless.Plugins;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,11 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace Exceptionless.Api.Utility.Handlers {
     public class ApiExceptionFilter : ExceptionFilterAttribute {
         public override void OnException(ExceptionContext context) {
+            var contextData = new ContextData();
+            contextData.MarkAsUnhandledError();
+            contextData.SetSubmissionMethod(nameof(ApiExceptionFilter));
+            context.Exception.ToExceptionless(contextData).SetHttpContext(context.HttpContext).Submit();
+
             ApiError apiError;
             int statusCode = StatusCodes.Status500InternalServerError;
 
