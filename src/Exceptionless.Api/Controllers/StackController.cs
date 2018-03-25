@@ -127,7 +127,7 @@ namespace Exceptionless.Api.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> MarkFixedAsync([FromBody] JObject data) {
             string id = null;
-            if (data.TryGetValue("ErrorStack", out JToken value))
+            if (data.TryGetValue("ErrorStack", out var value))
                 id = value.Value<string>();
 
             if (data.TryGetValue("Stack", out value))
@@ -176,7 +176,7 @@ namespace Exceptionless.Api.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> AddLinkAsync([FromBody] JObject data) {
             string id = null;
-            if (data.TryGetValue("ErrorStack", out JToken value))
+            if (data.TryGetValue("ErrorStack", out var value))
                 id = value.Value<string>();
 
             if (data.TryGetValue("Stack", out value))
@@ -966,7 +966,7 @@ namespace Exceptionless.Api.Controllers {
                 if (stackTerms == null || stackTerms.Buckets.Count == 0)
                     return Ok(EmptyModels);
 
-                var stackIds = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
+                string[] stackIds = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
                 var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
 
                 if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase)) {

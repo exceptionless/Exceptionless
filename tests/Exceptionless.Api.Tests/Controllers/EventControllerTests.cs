@@ -94,7 +94,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         public async Task CanPostCompressedStringAsync() {
             const string message = "simple string";
 
-            var data = Encoding.UTF8.GetBytes(message);
+            byte[] data = Encoding.UTF8.GetBytes(message);
             var ms = new MemoryStream();
             using (var gzip = new GZipStream(ms, CompressionMode.Compress, true))
                 gzip.Write(data, 0, data.Length);

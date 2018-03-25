@@ -384,7 +384,7 @@ namespace Exceptionless.Api.Controllers {
                     if (customer.Sources.TotalCount > 0)
                         organization.CardLast4 = customer.Sources.Data.First().Card.Last4;
                 } else {
-                    var update = new StripeSubscriptionUpdateOptions { PlanId = planId };
+                    var update = new StripeSubscriptionUpdateOptions { Items = new List<StripeSubscriptionItemUpdateOption> { new StripeSubscriptionItemUpdateOption { PlanId = planId } } };
                     var create = new StripeSubscriptionCreateOptions();
                     bool cardUpdated = false;
 

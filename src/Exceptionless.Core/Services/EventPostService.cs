@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Services {
             if (data.ShouldArchive) {
                 data.FilePath = GetArchivePath(SystemClock.UtcNow, data.ProjectId, $"{Guid.NewGuid():N}.json");
             } else {
-                var fileId = Guid.NewGuid().ToString("N");
+                string fileId = Guid.NewGuid().ToString("N");
                 data.FilePath = Path.Combine("q", fileId.Substring(0, 3), $"{fileId}.json");
             }
 
