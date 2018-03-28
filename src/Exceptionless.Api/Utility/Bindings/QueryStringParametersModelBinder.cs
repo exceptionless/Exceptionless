@@ -4,14 +4,16 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 
 namespace Exceptionless.Api.Utility {
     public class QueryStringParametersModelBinder : IModelBinder {
         private readonly SimpleTypeModelBinder _simpleModelBinder;
 
-        public QueryStringParametersModelBinder(Type type) {
-            _simpleModelBinder = new SimpleTypeModelBinder(type);
+        public QueryStringParametersModelBinder(Type type, ILoggerFactory loggerFactory) {
+            _simpleModelBinder = new SimpleTypeModelBinder(type, loggerFactory);
         }
 
         public Task BindModelAsync(ModelBindingContext bindingContext) {
@@ -61,7 +63,7 @@ namespace Exceptionless.Api.Utility {
             if (context.Metadata.IsComplexType || context.Metadata.ModelType != typeof(string))
                 return null;
 
-            return new QueryStringParametersModelBinder(context.Metadata.ModelType);
+            return new QueryStringParametersModelBinder(context.Metadata.ModelType, context.Services.GetService<ILoggerFactory>());
         }
     }
 }
