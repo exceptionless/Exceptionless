@@ -393,6 +393,14 @@ namespace Exceptionless.Api.Controllers {
                 await ChangePasswordAsync(CurrentUser, model.Password, nameof(ChangePasswordAsync));
                 await ResetUserTokensAsync(CurrentUser, nameof(ChangePasswordAsync));
 
+                string userLoginAttemptsCacheKey = $"user:{CurrentUser.EmailAddress}:attempts";
+                await _cache.RemoveAsync(userLoginAttemptsCacheKey);
+
+                string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
+                long attempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, -1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+                if (attempts <= 0)
+                    await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
+
                 _logger.LogInformation("{EmailAddress} changed their password.", CurrentUser.EmailAddress);
                 return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(CurrentUser) });
             }
@@ -491,6 +499,14 @@ namespace Exceptionless.Api.Controllers {
                 user.MarkEmailAddressVerified();
                 await ChangePasswordAsync(user, model.Password, nameof(ResetPasswordAsync));
                 await ResetUserTokensAsync(user, nameof(ResetPasswordAsync));
+
+                string userLoginAttemptsCacheKey = $"user:{CurrentUser.EmailAddress}:attempts";
+                await _cache.RemoveAsync(userLoginAttemptsCacheKey);
+
+                string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
+                long attempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, -1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+                if (attempts <= 0)
+                    await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
                 _logger.LogInformation("{EmailAddress} reset their password.", user.EmailAddress);
                 return Ok();
