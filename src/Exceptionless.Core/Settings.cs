@@ -6,6 +6,7 @@ using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Stripe;
 
 namespace Exceptionless.Core {
     public class Settings {
@@ -128,6 +129,7 @@ namespace Exceptionless.Core {
         public bool EnableBilling => !String.IsNullOrEmpty(StripeApiKey);
 
         public string StripeApiKey { get; private set; }
+        public string StripeWebHookSigningSecret { get; set; }
 
         public string StorageFolder { get; private set; }
 
@@ -213,6 +215,10 @@ namespace Exceptionless.Core {
             settings.GitHubAppId = configRoot.GetValue<string>(nameof(GitHubAppId));
             settings.GitHubAppSecret = configRoot.GetValue<string>(nameof(GitHubAppSecret));
             settings.StripeApiKey = configRoot.GetValue<string>(nameof(StripeApiKey));
+            settings.StripeWebHookSigningSecret = configRoot.GetValue<string>(nameof(StripeWebHookSigningSecret));
+            if (settings.EnableBilling)
+                StripeConfiguration.SetApiKey(settings.StripeApiKey);
+
             settings.StorageFolder = configRoot.GetValue<string>(nameof(StorageFolder), "|DataDirectory|\\storage");
             settings.BulkBatchSize = configRoot.GetValue(nameof(BulkBatchSize), 1000);
 

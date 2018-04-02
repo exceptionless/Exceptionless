@@ -33,7 +33,7 @@ namespace Exceptionless.Api.Controllers {
             using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext))) {
                 StripeEvent stripeEvent;
                 try {
-                    stripeEvent = StripeEventUtility.ConstructEvent(json, signature, Settings.Current.StripeApiKey);
+                    stripeEvent = StripeEventUtility.ConstructEvent(json, signature, Settings.Current.StripeWebHookSigningSecret);
                 } catch (Exception ex) {
                     using (_logger.BeginScope(new ExceptionlessState().Property("event", json)))
                         _logger.LogError(ex, "Unable to parse incoming event: {Message}", ex.Message);

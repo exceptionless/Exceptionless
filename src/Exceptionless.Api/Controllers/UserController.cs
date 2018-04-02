@@ -190,6 +190,8 @@ namespace Exceptionless.Api.Controllers {
             if (!user.IsEmailAddressVerified)
                 await ResendVerificationEmailAsync(id);
 
+            // TODO: We may want to send an email to old email addresses as well.
+
             return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
         }
 
@@ -217,7 +219,6 @@ namespace Exceptionless.Api.Controllers {
             user.MarkEmailAddressVerified();
             await _repository.SaveAsync(user, o => o.Cache());
 
-            //ExceptionlessClient.Default.CreateFeatureUsage("Verify Email Address").AddObject(user).Submit();
             return Ok();
         }
 
