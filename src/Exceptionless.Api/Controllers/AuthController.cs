@@ -142,7 +142,7 @@ namespace Exceptionless.Api.Controllers {
                     await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
 
                 await _cache.RemoveAsync(userLoginAttemptsCacheKey);
-                await _cache.IncrementAsync(ipLoginAttemptsCacheKey, -1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+                await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
                 _logger.LogInformation("{EmailAddress} logged in.", user.EmailAddress);
                 return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(user) });
@@ -397,7 +397,7 @@ namespace Exceptionless.Api.Controllers {
                 await _cache.RemoveAsync(userLoginAttemptsCacheKey);
 
                 string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
-                long attempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, -1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+                long attempts = await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
                 if (attempts <= 0)
                     await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
@@ -504,7 +504,7 @@ namespace Exceptionless.Api.Controllers {
                 await _cache.RemoveAsync(userLoginAttemptsCacheKey);
 
                 string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
-                long attempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, -1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+                long attempts = await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
                 if (attempts <= 0)
                     await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
