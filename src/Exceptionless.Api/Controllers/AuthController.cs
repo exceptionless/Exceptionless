@@ -388,6 +388,12 @@ namespace Exceptionless.Api.Controllers {
                         _logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect.", CurrentUser.EmailAddress);
                         return BadRequest("The current password is incorrect.");
                     }
+
+                    string newPasswordHash = model.Password.ToSaltedHash(CurrentUser.Salt);
+                    if (String.Equals(newPasswordHash, CurrentUser.Password)) {
+                        _logger.LogError("Change password failed for {EmailAddress}: The new password is the same as the current password.", CurrentUser.EmailAddress);
+                        return BadRequest("The new password must be different than the previous password.");
+                    }
                 }
 
                 await ChangePasswordAsync(CurrentUser, model.Password, nameof(ChangePasswordAsync));
@@ -494,6 +500,12 @@ namespace Exceptionless.Api.Controllers {
                 if (!IsValidPassword(model.Password)) {
                     _logger.LogError("Reset password failed for {EmailAddress}: The New Password must be at least 6 characters long.", user.EmailAddress);
                     return BadRequest("The New Password must be at least 6 characters long.");
+                }
+
+                string newPasswordHash = model.Password.ToSaltedHash(CurrentUser.Salt);
+                if (String.Equals(newPasswordHash, CurrentUser.Password)) {
+                    _logger.LogError("Reset password failed for {EmailAddress}: The new password is the same as the current password.", CurrentUser.EmailAddress);
+                    return BadRequest("The new password must be different than the previous password.");
                 }
 
                 user.MarkEmailAddressVerified();
