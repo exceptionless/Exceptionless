@@ -580,7 +580,6 @@ namespace Exceptionless.Api.Tests.Controllers {
             );
         }
 
-
         [Fact]
         public async Task CanChangePasswordAsync() {
             const string email = "test6@exceptionless.io";
@@ -680,6 +679,111 @@ namespace Exceptionless.Api.Tests.Controllers {
                 .AppendPath("auth/change-password")
                 .Content(new ChangePasswordModel {
                     CurrentPassword = password,
+                    Password = password
+                })
+                .StatusCodeShouldBeBadRequest()
+            );
+
+            Assert.NotNull(await _tokenRepository.GetByIdAsync(result.Token));
+        }
+
+        [Fact]
+        public async Task CanResetPasswordAsync() {
+            const string email = "test6@exceptionless.io";
+            const string password = "Test6 password";
+            const string salt = "1234567890123456";
+            string passwordHash = password.ToSaltedHash(salt);
+
+            var user = new User {
+                EmailAddress = email,
+                Password = passwordHash,
+                Salt = salt,
+                IsEmailAddressVerified = true,
+                FullName = "User 6",
+                Roles = AuthorizationRoles.AllScopes
+            };
+
+            user.CreatePasswordResetToken();
+            await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
+
+            var result = await SendRequestAs<TokenResult>(r => r
+                .Post()
+                .AppendPath("auth/login")
+                .Content(new LoginModel {
+                    Email = email,
+                    Password = password,
+                })
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.NotNull(result);
+            Assert.NotEmpty(result.Token);
+
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
+            Assert.NotNull(token);
+
+            var actualUser = await _userRepository.GetByIdAsync(token.UserId);
+            Assert.NotNull(actualUser);
+            Assert.Equal(email, actualUser.EmailAddress);
+
+            const string newPassword = "NewP@ssword2";
+            await SendUserRequest(email, password, r => r
+                .Post()
+                .AppendPath("auth/reset-password")
+                .Content(new ResetPasswordModel {
+                    PasswordResetToken = user.PasswordResetToken,
+                    Password = newPassword
+                })
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Null(await _tokenRepository.GetByIdAsync(result.Token));
+        }
+
+        [Fact]
+        public async Task ResetPasswordShouldFailWithCurrentPasswordAsync() {
+            const string email = "test6@exceptionless.io";
+            const string password = "Test6 password";
+            const string salt = "1234567890123456";
+            string passwordHash = password.ToSaltedHash(salt);
+
+            var user = new User {
+                EmailAddress = email,
+                Password = passwordHash,
+                Salt = salt,
+                IsEmailAddressVerified = true,
+                FullName = "User 6",
+                Roles = AuthorizationRoles.AllScopes
+            };
+
+            user.CreatePasswordResetToken();
+            await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
+
+            var result = await SendRequestAs<TokenResult>(r => r
+                .Post()
+                .AppendPath("auth/login")
+                .Content(new LoginModel {
+                    Email = email,
+                    Password = password,
+                })
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.NotNull(result);
+            Assert.NotEmpty(result.Token);
+
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
+            Assert.NotNull(token);
+
+            var actualUser = await _userRepository.GetByIdAsync(token.UserId);
+            Assert.NotNull(actualUser);
+            Assert.Equal(email, actualUser.EmailAddress);
+
+            await SendUserRequest(email, password, r => r
+                .Post()
+                .AppendPath("auth/reset-password")
+                .Content(new ResetPasswordModel {
+                    PasswordResetToken = user.PasswordResetToken,
                     Password = password
                 })
                 .StatusCodeShouldBeBadRequest()

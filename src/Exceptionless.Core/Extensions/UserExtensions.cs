@@ -5,6 +5,14 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Core.Extensions {
     public static class UserExtensions {
+        public static bool IsCorrectPassword(this User user, string password) {
+            if (String.IsNullOrEmpty(user.Salt) || String.IsNullOrEmpty(user.Password))
+                return false;
+
+            string encodedPassword = password.ToSaltedHash(user.Salt);
+            return String.Equals(encodedPassword, user.Password);
+        }
+
         public static void ResetVerifyEmailAddressToken(this User user) {
             if (user == null)
                 return;
