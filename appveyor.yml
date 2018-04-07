@@ -23,8 +23,8 @@ init:
   - ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
 
 install:
-  - cmd: curl -O https://download.microsoft.com/download/D/7/8/D788D3CD-44C4-487D-829B-413E914FB1C3/dotnet-sdk-2.1.300-preview1-008174-win-x64.exe
-  - cmd: dotnet-sdk-2.1.300-preview1-008174-win-x64.exe /install /quiet /norestart /log install.log 
+  - cmd: curl -O https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-x64.exe
+  - cmd: dotnet-runtime-latest-win-x64.exe /install /quiet /norestart /log install.log 
 
 before_build:
   - ps: .\build\Set-BuildVersion.ps1 -Version $env:APPVEYOR_BUILD_VERSION -Suffix $env:VERSION_SUFFIX

@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Cors.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -100,7 +101,8 @@ namespace Exceptionless.Api {
                 o.Filters.Add<ApiExceptionFilter>();
                 o.ModelBinderProviders.Add(new CustomAttributesModelBinderProvider());
                 o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
-            }).AddJsonOptions(o => {
+            }).SetCompatibilityVersion(CompatibilityVersion.Latest)
+              .AddJsonOptions(o => {
                 o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
                 o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
                 o.SerializerSettings.Formatting = Formatting.Indented;
