@@ -14,6 +14,7 @@ using Exceptionless.Core.Utility;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
+using Foundatio.Repositories;
 using Foundatio.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -68,7 +69,7 @@ namespace Exceptionless.Api.Controllers {
             organization.RemoveSuspension();
             BillingManager.ApplyBillingPlan(organization, plan, CurrentUser, false);
 
-            await _organizationRepository.SaveAsync(organization);
+            await _organizationRepository.SaveAsync(organization, o => o.Cache());
             await _messagePublisher.PublishAsync(new PlanChanged {
                 OrganizationId = organization.Id
             });

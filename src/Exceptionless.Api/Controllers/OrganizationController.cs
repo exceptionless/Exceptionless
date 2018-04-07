@@ -206,10 +206,12 @@ namespace Exceptionless.Api.Controllers {
             foreach (var line in stripeInvoice.StripeInvoiceLineItems.Data) {
                 var item = new InvoiceLineItem { Amount = line.Amount / 100.0 };
 
-                if (line.Plan != null)
-                    item.Description = $"Exceptionless - {line.Plan.Nickname} Plan ({(line.Plan.Amount / 100.0):c}/{line.Plan.Interval})";
-                else
+                if (line.Plan != null) {
+                    string planName = line.Plan.Nickname ?? BillingManager.GetBillingPlan(line.Plan.Id)?.Name;
+                    item.Description = $"Exceptionless - {planName} Plan ({(line.Plan.Amount / 100.0):c}/{line.Plan.Interval})";
+                } else {
                     item.Description = line.Description;
+                }
 
                 item.Date = $"{(line.StripePeriod.Start ?? stripeInvoice.PeriodStart).ToShortDateString()} - {(line.StripePeriod.End ?? stripeInvoice.PeriodEnd).ToShortDateString()}";
                 invoice.Items.Add(item);
@@ -384,7 +386,7 @@ namespace Exceptionless.Api.Controllers {
                     if (customer.Sources.TotalCount > 0)
                         organization.CardLast4 = customer.Sources.Data.First().Card.Last4;
                 } else {
-                    var update = new StripeSubscriptionUpdateOptions { Items = new List<StripeSubscriptionItemUpdateOption> { new StripeSubscriptionItemUpdateOption { PlanId = planId } } };
+                    var update = new StripeSubscriptionUpdateOptions { Items = new List<StripeSubscriptionItemUpdateOption>() };
                     var create = new StripeSubscriptionCreateOptions();
                     bool cardUpdated = false;
 
@@ -396,10 +398,12 @@ namespace Exceptionless.Api.Controllers {
 
                     var subscriptionList = await subscriptionService.ListAsync(new StripeSubscriptionListOptions { CustomerId = organization.StripeCustomerId });
                     var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
-                    if (subscription != null)
+                    if (subscription != null) {
+                        update.Items.Add(new StripeSubscriptionItemUpdateOption { Id = subscription.Items.Data[0].Id, PlanId = planId });
                         await subscriptionService.UpdateAsync(subscription.Id, update);
-                    else
+                    } else {
                         await subscriptionService.CreateAsync(organization.StripeCustomerId, planId, create);
+                    }
 
                     await customerService.UpdateAsync(organization.StripeCustomerId, new StripeCustomerUpdateOptions {
                         Email = CurrentUser.EmailAddress
