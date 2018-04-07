@@ -126,10 +126,14 @@ namespace Exceptionless.Api.Controllers {
                         return Unauthorized();
                     }
 
-                    string encodedPassword = model.Password.ToSaltedHash(user.Salt);
-                    if (!String.Equals(encodedPassword, user.Password)) {
+                    if (!user.IsCorrectPassword(model.Password)) {
                         _logger.LogError("Login failed for {EmailAddress}: Invalid Password.", user.EmailAddress);
                         return Unauthorized();
+                    }
+
+                    if (!PasswordMeetsRequirements(model.Password)) {
+                        _logger.LogError("Login denied for {EmailAddress} for invalid password.", email);
+                        return StatusCode(423, "Password requirements have changed. Password needs to be reset to meet the new requirements.");
                     }
                 } else {
                     if (!IsValidActiveDirectoryLogin(email, model.Password)) {
@@ -142,7 +146,7 @@ namespace Exceptionless.Api.Controllers {
                     await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
 
                 await _cache.RemoveAsync(userLoginAttemptsCacheKey);
-                await _cache.IncrementAsync(ipLoginAttemptsCacheKey, -1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+                await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
                 _logger.LogInformation("{EmailAddress} logged in.", user.EmailAddress);
                 return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(user) });
@@ -195,7 +199,7 @@ namespace Exceptionless.Api.Controllers {
                     return BadRequest("Name is required.");
                 }
 
-                if (!IsValidPassword(model.Password)) {
+                if (!PasswordMeetsRequirements(model.Password)) {
                     _logger.LogError("Signup failed for {EmailAddress}: Invalid Password", email);
                     return BadRequest("Password must be at least 6 characters long.");
                 }
@@ -371,7 +375,7 @@ namespace Exceptionless.Api.Controllers {
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordModel model) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("Change Password").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Password Length", model?.Password?.Length ?? 0).SetHttpContext(HttpContext))) {
-                if (model == null || !IsValidPassword(model.Password)) {
+                if (model == null || !PasswordMeetsRequirements(model.Password)) {
                     _logger.LogError("Change password failed for {EmailAddress}: The New Password must be at least 6 characters long.", CurrentUser.EmailAddress);
                     return BadRequest("The New Password must be at least 6 characters long.");
                 }
@@ -388,10 +392,24 @@ namespace Exceptionless.Api.Controllers {
                         _logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect.", CurrentUser.EmailAddress);
                         return BadRequest("The current password is incorrect.");
                     }
+
+                    string newPasswordHash = model.Password.ToSaltedHash(CurrentUser.Salt);
+                    if (String.Equals(newPasswordHash, CurrentUser.Password)) {
+                        _logger.LogError("Change password failed for {EmailAddress}: The new password is the same as the current password.", CurrentUser.EmailAddress);
+                        return BadRequest("The new password must be different than the previous password.");
+                    }
                 }
 
                 await ChangePasswordAsync(CurrentUser, model.Password, nameof(ChangePasswordAsync));
                 await ResetUserTokensAsync(CurrentUser, nameof(ChangePasswordAsync));
+
+                string userLoginAttemptsCacheKey = $"user:{CurrentUser.EmailAddress}:attempts";
+                await _cache.RemoveAsync(userLoginAttemptsCacheKey);
+
+                string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
+                long attempts = await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+                if (attempts <= 0)
+                    await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
                 _logger.LogInformation("{EmailAddress} changed their password.", CurrentUser.EmailAddress);
                 return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(CurrentUser) });
@@ -483,14 +501,31 @@ namespace Exceptionless.Api.Controllers {
                     return BadRequest("Password Reset Token has expired.");
                 }
 
-                if (!IsValidPassword(model.Password)) {
+                if (!PasswordMeetsRequirements(model.Password)) {
                     _logger.LogError("Reset password failed for {EmailAddress}: The New Password must be at least 6 characters long.", user.EmailAddress);
                     return BadRequest("The New Password must be at least 6 characters long.");
+                }
+
+                // User has a local account..
+                if (!String.IsNullOrWhiteSpace(user.Password)) {
+                    string newPasswordHash = model.Password.ToSaltedHash(user.Salt);
+                    if (String.Equals(newPasswordHash, user.Password)) {
+                        _logger.LogError("Reset password failed for {EmailAddress}: The new password is the same as the current password.", user.EmailAddress);
+                        return BadRequest("The new password must be different than the previous password.");
+                    }
                 }
 
                 user.MarkEmailAddressVerified();
                 await ChangePasswordAsync(user, model.Password, nameof(ResetPasswordAsync));
                 await ResetUserTokensAsync(user, nameof(ResetPasswordAsync));
+
+                string userLoginAttemptsCacheKey = $"user:{CurrentUser.EmailAddress}:attempts";
+                await _cache.RemoveAsync(userLoginAttemptsCacheKey);
+
+                string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
+                long attempts = await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+                if (attempts <= 0)
+                    await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
                 _logger.LogInformation("{EmailAddress} reset their password.", user.EmailAddress);
                 return Ok();
@@ -737,7 +772,7 @@ namespace Exceptionless.Api.Controllers {
             return domainUsername != null && _domainLoginProvider.Login(domainUsername, password);
         }
 
-        private static bool IsValidPassword(string password) {
+        private static bool PasswordMeetsRequirements(string password) {
             if (String.IsNullOrWhiteSpace(password))
                 return false;
 

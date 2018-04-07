@@ -5,12 +5,16 @@ using Exceptionless.Api.Models;
 using Exceptionless.Api.Tests.Authentication;
 using Exceptionless.Api.Tests.Extensions;
 using Exceptionless.Core;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
+using Foundatio.Queues;
 using Foundatio.Utility;
 using Foundatio.Repositories;
+using Nest;
 using Xunit;
 using Xunit.Abstractions;
 using User = Exceptionless.Core.Models.User;
@@ -20,6 +24,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         private readonly IUserRepository _userRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly ITokenRepository _tokenRepository;
 
         public AuthControllerTests(ITestOutputHelper output) : base(output) {
             Settings.Current.EnableAccountCreation = true;
@@ -28,7 +33,21 @@ namespace Exceptionless.Api.Tests.Controllers {
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();
             _userRepository = GetService<IUserRepository>();
+            _tokenRepository = GetService<ITokenRepository>();
             CreateOrganizationAndProjectsAsync().GetAwaiter().GetResult();
+        }
+
+        [Fact]
+        public async Task CannotSignupWithoutPassword() {
+            await SendRequest(r => r
+                .Post()
+                .AppendPath("auth/signup")
+                .Content(new SignupModel {
+                    Email = "test@domain.com",
+                    Name = "hello"
+                })
+                .StatusCodeShouldBeBadRequest()
+            );
         }
 
         [Theory]
@@ -224,12 +243,17 @@ namespace Exceptionless.Api.Tests.Controllers {
 
             var orgs = await _organizationRepository.GetAllAsync();
             var organization = orgs.Documents.First();
-            string email = "test5@exceptionless.io";
+            const string email = "test5@exceptionless.io";
+            const string name = "Test";
+            const string password = "Password1$";
+
             var invite = new Invite {
                 Token = StringExtensions.GetNewToken(),
                 EmailAddress = email.ToLowerInvariant(),
                 DateAdded = SystemClock.UtcNow
             };
+
+            organization.Invites.Clear();
             organization.Invites.Add(invite);
             await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
             Assert.NotNull(organization.GetInvite(invite.Token));
@@ -240,14 +264,35 @@ namespace Exceptionless.Api.Tests.Controllers {
                .Content(new SignupModel {
                    Email = email,
                    InviteToken = invite.Token,
-                   Name = "Test",
-                   Password = "Password1$"
+                   Name = name,
+                   Password = password
                })
                .StatusCodeShouldBeOk()
             );
 
             Assert.NotNull(result);
             Assert.False(String.IsNullOrEmpty(result.Token));
+
+            await _configuration.Client.RefreshAsync(Indices.All);
+
+            var user = await _userRepository.GetByEmailAddressAsync(email);
+            Assert.NotNull(user);
+            Assert.Equal("Test", user.FullName);
+            Assert.NotEmpty(user.OrganizationIds);
+            Assert.True(user.IsEmailAddressVerified);
+            Assert.Equal(password.ToSaltedHash(user.Salt), user.Password);
+            Assert.Contains(organization.Id, user.OrganizationIds);
+
+            organization = await _organizationRepository.GetByIdAsync(organization.Id);
+            Assert.Empty(organization.Invites);
+
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
+            Assert.NotNull(token);
+            Assert.Equal(user.Id, token.UserId);
+            Assert.Equal(TokenType.Access, token.Type);
+
+            var mailQueue = GetService<IQueue<MailMessage>>() as InMemoryQueue<MailMessage>;
+            Assert.Equal(0, (await mailQueue.GetQueueStatsAsync()).Enqueued);
         }
 
         [Fact]
@@ -312,6 +357,46 @@ namespace Exceptionless.Api.Tests.Controllers {
                    Password = TestDomainLoginProvider.ValidPassword
                })
                .StatusCodeShouldBeBadRequest()
+            );
+        }
+
+        [Fact]
+        public async Task SignupShouldFailWhenUsingExistingAccountWithNoPasswordOrInvalidPassword() {
+            var userRepo = GetService<IUserRepository>();
+
+            const string email = "test6@exceptionless.io";
+            const string password = "Test6 password";
+            const string salt = "1234567890123456";
+            string passwordHash = password.ToSaltedHash(salt);
+
+            var user = new User {
+                EmailAddress = email,
+                Password = passwordHash,
+                Salt = salt,
+                IsEmailAddressVerified = true,
+                FullName = "User 6"
+            };
+            await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+
+            await SendRequest(r => r
+                .Post()
+                .AppendPath("auth/signup")
+                .Content(new SignupModel {
+                    Email = email,
+                    Name = "Random Name"
+                })
+                .StatusCodeShouldBeBadRequest()
+            );
+
+            await SendRequest(r => r
+                .Post()
+                .AppendPath("auth/signup")
+                .Content(new SignupModel {
+                    Email = email,
+                    Name = "Random Name",
+                    Password = "invalidPass",
+                })
+                .StatusCodeShouldBeUnauthorized()
             );
         }
 
@@ -493,6 +578,218 @@ namespace Exceptionless.Api.Tests.Controllers {
                })
                .StatusCodeShouldBeUnauthorized()
             );
+        }
+
+        [Fact]
+        public async Task CanChangePasswordAsync() {
+            const string email = "test6@exceptionless.io";
+            const string password = "Test6 password";
+            const string salt = "1234567890123456";
+            string passwordHash = password.ToSaltedHash(salt);
+
+            var user = new User {
+                EmailAddress = email,
+                Password = passwordHash,
+                Salt = salt,
+                IsEmailAddressVerified = true,
+                FullName = "User 6",
+                Roles = AuthorizationRoles.AllScopes
+            };
+
+            await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
+
+            var result = await SendRequestAs<TokenResult>(r => r
+                .Post()
+                .AppendPath("auth/login")
+                .Content(new LoginModel {
+                    Email = email,
+                    Password = password,
+                })
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.NotNull(result);
+            Assert.NotEmpty(result.Token);
+
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
+            Assert.NotNull(token);
+
+            var actualUser = await _userRepository.GetByIdAsync(token.UserId);
+            Assert.NotNull(actualUser);
+            Assert.Equal(email, actualUser.EmailAddress);
+
+            const string newPassword = "NewP@ssword2";
+            var changePasswordResult = await SendUserRequestAs<TokenResult>(email, password, r => r
+                .Post()
+                .AppendPath("auth/change-password")
+                .Content(new ChangePasswordModel {
+                    CurrentPassword = password,
+                    Password = newPassword
+                })
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.NotNull(changePasswordResult);
+            Assert.NotEmpty(changePasswordResult.Token);
+
+            Assert.Null(await _tokenRepository.GetByIdAsync(result.Token));
+            Assert.NotNull(await _tokenRepository.GetByIdAsync(changePasswordResult.Token));
+        }
+
+        [Fact]
+        public async Task ChangePasswordShouldFailWithCurrentPasswordAsync() {
+            const string email = "test6@exceptionless.io";
+            const string password = "Test6 password";
+            const string salt = "1234567890123456";
+            string passwordHash = password.ToSaltedHash(salt);
+
+            var user = new User {
+                EmailAddress = email,
+                Password = passwordHash,
+                Salt = salt,
+                IsEmailAddressVerified = true,
+                FullName = "User 6",
+                Roles = AuthorizationRoles.AllScopes
+            };
+
+            await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
+
+            var result = await SendRequestAs<TokenResult>(r => r
+                .Post()
+                .AppendPath("auth/login")
+                .Content(new LoginModel {
+                    Email = email,
+                    Password = password,
+                })
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.NotNull(result);
+            Assert.NotEmpty(result.Token);
+
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
+            Assert.NotNull(token);
+
+            var actualUser = await _userRepository.GetByIdAsync(token.UserId);
+            Assert.NotNull(actualUser);
+            Assert.Equal(email, actualUser.EmailAddress);
+
+            await SendUserRequest(email, password, r => r
+                .Post()
+                .AppendPath("auth/change-password")
+                .Content(new ChangePasswordModel {
+                    CurrentPassword = password,
+                    Password = password
+                })
+                .StatusCodeShouldBeBadRequest()
+            );
+
+            Assert.NotNull(await _tokenRepository.GetByIdAsync(result.Token));
+        }
+
+        [Fact]
+        public async Task CanResetPasswordAsync() {
+            const string email = "test6@exceptionless.io";
+            const string password = "Test6 password";
+            const string salt = "1234567890123456";
+            string passwordHash = password.ToSaltedHash(salt);
+
+            var user = new User {
+                EmailAddress = email,
+                Password = passwordHash,
+                Salt = salt,
+                IsEmailAddressVerified = true,
+                FullName = "User 6",
+                Roles = AuthorizationRoles.AllScopes
+            };
+
+            user.CreatePasswordResetToken();
+            await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
+
+            var result = await SendRequestAs<TokenResult>(r => r
+                .Post()
+                .AppendPath("auth/login")
+                .Content(new LoginModel {
+                    Email = email,
+                    Password = password,
+                })
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.NotNull(result);
+            Assert.NotEmpty(result.Token);
+
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
+            Assert.NotNull(token);
+
+            var actualUser = await _userRepository.GetByIdAsync(token.UserId);
+            Assert.NotNull(actualUser);
+            Assert.Equal(email, actualUser.EmailAddress);
+
+            const string newPassword = "NewP@ssword2";
+            await SendUserRequest(email, password, r => r
+                .Post()
+                .AppendPath("auth/reset-password")
+                .Content(new ResetPasswordModel {
+                    PasswordResetToken = user.PasswordResetToken,
+                    Password = newPassword
+                })
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Null(await _tokenRepository.GetByIdAsync(result.Token));
+        }
+
+        [Fact]
+        public async Task ResetPasswordShouldFailWithCurrentPasswordAsync() {
+            const string email = "test6@exceptionless.io";
+            const string password = "Test6 password";
+            const string salt = "1234567890123456";
+            string passwordHash = password.ToSaltedHash(salt);
+
+            var user = new User {
+                EmailAddress = email,
+                Password = passwordHash,
+                Salt = salt,
+                IsEmailAddressVerified = true,
+                FullName = "User 6",
+                Roles = AuthorizationRoles.AllScopes
+            };
+
+            user.CreatePasswordResetToken();
+            await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
+
+            var result = await SendRequestAs<TokenResult>(r => r
+                .Post()
+                .AppendPath("auth/login")
+                .Content(new LoginModel {
+                    Email = email,
+                    Password = password,
+                })
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.NotNull(result);
+            Assert.NotEmpty(result.Token);
+
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
+            Assert.NotNull(token);
+
+            var actualUser = await _userRepository.GetByIdAsync(token.UserId);
+            Assert.NotNull(actualUser);
+            Assert.Equal(email, actualUser.EmailAddress);
+
+            await SendUserRequest(email, password, r => r
+                .Post()
+                .AppendPath("auth/reset-password")
+                .Content(new ResetPasswordModel {
+                    PasswordResetToken = user.PasswordResetToken,
+                    Password = password
+                })
+                .StatusCodeShouldBeBadRequest()
+            );
+
+            Assert.NotNull(await _tokenRepository.GetByIdAsync(result.Token));
         }
 
         private Task CreateOrganizationAndProjectsAsync() {
