@@ -519,7 +519,7 @@ namespace Exceptionless.Api.Controllers {
                 await ChangePasswordAsync(user, model.Password, nameof(ResetPasswordAsync));
                 await ResetUserTokensAsync(user, nameof(ResetPasswordAsync));
 
-                string userLoginAttemptsCacheKey = $"user:{CurrentUser.EmailAddress}:attempts";
+                string userLoginAttemptsCacheKey = $"user:{user.EmailAddress}:attempts";
                 await _cache.RemoveAsync(userLoginAttemptsCacheKey);
 
                 string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
