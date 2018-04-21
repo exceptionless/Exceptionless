@@ -10,7 +10,6 @@ using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
-using Joonasw.AspNetCore.SecurityHeaders;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -21,17 +20,97 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.Extensions.Configuration;
+using Joonasw.AspNetCore.SecurityHeaders;
 
 namespace Exceptionless.Web {
     public class Startup {
-        private readonly ILoggerFactory _loggerFactory;
-
-        public Startup(ILoggerFactory loggerFactory) {
-            _loggerFactory = loggerFactory;
+        public Startup(ILoggerFactory loggerFactory, IConfiguration configuration) {
+            LoggerFactory = loggerFactory;
+            Configuration = configuration;
         }
 
-        public void Configure(IApplicationBuilder app) {
-            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, _loggerFactory);
+        public IConfiguration Configuration { get; }
+        public ILoggerFactory LoggerFactory { get; }
+
+        public void ConfigureServices(IServiceCollection services) {
+            services.AddCors(b => b.AddPolicy("AllowAny", p => p
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowAnyOrigin()
+                .AllowCredentials()
+                .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
+                .WithExposedHeaders("ETag", "Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-Result-Count")));
+
+            services.Configure<ForwardedHeadersOptions>(options => {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.RequireHeaderSymmetry = false;
+            });
+            services.AddMvc(o => {
+                o.Filters.Add(new CorsAuthorizationFilterFactory("AllowAny"));
+                o.Filters.Add<RequireHttpsExceptLocalAttribute>();
+                o.Filters.Add<ApiExceptionFilter>();
+                o.ModelBinderProviders.Add(new CustomAttributesModelBinderProvider());
+                o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
+            }).SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+              .AddJsonOptions(o => {
+                o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
+                o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
+                o.SerializerSettings.Formatting = Formatting.Indented;
+                o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
+            });
+
+            services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
+            services.AddAuthorization(options => {
+                options.DefaultPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+                options.AddPolicy(AuthorizationRoles.ClientPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.Client));
+                options.AddPolicy(AuthorizationRoles.UserPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.User));
+                options.AddPolicy(AuthorizationRoles.GlobalAdminPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.GlobalAdmin));
+            });
+
+            services.AddRouting(r => {
+                r.LowercaseUrls = true;
+                r.ConstraintMap.Add("identifier", typeof(IdentifierRouteConstraint));
+                r.ConstraintMap.Add("identifiers", typeof(IdentifiersRouteConstraint));
+                r.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
+                r.ConstraintMap.Add("objectids", typeof(ObjectIdsRouteConstraint));
+                r.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
+                r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
+            });
+            services.AddSwaggerGen(c => {
+                c.SwaggerDoc("v2", new Info {
+                    Title = "Exceptionless API V2",
+                    Version = "v2"
+                });
+                c.SwaggerDoc("v1", new Info {
+                    Title = "Exceptionless API V1",
+                    Version = "v1"
+                });
+
+                c.AddSecurityDefinition("access_token", new ApiKeyScheme {
+                    Name = "access_token",
+                    In = "header",
+                    Description = "API Key Authentication"
+                });
+                c.AddSecurityDefinition("basic", new BasicAuthScheme {
+                    Description = "Basic HTTP Authentication"
+                });
+                if (File.Exists($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml"))
+                    c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml");
+                c.IgnoreObsoleteActions();
+                c.AddAutoVersioningSupport();
+            });
+
+            Bootstrapper.RegisterServices(services, LoggerFactory);
+
+            services.AddSingleton(new ThrottlingOptions {
+                MaxRequestsForUserIdentifierFunc = userIdentifier => Settings.Current.ApiThrottleLimit,
+                Period = TimeSpan.FromMinutes(15)
+            });
+        }
+
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
+            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, LoggerFactory);
 
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
@@ -104,82 +183,6 @@ namespace Exceptionless.Web {
                     app.ApplicationServices.RunStartupActionsAsync(combined.Token).GetAwaiter().GetResult();
                 });
             }
-        }
-
-        public void ConfigureServices(IServiceCollection services) {
-            services.AddCors(b => b.AddPolicy("AllowAny", p => p
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowAnyOrigin()
-                .AllowCredentials()
-                .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
-                .WithExposedHeaders("ETag", "Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-Result-Count")));
-
-            services.Configure<ForwardedHeadersOptions>(options => {
-                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-                options.RequireHeaderSymmetry = false;
-            });
-            services.AddMvc(o => {
-                o.Filters.Add(new CorsAuthorizationFilterFactory("AllowAny"));
-                o.Filters.Add<RequireHttpsExceptLocalAttribute>();
-                o.Filters.Add<ApiExceptionFilter>();
-                o.ModelBinderProviders.Add(new CustomAttributesModelBinderProvider());
-                o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
-            }).SetCompatibilityVersion(CompatibilityVersion.Latest)
-              .AddJsonOptions(o => {
-                o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
-                o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
-                o.SerializerSettings.Formatting = Formatting.Indented;
-                o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
-            });
-
-            services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
-            services.AddAuthorization(options => {
-                options.DefaultPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
-                options.AddPolicy(AuthorizationRoles.ClientPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.Client));
-                options.AddPolicy(AuthorizationRoles.UserPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.User));
-                options.AddPolicy(AuthorizationRoles.GlobalAdminPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.GlobalAdmin));
-            });
-
-            services.AddRouting(r => {
-                r.LowercaseUrls = true;
-                r.ConstraintMap.Add("identifier", typeof(IdentifierRouteConstraint));
-                r.ConstraintMap.Add("identifiers", typeof(IdentifiersRouteConstraint));
-                r.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
-                r.ConstraintMap.Add("objectids", typeof(ObjectIdsRouteConstraint));
-                r.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
-                r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
-            });
-            services.AddSwaggerGen(c => {
-                c.SwaggerDoc("v2", new Info {
-                    Title = "Exceptionless API V2",
-                    Version = "v2"
-                });
-                c.SwaggerDoc("v1", new Info {
-                    Title = "Exceptionless API V1",
-                    Version = "v1"
-                });
-
-                c.AddSecurityDefinition("access_token", new ApiKeyScheme {
-                    Name = "access_token",
-                    In = "header",
-                    Description = "API Key Authentication"
-                });
-                c.AddSecurityDefinition("basic", new BasicAuthScheme {
-                    Description = "Basic HTTP Authentication"
-                });
-                if (File.Exists($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml"))
-                    c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml");
-                c.IgnoreObsoleteActions();
-                c.AddAutoVersioningSupport();
-            });
-
-            Bootstrapper.RegisterServices(services, _loggerFactory);
-
-            services.AddSingleton(new ThrottlingOptions {
-                MaxRequestsForUserIdentifierFunc = userIdentifier => Settings.Current.ApiThrottleLimit,
-                Period = TimeSpan.FromMinutes(15)
-            });
         }
     }
 }
