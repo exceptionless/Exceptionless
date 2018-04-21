@@ -39,7 +39,7 @@ before_test:
   - ps: .\build\Start-ElasticSearch.ps1
 
 test_script:
-  - ps: Push-Location .\tests\Exceptionless.Api.Tests
+  - ps: Push-Location .\tests\Exceptionless.Tests
   - ps: dotnet test -c Release --no-build
   - ps: Pop-Location
 
