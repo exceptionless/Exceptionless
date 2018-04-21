@@ -67,7 +67,7 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewOrganization>))]
-        public async Task<IActionResult> GetAsync([FromQuery] string mode = null) {
+        public async Task<IActionResult> GetAsync(string mode = null) {
             var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
             var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations, true);
 
@@ -80,7 +80,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/admin/organizations")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IActionResult> GetForAdminsAsync([FromQuery] string criteria = null, [FromQuery] bool? paid = null, [FromQuery] bool? suspended = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] OrganizationSortBy sort = OrganizationSortBy.Newest) {
+        public async Task<IActionResult> GetForAdminsAsync(string criteria = null, bool? paid = null, bool? suspended = null, string mode = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var organizations = await _repository.GetByCriteriaAsync(criteria, o => o.PageNumber(page).PageLimit(limit), sort, paid, suspended);
@@ -107,7 +107,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The organization could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetOrganizationById")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewOrganization))]
-        public async Task<IActionResult> GetByIdAsync(string id, [FromQuery] string mode = null) {
+        public async Task<IActionResult> GetByIdAsync(string id, string mode = null) {
             var organization = await GetModelAsync(id);
             if (organization == null)
                 return NotFound();
@@ -128,7 +128,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="409">The organization already exists.</response>
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewOrganization))]
-        public Task<IActionResult> PostAsync([FromBody] NewOrganization organization) {
+        public Task<IActionResult> PostAsync(NewOrganization organization) {
             return PostImplAsync(organization);
         }
 
@@ -142,7 +142,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
-        public Task<IActionResult> PatchAsync(string id, [FromBody] Delta<NewOrganization> changes) {
+        public Task<IActionResult> PatchAsync(string id, Delta<NewOrganization> changes) {
             return PatchImplAsync(id, changes);
         }
 
@@ -244,7 +244,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet]
         [Route("{id:objectid}/invoices")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Invoice>))]
-        public async Task<IActionResult> GetInvoicesAsync(string id, [FromQuery] string before = null, [FromQuery] string after = null, [FromQuery] int limit = 12) {
+        public async Task<IActionResult> GetInvoicesAsync(string id, string before = null, string after = null, int limit = 12) {
             if (!Settings.Current.EnableBilling)
                 return NotFound();
 
@@ -323,7 +323,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost]
         [Route("{id:objectid}/change-plan")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ChangePlanResult))]
-        public async Task<IActionResult> ChangePlanAsync(string id, [FromQuery] string planId, [FromQuery] string stripeToken = null, [FromQuery] string last4 = null, [FromQuery] string couponId = null) {
+        public async Task<IActionResult> ChangePlanAsync(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 return NotFound();
 
@@ -534,7 +534,7 @@ namespace Exceptionless.Web.Controllers {
         [Route("{id:objectid}/suspend")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IActionResult> SuspendAsync(string id, [FromQuery] SuspensionCode code, [FromQuery] string notes = null) {
+        public async Task<IActionResult> SuspendAsync(string id, SuspensionCode code, string notes = null) {
             var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
@@ -615,7 +615,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="204">The organization name is not available.</response>
         [HttpGet]
         [Route("check-name")]
-        public async Task<IActionResult> IsNameAvailableAsync([FromQuery] string name) {
+        public async Task<IActionResult> IsNameAvailableAsync(string name) {
             if (await IsOrganizationNameAvailableInternalAsync(name))
                 return StatusCode(StatusCodes.Status204NoContent);
 

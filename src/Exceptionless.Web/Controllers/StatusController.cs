@@ -116,7 +116,7 @@ namespace Exceptionless.Web.Controllers {
 
         [HttpPost("notifications/release")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-        public async Task<IActionResult> PostReleaseNotificationAsync([FromBody] string message = null, [FromQuery] bool critical = false) {
+        public async Task<IActionResult> PostReleaseNotificationAsync([FromBody] string message = null, bool critical = false) {
             var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message };
             await _messagePublisher.PublishAsync(notification);
             return Ok(notification);

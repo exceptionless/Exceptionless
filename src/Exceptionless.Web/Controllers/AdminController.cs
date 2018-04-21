@@ -53,7 +53,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         [HttpPost("change-plan")]
-        public async Task<IActionResult> ChangePlanAsync([FromQuery] string organizationId, [FromQuery] string planId) {
+        public async Task<IActionResult> ChangePlanAsync(string organizationId, string planId) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -78,7 +78,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         [HttpPost("set-bonus")]
-        public async Task<IActionResult> SetBonusAsync([FromQuery] string organizationId, [FromQuery] int bonusEvents, [FromQuery] DateTime? expires = null) {
+        public async Task<IActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -94,7 +94,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         [HttpGet("requeue")]
-        public async Task<IActionResult> RequeueAsync([FromQuery] string path = null, [FromQuery] bool archive = false) {
+        public async Task<IActionResult> RequeueAsync(string path = null, bool archive = false) {
             if (String.IsNullOrEmpty(path))
                 path = @"q\*";
 

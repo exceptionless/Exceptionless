@@ -71,7 +71,7 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("login")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public async Task<IActionResult> LoginAsync([FromBody] LoginModel model) {
+        public async Task<IActionResult> LoginAsync(LoginModel model) {
             string email = model?.Email?.Trim().ToLowerInvariant();
             using (_logger.BeginScope(new ExceptionlessState().Tag("Login").Identity(email).SetHttpContext(HttpContext))) {
                 if (String.IsNullOrEmpty(email)) {
@@ -182,7 +182,7 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("signup")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public async Task<IActionResult> SignupAsync([FromBody] SignupModel model) {
+        public async Task<IActionResult> SignupAsync(SignupModel model) {
             bool valid = await IsAccountCreationEnabledAsync(model?.InviteToken);
             if (!valid)
                 return BadRequest("Account Creation is currently disabled.");
@@ -273,10 +273,10 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("github")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> GitHubAsync([FromBody] JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), 
-                Settings.Current.GitHubAppId, 
-                Settings.Current.GitHubAppSecret, 
+        public Task<IActionResult> GitHubAsync(JObject value) {
+            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
+                Settings.Current.GitHubAppId,
+                Settings.Current.GitHubAppSecret,
                 (f, c) => {
                     c.Scope = "user:email";
                     return new GitHubClient(f, c);
@@ -288,10 +288,10 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("google")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> GoogleAsync([FromBody] JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), 
-                Settings.Current.GoogleAppId, 
-                Settings.Current.GoogleAppSecret, 
+        public Task<IActionResult> GoogleAsync(JObject value) {
+            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
+                Settings.Current.GoogleAppId,
+                Settings.Current.GoogleAppSecret,
                 (f, c) => {
                     c.Scope = "profile email";
                     return new GoogleClient(f, c);
@@ -303,10 +303,10 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("facebook")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> FacebookAsync([FromBody] JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), 
-                Settings.Current.FacebookAppId, 
-                Settings.Current.FacebookAppSecret, 
+        public Task<IActionResult> FacebookAsync(JObject value) {
+            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
+                Settings.Current.FacebookAppId,
+                Settings.Current.FacebookAppSecret,
                 (f, c) => {
                     c.Scope = "email";
                     return new FacebookClient(f, c);
@@ -318,10 +318,10 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("live")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> LiveAsync([FromBody] JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(), 
-                Settings.Current.MicrosoftAppId, 
-                Settings.Current.MicrosoftAppSecret, 
+        public Task<IActionResult> LiveAsync(JObject value) {
+            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
+                Settings.Current.MicrosoftAppId,
+                Settings.Current.MicrosoftAppSecret,
                 (f, c) => {
                     c.Scope = "wl.emails";
                     return new WindowsLiveClient(f, c);
@@ -373,7 +373,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid change password model.</response>
         [HttpPost("change-password")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordModel model) {
+        public async Task<IActionResult> ChangePasswordAsync(ChangePasswordModel model) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("Change Password").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Password Length", model?.Password?.Length ?? 0).SetHttpContext(HttpContext))) {
                 if (model == null || !PasswordMeetsRequirements(model.Password)) {
                     _logger.LogError("Change password failed for {EmailAddress}: The New Password must be at least 6 characters long.", CurrentUser.EmailAddress);
@@ -482,7 +482,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid reset password model.</response>
         [AllowAnonymous]
         [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordModel model) {
+        public async Task<IActionResult> ResetPasswordAsync(ResetPasswordModel model) {
             if (String.IsNullOrEmpty(model?.PasswordResetToken)) {
                 using (_logger.BeginScope(new ExceptionlessState().Tag("Reset Password").SetHttpContext(HttpContext)))
                     _logger.LogError("Reset password failed: Invalid Password Reset Token.");
@@ -553,7 +553,7 @@ namespace Exceptionless.Web.Controllers {
             user.ResetPasswordResetToken();
             await _userRepository.SaveAsync(user, o => o.Cache());
 
-            using (_logger.BeginScope(new ExceptionlessState().Tag("Cancel Reset Password").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext))) 
+            using (_logger.BeginScope(new ExceptionlessState().Tag("Cancel Reset Password").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext)))
                 _logger.LogInformation("{EmailAddress} canceled the reset password", user.EmailAddress);
 
             return Ok();

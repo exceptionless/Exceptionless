@@ -73,7 +73,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The organization could not be found.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/users")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewUser>))]
-        public async Task<IActionResult> GetByOrganizationAsync(string organizationId, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
@@ -113,7 +113,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPatch("{id:objectid}")]
         [HttpPut("{id:objectid}")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewUser))]
-        public Task<IActionResult> PatchAsync(string id, [FromBody] Delta<UpdateUser> changes) {
+        public Task<IActionResult> PatchAsync(string id, Delta<UpdateUser> changes) {
             return PatchImplAsync(id, changes);
         }
 

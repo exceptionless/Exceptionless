@@ -24,7 +24,7 @@ namespace Exceptionless.Web.Controllers {
 
         [AllowAnonymous]
         [HttpPost]
-        public async Task<IActionResult> PostAsync([FromBody] JObject data) {
+        public async Task<IActionResult> PostAsync(JObject data) {
             using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext).Property("event", data))) {
                 string json = data?.ToString();
                 if (String.IsNullOrEmpty(json)) {
