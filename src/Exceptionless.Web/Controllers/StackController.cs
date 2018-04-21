@@ -70,7 +70,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The stack could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetStackById")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(Stack))]
         public async Task<ActionResult<Stack>> GetByIdAsync(string id, string offset = null) {
             var stack = await GetModelAsync(id);
             if (stack == null)
@@ -87,7 +86,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost("{ids:objectids}/mark-fixed")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        [SwaggerResponse(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> MarkFixedAsync(string ids, string version = null) {
             version = version?.Trim();
             SemanticVersion semanticVersion = null;
@@ -151,7 +150,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The stack could not be found.</response>
         [HttpPost("{id:objectid}/add-link")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> AddLinkAsync(string id, [FromBody] string url) {
             if (String.IsNullOrWhiteSpace(url))
                 return BadRequest();
@@ -226,7 +224,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost("{ids:objectids}/mark-critical")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> MarkCriticalAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
@@ -275,7 +272,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost("{ids:objectids}/notifications")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> EnableNotificationsAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
@@ -325,7 +321,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete("{ids:objectids}/mark-fixed")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        [SwaggerResponse(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> MarkNotFixedAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
@@ -359,7 +355,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost("{ids:objectids}/mark-hidden")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        [SwaggerResponse(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> MarkHiddenAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
@@ -394,7 +390,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete("{ids:objectids}/mark-hidden")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        [SwaggerResponse(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> MarkNotHiddenAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
@@ -430,7 +426,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="501">"No promoted web hooks are configured for this project.</response>
         [HttpPost("{id:objectid}/promote")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> PromoteAsync(string id) {
             if (String.IsNullOrEmpty(id))
                 return NotFound();
@@ -471,7 +466,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="500">An error occurred while deleting one or more stacks.</response>
         [HttpDelete("{ids:objectids}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        [SwaggerResponse(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
@@ -503,7 +498,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
@@ -559,7 +553,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
@@ -589,7 +582,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByProjectAsync(string projectId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -619,7 +611,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet("new")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetNewAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
@@ -645,7 +636,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/new")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetNewByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
@@ -674,7 +664,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetNewByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -704,7 +693,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet("recent")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetRecentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
@@ -730,7 +718,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/recent")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetRecentByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
@@ -759,7 +746,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetRecentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -789,7 +775,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet("frequent")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetFrequentAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
@@ -815,7 +800,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/frequent")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetFrequentByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1,  int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
@@ -844,7 +828,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetFrequentByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -874,7 +857,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet("users")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetUsersAsync(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
@@ -900,7 +882,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks/users")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetUsersByOrganizationAsync(string organizationId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
@@ -929,7 +910,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/users")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Stack>))]
         public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetUsersByProjectAsync(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)

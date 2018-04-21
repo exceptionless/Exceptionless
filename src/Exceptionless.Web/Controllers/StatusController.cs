@@ -126,7 +126,6 @@ namespace Exceptionless.Web.Controllers {
         /// Returns the current system notification messages.
         /// </summary>
         [HttpGet("notifications/system")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(SystemNotification))]
         public async Task<ActionResult<SystemNotification>> GetSystemNotificationAsync() {
             var notification = await _cacheClient.GetAsync<SystemNotification>("system-notification");
             if (!notification.HasValue)

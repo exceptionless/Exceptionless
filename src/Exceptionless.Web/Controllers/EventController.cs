@@ -88,7 +88,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet("count")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<CountResult>))]
         public async Task<ActionResult<CountResult>> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
@@ -110,7 +109,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/count")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<CountResult>))]
         public async Task<ActionResult<CountResult>> GetCountByOrganizationAsync(string organizationId, string filter = null, string aggregations = null, string time = null, string offset = null) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
@@ -135,7 +133,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/count")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<CountResult>))]
         public async Task<ActionResult<CountResult>> GetCountByProjectAsync(string projectId, string filter = null, string aggregations = null, string time = null, string offset = null) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -164,7 +161,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view event occurrence due to plan limits.</response>
         [HttpGet("{id:objectid}", Name = "GetPersistentEventById")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(PersistentEvent))]
         public async Task<ActionResult<PersistentEvent>> GetByIdAsync(string id, string filter = null, string time = null, string offset = null) {
             var model = await GetModelAsync(id, false);
             if (model == null)
@@ -203,7 +199,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
@@ -267,7 +262,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
@@ -297,7 +291,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -331,7 +324,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByStackAsync(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var stack = await GetStackAsync(stackId);
             if (stack == null)
@@ -360,7 +352,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet("by-ref/{referenceId:identifier}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository);
             if (organizations.Count(o => !o.IsSuspended) == 0)
@@ -385,7 +376,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string projectId, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -417,7 +407,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet("sessions/{sessionId:identifier}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
@@ -445,7 +434,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -476,7 +464,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid filter.</response>
         [HttpGet("sessions")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionsAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
@@ -503,7 +490,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/sessions")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByOrganizationAsync(string organizationId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
@@ -533,7 +519,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -563,7 +548,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("by-ref/{referenceId:identifier}/user-description")]
         [HttpPost("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description")]
         [ConfigurationResponseFilter]
-        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(List<PersistentEvent>))]
+        [SwaggerResponse(StatusCodes.Status202Accepted)]
         public async Task<IActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
@@ -623,7 +608,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
         [HttpGet("session/heartbeat")]
-        [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> RecordHeartbeatAsync(string id = null, bool close = false) {
             if (Settings.Current.EventSubmissionDisabled || String.IsNullOrEmpty(id))
                 return Ok();
@@ -680,7 +664,6 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/api/v{apiVersion:int=2}/projects/{projectId:objectid}/events/submit")]
         [HttpGet("~/api/v{apiVersion:int=2}/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
         [ConfigurationResponseFilter]
-        [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetSubmitEventAsync(string projectId = null, int apiVersion = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
             var filteredParameters = parameters?.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty) && !_ignoredKeys.Contains(p.Key)).ToList();
             if (filteredParameters == null || filteredParameters.Count == 0)
@@ -926,7 +909,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="500">An error occurred while deleting one or more event occurrences.</response>
         [HttpDelete("{ids:objectids}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        [SwaggerResponse(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
