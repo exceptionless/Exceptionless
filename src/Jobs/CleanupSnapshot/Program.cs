@@ -13,12 +13,13 @@ namespace CleanupSnapshotJob {
         public static async Task<int> Main() {
             IServiceProvider serviceProvider = null;
             try {
+                serviceProvider = JobServiceProvider.GetServiceProvider();
+
                 if (!Settings.Current.EnableSnapshotJobs) {
                     Log.Logger.Information("Snapshot Jobs are currently disabled.");
                     return 0;
                 }
 
-                serviceProvider = JobServiceProvider.GetServiceProvider();
                 var job = serviceProvider.GetService<Exceptionless.Core.Jobs.Elastic.CleanupSnapshotJob>();
                 return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), runContinuous: false).RunInConsoleAsync();
             } catch (Exception ex) {

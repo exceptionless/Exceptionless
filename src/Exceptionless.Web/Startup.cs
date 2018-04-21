@@ -10,6 +10,7 @@ using Exceptionless.Api.Utility.Handlers;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
+using Joonasw.AspNetCore.SecurityHeaders;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -35,6 +36,29 @@ namespace Exceptionless.Api {
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
 
+            app.UseCsp(csp => { 
+                csp.ByDefaultAllow.FromSelf(); 
+                csp.AllowFonts.FromSelf() 
+                    .From("https://fonts.gstatic.com"); 
+                csp.AllowImages.FromSelf() 
+                    .From("data:"); 
+                csp.AllowScripts.FromSelf() 
+                    .AllowUnsafeInline(); 
+                csp.AllowStyles.FromSelf() 
+                    .AllowUnsafeInline() 
+                    .From("https://fonts.googleapis.com"); 
+            }); 
+            
+            app.Use(async (context, next) => {
+                context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+                context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+                context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+                context.Response.Headers.Add("X-Frame-Options", "DENY");
+                context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+                
+                await next();
+            });
+            
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
