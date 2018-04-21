@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Threading.Tasks;
 using AutoMapper;
-using Exceptionless.Api.Hubs;
-using Exceptionless.Api.Models;
-using Exceptionless.Api.Utility;
-using Exceptionless.Api.Utility.Handlers;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Web.Hubs;
+using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
+using Exceptionless.Web.Utility.Handlers;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +18,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Stripe;
 
-namespace Exceptionless.Api {
+namespace Exceptionless.Web {
     public class Bootstrapper {
         public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory) {
             container.AddSingleton<WebSocketConnectionManager>();

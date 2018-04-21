@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Web.Utility {
     public class JobsHostedService : IHostedService {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILoggerFactory _loggerFactory;

@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using Exceptionless.Api.Extensions;
-using Exceptionless.Api.Models;
-using Exceptionless.Api.Utility;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -19,6 +17,8 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
@@ -35,7 +35,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 #pragma warning disable 1998
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/organizations")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class OrganizationController : RepositoryApiController<IOrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {

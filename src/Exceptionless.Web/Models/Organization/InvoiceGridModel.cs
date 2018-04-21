@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class InvoiceGridModel {
         public string Id { get; set; }
         public DateTime Date { get; set; }

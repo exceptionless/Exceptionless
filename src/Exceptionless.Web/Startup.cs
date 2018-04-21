@@ -2,14 +2,14 @@
 using System.IO;
 using System.Security.Claims;
 using System.Threading;
-using Exceptionless.Api.Extensions;
-using Exceptionless.Api.Hubs;
-using Exceptionless.Api.Security;
-using Exceptionless.Api.Utility;
-using Exceptionless.Api.Utility.Handlers;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Web.Hubs;
+using Exceptionless.Web.Security;
+using Exceptionless.Web.Utility;
+using Exceptionless.Web.Utility.Handlers;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -22,7 +22,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 
-namespace Exceptionless.Api {
+namespace Exceptionless.Web {
     public class Startup {
         private readonly ILoggerFactory _loggerFactory;
 

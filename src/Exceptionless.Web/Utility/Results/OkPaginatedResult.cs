@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 
-namespace Exceptionless.Api.Utility.Results {
+namespace Exceptionless.Web.Utility.Results {
     public class OkPaginatedResult : ObjectWithHeadersResult {
         public OkPaginatedResult(object content, bool hasMore, int page, long? total = null, IHeaderDictionary headers = null) : base(content, headers) {
             StatusCode = StatusCodes.Status200OK;

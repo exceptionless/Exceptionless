@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Exceptionless.Api.Utility.Results {
+namespace Exceptionless.Web.Utility.Results {
     internal class MessageContent {
         public MessageContent(string message) : this(null, message) {}
 

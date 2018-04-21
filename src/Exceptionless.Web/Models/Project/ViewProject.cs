@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Models;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class ViewProject : IIdentity, IData, IHaveCreatedDate {
         public string Id { get; set; }
         public DateTime CreatedUtc { get; set; }

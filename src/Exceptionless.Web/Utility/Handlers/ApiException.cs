@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 
-namespace Exceptionless.Api.Utility.Handlers {
+namespace Exceptionless.Web.Utility.Handlers {
     public class ApiException : Exception {
         public ApiException(string message, int statusCode = StatusCodes.Status500InternalServerError, ICollection<ApiErrorItem> errors = null) : base(message) {
             StatusCode = statusCode;

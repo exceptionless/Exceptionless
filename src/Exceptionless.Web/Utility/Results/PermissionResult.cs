@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.AspNetCore.Http;
 
-namespace Exceptionless.Api.Utility.Results {
+namespace Exceptionless.Web.Utility.Results {
     public class PermissionResult {
         public bool Allowed { get; set; }
         public string Id { get; set; }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class UpdateEvent {
         public string EmailAddress { get; set; }
         public string Description { get; set; }

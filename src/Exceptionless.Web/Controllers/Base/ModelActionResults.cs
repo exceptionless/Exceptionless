@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     public class ModelActionResults: WorkInProgressResult {
         public ModelActionResults() {
             Success = new List<string>();

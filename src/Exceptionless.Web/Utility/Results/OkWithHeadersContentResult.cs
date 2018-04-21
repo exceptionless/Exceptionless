@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Exceptionless.Api.Utility.Results {
+namespace Exceptionless.Web.Utility.Results {
     public class OkWithHeadersContentResult<T> : ObjectWithHeadersResult {
         public OkWithHeadersContentResult(T content, IHeaderDictionary headers = null) : base(content, headers) {
             StatusCode = StatusCodes.Status200OK;
