@@ -43,7 +43,6 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="404">The project could not be found.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<WebHook>))]
         public async Task<ActionResult<IReadOnlyCollection<WebHook>>> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -62,7 +61,6 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="404">The web hook could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetWebHookById")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(WebHook))]
         public Task<ActionResult<WebHook>> GetByIdAsync(string id) {
             return GetByIdImplAsync(id);
         }
@@ -90,7 +88,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="500">An error occurred while deleting one or more web hooks.</response>
         [HttpDelete("{ids:objectids}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        [SwaggerResponse(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }

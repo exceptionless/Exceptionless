@@ -44,7 +44,6 @@ namespace Exceptionless.Web.Controllers {
         /// </summary>
         /// <response code="404">The current user could not be found.</response>
         [HttpGet("me")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewCurrentUser))]
         public async Task<ActionResult<ViewUser>> GetCurrentUserAsync() {
             var currentUser = await GetModelAsync(CurrentUser.Id);
             if (currentUser == null)
@@ -59,7 +58,6 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="id">The identifier of the user.</param>
         /// <response code="404">The user could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetUserById")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewUser))]
         public Task<ActionResult<ViewUser>> GetByIdAsync(string id) {
             return GetByIdImplAsync(id);
         }
@@ -72,7 +70,6 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <response code="404">The organization could not be found.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/users")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewUser>))]
         public async Task<ActionResult<IReadOnlyCollection<ViewUser>>> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
@@ -112,7 +109,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The user could not be found.</response>
         [HttpPatch("{id:objectid}")]
         [HttpPut("{id:objectid}")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewUser))]
         public Task<ActionResult<ViewUser>> PatchAsync(string id, Delta<UpdateUser> changes) {
             return PatchImplAsync(id, changes);
         }
@@ -122,7 +118,7 @@ namespace Exceptionless.Web.Controllers {
         /// </summary>
         /// <response code="404">The current user could not be found.</response>
         [HttpDelete("me")]
-        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        [SwaggerResponse(StatusCodes.Status202Accepted))]
         public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync() {
             return DeleteImplAsync(new [] { CurrentUser.Id });
         }
@@ -137,7 +133,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="500">An error occurred while deleting one or more users.</response>
         [HttpDelete("{ids:objectids}")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        [SwaggerResponse(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
@@ -150,7 +146,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">An error occurred while updating the users email address.</response>
         /// <response code="404">The user could not be found.</response>
         [HttpPost("{id:objectid}/email-address/{email:minlength(1)}")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(UpdateEmailAddressResult))]
         public async Task<ActionResult<UpdateEmailAddressResult>> UpdateEmailAddressAsync(string id, string email) {
             var user = await GetModelAsync(id, false);
             if (user == null)
@@ -202,7 +197,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Verify Email Address Token has expired.</response>
         /// <response code="404">The user could not be found.</response>
         [HttpGet("verify-email-address/{token:token}")]
-        [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> VerifyAsync(string token) {
             var user = await _repository.GetByVerifyEmailAddressTokenAsync(token);
             if (user == null) {
@@ -228,7 +222,6 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="id">The identifier of the user.</param>
         /// <response code="404">The user could not be found.</response>
         [HttpGet("{id:objectid}/resend-verification-email")]
-        [SwaggerResponse(StatusCodes.Status200OK)]
         public async Task<IActionResult> ResendVerificationEmailAsync(string id) {
             var user = await GetModelAsync(id, false);
             if (user == null)

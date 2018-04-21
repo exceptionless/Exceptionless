@@ -66,7 +66,6 @@ namespace Exceptionless.Web.Controllers {
         /// </summary>
         /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         [HttpGet]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewOrganization>))]
         public async Task<ActionResult<ViewOrganization>> GetAsync(string mode = null) {
             var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
             var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations, true);
@@ -106,7 +105,6 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         /// <response code="404">The organization could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetOrganizationById")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewOrganization))]
         public async Task<ActionResult<ViewOrganization>> GetByIdAsync(string id, string mode = null) {
             var organization = await GetModelAsync(id);
             if (organization == null)
@@ -127,7 +125,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">An error occurred while creating the organization.</response>
         /// <response code="409">The organization already exists.</response>
         [HttpPost]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewOrganization))]
         public Task<ActionResult<ViewOrganization>> PostAsync(NewOrganization organization) {
             return PostImplAsync(organization);
         }
@@ -156,7 +153,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="500">An error occurred while deleting one or more organizations.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
+        [SwaggerResponse(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
@@ -170,7 +167,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The invoice was not found.</response>
         [HttpGet]
         [Route("invoice/{id:minlength(10)}")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(Invoice))]
         public async Task<ActionResult<Invoice>> GetInvoiceAsync(string id) {
             if (!Settings.Current.EnableBilling)
                 return NotFound();
@@ -243,7 +239,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The organization was not found.</response>
         [HttpGet]
         [Route("{id:objectid}/invoices")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<Invoice>))]
         public async Task<ActionResult<IReadOnlyCollection<Invoice>>> GetInvoicesAsync(string id, string before = null, string after = null, int limit = 12) {
             if (!Settings.Current.EnableBilling)
                 return NotFound();
@@ -277,7 +272,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The organization was not found.</response>
         [HttpGet]
         [Route("{id:objectid}/plans")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<BillingPlan>))]
         public async Task<ActionResult<IReadOnlyCollection<BillingPlan>>> GetPlansAsync(string id) {
             var organization = await GetModelAsync(id);
             if (organization == null)
@@ -322,7 +316,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The organization was not found.</response>
         [HttpPost]
         [Route("{id:objectid}/change-plan")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ChangePlanResult))]
         public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 return NotFound();
@@ -438,7 +431,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Please upgrade your plan to add an additional user.</response>
         [HttpPost]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(User))]
         public async Task<ActionResult<User>> AddUserAsync(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return NotFound();

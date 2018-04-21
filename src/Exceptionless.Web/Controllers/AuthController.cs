@@ -70,7 +70,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="401">Login failed.</response>
         [AllowAnonymous]
         [HttpPost("login")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public async Task<ActionResult<TokenResult>> LoginAsync(LoginModel model) {
             string email = model?.Email?.Trim().ToLowerInvariant();
             using (_logger.BeginScope(new ExceptionlessState().Tag("Login").Identity(email).SetHttpContext(HttpContext))) {
@@ -181,7 +180,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="401">Sign up failed.</response>
         [AllowAnonymous]
         [HttpPost("signup")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public async Task<ActionResult<TokenResult>> SignupAsync(SignupModel model) {
             bool valid = await IsAccountCreationEnabledAsync(model?.InviteToken);
             if (!valid)
@@ -272,7 +270,6 @@ namespace Exceptionless.Web.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
         [HttpPost("github")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public Task<ActionResult<TokenResult>> GitHubAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
                 Settings.Current.GitHubAppId,
@@ -287,7 +284,6 @@ namespace Exceptionless.Web.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
         [HttpPost("google")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public Task<ActionResult<TokenResult>> GoogleAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
                 Settings.Current.GoogleAppId,
@@ -302,7 +298,6 @@ namespace Exceptionless.Web.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
         [HttpPost("facebook")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public Task<ActionResult<TokenResult>> FacebookAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
                 Settings.Current.FacebookAppId,
@@ -317,7 +312,6 @@ namespace Exceptionless.Web.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
         [HttpPost("live")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public Task<ActionResult<TokenResult>> LiveAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
                 Settings.Current.MicrosoftAppId,
@@ -338,7 +332,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="500">An error while saving the user account.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("unlink/{providerName:minlength(1)}")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public async Task<ActionResult<TokenResult>> RemoveExternalLoginAsync(string providerName, [FromBody] string providerUserId) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(providerName).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Provider User Id", providerUserId).SetHttpContext(HttpContext))) {
                 if (String.IsNullOrWhiteSpace(providerName) || String.IsNullOrWhiteSpace(providerUserId)) {
@@ -372,7 +365,6 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="model">The change password model.</param>
         /// <response code="400">Invalid change password model.</response>
         [HttpPost("change-password")]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
         public async Task<ActionResult<TokenResult>> ChangePasswordAsync(ChangePasswordModel model) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("Change Password").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Password Length", model?.Password?.Length ?? 0).SetHttpContext(HttpContext))) {
                 if (model == null || !PasswordMeetsRequirements(model.Password)) {
