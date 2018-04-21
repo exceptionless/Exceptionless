@@ -24,7 +24,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/projects")]
@@ -120,7 +119,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="409">The project already exists.</response>
         [HttpPost]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
         public Task<ActionResult<ViewProject>> PostAsync(NewProject project) {
             return PostImplAsync(project);
         }
@@ -149,7 +148,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="500">An error occurred while deleting one or more projects.</response>
         [HttpDelete("{ids:objectids}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
@@ -237,7 +236,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpGet("{id:objectid}/reset-data")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted))]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> ResetDataAsync(string id) {
             var project = await GetModelAsync(id);
             if (project == null)
@@ -450,7 +449,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("check-name")]
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects/check-name")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
         public async Task<IActionResult> IsNameAvailableAsync(string name, string organizationId = null) {
             if (await IsProjectNameAvailableInternalAsync(organizationId, name))
                 return StatusCode(StatusCodes.Status204NoContent);

@@ -3,9 +3,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Queries.Validation;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Web.Controllers {
     [ApiExplorerSettings(IgnoreApi = true)]

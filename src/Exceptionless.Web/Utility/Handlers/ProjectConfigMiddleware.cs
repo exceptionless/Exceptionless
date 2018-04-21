@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Web.Extensions;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Foundatio.Repositories;
 using Foundatio.Serializer;
