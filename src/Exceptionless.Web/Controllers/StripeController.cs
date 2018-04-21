@@ -5,6 +5,7 @@ using Exceptionless.Core.Billing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using Stripe;
 #pragma warning disable 1998
 
@@ -23,27 +24,30 @@ namespace Exceptionless.Api.Controllers {
 
         [AllowAnonymous]
         [HttpPost]
-        public async Task<IActionResult> PostAsync([FromBody] string json) {
-            if (String.IsNullOrEmpty(json))
-                return Ok();
+        public async Task<IActionResult> PostAsync([FromBody] JObject data) {
+            using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext).Property("event", data))) {
+                string json = data?.ToString();
+                if (String.IsNullOrEmpty(json)) {
+                    _logger.LogWarning("Unable to get json of incoming event.");
+                    return BadRequest();
+                }
 
-            if (!Request.Headers.TryGetValue("Stripe-Signature", out var signature) || String.IsNullOrEmpty(signature))
-                return Ok();
+                if (!Request.Headers.TryGetValue("Stripe-Signature", out var signature) || String.IsNullOrEmpty(signature)) {
+                    _logger.LogWarning("No Stripe-Signature header was sent with incoming event.");
+                    return BadRequest();
+                }
 
-            using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext))) {
                 StripeEvent stripeEvent;
                 try {
                     stripeEvent = StripeEventUtility.ConstructEvent(json, signature, Settings.Current.StripeWebHookSigningSecret);
                 } catch (Exception ex) {
-                    using (_logger.BeginScope(new ExceptionlessState().Property("event", json)))
-                        _logger.LogError(ex, "Unable to parse incoming event: {Message}", ex.Message);
-
-                    return BadRequest("Unable to parse incoming event");
+                    _logger.LogError(ex, "Unable to parse incoming event: {Message}", ex.Message);
+                    return BadRequest();
                 }
 
                 if (stripeEvent == null) {
                     _logger.LogWarning("Null stripe event.");
-                    return BadRequest("Incoming event empty");
+                    return BadRequest();
                 }
 
                 await _stripeEventHandler.HandleEventAsync(stripeEvent);
