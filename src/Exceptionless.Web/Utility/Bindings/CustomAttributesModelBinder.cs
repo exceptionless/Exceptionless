@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Web.Utility {
     public class CustomAttributesModelBinder : IModelBinder {
         private readonly SimpleTypeModelBinder _simpleModelBinder;
 

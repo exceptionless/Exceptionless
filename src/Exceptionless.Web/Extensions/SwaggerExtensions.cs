@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Exceptionless.Api.Extensions {
+namespace Exceptionless.Web.Extensions {
     public static class SwaggerExtensions {
         /// <summary>
         /// Matches /api/{version}/ url's (where {version} = v1 or v2) to their matching swagger specification, 

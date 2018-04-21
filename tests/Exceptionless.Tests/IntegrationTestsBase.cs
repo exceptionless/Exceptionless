@@ -10,10 +10,9 @@ using Foundatio.Serializer;
 using Xunit.Abstractions;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Exceptionless.Api;
+using Exceptionless.Web;
 
-namespace Exceptionless.Tests
-{
+namespace Exceptionless.Tests {
     public class IntegrationTestsBase : TestBase {
         protected readonly ExceptionlessElasticConfiguration _configuration;
         protected readonly TestServer _server;

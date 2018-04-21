@@ -3,7 +3,7 @@ using System.Diagnostics;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Utility;
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     [DebuggerDisplay("Range: {Range} Offset: {Offset} Field: {Field}")]
     public class TimeInfo {
         public string Field { get; set; }

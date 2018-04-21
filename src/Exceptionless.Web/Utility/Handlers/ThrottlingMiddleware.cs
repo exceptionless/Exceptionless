@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Api.Extensions;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Http;
 
-namespace Exceptionless.Api.Utility.Handlers {
+namespace Exceptionless.Web.Utility.Handlers {
     public class ThrottlingOptions {
         public Func<string, long> MaxRequestsForUserIdentifierFunc { get; set; }
         public TimeSpan Period { get; set; }

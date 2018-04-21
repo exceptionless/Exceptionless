@@ -4,9 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using Exceptionless.Api.Extensions;
-using Exceptionless.Api.Models;
-using Exceptionless.Api.Utility;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -21,6 +19,8 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Queues;
@@ -35,7 +35,7 @@ using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/events")]
     [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, PersistentEvent, UpdateEvent> {

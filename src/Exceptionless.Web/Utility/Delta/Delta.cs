@@ -11,7 +11,7 @@ using Exceptionless.Core.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Web.Utility {
     /// <summary>
     /// A class the tracks changes (i.e. the Delta) for a particular <typeparamref name="TEntityType" />.
     /// </summary>

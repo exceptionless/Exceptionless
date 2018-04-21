@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Api.Models;
+using Exceptionless.Web.Models;
 using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Core;

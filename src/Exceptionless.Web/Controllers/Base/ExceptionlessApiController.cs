@@ -2,21 +2,21 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Api.Extensions;
-using Exceptionless.Api.Security;
-using Exceptionless.Api.Utility;
-using Exceptionless.Api.Utility.Results;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Web.Security;
+using Exceptionless.Web.Utility;
+using Exceptionless.Web.Utility.Results;
 using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     [RequireHttpsExceptLocal]
     public abstract class ExceptionlessApiController : Controller {
         public const string API_PREFIX = "api/v2";

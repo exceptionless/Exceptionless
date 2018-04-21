@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Exceptionless.Api.Security {
+namespace Exceptionless.Web.Security {
     public sealed class RequireHttpsExceptLocalAttribute : RequireHttpsAttribute {
         public RequireHttpsExceptLocalAttribute() {
             IgnoreLocalRequests = true;

@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Api.Extensions;
-using Exceptionless.Api.Models;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Authorization;
@@ -11,6 +10,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Web.Models;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Repositories;
@@ -27,7 +27,7 @@ using OAuth2.Infrastructure;
 using OAuth2.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/auth")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class AuthController : ExceptionlessApiController {

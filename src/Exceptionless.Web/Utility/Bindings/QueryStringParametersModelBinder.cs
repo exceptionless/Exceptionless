@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Web.Utility {
     public class QueryStringParametersModelBinder : IModelBinder {
         private readonly SimpleTypeModelBinder _simpleModelBinder;
 

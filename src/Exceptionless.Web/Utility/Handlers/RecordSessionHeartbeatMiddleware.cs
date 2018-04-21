@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Api.Extensions;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
@@ -11,7 +11,7 @@ using Foundatio.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Web.Utility {
     public sealed class RecordSessionHeartbeatMiddleware {
         private readonly IProjectRepository _projectRepository;
         private readonly ITextSerializer _serializer;

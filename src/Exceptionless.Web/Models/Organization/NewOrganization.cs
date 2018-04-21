@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class NewOrganization {
         public string Name { get; set; }
     }

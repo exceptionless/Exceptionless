@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Primitives;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Web.Utility {
     public class DelimitedQueryStringValueProvider : QueryStringValueProvider {
         private readonly CultureInfo _culture;
         private readonly char[] _delimiters;

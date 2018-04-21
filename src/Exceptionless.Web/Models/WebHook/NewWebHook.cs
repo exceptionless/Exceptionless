@@ -1,7 +1,7 @@
 ﻿using System;
 using Exceptionless.Core.Models;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class NewWebHook : IOwnedByOrganizationAndProject {
         public string OrganizationId { get; set; }
         public string ProjectId { get; set; }

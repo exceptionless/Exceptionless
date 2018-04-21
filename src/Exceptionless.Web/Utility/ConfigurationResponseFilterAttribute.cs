@@ -1,10 +1,10 @@
 ﻿using System;
-using Exceptionless.Api.Extensions;
+using Exceptionless.Web.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Web.Utility {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class ConfigurationResponseFilterAttribute : ActionFilterAttribute {
         public override void OnActionExecuted(ActionExecutedContext context) {

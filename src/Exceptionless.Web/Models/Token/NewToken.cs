@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Models;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class NewToken : IOwnedByOrganizationAndProject {
         public NewToken() {
             Scopes = new HashSet<string>();

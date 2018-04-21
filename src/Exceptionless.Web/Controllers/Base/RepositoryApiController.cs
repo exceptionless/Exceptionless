@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using Exceptionless.Api.Extensions;
-using Exceptionless.Api.Utility;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
+using Exceptionless.Web.Utility;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging;
 
 #pragma warning disable 1998
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : ISearchableRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
         public RepositoryApiController(TRepository repository, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {}
 
