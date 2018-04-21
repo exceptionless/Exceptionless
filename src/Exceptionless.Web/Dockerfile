@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:2.1-runtime-deps
+FROM microsoft/dotnet:2.1-runtime
 LABEL Author="Exceptionless"
 COPY published/ .
 
