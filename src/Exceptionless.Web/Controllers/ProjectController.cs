@@ -55,7 +55,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewProject>))]
-        public async Task<IActionResult> GetAsync(int page = 1, int limit = 10, string mode = null) {
+        public async Task<ActionResult<ViewProject>> GetAsync(int page = 1, int limit = 10, string mode = null) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), o => o.PageNumber(page).PageLimit(limit));
@@ -78,7 +78,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewProject>))]
-        public async Task<IActionResult> GetByOrganizationAsync(string organization, int page = 1, int limit = 10, string mode = null) {
+        public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetByOrganizationAsync(string organization, int page = 1, int limit = 10, string mode = null) {
             if (String.IsNullOrEmpty(organization) || !CanAccessOrganization(organization))
                 return NotFound();
 
@@ -102,7 +102,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("{id:objectid}", Name = "GetProjectById")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewProject))]
-        public async Task<IActionResult> GetByIdAsync(string id, string mode = null) {
+        public async Task<ActionResult<ViewProject>> GetByIdAsync(string id, string mode = null) {
             var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
@@ -124,7 +124,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status201Created, Type = typeof(ViewProject))]
-        public Task<IActionResult> PostAsync(NewProject project) {
+        public Task<ActionResult<ViewProject>> PostAsync(NewProject project) {
             return PostImplAsync(project);
         }
 
@@ -139,7 +139,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPut("{id:objectid}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewProject))]
-        public Task<IActionResult> PatchAsync(string id, Delta<UpdateProject> changes) {
+        public Task<ActionResult<ViewProject>> PatchAsync(string id, Delta<UpdateProject> changes) {
             return PatchImplAsync(id, changes);
         }
 
@@ -154,7 +154,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpDelete("{ids:objectids}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
-        public Task<IActionResult> DeleteAsync(string ids) {
+        public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
 
@@ -171,7 +171,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("{id:objectid}/config")]
         [HttpGet("~/api/v1/project/config")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ClientConfiguration))]
-        public async Task<IActionResult> GetConfigAsync(string id = null, int? v = null) {
+        public async Task<ActionResult<ClientConfiguration>> GetConfigAsync(string id = null, int? v = null) {
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();
 
@@ -245,7 +245,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("{id:objectid}/reset-data")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
-        public async Task<IActionResult> ResetDataAsync(string id) {
+        public async Task<ActionResult<WorkInProgressResult>> ResetDataAsync(string id) {
             var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
@@ -262,7 +262,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("{id:objectid}/notifications")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IActionResult> GetNotificationSettingsAsync(string id) {
+        public async Task<ActionResult<IDictionary<string, NotificationSettings>>> GetNotificationSettingsAsync(string id) {
             var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
@@ -279,7 +279,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(NotificationSettings))]
-        public async Task<IActionResult> GetNotificationSettingsAsync(string id, string userId) {
+        public async Task<ActionResult<NotificationSettings>> GetNotificationSettingsAsync(string id, string userId) {
             var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
@@ -301,7 +301,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("{id:objectid}/{integration:minlength(1)}/notifications")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(NotificationSettings))]
-        public async Task<IActionResult> GetIntegrationNotificationSettingsAsync(string id, string integration) {
+        public async Task<ActionResult<NotificationSettings>> GetIntegrationNotificationSettingsAsync(string id, string integration) {
             var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();

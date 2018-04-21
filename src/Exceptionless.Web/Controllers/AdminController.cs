@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
@@ -42,12 +43,12 @@ namespace Exceptionless.Web.Controllers {
         }
 
         [HttpGet("settings")]
-        public IActionResult SettingsRequest() {
+        public ActionResult<Settings> SettingsRequest() {
             return Ok(JsonConvert.SerializeObject(Settings.Current, Formatting.Indented));
         }
 
         [HttpGet("assemblies")]
-        public IActionResult Assemblies() {
+        public ActionResult<IReadOnlyCollection<AssemblyDetail>> Assemblies() {
             var details = AssemblyDetail.ExtractAll();
             return Ok(details);
         }

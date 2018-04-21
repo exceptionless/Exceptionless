@@ -27,7 +27,7 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="query">The query you wish to validate.</param>
         [HttpGet("search/validate")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(QueryValidator.QueryProcessResult))]
-        public async Task<IActionResult> ValidateAsync(string query) {
+        public async Task<ActionResult<QueryValidator.QueryProcessResult>> ValidateAsync(string query) {
             return Ok(await _validator.ValidateQueryAsync(query));
         }
     }

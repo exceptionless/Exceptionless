@@ -21,7 +21,7 @@ namespace Exceptionless.Web.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : ISearchableRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
         public RepositoryApiController(TRepository repository, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {}
 
-        protected async Task<IActionResult> PostImplAsync(TNewModel value) {
+        protected async Task<ActionResult<TViewModel>> PostImplAsync(TNewModel value) {
             if (value == null)
                 return BadRequest();
 
@@ -45,7 +45,7 @@ namespace Exceptionless.Web.Controllers {
             return Created(new Uri(GetEntityLink(model.Id)), await MapAsync<TViewModel>(model, true));
         }
 
-        protected async Task<IActionResult> UpdateModelAsync(string id, Func<TModel, Task<TModel>> modelUpdateFunc) {
+        protected async Task<ActionResult<TViewModel>> UpdateModelAsync(string id, Func<TModel, Task<TModel>> modelUpdateFunc) {
             var model = await GetModelAsync(id);
             if (model == null)
                 return NotFound();
@@ -62,7 +62,7 @@ namespace Exceptionless.Web.Controllers {
             return Ok(await MapAsync<TViewModel>(model, true));
         }
 
-        protected async Task<IActionResult> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc) {
+        protected async Task<ActionResult<TViewModel>> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc) {
             var models = await GetModelsAsync(ids, false);
             if (models == null || models.Count == 0)
                 return NotFound();
@@ -128,7 +128,7 @@ namespace Exceptionless.Web.Controllers {
             return Task.FromResult(value);
         }
 
-        protected async Task<IActionResult> PatchImplAsync(string id, Delta<TUpdateModel> changes) {
+        protected async Task<ActionResult<TViewModel>> PatchImplAsync(string id, Delta<TUpdateModel> changes) {
             var original = await GetModelAsync(id, false);
             if (original == null)
                 return NotFound();
@@ -170,7 +170,7 @@ namespace Exceptionless.Web.Controllers {
             return Task.FromResult(value);
         }
 
-        protected async Task<IActionResult> DeleteImplAsync(string[] ids) {
+        protected async Task<ActionResult<WorkInProgressResult>> DeleteImplAsync(string[] ids) {
             var items = await GetModelsAsync(ids, false);
             if (items.Count == 0)
                 return NotFound();

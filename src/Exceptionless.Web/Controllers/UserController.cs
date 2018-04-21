@@ -45,7 +45,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The current user could not be found.</response>
         [HttpGet("me")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewCurrentUser))]
-        public async Task<IActionResult> GetCurrentUserAsync() {
+        public async Task<ActionResult<ViewUser>> GetCurrentUserAsync() {
             var currentUser = await GetModelAsync(CurrentUser.Id);
             if (currentUser == null)
                 return NotFound();
@@ -60,7 +60,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The user could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetUserById")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewUser))]
-        public Task<IActionResult> GetByIdAsync(string id) {
+        public Task<ActionResult<ViewUser>> GetByIdAsync(string id) {
             return GetByIdImplAsync(id);
         }
 
@@ -73,7 +73,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The organization could not be found.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/users")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewUser>))]
-        public async Task<IActionResult> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
+        public async Task<ActionResult<IReadOnlyCollection<ViewUser>>> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
@@ -113,7 +113,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPatch("{id:objectid}")]
         [HttpPut("{id:objectid}")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewUser))]
-        public Task<IActionResult> PatchAsync(string id, Delta<UpdateUser> changes) {
+        public Task<ActionResult<ViewUser>> PatchAsync(string id, Delta<UpdateUser> changes) {
             return PatchImplAsync(id, changes);
         }
 
@@ -123,7 +123,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The current user could not be found.</response>
         [HttpDelete("me")]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
-        public Task<IActionResult> DeleteCurrentUserAsync() {
+        public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync() {
             return DeleteImplAsync(new [] { CurrentUser.Id });
         }
 
@@ -138,7 +138,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpDelete("{ids:objectids}")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
-        public Task<IActionResult> DeleteAsync(string ids) {
+        public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
 
@@ -151,7 +151,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The user could not be found.</response>
         [HttpPost("{id:objectid}/email-address/{email:minlength(1)}")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(UpdateEmailAddressResult))]
-        public async Task<IActionResult> UpdateEmailAddressAsync(string id, string email) {
+        public async Task<ActionResult<UpdateEmailAddressResult>> UpdateEmailAddressAsync(string id, string email) {
             var user = await GetModelAsync(id, false);
             if (user == null)
                 return NotFound();

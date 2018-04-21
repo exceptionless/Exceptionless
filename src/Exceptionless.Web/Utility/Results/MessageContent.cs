@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace Exceptionless.Web.Utility.Results {
-    internal class MessageContent {
+    public class MessageContent {
         public MessageContent(string message) : this(null, message) {}
 
         public MessageContent(string id, string message) {

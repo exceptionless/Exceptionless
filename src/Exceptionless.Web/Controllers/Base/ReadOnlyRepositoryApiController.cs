@@ -31,7 +31,7 @@ namespace Exceptionless.Web.Controllers {
             _logger = loggerFactory.CreateLogger(GetType());
         }
 
-        protected async Task<IActionResult> GetByIdImplAsync(string id) {
+        protected async Task<ActionResult<TViewModel>> GetByIdImplAsync(string id) {
             var model = await GetModelAsync(id);
             if (model == null)
                 return NotFound();
@@ -39,7 +39,7 @@ namespace Exceptionless.Web.Controllers {
             return await OkModelAsync(model);
         }
 
-        protected async Task<IActionResult> GetCountImplAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string aggregations = null) {
+        protected async Task<ActionResult<CountResult>> GetCountImplAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string aggregations = null) {
             var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
@@ -67,7 +67,7 @@ namespace Exceptionless.Web.Controllers {
             return Ok(result);
         }
 
-        protected async Task<IActionResult> OkModelAsync(TModel model) {
+        protected async Task<ActionResult<TViewModel>> OkModelAsync(TModel model) {
             return Ok(await MapAsync<TViewModel>(model, true));
         }
 

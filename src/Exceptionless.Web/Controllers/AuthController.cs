@@ -71,7 +71,7 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("login")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public async Task<IActionResult> LoginAsync(LoginModel model) {
+        public async Task<ActionResult<TokenResult>> LoginAsync(LoginModel model) {
             string email = model?.Email?.Trim().ToLowerInvariant();
             using (_logger.BeginScope(new ExceptionlessState().Tag("Login").Identity(email).SetHttpContext(HttpContext))) {
                 if (String.IsNullOrEmpty(email)) {
@@ -182,7 +182,7 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("signup")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public async Task<IActionResult> SignupAsync(SignupModel model) {
+        public async Task<ActionResult<TokenResult>> SignupAsync(SignupModel model) {
             bool valid = await IsAccountCreationEnabledAsync(model?.InviteToken);
             if (!valid)
                 return BadRequest("Account Creation is currently disabled.");
@@ -273,7 +273,7 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("github")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> GitHubAsync(JObject value) {
+        public Task<ActionResult<TokenResult>> GitHubAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
                 Settings.Current.GitHubAppId,
                 Settings.Current.GitHubAppSecret,
@@ -288,7 +288,7 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("google")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> GoogleAsync(JObject value) {
+        public Task<ActionResult<TokenResult>> GoogleAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
                 Settings.Current.GoogleAppId,
                 Settings.Current.GoogleAppSecret,
@@ -303,7 +303,7 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("facebook")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> FacebookAsync(JObject value) {
+        public Task<ActionResult<TokenResult>> FacebookAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
                 Settings.Current.FacebookAppId,
                 Settings.Current.FacebookAppSecret,
@@ -318,7 +318,7 @@ namespace Exceptionless.Web.Controllers {
         [AllowAnonymous]
         [HttpPost("live")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public Task<IActionResult> LiveAsync(JObject value) {
+        public Task<ActionResult<TokenResult>> LiveAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
                 Settings.Current.MicrosoftAppId,
                 Settings.Current.MicrosoftAppSecret,
@@ -339,7 +339,7 @@ namespace Exceptionless.Web.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("unlink/{providerName:minlength(1)}")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public async Task<IActionResult> RemoveExternalLoginAsync(string providerName, [FromBody] string providerUserId) {
+        public async Task<ActionResult<TokenResult>> RemoveExternalLoginAsync(string providerName, [FromBody] string providerUserId) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(providerName).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Provider User Id", providerUserId).SetHttpContext(HttpContext))) {
                 if (String.IsNullOrWhiteSpace(providerName) || String.IsNullOrWhiteSpace(providerUserId)) {
                     _logger.LogError("Remove external login failed for {EmailAddress}: Invalid Provider Name or Provider User Id.", CurrentUser.EmailAddress);
@@ -373,7 +373,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid change password model.</response>
         [HttpPost("change-password")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(TokenResult))]
-        public async Task<IActionResult> ChangePasswordAsync(ChangePasswordModel model) {
+        public async Task<ActionResult<TokenResult>> ChangePasswordAsync(ChangePasswordModel model) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("Change Password").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Password Length", model?.Password?.Length ?? 0).SetHttpContext(HttpContext))) {
                 if (model == null || !PasswordMeetsRequirements(model.Password)) {
                     _logger.LogError("Change password failed for {EmailAddress}: The New Password must be at least 6 characters long.", CurrentUser.EmailAddress);
@@ -570,7 +570,7 @@ namespace Exceptionless.Web.Controllers {
             _isFirstUserChecked = true;
         }
 
-        private async Task<IActionResult> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, string appId, string appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client {
+        private async Task<ActionResult<TokenResult>> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, string appId, string appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client {
             using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").Property("Auth Info", authInfo).SetHttpContext(HttpContext))) {
                 if (String.IsNullOrEmpty(authInfo?.Code)) {
                     _logger.LogError("External login failed: Unable to get auth info.");
