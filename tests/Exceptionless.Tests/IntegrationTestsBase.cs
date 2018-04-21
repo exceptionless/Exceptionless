@@ -23,7 +23,7 @@ namespace Exceptionless.Tests
 
         public IntegrationTestsBase(ITestOutputHelper output) : base(output) {
             var builder = new MvcWebApplicationBuilder<Startup>()
-                .UseSolutionRelativeContentRoot("src/Exceptionless.Api")
+                .UseSolutionRelativeContentRoot("src/Exceptionless.Web")
                 .ConfigureBeforeStartup(Configure)
                 .ConfigureAfterStartup(RegisterServices)
                 .UseApplicationAssemblies();

@@ -58,10 +58,7 @@ namespace Exceptionless.Tests.Utility
                     "tests run.");
             }
 
-            //ApplicationAssemblies.AddRange(DefaultAssemblyPartDiscoveryProvider
-            //    .DiscoverAssemblyParts(typeof(TStartup).Assembly.GetName().Name)
-            //    .Select(s => ((AssemblyPart)s).Assembly)
-            //    .ToList());
+            ApplicationAssemblies.AddRange(new[] { typeof(Web.Program).Assembly });
 
             return this;
         }
