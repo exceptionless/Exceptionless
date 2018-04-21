@@ -42,7 +42,7 @@ namespace Exceptionless.Web.Controllers {
         protected virtual TimeInfo GetTimeInfo(string time, string offset, DateTime? minimumUtcStartDate = null) {
             string field = DefaultDateField;
             if (!String.IsNullOrEmpty(time) && time.Contains("|")) {
-                var parts = time.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] parts = time.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
                 field = parts.Length > 0 && AllowedDateFields.Contains(parts[0]) ? parts[0] : DefaultDateField;
                 time = parts.Length > 1 ? parts[1] : null;
             }
@@ -164,7 +164,7 @@ namespace Exceptionless.Web.Controllers {
             return StatusCode(statusCode, new MessageContent(message, reason));
         }
 
-        protected ObjectResult WorkInProgress(IEnumerable<string> workers) {
+        protected ActionResult<WorkInProgressResult> WorkInProgress(IEnumerable<string> workers) {
             return StatusCode(StatusCodes.Status202Accepted, new WorkInProgressResult(workers));
             }
 
@@ -186,7 +186,7 @@ namespace Exceptionless.Web.Controllers {
 
         protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string[] links) {
             var headers = new HeaderDictionary();
-            var linksToAdd = links.Where(l => l != null).ToArray();
+            string[] linksToAdd = links.Where(l => l != null).ToArray();
             if (linksToAdd.Length > 0)
                 headers.Add("Link", linksToAdd);
 

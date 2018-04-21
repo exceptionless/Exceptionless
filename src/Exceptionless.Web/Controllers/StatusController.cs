@@ -116,7 +116,7 @@ namespace Exceptionless.Web.Controllers {
 
         [HttpPost("notifications/release")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-        public async Task<IActionResult> PostReleaseNotificationAsync([FromBody] string message = null, bool critical = false) {
+        public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync([FromBody] string message = null, bool critical = false) {
             var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message };
             await _messagePublisher.PublishAsync(notification);
             return Ok(notification);
@@ -127,7 +127,7 @@ namespace Exceptionless.Web.Controllers {
         /// </summary>
         [HttpGet("notifications/system")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(SystemNotification))]
-        public async Task<IActionResult> GetSystemNotificationAsync() {
+        public async Task<ActionResult<SystemNotification>> GetSystemNotificationAsync() {
             var notification = await _cacheClient.GetAsync<SystemNotification>("system-notification");
             if (!notification.HasValue)
                 return Ok();
@@ -137,7 +137,7 @@ namespace Exceptionless.Web.Controllers {
 
         [HttpPost("notifications/system")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-        public async Task<IActionResult> PostSystemNotificationAsync([FromBody] string message) {
+        public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync([FromBody] string message) {
             if (String.IsNullOrWhiteSpace(message))
                 return NotFound();
 

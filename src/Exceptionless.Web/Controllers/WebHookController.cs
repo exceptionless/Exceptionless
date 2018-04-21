@@ -44,7 +44,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<WebHook>))]
-        public async Task<IActionResult> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
+        public async Task<ActionResult<IReadOnlyCollection<WebHook>>> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -63,7 +63,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet("{id:objectid}", Name = "GetWebHookById")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(WebHook))]
-        public Task<IActionResult> GetByIdAsync(string id) {
+        public Task<ActionResult<WebHook>> GetByIdAsync(string id) {
             return GetByIdImplAsync(id);
         }
 
@@ -76,7 +76,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="409">The web hook already exists.</response>
         [HttpPost]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public Task<IActionResult> PostAsync(NewWebHook webhook) {
+        public Task<ActionResult<WebHook>> PostAsync(NewWebHook webhook) {
             return PostImplAsync(webhook);
         }
 
@@ -91,7 +91,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpDelete("{ids:objectids}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(IEnumerable<string>))]
-        public Task<IActionResult> DeleteAsync(string ids) {
+        public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
 
@@ -104,7 +104,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPost("~/api/v{apiVersion:int=2}/webhooks/subscribe")]
         [HttpPost("~/api/v1/projecthook/subscribe")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public Task<IActionResult> SubscribeAsync(JObject data, int apiVersion = 1) {
+        public async Task<ActionResult<WebHook>> SubscribeAsync(JObject data, int apiVersion = 1) {
             var webHook = new NewWebHook {
                 EventTypes = new[] { data.GetValue("event").Value<string>() },
                 Url = data.GetValue("target_url").Value<string>(),
@@ -112,7 +112,7 @@ namespace Exceptionless.App.Controllers.API {
             };
 
             if (!webHook.Url.StartsWith("https://hooks.zapier.com"))
-                return Task.FromResult<IActionResult>(NotFound());
+                return NotFound();
 
             string projectId = User.GetProjectId();
             if (projectId != null)
@@ -120,7 +120,7 @@ namespace Exceptionless.App.Controllers.API {
             else
                 webHook.OrganizationId = Request.GetDefaultOrganizationId();
 
-            return PostImplAsync(webHook);
+            return await PostImplAsync(webHook);
         }
 
         /// <summary>
