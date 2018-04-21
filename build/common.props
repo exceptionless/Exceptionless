@@ -15,6 +15,7 @@
     <Copyright>Copyright (c) 2018 Exceptionless.  All rights reserved.</Copyright>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <WarningsAsErrors>true</WarningsAsErrors>
+    <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageOutputPath>$(SolutionDir)artifacts\</PackageOutputPath>
     <RepositoryType>git</RepositoryType>
