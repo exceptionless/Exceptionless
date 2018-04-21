@@ -23,8 +23,8 @@ init:
   - ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
 
 install:
-  - cmd: curl -O https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-x64.exe
-  - cmd: dotnet-runtime-latest-win-x64.exe /install /quiet /norestart /log install.log 
+  - cmd: curl -O https://download.microsoft.com/download/3/7/C/37C0D2E3-2056-4F9A-A67C-14DEFBD70F06/dotnet-sdk-2.1.300-preview2-008533-win-x64.exe
+  - cmd: dotnet-sdk-2.1.300-preview2-008533-win-x64.exe /install /quiet /norestart /log install.log 
 
 before_build:
   - ps: .\build\Set-BuildVersion.ps1 -Version $env:APPVEYOR_BUILD_VERSION -Suffix $env:VERSION_SUFFIX
@@ -39,7 +39,7 @@ before_test:
   - ps: .\build\Start-ElasticSearch.ps1
 
 test_script:
-  - ps: Push-Location .\tests\Exceptionless.Api.Tests
+  - ps: Push-Location .\tests\Exceptionless.Tests
   - ps: dotnet test -c Release --no-build
   - ps: Pop-Location
 
