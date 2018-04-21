@@ -15,9 +15,12 @@
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.2.1" />
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.0-preview2-final" />
     <PackageReference Include="Serilog.AspNetCore" Version="2.1.1" />
+    <PackageReference Include="Exceptionless.AspNetCore.Signed" Version="4.2.1989" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="2.4.0" />
+    <PackageReference Include="OAuth2" Version="0.9.12-pre" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Exceptionless.Api\Exceptionless.Api.csproj" />
+    <ProjectReference Include="..\Exceptionless.Insulation\Exceptionless.Insulation.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.yml" CopyToOutputDirectory="Always" />
