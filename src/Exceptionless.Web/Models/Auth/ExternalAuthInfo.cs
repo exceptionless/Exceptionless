@@ -1,6 +1,6 @@
 using System;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class ExternalAuthInfo {
         public string ClientId { get; set; }
         public string Code { get; set; }

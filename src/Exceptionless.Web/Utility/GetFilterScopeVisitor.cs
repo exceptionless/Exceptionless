@@ -4,7 +4,7 @@ using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Web.Utility {
     public class GetFilterScopeVisitor : QueryNodeVisitorWithResultBase<FilterScope> {
         private readonly FilterScope _scope = new FilterScope();
         private static readonly LuceneQueryParser _parser = new LuceneQueryParser();

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Foundatio.Repositories.Models;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class ViewUser : IIdentity {
         public string Id { get; set; }
         public ICollection<string> OrganizationIds { get; set; }

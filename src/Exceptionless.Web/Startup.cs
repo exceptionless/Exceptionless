@@ -2,14 +2,14 @@
 using System.IO;
 using System.Security.Claims;
 using System.Threading;
-using Exceptionless.Api.Extensions;
-using Exceptionless.Api.Hubs;
-using Exceptionless.Api.Security;
-using Exceptionless.Api.Utility;
-using Exceptionless.Api.Utility.Handlers;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Web.Hubs;
+using Exceptionless.Web.Security;
+using Exceptionless.Web.Utility;
+using Exceptionless.Web.Utility.Handlers;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -22,7 +22,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 
-namespace Exceptionless.Api {
+namespace Exceptionless.Web {
     public class Startup {
         private readonly ILoggerFactory _loggerFactory;
 
@@ -36,29 +36,29 @@ namespace Exceptionless.Api {
             if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
 
-            app.UseCsp(csp => { 
-                csp.ByDefaultAllow.FromSelf(); 
-                csp.AllowFonts.FromSelf() 
-                    .From("https://fonts.gstatic.com"); 
-                csp.AllowImages.FromSelf() 
-                    .From("data:"); 
-                csp.AllowScripts.FromSelf() 
-                    .AllowUnsafeInline(); 
-                csp.AllowStyles.FromSelf() 
-                    .AllowUnsafeInline() 
-                    .From("https://fonts.googleapis.com"); 
-            }); 
-            
+            app.UseCsp(csp => {
+                csp.ByDefaultAllow.FromSelf();
+                csp.AllowFonts.FromSelf()
+                    .From("https://fonts.gstatic.com");
+                csp.AllowImages.FromSelf()
+                    .From("data:");
+                csp.AllowScripts.FromSelf()
+                    .AllowUnsafeInline();
+                csp.AllowStyles.FromSelf()
+                    .AllowUnsafeInline()
+                    .From("https://fonts.googleapis.com");
+            });
+
             app.Use(async (context, next) => {
                 context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
                 context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
                 context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
                 context.Response.Headers.Add("X-Frame-Options", "DENY");
                 context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
-                
+
                 await next();
             });
-            
+
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
@@ -168,8 +168,8 @@ namespace Exceptionless.Api {
                 c.AddSecurityDefinition("basic", new BasicAuthScheme {
                     Description = "Basic HTTP Authentication"
                 });
-                if (File.Exists($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Api.xml"))
-                    c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Api.xml");
+                if (File.Exists($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml"))
+                    c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml");
                 c.IgnoreObsoleteActions();
                 c.AddAutoVersioningSupport();
             });

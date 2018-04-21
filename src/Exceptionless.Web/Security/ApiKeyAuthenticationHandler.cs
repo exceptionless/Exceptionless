@@ -4,7 +4,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using Exceptionless.Api.Extensions;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Exceptionless.Api.Security {
+namespace Exceptionless.Web.Security {
     public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions {
         public const string ApiKeySchema = "ApiKey";
 

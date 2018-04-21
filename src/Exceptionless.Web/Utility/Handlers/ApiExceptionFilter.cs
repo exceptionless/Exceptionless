@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace Exceptionless.Api.Utility.Handlers {
+namespace Exceptionless.Web.Utility.Handlers {
     public class ApiExceptionFilter : ExceptionFilterAttribute {
         public override void OnException(ExceptionContext context) {
             var contextData = new ContextData();

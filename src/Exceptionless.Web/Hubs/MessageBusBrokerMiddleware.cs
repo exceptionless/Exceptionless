@@ -9,7 +9,7 @@ using Exceptionless.Core.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-namespace Exceptionless.Api.Hubs {
+namespace Exceptionless.Web.Hubs {
     public class MessageBusBrokerMiddleware {
         private readonly ILogger _logger;
         private readonly WebSocketConnectionManager _connectionManager;

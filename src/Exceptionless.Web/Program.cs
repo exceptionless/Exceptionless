@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using Exceptionless.Api;
 using Exceptionless.Core;
 using Exceptionless.Insulation.Configuration;
 using Microsoft.AspNetCore.Hosting;

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Exceptionless.Api.Utility.Results;
+using Exceptionless.Web.Utility.Results;
 using Xunit;
 using Xunit.Abstractions;
 

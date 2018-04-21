@@ -20,7 +20,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/admin")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     [ApiExplorerSettings(IgnoreApi = true)]

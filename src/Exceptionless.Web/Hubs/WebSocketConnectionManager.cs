@@ -11,7 +11,7 @@ using Foundatio.Queues;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Exceptionless.Api.Hubs {
+namespace Exceptionless.Web.Hubs {
     public class WebSocketConnectionManager : IDisposable {
         private static readonly ArraySegment<byte> _keepAliveMessage = new ArraySegment<byte>(Encoding.ASCII.GetBytes("{}"), 0, 2);
         private readonly ConcurrentDictionary<string, WebSocket> _connections = new ConcurrentDictionary<string, WebSocket>();

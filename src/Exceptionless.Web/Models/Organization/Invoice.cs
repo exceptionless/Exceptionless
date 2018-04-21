@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class Invoice {
         public Invoice() {
             Items = new List<InvoiceLineItem>();

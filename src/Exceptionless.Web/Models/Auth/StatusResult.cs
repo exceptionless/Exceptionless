@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class TokenResult {
         public string Token { get; set; }
     }

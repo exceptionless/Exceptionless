@@ -29,7 +29,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/stacks")]
     [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack> {
