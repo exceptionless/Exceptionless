@@ -9,7 +9,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Tests.Extensions;
-using Exceptionless.Api.Utility;
+using Exceptionless.Web.Utility;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Net.Http.Headers;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Web.Utility {
     public class RawRequestBodyFormatter : InputFormatter {
         public RawRequestBodyFormatter() {
             SupportedMediaTypes.Add(new MediaTypeHeaderValue("text/plain"));

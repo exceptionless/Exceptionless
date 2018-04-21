@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Web.Utility {
     public static class Headers {
         public const string Bearer = "Bearer";
         public const string LegacyConfigurationVersion = "v";

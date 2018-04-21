@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
-using Exceptionless.Api.Utility;
+using Exceptionless.Web.Utility;
 
-namespace Exceptionless.Api.Extensions {
+namespace Exceptionless.Web.Extensions {
     public static class DeltaExtensions {
         public static bool ContainsChangedProperty<T>(this Delta<T> value, Expression<Func<T, object>> action) where T : class, new() {
             if (!value.GetChangedPropertyNames().Any())

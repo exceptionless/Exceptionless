@@ -9,7 +9,7 @@ using Newtonsoft.Json.Linq;
 using Stripe;
 #pragma warning disable 1998
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/stripe")]
     [ApiExplorerSettings(IgnoreApi = true)]
     [Authorize]

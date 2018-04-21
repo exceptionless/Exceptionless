@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX)]
     [ApiExplorerSettings(IgnoreApi = true)]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]

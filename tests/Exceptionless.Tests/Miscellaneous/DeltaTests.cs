@@ -1,5 +1,5 @@
 ﻿using System;
-using Exceptionless.Api.Utility;
+using Exceptionless.Web.Utility;
 using Xunit;
 using Xunit.Abstractions;
 

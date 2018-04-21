@@ -12,7 +12,7 @@ using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
 
-namespace Exceptionless.Api.Hubs {
+namespace Exceptionless.Web.Hubs {
     public sealed class MessageBusBroker : IStartupAction {
         private static readonly string TokenTypeName = typeof(Token).Name;
         private static readonly string UserTypeName = typeof(User).Name;

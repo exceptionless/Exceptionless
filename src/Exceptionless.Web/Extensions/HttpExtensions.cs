@@ -9,7 +9,7 @@ using Exceptionless.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 
-namespace Exceptionless.Api.Extensions {
+namespace Exceptionless.Web.Extensions {
     public static class HttpExtensions {
         public static User GetUser(this HttpRequest request) {
             return request.HttpContext.Items.TryGetAndReturn("User") as User;

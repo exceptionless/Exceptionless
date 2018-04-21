@@ -1,6 +1,6 @@
 using System;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class LoginModel {
         public string Email { get; set; }
         public string Password { get; set; }

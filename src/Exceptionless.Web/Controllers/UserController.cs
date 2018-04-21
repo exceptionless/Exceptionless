@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using Exceptionless.Api.Extensions;
-using Exceptionless.Api.Models;
-using Exceptionless.Api.Utility;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -13,6 +11,8 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Repositories;
@@ -23,7 +23,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/users")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, UpdateUser> {

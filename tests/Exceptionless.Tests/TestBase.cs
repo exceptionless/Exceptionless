@@ -44,7 +44,7 @@ namespace Exceptionless.Tests {
             services.AddSingleton<ILoggerFactory>(Log);
             services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
 
-            Api.Bootstrapper.RegisterServices(services, Log);
+            Web.Bootstrapper.RegisterServices(services, Log);
 
             services.AddSingleton<IMailer, NullMailer>();
             services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
@@ -61,7 +61,7 @@ namespace Exceptionless.Tests {
 
             Settings.Initialize(config, "Development");
             services.AddSingleton<IConfiguration>(config);
-            Api.Bootstrapper.RegisterServices(services, Log);
+            Web.Bootstrapper.RegisterServices(services, Log);
             RegisterServices(services);
 
             return services.BuildServiceProvider();

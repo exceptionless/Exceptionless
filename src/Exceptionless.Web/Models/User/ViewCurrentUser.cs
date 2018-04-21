@@ -5,7 +5,7 @@ using System.Text;
 using Exceptionless.Core;
 using Exceptionless.Core.Models;
 
-namespace Exceptionless.Api.Models {
+namespace Exceptionless.Web.Models {
     public class ViewCurrentUser : ViewUser {
         public ViewCurrentUser(User user) {
             Id = user.Id;

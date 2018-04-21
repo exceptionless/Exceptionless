@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Api.Extensions;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
@@ -11,7 +11,7 @@ using Foundatio.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Web.Utility {
     public sealed class OverageMiddleware {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;

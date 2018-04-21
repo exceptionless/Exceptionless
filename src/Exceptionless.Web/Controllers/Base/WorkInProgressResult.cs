@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Exceptionless.Api.Controllers {
+namespace Exceptionless.Web.Controllers {
     public class WorkInProgressResult {
         public WorkInProgressResult() {
             Workers = new List<string>();

@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 
-namespace Exceptionless.Api.Security {
+namespace Exceptionless.Web.Security {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class RequireHttpsAttribute : Attribute, IAuthorizationFilter, IOrderedFilter {
         public bool Permanent { get; set; }
