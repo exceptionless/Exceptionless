@@ -14,7 +14,6 @@ using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Primitives;
 
 namespace Exceptionless.Web.Controllers {
   [ApiController]

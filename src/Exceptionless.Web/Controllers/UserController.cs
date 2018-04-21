@@ -21,7 +21,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/users")]
@@ -118,7 +117,7 @@ namespace Exceptionless.Web.Controllers {
         /// </summary>
         /// <response code="404">The current user could not be found.</response>
         [HttpDelete("me")]
-        [SwaggerResponse(StatusCodes.Status202Accepted))]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync() {
             return DeleteImplAsync(new [] { CurrentUser.Id });
         }
@@ -133,7 +132,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="500">An error occurred while deleting one or more users.</response>
         [HttpDelete("{ids:objectids}")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }

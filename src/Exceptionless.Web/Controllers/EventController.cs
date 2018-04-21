@@ -33,7 +33,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/events")]
@@ -548,7 +547,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("by-ref/{referenceId:identifier}/user-description")]
         [HttpPost("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description")]
         [ConfigurationResponseFilter]
-        [SwaggerResponse(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task<IActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
@@ -842,7 +841,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("~/api/v{apiVersion:int=2}/events")]
         [HttpPost("~/api/v{apiVersion:int=2}/projects/{projectId:objectid}/events")]
         [ConfigurationResponseFilter]
-        [SwaggerResponse(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task <IActionResult> PostAsync(string projectId = null, int apiVersion = 2, [UserAgent]string userAgent = null) {
             if (Request.ContentLength.HasValue && Request.ContentLength.Value <= 0)
                 return StatusCode(StatusCodes.Status202Accepted);
@@ -909,7 +908,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="500">An error occurred while deleting one or more event occurrences.</response>
         [HttpDelete("{ids:objectids}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }

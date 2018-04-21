@@ -1,7 +1,6 @@
 ﻿using System;
 using Exceptionless.Web.Extensions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace Exceptionless.Web.Utility {

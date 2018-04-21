@@ -5,7 +5,6 @@ using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
-using Foundatio.Repositories;
 using Foundatio.Serializer;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Http;

@@ -27,7 +27,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/stacks")]
@@ -86,7 +85,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost("{ids:objectids}/mark-fixed")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> MarkFixedAsync(string ids, string version = null) {
             version = version?.Trim();
             SemanticVersion semanticVersion = null;
@@ -200,7 +199,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The stack could not be found.</response>
         [HttpPost("{id:objectid}/remove-link")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> RemoveLinkAsync(string id, [FromBody] string url) {
             if (String.IsNullOrWhiteSpace(url))
                 return BadRequest();
@@ -248,7 +247,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete("{ids:objectids}/mark-critical")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> MarkNotCriticalAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
@@ -296,7 +295,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete("{ids:objectids}/notifications")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> DisableNotificationsAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
@@ -321,7 +320,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete("{ids:objectids}/mark-fixed")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> MarkNotFixedAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
@@ -355,7 +354,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost("{ids:objectids}/mark-hidden")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> MarkHiddenAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
@@ -390,7 +389,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete("{ids:objectids}/mark-hidden")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> MarkNotHiddenAsync(string ids) {
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
@@ -466,7 +465,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="500">An error occurred while deleting one or more stacks.</response>
         [HttpDelete("{ids:objectids}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [SwaggerResponse(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }

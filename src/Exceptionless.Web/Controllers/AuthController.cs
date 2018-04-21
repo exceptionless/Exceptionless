@@ -25,7 +25,6 @@ using OAuth2.Client.Impl;
 using OAuth2.Configuration;
 using OAuth2.Infrastructure;
 using OAuth2.Models;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/auth")]

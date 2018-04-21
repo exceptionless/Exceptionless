@@ -13,7 +13,6 @@ using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX)]

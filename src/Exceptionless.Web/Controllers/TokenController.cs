@@ -18,7 +18,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Exceptionless.App.Controllers.API {
     [Route(API_PREFIX + "/tokens")]
@@ -184,7 +183,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="404">One or more tokens were not found.</response>
         /// <response code="500">An error occurred while deleting one or more tokens.</response>
         [HttpDelete("{ids:tokens}")]
-        [SwaggerResponse(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
