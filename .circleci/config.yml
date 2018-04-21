@@ -5,8 +5,8 @@ jobs:
       - API_DOCKER_IMAGE=api-ci
       - JOB_DOCKER_IMAGE=job-ci
     docker:
-      - image: slideroom/dotnet:86
-      - image: slideroom/elasticsearch:81
+      - image: slideroom/dotnet:179
+      - image: slideroom/elasticsearch:98
         environment:
           - ES_JAVA_OPTS=-Xms750m -Xmx750m
     steps:
@@ -32,10 +32,10 @@ jobs:
           command: dotnet publish -c Release -o published -r debian-x64
       - run:
           name: Integration Tests
-          working_directory: tests/Exceptionless.Api.Tests
+          working_directory: tests/Exceptionless.Tests
           command: dotnet test -c Release --logger trx
       - store_test_results:
-          path: tests/Exceptionless.Api.Tests/TestResults
+          path: tests/Exceptionless.Tests/TestResults
       - setup_remote_docker
       # - run:
       #     name: Build jobs docker image
