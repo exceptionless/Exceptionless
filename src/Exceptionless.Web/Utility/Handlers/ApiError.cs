@@ -4,8 +4,7 @@ using System.Linq;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace Exceptionless.Web.Utility.Handlers
-{
+namespace Exceptionless.Web.Utility.Handlers {
     public class ApiError {
         public string Message { get; set; }
         public bool IsError => true;

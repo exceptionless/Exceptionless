@@ -17,7 +17,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 
 namespace Exceptionless.Web.Controllers {
-    [RequireHttpsExceptLocal]
+  [ApiController]
+  [RequireHttpsExceptLocal]
     public abstract class ExceptionlessApiController : Controller {
         public const string API_PREFIX = "api/v2";
         protected const int DEFAULT_LIMIT = 10;
