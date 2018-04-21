@@ -55,7 +55,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewProject>))]
-        public async Task<IActionResult> GetAsync([FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] string mode = null) {
+        public async Task<IActionResult> GetAsync(int page = 1, int limit = 10, string mode = null) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), o => o.PageNumber(page).PageLimit(limit));
@@ -78,7 +78,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<ViewProject>))]
-        public async Task<IActionResult> GetByOrganizationAsync(string organization, [FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] string mode = null) {
+        public async Task<IActionResult> GetByOrganizationAsync(string organization, int page = 1, int limit = 10, string mode = null) {
             if (String.IsNullOrEmpty(organization) || !CanAccessOrganization(organization))
                 return NotFound();
 
@@ -102,7 +102,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("{id:objectid}", Name = "GetProjectById")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewProject))]
-        public async Task<IActionResult> GetByIdAsync(string id, [FromQuery] string mode = null) {
+        public async Task<IActionResult> GetByIdAsync(string id, string mode = null) {
             var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
@@ -124,7 +124,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status201Created, Type = typeof(ViewProject))]
-        public Task<IActionResult> PostAsync([FromBody] NewProject project) {
+        public Task<IActionResult> PostAsync(NewProject project) {
             return PostImplAsync(project);
         }
 
@@ -139,7 +139,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPut("{id:objectid}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ViewProject))]
-        public Task<IActionResult> PatchAsync(string id, [FromBody] Delta<UpdateProject> changes) {
+        public Task<IActionResult> PatchAsync(string id, Delta<UpdateProject> changes) {
             return PatchImplAsync(id, changes);
         }
 
@@ -171,7 +171,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("{id:objectid}/config")]
         [HttpGet("~/api/v1/project/config")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ClientConfiguration))]
-        public async Task<IActionResult> GetConfigAsync(string id = null, [FromQuery] int? v = null) {
+        public async Task<IActionResult> GetConfigAsync(string id = null, int? v = null) {
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();
 
@@ -196,7 +196,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("{id:objectid}/config")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
-        public async Task<IActionResult> SetConfigAsync(string id, [FromQuery] string key, [FromBody] string value) {
+        public async Task<IActionResult> SetConfigAsync(string id, string key, [FromBody] string value) {
             if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value))
                 return BadRequest();
 
@@ -221,7 +221,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpDelete("{id:objectid}/config")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
-        public async Task<IActionResult> DeleteConfigAsync(string id, [FromQuery] string key) {
+        public async Task<IActionResult> DeleteConfigAsync(string id, string key) {
             if (String.IsNullOrWhiteSpace(key))
                 return BadRequest();
 
@@ -323,7 +323,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
-        public async Task<IActionResult> SetNotificationSettingsAsync(string id, string userId, [FromBody] NotificationSettings settings) {
+        public async Task<IActionResult> SetNotificationSettingsAsync(string id, string userId, NotificationSettings settings) {
             var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
@@ -352,7 +352,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("{id:objectid}/{integration:minlength(1)}/notifications")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
-        public async Task<IActionResult> SetIntegrationNotificationSettingsAsync(string id, string integration, [FromBody] NotificationSettings settings) {
+        public async Task<IActionResult> SetIntegrationNotificationSettingsAsync(string id, string integration, NotificationSettings settings) {
             if (!String.Equals(Project.NotificationIntegrations.Slack, integration))
                 return NotFound();
 
@@ -412,7 +412,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("{id:objectid}/promotedtabs")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
-        public async Task<IActionResult> PromoteTabAsync(string id, [FromQuery] string name) {
+        public async Task<IActionResult> PromoteTabAsync(string id, string name) {
             if (String.IsNullOrWhiteSpace(name))
                 return BadRequest();
 
@@ -438,7 +438,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpDelete("{id:objectid}/promotedtabs")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
-        public async Task<IActionResult> DemoteTabAsync(string id, [FromQuery] string name) {
+        public async Task<IActionResult> DemoteTabAsync(string id, string name) {
             if (String.IsNullOrWhiteSpace(name))
                 return BadRequest();
 
@@ -465,7 +465,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects/check-name")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status201Created)]
-        public async Task<IActionResult> IsNameAvailableAsync([FromQuery] string name, string organizationId = null) {
+        public async Task<IActionResult> IsNameAvailableAsync(string name, string organizationId = null) {
             if (await IsProjectNameAvailableInternalAsync(organizationId, name))
                 return StatusCode(StatusCodes.Status204NoContent);
 
@@ -494,7 +494,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("{id:objectid}/data")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
-        public async Task<IActionResult> PostDataAsync(string id, [FromQuery] string key, [FromBody] string value) {
+        public async Task<IActionResult> PostDataAsync(string id, string key, [FromBody] string value) {
             if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value) || key.StartsWith("-"))
                 return BadRequest();
 
@@ -518,7 +518,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpDelete("{id:objectid}/data")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK)]
-        public async Task<IActionResult> DeleteDataAsync(string id, [FromQuery] string key) {
+        public async Task<IActionResult> DeleteDataAsync(string id, string key) {
             if (String.IsNullOrWhiteSpace(key) || key.StartsWith("-"))
                 return BadRequest();
 
@@ -542,7 +542,7 @@ namespace Exceptionless.Web.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{id:objectid}/slack")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<IActionResult> AddSlackAsync(string id, [FromQuery] string code) {
+        public async Task<IActionResult> AddSlackAsync(string id, string code) {
             if (String.IsNullOrWhiteSpace(code))
                 return BadRequest();
 

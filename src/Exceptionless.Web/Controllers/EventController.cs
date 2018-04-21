@@ -89,7 +89,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("count")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<CountResult>))]
-        public async Task<IActionResult> GetCountAsync([FromQuery] string filter = null, [FromQuery] string aggregations = null, [FromQuery] string time = null, [FromQuery] string offset = null) {
+        public async Task<IActionResult> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(CountResult.Empty);
@@ -111,7 +111,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/count")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<CountResult>))]
-        public async Task<IActionResult> GetCountByOrganizationAsync(string organizationId, [FromQuery] string filter = null, [FromQuery] string aggregations = null, [FromQuery] string time = null, [FromQuery] string offset = null) {
+        public async Task<IActionResult> GetCountByOrganizationAsync(string organizationId, string filter = null, string aggregations = null, string time = null, string offset = null) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
                 return NotFound();
@@ -136,7 +136,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/count")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<CountResult>))]
-        public async Task<IActionResult> GetCountByProjectAsync(string projectId, [FromQuery] string filter = null, [FromQuery] string aggregations = null, [FromQuery] string time = null, [FromQuery] string offset = null) {
+        public async Task<IActionResult> GetCountByProjectAsync(string projectId, string filter = null, string aggregations = null, string time = null, string offset = null) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -165,7 +165,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("{id:objectid}", Name = "GetPersistentEventById")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(PersistentEvent))]
-        public async Task<IActionResult> GetByIdAsync(string id, [FromQuery] string filter = null, [FromQuery] string time = null, [FromQuery] string offset = null) {
+        public async Task<IActionResult> GetByIdAsync(string id, string filter = null, string time = null, string offset = null) {
             var model = await GetModelAsync(id, false);
             if (model == null)
                 return NotFound();
@@ -204,7 +204,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
-        public async Task<IActionResult> GetAsync([FromQuery] string filter = null, [FromQuery] string sort = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
@@ -268,7 +268,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
-        public async Task<IActionResult> GetByOrganizationAsync(string organizationId = null, [FromQuery] string filter = null, [FromQuery] string sort = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
                 return NotFound();
@@ -298,7 +298,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
-        public async Task<IActionResult> GetByProjectAsync(string projectId, [FromQuery] string filter = null, [FromQuery] string sort = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -332,7 +332,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
-        public async Task<IActionResult> GetByStackAsync(string stackId, [FromQuery] string filter = null, [FromQuery] string sort = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetByStackAsync(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var stack = await GetStackAsync(stackId);
             if (stack == null)
                 return NotFound();
@@ -361,7 +361,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("by-ref/{referenceId:identifier}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
-        public async Task<IActionResult> GetByReferenceIdAsync(string referenceId, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository);
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
@@ -386,7 +386,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
-        public async Task<IActionResult> GetByReferenceIdAsync(string referenceId, string projectId, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetByReferenceIdAsync(string referenceId, string projectId, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -418,7 +418,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("sessions/{sessionId:identifier}")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
-        public async Task<IActionResult> GetBySessionIdAsync(string sessionId, [FromQuery] string filter = null, [FromQuery] string sort = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
@@ -477,7 +477,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("sessions")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
-        public async Task<IActionResult> GetSessionsAsync([FromQuery] string filter = null, [FromQuery] string sort = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetSessionsAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
@@ -504,7 +504,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/sessions")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
-        public async Task<IActionResult> GetSessionByOrganizationAsync(string organizationId, [FromQuery] string filter = null, [FromQuery] string sort = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetSessionByOrganizationAsync(string organizationId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
                 return NotFound();
@@ -534,7 +534,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<PersistentEvent>))]
-        public async Task<IActionResult> GetSessionByProjectAsync(string projectId, [FromQuery] string filter = null, [FromQuery] string sort = null, [FromQuery] string time = null, [FromQuery] string offset = null, [FromQuery] string mode = null, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetSessionByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -564,7 +564,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description")]
         [ConfigurationResponseFilter]
         [SwaggerResponse(StatusCodes.Status202Accepted, Type = typeof(List<PersistentEvent>))]
-        public async Task<IActionResult> SetUserDescriptionAsync(string referenceId, [FromBody] UserDescription description, string projectId = null) {
+        public async Task<IActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
 
@@ -599,7 +599,7 @@ namespace Exceptionless.Web.Controllers {
 
         [HttpPatch("~/api/v1/error/{id:objectid}")]
         [ConfigurationResponseFilter]
-        public async Task<IActionResult> LegacyPatchAsync(string id, [FromBody] Delta<UpdateEvent> changes) {
+        public async Task<IActionResult> LegacyPatchAsync(string id, Delta<UpdateEvent> changes) {
             if (changes == null)
                 return Ok();
 
@@ -624,7 +624,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">No project was found.</response>
         [HttpGet("session/heartbeat")]
         [SwaggerResponse(StatusCodes.Status200OK)]
-        public async Task<IActionResult> RecordHeartbeatAsync([FromQuery] string id = null, [FromQuery] bool close = false) {
+        public async Task<IActionResult> RecordHeartbeatAsync(string id = null, bool close = false) {
             if (Settings.Current.EventSubmissionDisabled || String.IsNullOrEmpty(id))
                 return Ok();
 
@@ -813,14 +813,14 @@ namespace Exceptionless.Web.Controllers {
         ///  You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it
         ///  we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON
         ///  object into the events data collection.
-        /// 
+        ///
         ///  You can also post a multi-line string. We automatically split strings by the \n character and create a new log event for every line.
-        /// 
+        ///
         ///  Simple event:
         ///  <code>
         ///      { "message": "Exceptionless is amazing!" }
         ///  </code>
-        ///  
+        ///
         ///  Simple log event with user identity:
         ///  <code>
         ///      {
@@ -830,13 +830,13 @@ namespace Exceptionless.Web.Controllers {
         ///          "@user":{ "identity":"123456789", "name": "Test User" }
         ///      }
         ///  </code>
-        /// 
+        ///
         ///  Multiple events from string content:
         ///  <code>
         ///      Exceptionless is amazing!
         ///      Exceptionless is really amazing!
         ///  </code>
-        /// 
+        ///
         ///  Simple error:
         ///  <code>
         ///      {

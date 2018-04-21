@@ -44,7 +44,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(List<WebHook>))]
-        public async Task<IActionResult> GetByProjectAsync(string projectId, [FromQuery] int page = 1, [FromQuery] int limit = 10) {
+        public async Task<IActionResult> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -76,7 +76,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="409">The web hook already exists.</response>
         [HttpPost]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public Task<IActionResult> PostAsync([FromBody] NewWebHook webhook) {
+        public Task<IActionResult> PostAsync(NewWebHook webhook) {
             return PostImplAsync(webhook);
         }
 
@@ -104,7 +104,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPost("~/api/v{apiVersion:int=2}/webhooks/subscribe")]
         [HttpPost("~/api/v1/projecthook/subscribe")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public Task<IActionResult> SubscribeAsync([FromBody] JObject data, int apiVersion = 1) {
+        public Task<IActionResult> SubscribeAsync(JObject data, int apiVersion = 1) {
             var webHook = new NewWebHook {
                 EventTypes = new[] { data.GetValue("event").Value<string>() },
                 Url = data.GetValue("target_url").Value<string>(),
@@ -130,7 +130,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPost("unsubscribe")]
         [HttpPost("~/api/v1/projecthook/unsubscribe")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IActionResult> UnsubscribeAsync([FromBody] JObject data) {
+        public async Task<IActionResult> UnsubscribeAsync(JObject data) {
             string targetUrl = data.GetValue("target_url").Value<string>();
 
             // don't let this anon method delete non-zapier hooks
