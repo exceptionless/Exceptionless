@@ -1,0 +1,19 @@
+---
+ConnectionStrings:
+  RedisConnectionString.off: localhost,abortConnect=false
+  ElasticsearchConnectionString.off: http://localhost:9200/
+
+  # Base url for the ui used to build links in emails and other places.
+BaseURL: https://dev.exceptionless.io
+
+# Metrics
+MetricsServerName: 10.0.0.5
+
+# Elasticsearch
+ElasticSearchNumberOfReplicas: 0
+
+# Exceptionless Client Settings
+ExceptionlessServerUrl: https://dev-api.exceptionless.io
+InternalProjectId: 50ca6b2423d6c8493020b823
+
+SlackAppId: 34500115540.177239122322
