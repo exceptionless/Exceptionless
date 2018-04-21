@@ -57,11 +57,6 @@ namespace Exceptionless.Core.Jobs {
 
             try {
                 int retentionDays = organization.RetentionDays;
-
-                var nextPlan = BillingManager.GetBillingPlanByUpsellingRetentionPeriod(organization.RetentionDays);
-                if (nextPlan != null)
-                    retentionDays = nextPlan.RetentionDays;
-
                 if (Settings.Current.MaximumRetentionDays > 0 && retentionDays > Settings.Current.MaximumRetentionDays)
                     retentionDays = Settings.Current.MaximumRetentionDays;
 
