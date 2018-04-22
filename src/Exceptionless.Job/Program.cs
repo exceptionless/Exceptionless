@@ -8,6 +8,9 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
 using Exceptionless.Insulation.Configuration;
+using Exceptionless.Core.Jobs;
+using Foundatio.Jobs;
+using Exceptionless.Core.Jobs.Elastic;
 
 namespace Exceptionless.Job {
     public class Program {
@@ -37,6 +40,7 @@ namespace Exceptionless.Job {
 
                 Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current, currentDirectory);
 
+                // TODO: Use command line to pick which job to run. Also, allow option to run all jobs.
                 var builder = new HostBuilder()
                     .UseEnvironment(environment)
                     .ConfigureAppConfiguration(c => c.AddConfiguration(config))
@@ -44,6 +48,19 @@ namespace Exceptionless.Job {
                     .ConfigureServices(s => {
                         Bootstrapper.RegisterServices(s);
                         Insulation.Bootstrapper.RegisterServices(s, true);
+
+                        s.AddJob<EventPostsJob>();
+                        s.AddJob<EventUserDescriptionsJob>();
+                        s.AddJob<EventNotificationsJob>();
+                        s.AddJob<MailMessageJob>();
+                        s.AddJob<WebHooksJob>();
+                        s.AddJob<CloseInactiveSessionsJob>();
+                        s.AddJob<DailySummaryJob>();
+                        s.AddJob<DownloadGeoIPDatabaseJob>();
+                        s.AddJob<RetentionLimitsJob>();
+                        s.AddJob<WorkItemJob>();
+                        s.AddJob<MaintainIndexesJob>();
+                        s.AddJob<StackEventCountJob>();
                     });
 
                 await builder.RunConsoleAsync();
