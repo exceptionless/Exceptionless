@@ -9,25 +9,16 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Job {
-    public class JobHostedService<T> : HostedService where T : IJob {
+    public class HostedJobService<T> : HostedService where T : IJob {
         protected readonly IServiceProvider _serviceProvider;
         protected readonly ILoggerFactory _loggerFactory;
-        public JobHostedService(IServiceProvider serviceProvider, ILoggerFactory loggerFactory) {
+        public HostedJobService(IServiceProvider serviceProvider, ILoggerFactory loggerFactory) {
             _serviceProvider = serviceProvider;
             _loggerFactory = loggerFactory;
         }
 
         protected override Task ExecuteAsync(CancellationToken cancellationToken) {
             var jobAttribute = typeof(T).GetCustomAttribute<JobAttribute>() ?? new JobAttribute();
-            string jobName = jobAttribute.Name;
-
-            if (String.IsNullOrEmpty(jobName)) {
-                jobName = typeof(T).Name;
-                if (jobName.EndsWith("Job"))
-                    jobName = jobName.Substring(0, jobName.Length - 3);
-
-                jobName = jobName.ToLower();
-            }
 
             bool isContinuous = jobAttribute.IsContinuous;
             TimeSpan? interval = null;
@@ -72,7 +63,7 @@ namespace Exceptionless.Job {
 
     public static class JobExtensions {
         public static IServiceCollection AddJob<T>(this IServiceCollection services) where T: IJob {
-            return services.AddSingleton<IHostedService, JobHostedService<T>>();
+            return services.AddSingleton<IHostedService, HostedJobService<T>>();
         }
     }
 }

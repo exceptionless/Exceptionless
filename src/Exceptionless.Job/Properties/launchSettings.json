@@ -1,0 +1,18 @@
+{
+  "profiles": {
+    "EventPosts": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      },
+      "commandLineArgs": "EventPosts"
+    },
+    "MailMessage": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AppMode": "Development"
+      },
+      "commandLineArgs": "MailMessage"
+    }
+  }
+}
