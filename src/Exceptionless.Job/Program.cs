@@ -11,6 +11,7 @@ using Exceptionless.Insulation.Configuration;
 using Exceptionless.Core.Jobs;
 using Foundatio.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
+using Fclp;
 
 namespace Exceptionless.Job {
     public class Program {
@@ -40,7 +41,14 @@ namespace Exceptionless.Job {
 
                 Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current, currentDirectory);
 
-                // TODO: Use command line to pick which job to run. Also, allow option to run all jobs.
+                var parser = JobRunnerArguments.GetParser();
+                var result = parser.Parse(args);
+                if (result.HasErrors)
+                    return 1;
+
+                var jobArguments = parser.Object;
+                jobArguments.RunAllByDefault();
+
                 var builder = new HostBuilder()
                     .UseEnvironment(environment)
                     .ConfigureAppConfiguration(c => c.AddConfiguration(config))
@@ -49,18 +57,41 @@ namespace Exceptionless.Job {
                         Bootstrapper.RegisterServices(s);
                         Insulation.Bootstrapper.RegisterServices(s, true);
 
-                        s.AddJob<EventPostsJob>();
-                        s.AddJob<EventUserDescriptionsJob>();
-                        s.AddJob<EventNotificationsJob>();
-                        s.AddJob<MailMessageJob>();
-                        s.AddJob<WebHooksJob>();
-                        s.AddJob<CloseInactiveSessionsJob>();
-                        s.AddJob<DailySummaryJob>();
-                        s.AddJob<DownloadGeoIPDatabaseJob>();
-                        s.AddJob<RetentionLimitsJob>();
-                        s.AddJob<WorkItemJob>();
-                        s.AddJob<MaintainIndexesJob>();
-                        s.AddJob<StackEventCountJob>();
+                        if (jobArguments.EventPostsJob == true)
+                            s.AddJob<EventPostsJob>();
+
+                        if (jobArguments.EventUserDescriptionsJob == true)
+                            s.AddJob<EventUserDescriptionsJob>();
+
+                        if (jobArguments.EventNotificationsJob == true)
+                            s.AddJob<EventNotificationsJob>();
+
+                        if (jobArguments.MailMessageJob == true)
+                            s.AddJob<MailMessageJob>();
+
+                        if (jobArguments.WebHooksJob == true)
+                            s.AddJob<WebHooksJob>();
+
+                        if (jobArguments.CloseInactiveSessionsJob == true)
+                            s.AddJob<CloseInactiveSessionsJob>();
+
+                        if (jobArguments.DailySummaryJob == true)
+                            s.AddJob<DailySummaryJob>();
+
+                        if (jobArguments.DownloadGeoIPDatabaseJob == true)
+                            s.AddJob<DownloadGeoIPDatabaseJob>();
+
+                        if (jobArguments.RetentionLimitsJob == true)
+                            s.AddJob<RetentionLimitsJob>();
+
+                        if (jobArguments.WorkItemJob == true)
+                            s.AddJob<WorkItemJob>();
+
+                        if (jobArguments.MaintainIndexesJob == true)
+                            s.AddJob<MaintainIndexesJob>();
+
+                        if (jobArguments.StackEventCountJob == true)
+                            s.AddJob<StackEventCountJob>();
                     });
 
                 await builder.RunConsoleAsync();
@@ -72,6 +103,93 @@ namespace Exceptionless.Job {
                 Log.CloseAndFlush();
                 await ExceptionlessClient.Default.ProcessQueueAsync();
             }
+        }
+    }
+
+    public class JobRunnerArguments {
+        public bool EventPostsJob { get; set; }
+        public bool EventUserDescriptionsJob { get; set; }
+        public bool EventNotificationsJob { get; set; }
+        public bool MailMessageJob { get; set; }
+        public bool WebHooksJob { get; set; }
+        public bool CloseInactiveSessionsJob { get; set; }
+        public bool DailySummaryJob { get; set; }
+        public bool DownloadGeoIPDatabaseJob { get; set; }
+        public bool RetentionLimitsJob { get; set; }
+        public bool WorkItemJob { get; set; }
+        public bool MaintainIndexesJob { get; set; }
+        public bool StackEventCountJob { get; set; }
+
+        public static FluentCommandLineParser<JobRunnerArguments> GetParser() {
+            var p = new FluentCommandLineParser<JobRunnerArguments>();
+
+            p.Setup(arg => arg.EventPostsJob)
+                .As('e', "event-posts")
+                .WithDescription("Wether to run the EventPostsJob");
+            p.Setup(arg => arg.EventUserDescriptionsJob)
+                .As('u', "event-user-descriptions")
+                .WithDescription("Wether to run the EventUserDescriptionsJob");
+            p.Setup(arg => arg.EventNotificationsJob)
+                .As('n', "event-notifications")
+                .WithDescription("Wether to run the EventNotificationsJob");
+            p.Setup(arg => arg.MailMessageJob)
+                .As('m', "mail-message")
+                .WithDescription("Wether to run the MailMessageJob");
+            p.Setup(arg => arg.WebHooksJob)
+                .As('h', "web-hooks")
+                .WithDescription("Wether to run the WebHooksJob");
+            p.Setup(arg => arg.CloseInactiveSessionsJob)
+                .As('s', "close-inactive-sessions")
+                .WithDescription("Wether to run the CloseInactiveSessionsJob");
+            p.Setup(arg => arg.DailySummaryJob)
+                .As('d', "daily-summary")
+                .WithDescription("Wether to run the DailySummaryJob");
+            p.Setup(arg => arg.DownloadGeoIPDatabaseJob)
+                .As('g', "download-geoip-database")
+                .WithDescription("Wether to run the DownloadGeoIPDatabaseJob");
+            p.Setup(arg => arg.RetentionLimitsJob)
+                .As('r', "retention-limits")
+                .WithDescription("Wether to run the RetentionLimitsJob");
+            p.Setup(arg => arg.WorkItemJob)
+                .As('w', "work-item")
+                .WithDescription("Wether to run the WorkItemJob");
+            p.Setup(arg => arg.MaintainIndexesJob)
+                .As('i', "maintain-indexes")
+                .WithDescription("Wether to run the MaintainIndexesJob");
+            p.Setup(arg => arg.StackEventCountJob)
+                .As('c', "stack-event-count")
+                .WithDescription("Wether to run the StackEventCountJob");
+
+            return p;
+        }
+
+        public void RunAllByDefault() {
+            if (EventPostsJob
+                || EventUserDescriptionsJob
+                || EventNotificationsJob
+                || MailMessageJob
+                || WebHooksJob
+                || CloseInactiveSessionsJob
+                || DailySummaryJob
+                || DownloadGeoIPDatabaseJob
+                || RetentionLimitsJob
+                || WorkItemJob
+                || MaintainIndexesJob
+                || StackEventCountJob)
+                return;
+
+            EventPostsJob = true;
+            EventUserDescriptionsJob = true;
+            EventNotificationsJob = true;
+            MailMessageJob = true;
+            WebHooksJob = true;
+            CloseInactiveSessionsJob = true;
+            DailySummaryJob = true;
+            DownloadGeoIPDatabaseJob = true;
+            RetentionLimitsJob = true;
+            WorkItemJob = true;
+            MaintainIndexesJob = true;
+            StackEventCountJob = true;
         }
     }
 }

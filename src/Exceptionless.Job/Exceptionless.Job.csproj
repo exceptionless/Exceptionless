@@ -9,6 +9,7 @@
     <ProjectReference Include="..\Exceptionless.Insulation\Exceptionless.Insulation.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="FluentCommandLineParser" Version="1.4.3" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="2.1.0-preview2-final" />
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="2.1.0-preview2-final" />
   </ItemGroup>

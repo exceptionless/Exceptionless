@@ -11,7 +11,6 @@ using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Results;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -49,7 +48,7 @@ namespace Exceptionless.Web.Controllers {
             var utcOffset = GetOffset(offset);
 
             // range parsing needs to be based on the user's local time.
-            var range = DateTimeRange.Parse(time, SystemClock.OffsetUtcNow.ToOffset(utcOffset));
+            var range = DateTimeRange.Parse(time, Foundatio.Utility.SystemClock.OffsetUtcNow.ToOffset(utcOffset));
             var timeInfo = new TimeInfo { Field = field, Offset = utcOffset, Range = range };
             if (minimumUtcStartDate.HasValue)
                 timeInfo.ApplyMinimumUtcStartDate(minimumUtcStartDate.Value);

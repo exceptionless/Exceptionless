@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.DateTimeExtensions;
 using Foundatio.Jobs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,32 +10,36 @@ namespace Exceptionless.Job {
     public class HostedJobService<T> : HostedService where T : IJob {
         protected readonly IServiceProvider _serviceProvider;
         protected readonly ILoggerFactory _loggerFactory;
+
         public HostedJobService(IServiceProvider serviceProvider, ILoggerFactory loggerFactory) {
             _serviceProvider = serviceProvider;
             _loggerFactory = loggerFactory;
         }
 
         protected override Task ExecuteAsync(CancellationToken cancellationToken) {
-            var jobAttribute = typeof(T).GetCustomAttribute<JobAttribute>() ?? new JobAttribute();
-
-            bool isContinuous = jobAttribute.IsContinuous;
-            TimeSpan? interval = null;
-            TimeSpan? delay = null;
-            int limit = -1;
-
-            if (!String.IsNullOrEmpty(jobAttribute.Interval))
-                TimeUnit.TryParse(jobAttribute.Interval, out interval);
-
-            if (!String.IsNullOrEmpty(jobAttribute.InitialDelay))
-                TimeUnit.TryParse(jobAttribute.InitialDelay, out delay);
-
-            if (jobAttribute.IterationLimit > 0)
-                limit = jobAttribute.IterationLimit;
-
-            var runner = new JobRunner(() => _serviceProvider.GetRequiredService<T>(), _loggerFactory, runContinuous: isContinuous, interval: interval, initialDelay: delay, iterationLimit: limit);
+            var jobOptions = JobOptions.GetDefaults<T>(() => _serviceProvider.GetRequiredService<T>());
+            var runner = new JobRunner(jobOptions, _loggerFactory);
             return runner.RunAsync();
         }
     }
+
+    public class HostedJobService : HostedService {
+        protected readonly Func<IJob> _jobFactory;
+        protected readonly ILoggerFactory _loggerFactory;
+
+        public HostedJobService(Func<IJob> jobFactory, ILoggerFactory loggerFactory) {
+            _jobFactory = jobFactory;
+            _loggerFactory = loggerFactory;
+        }
+
+        protected override Task ExecuteAsync(CancellationToken cancellationToken) {
+            var job = _jobFactory();
+            var jobOptions = JobOptions.GetDefaults(job.GetType(), job);
+            var runner = new JobRunner(jobOptions, _loggerFactory);
+            return runner.RunAsync();
+        }
+    }
+
 
     public abstract class HostedService : IHostedService {
         private Task _executingTask;
@@ -64,6 +66,10 @@ namespace Exceptionless.Job {
     public static class JobExtensions {
         public static IServiceCollection AddJob<T>(this IServiceCollection services) where T: IJob {
             return services.AddSingleton<IHostedService, HostedJobService<T>>();
+        }
+
+        public static IServiceCollection AddJob(this IServiceCollection services, Func<IServiceProvider, IJob> jobFactory) {
+            return services.AddSingleton<IHostedService>(sp => new HostedJobService(() => jobFactory(sp), sp.GetRequiredService<ILoggerFactory>()));
         }
     }
 }
