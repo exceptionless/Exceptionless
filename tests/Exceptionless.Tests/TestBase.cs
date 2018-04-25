@@ -36,8 +36,22 @@ namespace Exceptionless.Tests {
         }
 
         protected virtual void Configure(IServiceCollection serviceCollection) {
-            var serviceProvider = serviceCollection.BuildServiceProvider();
-            Settings.Initialize(serviceProvider.GetRequiredService<IConfiguration>(), "Development");
+            var config = ConfigureSettings();
+            serviceCollection.AddSingleton<IConfiguration>(config);
+
+            _container = serviceCollection.BuildServiceProvider();
+            _initialized = true;
+        }
+
+        protected virtual IConfiguration ConfigureSettings() {
+            var config = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            Settings.Initialize(config, "Development");
+            return config;
         }
 
         protected virtual void RegisterServices(IServiceCollection services) {
@@ -51,20 +65,10 @@ namespace Exceptionless.Tests {
         }
 
         protected virtual IServiceProvider GetDefaultContainer() {
-            var services = new ServiceCollection();
-
-            var config = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables()
-                .Build();
-
-            Settings.Initialize(config, "Development");
-            services.AddSingleton<IConfiguration>(config);
-            Web.Bootstrapper.RegisterServices(services, Log);
-            RegisterServices(services);
-
-            return services.BuildServiceProvider();
+            var container = new ServiceCollection();
+            Configure(container);
+            RegisterServices(container);
+            return container.BuildServiceProvider();
         }
 
         public virtual void Dispose() {
