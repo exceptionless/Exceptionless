@@ -9,11 +9,6 @@
     <ProjectReference Include="..\Exceptionless.Insulation\Exceptionless.Insulation.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="FluentCommandLineParser" Version="1.4.3" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="2.1.0-preview2-final" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="2.1.0-preview2-final" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="appsettings.yml" Link="appsettings.yml" CopyToOutputDirectory="Always" />
     <None Include="appsettings.*.yml" Link="%(Filename).yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
   </ItemGroup>

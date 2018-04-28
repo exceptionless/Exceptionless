@@ -11,84 +11,84 @@
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "--event-posts"
+      "commandLineArgs": "EventPosts"
     },
     "EventUserDescriptionsJob": {
       "commandName": "Project",
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "event-user-descriptions"
+      "commandLineArgs": "EventUserDescriptions"
     },
     "EventNotificationsJob": {
       "commandName": "Project",
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "--event-notifications"
+      "commandLineArgs": "EventNotifications"
     },
     "MailMessageJob": {
       "commandName": "Project",
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "--mail-message"
+      "commandLineArgs": "MailMessage"
     },
     "WebHooksJob": {
       "commandName": "Project",
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "--web-hooks"
+      "commandLineArgs": "WebHooks"
     },
     "CloseInactiveSessionsJob": {
       "commandName": "Project",
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "--close-inactive-sessions"
+      "commandLineArgs": "CloseInactiveSessions"
     },
     "DailySummaryJob": {
       "commandName": "Project",
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "--daily-summary"
+      "commandLineArgs": "DailySummary"
     },
     "DownloadGeoIPDatabaseJob": {
       "commandName": "Project",
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "--download-geoip-database"
+      "commandLineArgs": "DownloadGeoipDatabase"
     },
     "RetentionLimitsJob": {
       "commandName": "Project",
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "--retention-limits"
+      "commandLineArgs": "RetentionLimits"
     },
     "WorkItemJob": {
       "commandName": "Project",
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "--work-item"
+      "commandLineArgs": "WorkItem"
     },
     "MaintainIndexesJob": {
       "commandName": "Project",
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "--maintain-indexes"
+      "commandLineArgs": "MaintainIndexes"
     },
     "StackEventCountJob": {
       "commandName": "Project",
       "environmentVariables": {
         "AppMode": "Development"
       },
-      "commandLineArgs": "--stack-event-count"
+      "commandLineArgs": "StackEventCount"
     }
   }
 }
