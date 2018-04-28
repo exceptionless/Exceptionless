@@ -37,10 +37,10 @@ jobs:
       - store_test_results:
           path: tests/Exceptionless.Tests/TestResults
       - setup_remote_docker
-      # - run:
-      #     name: Build jobs docker image
-      #     working_directory: src/Jobs
-      #     command: docker build -t $JOB_DOCKER_IMAGE .
+      - run:
+          name: Build jobs docker image
+          working_directory: src/Exceptionless.Job
+          command: docker build -t $JOB_DOCKER_IMAGE .
       - run:
           name: Build API docker image
           working_directory: src/Exceptionless.Web
@@ -57,13 +57,13 @@ jobs:
               echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
 
               # Tag and push docker image
-              #for image in {$API_DOCKER_IMAGE,$JOB_DOCKER_IMAGE}; do  
+              for image in {$API_DOCKER_IMAGE,$JOB_DOCKER_IMAGE}; do  
                 for tag in {$BUILD_TAG,latest}; do
                   (
-                    docker tag $API_DOCKER_IMAGE exceptionless/$API_DOCKER_IMAGE:$tag
-                    docker push exceptionless/$API_DOCKER_IMAGE:$tag
+                    docker tag $image exceptionless/$image:$tag
+                    docker push exceptionless/$image:$tag
                   ) &
                 done
-              #done
+              done
               wait
             fi
