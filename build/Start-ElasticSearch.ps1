@@ -45,6 +45,12 @@ For ($i = 1; $i -le $NodeCount; $i++) {
       $host.SetShouldExit($LastExitCode)
       Return
     }
+
+    Invoke-Expression ".\elasticsearch-$Version-node$i\bin\elasticsearch-plugin.bat install x-pack --batch"
+    if ($LastExitCode -ne 0) {
+      $host.SetShouldExit($LastExitCode)
+      Return
+    }
   }
 
   If ($ResetData -And (Test-Path -Path "$(Get-Location)\elasticsearch-$Version-node$i\data")) {
