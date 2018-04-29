@@ -48,9 +48,7 @@ jobs:
       - deploy:
           name: Push docker images
           command: |
-            if [ "${CIRCLE_BRANCH}" == "feature/core" ]; then
-              echo "AppScope: $APP_SCOPE"
-
+            if [ "${CIRCLE_BRANCH}" == "feature/aspnet21" ]; then
               BUILD_TAG="$BUILD_VERSION-$BUILD_SUFFIX"
 
               # Login to Docker
