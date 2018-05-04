@@ -4,7 +4,8 @@
     <IsPackable>False</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ApprovalTests" Version="3.0.13" />
+    <PackageReference Include="ApprovalTests" Version="3.0.13" NoWarn="NU1701" />
+    <PackageReference Include="ApprovalUtilities" Version="3.0.13" NoWarn="NU1701" />
     <PackageReference Include="Exceptionless.RandomData" Version="1.1.47" />
     <PackageReference Include="FluentRest" Version="4.0.0.51" />
     <PackageReference Include="Foundatio.Logging.Xunit" Version="7.0.1702-pre" />

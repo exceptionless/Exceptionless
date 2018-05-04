@@ -17,6 +17,7 @@ namespace Exceptionless.Job {
                 return result;
             } catch (Exception ex) {
                 Log.Fatal(ex, "Job terminated unexpectedly");
+                Console.WriteLine(ex.ToString());
                 return 1;
             } finally {
                 Log.CloseAndFlush();
