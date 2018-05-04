@@ -4,10 +4,10 @@
     <IsPackable>False</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ApprovalTests" Version="3.0.13" NoWarn="NU1701" />
-    <PackageReference Include="ApprovalUtilities" Version="3.0.13" NoWarn="NU1701" />
+    <PackageReference Include="ApprovalTests" Version="3.0.14" NoWarn="NU1701" />
+    <PackageReference Include="ApprovalUtilities" Version="3.0.14" NoWarn="NU1701" />
     <PackageReference Include="Exceptionless.RandomData" Version="1.1.47" />
-    <PackageReference Include="FluentRest" Version="4.0.0.51" />
+    <PackageReference Include="FluentRest" Version="4.0.0.54" />
     <PackageReference Include="Foundatio.Logging.Xunit" Version="7.0.1702-pre" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="2.1.0-preview2-final" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.0" />
