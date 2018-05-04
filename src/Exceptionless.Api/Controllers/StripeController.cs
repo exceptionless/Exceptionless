@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
@@ -32,16 +33,16 @@ namespace Exceptionless.Api.Controllers {
                     return BadRequest();
                 }
 
-                if (!Request.Headers.TryGetValue("Stripe-Signature", out var signature) || String.IsNullOrEmpty(signature)) {
+                if (!Request.Headers.TryGetValue("Stripe-Signature", out var signature) || String.IsNullOrEmpty(signature.FirstOrDefault())) {
                     _logger.LogWarning("No Stripe-Signature header was sent with incoming event.");
                     return BadRequest();
                 }
 
                 StripeEvent stripeEvent;
                 try {
-                    stripeEvent = StripeEventUtility.ConstructEvent(json, signature, Settings.Current.StripeWebHookSigningSecret);
+                    stripeEvent = StripeEventUtility.ConstructEvent(json, signature.FirstOrDefault(), Settings.Current.StripeWebHookSigningSecret);
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Unable to parse incoming event with {Signature}: {Message}", signature, ex.Message);
+                    _logger.LogError(ex, "Unable to parse incoming event with {Signature}: {Message}", signature.FirstOrDefault(), ex.Message);
                     return BadRequest();
                 }
 
