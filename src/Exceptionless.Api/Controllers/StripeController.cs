@@ -41,7 +41,7 @@ namespace Exceptionless.Api.Controllers {
                 try {
                     stripeEvent = StripeEventUtility.ConstructEvent(json, signature, Settings.Current.StripeWebHookSigningSecret);
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Unable to parse incoming event: {Message}", ex.Message);
+                    _logger.LogError(ex, "Unable to parse incoming event with {Signature}: {Message}", signature, ex.Message);
                     return BadRequest();
                 }
 
