@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core;
@@ -6,9 +7,7 @@ using Exceptionless.Core.Billing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 using Stripe;
-#pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
     [Route(API_PREFIX + "/stripe")]
@@ -25,24 +24,19 @@ namespace Exceptionless.Api.Controllers {
 
         [AllowAnonymous]
         [HttpPost]
-        public async Task<IActionResult> PostAsync([FromBody] JObject data) {
-            using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext).Property("event", data))) {
-                string json = data?.ToString();
+        public async Task<IActionResult> PostAsync() {
+            string json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+            using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext).Property("event", json))) {
                 if (String.IsNullOrEmpty(json)) {
                     _logger.LogWarning("Unable to get json of incoming event.");
                     return BadRequest();
                 }
 
-                if (!Request.Headers.TryGetValue("Stripe-Signature", out var signature) || String.IsNullOrEmpty(signature.FirstOrDefault())) {
-                    _logger.LogWarning("No Stripe-Signature header was sent with incoming event.");
-                    return BadRequest();
-                }
-
                 StripeEvent stripeEvent;
                 try {
-                    stripeEvent = StripeEventUtility.ConstructEvent(json, signature.FirstOrDefault(), Settings.Current.StripeWebHookSigningSecret);
+                    stripeEvent = StripeEventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], Settings.Current.StripeWebHookSigningSecret);
                 } catch (Exception ex) {
-                    _logger.LogError(ex, "Unable to parse incoming event with {Signature}: {Message}", signature.FirstOrDefault(), ex.Message);
+                    _logger.LogError(ex, "Unable to parse incoming event with {Signature}: {Message}", Request.Headers["Stripe-Signature"], ex.Message);
                     return BadRequest();
                 }
 
