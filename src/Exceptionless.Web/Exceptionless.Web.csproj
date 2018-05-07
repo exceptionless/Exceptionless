@@ -16,6 +16,7 @@
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.0-preview2-final" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="2.5.1" /> 
     <PackageReference Include="OAuth2" Version="0.9.12-pre" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.7" />
     <PackageReference Include="Serilog.AspNetCore" Version="2.1.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="2.4.0" />
   </ItemGroup>

@@ -44,6 +44,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="Stripe.net" Version="15.6.1" />
     <PackageReference Include="Stripe.net" Version="15.6.1" />
+    <PackageReference Include="Stripe.net" Version="15.7.0" />
 
     <PackageReference Include="System.DirectoryServices" Version="4.5.0-preview2-26406-04" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
