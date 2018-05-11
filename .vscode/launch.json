@@ -12,35 +12,35 @@
       "stopAtEntry": false,
       "console": "integratedTerminal",
       "launchBrowser": {
-        "enabled": true,
-        "args": "${auto-detect-url}",
-        "windows": {
-          "command": "cmd.exe",
-          "args": "/C start ${auto-detect-url}"
-        },
-        "osx": {
-          "command": "open"
-        },
-        "linux": {
-          "command": "xdg-open"
-        }
+          "enabled": true,
+          "args": "${auto-detect-url}",
+          "windows": {
+              "command": "cmd.exe",
+              "args": "/C start ${auto-detect-url}"
+          },
+          "osx": {
+              "command": "open"
+          },
+          "linux": {
+              "command": "xdg-open"
+          }
       },
       "env": {
-        "AppMode": "Development"
+          "AppMode": "Development"
       }
     },
     {
-      "name": "Event Posts Job",
+      "name": "Job",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceRoot}/src/Jobs/EventPost/bin/Debug/netcoreapp2.1/EventPostsJob.dll",
+      "program": "${workspaceRoot}/src/Exceptionless.Job/bin/Debug/netcoreapp2.1/Job.dll",
       "args": [],
-      "cwd": "${workspaceRoot}/src/Jobs/EventPost",
+      "cwd": "${workspaceRoot}/src/Exceptionless.Job",
       "stopAtEntry": false,
       "console": "integratedTerminal",
       "env": {
-        "AppMode": "Development"
+          "AppMode": "Development"
       }
     }
   ]
