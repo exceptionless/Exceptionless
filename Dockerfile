@@ -42,15 +42,15 @@ COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
 
 
-# web-publish
+# api-publish
 
-FROM build AS web-publish
+FROM build AS api-publish
 WORKDIR /app/src/Exceptionless.Web
 RUN dotnet publish -c Release -o out
 
-# web
+# api
 
-FROM microsoft/dotnet:2.1-aspnetcore-runtime AS web
+FROM microsoft/dotnet:2.1-aspnetcore-runtime AS api
 WORKDIR /app
-COPY --from=web-publish /app/src/Exceptionless.Web/out ./
+COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
