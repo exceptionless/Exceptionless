@@ -8,8 +8,6 @@ services:
   #   build:
   #     context: .
   #     target: job
-  #   networks:
-  #     - exceptionless
 
   web:
     depends_on:
@@ -22,8 +20,6 @@ services:
       ConnectionStrings_ElasticSearchConnectionString: http://elasticsearch:9200
     ports:
       - 5000:80
-    networks:
-      - exceptionless
 
   elasticsearch:
     image: slideroom/elasticsearch:98
@@ -41,8 +37,6 @@ services:
         hard: -1
     volumes:
       - esdata:/usr/share/elasticsearch/data
-    networks:
-      - exceptionless
 
   kibana:
     depends_on:
@@ -50,20 +44,12 @@ services:
     image: slideroom/kibana:116
     ports:
       - 5601:5601
-    networks:
-      - exceptionless
 
   redis:
     image: redis:alpine
     ports:
       - 6379:6379
-    networks:
-      - exceptionless
  
 volumes:
   esdata:
     driver: local
-
-networks:
-  exceptionless:
-    driver: bridge
