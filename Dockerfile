@@ -22,11 +22,11 @@ RUN dotnet restore
 COPY . .
 RUN dotnet build
 
-# test
+# testrunner
 
-FROM build AS test
+FROM build AS testrunner
 WORKDIR /app/tests/Exceptionless.Tests
-#RUN dotnet test
+ENTRYPOINT ["dotnet", "test", "--logger:trx"]
 
 # job-publish
 
