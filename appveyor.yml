@@ -26,11 +26,8 @@ install:
   - cmd: curl -O https://download.microsoft.com/download/B/1/9/B19A2F87-F00F-420C-B4B9-A0BA4403F754/dotnet-sdk-2.1.300-rc1-008673-win-x64.exe
   - cmd: dotnet-sdk-2.1.300-rc1-008673-win-x64.exe /install /quiet /norestart /log install.log 
 
-before_build:
-  - ps: .\build\Set-BuildVersion.ps1 -Version $env:APPVEYOR_BUILD_VERSION -Suffix $env:VERSION_SUFFIX
-
 build_script:
-  - dotnet publish -c Release
+  - dotnet publish -c Release --version-suffix $env:VERSION_SUFFIX /p:BuildNumber=$env:APPVEYOR_BUILD_VERSION
 
 on_failure:
 #  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
