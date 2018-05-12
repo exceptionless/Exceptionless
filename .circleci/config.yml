@@ -5,46 +5,30 @@ jobs:
       - API_DOCKER_IMAGE=api-ci
       - JOB_DOCKER_IMAGE=job-ci
     docker:
-      - image: slideroom/dotnet:179
+      - image: circleci/stretch-scm-dind
       - image: slideroom/elasticsearch:98
         environment:
           - ES_JAVA_OPTS=-Xms750m -Xmx750m
     steps:
       - checkout
-      - run:
-          name: Set version
-          command: |
-            echo "export BUILD_VERSION=5.0.$CIRCLE_BUILD_NUM" >> $BASH_ENV
-            echo "export BUILD_SUFFIX=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
-      - run:
-          name: Set version props
-          working_directory: build
-          command: |
-            echo "<Project>
-              <PropertyGroup>
-                <VersionPrefix>$BUILD_VERSION</VersionPrefix>
-                <VersionSuffix>$BUILD_SUFFIX</VersionSuffix>
-              </PropertyGroup>
-            </Project>" >| version.props
-            cat version.props
-      - run:
-          name: Build
-          command: dotnet publish -c Release -o published -r debian-x64
-      - run:
-          name: Integration Tests
-          working_directory: tests/Exceptionless.Tests
-          command: dotnet test -c Release --logger trx
-      - store_test_results:
-          path: tests/Exceptionless.Tests/TestResults
       - setup_remote_docker
       - run:
+          name: Build
+          command: docker build .
+      - run:
+          name: Integration Tests
+          command: |
+            docker build --target testrunner -t exceptionless:test .
+            mkdir TestResults
+            docker run --rm -v TestResults:/app/tests/TestResults exceptionless:test
+      - store_test_results:
+          path: TestResults
+      - run:
           name: Build jobs docker image
-          working_directory: src/Exceptionless.Job
-          command: docker build -t $JOB_DOCKER_IMAGE .
+          command: docker build --target job -t $JOB_DOCKER_IMAGE .
       - run:
           name: Build API docker image
-          working_directory: src/Exceptionless.Web
-          command: docker build -t $API_DOCKER_IMAGE .
+          command: docker build --target api -t $API_DOCKER_IMAGE .
       - deploy:
           name: Push docker images
           command: |
