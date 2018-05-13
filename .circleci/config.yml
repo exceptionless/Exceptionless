@@ -5,13 +5,14 @@ jobs:
       - API_DOCKER_IMAGE=api-ci
       - JOB_DOCKER_IMAGE=job-ci
     docker:
-      - image: circleci/buildpack-deps:stretch-scm-dind
+      - image: docker:17.11.0-ce-git
       - image: slideroom/elasticsearch:98
         environment:
           - ES_JAVA_OPTS=-Xms750m -Xmx750m
     steps:
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
+          docker_layer_caching: true
       - run:
           name: Build
           command: docker build .
