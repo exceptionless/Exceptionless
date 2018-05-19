@@ -17,8 +17,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
             return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
-                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)
+                .NumberOfShards(Settings.Current.ElasticsearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticsearchNumberOfReplicas)
                 .Priority(10)));
         }
 

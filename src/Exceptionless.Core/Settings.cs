@@ -76,13 +76,13 @@ namespace Exceptionless.Core {
 
         public bool EnableBootstrapStartupActions { get; private set; }
 
-        public string ElasticSearchConnectionString { get; private set; }
+        public string ElasticsearchConnectionString { get; private set; }
 
-        public int ElasticSearchNumberOfShards { get; private set; }
+        public int ElasticsearchNumberOfShards { get; private set; }
 
-        public int ElasticSearchNumberOfReplicas { get; private set; }
+        public int ElasticsearchNumberOfReplicas { get; private set; }
 
-        public int ElasticSearchFieldsLimit { get; private set; }
+        public int ElasticsearchFieldsLimit { get; private set; }
 
         public bool EnableElasticsearchMapperSizePlugin { get; private set; }
 
@@ -246,15 +246,15 @@ namespace Exceptionless.Core {
 
             settings.DisableIndexConfiguration = configRoot.GetValue(nameof(DisableIndexConfiguration), false);
             settings.EnableSnapshotJobs = configRoot.GetValue(nameof(EnableSnapshotJobs), String.IsNullOrEmpty(settings.AppScopePrefix) && settings.AppMode == AppMode.Production);
-            settings.ElasticSearchConnectionString = configRoot.GetConnectionString(nameof(ElasticSearchConnectionString)) ?? "http://localhost:9200";
-            settings.ElasticSearchNumberOfShards = configRoot.GetValue(nameof(ElasticSearchNumberOfShards), 1);
-            settings.ElasticSearchNumberOfReplicas = configRoot.GetValue(nameof(ElasticSearchNumberOfReplicas), settings.AppMode == AppMode.Production ? 1 : 0);
-            settings.ElasticSearchFieldsLimit = configRoot.GetValue(nameof(ElasticSearchFieldsLimit), 1500);
+            settings.ElasticsearchConnectionString = configRoot.GetConnectionString("Elasticsearch") ?? "http://localhost:9200";
+            settings.ElasticsearchNumberOfShards = configRoot.GetValue(nameof(ElasticsearchNumberOfShards), 1);
+            settings.ElasticsearchNumberOfReplicas = configRoot.GetValue(nameof(ElasticsearchNumberOfReplicas), settings.AppMode == AppMode.Production ? 1 : 0);
+            settings.ElasticsearchFieldsLimit = configRoot.GetValue(nameof(ElasticsearchFieldsLimit), 1500);
             settings.EnableElasticsearchMapperSizePlugin = configRoot.GetValue(nameof(EnableElasticsearchMapperSizePlugin), settings.AppMode != AppMode.Development);
 
-            settings.RedisConnectionString = configRoot.GetConnectionString(nameof(RedisConnectionString));
+            settings.RedisConnectionString = configRoot.GetConnectionString("Redis");
 
-            settings.LdapConnectionString = configRoot.GetConnectionString(nameof(LdapConnectionString));
+            settings.LdapConnectionString = configRoot.GetConnectionString("Ldap");
             settings.EnableActiveDirectoryAuth = configRoot.GetValue(nameof(EnableActiveDirectoryAuth), !String.IsNullOrEmpty(settings.LdapConnectionString));
 
             try {

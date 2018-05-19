@@ -39,9 +39,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
             return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(BuildAnalysis)
-                .NumberOfShards(Settings.Current.ElasticSearchNumberOfShards)
-                .NumberOfReplicas(Settings.Current.ElasticSearchNumberOfReplicas)
-                .Setting("index.mapping.total_fields.limit", Settings.Current.ElasticSearchFieldsLimit)
+                .NumberOfShards(Settings.Current.ElasticsearchNumberOfShards)
+                .NumberOfReplicas(Settings.Current.ElasticsearchNumberOfReplicas)
+                .Setting("index.mapping.total_fields.limit", Settings.Current.ElasticsearchFieldsLimit)
                 .Priority(1)));
         }
 

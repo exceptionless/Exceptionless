@@ -1,7 +1,7 @@
 ---
 ConnectionStrings:
-  RedisConnectionString.off: localhost,abortConnect=false
-  ElasticsearchConnectionString.off: http://localhost:9200/
+  Redis.off: localhost,abortConnect=false
+  Elasticsearch.off: http://localhost:9200/
 
   # Base url for the ui used to build links in emails and other places.
 BaseURL: https://dev.exceptionless.io
@@ -10,7 +10,7 @@ BaseURL: https://dev.exceptionless.io
 MetricsServerName: 10.0.0.5
 
 # Elasticsearch
-ElasticSearchNumberOfReplicas: 0
+ElasticsearchNumberOfReplicas: 0
 
 # Exceptionless Client Settings
 ExceptionlessServerUrl: https://dev-api.exceptionless.io

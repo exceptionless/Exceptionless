@@ -8,7 +8,7 @@ If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
 }
 
 Write-Host "Cloning repository into $($artifactsDir)..."
-git clone "$env:BUILD_REPO_URL" "$artifactsDir" -q 2>&1 | % { "$_" }
+git clone "$env:BUILD_REPO_URL" "$artifactsDir" -q 2>&1 | ForEach-Object { "$_" }
 
 If ($LastExitCode -ne 0) {
     Write-Error "An error occurred while cloning the repository."
@@ -17,14 +17,14 @@ If ($LastExitCode -ne 0) {
 
 Push-Location $artifactsDir
 
-git fetch --all -f -q 2>&1 | %{ "$_" }
+git fetch --all -f -q 2>&1 | ForEach-Object { "$_" }
 $branches = (git branch -r) 2> $null
 If (($branches.Replace(" ", "").Split([environment]::NewLine) -contains "origin/$($env:APPVEYOR_REPO_BRANCH)") -eq $True) {
     Write-Host "Checking out branch: $env:APPVEYOR_REPO_BRANCH"
-    git checkout "$env:APPVEYOR_REPO_BRANCH" -f -q 2>&1 | %{ "$_" }
+    git checkout "$env:APPVEYOR_REPO_BRANCH" -f -q 2>&1 | ForEach-Object { "$_" }
 } else {
     Write-Host "Checking out new branch: $env:APPVEYOR_REPO_BRANCH"
-    git checkout -b "$env:APPVEYOR_REPO_BRANCH" -q 2>&1 | %{ "$_" }
+    git checkout -b "$env:APPVEYOR_REPO_BRANCH" -q 2>&1 | ForEach-Object { "$_" }
 }
 
 If ($LastExitCode -ne 0) {
@@ -33,7 +33,7 @@ If ($LastExitCode -ne 0) {
 }
 
 Write-Host "Removing existing files..."
-git rm -r * -q 2>&1 | %{ "$_" }
+git rm -r * -q 2>&1 | ForEach-Object { "$_" }
 
 Write-Host "Copying build artifacts..."
 ROBOCOPY "$sourceDir\Exceptionless.Web" "$artifactsDir" /XD "$sourceDir\Exceptionless.Web\bin" "$sourceDir\Exceptionless.Web\obj" "$sourceDir\Exceptionless.Web\Properties" /S /XF "*.nuspec" "*.settings" "*.cs" "*.Development.yml" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" /NFL /NDL /NJH /NJS /nc /ns /np
@@ -77,7 +77,7 @@ Write-Host "Copying WorkItem job..."
 ROBOCOPY "$sourceDir\Jobs\WorkItemJob\bin\Release\netcoreapp2.1\publish" "$artifactsDir\App_Data\jobs\continuous\WorkItem" "WorkItem*" "appsettings*.yml" "run.bat" /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\Jobs\WorkItemJob\bin\Release\netcoreapp2.1\publish" "$artifactsDir\App_Data\jobs\continuous\WorkItem2" "WorkItem*" "appsettings*.yml" "run.bat" /NFL /NDL /NJH /NJS /nc /ns /np
 
-git add * 2>&1 | %{ "$_" }
+git add * 2>&1 | ForEach-Object { "$_" }
 $res = git diff --cached --numstat | wc -l
 If ($res.Trim() -eq "0") {
   Write-Host "No changes since last build."
@@ -86,8 +86,8 @@ If ($res.Trim() -eq "0") {
 
 Write-Host "Pushing build to artifacts repository..."
 $tag = "build-$($env:APPVEYOR_BUILD_NUMBER)"
-git commit -a -m "Build: $env:APPVEYOR_BUILD_NUMBER Author: $env:APPVEYOR_REPO_COMMIT_AUTHOR Branch: $env:APPVEYOR_REPO_BRANCH Commit: $($env:APPVEYOR_REPO_NAME)@$($env:APPVEYOR_REPO_COMMIT)" 2>&1 | %{ "$_" }
-git push origin "$env:APPVEYOR_REPO_BRANCH" -q 2>&1 | %{ "$_" }
+git commit -a -m "Build: $env:APPVEYOR_BUILD_NUMBER Author: $env:APPVEYOR_REPO_COMMIT_AUTHOR Branch: $env:APPVEYOR_REPO_BRANCH Commit: $($env:APPVEYOR_REPO_NAME)@$($env:APPVEYOR_REPO_COMMIT)" 2>&1 | ForEach-Object { "$_" }
+git push origin "$env:APPVEYOR_REPO_BRANCH" -q 2>&1 | ForEach-Object { "$_" }
 If ($LastExitCode -ne 0) {
   Write-Error "An error occurred while pushing the build."
   Return $LastExitCode
@@ -102,7 +102,7 @@ If ($LastExitCode -ne 0) {
   Return $LastExitCode
 }
 
-git push --tags origin $env:APPVEYOR_REPO_BRANCH -q 2>&1 | %{ "$_" }
+git push --tags origin $env:APPVEYOR_REPO_BRANCH -q 2>&1 | ForEach-Object { "$_" }
 
 If ($LastExitCode -ne 0) {
   Write-Error "An error occurred while tagging the build."
