@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         private CancellationToken _shutdownToken;
 
         public ExceptionlessElasticConfiguration(IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
-            _logger.LogInformation("All new indexes will be created with {ElasticSearchNumberOfShards} Shards and {ElasticSearchNumberOfReplicas} Replicas", Settings.Current.ElasticSearchNumberOfShards, Settings.Current.ElasticSearchNumberOfReplicas);
+            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", Settings.Current.ElasticsearchNumberOfShards, Settings.Current.ElasticsearchNumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
             AddIndex(Events = new EventIndex(this));
             AddIndex(Organizations = new OrganizationIndex(this));
@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override IConnectionPool CreateConnectionPool() {
-            var serverUris = Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url));
+            var serverUris = Settings.Current.ElasticsearchConnectionString.Split(',').Select(url => new Uri(url));
             return new StaticConnectionPool(serverUris);
         }
 

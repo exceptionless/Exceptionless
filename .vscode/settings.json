@@ -5,5 +5,15 @@
         "**/.DS_Store": true,
         "build/elasticsearch-*": true,
         "build/kibana-*": true
-    }
+    },
+    "dotnet-test-explorer.testProjectPath": "tests/Exceptionless.Tests",
+    "cSpell.words": [
+        "Exceptionless",
+        "Guid",
+        "circleci",
+        "dockerignore",
+        "editorconfig",
+        "elasticsearch",
+        "gitignore"
+    ]
 }
