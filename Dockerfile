@@ -26,7 +26,7 @@ RUN dotnet build
 
 FROM build AS testrunner
 WORKDIR /app/tests/Exceptionless.Tests
-ENTRYPOINT [ "dotnet", "test", "--logger:trx" ]
+ENTRYPOINT [ "dotnet", "test", "--verbosity normal", "--logger:trx" ]
 
 # job-publish
 

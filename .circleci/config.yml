@@ -21,7 +21,8 @@ jobs:
           command: |
             docker build --target testrunner -t exceptionless:test .
             mkdir TestResults
-            docker run --rm -v TestResults:/app/tests/TestResults exceptionless:test
+            DOCKER_CID=$(docker run --network host exceptionless:test)
+            docker cp $DOCKER_CID:/app/tests/Exceptionless.Tests/TestResults /TestResults
       - store_test_results:
           path: TestResults
       - run:
