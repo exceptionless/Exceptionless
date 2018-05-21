@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using ApprovalTests.Reporters;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -11,7 +10,6 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    [UseReporter(typeof(DiffReporter))]
     public class SummaryDataTests : TestBase {
         private readonly FormattingPluginManager _formatter;
 
@@ -40,7 +38,8 @@ namespace Exceptionless.Tests.Plugins {
                 Data = data.Data
             };
 
-            ApprovalsUtility.VerifyFile(Path.ChangeExtension(path, "summary.json"), JsonConvert.SerializeObject(summary, settings));
+            string expectedContent = File.ReadAllText(Path.ChangeExtension(path, "summary.json"));
+            Assert.Equal(expectedContent, JsonConvert.SerializeObject(summary, settings));
         }
 
 #if DEBUG
@@ -64,7 +63,8 @@ namespace Exceptionless.Tests.Plugins {
                 Total = 1,
             };
 
-            ApprovalsUtility.VerifyFile(Path.ChangeExtension(path, "summary.json"), JsonConvert.SerializeObject(summary, settings));
+            string expectedContent = File.ReadAllText(Path.ChangeExtension(path, "summary.json"));
+            Assert.Equal(expectedContent, JsonConvert.SerializeObject(summary, settings));
         }
 
         public static IEnumerable<object[]> Events {

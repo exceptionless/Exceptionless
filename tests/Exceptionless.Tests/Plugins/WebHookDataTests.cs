@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using ApprovalTests.Reporters;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -12,7 +11,6 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    [UseReporter(typeof(DiffReporter))]
     public class WebHookDataTests : TestBase {
         private readonly WebHookDataPluginManager _webHookData;
         private readonly FormattingPluginManager _formatter;
@@ -32,7 +30,8 @@ namespace Exceptionless.Tests.Plugins {
             object data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
             if (expectData) {
                 string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"v{version}.event.expected.json"));
-                ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
+                string expectedContent = File.ReadAllText(filePath);
+                Assert.Equal(expectedContent, JsonConvert.SerializeObject(data, settings));
             } else {
                 Assert.Null(data);
             }
@@ -48,7 +47,8 @@ namespace Exceptionless.Tests.Plugins {
             object data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
             if (expectData) {
                 string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"v{version}.stack.expected.json"));
-                ApprovalsUtility.VerifyFile(filePath, JsonConvert.SerializeObject(data, settings));
+                string expectedContent = File.ReadAllText(filePath);
+                Assert.Equal(expectedContent, JsonConvert.SerializeObject(data, settings));
             } else {
                 Assert.Null(data);
             }
