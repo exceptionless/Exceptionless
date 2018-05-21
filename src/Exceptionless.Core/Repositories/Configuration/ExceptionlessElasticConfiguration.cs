@@ -47,6 +47,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public OrganizationIndex Organizations { get; }
 
         private static Lazy<DateTime> _maxWaitTime = new Lazy<DateTime>(() => SystemClock.UtcNow.AddMinutes(1));
+        private static bool _isFirstAttempt = true;
         protected override IElasticClient CreateElasticClient() {
             var connectionPool = CreateConnectionPool();
             var settings = new ConnectionSettings(connectionPool, s => new ElasticsearchJsonNetSerializer(s, _logger));
@@ -57,7 +58,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             var client = new ElasticClient(settings);
             var nodes = connectionPool.Nodes.Select(n => n.Uri.ToString());
             var startTime = SystemClock.UtcNow;
-            if (SystemClock.UtcNow > _maxWaitTime.Value)
+            if (SystemClock.UtcNow > _maxWaitTime.Value || !_isFirstAttempt)
                 return client;
             
             while (!_shutdownToken.IsCancellationRequested && !client.Ping().IsValid) {
@@ -73,6 +74,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
                 Thread.Sleep(1000);
             }
+            _isFirstAttempt = true;
 
             return client;
         }
