@@ -27,14 +27,12 @@ jobs:
           name: Push docker images
           command: |
             if [ "${CIRCLE_BRANCH}" == "feature/aspnet21" ]; then
-              BUILD_TAG="$BUILD_VERSION-$BUILD_SUFFIX"
-
               # Login to Docker
               echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
 
               # Tag and push docker image
               for image in {$API_DOCKER_IMAGE,$JOB_DOCKER_IMAGE}; do  
-                for tag in {$BUILD_TAG,latest}; do
+                for tag in {$CIRCLE_BUILD_NUM,latest}; do
                   (
                     docker tag $image exceptionless/$image:$tag
                     docker push exceptionless/$image:$tag
