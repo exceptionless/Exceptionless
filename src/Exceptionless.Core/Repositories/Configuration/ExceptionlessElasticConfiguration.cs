@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public EventIndex Events { get; }
         public OrganizationIndex Organizations { get; }
 
-        private static DateTime _maxWaitTime = SystemClock.UtcNow.AddMinutes(1);
+        private static Lazy<DateTime> _maxWaitTime = new Lazy<DateTime>(() => SystemClock.UtcNow.AddMinutes(1));
         protected override IElasticClient CreateElasticClient() {
             var connectionPool = CreateConnectionPool();
             var settings = new ConnectionSettings(connectionPool, s => new ElasticsearchJsonNetSerializer(s, _logger));
@@ -57,17 +57,21 @@ namespace Exceptionless.Core.Repositories.Configuration {
             var client = new ElasticClient(settings);
             var nodes = connectionPool.Nodes.Select(n => n.Uri.ToString());
             var startTime = SystemClock.UtcNow;
-            var maxWaitTime = TimeSpan.FromMinutes(1);
+            if (SystemClock.UtcNow > _maxWaitTime.Value)
+                return client;
+            
             while (!_shutdownToken.IsCancellationRequested && !client.Ping().IsValid) {
                 if (_logger.IsEnabled(LogLevel.Information))
                     _logger.LogInformation("Waiting for Elasticsearch {Server} after {Duration:g}...", nodes, SystemClock.UtcNow.Subtract(startTime));
 
-                Thread.Sleep(1000);
-                if (SystemClock.UtcNow > _maxWaitTime) {
+                if (SystemClock.UtcNow > _maxWaitTime.Value) {
                     if (_logger.IsEnabled(LogLevel.Error))
                         _logger.LogError("Unable to connect to Elasticsearch {Server} after attempting for {Duration:g}", nodes, SystemClock.UtcNow.Subtract(startTime));
+                    
                     break;
                 }
+
+                Thread.Sleep(1000);
             }
 
             return client;
