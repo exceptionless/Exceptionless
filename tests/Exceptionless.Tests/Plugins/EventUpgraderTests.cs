@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using ApprovalTests.Reporters;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventUpgrader;
@@ -11,7 +10,6 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    [UseReporter(typeof(DiffReporter))]
     public class EventUpgraderTests : TestBase {
         private readonly EventUpgraderPluginManager _upgrader;
         private readonly EventParserPluginManager _parser;
@@ -30,7 +28,8 @@ namespace Exceptionless.Tests.Plugins {
             var ctx = new EventUpgraderContext(json);
 
             _upgrader.Upgrade(ctx);
-            ApprovalsUtility.VerifyFile(Path.ChangeExtension(errorFilePath, ".expected.json"), ctx.Documents.First.ToString());
+            string expectedContent = File.ReadAllText(Path.ChangeExtension(errorFilePath, ".expected.json"));
+            Assert.Equal(expectedContent, ctx.Documents.First.ToString());
 
             var events = _parser.ParseEvents(ctx.Documents.ToString(), 2, "exceptionless/2.0.0.0");
             Assert.Single(events);

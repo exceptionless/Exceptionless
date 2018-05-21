@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using ApprovalTests.Reporters;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -13,7 +12,6 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    [UseReporter(typeof(DiffReporter))]
     public class EventParserTests : TestBase {
         private readonly EventParserPluginManager _parser;
 
@@ -58,7 +56,8 @@ namespace Exceptionless.Tests.Plugins {
             var events = _parser.ParseEvents(json, 2, "exceptionless/2.0.0.0");
             Assert.Single(events);
 
-            ApprovalsUtility.VerifyFile(eventsFilePath, events.First().ToJson(Formatting.Indented, GetService<JsonSerializerSettings>()));
+            string expectedContent = File.ReadAllText(eventsFilePath);
+            Assert.Equal(expectedContent, events.First().ToJson(Formatting.Indented, GetService<JsonSerializerSettings>()));
         }
 
         [Theory]
