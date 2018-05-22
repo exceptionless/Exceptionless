@@ -36,7 +36,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "messge": "Hello World!"
+    "message": "Hello World!"
 }
 
 ###
