@@ -10,6 +10,7 @@ services:
       AppMode: Development
       ConnectionStrings__Elasticsearch: http://elasticsearch:9200
       ConnectionStrings__Redis: redis,abortConnect=false
+      StorageFolder: /app/storage
     volumes:
       - appdata:/app/storage
 
@@ -22,6 +23,7 @@ services:
       ConnectionStrings__Elasticsearch: http://elasticsearch:9200
       ConnectionStrings__Redis: redis,abortConnect=false
       RunJobsInProcess: 'false'
+      StorageFolder: /app/storage
     ports:
       - 5000:80
     volumes:
