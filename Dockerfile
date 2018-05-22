@@ -26,6 +26,7 @@ RUN dotnet build
 
 FROM build AS testrunner
 WORKDIR /app/tests/Exceptionless.Tests
+# TODO: Switch to using xunit runner with junit export format once xunit 2.4 comes out
 ENTRYPOINT [ "dotnet", "test", "--verbosity", "minimal", "--logger:trx" ]
 
 # job-publish
@@ -40,7 +41,6 @@ FROM microsoft/dotnet:2.1-runtime AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
-
 
 # api-publish
 
