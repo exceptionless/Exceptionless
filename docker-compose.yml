@@ -1,25 +1,31 @@
 version: '3.4'
 
 services:
-  # job:
-  #   depends_on:
-  #     - elasticsearch
-  #   image: job
-  #   build:
-  #     context: .
-  #     target: job
-
-  web:
+  jobs:
     depends_on:
       - elasticsearch
-    image: web
-    build:
-      context: .
-      target: web
+    image: exceptionless/job-ci
+    command: run-all
     environment:
-      ConnectionStrings_Elasticsearch: http://elasticsearch:9200
+      AppMode: Development
+      ConnectionStrings__Elasticsearch: http://elasticsearch:9200
+      ConnectionStrings__Redis: redis,abortConnect=false
+    volumes:
+      - appdata:/app/storage
+
+  api:
+    depends_on:
+      - elasticsearch
+    image: exceptionless/api-ci
+    environment:
+      AppMode: Development
+      ConnectionStrings__Elasticsearch: http://elasticsearch:9200
+      ConnectionStrings__Redis: redis,abortConnect=false
+      RunJobsInProcess: 'false'
     ports:
       - 5000:80
+    volumes:
+      - appdata:/app/storage
 
   elasticsearch:
     image: slideroom/elasticsearch:98
@@ -52,4 +58,6 @@ services:
  
 volumes:
   esdata:
+    driver: local
+  appdata:
     driver: local
