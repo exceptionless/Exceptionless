@@ -3,7 +3,7 @@ version: '3.4'
 services:
   jobs:
     depends_on:
-      - elasticsearch
+      - api
     image: exceptionless/job-ci
     command: run-all
     environment:
@@ -28,6 +28,13 @@ services:
       - 5000:80
     volumes:
       - appdata:/app/storage
+
+  ui:
+    image: exceptionless/ui-ci
+    environment:
+      AppMode: Development
+    ports:
+      - 5100:80
 
   elasticsearch:
     image: slideroom/elasticsearch:98
