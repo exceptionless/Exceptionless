@@ -34,7 +34,7 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceRoot}/src/Exceptionless.Job/bin/Debug/netcoreapp2.1/Job.dll",
+      "program": "${workspaceRoot}/src/Exceptionless.Job/bin/Debug/netcoreapp2.1/Exceptionless.Job.dll",
       "args": [],
       "cwd": "${workspaceRoot}/src/Exceptionless.Job",
       "stopAtEntry": false,
