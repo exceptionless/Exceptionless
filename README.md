@@ -16,14 +16,13 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
 
 1. Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/master/CONTRIBUTING.md).
 2. Please follow the steps below to start configuring your Exceptionless development environment.
-  1. You will need to have an IDE like [Visual Studio Code](https://code.visualstudio.com) installed.
-  2. Start `Elasticsearch` by running the `.\build\Start-Elasticsearch.ps1` [PowerShell script] (https://github.com/PowerShell/PowerShell#get-powershell).
-  3. Open the `Exceptionless.sln` Visual Studio solution file.
-  4. Select `Exceptionless.Web` as startup projects.
-  5. Run the project by pressing `F5` to start the server.
-  6. We have a prebuilt [Exceptionless UI](https://github.com/exceptionless/Exceptionless.UI) that's configured to talk to the localhost server instance. Just navigate to [http://local-app.exceptionless.io](http://local-app.exceptionless.io) to get started.
-
-Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuBoDs) showing how to get started with the project.
+  1. Make sure you have [Visual Studio Code](https://code.visualstudio.com) installed. You can also use Visual Studio or JetBrains Rider, but these steps assume you are using Visual Studio Code.
+  2. Make sure you have [Docker](https://www.docker.com/get-docker) installed.
+  3. Open Visual Studio Code and then open the Exceptionless root folder.
+  4. Go to the `Tasks` menu and select `Run Task...` and then select `Start Elasticsearch`.
+  5. Go to the `Debug` menu and select `Start Debugging`.
+  6. Open the `exceptionless.http` file in the Exceptionless root folder and begin making API requests.
+  7. If you want to use the Exceptionless UI then Go to the `Tasks` menu and select `Run Task...` and then select `Start Exceptionless UI` and then open a browser to `http://ex-ui.localtest.me:5100`.
 
 ## Thanks
 Thanks to the community for your support!
