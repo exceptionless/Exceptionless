@@ -1,19 +1,6 @@
 version: '3.4'
 
 services:
-  jobs:
-    depends_on:
-      - api
-    image: exceptionless/job-ci
-    command: run-all
-    environment:
-      AppMode: Development
-      ConnectionStrings__Elasticsearch: http://elasticsearch:9200
-      ConnectionStrings__Redis: redis,abortConnect=false
-      StorageFolder: /app/storage
-    volumes:
-      - appdata:/app/storage
-
   api:
     depends_on:
       - elasticsearch
@@ -29,10 +16,24 @@ services:
     volumes:
       - appdata:/app/storage
 
+  jobs:
+    depends_on:
+      - api
+    image: exceptionless/job-ci
+    command: run-all
+    environment:
+      AppMode: Development
+      ConnectionStrings__Elasticsearch: http://elasticsearch:9200
+      ConnectionStrings__Redis: redis,abortConnect=false
+      StorageFolder: /app/storage
+    volumes:
+      - appdata:/app/storage
+
   ui:
     image: exceptionless/ui-ci
     environment:
       AppMode: Development
+      BaseUrl: http://ex-api.localtest.me:5000
     ports:
       - 5100:80
 
@@ -48,7 +49,7 @@ services:
       - 9300:9300
     ulimits:
       memlock:
-        soft: -1
+        soft: -1 
         hard: -1
     volumes:
       - esdata:/usr/share/elasticsearch/data
