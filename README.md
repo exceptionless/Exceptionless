@@ -23,6 +23,7 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
   5. Go to the `Debug` menu and select `Start Debugging`.
   6. Open the `exceptionless.http` file in the Exceptionless root folder and begin making API requests.
   7. If you want to use the Exceptionless UI then Go to the `Tasks` menu and select `Run Task...` and then select `Start Exceptionless UI` and then open a browser to `http://ex-ui.localtest.me:5100`.
+  8. When running locally in `Development` mode, a global administrator user `test@exceptionless.io` is automatically created with password `tester`.
 
 ## Thanks
 Thanks to the community for your support!
