@@ -173,7 +173,9 @@ namespace Exceptionless.Core {
         public static Settings Current { get; private set; }
 
         public static void Initialize(IConfiguration configRoot, string environment) {
+#pragma warning disable IDE0017 // Simplify object initialization
             var settings = new Settings();
+#pragma warning restore IDE0017 // Simplify object initialization
 
             settings.BaseURL = configRoot.GetValue<string>(nameof(BaseURL))?.TrimEnd('/');
             settings.InternalProjectId = configRoot.GetValue(nameof(InternalProjectId), "54b56e480ef9605a88a13153");

@@ -60,11 +60,11 @@ namespace Exceptionless.Core.Billing {
                 return ChangePlanResult.FailWithMessage("Invalid Organization");
 
             long currentNumberOfUsers = (await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext()).Total + organization.Invites.Count;
-            int maxUsers = plan.MaxUsers != -1 ? plan.MaxUsers : int.MaxValue;
+            int maxUsers = plan.MaxUsers != -1 ? plan.MaxUsers : Int32.MaxValue;
             if (currentNumberOfUsers > maxUsers)
                 return ChangePlanResult.FailWithMessage($"Please remove {currentNumberOfUsers - maxUsers} user{((currentNumberOfUsers - maxUsers) > 0 ? "s" : String.Empty)} and try again.");
 
-            int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : int.MaxValue;
+            int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : Int32.MaxValue;
             long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id).AnyContext();
             if (projectCount > maxProjects)
                 return ChangePlanResult.FailWithMessage($"Please remove {projectCount - maxProjects} project{((projectCount - maxProjects) > 0 ? "s" : String.Empty)} and try again.");

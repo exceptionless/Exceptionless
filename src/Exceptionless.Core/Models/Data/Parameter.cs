@@ -16,22 +16,22 @@ namespace Exceptionless.Core.Models.Data {
         public GenericArguments GenericArguments { get; set; }
 
         protected bool Equals(Parameter other) {
-            return string.Equals(Name, other.Name) && string.Equals(Type, other.Type) && string.Equals(TypeNamespace, other.TypeNamespace) && Equals(Data, other.Data) && GenericArguments.CollectionEquals(other.GenericArguments);
+            return String.Equals(Name, other.Name) && String.Equals(Type, other.Type) && String.Equals(TypeNamespace, other.TypeNamespace) && Equals(Data, other.Data) && GenericArguments.CollectionEquals(other.GenericArguments);
         }
 
         public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj))
+            if (obj is null)
                 return false;
             if (ReferenceEquals(this, obj))
                 return true;
-            if (obj.GetType() != this.GetType())
+            if (obj.GetType() != GetType())
                 return false;
             return Equals((Parameter)obj);
         }
 
         public override int GetHashCode() {
             unchecked {
-                var hashCode = Name?.GetHashCode() ?? 0;
+                int hashCode = Name?.GetHashCode() ?? 0;
                 hashCode = (hashCode * 397) ^ (Type?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ (TypeNamespace?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);

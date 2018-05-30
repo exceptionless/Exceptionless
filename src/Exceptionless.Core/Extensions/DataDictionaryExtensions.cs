@@ -36,8 +36,8 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static void RemoveSensitiveData(this DataDictionary extendedData) {
-            var removeKeys = extendedData.Keys.Where(k => k.StartsWith("-")).ToArray();
-            foreach (var key in removeKeys)
+            string[] removeKeys = extendedData.Keys.Where(k => k.StartsWith("-")).ToArray();
+            foreach (string key in removeKeys)
                 extendedData.Remove(key);
         }
     }

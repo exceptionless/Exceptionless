@@ -28,22 +28,22 @@ namespace Exceptionless.Core.Models.Data {
         }
 
         protected bool Equals(Module other) {
-            return ModuleId == other.ModuleId && string.Equals(Name, other.Name) && string.Equals(Version, other.Version) && IsEntry == other.IsEntry && CreatedDate.Equals(other.CreatedDate) && ModifiedDate.Equals(other.ModifiedDate) && Equals(Data, other.Data);
+            return ModuleId == other.ModuleId && String.Equals(Name, other.Name) && String.Equals(Version, other.Version) && IsEntry == other.IsEntry && CreatedDate.Equals(other.CreatedDate) && ModifiedDate.Equals(other.ModifiedDate) && Equals(Data, other.Data);
         }
 
         public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj))
+            if (obj is null)
                 return false;
             if (ReferenceEquals(this, obj))
                 return true;
-            if (obj.GetType() != this.GetType())
+            if (obj.GetType() != GetType())
                 return false;
             return Equals((Module)obj);
         }
 
         public override int GetHashCode() {
             unchecked {
-                var hashCode = ModuleId;
+                int hashCode = ModuleId;
                 hashCode = (hashCode * 397) ^ (Name?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ (Version?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ IsEntry.GetHashCode();

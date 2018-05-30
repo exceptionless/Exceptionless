@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (!context.Event.IsError())
                 return Task.CompletedTask;
 
-            SimpleError error = context.Event.GetSimpleError();
+            var error = context.Event.GetSimpleError();
             if (error == null)
                 return Task.CompletedTask;
             

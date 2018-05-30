@@ -13,12 +13,11 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             foreach (var doc in ctx.Documents) {
-                var clientInfo = doc["ExceptionlessClientInfo"] as JObject;
-                if (clientInfo == null || !clientInfo.HasValues || clientInfo["InstallDate"] == null)
+                if (!(doc["ExceptionlessClientInfo"] is JObject clientInfo) || !clientInfo.HasValues || clientInfo["InstallDate"] == null)
                     return;
 
                 // This shouldn't hurt using DateTimeOffset to try and parse a date. It insures you won't lose any info.
-                if (DateTimeOffset.TryParse(clientInfo["InstallDate"].ToString(), out DateTimeOffset date)) {
+                if (DateTimeOffset.TryParse(clientInfo["InstallDate"].ToString(), out var date)) {
                     clientInfo.Remove("InstallDate");
                     clientInfo.Add("InstallDate", new JValue(date));
                 } else {

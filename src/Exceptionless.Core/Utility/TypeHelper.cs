@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Helpers {
         }
 
         public static object ChangeType(object v, Type desiredType) {
-            Type currentType = v.GetType();
+            var currentType = v.GetType();
 
             if (desiredType == currentType)
                 return v;
@@ -76,12 +76,10 @@ namespace Exceptionless.Core.Helpers {
         }
 
         private static object ToBoolean(object value) {
-            bool b;
-            if (bool.TryParse(value.ToString(), out b))
+            if (Boolean.TryParse(value.ToString(), out bool b))
                 return b;
 
-            int i;
-            if (int.TryParse(value.ToString(), out i))
+            if (Int32.TryParse(value.ToString(), out int i))
                 return Convert.ToBoolean(i);
 
             return Convert.ToBoolean(value);

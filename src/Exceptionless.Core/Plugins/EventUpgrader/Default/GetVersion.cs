@@ -16,8 +16,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             }
 
             var doc = ctx.Documents.First();
-            var clientInfo = doc["ExceptionlessClientInfo"] as JObject;
-            if (clientInfo == null || !clientInfo.HasValues || clientInfo["Version"] == null) {
+            if (!(doc["ExceptionlessClientInfo"] is JObject clientInfo) || !clientInfo.HasValues || clientInfo["Version"] == null) {
                 ctx.Version = new Version();
                 return;
             }

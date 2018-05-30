@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (ev.IsSessionStart()) {
                 data.Add("Value", ev.Value.GetValueOrDefault());
 
-                DateTime? endTime = ev.GetSessionEndTime();
+                var endTime = ev.GetSessionEndTime();
                 if (endTime.HasValue)
                     data.Add("SessionEnd", endTime);
             }

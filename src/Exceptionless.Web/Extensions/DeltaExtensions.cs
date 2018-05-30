@@ -9,7 +9,7 @@ namespace Exceptionless.Web.Extensions {
             if (!value.GetChangedPropertyNames().Any())
                 return false;
 
-            MemberExpression expression = action.Body as MemberExpression ?? ((UnaryExpression)action.Body).Operand as MemberExpression;
+            var expression = action.Body as MemberExpression ?? ((UnaryExpression)action.Body).Operand as MemberExpression;
             return expression != null && value.GetChangedPropertyNames().Contains(expression.Member.Name);
         }
     }

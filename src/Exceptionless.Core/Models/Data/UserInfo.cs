@@ -35,22 +35,22 @@ namespace Exceptionless.Core.Models.Data {
         public DataDictionary Data { get; set; }
 
         protected bool Equals(UserInfo other) {
-            return string.Equals(Identity, other.Identity) && string.Equals(Name, other.Name) && Equals(Data, other.Data);
+            return String.Equals(Identity, other.Identity) && String.Equals(Name, other.Name) && Equals(Data, other.Data);
         }
 
         public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj))
+            if (obj is null)
                 return false;
             if (ReferenceEquals(this, obj))
                 return true;
-            if (obj.GetType() != this.GetType())
+            if (obj.GetType() != GetType())
                 return false;
             return Equals((UserInfo)obj);
         }
 
         public override int GetHashCode() {
             unchecked {
-                var hashCode = Identity?.GetHashCode() ?? 0;
+                int hashCode = Identity?.GetHashCode() ?? 0;
                 hashCode = (hashCode * 397) ^ (Name?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);
                 return hashCode;

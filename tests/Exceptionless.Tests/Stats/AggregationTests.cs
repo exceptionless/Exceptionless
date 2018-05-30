@@ -85,8 +85,8 @@ namespace Exceptionless.Tests.Stats {
             var startDate = SystemClock.UtcNow.SubtractDays(3);
             await CreateDataAsync(0, false);
 
-            var values = new decimal?[] { null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
-            foreach (var value in values)
+            decimal?[] values = new decimal?[] { null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+            foreach (decimal? value in values)
                 await CreateEventsAsync(1, null, value);
 
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);

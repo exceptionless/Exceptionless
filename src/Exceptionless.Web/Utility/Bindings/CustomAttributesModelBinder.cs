@@ -21,9 +21,8 @@ namespace Exceptionless.Web.Utility {
             if (bindingContext == null)
                 throw new ArgumentNullException(nameof(bindingContext));
 
-            var parameter = bindingContext.ActionContext.ActionDescriptor.Parameters.FirstOrDefault(p => p.Name == bindingContext.FieldName) as ControllerParameterDescriptor;
 
-            if (parameter == null)
+            if (!(bindingContext.ActionContext.ActionDescriptor.Parameters.FirstOrDefault(p => p.Name == bindingContext.FieldName) is ControllerParameterDescriptor parameter))
                 return _simpleModelBinder.BindModelAsync(bindingContext);
 
             if (parameter.ParameterInfo.GetCustomAttributes(typeof(IpAddressAttribute), false).Any()) {
@@ -39,7 +38,7 @@ namespace Exceptionless.Web.Utility {
 
             if (parameter.ParameterInfo.GetCustomAttributes(typeof(UserAgentAttribute), false).Any()) {
                 string userAgent;
-                if (bindingContext.HttpContext.Request.Headers.TryGetValue(Headers.Client, out StringValues values) && values.Count > 0)
+                if (bindingContext.HttpContext.Request.Headers.TryGetValue(Headers.Client, out var values) && values.Count > 0)
                     userAgent = values;
                 else
                     userAgent = bindingContext.HttpContext.Request.Headers[HeaderNames.UserAgent].ToString();

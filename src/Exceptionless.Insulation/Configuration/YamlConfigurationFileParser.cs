@@ -27,7 +27,7 @@ namespace Exceptionless.Insulation.Configuration {
                 return _data;
             
             foreach (var nodePair in mappingNode.Children) {
-                var context = ((YamlScalarNode) nodePair.Key).Value;
+                string context = ((YamlScalarNode) nodePair.Key).Value;
                 VisitYamlNode(context, nodePair.Value);
             }
 
@@ -55,7 +55,7 @@ namespace Exceptionless.Insulation.Configuration {
 
         private void VisitYamlScalarNode(string context, YamlScalarNode scalarNode) {
             EnterContext(context);
-            var currentKey = _currentPath;
+            string currentKey = _currentPath;
 
             if (_data.ContainsKey(currentKey))
                 throw new FormatException($"A duplicate key '{currentKey}' was found.");
@@ -68,7 +68,7 @@ namespace Exceptionless.Insulation.Configuration {
             EnterContext(context);
 
             foreach (var nodePair in mappingNode.Children) {
-                var innerContext = ((YamlScalarNode) nodePair.Key).Value;
+                string innerContext = ((YamlScalarNode) nodePair.Key).Value;
                 VisitYamlNode(innerContext, nodePair.Value);
             }
 
@@ -78,7 +78,7 @@ namespace Exceptionless.Insulation.Configuration {
         private void VisitYamlSequenceNode(string context, YamlSequenceNode sequenceNode) {
             EnterContext(context);
 
-            for (var i = 0; i < sequenceNode.Children.Count; ++i)
+            for (int i = 0; i < sequenceNode.Children.Count; ++i)
                 VisitYamlNode(i.ToString(), sequenceNode.Children[i]);
 
             ExitContext();

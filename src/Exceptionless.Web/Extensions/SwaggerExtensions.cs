@@ -12,11 +12,11 @@ namespace Exceptionless.Web.Extensions {
         /// </summary>
         public static void AddAutoVersioningSupport(this SwaggerGenOptions c) {
             c.DocInclusionPredicate((version, apiDescription) => {
-                var regex = @"api\/(v\d)\/";
+                string regex = @"api\/(v\d)\/";
                 var urlMatches = Regex.Match(apiDescription.RelativePath, regex);
                 if (urlMatches.Groups.Count == 2) {
                     // will be 'v1', 'v2', or '{version}'
-                    var urlVersion = urlMatches.Groups[1].Value.ToLower();
+                    string urlVersion = urlMatches.Groups[1].Value.ToLower();
                     if (urlVersion == version)
                         return true;
                 }
@@ -41,7 +41,7 @@ namespace Exceptionless.Web.Extensions {
                     if (doc.Info.Version == "v1")
                         continue;
 
-                    var key = item.Key.Replace("v{apiVersion}", doc.Info.Version);
+                    string key = item.Key.Replace("v{apiVersion}", doc.Info.Version);
                     var toAdd = item.Value;
 
                     var operations = typeof(PathItem)

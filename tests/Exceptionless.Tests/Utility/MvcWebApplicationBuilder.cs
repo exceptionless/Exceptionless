@@ -154,7 +154,7 @@ namespace Exceptionless.Tests.Utility
 
         public void ConfigureServices(IServiceCollection services) {
             var configureServices = _instance.GetType().GetMethod(nameof(ConfigureServices));
-            var parameters = Enumerable.Repeat(services, 1)
+            object[] parameters = Enumerable.Repeat(services, 1)
                 .Concat(configureServices
                     .GetParameters()
                     .Skip(1)
@@ -166,7 +166,7 @@ namespace Exceptionless.Tests.Utility
 
         public void Configure(IApplicationBuilder applicationBuilder) {
             var configure = _instance.GetType().GetMethod(nameof(Configure));
-            var parameters = Enumerable.Repeat(applicationBuilder, 1)
+            object[] parameters = Enumerable.Repeat(applicationBuilder, 1)
                 .Concat(configure
                     .GetParameters()
                     .Skip(1)

@@ -20,9 +20,8 @@ namespace Exceptionless.Web.Utility {
             if (bindingContext == null)
                 throw new ArgumentNullException(nameof(bindingContext));
 
-            var parameter = bindingContext.ActionContext.ActionDescriptor.Parameters.FirstOrDefault(p => p.Name == bindingContext.FieldName) as ControllerParameterDescriptor;
 
-            if (parameter == null)
+            if (!(bindingContext.ActionContext.ActionDescriptor.Parameters.FirstOrDefault(p => p.Name == bindingContext.FieldName) is ControllerParameterDescriptor parameter))
                 return _simpleModelBinder.BindModelAsync(bindingContext);
 
             if (parameter.ParameterInfo.GetCustomAttributes(typeof(IpAddressAttribute), false).Any()) {

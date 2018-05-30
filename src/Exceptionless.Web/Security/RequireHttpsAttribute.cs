@@ -32,7 +32,7 @@ namespace Exceptionless.Web.Security {
 
         private bool IsSecure(HttpRequest request, ILogger logger) {
             bool isLogTraceEnabled = logger.IsEnabled(LogLevel.Trace);
-            if (request.Headers.TryGetValue("X-Forwarded-Proto", out StringValues value)) {
+            if (request.Headers.TryGetValue("X-Forwarded-Proto", out var value)) {
                 if (isLogTraceEnabled) logger.LogTrace("X-Forwarded-Proto header present with value: {Value}", value.FirstOrDefault());
                 if (value.FirstOrDefault() == Uri.UriSchemeHttps)
                     return true;

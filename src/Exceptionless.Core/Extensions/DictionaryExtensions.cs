@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) {
-            dictionary.TryGetValue(key, out TValue obj);
+            dictionary.TryGetValue(key, out var obj);
             return obj;
         }
 
@@ -69,10 +69,10 @@ namespace Exceptionless.Core.Extensions {
             if (source.Count != other.Count)
                 return false;
 
-            foreach (var key in source.Keys) {
+            foreach (string key in source.Keys) {
                 var sourceValue = source[key];
 
-                if (!other.TryGetValue(key, out TValue otherValue))
+                if (!other.TryGetValue(key, out var otherValue))
                     return false;
 
                 if (sourceValue.Equals(otherValue))
@@ -84,25 +84,25 @@ namespace Exceptionless.Core.Extensions {
 
 
         public static int GetCollectionHashCode<TValue>(this IDictionary<string, TValue> source, IList<string> exclusions = null) {
-            var assemblyQualifiedName = typeof(TValue).AssemblyQualifiedName;
+            string assemblyQualifiedName = typeof(TValue).AssemblyQualifiedName;
             int hashCode = assemblyQualifiedName?.GetHashCode() ?? 0;
 
             var keyValuePairHashes = new List<int>(source.Keys.Count);
 
-            foreach (var key in source.Keys.OrderBy(x => x)) {
+            foreach (string key in source.Keys.OrderBy(x => x)) {
                 if (exclusions != null && exclusions.Contains(key))
                     continue;
 
                 var item = source[key];
                 unchecked {
-                    var kvpHash = key.GetHashCode();
+                    int kvpHash = key.GetHashCode();
                     kvpHash = (kvpHash * 397) ^ item.GetHashCode();
                     keyValuePairHashes.Add(kvpHash);
                 }
             }
 
             keyValuePairHashes.Sort();
-            foreach (var kvpHash in keyValuePairHashes) {
+            foreach (int kvpHash in keyValuePairHashes) {
                 unchecked {
                     hashCode = (hashCode * 397) ^ kvpHash;
                 }

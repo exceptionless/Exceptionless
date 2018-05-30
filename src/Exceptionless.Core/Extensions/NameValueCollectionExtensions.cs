@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static int? GetInt(this NameValueCollection collection, string name)
         {
-            var value = collection[name];
+            string value = collection[name];
             if (value == null)
                 return null;
 
@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static long? GetInt64(this NameValueCollection collection, string name) {
-            var value = collection[name];
+            string value = collection[name];
             if (value == null)
                 return null;
 

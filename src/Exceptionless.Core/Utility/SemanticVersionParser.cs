@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Utility {
 
             if (version.Length >= 3 && Version.TryParse(version, out var v))
                 semanticVersion = new SemanticVersion(v.Major > 0 ? v.Major : 0, v.Minor > 0 ? v.Minor : 0, v.Build > 0 ? v.Build : 0, v.Revision >= 0 ? new[] { v.Revision.ToString() } : EmptyIdentifiers);
-            else if (Int32.TryParse(version, out var major))
+            else if (Int32.TryParse(version, out int major))
                 semanticVersion = new SemanticVersion(major, 0);
             else
                 _logger.LogInformation("Unable to parse version: {Version}", version);

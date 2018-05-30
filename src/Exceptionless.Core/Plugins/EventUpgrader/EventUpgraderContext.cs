@@ -9,10 +9,10 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
         public EventUpgraderContext(string json, Version version = null, bool isMigration = false) {
             var jsonType = json.GetJsonType();
             if (jsonType == JsonType.Object) {
-                JObject doc = JsonConvert.DeserializeObject<JObject>(json);
+                var doc = JsonConvert.DeserializeObject<JObject>(json);
                 Documents = new JArray(doc);
             } else if (jsonType == JsonType.Array) {
-                JArray docs = JsonConvert.DeserializeObject<JArray>(json);
+                var docs = JsonConvert.DeserializeObject<JArray>(json);
                 Documents = docs;
             } else {
                 throw new ArgumentException("Invalid json data specified.", "");

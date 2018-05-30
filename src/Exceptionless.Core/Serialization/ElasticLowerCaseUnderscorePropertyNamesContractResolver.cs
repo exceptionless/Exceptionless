@@ -11,15 +11,15 @@ namespace Exceptionless.Core.Serialization {
         public ElasticLowerCaseUnderscorePropertyNamesContractResolver(IConnectionSettingsValues connectionSettings, IList<Func<Type, JsonConverter>> contractConverters) : base(connectionSettings, contractConverters) {}
 
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
-            JsonProperty property = base.CreateProperty(member, memberSerialization);
+            var property = base.CreateProperty(member, memberSerialization);
 
-            Predicate<object> shouldSerialize = property.ShouldSerialize;
+            var shouldSerialize = property.ShouldSerialize;
             property.ShouldSerialize = obj => (shouldSerialize == null || shouldSerialize(obj)) && !property.IsValueEmptyCollection(obj);
             return property;
         }
 
         protected override JsonDictionaryContract CreateDictionaryContract(Type objectType) {
-            JsonDictionaryContract contract = base.CreateDictionaryContract(objectType);
+            var contract = base.CreateDictionaryContract(objectType);
             contract.DictionaryKeyResolver = propertyName => propertyName;
             return contract;
         }

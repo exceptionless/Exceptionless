@@ -867,7 +867,7 @@ namespace Exceptionless.Tests.Pipeline {
             });
 
             foreach (var file in await storage.GetFileListAsync(Path.Combine("Exceptionless.Web", "storage", "q", "*"))) {
-                var data = await storage.GetFileContentsRawAsync(Path.ChangeExtension(file.Path, ".payload"));
+                byte[] data = await storage.GetFileContentsRawAsync(Path.ChangeExtension(file.Path, ".payload"));
                 var eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(file.Path);
                 if (!String.IsNullOrEmpty(eventPostInfo.ContentEncoding))
                     data = data.Decompress(eventPostInfo.ContentEncoding);

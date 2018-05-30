@@ -54,7 +54,7 @@ namespace Exceptionless.Web.Utility {
 
             string identityHash = id.ToSHA1();
             string heartbeatCacheKey = String.Concat("Project:", projectId, ":heartbeat:", identityHash);
-            bool close = context.Request.Query.TryGetValue("close", out var c) && Boolean.TryParse(c, out var closed) && closed;
+            bool close = context.Request.Query.TryGetValue("close", out var c) && Boolean.TryParse(c, out bool closed) && closed;
             try {
                 await Task.WhenAll(
                     _cache.SetAsync(heartbeatCacheKey, SystemClock.UtcNow, TimeSpan.FromHours(2)),
