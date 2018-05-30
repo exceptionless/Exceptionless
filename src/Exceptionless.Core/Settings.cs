@@ -172,7 +172,7 @@ namespace Exceptionless.Core {
 
         public static Settings Current { get; private set; }
 
-        public static void Initialize(IConfiguration configRoot, string environment) {
+        public static Settings ReadFromConfiguration(IConfiguration configRoot, string environment) {
 #pragma warning disable IDE0017 // Simplify object initialization
             var settings = new Settings();
 #pragma warning restore IDE0017 // Simplify object initialization
@@ -266,6 +266,8 @@ namespace Exceptionless.Core {
             } catch { }
 
             Current = settings;
+
+            return settings;
         }
 
         private SmtpEncryption GetDefaultSmtpEncryption(int port) {

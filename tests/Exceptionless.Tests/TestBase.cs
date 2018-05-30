@@ -35,23 +35,20 @@ namespace Exceptionless.Tests {
             return _container.GetRequiredService<TService>();
         }
 
-        protected virtual void Configure(IServiceCollection serviceCollection) {
-            var config = ConfigureSettings();
-            serviceCollection.AddSingleton<IConfiguration>(config);
-
-            _container = serviceCollection.BuildServiceProvider();
+        protected virtual void Configure(IServiceCollection services) {
+            services.AddSingleton(ReadSettings());
+            _container = services.BuildServiceProvider();
             _initialized = true;
         }
 
-        protected virtual IConfiguration ConfigureSettings() {
+        protected virtual Settings ReadSettings() {
             var config = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
 
-            Settings.Initialize(config, "Development");
-            return config;
+            return Settings.ReadFromConfiguration(config, "Development");
         }
 
         protected virtual void RegisterServices(IServiceCollection services) {

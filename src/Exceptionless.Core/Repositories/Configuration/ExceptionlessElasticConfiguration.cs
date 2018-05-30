@@ -23,8 +23,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
         private CancellationToken _shutdownToken;
 
-        public ExceptionlessElasticConfiguration(IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
-            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", Settings.Current.ElasticsearchNumberOfShards, Settings.Current.ElasticsearchNumberOfReplicas);
+        public ExceptionlessElasticConfiguration(Settings settings, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
+            Settings = settings;
+            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", Settings.ElasticsearchNumberOfShards, Settings.ElasticsearchNumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
             AddIndex(Events = new EventIndex(this));
             AddIndex(Organizations = new OrganizationIndex(this));
@@ -42,6 +43,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             builder.Register(new StackQueryBuilder());
         }
 
+        public Settings Settings { get; }
         public StackIndex Stacks { get; }
         public EventIndex Events { get; }
         public OrganizationIndex Organizations { get; }
@@ -80,7 +82,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override IConnectionPool CreateConnectionPool() {
-            var serverUris = Settings.Current.ElasticsearchConnectionString.Split(',').Select(url => new Uri(url));
+            var serverUris = Settings.ElasticsearchConnectionString.Split(',').Select(url => new Uri(url));
             return new StaticConnectionPool(serverUris);
         }
 

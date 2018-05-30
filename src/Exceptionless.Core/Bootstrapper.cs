@@ -202,40 +202,40 @@ namespace Exceptionless.Core {
             });
         }
 
-        public static void LogConfiguration(IServiceProvider serviceProvider, ILoggerFactory loggerFactory) {
+        public static void LogConfiguration(IServiceProvider serviceProvider, Settings settings, ILoggerFactory loggerFactory) {
             var logger = loggerFactory.CreateLogger<Bootstrapper>();
             if (!logger.IsEnabled(LogLevel.Warning))
                 return;
 
-            if (!Settings.Current.EnableMetricsReporting)
+            if (!settings.EnableMetricsReporting)
                 logger.LogWarning("StatsD Metrics is NOT enabled on {MachineName}.", Environment.MachineName);
 
-            if (String.IsNullOrEmpty(Settings.Current.RedisConnectionString))
+            if (String.IsNullOrEmpty(settings.RedisConnectionString))
                 logger.LogWarning("Redis is NOT enabled on {MachineName}.", Environment.MachineName);
 
-            if (!Settings.Current.EnableWebSockets)
+            if (!settings.EnableWebSockets)
                 logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (Settings.Current.AppMode == AppMode.Development)
+            if (settings.AppMode == AppMode.Development)
                 logger.LogWarning("Emails will NOT be sent in Development mode on {MachineName}", Environment.MachineName);
 
-            if (String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString))
+            if (String.IsNullOrEmpty(settings.AzureStorageConnectionString))
                 logger.LogWarning("Azure Storage is NOT enabled on {MachineName}", Environment.MachineName);
 
             var fileStorage = serviceProvider.GetRequiredService<IFileStorage>();
             if (fileStorage is InMemoryFileStorage)
                 logger.LogWarning("Using in memory file storage on {MachineName}", Environment.MachineName);
 
-            if (!Settings.Current.EnableBootstrapStartupActions)
+            if (!settings.EnableBootstrapStartupActions)
                 logger.LogWarning("Startup Actions is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (Settings.Current.DisableIndexConfiguration)
+            if (settings.DisableIndexConfiguration)
                 logger.LogWarning("Index Configuration is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (Settings.Current.EventSubmissionDisabled)
+            if (settings.EventSubmissionDisabled)
                 logger.LogWarning("Event Submission is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (!Settings.Current.EnableAccountCreation)
+            if (!settings.EnableAccountCreation)
                 logger.LogWarning("Account Creation is NOT enabled on {MachineName}", Environment.MachineName);
         }
 
