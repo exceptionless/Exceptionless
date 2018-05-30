@@ -81,7 +81,7 @@ namespace Exceptionless.Core.Reflection
                 throw new ArgumentNullException(nameof(name));
 
             // first try GetProperty
-            PropertyInfo property = type.GetProperty(name, flags);
+            var property = type.GetProperty(name, flags);
             if (property != null)
                 return property;
 

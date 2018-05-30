@@ -8,7 +8,7 @@ namespace Exceptionless.Core.Extensions {
         public static void MarkFixed(this Stack stack, SemanticVersion version = null) {
             stack.IsRegressed = false;
             stack.DateFixed = SystemClock.UtcNow;
-            stack.FixedInVersion = version != null ? version.ToString() : null;
+            stack.FixedInVersion = version?.ToString();
         }
 
         public static void MarkNotFixed(this Stack stack, string version = null) {

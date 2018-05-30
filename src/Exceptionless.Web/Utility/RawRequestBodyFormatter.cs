@@ -16,7 +16,7 @@ namespace Exceptionless.Web.Utility {
                 throw new ArgumentNullException(nameof(context));
 
             MediaTypeHeaderValue.TryParse(context.HttpContext.Request.ContentType, out var contentTypeHeader);
-            var contentType = contentTypeHeader?.MediaType.ToString();
+            string contentType = contentTypeHeader?.MediaType.ToString();
             if (String.IsNullOrEmpty(contentType) || contentType == "text/plain" || contentType == "application/octet-stream")
                 return true;
 
@@ -31,14 +31,14 @@ namespace Exceptionless.Web.Utility {
 
             if (String.IsNullOrEmpty(contentType) || contentType == "text/plain") {
                 using (var reader = new StreamReader(request.Body)) {
-                    var content = await reader.ReadToEndAsync();
+                    string content = await reader.ReadToEndAsync();
                     return await InputFormatterResult.SuccessAsync(content);
                 }
             }
             if (contentType == "application/octet-stream") {
                 using (var ms = new MemoryStream(2048)) {
                     await request.Body.CopyToAsync(ms);
-                    var content = ms.ToArray();
+                    byte[] content = ms.ToArray();
                     return await InputFormatterResult.SuccessAsync(content);
                 }
             }

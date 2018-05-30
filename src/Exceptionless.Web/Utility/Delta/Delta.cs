@@ -72,7 +72,7 @@ namespace Exceptionless.Web.Utility {
             if (!_propertiesThatExist.ContainsKey(name))
                 return false;
 
-            IMemberAccessor cacheHit = _propertiesThatExist[name];
+            var cacheHit = _propertiesThatExist[name];
 
             if (value == null && !IsNullable(cacheHit.MemberType))
                 return false;
@@ -86,8 +86,8 @@ namespace Exceptionless.Web.Utility {
                     }
                 } else {
                     bool isGuid = cacheHit.MemberType == typeof(Guid) && value is string;
-                    bool isEnum = cacheHit.MemberType.IsEnum && value is Int64 && (long)value <= int.MaxValue;
-                    bool isInt32 = cacheHit.MemberType == typeof(int) && value is Int64 && (long)value <= int.MaxValue;
+                    bool isEnum = cacheHit.MemberType.IsEnum && value is Int64 && (long)value <= Int32.MaxValue;
+                    bool isInt32 = cacheHit.MemberType == typeof(int) && value is Int64 && (long)value <= Int32.MaxValue;
 
                     if (!cacheHit.MemberType.IsPrimitive && !isGuid && !isEnum && !cacheHit.MemberType.IsInstanceOfType(value))
                         return false;
@@ -123,7 +123,7 @@ namespace Exceptionless.Web.Utility {
                 throw new ArgumentNullException(nameof(name));
 
             if (_propertiesThatExist.ContainsKey(name)) {
-                IMemberAccessor cacheHit = _propertiesThatExist[name];
+                var cacheHit = _propertiesThatExist[name];
                 value = cacheHit.GetValue(target ?? _entity);
                 return true;
             }
@@ -146,7 +146,7 @@ namespace Exceptionless.Web.Utility {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            if (_propertiesThatExist.TryGetValue(name, out IMemberAccessor value)) {
+            if (_propertiesThatExist.TryGetValue(name, out var value)) {
                 type = value.MemberType;
                 return true;
             }
@@ -215,7 +215,7 @@ namespace Exceptionless.Web.Utility {
 
             var changedPropertyNames = new HashSet<string>();
 
-            foreach (var propertyName in _changedProperties) {
+            foreach (string propertyName in _changedProperties) {
                 if (!TryGetPropertyValue(propertyName, out object originalValue, original))
                     changedPropertyNames.Add(propertyName);
 
@@ -249,15 +249,15 @@ namespace Exceptionless.Web.Utility {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
 
-            Type targetType = target.GetType();
+            var targetType = target.GetType();
             if (!_propertyCache.ContainsKey(targetType))
                 CachePropertyAccessors(targetType);
 
-            IMemberAccessor[] propertiesToCopy = GetChangedPropertyNames().Select(s => _propertiesThatExist[s]).ToArray();
+            var propertiesToCopy = GetChangedPropertyNames().Select(s => _propertiesThatExist[s]).ToArray();
 
-            foreach (IMemberAccessor sourceProperty in propertiesToCopy) {
+            foreach (var sourceProperty in propertiesToCopy) {
                 object value = sourceProperty.GetValue(_entity);
-                if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out IMemberAccessor targetAccessor))
+                if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out var targetAccessor))
                     continue;
 
                 if (!targetAccessor.MemberType.IsInstanceOfType(value))
@@ -277,15 +277,15 @@ namespace Exceptionless.Web.Utility {
                 throw new ArgumentNullException(nameof(target));
 
 
-            Type targetType = target.GetType();
+            var targetType = target.GetType();
             if (!_propertyCache.ContainsKey(targetType))
                 CachePropertyAccessors(targetType);
 
-            IMemberAccessor[] propertiesToCopy = GetUnchangedPropertyNames().Select(s => _propertiesThatExist[s]).ToArray();
+            var propertiesToCopy = GetUnchangedPropertyNames().Select(s => _propertiesThatExist[s]).ToArray();
 
-            foreach (IMemberAccessor sourceProperty in propertiesToCopy) {
+            foreach (var sourceProperty in propertiesToCopy) {
                 object value = sourceProperty.GetValue(_entity);
-                if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out IMemberAccessor targetAccessor))
+                if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out var targetAccessor))
                     continue;
 
                 if (!targetAccessor.MemberType.IsInstanceOfType(value))

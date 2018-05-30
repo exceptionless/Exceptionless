@@ -12,10 +12,9 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             foreach (var doc in ctx.Documents.OfType<JObject>()) {
-                JObject current = doc;
+                var current = doc;
                 while (current != null) {
-                    var extendedData = doc["ExtendedData"] as JObject;
-                    if (extendedData != null) {
+                    if (doc["ExtendedData"] is JObject extendedData) {
                         if (extendedData["ExtraExceptionProperties"] != null)
                             extendedData.Rename("ExtraExceptionProperties", "__ExceptionInfo");
 

@@ -108,7 +108,7 @@ namespace Exceptionless.Web.Extensions {
 
             string token = authHeader.Substring(6).Trim();
             string credentialstring = Encoding.UTF8.GetString(Convert.FromBase64String(token));
-            var credentials = credentialstring.Split(':', StringSplitOptions.RemoveEmptyEntries);
+            string[] credentials = credentialstring.Split(':', StringSplitOptions.RemoveEmptyEntries);
             if (credentials.Length != 2)
                 return null;
 

@@ -85,7 +85,7 @@ namespace Exceptionless.Core.Models.Collections {
         public TValue this[TKey key] {
             get { return _dictionary[key]; }
             set {
-                ChangedAction action = ContainsKey(key) ? ChangedAction.Update : ChangedAction.Add;
+                var action = ContainsKey(key) ? ChangedAction.Update : ChangedAction.Add;
 
                 _dictionary[key] = value;
                 OnChanged(new ChangedEventArgs<KeyValuePair<TKey, TValue>>(new KeyValuePair<TKey, TValue>(key, value), action));

@@ -50,7 +50,7 @@ namespace Exceptionless.Serializer {
                     continue;
                 }
 
-                var accessor = _propertyAccessors.TryGetValue(propertyName, out IMemberAccessor value) ? value : null;
+                var accessor = _propertyAccessors.TryGetValue(propertyName, out var value) ? value : null;
                 if (accessor != null) {
                     if (p.Value.Type == JTokenType.None || p.Value.Type == JTokenType.Undefined)
                         continue;
@@ -89,7 +89,7 @@ namespace Exceptionless.Serializer {
             string unknownTypeDataKey = GetDataKey(target.Data, p.Name, true);
 
             // when adding items to data, see if they are a known type and deserialize to the registered type
-            if (_dataTypeRegistry.TryGetValue(p.Name, out Type dataType)) {
+            if (_dataTypeRegistry.TryGetValue(p.Name, out var dataType)) {
                 try {
                     if (p.Value is JValue && p.Value.Type == JTokenType.String) {
                         string value = p.Value.ToString();

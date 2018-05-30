@@ -289,8 +289,7 @@ namespace Exceptionless.Tests.Mail {
             var job = GetService<MailMessageJob>();
             await job.RunAsync();
 
-            var sender = GetService<IMailSender>() as InMemoryMailSender;
-            if (sender == null)
+            if (!(GetService<IMailSender>() is InMemoryMailSender sender))
                 return;
 
             _logger.LogTrace("To:      {To}", sender.LastMessage.To);

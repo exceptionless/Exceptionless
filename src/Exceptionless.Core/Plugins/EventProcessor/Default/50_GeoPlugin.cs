@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
             var tasks = new List<Task>();
             foreach (var group in geoGroups) {
-                if (GeoResult.TryParse(group.Key, out GeoResult result) && result.IsValid()) {
+                if (GeoResult.TryParse(group.Key, out var result) && result.IsValid()) {
                     group.ForEach(c => UpdateGeoAndLocation(c.Event, result, false));
                     continue;
                 }

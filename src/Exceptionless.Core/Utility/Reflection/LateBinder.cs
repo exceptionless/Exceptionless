@@ -40,13 +40,13 @@ namespace Exceptionless.Core.Reflection
             if (String.IsNullOrEmpty(name))
                 throw new ArgumentNullException(nameof(name));
 
-            Type currentType = type;
+            var currentType = type;
             TypeAccessor typeAccessor;
             IMemberAccessor memberAccessor = null;
 
             // support nested property
-            var parts = name.Split('.');
-            foreach (var part in parts)
+            string[] parts = name.Split('.');
+            foreach (string part in parts)
             {
                 if (memberAccessor != null)
                     currentType = memberAccessor.MemberType;
@@ -116,8 +116,8 @@ namespace Exceptionless.Core.Reflection
             if (String.IsNullOrEmpty(name))
                 throw new ArgumentNullException(nameof(name));
 
-            TypeAccessor typeAccessor = GetAccessor(type);
-            IMemberAccessor memberAccessor = typeAccessor.FindField(name, flags);
+            var typeAccessor = GetAccessor(type);
+            var memberAccessor = typeAccessor.FindField(name, flags);
 
             return memberAccessor;
         }
@@ -135,16 +135,16 @@ namespace Exceptionless.Core.Reflection
             if (String.IsNullOrEmpty(name))
                 throw new ArgumentNullException(nameof(name));
 
-            Type rootType = target.GetType();
-            Type currentType = rootType;
+            var rootType = target.GetType();
+            var currentType = rootType;
             object currentTarget = target;
 
             TypeAccessor typeAccessor;
             IMemberAccessor memberAccessor = null;
 
             // support nested property
-            var parts = name.Split('.');
-            foreach (var part in parts)
+            string[] parts = name.Split('.');
+            foreach (string part in parts)
             {
                 if (memberAccessor != null)
                 {
@@ -175,7 +175,7 @@ namespace Exceptionless.Core.Reflection
             if (String.IsNullOrEmpty(name))
                 throw new ArgumentNullException(nameof(name));
 
-            Type rootType = target.GetType();
+            var rootType = target.GetType();
             var memberAccessor = FindField(rootType, name);
 
             if (memberAccessor == null)
@@ -197,16 +197,16 @@ namespace Exceptionless.Core.Reflection
             if (String.IsNullOrEmpty(name))
                 throw new ArgumentNullException(nameof(name));
 
-            Type rootType = target.GetType();
-            Type currentType = rootType;
+            var rootType = target.GetType();
+            var currentType = rootType;
             object currentTarget = target;
 
             TypeAccessor typeAccessor;
             IMemberAccessor memberAccessor = null;
 
             // support nested property
-            var parts = name.Split('.');
-            foreach (var part in parts)
+            string[] parts = name.Split('.');
+            foreach (string part in parts)
             {
                 if (memberAccessor != null)
                 {
@@ -237,7 +237,7 @@ namespace Exceptionless.Core.Reflection
             if (String.IsNullOrEmpty(name))
                 throw new ArgumentNullException(nameof(name));
 
-            Type rootType = target.GetType();
+            var rootType = target.GetType();
             var memberAccessor = FindField(rootType, name);
             if (memberAccessor == null)
                 throw new InvalidOperationException($"Could not find field '{name}' in type '{rootType.Name}'.");

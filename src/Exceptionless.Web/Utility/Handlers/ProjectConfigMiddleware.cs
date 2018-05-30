@@ -49,7 +49,7 @@ namespace Exceptionless.Web.Utility {
                 return;
             }
 
-            if (context.Request.Query.TryGetValue("v", out var v) && Int32.TryParse(v, out var version) && version == project.Configuration.Version) {
+            if (context.Request.Query.TryGetValue("v", out var v) && Int32.TryParse(v, out int version) && version == project.Configuration.Version) {
                 context.Response.StatusCode = StatusCodes.Status304NotModified;
                 return;
             }

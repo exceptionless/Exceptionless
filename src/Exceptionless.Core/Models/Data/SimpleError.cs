@@ -33,22 +33,22 @@ namespace Exceptionless.Core.Models.Data {
         public SimpleError Inner { get; set; }
 
         protected bool Equals(SimpleError other) {
-            return string.Equals(Message, other.Message) && string.Equals(Type, other.Type) && string.Equals(StackTrace, other.StackTrace) && Equals(Data, other.Data) && Equals(Inner, other.Inner);
+            return String.Equals(Message, other.Message) && String.Equals(Type, other.Type) && String.Equals(StackTrace, other.StackTrace) && Equals(Data, other.Data) && Equals(Inner, other.Inner);
         }
 
         public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj))
+            if (obj is null)
                 return false;
             if (ReferenceEquals(this, obj))
                 return true;
-            if (obj.GetType() != this.GetType())
+            if (obj.GetType() != GetType())
                 return false;
             return Equals((SimpleError)obj);
         }
 
         public override int GetHashCode() {
             unchecked {
-                var hashCode = Message?.GetHashCode() ?? 0;
+                int hashCode = Message?.GetHashCode() ?? 0;
                 hashCode = (hashCode * 397) ^ (Type?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ (StackTrace?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);

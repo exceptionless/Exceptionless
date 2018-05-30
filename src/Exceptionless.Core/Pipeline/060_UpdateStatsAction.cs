@@ -34,8 +34,8 @@ namespace Exceptionless.Core.Pipeline {
 
             try {
                 int count = stackContexts.Count;
-                DateTime minDate = stackContexts.Min(s => s.Event.Date.UtcDateTime);
-                DateTime maxDate = stackContexts.Max(s => s.Event.Date.UtcDateTime);
+                var minDate = stackContexts.Min(s => s.Event.Date.UtcDateTime);
+                var maxDate = stackContexts.Max(s => s.Event.Date.UtcDateTime);
                 await _stackService.IncrementStackUsageAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count).AnyContext();
 
                 // Update stacks in memory since they are used in notifications.

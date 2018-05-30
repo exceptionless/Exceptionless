@@ -87,28 +87,28 @@ namespace Exceptionless.Web.Controllers {
             return Ok(new {
                 EventPosts = new {
                     Active = eventQueueStats.Enqueued,
-                    Deadletter = eventQueueStats.Deadletter,
-                    Working = eventQueueStats.Working
+                    eventQueueStats.Deadletter,
+                    eventQueueStats.Working
                 },
                 MailMessages = new {
                     Active = mailQueueStats.Enqueued,
-                    Deadletter = mailQueueStats.Deadletter,
-                    Working = mailQueueStats.Working
+                    mailQueueStats.Deadletter,
+                    mailQueueStats.Working
                 },
                 UserDescriptions = new {
                     Active = userDescriptionQueueStats.Enqueued,
-                    Deadletter = userDescriptionQueueStats.Deadletter,
-                    Working = userDescriptionQueueStats.Working
+                    userDescriptionQueueStats.Deadletter,
+                    userDescriptionQueueStats.Working
                 },
                 Notifications = new {
                     Active = notificationQueueStats.Enqueued,
-                    Deadletter = notificationQueueStats.Deadletter,
-                    Working = notificationQueueStats.Working
+                    notificationQueueStats.Deadletter,
+                    notificationQueueStats.Working
                 },
                 WebHooks = new {
                     Active = webHooksQueueStats.Enqueued,
-                    Deadletter = webHooksQueueStats.Deadletter,
-                    Working = webHooksQueueStats.Working
+                    webHooksQueueStats.Deadletter,
+                    webHooksQueueStats.Working
                 }
             });
         }
