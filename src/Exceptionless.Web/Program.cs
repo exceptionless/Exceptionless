@@ -5,6 +5,7 @@ using Exceptionless.Insulation.Configuration;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
@@ -38,10 +39,10 @@ namespace Exceptionless.Web {
                 .AddCommandLine(args)
                 .Build();
 
-            Settings.Initialize(config, environment);
+            var settings = Settings.ReadFromConfiguration(config, environment);
 
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
-            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey))
+            if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
             Log.Logger = loggerConfig.CreateLogger();
@@ -57,6 +58,9 @@ namespace Exceptionless.Web {
                 })
                 .UseConfiguration(config)
                 .ConfigureLogging(b => b.AddSerilog(Log.Logger))
+                .ConfigureServices(s => {
+                    s.AddSingleton(settings);
+                })
                 .UseStartup<Startup>();
         }
     }

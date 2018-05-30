@@ -20,17 +20,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
-using Microsoft.Extensions.Configuration;
 using Joonasw.AspNetCore.SecurityHeaders;
 
 namespace Exceptionless.Web {
     public class Startup {
-        public Startup(ILoggerFactory loggerFactory, IConfiguration configuration) {
+        public Startup(ILoggerFactory loggerFactory) {
             LoggerFactory = loggerFactory;
-            Configuration = configuration;
         }
 
-        public IConfiguration Configuration { get; }
         public ILoggerFactory LoggerFactory { get; }
 
         public void ConfigureServices(IServiceCollection services) {
@@ -101,18 +98,21 @@ namespace Exceptionless.Web {
                 c.AddAutoVersioningSupport();
             });
 
+            var serviceProvider = services.BuildServiceProvider();
+            var settings = serviceProvider.GetRequiredService<Settings>();
             Bootstrapper.RegisterServices(services, LoggerFactory);
 
             services.AddSingleton(new ThrottlingOptions {
-                MaxRequestsForUserIdentifierFunc = userIdentifier => Settings.Current.ApiThrottleLimit,
+                MaxRequestsForUserIdentifierFunc = userIdentifier => settings.ApiThrottleLimit,
                 Period = TimeSpan.FromMinutes(15)
             });
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
-            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, LoggerFactory);
+            var settings = app.ApplicationServices.GetRequiredService<Settings>();
+            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, settings, LoggerFactory);
 
-            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl))
+            if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey) && !String.IsNullOrEmpty(settings.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
 
             app.UseCsp(csp => {
@@ -145,7 +145,7 @@ namespace Exceptionless.Web {
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
 
-            if (Settings.Current.ApiThrottleLimit < Int32.MaxValue) {
+            if (settings.ApiThrottleLimit < Int32.MaxValue) {
                 // Throttle api calls to X every 15 minutes by IP address.
                 app.UseMiddleware<ThrottlingMiddleware>();
             }
@@ -164,13 +164,13 @@ namespace Exceptionless.Web {
                 s.InjectStylesheet("/docs.css");
             });
 
-            if (Settings.Current.EnableWebSockets) {
+            if (settings.EnableWebSockets) {
                 app.UseWebSockets();
                 app.UseMiddleware<MessageBusBrokerMiddleware>();
             }
 
             // run startup actions registered in the container
-            if (Settings.Current.EnableBootstrapStartupActions) {
+            if (settings.EnableBootstrapStartupActions) {
                 var lifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
                 lifetime.ApplicationStarted.Register(() => {
                     var shutdownSource = new CancellationTokenSource();
