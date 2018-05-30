@@ -5,7 +5,7 @@ The definition of the word exceptionless is: to be without exception. [Exception
 
 ## Using Exceptionless
 Refer to the [Exceptionless documentation wiki](https://github.com/exceptionless/Exceptionless/wiki/Getting-Started).
-
+ 
 ## Hosting Options
 We provide very reasonably priced hosting at [Exceptionless](http://exceptionless.com). By using our hosted service, you are supporting the project and helping it get better! We also provide set up and support services.
 
