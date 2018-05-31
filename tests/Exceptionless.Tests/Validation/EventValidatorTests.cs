@@ -12,11 +12,11 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Validation {
-    public class EventValidatorTests : TestBase {
+    public class EventValidatorTests : TestWithServices {
         private readonly PersistentEvent _benchmarkEvent;
         private readonly PersistentEventValidator _validator;
 
-        public EventValidatorTests(ITestOutputHelper output) : base(output) {
+        public EventValidatorTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _validator = new PersistentEventValidator();
 
             string path = Path.Combine("..", "..", "..", "Search", "Data", "event1.json");

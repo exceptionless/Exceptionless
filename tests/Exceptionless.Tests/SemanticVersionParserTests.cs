@@ -5,9 +5,9 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests {
-    public class SemanticVersionParserTests : TestBase {
+    public class SemanticVersionParserTests : TestWithServices {
         private readonly SemanticVersionParser _parser;
-        public SemanticVersionParserTests(ITestOutputHelper output) : base(output) {
+        public SemanticVersionParserTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _parser = new SemanticVersionParser(Log);
         }
         

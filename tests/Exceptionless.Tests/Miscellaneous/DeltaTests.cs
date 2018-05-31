@@ -1,12 +1,9 @@
 ﻿using System;
 using Exceptionless.Web.Utility;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Miscellaneous {
-    public class DeltaTests : TestBase {
-        public DeltaTests(ITestOutputHelper output) : base(output) {}
-
+    public class DeltaTests {
         [Fact]
         public void CanSetUnknownProperties() {
             dynamic delta = new Delta<SimpleMessageA>();

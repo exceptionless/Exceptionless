@@ -10,12 +10,8 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    public class SummaryDataTests : TestBase {
-        private readonly FormattingPluginManager _formatter;
-
-        public SummaryDataTests(ITestOutputHelper output) : base(output) {
-            _formatter = GetService<FormattingPluginManager>();
-        }
+    public class SummaryDataTests : TestWithServices {
+        public SummaryDataTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {}
 
 #if DEBUG
         [Theory]
@@ -30,7 +26,7 @@ namespace Exceptionless.Tests.Plugins {
             var ev = json.FromJson<PersistentEvent>(settings);
             Assert.NotNull(ev);
 
-            var data = _formatter.GetEventSummaryData(ev);
+            var data = GetService<FormattingPluginManager>().GetEventSummaryData(ev);
             var summary = new EventSummaryModel {
                 TemplateKey = data.TemplateKey,
                 Id = ev.Id,
@@ -54,7 +50,7 @@ namespace Exceptionless.Tests.Plugins {
             var stack = json.FromJson<Stack>(settings);
             Assert.NotNull(stack);
 
-            var data = _formatter.GetStackSummaryData(stack);
+            var data = GetService<FormattingPluginManager>().GetStackSummaryData(stack);
             var summary = new StackSummaryModel {
                 TemplateKey = data.TemplateKey,
                 Data = data.Data,

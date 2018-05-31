@@ -17,10 +17,10 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Mail {
-    public class MailerTests : TestBase {
+    public class MailerTests : TestWithServices {
         private readonly IMailer _mailer;
 
-        public MailerTests(ITestOutputHelper output) : base(output) {
+        public MailerTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _mailer = GetService<IMailer>();
             if (_mailer is NullMailer)
                 _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());

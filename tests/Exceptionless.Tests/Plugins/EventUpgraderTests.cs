@@ -10,11 +10,11 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    public class EventUpgraderTests : TestBase {
+    public class EventUpgraderTests : TestWithServices {
         private readonly EventUpgraderPluginManager _upgrader;
         private readonly EventParserPluginManager _parser;
 
-        public EventUpgraderTests(ITestOutputHelper output) : base(output) {
+        public EventUpgraderTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _upgrader = GetService<EventUpgraderPluginManager>();
             _parser = GetService<EventParserPluginManager>();
         }

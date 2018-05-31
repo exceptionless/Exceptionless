@@ -11,11 +11,11 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    public class WebHookDataTests : TestBase {
+    public class WebHookDataTests : TestWithServices {
         private readonly WebHookDataPluginManager _webHookData;
         private readonly FormattingPluginManager _formatter;
 
-        public WebHookDataTests(ITestOutputHelper output) : base(output) {
+        public WebHookDataTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _webHookData = GetService<WebHookDataPluginManager>();
             _formatter = GetService<FormattingPluginManager>();
         }

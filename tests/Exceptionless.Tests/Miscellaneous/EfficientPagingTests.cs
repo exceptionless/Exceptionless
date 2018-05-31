@@ -5,8 +5,8 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Miscellaneous {
-    public class EfficientPagingTests : TestBase {
-        public EfficientPagingTests(ITestOutputHelper output) : base(output) {}
+    public class EfficientPagingTests : TestWithServices {
+        public EfficientPagingTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) { }
 
         [Theory]
         [InlineData("http://localhost", false, false, false)]
