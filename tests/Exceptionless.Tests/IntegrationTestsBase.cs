@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Tests.Utility;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentRest;
 using Foundatio.Serializer;
@@ -11,6 +9,8 @@ using Xunit.Abstractions;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Exceptionless.Web;
+using Newtonsoft.Json;
+using Exceptionless.Tests.Extensions;
 
 namespace Exceptionless.Tests {
     public class IntegrationTestsBase : TestBase {
@@ -29,14 +29,12 @@ namespace Exceptionless.Tests {
 
             _server = builder.Build();
 
-            var settings = GetService<Newtonsoft.Json.JsonSerializerSettings>();
+            var settings = GetService<JsonSerializerSettings>();
             _serializer = GetService<ITextSerializer>();
-            _client = new FluentClient(new JsonContentSerializer(settings), _server.CreateHandler()) {
-                BaseUri = new Uri(_server.BaseAddress + "api/v2")
-            };
             _httpClient = new HttpClient(_server.CreateHandler()) {
                 BaseAddress = new Uri(_server.BaseAddress + "api/v2/")
             };
+            _client = new FluentClient(_httpClient, new JsonContentSerializer(settings));
 
             _configuration = GetService<ExceptionlessElasticConfiguration>();
             _configuration.DeleteIndexesAsync().GetAwaiter().GetResult();
@@ -47,56 +45,44 @@ namespace Exceptionless.Tests {
             return _server.Host.Services.GetRequiredService<TService>();
         }
 
-        protected Task<FluentResponse> SendRequest(Action<SendBuilder> configure) {
-            var request = _client.CreateRequest();
-            var builder = new SendBuilder(request);
+        protected async Task<HttpResponseMessage> SendRequest(Action<AppSendBuilder> configure) {
+            var request = new HttpRequestMessage(HttpMethod.Get, _client.HttpClient.BaseAddress);
+            var builder = new AppSendBuilder(request);
             configure(builder);
 
-            if (request.ContentData != null && !(request.ContentData is HttpContent)) {
-                string mediaType = !String.IsNullOrEmpty(request.ContentType) ? request.ContentType : "application/json";
-                request.ContentData = new StringContent(_serializer.SerializeToString(request.ContentData), Encoding.UTF8, mediaType);
+            var response = await _client.SendAsync(request);
+
+            var expectedStatus = request.GetExpectedStatus();
+            if (expectedStatus.HasValue && expectedStatus.Value != response.StatusCode) {
+                string content = await response.Content.ReadAsStringAsync();
+                if (content.Length > 1000)
+                    content = content.Substring(0, 1000);
+
+                throw new HttpRequestException($"Expected status code {expectedStatus.Value} but received status code {response.StatusCode} ({response.ReasonPhrase}).\n" + content);
             }
 
-            return _client.SendAsync(request);
+            return response;
         }
 
-        protected async Task<T> SendRequestAs<T>(Action<SendBuilder> configure) {
+        protected async Task<T> SendRequestAs<T>(Action<AppSendBuilder> configure) {
             var response = await SendRequest(configure);
-            return await DeserializeResponse<T>(response);
+            return await response.DeserializeAsync<T>();
         }
 
-        protected Task<FluentResponse> SendTokenRequest(Token token, Action<SendBuilder> configure) {
-            return SendTokenRequest(token.Id, configure);
-        }
-
-        protected Task<FluentResponse> SendTokenRequest(string token, Action<SendBuilder> configure) {
-            return SendRequest(s => {
-                s.BearerToken(token);
-                configure(s);
+        protected async Task<HttpResponseMessage> SendGlobalAdminRequest(Action<AppSendBuilder> configure) {
+            return await SendRequest(b => {
+                b.AsGlobalAdminUser();
+                configure(b);
             });
         }
 
-        protected async Task<T> SendTokenRequestAs<T>(string token, Action<SendBuilder> configure) {
-            var response = await SendTokenRequest(token, configure);
-            return await DeserializeResponse<T>(response);
+        protected async Task<T> SendGlobalAdminRequestAs<T>(Action<AppSendBuilder> configure) {
+            var response = await SendGlobalAdminRequest(configure);
+            return await response.DeserializeAsync<T>();
         }
 
-        protected Task<FluentResponse> SendUserRequest(string username, string password, Action<SendBuilder> configure) {
-            return SendRequest(s => {
-                s.BasicAuthorization(username, password);
-                configure(s);
-            });
-        }
-
-        protected async Task<T> SendUserRequestAs<T>(string username, string password, Action<SendBuilder> configure) {
-            var response = await SendUserRequest(username, password, configure);
-            return await DeserializeResponse<T>(response);
-        }
-
-        protected async Task<T> DeserializeResponse<T>(FluentResponse response) {
-            string json = await response.HttpContent.ReadAsStringAsync();
-            response.EnsureSuccessStatusCode();
-            return _serializer.Deserialize<T>(json);
+        protected async Task<T> DeserializeResponse<T>(HttpResponseMessage response) {
+            return await response.DeserializeAsync<T>();
         }
 
         public override void Dispose() {
