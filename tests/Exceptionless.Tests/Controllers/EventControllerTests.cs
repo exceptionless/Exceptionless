@@ -46,8 +46,9 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task CanPostUserDescriptionAsync() {
-            await SendTokenRequest(TestConstants.ApiKey, r => r
+            await SendRequest(r => r
                .Post()
+               .AsClientUser()
                .AppendPath("events/by-ref/TestReferenceId/user-description")
                .Content(new EventUserDescription { Description = "Test Description", EmailAddress = TestConstants.UserEmail })
                .StatusCodeShouldBeAccepted()
@@ -68,8 +69,9 @@ namespace Exceptionless.Tests.Controllers {
         [Fact]
         public async Task CanPostStringAsync() {
             const string message = "simple string";
-            await SendTokenRequest(TestConstants.ApiKey, r => r
+            await SendRequest(r => r
                 .Post()
+                .AsClientUser()
                 .AppendPath("events")
                 .Content(message, "text/plain")
                 .StatusCodeShouldBeAccepted()
@@ -136,8 +138,9 @@ namespace Exceptionless.Tests.Controllers {
             if (String.IsNullOrEmpty(ev.Message))
                 ev.Message = "Generated message.";
 
-            await SendTokenRequest(TestConstants.ApiKey, r => r
+            await SendRequest(r => r
                 .Post()
+                .AsClientUser()
                 .AppendPath("events")
                 .Content(ev)
                 .StatusCodeShouldBeAccepted()
@@ -166,8 +169,9 @@ namespace Exceptionless.Tests.Controllers {
 
             await Run.InParallelAsync(batchCount, async i => {
                 var events = new RandomEventGenerator().Generate(batchSize, false);
-                await SendTokenRequest(TestConstants.ApiKey, r => r
+                await SendRequest(r => r
                    .Post()
+                   .AsClientUser()
                    .AppendPath("events")
                    .Content(events)
                    .StatusCodeShouldBeAccepted()

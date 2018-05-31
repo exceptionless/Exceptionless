@@ -18,6 +18,7 @@ using Nest;
 using Xunit;
 using Xunit.Abstractions;
 using User = Exceptionless.Core.Models.User;
+using FluentRest;
 
 namespace Exceptionless.Tests.Controllers {
     public class AuthControllerTests : IntegrationTestsBase {
@@ -619,8 +620,9 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(email, actualUser.EmailAddress);
 
             const string newPassword = "NewP@ssword2";
-            var changePasswordResult = await SendUserRequestAs<TokenResult>(email, password, r => r
+            var changePasswordResult = await SendRequestAs<TokenResult>(r => r
                 .Post()
+                .BasicAuthorization(email, password)
                 .AppendPath("auth/change-password")
                 .Content(new ChangePasswordModel {
                     CurrentPassword = password,
@@ -674,8 +676,9 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(actualUser);
             Assert.Equal(email, actualUser.EmailAddress);
 
-            await SendUserRequest(email, password, r => r
+            await SendRequest(r => r
                 .Post()
+                .BasicAuthorization(email, password)
                 .AppendPath("auth/change-password")
                 .Content(new ChangePasswordModel {
                     CurrentPassword = password,
@@ -727,8 +730,9 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(email, actualUser.EmailAddress);
 
             const string newPassword = "NewP@ssword2";
-            await SendUserRequest(email, password, r => r
+            await SendRequest(r => r
                 .Post()
+                .BasicAuthorization(email, password)
                 .AppendPath("auth/reset-password")
                 .Content(new ResetPasswordModel {
                     PasswordResetToken = user.PasswordResetToken,
@@ -779,8 +783,9 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(actualUser);
             Assert.Equal(email, actualUser.EmailAddress);
 
-            await SendUserRequest(email, password, r => r
+            await SendRequest(r => r
                 .Post()
+                .BasicAuthorization(email, password)
                 .AppendPath("auth/reset-password")
                 .Content(new ResetPasswordModel {
                     PasswordResetToken = user.PasswordResetToken,
