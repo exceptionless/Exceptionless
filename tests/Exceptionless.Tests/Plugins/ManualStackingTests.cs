@@ -8,8 +8,8 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    public class ManualStackingTests : TestBase {
-        public ManualStackingTests(ITestOutputHelper output) : base(output) {}
+    public class ManualStackingTests : TestWithServices {
+        public ManualStackingTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {}
 
         [Theory]
         [MemberData(nameof(StackingData))]

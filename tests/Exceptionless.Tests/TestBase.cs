@@ -44,7 +44,7 @@ namespace Exceptionless.Tests {
         protected virtual Settings ReadSettings() {
             var config = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
-                .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
+                .AddYamlFile("appsettings.yml", optional: true)
                 .AddEnvironmentVariables()
                 .Build();
 

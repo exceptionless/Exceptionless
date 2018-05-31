@@ -12,10 +12,10 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    public class EventParserTests : TestBase {
+    public class EventParserTests : TestWithServices {
         private readonly EventParserPluginManager _parser;
 
-        public EventParserTests(ITestOutputHelper output) : base(output) {
+        public EventParserTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _parser = GetService<EventParserPluginManager>();
         }
 

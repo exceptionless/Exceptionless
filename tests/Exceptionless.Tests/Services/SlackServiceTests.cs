@@ -10,11 +10,11 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Services {
-    public class SlackServiceTests : TestBase {
+    public class SlackServiceTests : TestWithServices {
         private readonly Project _project;
         private readonly SlackService _slackService;
 
-        public SlackServiceTests(ITestOutputHelper output) : base(output) {
+        public SlackServiceTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _slackService = GetService<SlackService>();
             _project = ProjectData.GenerateSampleProject();
             _project.Data[Project.KnownDataKeys.SlackToken] = new SlackToken {

@@ -17,13 +17,13 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    public class GeoTests : TestBase {
+    public class GeoTests : TestWithServices {
         private const string GREEN_BAY_COORDINATES = "44.5241,-87.9056";
         private const string GREEN_BAY_IP = "143.200.133.1";
         private const string IRVING_COORDINATES = "32.85,-96.9613";
         private const string IRVING_IP = "192.91.253.248";
 
-        public GeoTests(ITestOutputHelper output) : base(output) {}
+        public GeoTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) { }
 
         private async Task<IGeoIpService> GetResolverAsync(ILoggerFactory loggerFactory) {
             string dataDirectory = PathHelper.ExpandPath(".\\");

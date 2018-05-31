@@ -13,11 +13,11 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Search {
-    public class PersistentEventQueryValidatorTests : TestBase {
+    public class PersistentEventQueryValidatorTests : TestWithServices {
         private readonly ElasticQueryParser _parser;
         private readonly PersistentEventQueryValidator _validator;
 
-        public PersistentEventQueryValidatorTests(ITestOutputHelper output) : base(output) {
+        public PersistentEventQueryValidatorTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _parser = GetService<ExceptionlessElasticConfiguration>().Events.Event.QueryParser;
             _validator = GetService<PersistentEventQueryValidator>();
         }
