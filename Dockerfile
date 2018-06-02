@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:2.1-sdk AS build  
+FROM microsoft/dotnet:2.1.300-sdk-alpine3.7 AS build  
 WORKDIR /app
 
 COPY ./*.sln ./NuGet.Config ./
@@ -37,7 +37,7 @@ RUN dotnet publish -c Release -o out
 
 # job
 
-FROM microsoft/dotnet:2.1-runtime AS job
+FROM microsoft/dotnet:2.1.0-runtime-alpine3.7 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
@@ -50,7 +50,7 @@ RUN dotnet publish -c Release -o out
 
 # api
 
-FROM microsoft/dotnet:2.1-aspnetcore-runtime AS api
+FROM microsoft/dotnet:2.1.0-aspnetcore-runtime-alpine3.7 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
