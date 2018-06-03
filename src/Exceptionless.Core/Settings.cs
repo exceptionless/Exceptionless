@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Utility;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -222,6 +223,7 @@ namespace Exceptionless.Core {
                 StripeConfiguration.SetApiKey(settings.StripeApiKey);
 
             settings.StorageFolder = configRoot.GetValue<string>(nameof(StorageFolder), "|DataDirectory|\\storage");
+            settings.StorageFolder = PathHelper.ExpandPath(settings.StorageFolder);
             settings.BulkBatchSize = configRoot.GetValue(nameof(BulkBatchSize), 1000);
 
             settings.EnableRepositoryNotifications = configRoot.GetValue(nameof(EnableRepositoryNotifications), true);
