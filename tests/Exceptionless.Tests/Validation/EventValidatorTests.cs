@@ -84,7 +84,7 @@ namespace Exceptionless.Tests.Validation {
         public void ValidateDate(double? minutes, bool isValid) {
             var date = minutes.HasValue ? SystemClock.OffsetNow.AddMinutes(minutes.Value) : DateTimeOffset.MinValue;
             var result = _validator.Validate(new PersistentEvent { Type = Event.KnownTypes.Error, Date = date, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" });
-            Console.WriteLine(date + " " + result.IsValid + " " + String.Join(" ", result.Errors.Select(e => e.ErrorMessage)));
+            _logger.LogInformation(date + " " + result.IsValid + " " + String.Join(" ", result.Errors.Select(e => e.ErrorMessage)));
             Assert.Equal(isValid, result.IsValid);
         }
 

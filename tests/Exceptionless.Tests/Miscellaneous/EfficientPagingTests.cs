@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Exceptionless.Web.Utility.Results;
 using Xunit;
 using Xunit.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Tests.Miscellaneous {
     public class EfficientPagingTests : TestWithServices {
@@ -25,14 +26,14 @@ namespace Exceptionless.Tests.Miscellaneous {
             if (expectNext)
                 expectedLinkCount++;
 
+            foreach (string link in links)
+                _logger.LogInformation(link);
+
             Assert.Equal(expectedLinkCount, links.Count);
             if (expectPrevious)
                 Assert.Contains(links, l => l.Contains("previous"));
             if (expectNext)
                 Assert.Contains(links, l => l.Contains("next"));
-
-            foreach (string link in links)
-                Console.WriteLine(link);
         }
 
         [Theory]
@@ -49,14 +50,14 @@ namespace Exceptionless.Tests.Miscellaneous {
             if (expectNext)
                 expectedLinkCount++;
 
+            foreach (string link in links)
+                _logger.LogInformation(link);
+
             Assert.Equal(expectedLinkCount, links.Count);
             if (expectPrevious)
                 Assert.Contains(links, l => l.Contains("previous"));
             if (expectNext)
                 Assert.Contains(links, l => l.Contains("next"));
-
-            foreach (string link in links)
-                Console.WriteLine(link);
         }
     }
 }
