@@ -240,7 +240,8 @@ namespace Exceptionless.Core {
         }
 
         private static async Task CreateSampleDataAsync(IServiceProvider container) {
-            if (Settings.Current.AppMode != AppMode.Development)
+            if (Settings.Current.AppMode != AppMode.Development
+                || Settings.Current.DisableIndexConfiguration)
                 return;
 
             var userRepository = container.GetRequiredService<IUserRepository>();

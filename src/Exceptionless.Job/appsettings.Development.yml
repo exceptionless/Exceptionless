@@ -6,6 +6,9 @@ ConnectionStrings:
 # Base url for the ui used to build links in emails and other places.
 BaseURL: 'http://localhost:9001/#!'
 
+# Folder used to store event post data
+StorageFolder: ..\..\..\..\Exceptionless.Web\storage
+
 Serilog:
   MinimumLevel:
     Default: Debug
