@@ -19,7 +19,10 @@ auto_increment:
   before_script:
   - apk add --update curl jq
   script:
-  - GITLAB_URL=$(echo ${CI_PROJECT_URL} |awk -F "/" '{print $1 "//" $2$3}') 
+  - GITLAB_URL=$(echo ${CI_PROJECT_URL} |awk -F "/" '{print $1 "//" $2$3}')
+  - echo $TOKEN
+  - echo $GITLAB_URL
+  - echo $CI_PROJECT_ID
 
   - "VAR=$(curl -s -f  --header \"PRIVATE-TOKEN: ${TOKEN}\" \"${GITLAB_URL}/api/v4/projects/${CI_PROJECT_ID}/variables/${VAR_NAME}\" | jq  -r '.value' ) "
   - let VAR=VAR+1
