@@ -19,25 +19,21 @@ auto_increment:
   - "BUILD_NUMBER=$(curl -s -f  --header \"PRIVATE-TOKEN: ${CI_PIPELINE_IID_TOKEN}\" \"https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/variables/BUILD_NUMBER\" | jq  -r '.value' ) "
   - let BUILD_NUMBER=BUILD_NUMBER+1
   - "curl -s -f --request PUT --header \"PRIVATE-TOKEN: ${CI_PIPELINE_IID_TOKEN}\" \"https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/variables/BUILD_NUMBER\" --form \"value=${BUILD_NUMBER}\" "
-  only:
-    - master
-
-start-elasticsearch:
-  stage: test
-  script:
-    - docker run -d -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms750m -Xmx750m" slideroom/elasticsearch:98
+#  only:
+#    - master
 
 run-tests:
   stage: test
   script:
+    - docker run -d -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms750m -Xmx750m" slideroom/elasticsearch:98
     - docker build --pull --target testrunner -t exceptionless:test .
     - docker run --network host exceptionless:test
 
 build-job-master:
   stage: build
   script:
-    - docker build --target job -t "$CI_REGISTRY_IMAGE/job:$CI_COMMIT_REF_SLUG" .
-    - docker push "$CI_REGISTRY_IMAGE/job:$CI_COMMIT_REF_SLUG"
+    - docker build --target job -t "$CI_REGISTRY_IMAGE/job:$BUILD_NUMBER" .
+    - docker push "$CI_REGISTRY_IMAGE/job:$BUILD_NUMBER"
   only:
     - master
 
@@ -52,15 +48,15 @@ build-api-master:
 build-job:
   stage: build
   script:
-    - docker build --target job -t "$CI_REGISTRY_IMAGE/job:$CI_COMMIT_REF_SLUG" .
-    - docker push "$CI_REGISTRY_IMAGE/job:$CI_COMMIT_REF_SLUG"
+    - docker build --target job -t "$CI_REGISTRY_IMAGE/job:$BUILD_NUMBER-$CI_COMMIT_REF_SLUG" .
+    - docker push "$CI_REGISTRY_IMAGE/job:$BUILD_NUMBER-$CI_COMMIT_REF_SLUG"
   except:
     - master
 
 build-api:
   stage: build
   script:
-    - docker build --target api -t "$CI_REGISTRY_IMAGE/api:$CI_COMMIT_REF_SLUG" .
-    - docker push "$CI_REGISTRY_IMAGE/api:$CI_COMMIT_REF_SLUG"
+    - docker build --target api -t "$CI_REGISTRY_IMAGE/api:$BUILD_NUMBER-$CI_COMMIT_REF_SLUG" .
+    - docker push "$CI_REGISTRY_IMAGE/api:$BUILD_NUMBER-$CI_COMMIT_REF_SLUG"
   except:
     - master
