@@ -13,12 +13,21 @@ stages:
 
 auto_increment:
   stage: init
+  variables:
+    VAR_NAME: BUILD_NUMBER
+    TOKEN: ${CI_PIPELINE_IID_TOKEN}
   before_script:
   - apk add --update curl jq
   script:
-  - "BUILD_NUMBER=$(curl -s -f  --header \"PRIVATE-TOKEN: ${CI_PIPELINE_IID_TOKEN}\" \"https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/variables/BUILD_NUMBER\" | jq  -r '.value' ) "
-  - let BUILD_NUMBER=BUILD_NUMBER+1
-  - "curl -s -f --request PUT --header \"PRIVATE-TOKEN: ${CI_PIPELINE_IID_TOKEN}\" \"https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/variables/BUILD_NUMBER\" --form \"value=${BUILD_NUMBER}\" "
+  - GITLAB_URL=$(echo ${CI_PROJECT_URL} |awk -F "/" '{print $1 "//" $2$3}') 
+
+  - "VAR=$(curl -s -f  --header \"PRIVATE-TOKEN: ${TOKEN}\" \"${GITLAB_URL}/api/v4/projects/${CI_PROJECT_ID}/variables/${VAR_NAME}\" | jq  -r '.value' ) "
+  - let VAR=VAR+1
+  - "curl -s -f --request PUT --header \"PRIVATE-TOKEN: ${TOKEN}\" \"${GITLAB_URL}/api/v4/projects/${CI_PROJECT_ID}/variables/${VAR_NAME}\" --form \"value=${VAR}\" "
+  - touch $VAR.txt
+  artifacts:
+    paths: 
+    - ./*.txt
 #  only:
 #    - master
 
