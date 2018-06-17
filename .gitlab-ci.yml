@@ -20,9 +20,9 @@ auto_increment:
   - apk add --update curl jq
   script:
   - 'GITLAB_URL=$(echo ${CI_PROJECT_URL} |awk -F "/" ''{print $1 "//" $2$3}'')'
-  - 'VAR=$(curl -s -f --header "PRIVATE-TOKEN: ${TOKEN}" "${GITLAB_URL}/api/v4/projects/${CI_PROJECT_ID}/variables/${VAR_NAME}" | jq  -r ''.value'')'
+  - 'VAR=$(curl --header "PRIVATE-TOKEN: ${TOKEN}" "${GITLAB_URL}/api/v4/projects/${CI_PROJECT_ID}/variables/${VAR_NAME}" | jq  -r ''.value'')'
   - let VAR=VAR+1
-  - 'curl -s -f --request PUT --header "PRIVATE-TOKEN: ${TOKEN}" "${GITLAB_URL}/api/v4/projects/${CI_PROJECT_ID}/variables/${VAR_NAME}" --form "value=${VAR}"'
+  - 'curl --request PUT --header "PRIVATE-TOKEN: ${TOKEN}" "${GITLAB_URL}/api/v4/projects/${CI_PROJECT_ID}/variables/${VAR_NAME}" --form "value=${VAR}"'
   - touch $VAR.txt
   artifacts:
     paths: 
