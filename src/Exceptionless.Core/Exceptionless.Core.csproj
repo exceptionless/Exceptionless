@@ -24,25 +24,25 @@
     <EmbeddedResource Include="Mail\Templates\user-password-reset.html" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="7.0.0" />
-    <PackageReference Include="AutoMapper.Collection" Version="3.1.3" />
-    <PackageReference Include="FluentValidation" Version="7.6.0" />
+    <PackageReference Include="AutoMapper" Version="7.0.1" />
+    <PackageReference Include="AutoMapper.Collection" Version="3.1.4" />
+    <PackageReference Include="FluentValidation" Version="7.6.103" />
     <PackageReference Include="Foundatio" Version="7.0.1706" />
     <PackageReference Include="Foundatio.Jobs.Commands" Version="7.0.1706" />
     <PackageReference Include="Foundatio.JsonNet" Version="7.0.1706" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="5.6.758" />
-    <PackageReference Include="Handlebars.Net" Version="1.9.4" />
+    <PackageReference Include="Handlebars.Net" Version="1.9.5" />
     <PackageReference Include="MaxMind.GeoIP2" Version="3.0.0" />
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.2.1" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.1.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.1.1" />
     <PackageReference Include="NEST" Version="5.6.2" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-    <PackageReference Include="Stripe.net" Version="16.7.0" />
+    <PackageReference Include="Stripe.net" Version="16.12.0" />
 
     <PackageReference Include="System.DirectoryServices" Version="4.5.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />

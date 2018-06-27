@@ -781,7 +781,6 @@ namespace Exceptionless.Web.Controllers {
             return Ok();
         }
 
-
         [HttpPost("~/api/v1/error")]
         [ConfigurationResponseFilter]
         public Task<IActionResult> LegacyPostAsync([UserAgent] string userAgent = null) {

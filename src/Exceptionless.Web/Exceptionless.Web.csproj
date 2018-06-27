@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Exceptionless.AspNetCore.Signed" Version="4.3.2004" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.3.0" />
-    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.1" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="2.6.0" /> 
     <PackageReference Include="OAuth2" Version="0.9.12-pre" />
     <PackageReference Include="Serilog.AspNetCore" Version="2.1.1" />
