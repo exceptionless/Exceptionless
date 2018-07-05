@@ -4,7 +4,7 @@ services:
   api:
     depends_on:
       - elasticsearch
-    image: exceptionless/api-ci
+    image: exceptionless/api-ci:latest
     environment:
       AppMode: Development
       ConnectionStrings__Elasticsearch: http://elasticsearch:9200
@@ -19,7 +19,7 @@ services:
   jobs:
     depends_on:
       - api
-    image: exceptionless/job-ci
+    image: exceptionless/job-ci:latest
     command: run-all
     environment:
       AppMode: Development
@@ -30,7 +30,7 @@ services:
       - appdata:/app/storage
 
   ui:
-    image: exceptionless/ui-ci
+    image: exceptionless/ui-ci:latest
     environment:
       AppMode: Development
       BaseUrl: http://ex-api.localtest.me:5000
