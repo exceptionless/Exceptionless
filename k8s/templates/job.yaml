@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exceptionless
+spec:
+  selector:
+    matchLabels:
+      app: exceptionless-jobs
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: exceptionless-jobs
+    spec:
+      containers:
+      - name: nginx
+        image: exceptionless/job-ci:latest
+
+
+# CleanupSnapshotJob
+# CloseInactiveSessionsJob
+# DailySummaryJob
+# DownloadGeoIPDatabaseJob
+# EventNotificationsJob
+# EventPostsJob
+# EventSnapshotJob
+# EventUserDescriptionsJob
+# MailMessageJob
+# MaintainIndexesJob
+# OrganizationSnapshotJob
+# RetentionLimitsJob
+# StackEventCountJob
+# StackSnapshotJob
+# WebHooksJob
+# WorkItemJob
