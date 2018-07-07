@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-master
+  labels:
+    app: redis
+    role: master
+    tier: backend
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+  selector:
+    app: redis
+    role: master
+    tier: backend
+
+# --
+
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: exceptionless
+# spec:
+#   selector:
+#     matchLabels:
+#       app: exceptionless-api
+#   replicas: 2
+#   template:
+#     metadata:
+#       labels:
+#         app: exceptionless-api
+#     spec:
+#       containers:
+#       - name: nginx
+#         image: exceptionless/api-ci:latest
