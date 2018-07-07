@@ -167,7 +167,7 @@ namespace Exceptionless.Web.Controllers {
 
         /// <summary>
         /// This controller action is called by zapier to add a reference link to a stack.
-        /// </summary>=
+        /// </summary>
         [HttpPost("~/api/v1/stack/addlink")]
         [HttpPost("add-link")]
         [ApiExplorerSettings(IgnoreApi = true)]

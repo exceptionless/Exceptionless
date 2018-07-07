@@ -154,6 +154,12 @@ namespace Exceptionless.Web.Controllers {
         }
 
         #endregion
+        
+        [Obsolete]
+        [HttpGet("~/api/v1/project/config")]
+        public Task<ActionResult<ClientConfiguration>> GetV1ConfigAsync(string id = null, int? v = null) {
+            return GetConfigAsync(id, v);
+        }
 
         /// <summary>
         /// Get configuration settings
@@ -164,7 +170,6 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpGet("config")]
         [HttpGet("{id:objectid}/config")]
-        [HttpGet("~/api/v1/project/config")]
         public async Task<ActionResult<ClientConfiguration>> GetConfigAsync(string id = null, int? v = null) {
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();
