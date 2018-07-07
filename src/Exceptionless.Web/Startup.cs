@@ -21,6 +21,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using Joonasw.AspNetCore.SecurityHeaders;
+using System.Collections.Generic;
 
 namespace Exceptionless.Web {
     public class Startup {
@@ -76,26 +77,31 @@ namespace Exceptionless.Web {
             });
             services.AddSwaggerGen(c => {
                 c.SwaggerDoc("v2", new Info {
-                    Title = "Exceptionless API V2",
+                    Title = "Exceptionless API",
                     Version = "v2"
                 });
-                c.SwaggerDoc("v1", new Info {
-                    Title = "Exceptionless API V1",
-                    Version = "v1"
-                });
 
-                c.AddSecurityDefinition("access_token", new ApiKeyScheme {
-                    Name = "access_token",
+                c.AddSecurityDefinition("Bearer", new ApiKeyScheme {
+                    Description = "Authorization token. Example: \"Bearer {apikey}\"",
+                    Name = "Authorization",
                     In = "header",
-                    Description = "API Key Authentication"
+                    Type = "apiKey",
                 });
-                c.AddSecurityDefinition("basic", new BasicAuthScheme {
+                c.AddSecurityDefinition("Basic", new BasicAuthScheme {
+                    Type = "basic",
                     Description = "Basic HTTP Authentication"
                 });
+                c.AddSecurityRequirement(new Dictionary<string, IEnumerable<string>> {
+                    { "Basic", new string[] { } },
+                    { "Bearer", new string[] { } }
+                });
+                
+                c.OperationFilter<ExceptionlessOperationFilter>();
+
                 if (File.Exists($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml"))
                     c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml");
+                
                 c.IgnoreObsoleteActions();
-                c.AddAutoVersioningSupport();
             });
 
             var serviceProvider = services.BuildServiceProvider();
@@ -159,8 +165,7 @@ namespace Exceptionless.Web {
             });
             app.UseSwaggerUI(s => {
                 s.RoutePrefix = "docs";
-                s.SwaggerEndpoint("/docs/v2/swagger.json", "Exceptionless API V2");
-                s.SwaggerEndpoint("/docs/v1/swagger.json", "Exceptionless API V1");
+                s.SwaggerEndpoint("/docs/v2/swagger.json", "Exceptionless API");
                 s.InjectStylesheet("/docs.css");
             });
 

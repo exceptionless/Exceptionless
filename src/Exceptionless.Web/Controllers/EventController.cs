@@ -581,6 +581,7 @@ namespace Exceptionless.Web.Controllers {
             return StatusCode(StatusCodes.Status202Accepted);
         }
 
+        [Obsolete]
         [HttpPatch("~/api/v1/error/{id:objectid}")]
         [ConfigurationResponseFilter]
         public async Task<IActionResult> LegacyPatchAsync(string id, Delta<UpdateEvent> changes) {
@@ -634,6 +635,16 @@ namespace Exceptionless.Web.Controllers {
             return Ok();
         }
 
+        [Obsolete]
+        [HttpGet("~/api/v1/events/submit")]
+        [HttpGet("~/api/v1/events/submit/{type:minlength(1)}")]
+        [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit")]
+        [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
+        [ConfigurationResponseFilter]
+        public Task<IActionResult> GetSubmitEventV1Async(string projectId = null, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
+            return GetSubmitEventAsync(projectId, 1, type, userAgent, parameters);
+        }
+
         /// <summary>
         /// Create
         /// </summary>
@@ -651,19 +662,22 @@ namespace Exceptionless.Web.Controllers {
         /// <code><![CDATA[/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
         /// </remarks>
         /// <param name="projectId">The identifier of the project.</param>
-        /// <param name="apiVersion">The api version that should be used</param>
         /// <param name="type">The event type</param>
         /// <param name="userAgent">The user agent that submitted the event.</param>
         /// <param name="parameters">Query String parameters that control what properties are set on the event</param>
         /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
-        [HttpGet("~/api/v{apiVersion:int=2}/events/submit")]
-        [HttpGet("~/api/v{apiVersion:int=2}/events/submit/{type:minlength(1)}")]
-        [HttpGet("~/api/v{apiVersion:int=2}/projects/{projectId:objectid}/events/submit")]
-        [HttpGet("~/api/v{apiVersion:int=2}/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
+        [HttpGet("submit")]
+        [HttpGet("submit/{type:minlength(1)}")]
+        [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit")]
+        [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
         [ConfigurationResponseFilter]
-        public async Task<IActionResult> GetSubmitEventAsync(string projectId = null, int apiVersion = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
+        public Task<IActionResult> GetSubmitEventV2Async(string projectId = null, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
+            return GetSubmitEventAsync(projectId, 2, type, userAgent, parameters);
+        }
+
+        private async Task<IActionResult> GetSubmitEventAsync(string projectId = null, int apiVersion = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
             var filteredParameters = parameters?.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty) && !_ignoredKeys.Contains(p.Key)).ToList();
             if (filteredParameters == null || filteredParameters.Count == 0)
                 return Ok();
@@ -781,10 +795,20 @@ namespace Exceptionless.Web.Controllers {
             return Ok();
         }
 
+        [Obsolete]
         [HttpPost("~/api/v1/error")]
         [ConfigurationResponseFilter]
         public Task<IActionResult> LegacyPostAsync([UserAgent] string userAgent = null) {
             return PostAsync(null, 1, userAgent);
+        }
+
+        [Obsolete]
+        [HttpPost("~/api/v1/events")]
+        [HttpPost("~/api/v1/projects/{projectId:objectid}/events")]
+        [ConfigurationResponseFilter]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
+        public Task <IActionResult> PostV1Async(string projectId = null, [UserAgent]string userAgent = null) {
+            return PostAsync(projectId, 1, userAgent);
         }
 
         ///  <summary>
@@ -831,17 +855,20 @@ namespace Exceptionless.Web.Controllers {
         ///      }
         ///  </code>
         ///  </remarks>
-        /// <param name="projectId">The identifier of the project.</param>
-        ///  <param name="apiVersion">The api version that should be used</param>
+        ///  <param name="projectId">The identifier of the project.</param>
         ///  <param name="userAgent">The user agent that submitted the event.</param>
         ///  <response code="202">Accepted</response>
         ///  <response code="400">No project id specified and no default project was found.</response>
         ///  <response code="404">No project was found.</response>
-        [HttpPost("~/api/v{apiVersion:int=2}/events")]
-        [HttpPost("~/api/v{apiVersion:int=2}/projects/{projectId:objectid}/events")]
+        [HttpPost]
+        [HttpPost("~/api/v2/projects/{projectId:objectid}/events")]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
-        public async Task <IActionResult> PostAsync(string projectId = null, int apiVersion = 2, [UserAgent]string userAgent = null) {
+        public Task <IActionResult> PostV2Async(string projectId = null, [UserAgent]string userAgent = null) {
+            return PostAsync(projectId, 2, userAgent);
+        }
+
+        private async Task <IActionResult> PostAsync(string projectId = null, int apiVersion = 2, [UserAgent]string userAgent = null) {
             if (Request.ContentLength.HasValue && Request.ContentLength.Value <= 0)
                 return StatusCode(StatusCodes.Status202Accepted);
 

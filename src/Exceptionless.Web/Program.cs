@@ -56,8 +56,9 @@ namespace Exceptionless.Web {
                     if (Settings.Current.MaximumEventPostSize > 0)
                         c.Limits.MaxRequestBodySize = Settings.Current.MaximumEventPostSize;
                 })
+                .UseSerilog(Log.Logger)
+                .SuppressStatusMessages(true)
                 .UseConfiguration(config)
-                .ConfigureLogging(b => b.AddSerilog(Log.Logger))
                 .ConfigureServices(s => {
                     s.AddSingleton(settings);
                 })

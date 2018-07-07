@@ -2,93 +2,94 @@
   "profiles": {
     "AllJobs": {
       "commandName": "Project",
+      "commandLineArgs": "run-all",
       "environmentVariables": {
         "AppMode": "Development"
       }
     },
     "EventPostsJob": {
       "commandName": "Project",
+      "commandLineArgs": "EventPosts",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "EventPosts"
+      }
     },
     "EventUserDescriptionsJob": {
       "commandName": "Project",
+      "commandLineArgs": "EventUserDescriptions",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "EventUserDescriptions"
+      }
     },
     "EventNotificationsJob": {
       "commandName": "Project",
+      "commandLineArgs": "EventNotifications",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "EventNotifications"
+      }
     },
     "MailMessageJob": {
       "commandName": "Project",
+      "commandLineArgs": "MailMessage",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "MailMessage"
+      }
     },
     "WebHooksJob": {
       "commandName": "Project",
+      "commandLineArgs": "WebHooks",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "WebHooks"
+      }
     },
     "CloseInactiveSessionsJob": {
       "commandName": "Project",
+      "commandLineArgs": "CloseInactiveSessions",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "CloseInactiveSessions"
+      }
     },
     "DailySummaryJob": {
       "commandName": "Project",
+      "commandLineArgs": "DailySummary",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "DailySummary"
+      }
     },
     "DownloadGeoIPDatabaseJob": {
       "commandName": "Project",
+      "commandLineArgs": "DownloadGeoipDatabase",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "DownloadGeoipDatabase"
+      }
     },
     "RetentionLimitsJob": {
       "commandName": "Project",
+      "commandLineArgs": "RetentionLimits",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "RetentionLimits"
+      }
     },
     "WorkItemJob": {
       "commandName": "Project",
+      "commandLineArgs": "WorkItem",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "WorkItem"
+      }
     },
     "MaintainIndexesJob": {
       "commandName": "Project",
+      "commandLineArgs": "MaintainIndexes",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "MaintainIndexes"
+      }
     },
     "StackEventCountJob": {
       "commandName": "Project",
+      "commandLineArgs": "StackEventCount",
       "environmentVariables": {
         "AppMode": "Development"
-      },
-      "commandLineArgs": "StackEventCount"
+      }
     }
   }
 }
