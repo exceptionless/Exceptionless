@@ -26,7 +26,7 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="7.0.1" />
     <PackageReference Include="AutoMapper.Collection" Version="4.0.0" />
-    <PackageReference Include="FluentValidation" Version="7.6.103" />
+    <PackageReference Include="FluentValidation" Version="7.6.104" />
     <PackageReference Include="Foundatio" Version="7.0.1706" />
     <PackageReference Include="Foundatio.Jobs.Commands" Version="7.0.1706" />
     <PackageReference Include="Foundatio.JsonNet" Version="7.0.1706" />
@@ -42,7 +42,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.1.1" />
     <PackageReference Include="NEST" Version="5.6.3" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-    <PackageReference Include="Stripe.net" Version="16.14.0" />
+    <PackageReference Include="Stripe.net" Version="16.16.0" />
 
     <PackageReference Include="System.DirectoryServices" Version="4.5.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
