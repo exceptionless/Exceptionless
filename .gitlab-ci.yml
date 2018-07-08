@@ -7,24 +7,8 @@ before_script:
   - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
 
 stages:
-  - init
   - test
   - build
-
-auto_increment:
-  stage: init
-  variables:
-    VAR_NAME: BUILD_NUMBER
-    TOKEN: ${CI_PIPELINE_IID_TOKEN}
-  before_script:
-  - apk add --update curl jq
-  script:
-  - 'GITLAB_URL=$(echo ${CI_PROJECT_URL} |awk -F "/" ''{print $1 "//" $2$3}'')'
-  - 'VAR=$(curl -s --header "PRIVATE-TOKEN: ${TOKEN}" "${GITLAB_URL}/api/v4/projects/${CI_PROJECT_ID}/variables/${VAR_NAME}" | jq  -r ''.value'')'
-  - let VAR=VAR+1
-  - 'curl -s --request PUT --header "PRIVATE-TOKEN: ${TOKEN}" "${GITLAB_URL}/api/v4/projects/${CI_PROJECT_ID}/variables/${VAR_NAME}" --form "value=${VAR}"'
-#  only:
-#    - master
 
 run-tests:
   stage: test
@@ -36,8 +20,8 @@ run-tests:
 build-job-master:
   stage: build
   script:
-    - docker build --target job -t "$CI_REGISTRY_IMAGE/job:$BUILD_NUMBER" .
-    - docker push "$CI_REGISTRY_IMAGE/job:$BUILD_NUMBER"
+    - docker build --target job -t "$CI_REGISTRY_IMAGE/job:$CI_PIPELINE_IID" .
+    - docker push "$CI_REGISTRY_IMAGE/job:$CI_PIPELINE_IID"
   only:
     - master
 
@@ -45,7 +29,7 @@ build-api-master:
   stage: build
   script:
     - docker build --target api -t "$CI_REGISTRY_IMAGE/api:$BUILD_NUMBER" .
-    - docker push "$CI_REGISTRY_IMAGE/api:$BUILD_NUMBER"
+    - docker push "$CI_REGISTRY_IMAGE/api:$CI_PIPELINE_IID"
   only:
     - master
 
@@ -53,7 +37,7 @@ build-job:
   stage: build
   script:
     - docker build --target job -t "$CI_REGISTRY_IMAGE/job:$BUILD_NUMBER-$CI_COMMIT_REF_SLUG" .
-    - docker push "$CI_REGISTRY_IMAGE/job:$BUILD_NUMBER-$CI_COMMIT_REF_SLUG"
+    - docker push "$CI_REGISTRY_IMAGE/job:$CI_PIPELINE_IID-$CI_COMMIT_REF_SLUG"
   except:
     - master
 
@@ -61,6 +45,6 @@ build-api:
   stage: build
   script:
     - docker build --target api -t "$CI_REGISTRY_IMAGE/api:$BUILD_NUMBER-$CI_COMMIT_REF_SLUG" .
-    - docker push "$CI_REGISTRY_IMAGE/api:$BUILD_NUMBER-$CI_COMMIT_REF_SLUG"
+    - docker push "$CI_REGISTRY_IMAGE/api:$CI_PIPELINE_IID-$CI_COMMIT_REF_SLUG"
   except:
     - master
