@@ -28,7 +28,7 @@ build-job-master:
 build-api-master:
   stage: build
   script:
-    - docker build --target api -t "$CI_REGISTRY_IMAGE/api:$BUILD_NUMBER" .
+    - docker build --target api -t "$CI_REGISTRY_IMAGE/api:$CI_PIPELINE_IID" .
     - docker push "$CI_REGISTRY_IMAGE/api:$CI_PIPELINE_IID"
   only:
     - master
@@ -36,7 +36,7 @@ build-api-master:
 build-job:
   stage: build
   script:
-    - docker build --target job -t "$CI_REGISTRY_IMAGE/job:$BUILD_NUMBER-$CI_COMMIT_REF_SLUG" .
+    - docker build --target job -t "$CI_REGISTRY_IMAGE/job:$CI_PIPELINE_IID-$CI_COMMIT_REF_SLUG" .
     - docker push "$CI_REGISTRY_IMAGE/job:$CI_PIPELINE_IID-$CI_COMMIT_REF_SLUG"
   except:
     - master
@@ -44,7 +44,7 @@ build-job:
 build-api:
   stage: build
   script:
-    - docker build --target api -t "$CI_REGISTRY_IMAGE/api:$BUILD_NUMBER-$CI_COMMIT_REF_SLUG" .
+    - docker build --target api -t "$CI_REGISTRY_IMAGE/api:$CI_PIPELINE_IID-$CI_COMMIT_REF_SLUG" .
     - docker push "$CI_REGISTRY_IMAGE/api:$CI_PIPELINE_IID-$CI_COMMIT_REF_SLUG"
   except:
     - master
