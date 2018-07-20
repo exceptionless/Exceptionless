@@ -48,7 +48,7 @@ namespace Exceptionless.Web {
                 o.Filters.Add(new CorsAuthorizationFilterFactory("AllowAny"));
                 o.Filters.Add<RequireHttpsExceptLocalAttribute>();
                 o.Filters.Add<ApiExceptionFilter>();
-                o.ModelBinderProviders.Add(new CustomAttributesModelBinderProvider());
+                o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
                 o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
             }).SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
               .AddJsonOptions(o => {
