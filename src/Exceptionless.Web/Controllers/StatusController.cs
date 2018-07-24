@@ -115,8 +115,8 @@ namespace Exceptionless.Web.Controllers {
 
         [HttpPost("notifications/release")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-        public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync([FromBody] string message = null, bool critical = false) {
-            var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message };
+        public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync(object body = null, bool critical = false) {
+            var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = body as string };
             await _messagePublisher.PublishAsync(notification);
             return Ok(notification);
         }
@@ -135,7 +135,8 @@ namespace Exceptionless.Web.Controllers {
 
         [HttpPost("notifications/system")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-        public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync([FromBody] string message) {
+        public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(object body) {
+            string message = body as string;
             if (String.IsNullOrWhiteSpace(message))
                 return NotFound();
 

@@ -661,7 +661,6 @@ namespace Exceptionless.Web.Controllers {
         /// OR
         /// <code><![CDATA[/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
         /// </remarks>
-        /// <param name="type">The event type</param>
         /// <param name="userAgent">The user agent that submitted the event.</param>
         /// <param name="parameters">Query String parameters that control what properties are set on the event</param>
         /// <response code="200">OK</response>
