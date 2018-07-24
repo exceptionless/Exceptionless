@@ -243,7 +243,7 @@ namespace Exceptionless.Core {
             if (String.IsNullOrWhiteSpace(settings.SmtpUser) != String.IsNullOrWhiteSpace(settings.SmtpPassword))
                 throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");
 
-            settings.AzureStorageConnectionString = configRoot.GetConnectionString(nameof(AzureStorageConnectionString));
+            settings.AzureStorageConnectionString = configRoot.GetConnectionString("AzureStorage");
             settings.AzureStorageQueueConnectionString = configRoot.GetConnectionString("AzureStorageQueue");
             settings.AliyunStorageConnectionString = configRoot.GetConnectionString("AliyunStorage");
             settings.MinioStorageConnectionString = configRoot.GetConnectionString("MinioStorage");
