@@ -641,8 +641,64 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit")]
         [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
         [ConfigurationResponseFilter]
-        public Task<IActionResult> GetSubmitEventV1Async(string projectId = null, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
+        public Task<IActionResult> GetSubmitEventV1Async(string projectId = null, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IQueryCollection parameters = null) {
             return GetSubmitEventAsync(projectId, 1, type, userAgent, parameters);
+        }
+
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <remarks>
+        /// You can create an event using query string parameters.
+        ///
+        /// Feature usage named build with a duration of 10:
+        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10]]></code>
+        /// OR
+        /// <code><![CDATA[/events/submit/usage?access_token=YOUR_API_KEY&source=build&value=10]]></code>
+        ///
+        /// Log with message, geo and extended data
+        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
+        /// OR
+        /// <code><![CDATA[/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
+        /// </remarks>
+        /// <param name="type">The event type</param>
+        /// <param name="userAgent">The user agent that submitted the event.</param>
+        /// <param name="parameters">Query String parameters that control what properties are set on the event</param>
+        /// <response code="200">OK</response>
+        /// <response code="400">No project id specified and no default project was found.</response>
+        /// <response code="404">No project was found.</response>
+        [HttpGet("submit")]
+        [ConfigurationResponseFilter]
+        public Task<IActionResult> GetSubmitEventV2Async([UserAgent] string userAgent = null, [QueryStringParameters] IQueryCollection parameters = null) {
+            return GetSubmitEventAsync(null, 2, null, userAgent, parameters);
+        }
+
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <remarks>
+        /// You can create an event using query string parameters.
+        ///
+        /// Feature usage named build with a duration of 10:
+        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10]]></code>
+        /// OR
+        /// <code><![CDATA[/events/submit/usage?access_token=YOUR_API_KEY&source=build&value=10]]></code>
+        ///
+        /// Log with message, geo and extended data
+        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
+        /// OR
+        /// <code><![CDATA[/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
+        /// </remarks>
+        /// <param name="type">The event type</param>
+        /// <param name="userAgent">The user agent that submitted the event.</param>
+        /// <param name="parameters">Query String parameters that control what properties are set on the event</param>
+        /// <response code="200">OK</response>
+        /// <response code="400">No project id specified and no default project was found.</response>
+        /// <response code="404">No project was found.</response>
+        [HttpGet("submit/{type:minlength(1)}")]
+        [ConfigurationResponseFilter]
+        public Task<IActionResult> GetSubmitEventV2Async(string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IQueryCollection parameters = null) {
+            return GetSubmitEventAsync(null, 2, type, userAgent, parameters);
         }
 
         /// <summary>
@@ -668,16 +724,14 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
-        [HttpGet("submit")]
-        [HttpGet("submit/{type:minlength(1)}")]
         [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit")]
         [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
         [ConfigurationResponseFilter]
-        public Task<IActionResult> GetSubmitEventV2Async(string projectId = null, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
+        public Task<IActionResult> GetSubmitEventByProjectV2Async(string projectId = null, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IQueryCollection parameters = null) {
             return GetSubmitEventAsync(projectId, 2, type, userAgent, parameters);
         }
 
-        private async Task<IActionResult> GetSubmitEventAsync(string projectId = null, int apiVersion = 2, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IDictionary<string, string[]> parameters = null) {
+        private async Task<IActionResult> GetSubmitEventAsync(string projectId = null, int apiVersion = 2, string type = null, string userAgent = null, IQueryCollection parameters = null) {
             var filteredParameters = parameters?.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty) && !_ignoredKeys.Contains(p.Key)).ToList();
             if (filteredParameters == null || filteredParameters.Count == 0)
                 return Ok();
@@ -753,7 +807,7 @@ namespace Exceptionless.Web.Controllers {
                         if (kvp.Key.AnyWildcardMatches(exclusions, true))
                             continue;
 
-                        if (kvp.Value.Length > 1)
+                        if (kvp.Value.Count > 1)
                             ev.Data[kvp.Key] = kvp.Value;
                         else
                             ev.Data[kvp.Key] = kvp.Value.FirstOrDefault();
@@ -855,16 +909,70 @@ namespace Exceptionless.Web.Controllers {
         ///      }
         ///  </code>
         ///  </remarks>
-        ///  <param name="projectId">The identifier of the project.</param>
         ///  <param name="userAgent">The user agent that submitted the event.</param>
         ///  <response code="202">Accepted</response>
         ///  <response code="400">No project id specified and no default project was found.</response>
         ///  <response code="404">No project was found.</response>
         [HttpPost]
+        [ConfigurationResponseFilter]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
+        public Task<IActionResult> PostV2Async([UserAgent]string userAgent = null) {
+            return PostAsync(null, 2, userAgent);
+        }
+
+        ///  <summary>
+        ///  Create
+        ///  </summary>
+        ///  <remarks>
+        ///  You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it
+        ///  we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON
+        ///  object into the events data collection.
+        ///
+        ///  You can also post a multi-line string. We automatically split strings by the \n character and create a new log event for every line.
+        ///
+        ///  Simple event:
+        ///  <code>
+        ///      { "message": "Exceptionless is amazing!" }
+        ///  </code>
+        ///
+        ///  Simple log event with user identity:
+        ///  <code>
+        ///      {
+        ///          "type": "log",
+        ///          "message": "Exceptionless is amazing!",
+        ///          "date":"2020-01-01T12:00:00.0000000-05:00",
+        ///          "@user":{ "identity":"123456789", "name": "Test User" }
+        ///      }
+        ///  </code>
+        ///
+        ///  Multiple events from string content:
+        ///  <code>
+        ///      Exceptionless is amazing!
+        ///      Exceptionless is really amazing!
+        ///  </code>
+        ///
+        ///  Simple error:
+        ///  <code>
+        ///      {
+        ///          "type": "error",
+        ///          "date":"2020-01-01T12:00:00.0000000-05:00",
+        ///          "@simple_error": {
+        ///              "message": "Simple Exception",
+        ///              "type": "System.Exception",
+        ///              "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77"
+        ///          }
+        ///      }
+        ///  </code>
+        ///  </remarks>
+        ///  <param name="projectId">The identifier of the project.</param>
+        ///  <param name="userAgent">The user agent that submitted the event.</param>
+        ///  <response code="202">Accepted</response>
+        ///  <response code="400">No project id specified and no default project was found.</response>
+        ///  <response code="404">No project was found.</response>
         [HttpPost("~/api/v2/projects/{projectId:objectid}/events")]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
-        public Task <IActionResult> PostV2Async(string projectId = null, [UserAgent]string userAgent = null) {
+        public Task <IActionResult> PostByProjectV2Async(string projectId = null, [UserAgent]string userAgent = null) {
             return PostAsync(projectId, 2, userAgent);
         }
 
