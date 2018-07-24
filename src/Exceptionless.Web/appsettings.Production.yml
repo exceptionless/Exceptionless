@@ -1,8 +1,8 @@
 ﻿---
 ConnectionStrings:
-  RedisConnectionString.off: localhost,abortConnect=false
-  ElasticsearchConnectionString.off: http://localhost:9200/
-  LdapConnectionString.off: ''
+  Redis.off: localhost,abortConnect=false
+  Elasticsearch.off: http://localhost:9200/
+  Ldap.off: ''
 
   # Base url for the ui used to build links in emails and other places.
 BaseURL: https://be.exceptionless.io

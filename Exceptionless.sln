@@ -8,60 +8,62 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{98A5A2F7-BBA9-4B65-91C9-88E18D474341}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		.gitlab-ci.yml = .gitlab-ci.yml
 		appveyor.yml = appveyor.yml
 		build\common.props = build\common.props
+		.circleci\config.yml = .circleci\config.yml
 		CONTRIBUTING.md = CONTRIBUTING.md
+		Dockerfile = Dockerfile
 		build\elasticsearch.prod.yml = build\elasticsearch.prod.yml
 		build\elasticsearch.yml = build\elasticsearch.yml
 		global.json = global.json
 		LICENSE.txt = LICENSE.txt
 		NuGet.Config = NuGet.Config
 		README.md = README.md
-		Rebracer.xml = Rebracer.xml
 		build\Start-ElasticSearch.ps1 = build\Start-ElasticSearch.ps1
 	EndProjectSection
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exceptionless.Api", "src\Exceptionless.Api\Exceptionless.Api.csproj", "{50717168-44E5-4E69-95EC-EED839630323}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exceptionless.Api.Tests", "tests\Exceptionless.Api.Tests\Exceptionless.Api.Tests.csproj", "{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exceptionless.Insulation", "src\Exceptionless.Insulation\Exceptionless.Insulation.csproj", "{75D9D89F-09F2-43A6-8B53-E1518E9FA822}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Jobs", "Jobs", "{4F070E46-F0D4-4134-A04E-BD1CB3B4AEA3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MailMessageJob", "src\Jobs\MailMessage\MailMessageJob.csproj", "{95CA459C-111E-4248-BC37-C6345CCFB40D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MailMessageJob", "src\Jobs\MailMessageJob\MailMessageJob.csproj", "{95CA459C-111E-4248-BC37-C6345CCFB40D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventPostsJob", "src\Jobs\EventPost\EventPostsJob.csproj", "{FD2FF108-158B-410D-AF72-C2BA3B555546}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventPostsJob", "src\Jobs\EventPostsJob\EventPostsJob.csproj", "{FD2FF108-158B-410D-AF72-C2BA3B555546}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventUserDescriptionsJob", "src\Jobs\EventUserDescription\EventUserDescriptionsJob.csproj", "{BDA9F1D6-F941-42F0-8B12-FDEA17A5F354}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventUserDescriptionsJob", "src\Jobs\EventUserDescriptionsJob\EventUserDescriptionsJob.csproj", "{BDA9F1D6-F941-42F0-8B12-FDEA17A5F354}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebHooksJob", "src\Jobs\WebHook\WebHooksJob.csproj", "{62C680F1-B27A-4802-BD88-D182F03F12D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebHooksJob", "src\Jobs\WebHooksJob\WebHooksJob.csproj", "{62C680F1-B27A-4802-BD88-D182F03F12D4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkItemJob", "src\Jobs\WorkItem\WorkItemJob.csproj", "{51840A88-8415-4A2C-9C93-343B95770D29}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkItemJob", "src\Jobs\WorkItemJob\WorkItemJob.csproj", "{51840A88-8415-4A2C-9C93-343B95770D29}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventNotificationsJob", "src\Jobs\EventNotification\EventNotificationsJob.csproj", "{8BC64C87-4A8C-4259-B1B2-7F6A8857CE6C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventNotificationsJob", "src\Jobs\EventNotificationsJob\EventNotificationsJob.csproj", "{8BC64C87-4A8C-4259-B1B2-7F6A8857CE6C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DailySummaryJob", "src\Jobs\DailySummary\DailySummaryJob.csproj", "{B0B479F6-A4B1-401A-A93D-7393877A4400}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DailySummaryJob", "src\Jobs\DailySummaryJob\DailySummaryJob.csproj", "{B0B479F6-A4B1-401A-A93D-7393877A4400}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DownloadGeoIPDatabaseJob", "src\Jobs\DownloadGeoIPDatabase\DownloadGeoIPDatabaseJob.csproj", "{BE383D44-18A2-4145-9D04-95F715D5E500}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DownloadGeoIPDatabaseJob", "src\Jobs\DownloadGeoIPDatabaseJob\DownloadGeoIPDatabaseJob.csproj", "{BE383D44-18A2-4145-9D04-95F715D5E500}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RetentionLimitsJob", "src\Jobs\RetentionLimit\RetentionLimitsJob.csproj", "{1A8C938F-D7F4-4E2F-8789-9053156E9077}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RetentionLimitsJob", "src\Jobs\RetentionLimitsJob\RetentionLimitsJob.csproj", "{1A8C938F-D7F4-4E2F-8789-9053156E9077}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloseInactiveSessionsJob", "src\Jobs\CloseInactiveSession\CloseInactiveSessionsJob.csproj", "{FA2A4275-9180-43A4-AAE6-12BF83DC1252}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloseInactiveSessionsJob", "src\Jobs\CloseInactiveSessionsJob\CloseInactiveSessionsJob.csproj", "{FA2A4275-9180-43A4-AAE6-12BF83DC1252}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CleanupSnapshotJob", "src\Jobs\CleanupSnapshot\CleanupSnapshotJob.csproj", "{5DC34AD7-3363-43F7-90AA-9380A44748DD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CleanupSnapshotJob", "src\Jobs\CleanupSnapshotJob\CleanupSnapshotJob.csproj", "{5DC34AD7-3363-43F7-90AA-9380A44748DD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventSnapshotJob", "src\Jobs\EventSnapshot\EventSnapshotJob.csproj", "{A9977754-118A-4994-9AF5-C79EA314EE1B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventSnapshotJob", "src\Jobs\EventSnapshotJob\EventSnapshotJob.csproj", "{A9977754-118A-4994-9AF5-C79EA314EE1B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MaintainIndexesJob", "src\Jobs\MaintainIndexes\MaintainIndexesJob.csproj", "{94868E31-26EF-4705-93C0-F4E1E75F0B07}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MaintainIndexesJob", "src\Jobs\MaintainIndexesJob\MaintainIndexesJob.csproj", "{94868E31-26EF-4705-93C0-F4E1E75F0B07}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrganizationSnapshotJob", "src\Jobs\OrganizationSnapshot\OrganizationSnapshotJob.csproj", "{25BAB233-B1B6-4888-BE57-263E1D5A0CE6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrganizationSnapshotJob", "src\Jobs\OrganizationSnapshotJob\OrganizationSnapshotJob.csproj", "{25BAB233-B1B6-4888-BE57-263E1D5A0CE6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StackSnapshotJob", "src\Jobs\StackSnapshot\StackSnapshotJob.csproj", "{2B4EB8F1-D73A-4F43-A25A-4194A55CC0B6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StackSnapshotJob", "src\Jobs\StackSnapshotJob\StackSnapshotJob.csproj", "{2B4EB8F1-D73A-4F43-A25A-4194A55CC0B6}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exceptionless.Web", "src\Exceptionless.Web\Exceptionless.Web.csproj", "{39353DAF-044D-4AF6-84DA-6EF178F70E50}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StackEventCountJob", "src\Jobs\StackEventCount\StackEventCountJob.csproj", "{BF78AB22-5303-4BA0-AEC5-BF9643A0BF7C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StackEventCountJob", "src\Jobs\StackEventCountJob\StackEventCountJob.csproj", "{BF78AB22-5303-4BA0-AEC5-BF9643A0BF7C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exceptionless.Tests", "tests\Exceptionless.Tests\Exceptionless.Tests.csproj", "{AE44C5E1-4B6E-48CF-A387-AAF3CE0D5B18}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exceptionless.Job", "src\Exceptionless.Job\Exceptionless.Job.csproj", "{788BA00C-FFBE-42A9-92A3-89E24FC137B5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -73,14 +75,6 @@ Global
 		{3E5B39D5-7ACD-486B-9F90-59116B67952D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E5B39D5-7ACD-486B-9F90-59116B67952D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3E5B39D5-7ACD-486B-9F90-59116B67952D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{50717168-44E5-4E69-95EC-EED839630323}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{50717168-44E5-4E69-95EC-EED839630323}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{50717168-44E5-4E69-95EC-EED839630323}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{50717168-44E5-4E69-95EC-EED839630323}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{75D9D89F-09F2-43A6-8B53-E1518E9FA822}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{75D9D89F-09F2-43A6-8B53-E1518E9FA822}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75D9D89F-09F2-43A6-8B53-E1518E9FA822}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -153,6 +147,14 @@ Global
 		{BF78AB22-5303-4BA0-AEC5-BF9643A0BF7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF78AB22-5303-4BA0-AEC5-BF9643A0BF7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BF78AB22-5303-4BA0-AEC5-BF9643A0BF7C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE44C5E1-4B6E-48CF-A387-AAF3CE0D5B18}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE44C5E1-4B6E-48CF-A387-AAF3CE0D5B18}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE44C5E1-4B6E-48CF-A387-AAF3CE0D5B18}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE44C5E1-4B6E-48CF-A387-AAF3CE0D5B18}.Release|Any CPU.Build.0 = Release|Any CPU
+		{788BA00C-FFBE-42A9-92A3-89E24FC137B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{788BA00C-FFBE-42A9-92A3-89E24FC137B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{788BA00C-FFBE-42A9-92A3-89E24FC137B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{788BA00C-FFBE-42A9-92A3-89E24FC137B5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,8 +15,8 @@ using Newtonsoft.Json.Linq;
 namespace Exceptionless.Serializer {
     public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData, new() {
         private static readonly Type _type = typeof(T);
-        private static readonly IDictionary<string, IMemberAccessor> _propertyAccessors = new Dictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
-        private readonly IDictionary<string, Type> _dataTypeRegistry = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, IMemberAccessor> _propertyAccessors = new ConcurrentDictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, Type> _dataTypeRegistry = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
         private readonly ILogger _logger;
         private readonly char[] _filteredChars = { '.', '-', '_' };
 
@@ -29,11 +30,11 @@ namespace Exceptionless.Serializer {
                 return;
 
             foreach (var prop in _type.GetProperties(BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.Public).Where(p => p.CanWrite))
-                _propertyAccessors.Add(prop.Name, LateBinder.GetPropertyAccessor(prop));
+                _propertyAccessors.TryAdd(prop.Name, LateBinder.GetPropertyAccessor(prop));
         }
 
         public void AddKnownDataType(string name, Type dataType) {
-            _dataTypeRegistry.Add(name, dataType);
+            _dataTypeRegistry.TryAdd(name, dataType);
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer) {
@@ -50,7 +51,7 @@ namespace Exceptionless.Serializer {
                     continue;
                 }
 
-                var accessor = _propertyAccessors.TryGetValue(propertyName, out IMemberAccessor value) ? value : null;
+                var accessor = _propertyAccessors.TryGetValue(propertyName, out var value) ? value : null;
                 if (accessor != null) {
                     if (p.Value.Type == JTokenType.None || p.Value.Type == JTokenType.Undefined)
                         continue;
@@ -89,7 +90,7 @@ namespace Exceptionless.Serializer {
             string unknownTypeDataKey = GetDataKey(target.Data, p.Name, true);
 
             // when adding items to data, see if they are a known type and deserialize to the registered type
-            if (_dataTypeRegistry.TryGetValue(p.Name, out Type dataType)) {
+            if (_dataTypeRegistry.TryGetValue(p.Name, out var dataType)) {
                 try {
                     if (p.Value is JValue && p.Value.Type == JTokenType.String) {
                         string value = p.Value.ToString();

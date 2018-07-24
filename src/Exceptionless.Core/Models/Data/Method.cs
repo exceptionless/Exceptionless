@@ -21,22 +21,23 @@ namespace Exceptionless.Core.Models.Data {
         public ParameterCollection Parameters { get; set; }
 
         protected bool Equals(Method other) {
-            return IsSignatureTarget == other.IsSignatureTarget && string.Equals(DeclaringNamespace, other.DeclaringNamespace) && string.Equals(DeclaringType, other.DeclaringType) && string.Equals(Name, other.Name) && Equals(Data, other.Data) && GenericArguments.CollectionEquals(other.GenericArguments) && Parameters.CollectionEquals(other.Parameters);
+            return IsSignatureTarget == other.IsSignatureTarget && String.Equals(DeclaringNamespace, other.DeclaringNamespace) && String.Equals(DeclaringType, other.DeclaringType) && String.Equals(Name, other.Name) && Equals(Data, other.Data) && GenericArguments.CollectionEquals(other.GenericArguments) && Parameters.CollectionEquals(other.Parameters);
         }
 
         public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj))
+            if (obj is null)
                 return false;
             if (ReferenceEquals(this, obj))
                 return true;
-            if (obj.GetType() != this.GetType())
+            if (obj.GetType() != GetType())
                 return false;
+
             return Equals((Method)obj);
         }
 
         public override int GetHashCode() {
             unchecked {
-                var hashCode = IsSignatureTarget.GetHashCode();
+                int hashCode = IsSignatureTarget.GetHashCode();
                 hashCode = (hashCode * 397) ^ (DeclaringNamespace?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ (DeclaringType?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ (Name?.GetHashCode() ?? 0);

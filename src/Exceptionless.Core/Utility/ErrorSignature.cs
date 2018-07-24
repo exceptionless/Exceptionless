@@ -14,10 +14,7 @@ namespace Exceptionless.Core.Utility {
         // TODO: Add support for user public key token on signed assemblies
 
         public ErrorSignature(Error error, IEnumerable<string> userNamespaces = null, IEnumerable<string> userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true) {
-            if (error == null)
-                throw new ArgumentNullException(nameof(error));
-
-            Error = error;
+            Error = error ?? throw new ArgumentNullException(nameof(error));
 
             _userNamespaces = userNamespaces == null
                 ? new HashSet<string>()
@@ -67,12 +64,12 @@ namespace Exceptionless.Core.Utility {
             if (ShouldFlagSignatureTarget)
                 errorStack.ForEach(es => es.StackTrace.ForEach(st => st.IsSignatureTarget = false));
 
-            foreach (InnerError e in errorStack) {
-                StackFrameCollection stackTrace = e.StackTrace;
+            foreach (var e in errorStack) {
+                var stackTrace = e.StackTrace;
                 if (stackTrace == null)
                     continue;
 
-                foreach (StackFrame stackFrame in stackTrace.Where(IsUserFrame)) {
+                foreach (var stackFrame in stackTrace.Where(IsUserFrame)) {
                     SignatureInfo.AddItemIfNotEmpty("ExceptionType", e.Type);
                     SignatureInfo.AddItemIfNotEmpty("Method", GetStackFrameSignature(stackFrame));
                     if (ShouldFlagSignatureTarget)
@@ -84,7 +81,7 @@ namespace Exceptionless.Core.Utility {
             }
 
             // We haven't found a user method yet, try some alternatives with the inner most error.
-            InnerError innerMostError = errorStack[0];
+            var innerMostError = errorStack[0];
 
             if (innerMostError.TargetMethod != null) {
                 // Use the target method if it exists.

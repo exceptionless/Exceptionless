@@ -27,8 +27,8 @@ namespace Exceptionless.Insulation.Jobs {
                 .AddEnvironmentVariables()
                 .Build();
 
-            Settings.Initialize(config, environment);
-            Settings.Current.DisableIndexConfiguration = true;
+            var settings = Settings.ReadFromConfiguration(config, environment);
+            settings.DisableIndexConfiguration = true;
 
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
 
@@ -53,13 +53,13 @@ namespace Exceptionless.Insulation.Jobs {
 
             var services = new ServiceCollection();
             services.AddLogging(b => b.AddSerilog(Log.Logger));
-            services.AddSingleton<IConfiguration>(config);
+            services.AddSingleton(settings);
             Core.Bootstrapper.RegisterServices(services);
             Bootstrapper.RegisterServices(services, true);
 
             var container = services.BuildServiceProvider();
 
-            Core.Bootstrapper.LogConfiguration(container, container.GetRequiredService<ILoggerFactory>());
+            Core.Bootstrapper.LogConfiguration(container, settings, container.GetRequiredService<ILoggerFactory>());
             if (Settings.Current.EnableBootstrapStartupActions)
                 container.RunStartupActionsAsync().GetAwaiter().GetResult();
 

@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             var data = new Dictionary<string, object>();
             string source = stack.SignatureInfo?.GetString("Source");
             if (!String.IsNullOrWhiteSpace(source) && String.Equals(source, stack.Title)) {
-                var parts = source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] parts = source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length > 1 && !String.Equals(source, parts.Last()) && parts.All(p => p.IsValidIdentifier())) {
                     data.Add("Source", source);
                     data.Add("SourceShortName", parts.Last());
@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!String.IsNullOrWhiteSpace(ev.Source)) {
                 data.Add("Source", ev.Source);
 
-                var parts = ev.Source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] parts = ev.Source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length > 1 && !String.Equals(ev.Source, parts.Last()) && parts.All(p => p.IsValidIdentifier()))
                     data.Add("SourceShortName", parts.Last());
             }

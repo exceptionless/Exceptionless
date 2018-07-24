@@ -1,4 +1,4 @@
-﻿version: 4.2.{build}
+﻿version: 5.0.{build}
 os: Visual Studio 2017
 configuration: Release
 clone_depth: 2
@@ -22,20 +22,21 @@ init:
   - git config --global user.name "AppVeyor CI"
   - ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
 
-before_build:
-  - ps: .\build\Set-BuildVersion.ps1 -Version $env:APPVEYOR_BUILD_VERSION -Suffix $env:VERSION_SUFFIX
+install:
+  - cmd: curl -O https://download.microsoft.com/download/4/0/9/40920432-3302-47a8-b13c-bbc4848ad114/dotnet-sdk-2.1.302-win-x64.exe
+  - cmd: dotnet-sdk-2.1.302-win-x64.exe /install /quiet /norestart /log install.log 
 
 build_script:
-  - dotnet publish -c Release
+  - ps: dotnet publish -c Release /p:BuildNumber=$env:APPVEYOR_BUILD_NUMBER
 
 on_failure:
 #  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 before_test:
-  - ps: .\build\Start-ElasticSearch.ps1
+  - ps: .\build\Start-ElasticSearch.ps1 -StartKibana $false
 
 test_script:
-  - ps: Push-Location .\tests\Exceptionless.Api.Tests
+  - ps: Push-Location .\tests\Exceptionless.Tests
   - ps: dotnet test -c Release --no-build
   - ps: Pop-Location
 

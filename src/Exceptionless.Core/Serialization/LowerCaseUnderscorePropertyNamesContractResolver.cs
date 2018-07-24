@@ -7,9 +7,9 @@ using Newtonsoft.Json.Serialization;
 namespace Exceptionless.Core.Serialization {
     public class LowerCaseUnderscorePropertyNamesContractResolver : DefaultContractResolver {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
-            JsonProperty property = base.CreateProperty(member, memberSerialization);
+            var property = base.CreateProperty(member, memberSerialization);
 
-            Predicate<object> shouldSerialize = property.ShouldSerialize;
+            var shouldSerialize = property.ShouldSerialize;
             property.ShouldSerialize = obj => (shouldSerialize == null || shouldSerialize(obj)) && !property.IsValueEmptyCollection(obj);
             return property;
         }

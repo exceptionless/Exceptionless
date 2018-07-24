@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Jobs {
             var projectTask = _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache());
             var organizationTask = _organizationRepository.GetByIdAsync(ep.OrganizationId, o => o.Cache());
 
-            var payload = await payloadTask.AnyContext();
+            byte[] payload = await payloadTask.AnyContext();
             if (payload == null) {
                 await Task.WhenAll(AbandonEntryAsync(entry), projectTask, organizationTask).AnyContext();
                 return JobResult.FailedWithMessage($"Unable to retrieve payload '{payloadPath}'.");
@@ -91,7 +91,7 @@ namespace Exceptionless.Core.Jobs {
                 }
 
                 long maxEventPostSize = Settings.Current.MaximumEventPostSize;
-                var uncompressedData = payload;
+                byte[] uncompressedData = payload;
                 if (!String.IsNullOrEmpty(ep.ContentEncoding)) {
                     if (!isInternalProject && isDebugLogLevelEnabled) {
                         using (_logger.BeginScope(new ExceptionlessState().Tag("decompressing").Tag(ep.ContentEncoding)))

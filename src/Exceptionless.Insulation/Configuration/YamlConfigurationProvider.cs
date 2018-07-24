@@ -17,7 +17,7 @@ namespace Exceptionless.Insulation.Configuration {
                 Data = parser.Parse(stream);
             }
             catch (YamlException ex) {
-                var errorLine = string.Empty;
+                string errorLine = String.Empty;
                 if (stream.CanSeek) {
                     stream.Seek(0, SeekOrigin.Begin);
 
@@ -34,8 +34,8 @@ namespace Exceptionless.Insulation.Configuration {
         }
 
         private static string RetrieveErrorContext(YamlException ex, IEnumerable<string> fileContent) {
-            var possibleLineContent = fileContent.Skip(ex.Start.Line - 1).FirstOrDefault();
-            return possibleLineContent ?? string.Empty;
+            string possibleLineContent = fileContent.Skip(ex.Start.Line - 1).FirstOrDefault();
+            return possibleLineContent ?? String.Empty;
         }
 
         private static IEnumerable<string> ReadLines(StreamReader streamReader) {

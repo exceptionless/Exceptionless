@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (String.IsNullOrEmpty(field))
                 return null;
 
-            var parts = field.Split('.');
+            string[] parts = field.Split('.');
             if (parts.Length != 2 || (parts.Length == 2 && parts[1].StartsWith("@")))
                 return field;
 
@@ -90,7 +90,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 if (term.StartsWith("*"))
                     continue;
 
-                if (Boolean.TryParse(term, out var boolResult))
+                if (Boolean.TryParse(term, out bool boolResult))
                     termType = "b";
                 else if (term.IsNumeric())
                     termType = "n";

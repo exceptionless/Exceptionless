@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Logging {
                 return this;
 
             HashSet<string> tagList = null;
-            if (TryGetValue(Tags, out var v) && v is HashSet<string> t)
+            if (TryGetValue(Tags, out object v) && v is HashSet<string> t)
                 tagList = t;
 
             if (tagList == null)

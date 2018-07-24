@@ -1,0 +1,95 @@
+{
+  "profiles": {
+    "AllJobs": {
+      "commandName": "Project",
+      "commandLineArgs": "run-all",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "EventPostsJob": {
+      "commandName": "Project",
+      "commandLineArgs": "EventPosts",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "EventUserDescriptionsJob": {
+      "commandName": "Project",
+      "commandLineArgs": "EventUserDescriptions",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "EventNotificationsJob": {
+      "commandName": "Project",
+      "commandLineArgs": "EventNotifications",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "MailMessageJob": {
+      "commandName": "Project",
+      "commandLineArgs": "MailMessage",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "WebHooksJob": {
+      "commandName": "Project",
+      "commandLineArgs": "WebHooks",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "CloseInactiveSessionsJob": {
+      "commandName": "Project",
+      "commandLineArgs": "CloseInactiveSessions",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "DailySummaryJob": {
+      "commandName": "Project",
+      "commandLineArgs": "DailySummary",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "DownloadGeoIPDatabaseJob": {
+      "commandName": "Project",
+      "commandLineArgs": "DownloadGeoipDatabase",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "RetentionLimitsJob": {
+      "commandName": "Project",
+      "commandLineArgs": "RetentionLimits",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "WorkItemJob": {
+      "commandName": "Project",
+      "commandLineArgs": "WorkItem",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "MaintainIndexesJob": {
+      "commandName": "Project",
+      "commandLineArgs": "MaintainIndexes",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    },
+    "StackEventCountJob": {
+      "commandName": "Project",
+      "commandLineArgs": "StackEventCount",
+      "environmentVariables": {
+        "AppMode": "Development"
+      }
+    }
+  }
+}

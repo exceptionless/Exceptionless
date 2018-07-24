@@ -1,0 +1,13 @@
+Dockerfile*
+docker-compose*
+.dockerignore
+.git
+.gitignore
+README.md
+LICENSE.txt
+.vscode
+.circleci
+**/bin/
+**/obj/
+**/TestResult/
+**/out/

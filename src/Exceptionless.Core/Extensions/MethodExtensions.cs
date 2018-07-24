@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Extensions {
                 sb.Append("(");
                 bool first = true;
                 if (method.Parameters?.Count > 0) {
-                    foreach (Parameter p in method.Parameters) {
+                    foreach (var p in method.Parameters) {
                         if (first)
                             first = false;
                         else

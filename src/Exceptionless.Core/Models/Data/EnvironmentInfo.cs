@@ -102,22 +102,22 @@ namespace Exceptionless.Core.Models.Data {
         public DataDictionary Data { get; set; }
 
         protected bool Equals(EnvironmentInfo other) {
-            return ProcessorCount == other.ProcessorCount && TotalPhysicalMemory == other.TotalPhysicalMemory && AvailablePhysicalMemory == other.AvailablePhysicalMemory && string.Equals(CommandLine, other.CommandLine) && string.Equals(ProcessName, other.ProcessName) && string.Equals(ProcessId, other.ProcessId) && ProcessMemorySize == other.ProcessMemorySize && string.Equals(ThreadName, other.ThreadName) && string.Equals(ThreadId, other.ThreadId) && string.Equals(Architecture, other.Architecture) && string.Equals(OSName, other.OSName) && string.Equals(OSVersion, other.OSVersion) && string.Equals(IpAddress, other.IpAddress) && string.Equals(MachineName, other.MachineName) && string.Equals(InstallId, other.InstallId) && string.Equals(RuntimeVersion, other.RuntimeVersion) && Equals(Data, other.Data);
+            return ProcessorCount == other.ProcessorCount && TotalPhysicalMemory == other.TotalPhysicalMemory && AvailablePhysicalMemory == other.AvailablePhysicalMemory && String.Equals(CommandLine, other.CommandLine) && String.Equals(ProcessName, other.ProcessName) && String.Equals(ProcessId, other.ProcessId) && ProcessMemorySize == other.ProcessMemorySize && String.Equals(ThreadName, other.ThreadName) && String.Equals(ThreadId, other.ThreadId) && String.Equals(Architecture, other.Architecture) && String.Equals(OSName, other.OSName) && String.Equals(OSVersion, other.OSVersion) && String.Equals(IpAddress, other.IpAddress) && String.Equals(MachineName, other.MachineName) && String.Equals(InstallId, other.InstallId) && String.Equals(RuntimeVersion, other.RuntimeVersion) && Equals(Data, other.Data);
         }
 
         public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj))
+            if (obj is null)
                 return false;
             if (ReferenceEquals(this, obj))
                 return true;
-            if (obj.GetType() != this.GetType())
+            if (obj.GetType() != GetType())
                 return false;
             return Equals((EnvironmentInfo)obj);
         }
 
         public override int GetHashCode() {
             unchecked {
-                var hashCode = ProcessorCount;
+                int hashCode = ProcessorCount;
                 hashCode = (hashCode * 397) ^ TotalPhysicalMemory.GetHashCode();
                 hashCode = (hashCode * 397) ^ (CommandLine?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ (ProcessName?.GetHashCode() ?? 0);

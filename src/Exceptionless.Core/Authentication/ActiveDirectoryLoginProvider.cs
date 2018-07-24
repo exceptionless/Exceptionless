@@ -10,10 +10,10 @@ namespace Exceptionless.Core.Authentication {
         private const string AD_USERNAME = "sAMAccountName";
 
         public bool Login(string username, string password) {
-            using (DirectoryEntry de = new DirectoryEntry(Settings.Current.LdapConnectionString, username, password, AuthenticationTypes.Secure)) {
-                using (DirectorySearcher ds = new DirectorySearcher(de, $"(&({AD_USERNAME}={username}))", new[] { AD_DISTINGUISHEDNAME })) {
+            using (var de = new DirectoryEntry(Settings.Current.LdapConnectionString, username, password, AuthenticationTypes.Secure)) {
+                using (var ds = new DirectorySearcher(de, $"(&({AD_USERNAME}={username}))", new[] { AD_DISTINGUISHEDNAME })) {
                     try {
-                        SearchResult result = ds.FindOne();
+                        var result = ds.FindOne();
                         return result != null;
                     }
                     // Catch "username and password are invalid"
@@ -25,21 +25,21 @@ namespace Exceptionless.Core.Authentication {
         }
 
         public string GetUsernameFromEmailAddress(string email) {
-            using (DirectoryEntry entry = new DirectoryEntry(Settings.Current.LdapConnectionString)) {
-                using (DirectorySearcher searcher = new DirectorySearcher(entry, $"(&({AD_EMAIL}={email}))", new[] { AD_USERNAME })) {
-                    SearchResult result = searcher.FindOne();
+            using (var entry = new DirectoryEntry(Settings.Current.LdapConnectionString)) {
+                using (var searcher = new DirectorySearcher(entry, $"(&({AD_EMAIL}={email}))", new[] { AD_USERNAME })) {
+                    var result = searcher.FindOne();
                     return result?.Properties[AD_USERNAME][0].ToString();
                 }
             }
         }
 
         public string GetEmailAddressFromUsername(string username) {
-            SearchResult result = FindUser(username);
+            var result = FindUser(username);
             return result?.Properties[AD_EMAIL][0].ToString();
         }
 
         public string GetUserFullName(string username) {
-            SearchResult result = FindUser(username);
+            var result = FindUser(username);
             if (result == null)
                 return null;
 
@@ -47,8 +47,8 @@ namespace Exceptionless.Core.Authentication {
         }
 
         private SearchResult FindUser(string username) {
-            using (DirectoryEntry entry = new DirectoryEntry(Settings.Current.LdapConnectionString)) {
-                using (DirectorySearcher searcher = new DirectorySearcher(entry, $"(&({AD_USERNAME}={username}))", new[] { AD_FIRSTNAME, AD_LASTNAME, AD_EMAIL })) {
+            using (var entry = new DirectoryEntry(Settings.Current.LdapConnectionString)) {
+                using (var searcher = new DirectorySearcher(entry, $"(&({AD_USERNAME}={username}))", new[] { AD_FIRSTNAME, AD_LASTNAME, AD_EMAIL })) {
                     return searcher.FindOne();
                 }
             }

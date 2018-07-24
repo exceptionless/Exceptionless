@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Pipeline {
                 return;
             
             try {
-                foreach (var projectId in projectIds) {
+                foreach (string projectId in projectIds) {
                     await _workItemQueue.EnqueueAsync(new SetProjectIsConfiguredWorkItem {
                         ProjectId = projectId,
                         IsConfigured = true

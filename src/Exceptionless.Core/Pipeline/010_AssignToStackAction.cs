@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Pipeline {
                     string signatureHash = ctx.StackSignatureData.Values.ToSHA1();
                     ctx.SignatureHash = signatureHash;
 
-                    if (stacks.TryGetValue(signatureHash, out Tuple<bool, Stack> value)) {
+                    if (stacks.TryGetValue(signatureHash, out var value)) {
                         ctx.Stack = value.Item2;
                     } else {
                         ctx.Stack = await _stackRepository.GetStackBySignatureHashAsync(ctx.Event.ProjectId, signatureHash).AnyContext();

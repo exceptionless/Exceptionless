@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Services {
 
             string url = $"https://slack.com/api/oauth.access?{data.ToQueryString()}";
             var response = await _client.PostAsync(url).AnyContext();
-            var body = await response.Content.ReadAsByteArrayAsync().AnyContext();
+            byte[] body = await response.Content.ReadAsByteArrayAsync().AnyContext();
             var result = _serializer.Deserialize<OAuthAccessResponse>(body);
 
             if (!result.ok) {
@@ -72,7 +72,7 @@ namespace Exceptionless.Core.Services {
 
             string url = $"https://slack.com/api/auth.revoke?token={token}";
             var response = await _client.PostAsync(url).AnyContext();
-            var body = await response.Content.ReadAsByteArrayAsync().AnyContext();
+            byte[] body = await response.Content.ReadAsByteArrayAsync().AnyContext();
             var result = _serializer.Deserialize<AuthRevokeResponse>(body);
 
             if (result.ok && result.revoked || String.Equals(result.error, "invalid_auth"))

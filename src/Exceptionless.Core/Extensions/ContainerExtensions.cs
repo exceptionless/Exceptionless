@@ -32,10 +32,9 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static IEnumerable<object> GetInstances(this IServiceProvider container, IHaveData target, string key, ILogger logger) {
-            var types = target.Data[key] as string[];
             var instances = new List<object>();
 
-            if (types == null || types.Length == 0)
+            if (!(target.Data[key] is string[] types) || types.Length == 0)
                 return Enumerable.Empty<object>();
 
             foreach (string typeName in types) {

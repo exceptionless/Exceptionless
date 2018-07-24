@@ -71,15 +71,15 @@ namespace Exceptionless.Core.Models.Data {
         public DataDictionary Data { get; set; }
 
         protected bool Equals(RequestInfo other) {
-            return string.Equals(UserAgent, other.UserAgent) && string.Equals(HttpMethod, other.HttpMethod) && IsSecure == other.IsSecure && string.Equals(Host, other.Host) && Port == other.Port && string.Equals(Path, other.Path) && string.Equals(Referrer, other.Referrer) && string.Equals(ClientIpAddress, other.ClientIpAddress) && Cookies.CollectionEquals(other.Cookies) && QueryString.CollectionEquals(other.QueryString) && Equals(Data, other.Data);
+            return String.Equals(UserAgent, other.UserAgent) && String.Equals(HttpMethod, other.HttpMethod) && IsSecure == other.IsSecure && String.Equals(Host, other.Host) && Port == other.Port && String.Equals(Path, other.Path) && String.Equals(Referrer, other.Referrer) && String.Equals(ClientIpAddress, other.ClientIpAddress) && Cookies.CollectionEquals(other.Cookies) && QueryString.CollectionEquals(other.QueryString) && Equals(Data, other.Data);
         }
 
         public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj))
+            if (obj is null)
                 return false;
             if (ReferenceEquals(this, obj))
                 return true;
-            if (obj.GetType() != this.GetType())
+            if (obj.GetType() != GetType())
                 return false;
             return Equals((RequestInfo)obj);
         }
@@ -88,7 +88,7 @@ namespace Exceptionless.Core.Models.Data {
 
         public override int GetHashCode() {
             unchecked {
-                var hashCode = UserAgent?.GetHashCode() ?? 0;
+                int hashCode = UserAgent?.GetHashCode() ?? 0;
                 hashCode = (hashCode * 397) ^ (HttpMethod?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ IsSecure.GetHashCode();
                 hashCode = (hashCode * 397) ^ (Host?.GetHashCode() ?? 0);

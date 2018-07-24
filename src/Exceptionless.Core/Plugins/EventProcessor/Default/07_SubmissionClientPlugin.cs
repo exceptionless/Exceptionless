@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 submissionClient.IpAddress = !epi.IpAddress.IsLocalHost() ? epi.IpAddress.Trim() : "127.0.0.1";
 
             if (hasUserAgent) {
-                var parts = epi.UserAgent.Split(new [] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] parts = epi.UserAgent.Split(new [] { '/' }, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length == 2 && Version.TryParse(parts[1], out var version)) {
                     submissionClient.UserAgent = parts[0].Trim().ToLowerInvariant();
                     submissionClient.Version = version.ToString();

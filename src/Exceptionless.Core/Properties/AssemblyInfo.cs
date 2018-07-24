@@ -1,4 +1,4 @@
 using System;
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("Exceptionless.Api.Tests")]
+[assembly: InternalsVisibleTo("Exceptionless.Tests")]

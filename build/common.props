@@ -1,9 +1,7 @@
 <Project ToolsVersion="15.0">
-  <Import Project="version.props" />
-
   <PropertyGroup>
-    <ProjectParentDirectory>$([System.IO.Path]::GetDirectoryName('$(MSBuildProjectDirectory)'))</ProjectParentDirectory>
-    <ProjectParentDirectoryName>$([System.IO.Path]::GetFileName('$(ProjectParentDirectory)'))</ProjectParentDirectoryName>
+    <BuildNumber Condition="'$(BuildNumber)' == ''">0</BuildNumber>
+    <VersionPrefix>5.0.$(BuildNumber)</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +13,7 @@
     <Copyright>Copyright (c) 2018 Exceptionless.  All rights reserved.</Copyright>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <WarningsAsErrors>true</WarningsAsErrors>
+    <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageOutputPath>$(SolutionDir)artifacts\</PackageOutputPath>
     <RepositoryType>git</RepositoryType>

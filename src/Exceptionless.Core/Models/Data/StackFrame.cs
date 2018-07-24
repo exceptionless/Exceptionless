@@ -7,15 +7,15 @@ namespace Exceptionless.Core.Models.Data {
         public int Column { get; set; }
 
         protected bool Equals(StackFrame other) {
-            return base.Equals(other) && string.Equals(FileName, other.FileName);
+            return base.Equals(other) && String.Equals(FileName, other.FileName);
         }
 
         public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj))
+            if (obj is null)
                 return false;
             if (ReferenceEquals(this, obj))
                 return true;
-            if (obj.GetType() != this.GetType())
+            if (obj.GetType() != GetType())
                 return false;
             return Equals((StackFrame)obj);
         }

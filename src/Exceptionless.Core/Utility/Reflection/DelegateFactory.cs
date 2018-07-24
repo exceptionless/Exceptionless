@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Reflection
     {
         private static DynamicMethod CreateDynamicMethod(string name, Type returnType, Type[] parameterTypes, Type owner)
         {
-            DynamicMethod dynamicMethod = !owner.IsInterface
+            var dynamicMethod = !owner.IsInterface
               ? new DynamicMethod(name, returnType, parameterTypes, owner, true)
               : new DynamicMethod(name, returnType, parameterTypes, owner.Assembly.ManifestModule, true);
 
@@ -23,12 +23,12 @@ namespace Exceptionless.Core.Reflection
 
         public static LateBoundMethod CreateMethod(MethodBase method)
         {
-            DynamicMethod dynamicMethod = CreateDynamicMethod(method.ToString(), typeof(object), new[] { typeof(object), typeof(object[]) }, method.DeclaringType);
-            ILGenerator generator = dynamicMethod.GetILGenerator();
+            var dynamicMethod = CreateDynamicMethod(method.ToString(), typeof(object), new[] { typeof(object), typeof(object[]) }, method.DeclaringType);
+            var generator = dynamicMethod.GetILGenerator();
 
-            ParameterInfo[] args = method.GetParameters();
+            var args = method.GetParameters();
 
-            Label argsOk = generator.DefineLabel();
+            var argsOk = generator.DefineLabel();
 
             generator.Emit(OpCodes.Ldarg_1);
             generator.Emit(OpCodes.Ldlen);
@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Reflection
             else if (method.IsFinal || !method.IsVirtual)
                 generator.CallMethod((MethodInfo)method);
 
-            Type returnType = method.IsConstructor
+            var returnType = method.IsConstructor
               ? method.DeclaringType
               : ((MethodInfo)method).ReturnType;
 
@@ -73,9 +73,9 @@ namespace Exceptionless.Core.Reflection
 
         public static LateBoundConstructor CreateConstructor(Type type)
         {
-            DynamicMethod dynamicMethod = CreateDynamicMethod("Create" + type.FullName, typeof(object), Type.EmptyTypes, type);
+            var dynamicMethod = CreateDynamicMethod("Create" + type.FullName, typeof(object), Type.EmptyTypes, type);
             dynamicMethod.InitLocals = true;
-            ILGenerator generator = dynamicMethod.GetILGenerator();
+            var generator = dynamicMethod.GetILGenerator();
 
             if (type.IsValueType)
             {
@@ -85,7 +85,7 @@ namespace Exceptionless.Core.Reflection
             }
             else
             {
-                ConstructorInfo constructorInfo = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                var constructorInfo = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
                 if (constructorInfo == null)
                     throw new InvalidOperationException($"Could not get constructor for {type}.");
 
@@ -99,12 +99,12 @@ namespace Exceptionless.Core.Reflection
 
         public static LateBoundGet CreateGet(PropertyInfo propertyInfo)
         {
-            MethodInfo getMethod = propertyInfo.GetGetMethod(true);
+            var getMethod = propertyInfo.GetGetMethod(true);
             if (getMethod == null)
                 throw new InvalidOperationException($"Property '{propertyInfo.Name}' does not have a getter.");
 
-            DynamicMethod dynamicMethod = CreateDynamicMethod("Get" + propertyInfo.Name, typeof(object), new[] { typeof(object) }, propertyInfo.DeclaringType);
-            ILGenerator generator = dynamicMethod.GetILGenerator();
+            var dynamicMethod = CreateDynamicMethod("Get" + propertyInfo.Name, typeof(object), new[] { typeof(object) }, propertyInfo.DeclaringType);
+            var generator = dynamicMethod.GetILGenerator();
 
             if (!getMethod.IsStatic)
                 generator.PushInstance(propertyInfo.DeclaringType);
@@ -118,9 +118,9 @@ namespace Exceptionless.Core.Reflection
 
         public static LateBoundGet CreateGet(FieldInfo fieldInfo)
         {
-            DynamicMethod dynamicMethod = CreateDynamicMethod("Get" + fieldInfo.Name, typeof(object), new[] { typeof(object) }, fieldInfo.DeclaringType);
+            var dynamicMethod = CreateDynamicMethod("Get" + fieldInfo.Name, typeof(object), new[] { typeof(object) }, fieldInfo.DeclaringType);
 
-            ILGenerator generator = dynamicMethod.GetILGenerator();
+            var generator = dynamicMethod.GetILGenerator();
 
             if (!fieldInfo.IsStatic)
                 generator.PushInstance(fieldInfo.DeclaringType);
@@ -134,12 +134,12 @@ namespace Exceptionless.Core.Reflection
 
         public static LateBoundSet CreateSet(PropertyInfo propertyInfo)
         {
-            MethodInfo setMethod = propertyInfo.GetSetMethod(true);
+            var setMethod = propertyInfo.GetSetMethod(true);
             if (setMethod == null)
                 throw new InvalidOperationException($"Property '{propertyInfo.Name}' does not have a setter.");
 
-            DynamicMethod dynamicMethod = CreateDynamicMethod("Set" + propertyInfo.Name, null, new[] { typeof(object), typeof(object) }, propertyInfo.DeclaringType);
-            ILGenerator generator = dynamicMethod.GetILGenerator();
+            var dynamicMethod = CreateDynamicMethod("Set" + propertyInfo.Name, null, new[] { typeof(object), typeof(object) }, propertyInfo.DeclaringType);
+            var generator = dynamicMethod.GetILGenerator();
 
             if (!setMethod.IsStatic)
                 generator.PushInstance(propertyInfo.DeclaringType);
@@ -154,8 +154,8 @@ namespace Exceptionless.Core.Reflection
 
         public static LateBoundSet CreateSet(FieldInfo fieldInfo)
         {
-            DynamicMethod dynamicMethod = CreateDynamicMethod("Set" + fieldInfo.Name, null, new[] { typeof(object), typeof(object) }, fieldInfo.DeclaringType);
-            ILGenerator generator = dynamicMethod.GetILGenerator();
+            var dynamicMethod = CreateDynamicMethod("Set" + fieldInfo.Name, null, new[] { typeof(object), typeof(object) }, fieldInfo.DeclaringType);
+            var generator = dynamicMethod.GetILGenerator();
 
             if (!fieldInfo.IsStatic)
                 generator.PushInstance(fieldInfo.DeclaringType);

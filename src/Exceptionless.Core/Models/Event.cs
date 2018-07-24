@@ -66,11 +66,11 @@ namespace Exceptionless.Core.Models {
         }
 
         public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj))
+            if (obj is null)
                 return false;
             if (ReferenceEquals(this, obj))
                 return true;
-            if (obj.GetType() != this.GetType())
+            if (obj.GetType() != GetType())
                 return false;
             return Equals((Event)obj);
         }
