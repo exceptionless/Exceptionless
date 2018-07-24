@@ -189,12 +189,13 @@ namespace Exceptionless.Web.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the project.</param>
         /// <param name="key">The key name of the configuration object.</param>
-        /// <param name="value">The configuration value.</param>
+        /// <param name="body">The configuration value.</param>
         /// <response code="400">Invalid configuration value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpPost("{id:objectid}/config")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<IActionResult> SetConfigAsync(string id, string key, [FromBody] string value) {
+        public async Task<IActionResult> SetConfigAsync(string id, string key, object body) {
+            string value = body as string;
             if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value))
                 return BadRequest();
 
@@ -478,12 +479,13 @@ namespace Exceptionless.Web.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the project.</param>
         /// <param name="key">The key name of the data object.</param>
-        /// <param name="value">Any string value.</param>
+        /// <param name="body">Any string value.</param>
         /// <response code="400">Invalid key or value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpPost("{id:objectid}/data")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<IActionResult> PostDataAsync(string id, string key, [FromBody] string value) {
+        public async Task<IActionResult> PostDataAsync(string id, string key, object body) {
+            string value = body as string;
             if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value) || key.StartsWith("-"))
                 return BadRequest();
 

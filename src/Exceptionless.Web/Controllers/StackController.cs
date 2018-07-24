@@ -144,12 +144,13 @@ namespace Exceptionless.Web.Controllers {
         /// Add reference link
         /// </summary>
         /// <param name="id">The identifier of the stack.</param>
-        /// <param name="url">The reference link.</param>
+        /// <param name="body">The reference link.</param>
         /// <response code="400">Invalid reference link.</response>
         /// <response code="404">The stack could not be found.</response>
         [HttpPost("{id:objectid}/add-link")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<IActionResult> AddLinkAsync(string id, [FromBody] string url) {
+        public async Task<IActionResult> AddLinkAsync(string id, object body) {
+            string url = body as string;
             if (String.IsNullOrWhiteSpace(url))
                 return BadRequest();
 
@@ -193,14 +194,15 @@ namespace Exceptionless.Web.Controllers {
         /// Remove reference link
         /// </summary>
         /// <param name="id">The identifier of the stack.</param>
-        /// <param name="url">The reference link.</param>
+        /// <param name="body">The reference link.</param>
         /// <response code="204">The reference link was removed.</response>
         /// <response code="400">Invalid reference link.</response>
         /// <response code="404">The stack could not be found.</response>
         [HttpPost("{id:objectid}/remove-link")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<IActionResult> RemoveLinkAsync(string id, [FromBody] string url) {
+        public async Task<IActionResult> RemoveLinkAsync(string id, object body) {
+            string url = body as string;
             if (String.IsNullOrWhiteSpace(url))
                 return BadRequest();
 
