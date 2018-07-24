@@ -1,7 +1,7 @@
 <Project ToolsVersion="15.0">
   <PropertyGroup>
     <BuildNumber Condition="'$(BuildNumber)' == ''">0</BuildNumber>
-    <VersionPrefix>4.2.$(BuildNumber)</VersionPrefix>
+    <VersionPrefix>5.0.$(BuildNumber)</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
