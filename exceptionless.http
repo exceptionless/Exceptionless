@@ -29,7 +29,7 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/projects
 Authorization: Bearer {{token}}
 
-### post a sample event
+### post a sample JSON event
 
 POST {{apiUrl}}/projects/{{projectId}}/events
 Authorization: Bearer {{token}}
@@ -38,6 +38,14 @@ Content-Type: application/json
 {
     "message": "Hello World!"
 }
+
+### post a sample text event
+
+POST {{apiUrl}}/projects/{{projectId}}/events
+Authorization: Bearer {{token}}
+Content-Type: text/plain
+
+Hello World!
 
 ### get events
 
