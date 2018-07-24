@@ -244,9 +244,9 @@ namespace Exceptionless.Core {
                 throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");
 
             settings.AzureStorageConnectionString = configRoot.GetConnectionString(nameof(AzureStorageConnectionString));
-            settings.AzureStorageQueueConnectionString = configRoot.GetConnectionString(nameof(AzureStorageQueueConnectionString));
-            settings.AliyunStorageConnectionString = configRoot.GetConnectionString(nameof(AliyunStorageConnectionString));
-            settings.MinioStorageConnectionString = configRoot.GetConnectionString(nameof(MinioStorageConnectionString));
+            settings.AzureStorageQueueConnectionString = configRoot.GetConnectionString("AzureStorageQueue");
+            settings.AliyunStorageConnectionString = configRoot.GetConnectionString("AliyunStorage");
+            settings.MinioStorageConnectionString = configRoot.GetConnectionString("MinioStorage");
 
             settings.DisableIndexConfiguration = configRoot.GetValue(nameof(DisableIndexConfiguration), false);
             settings.EnableSnapshotJobs = configRoot.GetValue(nameof(EnableSnapshotJobs), String.IsNullOrEmpty(settings.AppScopePrefix) && settings.AppMode == AppMode.Production);
