@@ -40,10 +40,10 @@ namespace Exceptionless.Core.Extensions {
             if (dictionary == null || dictionary.Count == 0)
                 return dictionary;
 
-            foreach (var key in dictionary.Keys.Where(k => String.IsNullOrEmpty(k) || StringExtensions.AnyWildcardMatches(k, exclusions, true)).ToList())
+            foreach (string key in dictionary.Keys.Where(k => String.IsNullOrEmpty(k) || StringExtensions.AnyWildcardMatches(k, exclusions, true)).ToList())
                 dictionary.Remove(key);
 
-            foreach (var key in dictionary.Where(kvp => kvp.Value != null && kvp.Value.Length > maxLength).Select(kvp => kvp.Key).ToList())
+            foreach (string key in dictionary.Where(kvp => kvp.Value != null && kvp.Value.Length > maxLength).Select(kvp => kvp.Key).ToList())
                 dictionary[key] = String.Format("Value is too large to be included.");
 
             return dictionary;

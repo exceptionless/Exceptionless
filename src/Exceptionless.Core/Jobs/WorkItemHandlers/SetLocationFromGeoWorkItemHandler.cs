@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         public override async Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<SetLocationFromGeoWorkItem>();
 
-            if (!GeoResult.TryParse(workItem.Geo, out GeoResult result))
+            if (!GeoResult.TryParse(workItem.Geo, out var result))
                 return;
 
             var location = await _cache.GetAsync<Location>(workItem.Geo, null).AnyContext();

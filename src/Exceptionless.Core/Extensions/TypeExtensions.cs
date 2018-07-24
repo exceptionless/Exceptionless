@@ -39,9 +39,9 @@ namespace Exceptionless.Core.Extensions {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            Type targetType = typeof(T);
-            TypeConverter converter = TypeDescriptor.GetConverter(targetType);
-            Type valueType = value.GetType();
+            var targetType = typeof(T);
+            var converter = TypeDescriptor.GetConverter(targetType);
+            var valueType = value.GetType();
 
             if (targetType.IsAssignableFrom(valueType))
                 return (T)value;
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Extensions {
                     return (T)parsedValue;
                 }
 
-                var message = $"The Enum value of '{value}' is not defined as a valid value for '{targetType.FullName}'.";
+                string message = $"The Enum value of '{value}' is not defined as a valid value for '{targetType.FullName}'.";
                 throw new ArgumentException(message);
             }
 

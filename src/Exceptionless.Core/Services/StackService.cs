@@ -87,8 +87,9 @@ namespace Exceptionless.Core.Services {
                     }
                 } catch(Exception ex) {
                     _logger.LogError(ex, "Error incrementing event count for organization: {OrganizationId} project:{ProjectId} stack:{StackId}", organizationId, projectId, stackId);
-                    if (!shouldRetry)
+                    if (!shouldRetry) {
                         await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount).AnyContext();
+                    }
                 }
             }
         }

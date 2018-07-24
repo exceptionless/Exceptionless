@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 var clientIpContexts = clientIpAddressGroup.ToList();
 
                 string throttleCacheKey = String.Concat("bot:", clientIpAddressGroup.Key, ":", SystemClock.UtcNow.Floor(_throttlingPeriod).Ticks);
-                var requestCount = await _cache.GetAsync<int?>(throttleCacheKey, null).AnyContext();
+                int? requestCount = await _cache.GetAsync<int?>(throttleCacheKey, null).AnyContext();
                 if (requestCount.HasValue) {
                     await _cache.IncrementAsync(throttleCacheKey, clientIpContexts.Count).AnyContext();
                     requestCount += clientIpContexts.Count;

@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Extensions {
         public static string ToSHA1(this IEnumerable<string> inputs) {
             var builder = new StringBuilder();
 
-            foreach (var input in inputs)
+            foreach (string input in inputs)
                 builder.Append(input);
 
             return builder.ToString().ToSHA1();

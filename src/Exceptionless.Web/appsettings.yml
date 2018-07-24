@@ -7,7 +7,7 @@ Serilog:
     Override:
       Microsoft: Warning
       System: Warning
-      Exceptionless.Api.Security.ApiKeyAuthenticationHandler: Warning
+      Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
       Foundatio.Utility.ScheduledTimer: Warning
       Foundatio.Metrics: Warning
   WriteTo:

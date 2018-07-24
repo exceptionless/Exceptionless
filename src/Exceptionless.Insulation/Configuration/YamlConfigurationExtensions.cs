@@ -94,7 +94,7 @@ namespace Exceptionless.Insulation.Configuration {
             if (builder == null)
                 throw new ArgumentNullException(nameof(builder));
 
-            if (string.IsNullOrEmpty(path))
+            if (String.IsNullOrEmpty(path))
                 throw new ArgumentException("File path must be a non-empty string.", nameof(path));
 
             return builder.AddYamlFile(s => {

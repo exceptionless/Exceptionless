@@ -7,8 +7,7 @@ namespace Exceptionless.Core {
 
         private static readonly Lazy<T> _instance = new Lazy<T>(() => {
             var instance = (T)Activator.CreateInstance(typeof(T), true);
-            var initializable = instance as IInitializable;
-            if (initializable != null)
+            if (instance is IInitializable initializable)
                 initializable.Initialize();
 
             return instance;

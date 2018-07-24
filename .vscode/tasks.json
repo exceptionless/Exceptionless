@@ -1,18 +1,99 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "build",
-            "command": "dotnet build",
-            "type": "shell",
-            "group": {
-              "kind": "build",
-              "isDefault": true
-            },
-            "presentation": {
-                "reveal": "always"
-            },
-            "problemMatcher": "$msCompile"
-        }
-    ]
+  "version": "2.0.0",
+  "options": {
+    "env": {
+      "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "true"
+    }
+  },
+  "tasks": [
+    {
+      "label": "Build",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/Exceptionless.sln",
+        "/p:GenerateFullPaths=true"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Run Tests",
+      "command": "dotnet",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "args": [
+        "test",
+        "${workspaceFolder}/tests/Exceptionless.Tests/Exceptionless.Tests.csproj",
+        "/p:GenerateFullPaths=true"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Start Elasticsearch",
+      "command": "docker-compose",
+      "args": [
+        "up",
+        "elasticsearch"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Start Exceptionless UI",
+      "command": "docker-compose",
+      "args": [
+        "up",
+        "ui"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Build API Docker Image",
+      "command": "docker",
+      "args": [
+        "build",
+        "--target",
+        "api",
+        "-t",
+        "exceptionless/api-ci",
+        "."
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Build Job Docker Image",
+      "command": "docker",
+      "args": [
+        "build",
+        "--target",
+        "job",
+        "-t",
+        "exceptionless/job-ci",
+        "."
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Run in Docker",
+      "command": "docker-compose",
+      "args": [
+        "up"
+      ],
+      "problemMatcher": [],
+      "dependsOn": [
+        "Build API Docker Image",
+        "Build Job Docker Image"
+      ]
+    }
+  ]
 }

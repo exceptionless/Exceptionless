@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Utility;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -76,13 +77,13 @@ namespace Exceptionless.Core {
 
         public bool EnableBootstrapStartupActions { get; private set; }
 
-        public string ElasticSearchConnectionString { get; private set; }
+        public string ElasticsearchConnectionString { get; private set; }
 
-        public int ElasticSearchNumberOfShards { get; private set; }
+        public int ElasticsearchNumberOfShards { get; private set; }
 
-        public int ElasticSearchNumberOfReplicas { get; private set; }
+        public int ElasticsearchNumberOfReplicas { get; private set; }
 
-        public int ElasticSearchFieldsLimit { get; private set; }
+        public int ElasticsearchFieldsLimit { get; private set; }
 
         public bool EnableElasticsearchMapperSizePlugin { get; private set; }
 
@@ -172,8 +173,10 @@ namespace Exceptionless.Core {
 
         public static Settings Current { get; private set; }
 
-        public static void Initialize(IConfiguration configRoot, string environment) {
+        public static Settings ReadFromConfiguration(IConfiguration configRoot, string environment) {
+#pragma warning disable IDE0017 // Simplify object initialization
             var settings = new Settings();
+#pragma warning restore IDE0017 // Simplify object initialization
 
             settings.BaseURL = configRoot.GetValue<string>(nameof(BaseURL))?.TrimEnd('/');
             settings.InternalProjectId = configRoot.GetValue(nameof(InternalProjectId), "54b56e480ef9605a88a13153");
@@ -220,6 +223,7 @@ namespace Exceptionless.Core {
                 StripeConfiguration.SetApiKey(settings.StripeApiKey);
 
             settings.StorageFolder = configRoot.GetValue<string>(nameof(StorageFolder), "|DataDirectory|\\storage");
+            settings.StorageFolder = PathHelper.ExpandPath(settings.StorageFolder);
             settings.BulkBatchSize = configRoot.GetValue(nameof(BulkBatchSize), 1000);
 
             settings.EnableRepositoryNotifications = configRoot.GetValue(nameof(EnableRepositoryNotifications), true);
@@ -239,22 +243,22 @@ namespace Exceptionless.Core {
             if (String.IsNullOrWhiteSpace(settings.SmtpUser) != String.IsNullOrWhiteSpace(settings.SmtpPassword))
                 throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");
 
-            settings.AzureStorageConnectionString = configRoot.GetConnectionString(nameof(AzureStorageConnectionString));
-            settings.AzureStorageQueueConnectionString = configRoot.GetConnectionString(nameof(AzureStorageQueueConnectionString));
-            settings.AliyunStorageConnectionString = configRoot.GetConnectionString(nameof(AliyunStorageConnectionString));
-            settings.MinioStorageConnectionString = configRoot.GetConnectionString(nameof(MinioStorageConnectionString));
+            settings.AzureStorageConnectionString = configRoot.GetConnectionString("AzureStorage");
+            settings.AzureStorageQueueConnectionString = configRoot.GetConnectionString("AzureStorageQueue");
+            settings.AliyunStorageConnectionString = configRoot.GetConnectionString("AliyunStorage");
+            settings.MinioStorageConnectionString = configRoot.GetConnectionString("MinioStorage");
 
             settings.DisableIndexConfiguration = configRoot.GetValue(nameof(DisableIndexConfiguration), false);
             settings.EnableSnapshotJobs = configRoot.GetValue(nameof(EnableSnapshotJobs), String.IsNullOrEmpty(settings.AppScopePrefix) && settings.AppMode == AppMode.Production);
-            settings.ElasticSearchConnectionString = configRoot.GetConnectionString(nameof(ElasticSearchConnectionString)) ?? "http://localhost:9200";
-            settings.ElasticSearchNumberOfShards = configRoot.GetValue(nameof(ElasticSearchNumberOfShards), 1);
-            settings.ElasticSearchNumberOfReplicas = configRoot.GetValue(nameof(ElasticSearchNumberOfReplicas), settings.AppMode == AppMode.Production ? 1 : 0);
-            settings.ElasticSearchFieldsLimit = configRoot.GetValue(nameof(ElasticSearchFieldsLimit), 1500);
+            settings.ElasticsearchConnectionString = configRoot.GetConnectionString("Elasticsearch") ?? "http://localhost:9200";
+            settings.ElasticsearchNumberOfShards = configRoot.GetValue(nameof(ElasticsearchNumberOfShards), 1);
+            settings.ElasticsearchNumberOfReplicas = configRoot.GetValue(nameof(ElasticsearchNumberOfReplicas), settings.AppMode == AppMode.Production ? 1 : 0);
+            settings.ElasticsearchFieldsLimit = configRoot.GetValue(nameof(ElasticsearchFieldsLimit), 1500);
             settings.EnableElasticsearchMapperSizePlugin = configRoot.GetValue(nameof(EnableElasticsearchMapperSizePlugin), settings.AppMode != AppMode.Development);
 
-            settings.RedisConnectionString = configRoot.GetConnectionString(nameof(RedisConnectionString));
+            settings.RedisConnectionString = configRoot.GetConnectionString("Redis");
 
-            settings.LdapConnectionString = configRoot.GetConnectionString(nameof(LdapConnectionString));
+            settings.LdapConnectionString = configRoot.GetConnectionString("Ldap");
             settings.EnableActiveDirectoryAuth = configRoot.GetValue(nameof(EnableActiveDirectoryAuth), !String.IsNullOrEmpty(settings.LdapConnectionString));
 
             try {
@@ -264,6 +268,8 @@ namespace Exceptionless.Core {
             } catch { }
 
             Current = settings;
+
+            return settings;
         }
 
         private SmtpEncryption GetDefaultSmtpEncryption(int port) {

@@ -72,7 +72,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static int GetCollectionHashCode<T>(this IEnumerable<T> source) {
-            var assemblyQualifiedName = typeof(T).AssemblyQualifiedName;
+            string assemblyQualifiedName = typeof(T).AssemblyQualifiedName;
             int hashCode = assemblyQualifiedName?.GetHashCode() ?? 0;
 
             foreach (var item in source) {

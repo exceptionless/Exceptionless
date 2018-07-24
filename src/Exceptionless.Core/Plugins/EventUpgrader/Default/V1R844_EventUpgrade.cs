@@ -10,26 +10,22 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             foreach (var doc in ctx.Documents) {
-                var requestInfo = doc["RequestInfo"] as JObject;
 
-                if (requestInfo == null || !requestInfo.HasValues)
+                if (!(doc["RequestInfo"] is JObject requestInfo) || !requestInfo.HasValues)
                     return;
 
                 if (requestInfo["Cookies"] != null && requestInfo["Cookies"].HasValues) {
-                    var cookies = requestInfo["Cookies"] as JObject;
-                    if (cookies != null)
+                    if (requestInfo["Cookies"] is JObject cookies)
                         cookies.Remove("");
                 }
 
                 if (requestInfo["Form"] != null && requestInfo["Form"].HasValues) {
-                    var form = requestInfo["Form"] as JObject;
-                    if (form != null)
+                    if (requestInfo["Form"] is JObject form)
                         form.Remove("");
                 }
 
                 if (requestInfo["QueryString"] != null && requestInfo["QueryString"].HasValues) {
-                    var queryString = requestInfo["QueryString"] as JObject;
-                    if (queryString != null)
+                    if (requestInfo["QueryString"] is JObject queryString)
                         queryString.Remove("");
                 }
             }
