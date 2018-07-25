@@ -326,15 +326,14 @@ namespace Exceptionless.Web.Controllers {
         /// Removes an external login provider from the account
         /// </summary>
         /// <param name="providerName">The provider name.</param>
-        /// <param name="body">The provider user id.</param>
+        /// <param name="providerUserId">The provider user id.</param>
         /// <response code="400">Invalid provider name.</response>
         /// <response code="500">An error while saving the user account.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("unlink/{providerName:minlength(1)}")]
-        public async Task<ActionResult<TokenResult>> RemoveExternalLoginAsync(string providerName, object body) {
-            string providerUserId = body as string;
-            using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(providerName).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Provider User Id", providerUserId).SetHttpContext(HttpContext))) {
-                if (String.IsNullOrWhiteSpace(providerName) || String.IsNullOrWhiteSpace(providerUserId)) {
+        public async Task<ActionResult<TokenResult>> RemoveExternalLoginAsync(string providerName, ValueFromBody<string> providerUserId) {
+            using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(providerName).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Provider User Id", providerUserId?.Value).SetHttpContext(HttpContext))) {
+                if (String.IsNullOrWhiteSpace(providerName) || String.IsNullOrWhiteSpace(providerUserId?.Value)) {
                     _logger.LogError("Remove external login failed for {EmailAddress}: Invalid Provider Name or Provider User Id.", CurrentUser.EmailAddress);
                     return BadRequest("Invalid Provider Name or Provider User Id.");
                 }
@@ -345,7 +344,7 @@ namespace Exceptionless.Web.Controllers {
                 }
 
                 try {
-                    if (CurrentUser.RemoveOAuthAccount(providerName, providerUserId))
+                    if (CurrentUser.RemoveOAuthAccount(providerName, providerUserId.Value))
                         await _userRepository.SaveAsync(CurrentUser, o => o.Cache());
                 } catch (Exception ex) {
                     _logger.LogCritical(ex, "Error removing external login for {EmailAddress}: {Message}", CurrentUser.EmailAddress, ex.Message);

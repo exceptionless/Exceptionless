@@ -564,20 +564,19 @@ namespace Exceptionless.Web.Controllers {
         /// </summary>
         /// <param name="id">The identifier of the organization.</param>
         /// <param name="key">The key name of the data object.</param>
-        /// <param name="body">Any string value.</param>
+        /// <param name="value">Any string value.</param>
         /// <response code="404">The organization was not found.</response>
         [HttpPost]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
-        public async Task<IActionResult> PostDataAsync(string id, string key, object body) {
-            string value = body as string;
-            if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value) || key.StartsWith("-"))
+        public async Task<IActionResult> PostDataAsync(string id, string key, ValueFromBody<string> value) {
+            if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value) || key.StartsWith("-"))
                 return BadRequest();
 
             var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
 
-            organization.Data[key.Trim()] = value.Trim();
+            organization.Data[key.Trim()] = value.Value.Trim();
             await _repository.SaveAsync(organization, o => o.Cache());
 
             return Ok();
