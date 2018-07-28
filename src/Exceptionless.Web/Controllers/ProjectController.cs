@@ -194,15 +194,15 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpPost("{id:objectid}/config")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<IActionResult> SetConfigAsync(string id, string key, [FromBody] string value) {
-            if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value))
+        public async Task<IActionResult> SetConfigAsync(string id, string key, ValueFromBody<string> value) {
+            if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value))
                 return BadRequest();
 
             var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
-            project.Configuration.Settings[key.Trim()] = value.Trim();
+            project.Configuration.Settings[key.Trim()] = value.Value.Trim();
             project.Configuration.IncrementVersion();
             await _repository.SaveAsync(project, o => o.Cache());
 
@@ -483,15 +483,15 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpPost("{id:objectid}/data")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<IActionResult> PostDataAsync(string id, string key, [FromBody] string value) {
-            if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value) || key.StartsWith("-"))
+        public async Task<IActionResult> PostDataAsync(string id, string key, ValueFromBody<string> value) {
+            if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value) || key.StartsWith("-"))
                 return BadRequest();
 
             var project = await GetModelAsync(id, false);
             if (project == null)
                 return NotFound();
 
-            project.Data[key.Trim()] = value.Trim();
+            project.Data[key.Trim()] = value.Value.Trim();
             await _repository.SaveAsync(project, o => o.Cache());
 
             return Ok();

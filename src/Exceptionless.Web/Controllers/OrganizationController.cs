@@ -568,12 +568,15 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The organization was not found.</response>
         [HttpPost]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
-        public async Task<IActionResult> PostDataAsync(string id, string key, [FromBody] string value) {
+        public async Task<IActionResult> PostDataAsync(string id, string key, ValueFromBody<string> value) {
+            if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value) || key.StartsWith("-"))
+                return BadRequest();
+
             var organization = await GetModelAsync(id, false);
             if (organization == null)
                 return NotFound();
 
-            organization.Data[key] = value;
+            organization.Data[key.Trim()] = value.Value.Trim();
             await _repository.SaveAsync(organization, o => o.Cache());
 
             return Ok();

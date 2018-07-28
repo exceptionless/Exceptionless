@@ -5,6 +5,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
+using Exceptionless.Web.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
@@ -115,8 +116,8 @@ namespace Exceptionless.Web.Controllers {
 
         [HttpPost("notifications/release")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-        public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync([FromBody] string message = null, bool critical = false) {
-            var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message };
+        public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync(ValueFromBody<string> message, bool critical = false) {
+            var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message?.Value };
             await _messagePublisher.PublishAsync(notification);
             return Ok(notification);
         }
@@ -135,11 +136,11 @@ namespace Exceptionless.Web.Controllers {
 
         [HttpPost("notifications/system")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-        public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync([FromBody] string message) {
-            if (String.IsNullOrWhiteSpace(message))
+        public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(ValueFromBody<string> message) {
+            if (String.IsNullOrWhiteSpace(message?.Value))
                 return NotFound();
 
-            var notification = new SystemNotification { Date = SystemClock.UtcNow, Message = message };
+            var notification = new SystemNotification { Date = SystemClock.UtcNow, Message = message.Value };
             await _cacheClient.SetAsync("system-notification", notification);
             await _messagePublisher.PublishAsync(notification);
 
