@@ -88,7 +88,7 @@ ctx._source.total_occurrences += params.count;";
             var result = await _client.UpdateAsync<Stack>(request).AnyContext();
             if (!result.IsValid) {
                 _logger.LogError(result.OriginalException, "Error occurred incrementing total event occurrences on stack {stack}. Error: {Message}", stackId, result.ServerError?.Error);
-                return result.Result == Result.NotFound;
+                return result.ServerError?.Status == 404;
             }
 
             if (IsCacheEnabled)

@@ -16,6 +16,7 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Web.Models;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -149,16 +150,16 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The stack could not be found.</response>
         [HttpPost("{id:objectid}/add-link")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<IActionResult> AddLinkAsync(string id, [FromBody] string url) {
-            if (String.IsNullOrWhiteSpace(url))
+        public async Task<IActionResult> AddLinkAsync(string id, ValueFromBody<string> url) {
+            if (String.IsNullOrWhiteSpace(url?.Value))
                 return BadRequest();
 
             var stack = await GetModelAsync(id, false);
             if (stack == null)
                 return NotFound();
 
-            if (!stack.References.Contains(url.Trim())) {
-                stack.References.Add(url.Trim());
+            if (!stack.References.Contains(url.Value.Trim())) {
+                stack.References.Add(url.Value.Trim());
                 await _stackRepository.SaveAsync(stack);
             }
 
@@ -186,7 +187,7 @@ namespace Exceptionless.Web.Controllers {
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
             string url = data.GetValue("Link").Value<string>();
-            return await AddLinkAsync(id, url);
+            return await AddLinkAsync(id, new ValueFromBody<string>(url));
         }
 
         /// <summary>
@@ -200,16 +201,16 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("{id:objectid}/remove-link")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<IActionResult> RemoveLinkAsync(string id, [FromBody] string url) {
-            if (String.IsNullOrWhiteSpace(url))
+        public async Task<IActionResult> RemoveLinkAsync(string id, ValueFromBody<string> url) {
+            if (String.IsNullOrWhiteSpace(url?.Value))
                 return BadRequest();
 
             var stack = await GetModelAsync(id, false);
             if (stack == null)
                 return NotFound();
 
-            if (stack.References.Contains(url.Trim())) {
-                stack.References.Remove(url.Trim());
+            if (stack.References.Contains(url.Value.Trim())) {
+                stack.References.Remove(url.Value.Trim());
                 await _stackRepository.SaveAsync(stack);
             }
 

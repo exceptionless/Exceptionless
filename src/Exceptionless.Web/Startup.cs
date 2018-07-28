@@ -38,7 +38,7 @@ namespace Exceptionless.Web {
                 .AllowAnyOrigin()
                 .AllowCredentials()
                 .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
-                .WithExposedHeaders("ETag", "Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-Result-Count")));
+                .WithExposedHeaders("ETag", "Link", Headers.RateLimit, Headers.RateLimitRemaining, "X-Result-Count", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion)));
 
             services.Configure<ForwardedHeadersOptions>(options => {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
