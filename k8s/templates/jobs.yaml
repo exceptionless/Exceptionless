@@ -26,38 +26,7 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: 80
-              protocol: TCP
-          env:
-            - name: AppMode
-              value: Development
-            - name: ConnectionStrings__Elasticsearch
-              value: http://elasticsearch:9200
-            - name: ConnectionStrings__Redis
-              value: redis,abortConnect=false
-            - name: StorageFolder
-              value: /app/storage
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ template "exceptionless.fullname" . }}
-  labels:
-    app: {{ template "exceptionless.name" . }}
-    component: {{ template "exceptionless.fullname" . }}-jobs
-    chart: {{ template "exceptionless.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    - port: 80
-      targetPort: http
-      protocol: TCP
-      name: http
-  selector:
-    app: {{ template "exceptionless.name" . }}
-    release: {{ .Release.Name }}
+          command: run-all
+          envFrom:
+            - configMapRef:
+              name: {{ template "exceptionless.fullname" . }}-config

@@ -22,22 +22,60 @@ spec:
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
     spec:
+      initContainers:
+        - name: init-sysctl
+          image: busybox:1.27.2
+          command:
+            - sysctl
+            - -w
+            - vm.max_map_count=262144
+          securityContext:
+            privileged: true
       containers:
         - name: {{ template "exceptionless.name" . }}-elasticsearch
           image: "{{ .Values.elasticsearch.image.repository }}:{{ .Values.elasticsearch.image.tag }}"
           imagePullPolicy: {{ .Values.elasticsearch.image.pullPolicy }}
           ports:
             - containerPort: 9200
+              name: http
             - containerPort: 9300
+              name: transport
           env:
-            - name: bootstrap.memory_lock
-              value: 'true'
+            - name: CLUSTER_NAME
+              value: exceptionless
             - name: discovery.type
               value: single-node
             - name: ES_JAVA_OPTS
-              value: '-Xms512m -Xmx512m'
+              value: -Xms512m -Xmx512m
             - name: xpack.security.enabled
               value: 'false'
+            - name: PROCESSORS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
+          resources:
+            requests:
+              cpu: 0.25
+            limits:
+              cpu: 1
+          livenessProbe:
+            tcpSocket:
+              port: transport
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: http
+            initialDelaySeconds: 20
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: storage
+              mountPath: /data
+      volumes:
+        - emptyDir:
+            medium: ""
+          name: storage
 
 ---
 apiVersion: v1
@@ -53,9 +91,7 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - name: elasticsearch-9200
+    - name: http
       port: 9200
-    - name: elasticsearch-9300
-      port: 9300
   selector:
     component: {{ template "exceptionless.fullname" . }}-elasticsearch

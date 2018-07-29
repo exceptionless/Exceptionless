@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ template "exceptionless.fullname" . }}-config
+data:
+    AppMode: Development
+    ConnectionStrings__Elasticsearch: http://elasticsearch:9200
+    ConnectionStrings__Redis: redis,abortConnect=false
+    StorageFolder: /app/storage

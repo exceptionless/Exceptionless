@@ -30,17 +30,12 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
+          envFrom:
+            - configMapRef:
+              name: {{ template "exceptionless.fullname" . }}-config
           env:
-            - name: AppMode
-              value: Development
-            - name: ConnectionStrings__Elasticsearch
-              value: http://elasticsearch:9200
-            - name: ConnectionStrings__Redis
-              value: redis,abortConnect=false
             - name: RunJobsInProcess
-              value: 'false'
-            - name: StorageFolder
-              value: /app/storage
+              value: false
 
 ---
 apiVersion: v1

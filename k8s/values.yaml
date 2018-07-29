@@ -27,3 +27,9 @@ elasticsearch:
     repository: slideroom/elasticsearch
     tag: 98
     pullPolicy: IfNotPresent
+
+redis:
+  image:
+    repository: redis
+    tag: latest
+    pullPolicy: IfNotPresent
