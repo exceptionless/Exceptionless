@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "exceptionless.fullname" . }}
+  name: {{ template "exceptionless.fullname" . }}-jobs
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs
@@ -26,7 +26,7 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
-          command: run-all
+          command: [run-all]
           envFrom:
             - configMapRef:
-              name: {{ template "exceptionless.fullname" . }}-config
+                name: {{ template "exceptionless.fullname" . }}-config

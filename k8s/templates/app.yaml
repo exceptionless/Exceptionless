@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "exceptionless.fullname" . }}
+  name: {{ template "exceptionless.fullname" . }}-app
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-app
@@ -30,17 +30,15 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
-          env:
-            - name: AppMode
-              value: Development
-            - name: BaseUrl
-              value: http://ex-api.localtest.me:5000
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "exceptionless.fullname" . }}
+  name: {{ template "exceptionless.fullname" . }}-app
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-app
