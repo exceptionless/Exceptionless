@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "exceptionless.fullname" . }}
+  name: {{ template "exceptionless.fullname" . }}-elasticsearch
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-elasticsearch
@@ -81,7 +81,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "exceptionless.fullname" . }}
+  name: {{ template "exceptionless.fullname" . }}-elasticsearch
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-elasticsearch

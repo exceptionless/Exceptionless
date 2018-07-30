@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "exceptionless.fullname" . }}
+  name: {{ template "exceptionless.fullname" . }}-api
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-api
@@ -32,16 +32,16 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-              name: {{ template "exceptionless.fullname" . }}-config
+                name: {{ template "exceptionless.fullname" . }}-config
           env:
             - name: RunJobsInProcess
-              value: false
+              value: 'false'
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "exceptionless.fullname" . }}
+  name: {{ template "exceptionless.fullname" . }}-api
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-api

@@ -4,6 +4,7 @@ metadata:
     name: {{ template "exceptionless.fullname" . }}-config
 data:
     AppMode: Development
-    ConnectionStrings__Elasticsearch: http://elasticsearch:9200
-    ConnectionStrings__Redis: redis,abortConnect=false
+    ConnectionStrings__Elasticsearch: http://{{ template "exceptionless.fullname" . }}-elasticsearch:9200
+    ConnectionStrings__Redis: {{ template "exceptionless.fullname" . }}-redis,abortConnect=false
     StorageFolder: /app/storage
+    BaseUrl: http://ex-api.localtest.me:5000
