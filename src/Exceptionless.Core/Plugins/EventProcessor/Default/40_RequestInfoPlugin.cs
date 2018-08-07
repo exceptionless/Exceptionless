@@ -32,19 +32,23 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
             var project = contexts.First().Project;
-            var exclusions = project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.DataExclusions)
-                    ? DefaultExclusions.Union(project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions)).ToList()
-                    : DefaultExclusions;
-            
+            var exclusions = DefaultExclusions.Union(project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions)).ToList();
             foreach (var context in contexts) {
                 var request = context.Event.GetRequestInfo();
                 if (request == null)
                     continue;
 
-                var submissionClient = context.Event.GetSubmissionClient();
-                AddClientIpAddress(request, submissionClient);
-                await SetBrowserOsAndDeviceFromUserAgent(request, context).AnyContext();
+                if (context.IncludePrivateInformation) {
+                    var submissionClient = context.Event.GetSubmissionClient();
+                    AddClientIpAddress(request, submissionClient);
+                } else {
+                    request.ClientIpAddress = null;
+                    request.Cookies?.Clear();
+                    request.PostData = null;
+                    request.QueryString?.Clear();
+                }
 
+                await SetBrowserOsAndDeviceFromUserAgent(request, context).AnyContext();
                 context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
             }
         }

@@ -16,8 +16,13 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             if (environment == null)
                 return Task.CompletedTask;
 
-            var submissionClient = context.Event.GetSubmissionClient();
-            AddClientIpAddress(environment, submissionClient);
+            if (context.IncludePrivateInformation) {
+                var submissionClient = context.Event.GetSubmissionClient();
+                AddClientIpAddress(environment, submissionClient);
+            } else {
+                environment.IpAddress = null;
+                environment.MachineName = null;
+            }
 
             context.Event.SetEnvironmentInfo(environment);
             return Task.CompletedTask;
