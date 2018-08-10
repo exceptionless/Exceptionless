@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
 
