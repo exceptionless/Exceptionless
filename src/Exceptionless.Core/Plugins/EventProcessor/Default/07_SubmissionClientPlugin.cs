@@ -16,11 +16,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
             contexts.ForEach(c => c.Event.Data.Remove(Event.KnownDataKeys.SubmissionClient));
 
-            var epi = contexts.FirstOrDefault()?.EventPostInfo;
+            var firstContext = contexts.FirstOrDefault();
+            var epi = firstContext?.EventPostInfo;
             if (epi == null)
                 return Task.CompletedTask;
 
-            bool hasIpAddress = !String.IsNullOrEmpty(epi.IpAddress);
+            bool hasIpAddress = firstContext.IncludePrivateInformation && !String.IsNullOrEmpty(epi.IpAddress);
             bool hasUserAgent = !String.IsNullOrEmpty(epi.UserAgent);
             if (!hasIpAddress && !hasUserAgent)
                 return Task.CompletedTask;
