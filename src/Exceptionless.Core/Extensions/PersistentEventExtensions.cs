@@ -146,7 +146,7 @@ namespace Exceptionless {
             return true;
         }
 
-        public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, DateTime? lastActivityUtc = null, bool? isSessionEnd = null, bool hasPremiumFeatures = true) {
+        public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, DateTime? lastActivityUtc = null, bool? isSessionEnd = null, bool hasPremiumFeatures = true, bool includePrivateInformation = true) {
             var startEvent = new PersistentEvent {
                 Date = source.Date,
                 Geo = source.Geo,
@@ -157,7 +157,8 @@ namespace Exceptionless {
             };
 
             startEvent.SetSessionId(source.GetSessionId());
-            startEvent.SetUserIdentity(source.GetUserIdentity());
+            if (includePrivateInformation)
+                startEvent.SetUserIdentity(source.GetUserIdentity());
             startEvent.SetLocation(source.GetLocation());
             startEvent.SetVersion(source.GetVersion());
 
@@ -168,8 +169,8 @@ namespace Exceptionless {
                     CommandLine = ei.CommandLine,
                     Data = ei.Data,
                     InstallId = ei.InstallId,
-                    IpAddress = ei.IpAddress,
-                    MachineName = ei.MachineName,
+                    IpAddress = includePrivateInformation ? ei.IpAddress : null,
+                    MachineName = includePrivateInformation ? ei.MachineName : null,
                     OSName = ei.OSName,
                     OSVersion = ei.OSVersion,
                     ProcessId = ei.ProcessId,
@@ -183,7 +184,7 @@ namespace Exceptionless {
             var ri = source.GetRequestInfo();
             if (ri != null) {
                 startEvent.AddRequestInfo(new RequestInfo {
-                    ClientIpAddress = ri.ClientIpAddress,
+                    ClientIpAddress = includePrivateInformation ? ri.ClientIpAddress : null,
                     Data = ri.Data,
                     Host = ri.Host,
                     HttpMethod = ri.HttpMethod,

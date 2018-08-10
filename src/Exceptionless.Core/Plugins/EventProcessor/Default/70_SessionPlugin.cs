@@ -234,7 +234,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         private async Task<PersistentEvent> CreateSessionStartEventAsync(EventContext startContext, DateTime? lastActivityUtc, bool? isSessionEnd) {
-            var startEvent = startContext.Event.ToSessionStartEvent(lastActivityUtc, isSessionEnd, startContext.Organization.HasPremiumFeatures);
+            var startEvent = startContext.Event.ToSessionStartEvent(lastActivityUtc, isSessionEnd, startContext.Organization.HasPremiumFeatures, startContext.IncludePrivateInformation);
             var startEventContexts = new List<EventContext> {
                 new EventContext(startEvent, startContext.Organization, startContext.Project)
             };
