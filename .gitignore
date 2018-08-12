@@ -122,3 +122,4 @@ artifacts
 .idea
 src/Exceptionless\.Web/storage/
 tests/Exceptionless\.Api\.Tests/src/Exceptionless\.Web/storage/
+k8s/output
