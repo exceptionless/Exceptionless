@@ -26,7 +26,14 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
-          command: [run-all]
+          args: [run-all]
           envFrom:
             - configMapRef:
                 name: {{ template "exceptionless.fullname" . }}-config
+          volumeMounts:
+            - mountPath: "/app/storage"
+              name: storage
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ template "exceptionless.fullname" . }}-storage

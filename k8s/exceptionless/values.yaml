@@ -8,7 +8,7 @@ api:
 app:
   replicaCount: 1
   image:
-    repository: exceptionless/app-ci
+    repository: exceptionless/ui-ci
     tag: latest
     pullPolicy: IfNotPresent
 
@@ -20,7 +20,7 @@ jobs:
     pullPolicy: IfNotPresent
 
 service:
-  type: ClusterIP # LoadBalancer
+  type: LoadBalancer # ClusterIP
 
 elasticsearch:
   image:
