@@ -36,6 +36,13 @@ spec:
           env:
             - name: RunJobsInProcess
               value: 'false'
+          volumeMounts:
+            - mountPath: "/app/storage"
+              name: storage
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ template "exceptionless.fullname" . }}-storage
 
 ---
 apiVersion: v1
