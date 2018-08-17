@@ -298,7 +298,6 @@ namespace Exceptionless.Core {
                     settings.MetricsServerPort = 8125;
                 }
             }
-
         }
 
         private SmtpEncryption GetDefaultSmtpEncryption(int port) {
