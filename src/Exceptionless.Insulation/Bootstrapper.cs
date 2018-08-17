@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using App.Metrics;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
@@ -45,8 +46,14 @@ namespace Exceptionless.Insulation {
             if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
                 container.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
 
-            if (Settings.Current.EnableMetricsReporting)
-                container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions { ServerName = Settings.Current.MetricsServerName, Port = Settings.Current.MetricsServerPort, Prefix = "ex", LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
+            if (Settings.Current.EnableMetricsReporting) {
+                if (String.Equals(Settings.Current.MetricsReportingStrategy,"StatsD", StringComparison.OrdinalIgnoreCase)) {
+                    container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions { ServerName = Settings.Current.MetricsServerName, Port = Settings.Current.MetricsServerPort, Prefix = "ex", LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
+                } else if (String.Equals(Settings.Current.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase)) {
+                    ConfigureAppMetrics(container);
+                    container.ReplaceSingleton<IMetricsClient, AppMetricsClient>();
+                }
+            }
 
             if (Settings.Current.AppMode != AppMode.Development)
                 container.ReplaceSingleton<IMailSender, MailKitMailSender>();
@@ -108,6 +115,28 @@ namespace Exceptionless.Insulation {
             //        LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             //    }));
             //}
+        }
+
+        private static void ConfigureAppMetrics(IServiceCollection container) {
+            string serverUrl = Settings.Current.MetricsServerName;
+            if (serverUrl.IndexOf("://", StringComparison.Ordinal) == -1) {
+                serverUrl = "http://" + serverUrl;
+            }
+
+            if (Settings.Current.MetricsServerPort > 0) {
+                serverUrl = new UriBuilder(new Uri(serverUrl)) {
+                    Port = Settings.Current.MetricsServerPort
+                }.Uri.ToString();
+            }
+
+            container.AddMetrics(builder => {
+                if (!String.IsNullOrEmpty(Settings.Current.MetricsReportingDatabase)) {
+                    builder.Report.ToInfluxDb(serverUrl, Settings.Current.MetricsReportingDatabase);
+                }
+                else {
+                    builder.Report.OverHttp(serverUrl);
+                }
+            });
         }
 
         private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
