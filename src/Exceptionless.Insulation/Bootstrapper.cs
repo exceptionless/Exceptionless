@@ -46,14 +46,7 @@ namespace Exceptionless.Insulation {
             if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
                 container.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
 
-            if (Settings.Current.EnableMetricsReporting) {
-                if (String.Equals(Settings.Current.MetricsReportingStrategy,"StatsD", StringComparison.OrdinalIgnoreCase)) {
-                    container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions { ServerName = Settings.Current.MetricsServerName, Port = Settings.Current.MetricsServerPort, Prefix = "ex", LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
-                } else if (String.Equals(Settings.Current.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase)) {
-                    ConfigureAppMetrics(container);
-                    container.ReplaceSingleton<IMetricsClient, AppMetricsClient>();
-                }
-            }
+            RegisterMetricReporting(container);
 
             if (Settings.Current.AppMode != AppMode.Development)
                 container.ReplaceSingleton<IMailSender, MailKitMailSender>();
@@ -117,7 +110,22 @@ namespace Exceptionless.Insulation {
             //}
         }
 
-        private static void ConfigureAppMetrics(IServiceCollection container) {
+        private static void RegisterMetricReporting(IServiceCollection container) {
+            if (String.Equals(Settings.Current.MetricsReportingStrategy, "StatsD", StringComparison.OrdinalIgnoreCase)) {
+                container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions {
+                    ServerName = Settings.Current.MetricsServerName,
+                    Port = Settings.Current.MetricsServerPort,
+                    Prefix = "ex",
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            }
+            else if (String.Equals(Settings.Current.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase)) {
+                RegisterAppMetrics(container);
+                container.ReplaceSingleton<IMetricsClient, AppMetricsClient>();
+            }
+        }
+
+        private static void RegisterAppMetrics(IServiceCollection container) {
             string serverUrl = Settings.Current.MetricsServerName;
             if (serverUrl.IndexOf("://", StringComparison.Ordinal) == -1) {
                 serverUrl = "http://" + serverUrl;
