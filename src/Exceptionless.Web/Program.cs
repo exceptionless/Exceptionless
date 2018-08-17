@@ -65,9 +65,11 @@ namespace Exceptionless.Web {
                 })
                 .UseStartup<Startup>();
 
-            if (settings.EnableMetricsReporting && String.Equals(settings.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase)) {
+            if (!String.IsNullOrEmpty(Settings.Current.ApplicationInsightsKey))
+                builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
+
+            if (settings.EnableMetricsReporting && String.Equals(settings.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase))
                 builder = builder.UseMetrics();
-            }
 
             return builder;
         }
