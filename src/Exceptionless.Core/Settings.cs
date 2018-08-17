@@ -206,20 +206,13 @@ namespace Exceptionless.Core {
             settings.DisabledPlugins = configRoot.GetValueList(nameof(DisabledPlugins), String.Empty);
             settings.MaximumEventPostSize = configRoot.GetValue(nameof(MaximumEventPostSize), 200000).NormalizeValue();
             settings.MaximumRetentionDays = configRoot.GetValue(nameof(MaximumRetentionDays), 180).NormalizeValue();
+
             settings.MetricsServerName = configRoot.GetValue<string>(nameof(MetricsServerName));
             settings.MetricsServerPort = configRoot.GetValue<int>(nameof(MetricsServerPort));
             settings.MetricsReportingDatabase = configRoot.GetValue<string>(nameof(MetricsReportingDatabase));
-            settings.MetricsReportingStrategy = configRoot.GetValue(nameof(MetricsReportingStrategy), !String.IsNullOrEmpty(settings.MetricsReportingDatabase) ? "AppMetrics" : !String.IsNullOrEmpty(settings.MetricsServerName) ? "StatsD" : "");
-            if (String.Equals(settings.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase)) {
-                if (String.IsNullOrEmpty(settings.MetricsServerName)) {
-                    settings.MetricsServerName = "http://127.0.0.1:8086";
-                }
-            }
-            else if (String.Equals(settings.MetricsReportingStrategy, "StatsD", StringComparison.OrdinalIgnoreCase)) {
-                if (settings.MetricsServerPort <= 0) {
-                    settings.MetricsServerPort = 8125;
-                }
-            }
+            settings.MetricsReportingStrategy = configRoot.GetValue<string>(nameof(MetricsReportingStrategy));
+            ReviseMetricsSettings(settings);
+
             settings.IntercomAppSecret = configRoot.GetValue<string>(nameof(IntercomAppSecret));
             settings.GoogleAppId = configRoot.GetValue<string>(nameof(GoogleAppId));
             settings.GoogleAppSecret = configRoot.GetValue<string>(nameof(GoogleAppSecret));
@@ -285,6 +278,27 @@ namespace Exceptionless.Core {
             Current = settings;
 
             return settings;
+        }
+
+        private static void ReviseMetricsSettings(Settings settings) {
+            if (String.IsNullOrEmpty(settings.MetricsReportingStrategy)) {
+                if (!String.IsNullOrEmpty(settings.MetricsReportingDatabase)) {
+                    settings.MetricsReportingStrategy = "AppMetrics";
+                } else if (!String.IsNullOrEmpty(settings.MetricsServerName)) {
+                    settings.MetricsReportingStrategy = "StatsD";
+                }
+            }
+
+            if (String.Equals(settings.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase)) {
+                if (String.IsNullOrEmpty(settings.MetricsServerName)) {
+                    settings.MetricsServerName = "http://127.0.0.1:8086";
+                }
+            } else if (String.Equals(settings.MetricsReportingStrategy, "StatsD", StringComparison.OrdinalIgnoreCase)) {
+                if (settings.MetricsServerPort <= 0) {
+                    settings.MetricsServerPort = 8125;
+                }
+            }
+
         }
 
         private SmtpEncryption GetDefaultSmtpEncryption(int port) {
