@@ -208,7 +208,7 @@ namespace Exceptionless.Core {
                 return;
 
             if (!settings.EnableMetricsReporting)
-                logger.LogWarning("StatsD Metrics is NOT enabled on {MachineName}.", Environment.MachineName);
+                logger.LogWarning("Metrics reporting is NOT enabled on {MachineName}.", Environment.MachineName);
 
             if (String.IsNullOrEmpty(settings.RedisConnectionString))
                 logger.LogWarning("Redis is NOT enabled on {MachineName}.", Environment.MachineName);
