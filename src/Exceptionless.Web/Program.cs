@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using App.Metrics.AspNetCore;
-using App.Metrics.AspNetCore.Health;
 using Exceptionless.Core;
 using Exceptionless.Insulation.Configuration;
 using Microsoft.AspNetCore;
@@ -67,7 +66,7 @@ namespace Exceptionless.Web {
                 .UseStartup<Startup>();
 
             if (settings.EnableMetricsReporting && String.Equals(settings.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase)) {
-                builder = builder.UseMetrics().UseHealth();
+                builder = builder.UseMetrics();
             }
 
             return builder;
