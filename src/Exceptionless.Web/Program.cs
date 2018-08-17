@@ -49,7 +49,7 @@ namespace Exceptionless.Web {
 
             Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current, currentDirectory);
 
-            return WebHost.CreateDefaultBuilder(args)
+            var builder = WebHost.CreateDefaultBuilder(args)
                 .UseEnvironment(environment)
                 .UseKestrel(c => {
                     c.AddServerHeader = false;
@@ -63,6 +63,11 @@ namespace Exceptionless.Web {
                     s.AddSingleton(settings);
                 })
                 .UseStartup<Startup>();
+
+            if (!String.IsNullOrEmpty(Settings.Current.ApplicationInsightsKey))
+                builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
+
+            return builder;
         }
     }
 }

@@ -63,6 +63,8 @@ namespace Exceptionless.Core {
 
         public int MaximumRetentionDays { get; private set; }
 
+        public string ApplicationInsightsKey { get; private set; }
+
         public string MetricsServerName { get; private set; }
 
         public int MetricsServerPort { get; private set; }
@@ -202,6 +204,7 @@ namespace Exceptionless.Core {
             settings.DisabledPlugins = configRoot.GetValueList(nameof(DisabledPlugins), String.Empty);
             settings.MaximumEventPostSize = configRoot.GetValue(nameof(MaximumEventPostSize), 200000).NormalizeValue();
             settings.MaximumRetentionDays = configRoot.GetValue(nameof(MaximumRetentionDays), 180).NormalizeValue();
+            settings.ApplicationInsightsKey = configRoot.GetValue<string>(nameof(ApplicationInsightsKey));
             settings.MetricsServerName = configRoot.GetValue<string>(nameof(MetricsServerName));
             settings.MetricsServerPort = configRoot.GetValue(nameof(MetricsServerPort), 8125);
             settings.EnableMetricsReporting = configRoot.GetValue(nameof(EnableMetricsReporting), !String.IsNullOrEmpty(settings.MetricsServerName));
