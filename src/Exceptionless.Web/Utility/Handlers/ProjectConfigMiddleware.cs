@@ -13,6 +13,9 @@ namespace Exceptionless.Web.Utility {
         private readonly ITextSerializer _serializer;
         private readonly ILogger _logger;
         private readonly RequestDelegate _next;
+        private static readonly PathString _v1path = new PathString("/api/v1/projects/config");
+        private static readonly PathString _v2path = new PathString("/api/v2/projects/config");
+        private static readonly PathString _getVerb = new PathString("GET");
 
         public ProjectConfigMiddleware(RequestDelegate next, IProjectRepository projectRepository, ITextSerializer serializer, ILogger<ProjectConfigMiddleware> logger) {
             _next = next;
@@ -22,13 +25,14 @@ namespace Exceptionless.Web.Utility {
         }
 
         private bool IsProjectConfigRoute(HttpContext context) {
-            string method = context.Request.Method;
-            if (!String.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+            if (!context.Request.Method.Equals(HttpMethods.Get, StringComparison.Ordinal))
                 return false;
 
-            string absolutePath = context.Request.Path.Value;
-            return String.Equals(absolutePath, "/api/v2/projects/config", StringComparison.OrdinalIgnoreCase) ||
-                   String.Equals(absolutePath, "/api/v1/project/config", StringComparison.OrdinalIgnoreCase);
+            if (context.Request.Path.StartsWithSegments(_v2path, StringComparison.Ordinal)
+                || context.Request.Path.StartsWithSegments(_v1path, StringComparison.Ordinal))
+                return true;
+
+            return false;
         }
 
         public async Task Invoke(HttpContext context) {
