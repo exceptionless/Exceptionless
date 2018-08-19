@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:2.1.302-sdk-alpine3.7 AS build  
+FROM microsoft/dotnet:2.1.400-sdk-alpine3.7 AS build  
 WORKDIR /app
 
 COPY ./*.sln ./NuGet.Config ./
@@ -37,7 +37,7 @@ RUN dotnet publish -c Release -o out
 
 # job
 
-FROM microsoft/dotnet:2.1.1-runtime-alpine3.7 AS job
+FROM microsoft/dotnet:2.1.2-runtime-alpine3.7 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
