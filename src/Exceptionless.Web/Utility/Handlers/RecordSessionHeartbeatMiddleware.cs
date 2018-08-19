@@ -12,27 +12,22 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Web.Utility {
     public sealed class RecordSessionHeartbeatMiddleware {
-        private readonly IProjectRepository _projectRepository;
-        private readonly ITextSerializer _serializer;
         private readonly ICacheClient _cache;
         private readonly ILogger _logger;
         private readonly RequestDelegate _next;
+        private static readonly PathString _heartbeatPath = new PathString("/api/v2/events/session/heartbeat");
 
-        public RecordSessionHeartbeatMiddleware(RequestDelegate next, IProjectRepository projectRepository, ITextSerializer serializer, ICacheClient cache, ILogger<ProjectConfigMiddleware> logger) {
+        public RecordSessionHeartbeatMiddleware(RequestDelegate next, ICacheClient cache, ILogger<ProjectConfigMiddleware> logger) {
             _next = next;
-            _projectRepository = projectRepository;
-            _serializer = serializer;
             _cache = cache;
             _logger = logger;
         }
 
         private bool IsHeartbeatRoute(HttpContext context) {
-            string method = context.Request.Method;
-            if (!String.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+            if (!context.Request.Method.Equals(HttpMethods.Get, StringComparison.Ordinal))
                 return false;
 
-            string absolutePath = context.Request.Path.Value;
-            return String.Equals(absolutePath, "/session/heartbeat", StringComparison.OrdinalIgnoreCase);
+            return context.Request.Path.StartsWithSegments(_heartbeatPath, StringComparison.Ordinal);
         }
 
         public async Task Invoke(HttpContext context) {
