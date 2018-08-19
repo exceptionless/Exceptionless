@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Web.Extensions;
 using Foundatio.Repositories;
 using Foundatio.Serializer;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +15,6 @@ namespace Exceptionless.Web.Utility {
         private readonly RequestDelegate _next;
         private static readonly PathString _v1path = new PathString("/api/v1/projects/config");
         private static readonly PathString _v2path = new PathString("/api/v2/projects/config");
-        private static readonly PathString _getVerb = new PathString("GET");
 
         public ProjectConfigMiddleware(RequestDelegate next, IProjectRepository projectRepository, ITextSerializer serializer, ILogger<ProjectConfigMiddleware> logger) {
             _next = next;

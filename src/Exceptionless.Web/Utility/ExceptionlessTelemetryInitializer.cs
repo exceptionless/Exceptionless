@@ -12,6 +12,9 @@ namespace Exceptionless.Web.Utility {
         }
 
         public void Initialize(ITelemetry telemetry) {
+            if (_httpContextAccessor.HttpContext == null)
+                return;
+
             telemetry.Context.User.UserAgent = _httpContextAccessor.HttpContext.Request.Headers["User-Agent"];
             telemetry.Context.User.AccountId = _httpContextAccessor.HttpContext.Request.GetDefaultProjectId();
             telemetry.Context.User.Id = _httpContextAccessor.HttpContext.Items["ApiKey"]?.ToString();

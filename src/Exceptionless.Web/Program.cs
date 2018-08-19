@@ -6,6 +6,7 @@ using Exceptionless.Web.Utility;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -66,6 +67,7 @@ namespace Exceptionless.Web {
                 .ConfigureServices(s => {
                     if (useApplicationInsights) {
                         s.AddSingleton<ITelemetryInitializer, ExceptionlessTelemetryInitializer>();
+                        s.AddHttpContextAccessor();
                         s.AddApplicationInsightsTelemetry();
                     }
                     s.AddSingleton(settings);
