@@ -5,30 +5,27 @@ using Exceptionless.Web.Extensions;
 using Foundatio.Repositories;
 using Foundatio.Serializer;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Web.Utility {
     public sealed class ProjectConfigMiddleware {
         private readonly IProjectRepository _projectRepository;
         private readonly ITextSerializer _serializer;
-        private readonly ILogger _logger;
         private readonly RequestDelegate _next;
-        private static readonly PathString _v1path = new PathString("/api/v1/projects/config");
-        private static readonly PathString _v2path = new PathString("/api/v2/projects/config");
+        private static readonly PathString _v1Path = new PathString("/api/v1/project/config");
+        private static readonly PathString _v2Path = new PathString("/api/v2/projects/config");
 
-        public ProjectConfigMiddleware(RequestDelegate next, IProjectRepository projectRepository, ITextSerializer serializer, ILogger<ProjectConfigMiddleware> logger) {
+        public ProjectConfigMiddleware(RequestDelegate next, IProjectRepository projectRepository, ITextSerializer serializer) {
             _next = next;
             _projectRepository = projectRepository;
             _serializer = serializer;
-            _logger = logger;
         }
 
         private bool IsProjectConfigRoute(HttpContext context) {
             if (!context.Request.Method.Equals(HttpMethods.Get, StringComparison.Ordinal))
                 return false;
 
-            if (context.Request.Path.StartsWithSegments(_v2path, StringComparison.Ordinal)
-                || context.Request.Path.StartsWithSegments(_v1path, StringComparison.Ordinal))
+            if (context.Request.Path.StartsWithSegments(_v2Path, StringComparison.Ordinal)
+                || context.Request.Path.StartsWithSegments(_v1Path, StringComparison.Ordinal))
                 return true;
 
             return false;
