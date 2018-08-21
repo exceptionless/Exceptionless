@@ -2,7 +2,13 @@
 using System.IO;
 using App.Metrics;
 using App.Metrics.AspNetCore;
+using App.Metrics.Formatters;
+using App.Metrics.Formatters.Prometheus;
+using App.Metrics.Reporting.Graphite;
+using App.Metrics.Reporting.Http;
+using App.Metrics.Reporting.InfluxDB;
 using Exceptionless.Core;
+using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Configuration;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
@@ -66,32 +72,61 @@ namespace Exceptionless.Web {
                 })
                 .UseStartup<Startup>();
 
-            if (!String.IsNullOrEmpty(Settings.Current.ApplicationInsightsKey))
-                builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
+            if (!String.IsNullOrEmpty(settings.ApplicationInsightsKey))
+                builder.UseApplicationInsights(settings.ApplicationInsightsKey);
 
-            if (settings.EnableMetricsReporting && String.Equals(settings.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase))
+            if (settings.MetricsConnectionString != null && !(settings.MetricsConnectionString is StatsDMetricsConnectionString)) {
                 // We have to configure the reporters here
-                builder = builder.ConfigureMetricsWithDefaults(ConfigureAppMetrics).UseMetrics();
+                var metrics = BuildAppMetrics(settings);
+                builder = builder.ConfigureMetrics(metrics).UseMetrics(options => ConfigureAppMetrics(settings, metrics, options));
+            }
 
             return builder;
         }
 
-        private static void ConfigureAppMetrics(IMetricsBuilder builder) {
-            string serverUrl = Settings.Current.MetricsServerName;
-            if (serverUrl.IndexOf("://", StringComparison.Ordinal) == -1) {
-                serverUrl = "http://" + serverUrl;
+        private static IMetricsRoot BuildAppMetrics(Settings settings) {
+            var metricsBuilder = AppMetrics.CreateDefaultBuilder();
+            switch (settings.MetricsConnectionString) {
+                case InfuxDBMetricsConnectionString influxConnectionString:
+                    metricsBuilder.Report.ToInfluxDb(new MetricsReportingInfluxDbOptions {
+                        InfluxDb = {
+                            BaseUri = new Uri(influxConnectionString.ServerUrl),
+                            UserName = influxConnectionString.UserName,
+                            Password = influxConnectionString.Password,
+                            Database = influxConnectionString.Database
+                        }
+                    });
+                    break;
+                case HttpMetricsConnectionString httpConnectionString:
+                    metricsBuilder.Report.OverHttp(new MetricsReportingHttpOptions {
+                        HttpSettings = {
+                            RequestUri = new Uri(httpConnectionString.ServerUrl),
+                            UserName = httpConnectionString.UserName,
+                            Password = httpConnectionString.Password
+                        }
+                    });
+                    break;
+                case PrometheusMetricsConnectionString prometheusConnectionString:
+                    metricsBuilder.OutputMetrics.AsPrometheusPlainText();
+                    metricsBuilder.OutputMetrics.AsPrometheusProtobuf();
+                    break;
+                case GraphiteMetricsConnectionString graphiteConnectionString:
+                    metricsBuilder.Report.ToGraphite(new MetricsReportingGraphiteOptions {
+                        Graphite = {
+                            BaseUri = new Uri(graphiteConnectionString.ServerUrl)
+                        }
+                    });
+                    break;
             }
+            return metricsBuilder.Build();
+        }
 
-            if (Settings.Current.MetricsServerPort > 0) {
-                serverUrl = new UriBuilder(new Uri(serverUrl)) {
-                    Port = Settings.Current.MetricsServerPort
-                }.Uri.ToString();
-            }
-
-            if (!String.IsNullOrEmpty(Settings.Current.MetricsReportingDatabase)) {
-                builder.Report.ToInfluxDb(serverUrl, Settings.Current.MetricsReportingDatabase);
-            } else {
-                builder.Report.OverHttp(serverUrl);
+        private static void ConfigureAppMetrics(Settings settings, IMetricsRoot metrics, MetricsWebHostOptions options) {
+            if (settings.MetricsConnectionString is PrometheusMetricsConnectionString) {
+                options.EndpointOptions = endpointsOptions => {
+                    endpointsOptions.MetricsTextEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusTextOutputFormatter>();
+                    endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
+                };
             }
         }
     }

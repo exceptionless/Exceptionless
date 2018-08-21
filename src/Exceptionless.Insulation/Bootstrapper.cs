@@ -46,7 +46,7 @@ namespace Exceptionless.Insulation {
             if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
                 container.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
 
-            RegisterMetricReporting(container);
+            RegisterMetricsReporting(container);
 
             if (Settings.Current.AppMode != AppMode.Development)
                 container.ReplaceSingleton<IMailSender, MailKitMailSender>();
@@ -110,18 +110,20 @@ namespace Exceptionless.Insulation {
             //}
         }
 
-        private static void RegisterMetricReporting(IServiceCollection container) {
-            if (String.Equals(Settings.Current.MetricsReportingStrategy, "StatsD", StringComparison.OrdinalIgnoreCase)) {
-                container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions {
-                    ServerName = Settings.Current.MetricsServerName,
-                    Port = Settings.Current.MetricsServerPort,
-                    Prefix = "ex",
-                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-                }));
-            }
-            else if (String.Equals(Settings.Current.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase)) {
-                container.AddMetrics();
-                container.ReplaceSingleton<IMetricsClient, AppMetricsClient>();
+        private static void RegisterMetricsReporting(IServiceCollection container) {
+            if(Settings.Current.MetricsConnectionString != null) {
+                if (Settings.Current.MetricsConnectionString is StatsDMetricsConnectionString connectionString) {
+                    container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions {
+                        ServerName = connectionString.ServerName,
+                        Port = connectionString.ServerPort,
+                        Prefix = "ex",
+                        LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                    }));
+                }
+                else {
+                    container.AddMetrics();
+                    container.ReplaceSingleton<IMetricsClient, AppMetricsClient>();
+                }
             }
         }
 

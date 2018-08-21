@@ -65,15 +65,7 @@ namespace Exceptionless.Core {
 
         public string ApplicationInsightsKey { get; private set; }
 
-        public string MetricsServerName { get; private set; }
-
-        public int MetricsServerPort { get; private set; }
-
-        public string MetricsReportingDatabase { get; private set; }
-
-        public string MetricsReportingStrategy { get; private set; }
-
-        public bool EnableMetricsReporting => !String.IsNullOrEmpty(MetricsReportingStrategy);
+        public IMetricsConnectionString MetricsConnectionString { get; private set; }
 
         public string RedisConnectionString { get; private set; }
 
@@ -209,11 +201,6 @@ namespace Exceptionless.Core {
             settings.MaximumEventPostSize = configRoot.GetValue(nameof(MaximumEventPostSize), 200000).NormalizeValue();
             settings.MaximumRetentionDays = configRoot.GetValue(nameof(MaximumRetentionDays), 180).NormalizeValue();
             settings.ApplicationInsightsKey = configRoot.GetValue<string>(nameof(ApplicationInsightsKey));
-            settings.MetricsServerName = configRoot.GetValue<string>(nameof(MetricsServerName));
-            settings.MetricsServerPort = configRoot.GetValue<int>(nameof(MetricsServerPort));
-            settings.MetricsReportingDatabase = configRoot.GetValue<string>(nameof(MetricsReportingDatabase));
-            settings.MetricsReportingStrategy = configRoot.GetValue<string>(nameof(MetricsReportingStrategy));
-            ReviseMetricsSettings(settings);
 
             settings.IntercomAppSecret = configRoot.GetValue<string>(nameof(IntercomAppSecret));
             settings.GoogleAppId = configRoot.GetValue<string>(nameof(GoogleAppId));
@@ -257,6 +244,7 @@ namespace Exceptionless.Core {
             settings.AzureStorageQueueConnectionString = configRoot.GetConnectionString("AzureStorageQueue");
             settings.AliyunStorageConnectionString = configRoot.GetConnectionString("AliyunStorage");
             settings.MinioStorageConnectionString = configRoot.GetConnectionString("MinioStorage");
+            settings.MetricsConnectionString = Utility.MetricsConnectionString.Parse(configRoot.GetConnectionString("Metrics"));
 
             settings.DisableIndexConfiguration = configRoot.GetValue(nameof(DisableIndexConfiguration), false);
             settings.EnableSnapshotJobs = configRoot.GetValue(nameof(EnableSnapshotJobs), String.IsNullOrEmpty(settings.AppScopePrefix) && settings.AppMode == AppMode.Production);
@@ -280,26 +268,6 @@ namespace Exceptionless.Core {
             Current = settings;
 
             return settings;
-        }
-
-        private static void ReviseMetricsSettings(Settings settings) {
-            if (String.IsNullOrEmpty(settings.MetricsReportingStrategy)) {
-                if (!String.IsNullOrEmpty(settings.MetricsReportingDatabase)) {
-                    settings.MetricsReportingStrategy = "AppMetrics";
-                } else if (!String.IsNullOrEmpty(settings.MetricsServerName)) {
-                    settings.MetricsReportingStrategy = "StatsD";
-                }
-            }
-
-            if (String.Equals(settings.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase)) {
-                if (String.IsNullOrEmpty(settings.MetricsServerName)) {
-                    settings.MetricsServerName = "http://127.0.0.1:8086";
-                }
-            } else if (String.Equals(settings.MetricsReportingStrategy, "StatsD", StringComparison.OrdinalIgnoreCase)) {
-                if (settings.MetricsServerPort <= 0) {
-                    settings.MetricsServerPort = 8125;
-                }
-            }
         }
 
         private SmtpEncryption GetDefaultSmtpEncryption(int port) {
