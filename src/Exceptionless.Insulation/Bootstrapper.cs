@@ -120,31 +120,9 @@ namespace Exceptionless.Insulation {
                 }));
             }
             else if (String.Equals(Settings.Current.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase)) {
-                RegisterAppMetrics(container);
+                container.AddMetrics();
                 container.ReplaceSingleton<IMetricsClient, AppMetricsClient>();
             }
-        }
-
-        private static void RegisterAppMetrics(IServiceCollection container) {
-            string serverUrl = Settings.Current.MetricsServerName;
-            if (serverUrl.IndexOf("://", StringComparison.Ordinal) == -1) {
-                serverUrl = "http://" + serverUrl;
-            }
-
-            if (Settings.Current.MetricsServerPort > 0) {
-                serverUrl = new UriBuilder(new Uri(serverUrl)) {
-                    Port = Settings.Current.MetricsServerPort
-                }.Uri.ToString();
-            }
-
-            container.AddMetrics(builder => {
-                if (!String.IsNullOrEmpty(Settings.Current.MetricsReportingDatabase)) {
-                    builder.Report.ToInfluxDb(serverUrl, Settings.Current.MetricsReportingDatabase);
-                }
-                else {
-                    builder.Report.OverHttp(serverUrl);
-                }
-            });
         }
 
         private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {

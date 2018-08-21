@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using App.Metrics;
 using App.Metrics.AspNetCore;
 using Exceptionless.Core;
 using Exceptionless.Insulation.Configuration;
@@ -69,9 +70,29 @@ namespace Exceptionless.Web {
                 builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
 
             if (settings.EnableMetricsReporting && String.Equals(settings.MetricsReportingStrategy, "AppMetrics", StringComparison.OrdinalIgnoreCase))
-                builder = builder.UseMetrics();
+                // We have to configure the reporters here
+                builder = builder.ConfigureMetricsWithDefaults(ConfigureAppMetrics).UseMetrics();
 
             return builder;
+        }
+
+        private static void ConfigureAppMetrics(IMetricsBuilder builder) {
+            string serverUrl = Settings.Current.MetricsServerName;
+            if (serverUrl.IndexOf("://", StringComparison.Ordinal) == -1) {
+                serverUrl = "http://" + serverUrl;
+            }
+
+            if (Settings.Current.MetricsServerPort > 0) {
+                serverUrl = new UriBuilder(new Uri(serverUrl)) {
+                    Port = Settings.Current.MetricsServerPort
+                }.Uri.ToString();
+            }
+
+            if (!String.IsNullOrEmpty(Settings.Current.MetricsReportingDatabase)) {
+                builder.Report.ToInfluxDb(serverUrl, Settings.Current.MetricsReportingDatabase);
+            } else {
+                builder.Report.OverHttp(serverUrl);
+            }
         }
     }
 }
