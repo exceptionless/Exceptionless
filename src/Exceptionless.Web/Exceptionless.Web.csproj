@@ -12,10 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="App.Metrics.AspNetCore" Version="2.0.0" />
-    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="2.0.0" />
-    <PackageReference Include="App.Metrics.Reporting.Graphite" Version="2.0.0" />
-    <PackageReference Include="App.Metrics.Reporting.Http" Version="2.0.0" />
-    <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="2.0.0" />
     <PackageReference Include="Exceptionless.AspNetCore.Signed" Version="4.3.2004" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.2" />

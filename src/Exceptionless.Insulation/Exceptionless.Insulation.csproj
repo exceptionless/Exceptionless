@@ -5,6 +5,10 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="App.Metrics.Extensions.DependencyInjection" Version="2.0.0" />
+    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="2.0.0" />
+    <PackageReference Include="App.Metrics.Reporting.Graphite" Version="2.0.0" />
+    <PackageReference Include="App.Metrics.Reporting.Http" Version="2.0.0" />
+    <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="2.0.0" />
     <PackageReference Include="Foundatio.Aliyun" Version="7.0.28" />
     <PackageReference Include="Foundatio.AppMetrics" Version="7.0.1732-pre" />
     <PackageReference Include="Foundatio.AzureStorage" Version="7.0.1505" />
