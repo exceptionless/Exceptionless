@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
+using App.Metrics;
+using App.Metrics.AspNetCore;
+using App.Metrics.Formatters.Prometheus;
+using App.Metrics.Formatters;
 using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
@@ -7,12 +11,14 @@ using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Insulation.Metrics;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,6 +26,28 @@ using Stripe;
 
 namespace Exceptionless.Web {
     public class Bootstrapper {
+        public static void ConfigureWebHost(IWebHostBuilder builder) {
+            if (!String.IsNullOrEmpty(Settings.Current.ApplicationInsightsKey))
+                builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
+
+            // Note: The prometheus reports metrics in passive mode, so it should only used in webapps but not in console apps.
+            if (Settings.Current.ParsedMetricsConnectionString is PrometheusMetricsConnectionString) {
+                var metrics = AppMetrics.CreateDefaultBuilder()
+                    .OutputMetrics.AsPrometheusPlainText()
+                    .OutputMetrics.AsPrometheusProtobuf()
+                    .Build();
+                builder.ConfigureMetrics(metrics).UseMetrics(options => {
+                    options.EndpointOptions = endpointsOptions => {
+                        endpointsOptions.MetricsTextEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusTextOutputFormatter>();
+                        endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
+                    };
+                });
+            }
+            else if (!(Settings.Current.ParsedMetricsConnectionString is StatsDMetricsConnectionString)) {
+                builder.UseMetrics();
+            }
+        }
+
         public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory) {
             container.AddSingleton<WebSocketConnectionManager>();
             container.AddSingleton<MessageBusBroker>();
@@ -31,12 +59,12 @@ namespace Exceptionless.Web {
             container.AddTransient<Profile, ApiMappings>();
 
             Core.Bootstrapper.RegisterServices(container);
-            bool includeInsulation = !String.IsNullOrEmpty(Settings.Current.RedisConnectionString) || 
+            bool includeInsulation = !String.IsNullOrEmpty(Settings.Current.RedisConnectionString) ||
                 !String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString) ||
                 !String.IsNullOrEmpty(Settings.Current.AzureStorageQueueConnectionString) ||
                 !String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString) ||
                 !String.IsNullOrEmpty(Settings.Current.MinioStorageConnectionString) ||
-                Settings.Current.MetricsConnectionString != null;
+                !String.IsNullOrEmpty(Settings.Current.MetricsConnectionString);
             if (includeInsulation)
                 Insulation.Bootstrapper.RegisterServices(container, Settings.Current.RunJobsInProcess);
 

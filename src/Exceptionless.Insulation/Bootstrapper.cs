@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Linq;
 using App.Metrics;
+using App.Metrics.Infrastructure;
+using App.Metrics.Internal.Infrastructure;
+using App.Metrics.Reporting.Graphite;
+using App.Metrics.Reporting.Http;
+using App.Metrics.Reporting.InfluxDB;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
@@ -9,6 +14,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
 using Exceptionless.Insulation.Mail;
+using Exceptionless.Insulation.Metrics;
 using Exceptionless.Insulation.Redis;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -18,6 +24,7 @@ using Foundatio.Queues;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Serilog.Sinks.Exceptionless;
 using StackExchange.Redis;
@@ -79,7 +86,8 @@ namespace Exceptionless.Insulation {
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<WebHookNotification>(s));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<MailMessage>(s));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<WorkItemData>(s, workItemTimeout: TimeSpan.FromHours(1)));
-            } else if (!String.IsNullOrEmpty(Settings.Current.RedisConnectionString)) {
+            }
+            else if (!String.IsNullOrEmpty(Settings.Current.RedisConnectionString)) {
                 container.ReplaceSingleton(s => CreateRedisQueue<EventPost>(s, runMaintenanceTasks, retries: 1));
                 container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, runMaintenanceTasks));
                 container.ReplaceSingleton(s => CreateRedisQueue<EventNotificationWorkItem>(s, runMaintenanceTasks));
@@ -91,11 +99,12 @@ namespace Exceptionless.Insulation {
             if (!String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString)) {
                 container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions {
                     ConnectionString = Settings.Current.AzureStorageConnectionString,
-                    ContainerName =  $"{Settings.Current.AppScopePrefix}ex-events",
+                    ContainerName = $"{Settings.Current.AppScopePrefix}ex-events",
                     Serializer = s.GetRequiredService<ITextSerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
-            } else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString)) {
+            }
+            else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString)) {
                 container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions {
                     ConnectionString = Settings.Current.AliyunStorageConnectionString,
                     Serializer = s.GetRequiredService<ITextSerializer>(),
@@ -110,18 +119,67 @@ namespace Exceptionless.Insulation {
             //}
         }
 
+        private static IMetricsRoot BuildAppMetrics(IMetricsConnectionString connectionString) {
+            var metricsBuilder = AppMetrics.CreateDefaultBuilder();
+            switch (connectionString) {
+                case InfuxDBMetricsConnectionString influxConnectionString:
+                    metricsBuilder.Report.ToInfluxDb(new MetricsReportingInfluxDbOptions {
+                        InfluxDb = {
+                            BaseUri = new Uri(influxConnectionString.ServerUrl),
+                            UserName = influxConnectionString.UserName,
+                            Password = influxConnectionString.Password,
+                            Database = influxConnectionString.Database
+                        }
+                    });
+                    break;
+                case HttpMetricsConnectionString httpConnectionString:
+                    metricsBuilder.Report.OverHttp(new MetricsReportingHttpOptions {
+                        HttpSettings = {
+                            RequestUri = new Uri(httpConnectionString.ServerUrl),
+                            UserName = httpConnectionString.UserName,
+                            Password = httpConnectionString.Password
+                        }
+                    });
+                    break;
+                case GraphiteMetricsConnectionString graphiteConnectionString:
+                    metricsBuilder.Report.ToGraphite(new MetricsReportingGraphiteOptions {
+                        Graphite = {
+                            BaseUri = new Uri(graphiteConnectionString.ServerUrl)
+                        }
+                    });
+                    break;
+                default:
+                    return null;
+            }
+            return metricsBuilder.Build();
+        }
+
         private static void RegisterMetricsReporting(IServiceCollection container) {
-            if(Settings.Current.MetricsConnectionString != null) {
-                if (Settings.Current.MetricsConnectionString is StatsDMetricsConnectionString connectionString) {
-                    container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions {
-                        ServerName = connectionString.ServerName,
-                        Port = connectionString.ServerPort,
-                        Prefix = "ex",
-                        LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-                    }));
-                }
-                else {
-                    container.AddMetrics();
+            var connectionString = Settings.Current.ParsedMetricsConnectionString;
+            if (connectionString is StatsDMetricsConnectionString statsdConnectionString) {
+                container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions {
+                    ServerName = statsdConnectionString.ServerName,
+                    Port = statsdConnectionString.ServerPort,
+                    Prefix = "ex",
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            }
+            else if (connectionString != null) {
+                var metrics = BuildAppMetrics(connectionString);
+                if (metrics != null) {
+                    container.ReplaceSingleton(metrics.Clock);
+                    container.ReplaceSingleton(metrics.Filter);
+                    container.ReplaceSingleton(metrics.DefaultOutputMetricsFormatter);
+                    container.ReplaceSingleton(metrics.OutputMetricsFormatters);
+                    container.ReplaceSingleton(metrics.DefaultOutputEnvFormatter);
+                    container.ReplaceSingleton(metrics.OutputEnvFormatters);
+                    container.TryAddSingleton<EnvironmentInfoProvider>();
+                    container.ReplaceSingleton<IMetrics>(metrics);
+                    container.ReplaceSingleton(metrics);
+                    container.ReplaceSingleton(metrics.Options);
+                    container.ReplaceSingleton(metrics.Reporters);
+                    container.ReplaceSingleton(metrics.ReportRunner);
+                    container.TryAddSingleton<AppMetricsMarkerService, AppMetricsMarkerService>();
                     container.ReplaceSingleton<IMetricsClient, AppMetricsClient>();
                 }
             }

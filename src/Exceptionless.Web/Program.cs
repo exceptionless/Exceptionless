@@ -1,15 +1,8 @@
 ﻿using System;
 using System.IO;
-using App.Metrics;
-using App.Metrics.AspNetCore;
-using App.Metrics.Formatters;
-using App.Metrics.Formatters.Prometheus;
-using App.Metrics.Reporting.Graphite;
-using App.Metrics.Reporting.Http;
-using App.Metrics.Reporting.InfluxDB;
 using Exceptionless.Core;
-using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Configuration;
+using Exceptionless.Insulation.Metrics;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -72,62 +65,10 @@ namespace Exceptionless.Web {
                 })
                 .UseStartup<Startup>();
 
-            if (!String.IsNullOrEmpty(settings.ApplicationInsightsKey))
-                builder.UseApplicationInsights(settings.ApplicationInsightsKey);
-
-            if (settings.MetricsConnectionString != null && !(settings.MetricsConnectionString is StatsDMetricsConnectionString)) {
-                // We have to configure the reporters here
-                var metrics = BuildAppMetrics(settings);
-                builder = builder.ConfigureMetrics(metrics).UseMetrics(options => ConfigureAppMetrics(settings, metrics, options));
-            }
+            settings.ParsedMetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString);
+            Bootstrapper.ConfigureWebHost(builder);
 
             return builder;
-        }
-
-        private static IMetricsRoot BuildAppMetrics(Settings settings) {
-            var metricsBuilder = AppMetrics.CreateDefaultBuilder();
-            switch (settings.MetricsConnectionString) {
-                case InfuxDBMetricsConnectionString influxConnectionString:
-                    metricsBuilder.Report.ToInfluxDb(new MetricsReportingInfluxDbOptions {
-                        InfluxDb = {
-                            BaseUri = new Uri(influxConnectionString.ServerUrl),
-                            UserName = influxConnectionString.UserName,
-                            Password = influxConnectionString.Password,
-                            Database = influxConnectionString.Database
-                        }
-                    });
-                    break;
-                case HttpMetricsConnectionString httpConnectionString:
-                    metricsBuilder.Report.OverHttp(new MetricsReportingHttpOptions {
-                        HttpSettings = {
-                            RequestUri = new Uri(httpConnectionString.ServerUrl),
-                            UserName = httpConnectionString.UserName,
-                            Password = httpConnectionString.Password
-                        }
-                    });
-                    break;
-                case PrometheusMetricsConnectionString prometheusConnectionString:
-                    metricsBuilder.OutputMetrics.AsPrometheusPlainText();
-                    metricsBuilder.OutputMetrics.AsPrometheusProtobuf();
-                    break;
-                case GraphiteMetricsConnectionString graphiteConnectionString:
-                    metricsBuilder.Report.ToGraphite(new MetricsReportingGraphiteOptions {
-                        Graphite = {
-                            BaseUri = new Uri(graphiteConnectionString.ServerUrl)
-                        }
-                    });
-                    break;
-            }
-            return metricsBuilder.Build();
-        }
-
-        private static void ConfigureAppMetrics(Settings settings, IMetricsRoot metrics, MetricsWebHostOptions options) {
-            if (settings.MetricsConnectionString is PrometheusMetricsConnectionString) {
-                options.EndpointOptions = endpointsOptions => {
-                    endpointsOptions.MetricsTextEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusTextOutputFormatter>();
-                    endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
-                };
-            }
         }
     }
 }

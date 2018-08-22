@@ -65,7 +65,9 @@ namespace Exceptionless.Core {
 
         public string ApplicationInsightsKey { get; private set; }
 
-        public IMetricsConnectionString MetricsConnectionString { get; private set; }
+        public string MetricsConnectionString { get; private set; }
+
+        internal IMetricsConnectionString ParsedMetricsConnectionString { get; set; }
 
         public string RedisConnectionString { get; private set; }
 
@@ -244,7 +246,7 @@ namespace Exceptionless.Core {
             settings.AzureStorageQueueConnectionString = configRoot.GetConnectionString("AzureStorageQueue");
             settings.AliyunStorageConnectionString = configRoot.GetConnectionString("AliyunStorage");
             settings.MinioStorageConnectionString = configRoot.GetConnectionString("MinioStorage");
-            settings.MetricsConnectionString = Utility.MetricsConnectionString.Parse(configRoot.GetConnectionString("Metrics"));
+            settings.MetricsConnectionString = configRoot.GetConnectionString("Metrics");
 
             settings.DisableIndexConfiguration = configRoot.GetValue(nameof(DisableIndexConfiguration), false);
             settings.EnableSnapshotJobs = configRoot.GetValue(nameof(EnableSnapshotJobs), String.IsNullOrEmpty(settings.AppScopePrefix) && settings.AppMode == AppMode.Production);
