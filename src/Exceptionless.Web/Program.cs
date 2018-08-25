@@ -2,9 +2,12 @@
 using System.IO;
 using Exceptionless.Core;
 using Exceptionless.Insulation.Configuration;
+using Exceptionless.Web.Utility;
+using Microsoft.ApplicationInsights.Extensibility;
 using Exceptionless.Insulation.Metrics;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -50,6 +53,8 @@ namespace Exceptionless.Web {
 
             Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current, currentDirectory);
 
+            bool useApplicationInsights = !String.IsNullOrEmpty(Settings.Current.ApplicationInsightsKey);
+
             var builder = WebHost.CreateDefaultBuilder(args)
                 .UseEnvironment(environment)
                 .UseKestrel(c => {
@@ -61,13 +66,20 @@ namespace Exceptionless.Web {
                 .SuppressStatusMessages(true)
                 .UseConfiguration(config)
                 .ConfigureServices(s => {
+                    if (useApplicationInsights) {
+                        s.AddSingleton<ITelemetryInitializer, ExceptionlessTelemetryInitializer>();
+                        s.AddHttpContextAccessor();
+                        s.AddApplicationInsightsTelemetry();
+                    }
                     s.AddSingleton(settings);
                 })
                 .UseStartup<Startup>();
+				
+			if (useApplicationInsights)
+                builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
 
             settings.ParsedMetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString);
             Bootstrapper.ConfigureWebHost(builder);
-
             return builder;
         }
     }

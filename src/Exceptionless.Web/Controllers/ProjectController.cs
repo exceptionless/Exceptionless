@@ -157,8 +157,19 @@ namespace Exceptionless.Web.Controllers {
         
         [Obsolete]
         [HttpGet("~/api/v1/project/config")]
-        public Task<ActionResult<ClientConfiguration>> GetV1ConfigAsync(string id = null, int? v = null) {
-            return GetConfigAsync(id, v);
+        public Task<ActionResult<ClientConfiguration>> GetV1ConfigAsync(int? v = null) {
+            return GetConfigAsync(null, v);
+        }
+        
+        /// <summary>
+        /// Get configuration settings
+        /// </summary>
+        /// <param name="v">The client configuration version.</param>
+        /// <response code="304">The client configuration version is the current version.</response>
+        /// <response code="404">The project could not be found.</response>
+        [HttpGet("config")]
+        public Task<ActionResult<ClientConfiguration>> GetV2ConfigAsync(int? v = null) {
+            return GetConfigAsync(null, v);
         }
 
         /// <summary>
@@ -168,7 +179,6 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="v">The client configuration version.</param>
         /// <response code="304">The client configuration version is the current version.</response>
         /// <response code="404">The project could not be found.</response>
-        [HttpGet("config")]
         [HttpGet("{id:objectid}/config")]
         public async Task<ActionResult<ClientConfiguration>> GetConfigAsync(string id = null, int? v = null) {
             if (String.IsNullOrEmpty(id))
