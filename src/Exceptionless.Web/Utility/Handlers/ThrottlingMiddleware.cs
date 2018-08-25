@@ -18,6 +18,11 @@ namespace Exceptionless.Web.Utility.Handlers {
         private readonly ICacheClient _cacheClient;
         private readonly ThrottlingOptions _options;
         private readonly RequestDelegate _next;
+        private static readonly PathString _v1ProjectConfigPath = new PathString("/api/v1/project/config");
+        private static readonly PathString _v2ProjectConfigPath = new PathString("/api/v2/projects/config");
+        private static readonly PathString _heartbeatPath = new PathString("/api/v2/events/session/heartbeat");
+        private static readonly PathString _webSocketPath = new PathString("/api/v2/push");
+
 
         public ThrottlingMiddleware(RequestDelegate next, ICacheClient cacheClient, ThrottlingOptions options) {
             _next = next;
@@ -63,7 +68,7 @@ namespace Exceptionless.Web.Utility.Handlers {
             long requestCount = 1;
             try {
                 string cacheKey = GetCacheKey(identifier);
-                requestCount = (long)await _cacheClient.IncrementAsync(cacheKey, 1);
+                requestCount = await _cacheClient.IncrementAsync(cacheKey, 1);
                 if (requestCount == 1)
                     await _cacheClient.SetExpirationAsync(cacheKey, SystemClock.UtcNow.Ceiling(_options.Period));
             } catch { }
@@ -89,16 +94,13 @@ namespace Exceptionless.Web.Utility.Handlers {
         }
 
         private bool IsUnthrottledRoute(HttpContext context) {
-            if (!String.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+            if (!context.Request.Method.Equals(HttpMethods.Get, StringComparison.Ordinal))
                 return false;
 
-            string absolutePath = context.Request.Path.Value;
-            if (absolutePath.EndsWith("/"))
-                absolutePath = absolutePath.Substring(0, absolutePath.Length - 1);
-
-            return absolutePath.EndsWith("/events/session/heartbeat", StringComparison.OrdinalIgnoreCase)
-                || absolutePath.EndsWith("/projects/config", StringComparison.OrdinalIgnoreCase)
-                || absolutePath.StartsWith("/api/v2/push", StringComparison.OrdinalIgnoreCase);
+            return context.Request.Path.StartsWithSegments(_v2ProjectConfigPath, StringComparison.Ordinal)
+               || context.Request.Path.StartsWithSegments(_heartbeatPath, StringComparison.Ordinal)
+               || context.Request.Path.StartsWithSegments(_webSocketPath, StringComparison.Ordinal)
+               || context.Request.Path.StartsWithSegments(_v1ProjectConfigPath, StringComparison.Ordinal);
         }
     }
 }
