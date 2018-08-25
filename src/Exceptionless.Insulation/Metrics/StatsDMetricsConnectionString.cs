@@ -26,7 +26,7 @@ namespace Exceptionless.Insulation.Metrics {
             }
         }
 
-        public string ServerName { get; }
+        public string ServerName { get; } = "127.0.0.1";
 
         public int ServerPort { get; } = 8125;
     }

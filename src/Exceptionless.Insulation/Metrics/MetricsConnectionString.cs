@@ -31,7 +31,7 @@ namespace Exceptionless.Insulation.Metrics {
                     return new HttpMetricsConnectionString(options);
                 }
 
-                if (String.Equals(provider, "infuxdb", StringComparison.OrdinalIgnoreCase)) {
+                if (String.Equals(provider, "influxdb", StringComparison.OrdinalIgnoreCase)) {
                     return new InfuxDBMetricsConnectionString(options);
                 }
 
