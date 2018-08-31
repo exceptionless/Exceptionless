@@ -23,12 +23,14 @@ service:
   type: LoadBalancer # ClusterIP
 
 elasticsearch:
+  connectionString: 
   image:
     repository: slideroom/elasticsearch
     tag: 98
     pullPolicy: IfNotPresent
 
 redis:
+  connectionString: 
   image:
     repository: redis
     tag: latest
