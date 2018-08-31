@@ -4,7 +4,15 @@ metadata:
     name: {{ template "exceptionless.fullname" . }}-config
 data:
     AppMode: Development
+{{- if (.Values.elasticsearch.connectionString) }}
+    ConnectionStrings__Elasticsearch: {{.Values.elasticsearch.connectionString}}
+{{- else }}
     ConnectionStrings__Elasticsearch: http://{{ template "exceptionless.fullname" . }}-elasticsearch:9200
+{{- end }}
+{{- if (.Values.redis.connectionString) }}
+    ConnectionStrings__Redis: {{.Values.redis.connectionString}}
+{{- else }}
     ConnectionStrings__Redis: {{ template "exceptionless.fullname" . }}-redis,abortConnect=false
+{{- end }}
     StorageFolder: /app/storage
     BaseUrl: http://ex-api.localtest.me:5000

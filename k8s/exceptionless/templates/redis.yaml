@@ -1,3 +1,4 @@
+{{- if (empty .Values.redis.connectionString) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -47,3 +48,5 @@ spec:
       port: 6379
   selector:
     component: {{ template "exceptionless.fullname" . }}-redis
+
+{{- end -}}
