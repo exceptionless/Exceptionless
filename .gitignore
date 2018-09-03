@@ -123,3 +123,4 @@ artifacts
 src/Exceptionless\.Web/storage/
 tests/Exceptionless\.Api\.Tests/src/Exceptionless\.Web/storage/
 k8s/output
+k8s/exceptionless/values.override.yaml
