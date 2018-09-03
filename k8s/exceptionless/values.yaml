@@ -20,7 +20,7 @@ jobs:
     pullPolicy: IfNotPresent
 
 service:
-  type: LoadBalancer # ClusterIP
+  type: ClusterIP
 
 elasticsearch:
   connectionString: 

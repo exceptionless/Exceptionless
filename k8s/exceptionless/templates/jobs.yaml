@@ -498,6 +498,7 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ template "exceptionless.fullname" . }}-config
+{{- if (empty .Values.storage.azureConnectionString) }}
           volumeMounts:
             - mountPath: "/app/storage"
               name: storage
@@ -505,3 +506,4 @@ spec:
         - name: storage
           persistentVolumeClaim:
             claimName: {{ template "exceptionless.fullname" . }}-storage
+{{- end }}
