@@ -52,5 +52,9 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: 443
+      targetPort: https
+      protocol: TCP
+      name: https
   selector:
     component: {{ template "exceptionless.fullname" . }}-app

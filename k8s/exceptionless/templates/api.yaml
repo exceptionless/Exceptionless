@@ -36,6 +36,7 @@ spec:
           env:
             - name: RunJobsInProcess
               value: 'false'
+{{- if (empty .Values.storage.azureConnectionString) }}
           volumeMounts:
             - mountPath: "/app/storage"
               name: storage
@@ -43,6 +44,7 @@ spec:
         - name: storage
           persistentVolumeClaim:
             claimName: {{ template "exceptionless.fullname" . }}-storage
+{{- end }}
 
 ---
 apiVersion: v1
@@ -62,5 +64,9 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: 443
+      targetPort: https
+      protocol: TCP
+      name: https
   selector:
     component: {{ template "exceptionless.fullname" . }}-api
