@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: Pod
-metadata:
-  name: shell
-spec:
-  containers:
-  - name: ubuntu
-    image: library/ubuntu
