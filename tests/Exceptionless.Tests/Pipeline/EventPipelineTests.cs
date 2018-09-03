@@ -792,6 +792,67 @@ namespace Exceptionless.Tests.Pipeline {
         }
 
         [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task EnsureIncludePrivateInformationIsRespectedAsync(bool includePrivateInformation) {
+            var project = ProjectData.GenerateSampleProject();
+            project.Configuration.Settings.Add(SettingsDictionary.KnownKeys.IncludePrivateInformation, includePrivateInformation.ToString());
+
+            var contexts = new List<EventContext> {
+                new EventContext(new PersistentEvent {
+                    ProjectId = TestConstants.ProjectId,
+                    OrganizationId = TestConstants.OrganizationId,
+                    Message = "Test Exception",
+                    Date = SystemClock.UtcNow,
+                    Type = Event.KnownTypes.Error,
+                    Data = new DataDictionary {
+                        { "@error", new Error { Message = "Test Exception", Type = "Error" } },
+                        { "@request", new RequestInfo { Path = "/test", ClientIpAddress = "127.0.0.1", Cookies = new Dictionary<string, string> {{ "test", "test" }}, PostData = "test", QueryString = new Dictionary<string, string> {{ "test", "test" }}} },
+                        { "@environment", new EnvironmentInfo { IpAddress = "127.0.0.1", OSName = "Windows", MachineName = "Test" } },
+                        { "@user", new UserInfo { Identity = "test@exceptionless.com" } },
+                        { "@user_description", new UserDescription { EmailAddress = "test@exceptionless.com", Description = "test" } }
+                    }
+                }, OrganizationData.GenerateSampleOrganization(), project)
+            };
+
+            await _pipeline.RunAsync(contexts);
+            var context = contexts.Single();
+            Assert.False(context.HasError);
+
+            var requestInfo = context.Event.GetRequestInfo();
+            var environmentInfo = context.Event.GetEnvironmentInfo();
+            var userInfo = context.Event.GetUserIdentity();
+            var userDescription = context.Event.GetUserDescription();
+
+            Assert.Equal("/test", requestInfo?.Path);
+            Assert.Equal("Windows", environmentInfo?.OSName);
+            Assert.Equal("test", userDescription?.Description);
+            if (includePrivateInformation) {
+                Assert.NotNull(requestInfo?.ClientIpAddress);
+                Assert.Single(requestInfo.Cookies);
+                Assert.NotNull(requestInfo.PostData);
+                Assert.Single(requestInfo.QueryString);
+
+                Assert.NotNull(environmentInfo?.IpAddress);
+                Assert.NotNull(environmentInfo.MachineName);
+
+                Assert.NotNull(userInfo?.Identity);
+                Assert.NotNull(userDescription?.EmailAddress);
+            } else {
+                Assert.Null(requestInfo?.ClientIpAddress);
+                Assert.Empty(requestInfo?.Cookies);
+                Assert.Null(requestInfo?.PostData);
+                Assert.Empty(requestInfo?.QueryString);
+
+                Assert.Null(environmentInfo?.IpAddress);
+                Assert.Null(environmentInfo?.MachineName);
+
+                Assert.Null(userInfo);
+                Assert.Null(userDescription?.EmailAddress);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(Events))]
         public async Task ProcessEventsAsync(string errorFilePath) {
             var pipeline = GetService<EventPipeline>();

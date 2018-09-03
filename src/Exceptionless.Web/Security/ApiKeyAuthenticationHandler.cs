@@ -83,6 +83,7 @@ namespace Exceptionless.Web.Security {
             if (String.IsNullOrEmpty(token))
                 return AuthenticateResult.NoResult();
 
+            Request.HttpContext.Items["ApiKey"] = token;
             var tokenRecord = await _tokenRepository.GetByIdAsync(token, o => o.Cache());
             if (tokenRecord == null) {
                 using (Logger.BeginScope(new ExceptionlessState().Property("Headers", Request.Headers)))

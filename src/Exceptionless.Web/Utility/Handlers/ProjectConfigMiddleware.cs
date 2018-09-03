@@ -1,34 +1,34 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Web.Extensions;
 using Foundatio.Repositories;
 using Foundatio.Serializer;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Web.Utility {
     public sealed class ProjectConfigMiddleware {
         private readonly IProjectRepository _projectRepository;
         private readonly ITextSerializer _serializer;
-        private readonly ILogger _logger;
         private readonly RequestDelegate _next;
+        private static readonly PathString _v1Path = new PathString("/api/v1/project/config");
+        private static readonly PathString _v2Path = new PathString("/api/v2/projects/config");
 
-        public ProjectConfigMiddleware(RequestDelegate next, IProjectRepository projectRepository, ITextSerializer serializer, ILogger<ProjectConfigMiddleware> logger) {
+        public ProjectConfigMiddleware(RequestDelegate next, IProjectRepository projectRepository, ITextSerializer serializer) {
             _next = next;
             _projectRepository = projectRepository;
             _serializer = serializer;
-            _logger = logger;
         }
 
         private bool IsProjectConfigRoute(HttpContext context) {
-            string method = context.Request.Method;
-            if (!String.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+            if (!context.Request.Method.Equals(HttpMethods.Get, StringComparison.Ordinal))
                 return false;
 
-            string absolutePath = context.Request.Path.Value;
-            return String.Equals(absolutePath, "/api/v2/projects/config", StringComparison.OrdinalIgnoreCase) ||
-                   String.Equals(absolutePath, "/api/v1/project/config", StringComparison.OrdinalIgnoreCase);
+            if (context.Request.Path.StartsWithSegments(_v2Path, StringComparison.Ordinal)
+                || context.Request.Path.StartsWithSegments(_v1Path, StringComparison.Ordinal))
+                return true;
+
+            return false;
         }
 
         public async Task Invoke(HttpContext context) {
