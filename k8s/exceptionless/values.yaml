@@ -35,3 +35,6 @@ redis:
     repository: redis
     tag: latest
     pullPolicy: IfNotPresent
+
+storage:
+  azureConnectionString: 

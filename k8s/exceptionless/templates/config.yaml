@@ -14,5 +14,9 @@ data:
 {{- else }}
     ConnectionStrings__Redis: {{ template "exceptionless.fullname" . }}-redis,abortConnect=false
 {{- end }}
+{{- if (.Values.storage.azureConnectionString) }}
+    ConnectionStrings__AzureStorage: {{.Values.storage.azureConnectionString}}
+{{- else }}
     StorageFolder: /app/storage
+{{- end }}
     BaseUrl: http://ex-api.localtest.me:5000
