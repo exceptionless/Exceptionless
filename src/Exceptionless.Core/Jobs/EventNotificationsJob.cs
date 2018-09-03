@@ -95,7 +95,7 @@ namespace Exceptionless.Core.Jobs {
                     var request = ev.GetRequestInfo();
                     // check for known bots if the user has elected to not report them
                     if (shouldReport && !String.IsNullOrEmpty(request?.UserAgent)) {
-                        var botPatterns = project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns) ? project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList() : new List<string>();
+                        var botPatterns = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList();
 
                         var info = await _parser.ParseAsync(request.UserAgent).AnyContext();
                         if (info != null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns)) {

@@ -2,6 +2,7 @@
   <Import Project="..\..\build\common.props" />
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Content Remove="Mail\**" />
@@ -15,6 +16,7 @@
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.2" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="2.7.0" /> 
+    <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="2.7.0" />
     <PackageReference Include="OAuth2" Version="0.9.12-pre" />
     <PackageReference Include="Serilog.AspNetCore" Version="2.1.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="3.0.0" />
