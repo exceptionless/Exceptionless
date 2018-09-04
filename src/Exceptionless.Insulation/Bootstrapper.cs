@@ -86,8 +86,7 @@ namespace Exceptionless.Insulation {
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<WebHookNotification>(s));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<MailMessage>(s));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<WorkItemData>(s, workItemTimeout: TimeSpan.FromHours(1)));
-            }
-            else if (!String.IsNullOrEmpty(Settings.Current.RedisConnectionString)) {
+            } else if (!String.IsNullOrEmpty(Settings.Current.RedisConnectionString)) {
                 container.ReplaceSingleton(s => CreateRedisQueue<EventPost>(s, runMaintenanceTasks, retries: 1));
                 container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, runMaintenanceTasks));
                 container.ReplaceSingleton(s => CreateRedisQueue<EventNotificationWorkItem>(s, runMaintenanceTasks));
@@ -99,12 +98,11 @@ namespace Exceptionless.Insulation {
             if (!String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString)) {
                 container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions {
                     ConnectionString = Settings.Current.AzureStorageConnectionString,
-                    ContainerName = $"{Settings.Current.AppScopePrefix}ex-events",
+                    ContainerName =  $"{Settings.Current.AppScopePrefix}ex-events",
                     Serializer = s.GetRequiredService<ITextSerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
-            }
-            else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString)) {
+            } else if (!String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString)) {
                 container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions {
                     ConnectionString = Settings.Current.AliyunStorageConnectionString,
                     Serializer = s.GetRequiredService<ITextSerializer>(),
