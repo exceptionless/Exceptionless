@@ -155,7 +155,7 @@ namespace Exceptionless.Insulation {
         }
 
         private static void RegisterMetricsReporting(IServiceCollection container) {
-            var connectionString = Settings.Current.ParsedMetricsConnectionString;
+            var connectionString = Settings.Current.MetricsConnectionString;
             if (connectionString is StatsDMetricsConnectionString statsdConnectionString) {
                 container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions {
                     ServerName = statsdConnectionString.ServerName,

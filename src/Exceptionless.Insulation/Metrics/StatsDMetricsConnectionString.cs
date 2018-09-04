@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Insulation.Metrics {
-    public class StatsDMetricsConnectionString : IMetricsConnectionString {
-        public StatsDMetricsConnectionString(IDictionary<string, string> settings) {
+    public class StatsDMetricsConnectionString : DefaultMetricsConnectionString {
+        public StatsDMetricsConnectionString(string connectionString, IDictionary<string, string> settings) : base(connectionString) {
             if (settings.TryGetValue("server", out string serverName) || settings.TryGetValue("server name", out serverName) || settings.TryGetValue("ServerName", out serverName) || settings.TryGetValue(String.Empty, out serverName)) {
                 ServerName = serverName;
             }

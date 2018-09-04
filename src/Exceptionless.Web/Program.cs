@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using Exceptionless.Core;
+using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web.Utility;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -78,8 +79,8 @@ namespace Exceptionless.Web {
 			if (useApplicationInsights)
                 builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
 
-            if (settings.EnableMetricsReporting) {
-                settings.ParsedMetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString);
+            if (settings.EnableMetricsReporting && settings.MetricsConnectionString is DefaultMetricsConnectionString) {
+                settings.MetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString.ConnectionString);
                 Bootstrapper.ConfigureWebHost(builder);
             }
             return builder;
