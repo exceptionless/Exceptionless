@@ -40,7 +40,7 @@ If (Test-Path -Path $releaseTempDir) {
 }
 
 ROBOCOPY "$releaseArtifactsDir\api" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\api\.git" /XF "exceptionless.png" "favicon.ico" /S /NFL /NDL /NJH /NJS /nc /ns /np
-ROBOCOPY "$releaseArtifactsDir\app" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\app\.git" /S /XF "web.config" /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$releaseArtifactsDir\app" "$releaseTempDir\wwwroot\wwwroot" /XD "$releaseArtifactsDir\app\.git" /S /XF "web.config" /NFL /NDL /NJH /NJS /nc /ns /np
 Copy-Item -Path "$base_dir\build\Start-ElasticSearch.ps1" -Destination $releaseTempDir
 Copy-Item -Path "$base_dir\build\elasticsearch.yml" -Destination $releaseTempDir
 Copy-Item -Path "$base_dir\build\elasticsearch.prod.yml" -Destination $releaseTempDir
