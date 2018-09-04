@@ -128,10 +128,14 @@ namespace Exceptionless.Web {
                 csp.AllowImages.FromSelf()
                     .From("data:");
                 csp.AllowScripts.FromSelf()
-                    .AllowUnsafeInline();
+                    .AllowUnsafeInline()
+                    .From("https://cdnjs.cloudflare.com")
+                    .From("https://js.stripe.com")
+                    .From("https://maxcdn.bootstrapcdn.com");
                 csp.AllowStyles.FromSelf()
                     .AllowUnsafeInline()
-                    .From("https://fonts.googleapis.com");
+                    .From("https://fonts.googleapis.com")
+                    .From("https://maxcdn.bootstrapcdn.com");
             });
 
             app.Use(async (context, next) => {

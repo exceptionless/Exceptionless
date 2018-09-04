@@ -4,7 +4,7 @@ ConnectionStrings:
   Elasticsearch.off: http://localhost:9200/
 
 # Base url for the ui used to build links in emails and other places.
-BaseURL: 'http://localhost:50000/'
+BaseURL: 'http://localhost:5000/'
 
 AppScope: test
 

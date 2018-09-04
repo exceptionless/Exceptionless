@@ -42,8 +42,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.1.1" />
     <PackageReference Include="NEST" Version="5.6.3" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-    <PackageReference Include="Stripe.net" Version="17.8.0" />
-    <PackageReference Include="Stripe.net" Version="17.10.0" />
+    <PackageReference Include="Stripe.net" Version="19.2.0" />
 
     <PackageReference Include="System.DirectoryServices" Version="4.5.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
