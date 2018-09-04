@@ -13,7 +13,7 @@ namespace Exceptionless.Web.Models {
 
         public DateTime Date { get; set; }
         public bool Paid { get; set; }
-        public double Total { get; set; }
+        public decimal Total { get; set; }
 
         public IList<InvoiceLineItem> Items { get; set; }
     }
