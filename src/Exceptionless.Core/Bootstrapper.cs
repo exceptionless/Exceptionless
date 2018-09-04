@@ -207,7 +207,7 @@ namespace Exceptionless.Core {
             if (!logger.IsEnabled(LogLevel.Warning))
                 return;
 
-            if (settings.MetricsConnectionString == null)
+            if (!settings.EnableMetricsReporting)
                 logger.LogWarning("Metrics reporting is NOT enabled on {MachineName}.", Environment.MachineName);
 
             if (String.IsNullOrEmpty(settings.RedisConnectionString))

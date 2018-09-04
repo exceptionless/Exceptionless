@@ -31,20 +31,22 @@ namespace Exceptionless.Web {
                 builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
 
             // Note: The prometheus reports metrics in passive mode, so it should only used in webapps but not in console apps.
-            if (Settings.Current.ParsedMetricsConnectionString is PrometheusMetricsConnectionString) {
-                var metrics = AppMetrics.CreateDefaultBuilder()
-                    .OutputMetrics.AsPrometheusPlainText()
-                    .OutputMetrics.AsPrometheusProtobuf()
-                    .Build();
-                builder.ConfigureMetrics(metrics).UseMetrics(options => {
-                    options.EndpointOptions = endpointsOptions => {
-                        endpointsOptions.MetricsTextEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusTextOutputFormatter>();
-                        endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
-                    };
-                });
-            }
-            else if (!(Settings.Current.ParsedMetricsConnectionString is StatsDMetricsConnectionString)) {
-                builder.UseMetrics();
+            if (Settings.Current.EnableMetricsReporting) {
+                if (Settings.Current.ParsedMetricsConnectionString is PrometheusMetricsConnectionString) {
+                    var metrics = AppMetrics.CreateDefaultBuilder()
+                        .OutputMetrics.AsPrometheusPlainText()
+                        .OutputMetrics.AsPrometheusProtobuf()
+                        .Build();
+                    builder.ConfigureMetrics(metrics).UseMetrics(options => {
+                        options.EndpointOptions = endpointsOptions => {
+                            endpointsOptions.MetricsTextEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusTextOutputFormatter>();
+                            endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
+                        };
+                    });
+                }
+                else if (!(Settings.Current.ParsedMetricsConnectionString is StatsDMetricsConnectionString)) {
+                    builder.UseMetrics();
+                }
             }
         }
 
@@ -64,7 +66,7 @@ namespace Exceptionless.Web {
                 !String.IsNullOrEmpty(Settings.Current.AzureStorageQueueConnectionString) ||
                 !String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString) ||
                 !String.IsNullOrEmpty(Settings.Current.MinioStorageConnectionString) ||
-                !String.IsNullOrEmpty(Settings.Current.MetricsConnectionString);
+                Settings.Current.EnableMetricsReporting;
             if (includeInsulation)
                 Insulation.Bootstrapper.RegisterServices(container, Settings.Current.RunJobsInProcess);
 
