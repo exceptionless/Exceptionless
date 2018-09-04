@@ -67,6 +67,8 @@ namespace Exceptionless.Core {
 
         public string MetricsConnectionString { get; private set; }
 
+        public bool EnableMetricsReporting { get; private set; }
+
         internal IMetricsConnectionString ParsedMetricsConnectionString { get; set; }
 
         public string RedisConnectionString { get; private set; }
@@ -247,6 +249,7 @@ namespace Exceptionless.Core {
             settings.AliyunStorageConnectionString = configRoot.GetConnectionString("AliyunStorage");
             settings.MinioStorageConnectionString = configRoot.GetConnectionString("MinioStorage");
             settings.MetricsConnectionString = configRoot.GetConnectionString("Metrics");
+            settings.EnableMetricsReporting = configRoot.GetValue(nameof(EnableMetricsReporting), !String.IsNullOrEmpty(settings.MetricsConnectionString));
 
             settings.DisableIndexConfiguration = configRoot.GetValue(nameof(DisableIndexConfiguration), false);
             settings.EnableSnapshotJobs = configRoot.GetValue(nameof(EnableSnapshotJobs), String.IsNullOrEmpty(settings.AppScopePrefix) && settings.AppMode == AppMode.Production);

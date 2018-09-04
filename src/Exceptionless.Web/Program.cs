@@ -78,8 +78,10 @@ namespace Exceptionless.Web {
 			if (useApplicationInsights)
                 builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
 
-            settings.ParsedMetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString);
-            Bootstrapper.ConfigureWebHost(builder);
+            if (settings.EnableMetricsReporting) {
+                settings.ParsedMetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString);
+                Bootstrapper.ConfigureWebHost(builder);
+            }
             return builder;
         }
     }
