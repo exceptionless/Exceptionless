@@ -24,23 +24,23 @@ namespace Exceptionless.Insulation.Metrics {
 
             if (options.TryGetValue("provider", out string provider) || options.TryGetValue("reporter", out provider)) {
                 if (String.Equals(provider, "statsd", StringComparison.OrdinalIgnoreCase)) {
-                    return new StatsDMetricsConnectionString(options);
+                    return new StatsDMetricsConnectionString(connectionString, options);
                 }
 
                 if (String.Equals(provider, "http", StringComparison.OrdinalIgnoreCase)) {
-                    return new HttpMetricsConnectionString(options);
+                    return new HttpMetricsConnectionString(connectionString, options);
                 }
 
                 if (String.Equals(provider, "influxdb", StringComparison.OrdinalIgnoreCase)) {
-                    return new InfuxDBMetricsConnectionString(options);
+                    return new InfuxDBMetricsConnectionString(connectionString, options);
                 }
 
                 if (String.Equals(provider, "prometheus", StringComparison.OrdinalIgnoreCase)) {
-                    return new PrometheusMetricsConnectionString();
+                    return new PrometheusMetricsConnectionString(connectionString);
                 }
 
                 if (String.Equals(provider, "graphite", StringComparison.OrdinalIgnoreCase)) {
-                    return new GraphiteMetricsConnectionString(options);
+                    return new GraphiteMetricsConnectionString(connectionString, options);
                 }
 
                 throw new InvalidOperationException($"The metrics provider {provider} cannot be recoganized.");

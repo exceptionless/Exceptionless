@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Insulation.Metrics {
-    public class HttpMetricsConnectionString : IMetricsConnectionString {
-        public HttpMetricsConnectionString(IDictionary<string, string> settings) {
+    public class HttpMetricsConnectionString : DefaultMetricsConnectionString {
+        public HttpMetricsConnectionString(string connectionString, IDictionary<string, string> settings) : base(connectionString) {
             if ((settings.TryGetValue("server", out string serverUrl) || settings.TryGetValue("serverUrl", out serverUrl) || settings.TryGetValue("server url", out serverUrl) || settings.TryGetValue("network address", out serverUrl) || settings.TryGetValue("address", out serverUrl) || settings.TryGetValue("addr", out serverUrl) || settings.TryGetValue(String.Empty, out serverUrl)) && !String.IsNullOrEmpty(serverUrl)) {
                 ServerUrl = ExtractAuthentication(ResoveServerUrl(serverUrl));
             }

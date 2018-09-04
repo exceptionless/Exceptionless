@@ -32,7 +32,7 @@ namespace Exceptionless.Web {
 
             // Note: The prometheus reports metrics in passive mode, so it should only used in webapps but not in console apps.
             if (Settings.Current.EnableMetricsReporting) {
-                if (Settings.Current.ParsedMetricsConnectionString is PrometheusMetricsConnectionString) {
+                if (Settings.Current.MetricsConnectionString is PrometheusMetricsConnectionString) {
                     var metrics = AppMetrics.CreateDefaultBuilder()
                         .OutputMetrics.AsPrometheusPlainText()
                         .OutputMetrics.AsPrometheusProtobuf()
@@ -44,7 +44,7 @@ namespace Exceptionless.Web {
                         };
                     });
                 }
-                else if (!(Settings.Current.ParsedMetricsConnectionString is StatsDMetricsConnectionString)) {
+                else if (!(Settings.Current.MetricsConnectionString is StatsDMetricsConnectionString)) {
                     builder.UseMetrics();
                 }
             }

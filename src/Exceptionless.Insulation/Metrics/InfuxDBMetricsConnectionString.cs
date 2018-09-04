@@ -2,7 +2,7 @@
 
 namespace Exceptionless.Insulation.Metrics {
     public class InfuxDBMetricsConnectionString : HttpMetricsConnectionString {
-        public InfuxDBMetricsConnectionString(IDictionary<string, string> settings) : base(settings) {
+        public InfuxDBMetricsConnectionString(string connectionString, IDictionary<string, string> settings) : base(connectionString, settings) {
             if (settings.TryGetValue("database", out string database) || settings.TryGetValue("catalog", out database)) {
                 Database = database;
             }
