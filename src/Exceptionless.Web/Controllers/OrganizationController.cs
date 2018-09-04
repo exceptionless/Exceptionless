@@ -195,11 +195,11 @@ namespace Exceptionless.Web.Controllers {
                 OrganizationName = organization.Name,
                 Date = stripeInvoice.Date.GetValueOrDefault(),
                 Paid = stripeInvoice.Paid,
-                Total = stripeInvoice.Total / 100.0
+                Total = stripeInvoice.Total / 100.0m
             };
 
             foreach (var line in stripeInvoice.StripeInvoiceLineItems.Data) {
-                var item = new InvoiceLineItem { Amount = line.Amount / 100.0 };
+                var item = new InvoiceLineItem { Amount = line.Amount / 100.0m };
 
                 if (line.Plan != null) {
                     string planName = line.Plan.Nickname ?? BillingManager.GetBillingPlan(line.Plan.Id)?.Name;
@@ -215,11 +215,11 @@ namespace Exceptionless.Web.Controllers {
             var coupon = stripeInvoice.StripeDiscount?.StripeCoupon;
             if (coupon != null) {
                 if (coupon.AmountOff.HasValue) {
-                    double discountAmount = coupon.AmountOff.GetValueOrDefault() / 100.0;
+                    decimal discountAmount = coupon.AmountOff.GetValueOrDefault() / 100.0m;
                     string description = $"{coupon.Id} ({discountAmount.ToString("C")} off)";
                     invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
                 } else {
-                    double discountAmount = (stripeInvoice.Subtotal / 100.0) * (coupon.PercentOff.GetValueOrDefault() / 100.0);
+                    decimal discountAmount = (stripeInvoice.Subtotal / 100.0m) * (coupon.PercentOff.GetValueOrDefault() / 100.0m);
                     string description = $"{coupon.Id} ({coupon.PercentOff.GetValueOrDefault()}% off)";
                     invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
                 }
@@ -349,7 +349,7 @@ namespace Exceptionless.Web.Controllers {
                     if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
                         var subs = await subscriptionService.ListAsync(new StripeSubscriptionListOptions { CustomerId = organization.StripeCustomerId });
                         foreach (var sub in subs.Where(s => !s.CanceledAt.HasValue))
-                            await subscriptionService.CancelAsync(sub.Id);
+                            await subscriptionService.CancelAsync(sub.Id, new StripeSubscriptionCancelOptions());
                     }
 
                     organization.BillingStatus = BillingStatus.Trialing;
@@ -379,7 +379,7 @@ namespace Exceptionless.Web.Controllers {
                         organization.CardLast4 = customer.Sources.Data.First().Card.Last4;
                 } else {
                     var update = new StripeSubscriptionUpdateOptions { Items = new List<StripeSubscriptionItemUpdateOption>() };
-                    var create = new StripeSubscriptionCreateOptions();
+                    var create = new StripeSubscriptionCreateOptions { CustomerId = organization.StripeCustomerId, Items = new List<StripeSubscriptionItemOption>() };
                     bool cardUpdated = false;
 
                     if (!String.IsNullOrEmpty(stripeToken)) {
@@ -394,7 +394,8 @@ namespace Exceptionless.Web.Controllers {
                         update.Items.Add(new StripeSubscriptionItemUpdateOption { Id = subscription.Items.Data[0].Id, PlanId = planId });
                         await subscriptionService.UpdateAsync(subscription.Id, update);
                     } else {
-                        await subscriptionService.CreateAsync(organization.StripeCustomerId, planId, create);
+                        create.Items.Add(new StripeSubscriptionItemOption { PlanId = planId });
+                        await subscriptionService.CreateAsync(create);
                     }
 
                     await customerService.UpdateAsync(organization.StripeCustomerId, new StripeCustomerUpdateOptions {
