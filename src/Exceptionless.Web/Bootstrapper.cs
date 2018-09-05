@@ -31,7 +31,7 @@ namespace Exceptionless.Web {
             container.AddTransient<Profile, ApiMappings>();
 
             Core.Bootstrapper.RegisterServices(container);
-            bool includeInsulation = !String.IsNullOrEmpty(Settings.Current.RedisConnectionString) || 
+            bool includeInsulation = !String.IsNullOrEmpty(Settings.Current.RedisConnectionString) ||
                 !String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString) ||
                 !String.IsNullOrEmpty(Settings.Current.AzureStorageQueueConnectionString) ||
                 !String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString) ||

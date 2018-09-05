@@ -65,9 +65,7 @@ namespace Exceptionless.Core {
 
         public string ApplicationInsightsKey { get; private set; }
 
-        public string MetricsServerName { get; private set; }
-
-        public int MetricsServerPort { get; private set; }
+        public IMetricsConnectionString MetricsConnectionString { get; set; }
 
         public bool EnableMetricsReporting { get; private set; }
 
@@ -205,9 +203,7 @@ namespace Exceptionless.Core {
             settings.MaximumEventPostSize = configRoot.GetValue(nameof(MaximumEventPostSize), 200000).NormalizeValue();
             settings.MaximumRetentionDays = configRoot.GetValue(nameof(MaximumRetentionDays), 180).NormalizeValue();
             settings.ApplicationInsightsKey = configRoot.GetValue<string>(nameof(ApplicationInsightsKey));
-            settings.MetricsServerName = configRoot.GetValue<string>(nameof(MetricsServerName));
-            settings.MetricsServerPort = configRoot.GetValue(nameof(MetricsServerPort), 8125);
-            settings.EnableMetricsReporting = configRoot.GetValue(nameof(EnableMetricsReporting), !String.IsNullOrEmpty(settings.MetricsServerName));
+
             settings.IntercomAppSecret = configRoot.GetValue<string>(nameof(IntercomAppSecret));
             settings.GoogleAppId = configRoot.GetValue<string>(nameof(GoogleAppId));
             settings.GoogleAppSecret = configRoot.GetValue<string>(nameof(GoogleAppSecret));
@@ -250,6 +246,13 @@ namespace Exceptionless.Core {
             settings.AzureStorageQueueConnectionString = configRoot.GetConnectionString("AzureStorageQueue");
             settings.AliyunStorageConnectionString = configRoot.GetConnectionString("AliyunStorage");
             settings.MinioStorageConnectionString = configRoot.GetConnectionString("MinioStorage");
+
+            var metricsConnectionString = configRoot.GetConnectionString("Metrics");
+            if (!String.IsNullOrEmpty(metricsConnectionString)) {
+                settings.MetricsConnectionString = new DefaultMetricsConnectionString(metricsConnectionString);
+            }
+
+            settings.EnableMetricsReporting = configRoot.GetValue(nameof(EnableMetricsReporting), settings.MetricsConnectionString != null);
 
             settings.DisableIndexConfiguration = configRoot.GetValue(nameof(DisableIndexConfiguration), false);
             settings.EnableSnapshotJobs = configRoot.GetValue(nameof(EnableSnapshotJobs), String.IsNullOrEmpty(settings.AppScopePrefix) && settings.AppMode == AppMode.Production);

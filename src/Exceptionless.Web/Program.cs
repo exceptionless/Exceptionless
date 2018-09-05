@@ -1,9 +1,15 @@
 ﻿using System;
 using System.IO;
+using App.Metrics;
+using App.Metrics.AspNetCore;
+using App.Metrics.Formatters;
+using App.Metrics.Formatters.Prometheus;
 using Exceptionless.Core;
+using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web.Utility;
 using Microsoft.ApplicationInsights.Extensibility;
+using Exceptionless.Insulation.Metrics;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -73,11 +79,33 @@ namespace Exceptionless.Web {
                     s.AddSingleton(settings);
                 })
                 .UseStartup<Startup>();
-
-            if (useApplicationInsights)
+				
+			if (useApplicationInsights)
                 builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
 
+            if (settings.EnableMetricsReporting) {
+                settings.MetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString.ConnectionString);
+                ConfigureMetricsReporting(builder);
+            }
             return builder;
+        }
+
+        private static void ConfigureMetricsReporting(IWebHostBuilder builder) {
+            if (Settings.Current.MetricsConnectionString is PrometheusMetricsConnectionString) {
+                var metrics = AppMetrics.CreateDefaultBuilder()
+                    .OutputMetrics.AsPrometheusPlainText()
+                    .OutputMetrics.AsPrometheusProtobuf()
+                    .Build();
+                builder.ConfigureMetrics(metrics).UseMetrics(options => {
+                    options.EndpointOptions = endpointsOptions => {
+                        endpointsOptions.MetricsTextEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusTextOutputFormatter>();
+                        endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
+                    };
+                });
+            }
+            else if (!(Settings.Current.MetricsConnectionString is StatsDMetricsConnectionString)) {
+                builder.UseMetrics();
+            }
         }
     }
 }
