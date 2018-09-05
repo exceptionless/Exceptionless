@@ -3,12 +3,10 @@ ConnectionStrings:
   Redis.off: localhost,abortConnect=false
   Elasticsearch.off: http://localhost:9200/
   Ldap.off: ''
+  Metrics.off: provider=statsd;server=10.0.0.5;
 
   # Base url for the ui used to build links in emails and other places.
 BaseURL: https://dev.exceptionless.io
-
-# Metrics
-MetricsServerName: 10.0.0.5
 
 # Exceptionless Client Settings
 ExceptionlessServerUrl: https://dev-api.exceptionless.io

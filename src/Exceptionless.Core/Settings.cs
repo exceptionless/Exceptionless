@@ -248,9 +248,8 @@ namespace Exceptionless.Core {
             settings.MinioStorageConnectionString = configRoot.GetConnectionString("MinioStorage");
 
             var metricsConnectionString = configRoot.GetConnectionString("Metrics");
-            if (!String.IsNullOrEmpty(metricsConnectionString)) {
+            if (!String.IsNullOrEmpty(metricsConnectionString))
                 settings.MetricsConnectionString = new DefaultMetricsConnectionString(metricsConnectionString);
-            }
 
             settings.EnableMetricsReporting = configRoot.GetValue(nameof(EnableMetricsReporting), settings.MetricsConnectionString != null);
 
