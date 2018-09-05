@@ -1,5 +1,11 @@
 ﻿using System;
 using System.Linq;
+using App.Metrics;
+using App.Metrics.Infrastructure;
+using App.Metrics.Internal.Infrastructure;
+using App.Metrics.Reporting.Graphite;
+using App.Metrics.Reporting.Http;
+using App.Metrics.Reporting.InfluxDB;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
@@ -8,6 +14,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
 using Exceptionless.Insulation.Mail;
+using Exceptionless.Insulation.Metrics;
 using Exceptionless.Insulation.Redis;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -17,6 +24,7 @@ using Foundatio.Queues;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Serilog.Sinks.Exceptionless;
 using StackExchange.Redis;
@@ -45,8 +53,7 @@ namespace Exceptionless.Insulation {
             if (!String.IsNullOrEmpty(Settings.Current.GoogleGeocodingApiKey))
                 container.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(Settings.Current.GoogleGeocodingApiKey));
 
-            if (Settings.Current.EnableMetricsReporting)
-                container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions { ServerName = Settings.Current.MetricsServerName, Port = Settings.Current.MetricsServerPort, Prefix = "ex", LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
+            RegisterMetricsReporting(container);
 
             if (Settings.Current.AppMode != AppMode.Development)
                 container.ReplaceSingleton<IMailSender, MailKitMailSender>();
@@ -108,6 +115,72 @@ namespace Exceptionless.Insulation {
             //        LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             //    }));
             //}
+        }
+
+        private static IMetricsRoot BuildAppMetrics(IMetricsConnectionString connectionString) {
+            var metricsBuilder = AppMetrics.CreateDefaultBuilder();
+            switch (connectionString) {
+                case InfuxDBMetricsConnectionString influxConnectionString:
+                    metricsBuilder.Report.ToInfluxDb(new MetricsReportingInfluxDbOptions {
+                        InfluxDb = {
+                            BaseUri = new Uri(influxConnectionString.ServerUrl),
+                            UserName = influxConnectionString.UserName,
+                            Password = influxConnectionString.Password,
+                            Database = influxConnectionString.Database
+                        }
+                    });
+                    break;
+                case HttpMetricsConnectionString httpConnectionString:
+                    metricsBuilder.Report.OverHttp(new MetricsReportingHttpOptions {
+                        HttpSettings = {
+                            RequestUri = new Uri(httpConnectionString.ServerUrl),
+                            UserName = httpConnectionString.UserName,
+                            Password = httpConnectionString.Password
+                        }
+                    });
+                    break;
+                case GraphiteMetricsConnectionString graphiteConnectionString:
+                    metricsBuilder.Report.ToGraphite(new MetricsReportingGraphiteOptions {
+                        Graphite = {
+                            BaseUri = new Uri(graphiteConnectionString.ServerUrl)
+                        }
+                    });
+                    break;
+                default:
+                    return null;
+            }
+            return metricsBuilder.Build();
+        }
+
+        private static void RegisterMetricsReporting(IServiceCollection container) {
+            var connectionString = Settings.Current.MetricsConnectionString;
+            if (connectionString is StatsDMetricsConnectionString statsdConnectionString) {
+                container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions {
+                    ServerName = statsdConnectionString.ServerName,
+                    Port = statsdConnectionString.ServerPort,
+                    Prefix = "ex",
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            }
+            else if (connectionString != null) {
+                var metrics = BuildAppMetrics(connectionString);
+                if (metrics != null) {
+                    container.ReplaceSingleton(metrics.Clock);
+                    container.ReplaceSingleton(metrics.Filter);
+                    container.ReplaceSingleton(metrics.DefaultOutputMetricsFormatter);
+                    container.ReplaceSingleton(metrics.OutputMetricsFormatters);
+                    container.ReplaceSingleton(metrics.DefaultOutputEnvFormatter);
+                    container.ReplaceSingleton(metrics.OutputEnvFormatters);
+                    container.TryAddSingleton<EnvironmentInfoProvider>();
+                    container.ReplaceSingleton<IMetrics>(metrics);
+                    container.ReplaceSingleton(metrics);
+                    container.ReplaceSingleton(metrics.Options);
+                    container.ReplaceSingleton(metrics.Reporters);
+                    container.ReplaceSingleton(metrics.ReportRunner);
+                    container.TryAddSingleton<AppMetricsMarkerService, AppMetricsMarkerService>();
+                    container.ReplaceSingleton<IMetricsClient, AppMetricsClient>();
+                }
+            }
         }
 
         private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
