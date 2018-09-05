@@ -161,8 +161,7 @@ namespace Exceptionless.Insulation {
                     Prefix = "ex",
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
-            }
-            else if (connectionString != null) {
+            } else if (connectionString != null) {
                 var metrics = BuildAppMetrics(connectionString);
                 if (metrics != null) {
                     container.ReplaceSingleton(metrics.Clock);

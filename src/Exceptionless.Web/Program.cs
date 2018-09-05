@@ -5,14 +5,12 @@ using App.Metrics.AspNetCore;
 using App.Metrics.Formatters;
 using App.Metrics.Formatters.Prometheus;
 using Exceptionless.Core;
-using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web.Utility;
 using Microsoft.ApplicationInsights.Extensibility;
 using Exceptionless.Insulation.Metrics;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -79,14 +77,15 @@ namespace Exceptionless.Web {
                     s.AddSingleton(settings);
                 })
                 .UseStartup<Startup>();
-				
-			if (useApplicationInsights)
+
+            if (useApplicationInsights)
                 builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
 
             if (settings.EnableMetricsReporting) {
-                settings.MetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString.ConnectionString);
+                settings.MetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString?.ConnectionString);
                 ConfigureMetricsReporting(builder);
             }
+
             return builder;
         }
 
@@ -102,8 +101,7 @@ namespace Exceptionless.Web {
                         endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
                     };
                 });
-            }
-            else if (!(Settings.Current.MetricsConnectionString is StatsDMetricsConnectionString)) {
+            } else if (!(Settings.Current.MetricsConnectionString is StatsDMetricsConnectionString)) {
                 builder.UseMetrics();
             }
         }
