@@ -6,11 +6,11 @@ using Exceptionless.Core.Utility;
 namespace Exceptionless.Insulation.Metrics {
     public static class MetricsConnectionString {
         public static IMetricsConnectionString Parse(string connectionString) {
-            if (string.IsNullOrEmpty(connectionString))
+            if (String.IsNullOrEmpty(connectionString))
                 return null;
 
             var options = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var option in connectionString
+            foreach (string[] option in connectionString
                 .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
                 .Where(kvp => kvp.Contains('='))
                 .Select(kvp => kvp.Split(new[] { '=' }, 2))) {

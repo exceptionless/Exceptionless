@@ -247,7 +247,7 @@ namespace Exceptionless.Core {
             settings.AliyunStorageConnectionString = configRoot.GetConnectionString("AliyunStorage");
             settings.MinioStorageConnectionString = configRoot.GetConnectionString("MinioStorage");
 
-            var metricsConnectionString = configRoot.GetConnectionString("Metrics");
+            string metricsConnectionString = configRoot.GetConnectionString("Metrics");
             if (!String.IsNullOrEmpty(metricsConnectionString))
                 settings.MetricsConnectionString = new DefaultMetricsConnectionString(metricsConnectionString);
 
