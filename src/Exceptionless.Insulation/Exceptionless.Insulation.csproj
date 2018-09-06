@@ -10,9 +10,9 @@
     <PackageReference Include="App.Metrics.Reporting.Http" Version="2.0.0" />
     <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="2.0.0" />
     <PackageReference Include="Foundatio.Aliyun" Version="7.0.28" />
-    <PackageReference Include="Foundatio.AppMetrics" Version="7.0.1732-pre" />
+    <PackageReference Include="Foundatio.AppMetrics" Version="7.0.1735-pre" />
     <PackageReference Include="Foundatio.AzureStorage" Version="7.0.1505" />
-    <PackageReference Include="Foundatio.Redis" Version="7.0.1565-pre" />
+    <PackageReference Include="Foundatio.Redis" Version="7.0.1568-pre" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MailKit" Version="2.0.6" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.1.1" />

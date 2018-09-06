@@ -59,11 +59,7 @@ namespace Exceptionless.Insulation {
                 container.ReplaceSingleton<IMailSender, MailKitMailSender>();
 
             if (!String.IsNullOrEmpty(Settings.Current.RedisConnectionString)) {
-                container.AddSingleton<ConnectionMultiplexer>(s => {
-                    var multiplexer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
-                    multiplexer.PreserveAsyncOrder = false;
-                    return multiplexer;
-                });
+                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString));
 
                 if (Settings.Current.HasAppScope)
                     container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), Settings.Current.AppScope));
