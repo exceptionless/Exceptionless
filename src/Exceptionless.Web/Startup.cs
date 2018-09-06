@@ -122,13 +122,17 @@ namespace Exceptionless.Web {
                 app.UseExceptionless(ExceptionlessClient.Default);
 
             app.UseCsp(csp => {
-                csp.ByDefaultAllow.FromSelf();
+                csp.ByDefaultAllow.FromSelf()
+                    .From("https://js.stripe.com");
                 csp.AllowFonts.FromSelf()
-                    .From("https://fonts.gstatic.com");
+                    .From("https://fonts.gstatic.com")
+                    .From("https://maxcdn.bootstrapcdn.com");
                 csp.AllowImages.FromSelf()
-                    .From("data:");
+                    .From("data:")
+                    .From("https://q.stripe.com");
                 csp.AllowScripts.FromSelf()
                     .AllowUnsafeInline()
+                    .AllowUnsafeEval()
                     .From("https://cdnjs.cloudflare.com")
                     .From("https://js.stripe.com")
                     .From("https://maxcdn.bootstrapcdn.com");
