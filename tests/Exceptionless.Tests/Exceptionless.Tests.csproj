@@ -6,7 +6,7 @@
   <ItemGroup>
     <PackageReference Include="Exceptionless.RandomData" Version="1.1.47" />
     <PackageReference Include="FluentRest" Version="5.0.0.78" />
-    <PackageReference Include="Foundatio.Logging.Xunit" Version="7.0.1735-pre" />
+    <PackageReference Include="Foundatio.Logging.Xunit" Version="7.0.1738" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="2.1.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.8.0" />
     <PackageReference Include="xunit" Version="2.4.0" />
