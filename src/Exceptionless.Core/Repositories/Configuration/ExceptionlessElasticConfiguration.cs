@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -25,7 +26,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public ExceptionlessElasticConfiguration(Settings settings, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
             Settings = settings;
-            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", Settings.ElasticsearchNumberOfShards, Settings.ElasticsearchNumberOfReplicas);
+
+            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", settings.ParsedElasticsearchConnectionString.NumberOfShards, settings.ParsedElasticsearchConnectionString.NumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
             AddIndex(Events = new EventIndex(this));
             AddIndex(Organizations = new OrganizationIndex(this));
@@ -82,7 +84,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override IConnectionPool CreateConnectionPool() {
-            var serverUris = Settings.ElasticsearchConnectionString.Split(',').Select(url => new Uri(url));
+            var serverUris = Settings.ParsedElasticsearchConnectionString?.ServerUrl.Split(',').Select(url => new Uri(url));
             return new StaticConnectionPool(serverUris);
         }
 

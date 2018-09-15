@@ -14,7 +14,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
 using Exceptionless.Insulation.Mail;
-using Exceptionless.Insulation.Metrics;
+using Exceptionless.Insulation.Configuration.ConnectionStrings;
 using Exceptionless.Insulation.Redis;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -113,10 +113,10 @@ namespace Exceptionless.Insulation {
             //}
         }
 
-        private static IMetricsRoot BuildAppMetrics(IMetricsConnectionString connectionString) {
+        private static IMetricsRoot BuildAppMetrics(IConnectionString connectionString) {
             var metricsBuilder = AppMetrics.CreateDefaultBuilder();
             switch (connectionString) {
-                case InfuxDBMetricsConnectionString influxConnectionString:
+                case InfluxDbConnectionString influxConnectionString:
                     metricsBuilder.Report.ToInfluxDb(new MetricsReportingInfluxDbOptions {
                         InfluxDb = {
                             BaseUri = new Uri(influxConnectionString.ServerUrl),
@@ -126,7 +126,7 @@ namespace Exceptionless.Insulation {
                         }
                     });
                     break;
-                case HttpMetricsConnectionString httpConnectionString:
+                case HttpConnectionString httpConnectionString:
                     metricsBuilder.Report.OverHttp(new MetricsReportingHttpOptions {
                         HttpSettings = {
                             RequestUri = new Uri(httpConnectionString.ServerUrl),
@@ -135,7 +135,7 @@ namespace Exceptionless.Insulation {
                         }
                     });
                     break;
-                case GraphiteMetricsConnectionString graphiteConnectionString:
+                case GraphiteConnectionString graphiteConnectionString:
                     metricsBuilder.Report.ToGraphite(new MetricsReportingGraphiteOptions {
                         Graphite = {
                             BaseUri = new Uri(graphiteConnectionString.ServerUrl)
@@ -150,7 +150,7 @@ namespace Exceptionless.Insulation {
 
         private static void RegisterMetricsReporting(IServiceCollection container) {
             var connectionString = Settings.Current.MetricsConnectionString;
-            if (connectionString is StatsDMetricsConnectionString statsdConnectionString) {
+            if (connectionString is StatsDConnectionString statsdConnectionString) {
                 container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions {
                     ServerName = statsdConnectionString.ServerName,
                     Port = statsdConnectionString.ServerPort,

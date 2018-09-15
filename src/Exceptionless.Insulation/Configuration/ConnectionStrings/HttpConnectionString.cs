@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Utility;
 
-namespace Exceptionless.Insulation.Metrics {
-    public class HttpMetricsConnectionString : DefaultMetricsConnectionString {
-        public HttpMetricsConnectionString(string connectionString, IDictionary<string, string> settings) : base(connectionString) {
+namespace Exceptionless.Insulation.Configuration.ConnectionStrings {
+    public class HttpConnectionString : DefaultConnectionString {
+        public const string ProviderName = "http";
+
+        public HttpConnectionString(string connectionString, IDictionary<string, string> settings) : base(connectionString) {
             if ((settings.TryGetValue("server", out string serverUrl) || settings.TryGetValue("serverUrl", out serverUrl) || settings.TryGetValue("server url", out serverUrl) || settings.TryGetValue("network address", out serverUrl) || settings.TryGetValue("address", out serverUrl) || settings.TryGetValue("addr", out serverUrl) || settings.TryGetValue(String.Empty, out serverUrl)) && !String.IsNullOrEmpty(serverUrl)) {
-                ServerUrl = ExtractAuthentication(ResoveServerUrl(serverUrl));
+                ServerUrl = ExtractAuthentication(ResolveServerUrl(serverUrl));
             }
 
             if (settings.TryGetValue("username", out string username) || settings.TryGetValue("user", out username) || settings.TryGetValue("userid", out username) || settings.TryGetValue("uid", out username)) {
@@ -18,7 +20,7 @@ namespace Exceptionless.Insulation.Metrics {
             }
         }
 
-        private string ResoveServerUrl(string serverUrl) {
+        private string ResolveServerUrl(string serverUrl) {
             // Add the default scheme as http:// when it's lost.
             if (serverUrl.IndexOf("://", StringComparison.Ordinal) == -1) {
                 serverUrl = "http://" + serverUrl;
@@ -46,6 +48,7 @@ namespace Exceptionless.Insulation.Metrics {
                 UserName = uriBuilder.UserName;
                 uriBuilder.UserName = String.Empty;
             }
+
             return uriBuilder.Uri.ToString();
         }
 

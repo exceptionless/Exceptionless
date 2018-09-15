@@ -65,29 +65,28 @@ namespace Exceptionless.Core {
 
         public string ApplicationInsightsKey { get; private set; }
 
-        public IMetricsConnectionString MetricsConnectionString { get; set; }
+        public IConnectionString CacheConnectionString { get; set; }
+
+        public IElasticsearchConnectionString ParsedElasticsearchConnectionString => ElasticsearchConnectionString as IElasticsearchConnectionString;
+        public IConnectionString ElasticsearchConnectionString { get; set; }
+
+        public IConnectionString LdapConnectionString { get; set; }
+
+        public IConnectionString MessagingConnectionString { get; set; }
+
+        public IConnectionString MetricsConnectionString { get; set; }
 
         public bool EnableMetricsReporting { get; private set; }
 
-        public string RedisConnectionString { get; private set; }
+        public IConnectionString StorageConnectionString { get; set; }
+
+        public IConnectionString QueueConnectionString { get; set; }
 
         public bool EnableSnapshotJobs { get; set; }
 
         public bool DisableIndexConfiguration { get; set; }
 
         public bool EnableBootstrapStartupActions { get; private set; }
-
-        public string ElasticsearchConnectionString { get; private set; }
-
-        public int ElasticsearchNumberOfShards { get; private set; }
-
-        public int ElasticsearchNumberOfReplicas { get; private set; }
-
-        public int ElasticsearchFieldsLimit { get; private set; }
-
-        public bool EnableElasticsearchMapperSizePlugin { get; private set; }
-
-        public string LdapConnectionString { get; private set; }
 
         public bool EnableActiveDirectoryAuth { get; internal set; }
 
@@ -130,17 +129,8 @@ namespace Exceptionless.Core {
         public bool EnableBilling => !String.IsNullOrEmpty(StripeApiKey);
 
         public string StripeApiKey { get; private set; }
+
         public string StripeWebHookSigningSecret { get; set; }
-
-        public string StorageFolder { get; private set; }
-
-        public string AzureStorageConnectionString { get; private set; }
-
-        public string AzureStorageQueueConnectionString { get; private set; }
-
-        public string AliyunStorageConnectionString { get; private set; }
-
-        public string MinioStorageConnectionString { get; private set; }
 
         public int BulkBatchSize { get; private set; }
 
@@ -221,8 +211,6 @@ namespace Exceptionless.Core {
             if (settings.EnableBilling)
                 StripeConfiguration.SetApiKey(settings.StripeApiKey);
 
-            settings.StorageFolder = configRoot.GetValue<string>(nameof(StorageFolder), "|DataDirectory|\\storage");
-            settings.StorageFolder = PathHelper.ExpandPath(settings.StorageFolder);
             settings.BulkBatchSize = configRoot.GetValue(nameof(BulkBatchSize), 1000);
 
             settings.EnableRepositoryNotifications = configRoot.GetValue(nameof(EnableRepositoryNotifications), true);
@@ -242,30 +230,39 @@ namespace Exceptionless.Core {
             if (String.IsNullOrWhiteSpace(settings.SmtpUser) != String.IsNullOrWhiteSpace(settings.SmtpPassword))
                 throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");
 
-            settings.AzureStorageConnectionString = configRoot.GetConnectionString("AzureStorage");
-            settings.AzureStorageQueueConnectionString = configRoot.GetConnectionString("AzureStorageQueue");
-            settings.AliyunStorageConnectionString = configRoot.GetConnectionString("AliyunStorage");
-            settings.MinioStorageConnectionString = configRoot.GetConnectionString("MinioStorage");
+            string cacheConnectionString = configRoot.GetConnectionString("Cache");
+            if (!String.IsNullOrEmpty(cacheConnectionString))
+                settings.CacheConnectionString = new DefaultConnectionString(cacheConnectionString);
 
-            string metricsConnectionString = configRoot.GetConnectionString("Metrics");
+            settings.ElasticsearchConnectionString = new DefaultConnectionString(configRoot.GetConnectionString("Elasticsearch") ?? "http://localhost:9200");
+
+            string ldapConnectionString = configRoot.GetConnectionString("Ldap");
+            if (!String.IsNullOrEmpty(ldapConnectionString))
+                settings.LdapConnectionString = new DefaultConnectionString(ldapConnectionString);
+
+            settings.EnableActiveDirectoryAuth = configRoot.GetValue(nameof(EnableActiveDirectoryAuth), settings.LdapConnectionString != null);
+
+            string messagingConnectionString = configRoot.GetConnectionString("Messaging");
+            if (!String.IsNullOrEmpty(messagingConnectionString))
+                settings.MessagingConnectionString = new DefaultConnectionString(messagingConnectionString);
+
+            string metricsConnectionString = configRoot.GetConnectionString("Metric");
             if (!String.IsNullOrEmpty(metricsConnectionString))
-                settings.MetricsConnectionString = new DefaultMetricsConnectionString(metricsConnectionString);
+                settings.MetricsConnectionString = new DefaultConnectionString(metricsConnectionString);
 
             settings.EnableMetricsReporting = configRoot.GetValue(nameof(EnableMetricsReporting), settings.MetricsConnectionString != null);
 
+            string storageConnectionString = configRoot.GetConnectionString("Storage");
+            if (!String.IsNullOrEmpty(storageConnectionString))
+                settings.StorageConnectionString = new DefaultConnectionString(storageConnectionString);
+
+            string queueConnectionString = configRoot.GetConnectionString("Queue");
+            if (!String.IsNullOrEmpty(queueConnectionString))
+                settings.QueueConnectionString = new DefaultConnectionString(queueConnectionString);
+
             settings.DisableIndexConfiguration = configRoot.GetValue(nameof(DisableIndexConfiguration), false);
             settings.EnableSnapshotJobs = configRoot.GetValue(nameof(EnableSnapshotJobs), String.IsNullOrEmpty(settings.AppScopePrefix) && settings.AppMode == AppMode.Production);
-            settings.ElasticsearchConnectionString = configRoot.GetConnectionString("Elasticsearch") ?? "http://localhost:9200";
-            settings.ElasticsearchNumberOfShards = configRoot.GetValue(nameof(ElasticsearchNumberOfShards), 1);
-            settings.ElasticsearchNumberOfReplicas = configRoot.GetValue(nameof(ElasticsearchNumberOfReplicas), settings.AppMode == AppMode.Production ? 1 : 0);
-            settings.ElasticsearchFieldsLimit = configRoot.GetValue(nameof(ElasticsearchFieldsLimit), 1500);
-            settings.EnableElasticsearchMapperSizePlugin = configRoot.GetValue(nameof(EnableElasticsearchMapperSizePlugin), settings.AppMode != AppMode.Development);
-
-            settings.RedisConnectionString = configRoot.GetConnectionString("Redis");
-
-            settings.LdapConnectionString = configRoot.GetConnectionString("Ldap");
-            settings.EnableActiveDirectoryAuth = configRoot.GetValue(nameof(EnableActiveDirectoryAuth), !String.IsNullOrEmpty(settings.LdapConnectionString));
-
+            
             try {
                 var versionInfo = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location);
                 settings.Version = versionInfo.FileVersion;

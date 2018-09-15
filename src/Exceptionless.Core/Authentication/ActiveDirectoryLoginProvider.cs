@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Authentication {
         private const string AD_USERNAME = "sAMAccountName";
 
         public bool Login(string username, string password) {
-            using (var de = new DirectoryEntry(Settings.Current.LdapConnectionString, username, password, AuthenticationTypes.Secure)) {
+            using (var de = new DirectoryEntry(Settings.Current.LdapConnectionString.ConnectionString, username, password, AuthenticationTypes.Secure)) {
                 using (var ds = new DirectorySearcher(de, $"(&({AD_USERNAME}={username}))", new[] { AD_DISTINGUISHEDNAME })) {
                     try {
                         var result = ds.FindOne();

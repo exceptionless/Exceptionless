@@ -8,7 +8,7 @@ using Exceptionless.Core;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web.Utility;
 using Microsoft.ApplicationInsights.Extensibility;
-using Exceptionless.Insulation.Metrics;
+using Exceptionless.Insulation.Configuration.ConnectionStrings;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -52,8 +52,9 @@ namespace Exceptionless.Web {
             if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
-            Log.Logger = loggerConfig.CreateLogger();
+            ConnectionStringManager.ParseAll(settings);
 
+            Log.Logger = loggerConfig.CreateLogger();
             Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current, currentDirectory);
 
             bool useApplicationInsights = !String.IsNullOrEmpty(Settings.Current.ApplicationInsightsKey);
@@ -81,16 +82,14 @@ namespace Exceptionless.Web {
             if (useApplicationInsights)
                 builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
 
-            if (settings.EnableMetricsReporting) {
-                settings.MetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString?.ConnectionString);
+            if (settings.EnableMetricsReporting)
                 ConfigureMetricsReporting(builder);
-            }
 
             return builder;
         }
 
         private static void ConfigureMetricsReporting(IWebHostBuilder builder) {
-            if (Settings.Current.MetricsConnectionString is PrometheusMetricsConnectionString) {
+            if (Settings.Current.MetricsConnectionString is PrometheusConnectionString) {
                 var metrics = AppMetrics.CreateDefaultBuilder()
                     .OutputMetrics.AsPrometheusPlainText()
                     .OutputMetrics.AsPrometheusProtobuf()
@@ -101,7 +100,7 @@ namespace Exceptionless.Web {
                         endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
                     };
                 });
-            } else if (!(Settings.Current.MetricsConnectionString is StatsDMetricsConnectionString)) {
+            } else if (!(Settings.Current.MetricsConnectionString is StatsDConnectionString)) {
                 builder.UseMetrics();
             }
         }
