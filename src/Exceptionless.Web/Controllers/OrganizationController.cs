@@ -384,7 +384,7 @@ namespace Exceptionless.Web.Controllers {
 
                     var customerUpdateOptions = new StripeCustomerUpdateOptions { Description = organization.Name, Email = CurrentUser.EmailAddress };
                     if (!String.IsNullOrEmpty(stripeToken)) {
-                        customerUpdateOptions.DefaultSource = stripeToken;
+                        customerUpdateOptions.SourceToken = stripeToken;
                         cardUpdated = true;
                     }
 
