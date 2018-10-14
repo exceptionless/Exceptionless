@@ -1,5 +1,7 @@
 ﻿using System;
+using Exceptionless.Core.Configuration;
 using Foundatio.Repositories.Elasticsearch.Configuration;
+using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
@@ -22,13 +24,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         internal const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
         internal const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
-        private readonly AppOptions _appOptions;
+        private readonly IOptions<ElasticsearchOptions> _elasticsearchOptions;
 
-        public EventIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.AppOptions.AppScopePrefix + "events", 1) {
-            _appOptions = configuration.AppOptions;
+        public EventIndex(ExceptionlessElasticConfiguration configuration, IOptions<AppOptions> appOptions) : base(configuration, appOptions.Value.AppScopePrefix + "events", 1) {
+            _elasticsearchOptions = configuration.ElasticsearchOptions;
             MaxIndexAge = TimeSpan.FromDays(180);
 
-            AddType(Event = new EventIndexType(this));
+            AddType(Event = new EventIndexType(this, _elasticsearchOptions));
             AddAlias($"{Name}-today", TimeSpan.FromDays(1));
             AddAlias($"{Name}-last3days", TimeSpan.FromDays(7));
             AddAlias($"{Name}-last7days", TimeSpan.FromDays(7));
@@ -41,9 +43,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
             return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(BuildAnalysis)
-                .NumberOfShards(_appOptions.ParsedElasticsearchConnectionString.NumberOfShards)
-                .NumberOfReplicas(_appOptions.ParsedElasticsearchConnectionString.NumberOfReplicas)
-                .Setting("index.mapping.total_fields.limit", _appOptions.ParsedElasticsearchConnectionString.FieldsLimit)
+                .NumberOfShards(_elasticsearchOptions.Value.NumberOfShards)
+                .NumberOfReplicas(_elasticsearchOptions.Value.NumberOfReplicas)
+                .Setting("index.mapping.total_fields.limit", _elasticsearchOptions.Value.FieldsLimit)
                 .Priority(1)));
         }
 

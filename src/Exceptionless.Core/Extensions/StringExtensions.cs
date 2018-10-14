@@ -166,8 +166,8 @@ namespace Exceptionless.Core.Extensions {
         }
 
 
-        public static DataDictionary ParseConnectionString(this string connectionString) {
-            var options = new DataDictionary();
+        public static Foundatio.Utility.DataDictionary ParseConnectionString(this string connectionString) {
+            var options = new Foundatio.Utility.DataDictionary();
             if (String.IsNullOrEmpty(connectionString))
                 return options;
 

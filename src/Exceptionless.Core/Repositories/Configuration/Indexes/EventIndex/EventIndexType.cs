@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Queries;
@@ -8,12 +9,17 @@ using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nest;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public class EventIndexType : DailyIndexType<PersistentEvent>, IHavePipelinedIndexType {
-        public EventIndexType(EventIndex index) : base(index, "events", document => document.Date.UtcDateTime) {}
+        private readonly IOptions<ElasticsearchOptions> _elasticsearchOptions;
+
+        public EventIndexType(EventIndex index, IOptions<ElasticsearchOptions> elasticsearchOptions) : base(index, "events", document => document.Date.UtcDateTime) {
+            _elasticsearchOptions = elasticsearchOptions;
+        }
 
         public string Pipeline { get; } = "events-pipeline";
 
@@ -46,7 +52,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .AddCopyToMappings()
             );
 
-            if (AppOptions.Current.ParsedElasticsearchConnectionString.EnableMapperSizePlugin)
+            if (_elasticsearchOptions.Value.EnableMapperSizePlugin)
                 return mapping.SizeField(s => s.Enabled());
 
             return mapping;
