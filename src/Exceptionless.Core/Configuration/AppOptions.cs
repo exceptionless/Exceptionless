@@ -161,7 +161,7 @@ namespace Exceptionless.Core {
 
         public static AppOptions Current { get; internal set; }
 
-        private SmtpEncryption GetDefaultSmtpEncryption(int port) {
+        internal SmtpEncryption GetDefaultSmtpEncryption(int port) {
             switch (port) {
                 case 465:
                     return SmtpEncryption.SSL;

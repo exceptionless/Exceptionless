@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Configuration {
 
             options.ServerUrl = pairs.GetString("server", pairs.GetString(String.Empty));
 
-            int shards = pairs.GetValueOrDefault("shards", 1);
+            int shards = pairs.GetValueOrDefault<int>("shards", 1);
             options.NumberOfShards = shards > 0 ? shards : 1;
 
             int replicas = pairs.GetValueOrDefault<int>("replicas");

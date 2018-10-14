@@ -1,14 +1,16 @@
 ﻿using System;
+using Exceptionless.Core.Configuration;
 using Foundatio.Repositories.Elasticsearch.Configuration;
+using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class OrganizationIndex : VersionedIndex {
         internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
-        private readonly AppOptions _appOptions;
+        private readonly IOptions<ElasticsearchOptions> _elasticsearchOptions;
 
-        public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.AppOptions.AppScopePrefix + "organizations", 1) {
-            _appOptions = configuration.AppOptions;
+        public OrganizationIndex(ExceptionlessElasticConfiguration configuration, IOptions<AppOptions> appOptions) : base(configuration, appOptions.Value.AppScopePrefix + "organizations", 1) {
+            _elasticsearchOptions = configuration.ElasticsearchOptions;
             AddType(Organization = new OrganizationIndexType(this));
             AddType(Project = new ProjectIndexType(this));
             AddType(Token = new TokenIndexType(this));
@@ -19,8 +21,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
             return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
-                .NumberOfShards(_appOptions.ParsedElasticsearchConnectionString.NumberOfShards)
-                .NumberOfReplicas(_appOptions.ParsedElasticsearchConnectionString.NumberOfReplicas)
+                .NumberOfShards(_elasticsearchOptions.Value.NumberOfShards)
+                .NumberOfReplicas(_elasticsearchOptions.Value.NumberOfReplicas)
                 .Priority(10)));
         }
 
