@@ -41,14 +41,14 @@ namespace Exceptionless.Tests {
             _initialized = true;
         }
 
-        protected virtual Settings ReadSettings() {
+        protected virtual AppOptions ReadSettings() {
             var config = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddYamlFile("appsettings.yml", optional: true)
                 .AddEnvironmentVariables()
                 .Build();
 
-            return Settings.ReadFromConfiguration(config, "Development");
+            return AppOptions.ReadFromConfiguration(config, "Development");
         }
 
         protected virtual void RegisterServices(IServiceCollection services) {

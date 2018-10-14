@@ -127,7 +127,7 @@ namespace Exceptionless.Core.Repositories {
             if (ev == null)
                 return null;
 
-            var retentionDate = Settings.Current.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(Settings.Current.MaximumRetentionDays) : DateTime.MinValue;
+            var retentionDate = AppOptions.Current.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(AppOptions.Current.MaximumRetentionDays) : DateTime.MinValue;
             if (!utcStart.HasValue || utcStart.Value.IsBefore(retentionDate))
                 utcStart = retentionDate;
 

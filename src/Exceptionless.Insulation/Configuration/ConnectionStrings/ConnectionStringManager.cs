@@ -6,14 +6,14 @@ using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Insulation.Configuration.ConnectionStrings {
     public static class ConnectionStringManager {
-        public static void ParseAll(Settings settings) {
-            settings.CacheConnectionString = Parse(settings.CacheConnectionString?.ConnectionString);
-            settings.ElasticsearchConnectionString = Parse(settings.ElasticsearchConnectionString?.ConnectionString);
-            settings.LdapConnectionString = Parse(settings.LdapConnectionString?.ConnectionString);
-            settings.MessagingConnectionString = Parse(settings.MessagingConnectionString?.ConnectionString);
-            settings.MetricsConnectionString = Parse(settings.MetricsConnectionString?.ConnectionString);
-            settings.StorageConnectionString = Parse(settings.StorageConnectionString?.ConnectionString);
-            settings.QueueConnectionString = Parse(settings.QueueConnectionString?.ConnectionString);
+        public static void ParseAll(AppOptions appOptions) {
+            appOptions.CacheConnectionString = Parse(appOptions.CacheConnectionString?.ConnectionString);
+            appOptions.ElasticsearchConnectionString = Parse(appOptions.ElasticsearchConnectionString?.ConnectionString);
+            appOptions.LdapConnectionString = Parse(appOptions.LdapConnectionString?.ConnectionString);
+            appOptions.MessagingConnectionString = Parse(appOptions.MessagingConnectionString?.ConnectionString);
+            appOptions.MetricsConnectionString = Parse(appOptions.MetricsConnectionString?.ConnectionString);
+            appOptions.StorageConnectionString = Parse(appOptions.StorageConnectionString?.ConnectionString);
+            appOptions.QueueConnectionString = Parse(appOptions.QueueConnectionString?.ConnectionString);
         }
 
         public static IConnectionString Parse(string connectionString) {

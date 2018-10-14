@@ -172,7 +172,7 @@ namespace Exceptionless.Tests.Mail {
 
             await _mailer.SendOrganizationInviteAsync(user, organization, new Invite {
                 DateAdded = SystemClock.UtcNow,
-                EmailAddress = Settings.Current.TestEmailAddress,
+                EmailAddress = AppOptions.Current.TestEmailAddress,
                 Token = "1"
             });
 

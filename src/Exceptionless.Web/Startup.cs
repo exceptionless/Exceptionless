@@ -105,7 +105,7 @@ namespace Exceptionless.Web {
             });
 
             var serviceProvider = services.BuildServiceProvider();
-            var settings = serviceProvider.GetRequiredService<Settings>();
+            var settings = serviceProvider.GetRequiredService<AppOptions>();
             Bootstrapper.RegisterServices(services, LoggerFactory);
 
             services.AddSingleton(new ThrottlingOptions {
@@ -115,7 +115,7 @@ namespace Exceptionless.Web {
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
-            var settings = app.ApplicationServices.GetRequiredService<Settings>();
+            var settings = app.ApplicationServices.GetRequiredService<AppOptions>();
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, settings, LoggerFactory);
 
             if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey) && !String.IsNullOrEmpty(settings.ExceptionlessServerUrl))

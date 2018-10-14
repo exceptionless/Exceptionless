@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Queues.Models {
 
     public class EventPost : EventPostInfo {
         public EventPost() {
-            ShouldArchive = Settings.Current.EnableArchive;
+            ShouldArchive = AppOptions.Current.EnableArchive;
         }
 
         public bool ShouldArchive { get; set; }

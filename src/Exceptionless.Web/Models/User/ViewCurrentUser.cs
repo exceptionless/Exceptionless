@@ -27,10 +27,10 @@ namespace Exceptionless.Web.Models {
         public ICollection<OAuthAccount> OAuthAccounts { get; set; }
 
         private string HMACSHA256HashString(string value) {
-            if (!Settings.Current.EnableIntercom)
+            if (!AppOptions.Current.EnableIntercom)
                 return null;
 
-            byte[] secretKey = Encoding.UTF8.GetBytes(Settings.Current.IntercomAppSecret);
+            byte[] secretKey = Encoding.UTF8.GetBytes(AppOptions.Current.IntercomAppSecret);
             byte[] bytes = Encoding.UTF8.GetBytes(value);
             using (var hmac = new HMACSHA256(secretKey)) {
                 hmac.ComputeHash(bytes);

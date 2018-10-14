@@ -21,13 +21,13 @@ namespace Exceptionless.Insulation.Mail {
             using (var client = new SmtpClient()) {
                 client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
-                await client.ConnectAsync(Settings.Current.SmtpHost, Settings.Current.SmtpPort, GetSecureSocketOption(Settings.Current.SmtpEncryption)).AnyContext();
+                await client.ConnectAsync(AppOptions.Current.SmtpHost, AppOptions.Current.SmtpPort, GetSecureSocketOption(AppOptions.Current.SmtpEncryption)).AnyContext();
 
                 // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
                 client.AuthenticationMechanisms.Remove("XOAUTH2");
 
-                if (!String.IsNullOrEmpty(Settings.Current.SmtpUser))
-                    await client.AuthenticateAsync(Settings.Current.SmtpUser, Settings.Current.SmtpPassword).AnyContext();
+                if (!String.IsNullOrEmpty(AppOptions.Current.SmtpUser))
+                    await client.AuthenticateAsync(AppOptions.Current.SmtpUser, AppOptions.Current.SmtpPassword).AnyContext();
 
                 await client.SendAsync(message).AnyContext();
                 await client.DisconnectAsync(true).AnyContext();
@@ -55,7 +55,7 @@ namespace Exceptionless.Insulation.Mail {
             if (!String.IsNullOrEmpty(notification.From))
                 message.From.AddRange(InternetAddressList.Parse(notification.From));
             else
-                message.From.AddRange(InternetAddressList.Parse(Settings.Current.SmtpFrom));
+                message.From.AddRange(InternetAddressList.Parse(AppOptions.Current.SmtpFrom));
 
             if (!String.IsNullOrEmpty(notification.Body))
                 builder.HtmlBody = notification.Body;

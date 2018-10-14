@@ -23,12 +23,12 @@ namespace Exceptionless.Tests {
         public ServicesFixture() {
             _serviceProvider = new Lazy<IServiceProvider>(() => GetServiceProvider());
             var config = GetConfiguration();
-            Settings = Settings.ReadFromConfiguration(config, "Development");
+            AppOptions = AppOptions.ReadFromConfiguration(config, "Development");
         }
 
         private IServiceProvider GetServiceProvider() {
             var services = new ServiceCollection();
-            services.AddSingleton(Settings);
+            services.AddSingleton(AppOptions);
 
             foreach (var configurator in _serviceConfigurations)
                 configurator(services);
@@ -37,7 +37,7 @@ namespace Exceptionless.Tests {
         }
 
         public IServiceProvider Services => _serviceProvider.Value;
-        public Settings Settings { get; }
+        public AppOptions AppOptions { get; }
 
         public void AddServicesConfiguration(Action<IServiceCollection> configuration) {
             _serviceConfigurations.Add(configuration);
@@ -76,6 +76,6 @@ namespace Exceptionless.Tests {
         }
 
         protected virtual TService GetService<TService>() => _fixture.Services.GetRequiredService<TService>();
-        protected Settings Settings => _fixture.Settings;
+        protected AppOptions AppOptions => _fixture.AppOptions;
     }
 }

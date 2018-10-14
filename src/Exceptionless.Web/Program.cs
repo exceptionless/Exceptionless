@@ -13,6 +13,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
@@ -46,25 +47,27 @@ namespace Exceptionless.Web {
                 .AddCommandLine(args)
                 .Build();
 
-            var settings = Settings.ReadFromConfiguration(config, environment);
+            var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(config);
+            services.ConfigureOptions<ConfigureAppOptions>();
+            var container = services.BuildServiceProvider();
+            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
 
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
-            if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey))
+            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
-            ConnectionStringManager.ParseAll(settings);
-
             Log.Logger = loggerConfig.CreateLogger();
-            Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current, currentDirectory);
+            Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, options.InformationalVersion, Environment.MachineName, options, currentDirectory);
 
-            bool useApplicationInsights = !String.IsNullOrEmpty(Settings.Current.ApplicationInsightsKey);
+            bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
 
             var builder = WebHost.CreateDefaultBuilder(args)
                 .UseEnvironment(environment)
                 .UseKestrel(c => {
                     c.AddServerHeader = false;
-                    if (Settings.Current.MaximumEventPostSize > 0)
-                        c.Limits.MaxRequestBodySize = Settings.Current.MaximumEventPostSize;
+                    if (options.MaximumEventPostSize > 0)
+                        c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
                 })
                 .UseSerilog(Log.Logger)
                 .SuppressStatusMessages(true)
@@ -75,32 +78,31 @@ namespace Exceptionless.Web {
                         s.AddHttpContextAccessor();
                         s.AddApplicationInsightsTelemetry();
                     }
-                    s.AddSingleton(settings);
                 })
                 .UseStartup<Startup>();
 
             if (useApplicationInsights)
-                builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
+                builder.UseApplicationInsights(options.ApplicationInsightsKey);
 
-            if (settings.EnableMetricsReporting)
-                ConfigureMetricsReporting(builder);
+            if (options.EnableMetricsReporting)
+                ConfigureMetricsReporting(builder, options);
 
             return builder;
         }
 
-        private static void ConfigureMetricsReporting(IWebHostBuilder builder) {
-            if (Settings.Current.MetricsConnectionString is PrometheusConnectionString) {
+        private static void ConfigureMetricsReporting(IWebHostBuilder builder, AppOptions options) {
+            if (options.MetricsConnectionString is PrometheusConnectionString) {
                 var metrics = AppMetrics.CreateDefaultBuilder()
                     .OutputMetrics.AsPrometheusPlainText()
                     .OutputMetrics.AsPrometheusProtobuf()
                     .Build();
-                builder.ConfigureMetrics(metrics).UseMetrics(options => {
-                    options.EndpointOptions = endpointsOptions => {
+                builder.ConfigureMetrics(metrics).UseMetrics(o => {
+                    o.EndpointOptions = endpointsOptions => {
                         endpointsOptions.MetricsTextEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusTextOutputFormatter>();
                         endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
                     };
                 });
-            } else if (!(Settings.Current.MetricsConnectionString is StatsDConnectionString)) {
+            } else if (!(options.MetricsConnectionString is StatsDConnectionString)) {
                 builder.UseMetrics();
             }
         }

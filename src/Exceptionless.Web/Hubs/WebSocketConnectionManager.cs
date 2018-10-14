@@ -23,7 +23,7 @@ namespace Exceptionless.Web.Hubs {
         public WebSocketConnectionManager(JsonSerializerSettings serializerSettings, ILoggerFactory loggerFactory) {
             _serializerSettings = serializerSettings;
             _logger = loggerFactory.CreateLogger<WebSocketConnectionManager>();
-            if (!Settings.Current.EnableWebSockets)
+            if (!AppOptions.Current.EnableWebSockets)
                 return;
 
             _taskQueue = new TaskQueue(maxDegreeOfParallelism: 1, loggerFactory: loggerFactory); 

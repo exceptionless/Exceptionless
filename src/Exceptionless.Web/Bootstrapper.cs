@@ -31,16 +31,16 @@ namespace Exceptionless.Web {
             container.AddTransient<Profile, ApiMappings>();
 
             Core.Bootstrapper.RegisterServices(container);
-            bool includeInsulation = !String.IsNullOrEmpty(Settings.Current.RedisConnectionString) ||
-                !String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString) ||
-                !String.IsNullOrEmpty(Settings.Current.AzureStorageQueueConnectionString) ||
-                !String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString) ||
-                !String.IsNullOrEmpty(Settings.Current.MinioStorageConnectionString) ||
-                Settings.Current.EnableMetricsReporting;
+            bool includeInsulation = !String.IsNullOrEmpty(AppOptions.Current.RedisConnectionString) ||
+                !String.IsNullOrEmpty(AppOptions.Current.AzureStorageConnectionString) ||
+                !String.IsNullOrEmpty(AppOptions.Current.AzureStorageQueueConnectionString) ||
+                !String.IsNullOrEmpty(AppOptions.Current.AliyunStorageConnectionString) ||
+                !String.IsNullOrEmpty(AppOptions.Current.MinioStorageConnectionString) ||
+                AppOptions.Current.EnableMetricsReporting;
             if (includeInsulation)
-                Insulation.Bootstrapper.RegisterServices(container, Settings.Current.RunJobsInProcess);
+                Insulation.Bootstrapper.RegisterServices(container, AppOptions.Current.RunJobsInProcess);
 
-            if (Settings.Current.RunJobsInProcess)
+            if (AppOptions.Current.RunJobsInProcess)
                 container.AddSingleton<IHostedService, JobsHostedService>();
 
             var logger = loggerFactory.CreateLogger<Startup>();

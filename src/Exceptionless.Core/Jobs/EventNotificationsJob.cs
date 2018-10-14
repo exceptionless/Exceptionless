@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Jobs {
             if (ev == null || ev.IsDeleted)
                 return JobResult.SuccessWithMessage($"Could not load event: {wi.EventId}");
 
-            bool shouldLog = ev.ProjectId != Settings.Current.InternalProjectId;
+            bool shouldLog = ev.ProjectId != AppOptions.Current.InternalProjectId;
             int sent = 0;
             if (shouldLog) _logger.LogTrace("Process notification: project={project} event={id} stack={stack}", ev.ProjectId, ev.Id, ev.StackId);
 
@@ -156,7 +156,7 @@ namespace Exceptionless.Core.Jobs {
             if (shouldLog) _logger.LogTrace("Loaded user: email={EmailAddress}", user.EmailAddress);
 
             // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
-            if (Settings.Current.AppMode != AppMode.Production && !Settings.Current.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
+            if (AppOptions.Current.AppMode != AppMode.Production && !AppOptions.Current.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
                 if (shouldLog) _logger.LogInformation("Skipping because email is not on the outbound list and not in production mode.");
                 return false;
             }

@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Security.Cryptography;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Extensions {
     public static class StringExtensions {
@@ -162,6 +163,28 @@ namespace Exceptionless.Core.Extensions {
             }
 
             return sb.ToString();
+        }
+
+
+        public static DataDictionary ParseConnectionString(this string connectionString) {
+            var options = new DataDictionary();
+            if (String.IsNullOrEmpty(connectionString))
+                return options;
+
+            foreach (string[] option in connectionString
+                .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(kvp => kvp.Contains('='))
+                .Select(kvp => kvp.Split(new[] { '=' }, 2))) {
+
+                string optionKey = option[0]?.Trim();
+                string optionValue = option[1]?.Trim();
+                if (String.IsNullOrEmpty(optionValue))
+                    options[String.Empty] = optionKey;
+                else if (!String.IsNullOrEmpty(optionKey))
+                    options[optionKey] = optionValue;
+            }
+
+            return options;
         }
 
         public static string[] FromDelimitedString(this string value, string delimiter = ",") {

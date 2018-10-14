@@ -42,7 +42,7 @@ namespace Exceptionless.Web.Utility {
                 return;
             }
 
-            if (Settings.Current.EventSubmissionDisabled || !context.Request.Query.TryGetValue("id", out var id) || String.IsNullOrEmpty(id)) {
+            if (AppOptions.Current.EventSubmissionDisabled || !context.Request.Query.TryGetValue("id", out var id) || String.IsNullOrEmpty(id)) {
                 context.Response.StatusCode = StatusCodes.Status200OK;
                 return;
             }
@@ -56,7 +56,7 @@ namespace Exceptionless.Web.Utility {
                     close ? _cache.SetAsync(String.Concat(heartbeatCacheKey, "-close"), true, TimeSpan.FromHours(2)) : Task.CompletedTask
                 );
             } catch (Exception ex) {
-                if (projectId != Settings.Current.InternalProjectId) {
+                if (projectId != AppOptions.Current.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Property("Id", id).Property("Close", close).SetHttpContext(context)))
                         _logger.LogError(ex, "Error enqueuing session heartbeat.");
                 }

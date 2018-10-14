@@ -43,8 +43,8 @@ namespace Exceptionless.Web.Controllers {
         }
 
         [HttpGet("settings")]
-        public ActionResult<Settings> SettingsRequest() {
-            return Ok(JsonConvert.SerializeObject(Settings.Current, Formatting.Indented));
+        public ActionResult<AppOptions> SettingsRequest() {
+            return Ok(JsonConvert.SerializeObject(AppOptions.Current, Formatting.Indented));
         }
 
         [HttpGet("assemblies")]
@@ -112,7 +112,7 @@ namespace Exceptionless.Web.Controllers {
         public async Task<IActionResult> RunJobAsync(string name) {
             switch (name.ToLowerInvariant()) {
                 case "indexes":
-                    if (!Settings.Current.DisableIndexConfiguration)
+                    if (!AppOptions.Current.DisableIndexConfiguration)
                         await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);
                     break;
                 case "update-organization-plans":

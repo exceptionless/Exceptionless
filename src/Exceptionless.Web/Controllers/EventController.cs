@@ -609,7 +609,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">No project was found.</response>
         [HttpGet("session/heartbeat")]
         public async Task<IActionResult> RecordHeartbeatAsync(string id = null, bool close = false) {
-            if (Settings.Current.EventSubmissionDisabled || String.IsNullOrEmpty(id))
+            if (AppOptions.Current.EventSubmissionDisabled || String.IsNullOrEmpty(id))
                 return Ok();
 
             string projectId = Request.GetDefaultProjectId();
@@ -624,7 +624,7 @@ namespace Exceptionless.Web.Controllers {
                     close ? _cache.SetAsync(String.Concat(heartbeatCacheKey, "-close"), true, TimeSpan.FromHours(2)) : Task.CompletedTask
                 );
             } catch (Exception ex) {
-                if (projectId != Settings.Current.InternalProjectId) {
+                if (projectId != AppOptions.Current.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).Property("Id", id).Property("Close", close).SetHttpContext(HttpContext)))
                         _logger.LogError(ex, "Error enqueuing session heartbeat.");
                 }
@@ -837,7 +837,7 @@ namespace Exceptionless.Web.Controllers {
                     UserAgent = userAgent
                 }, stream);
             } catch (Exception ex) {
-                if (projectId != Settings.Current.InternalProjectId) {
+                if (projectId != AppOptions.Current.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                         _logger.LogError(ex, "Error enqueuing event post.");
                 }
@@ -1020,7 +1020,7 @@ namespace Exceptionless.Web.Controllers {
                     UserAgent = userAgent,
                 }, Request.Body);
             } catch (Exception ex) {
-                if (projectId != Settings.Current.InternalProjectId) {
+                if (projectId != AppOptions.Current.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                         _logger.LogError(ex, "Error enqueuing event post.");
                 }
