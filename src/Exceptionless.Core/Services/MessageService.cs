@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Services {
         }
 
         public Task RunAsync(CancellationToken shutdownToken = default) {
-            if (!Settings.Current.EnableRepositoryNotifications)
+            if (!AppOptions.Current.EnableRepositoryNotifications)
                 return Task.CompletedTask;
 
             if (_stackRepository is StackRepository sr)

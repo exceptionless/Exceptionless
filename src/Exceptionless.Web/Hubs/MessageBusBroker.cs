@@ -29,7 +29,7 @@ namespace Exceptionless.Web.Hubs {
         }
 
         public async Task RunAsync(CancellationToken shutdownToken = default) {
-            if (!Settings.Current.EnableWebSockets)
+            if (!AppOptions.Current.EnableWebSockets)
                 return;
 
             _logger.LogDebug("Subscribing to message bus notifications");

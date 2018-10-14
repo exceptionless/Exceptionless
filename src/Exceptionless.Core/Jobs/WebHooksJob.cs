@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Jobs {
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<WebHookNotification> context) {
             var body = context.QueueEntry.Value;
-            bool shouldLog = body.ProjectId != Settings.Current.InternalProjectId;
+            bool shouldLog = body.ProjectId != AppOptions.Current.InternalProjectId;
             using (_logger.BeginScope(new ExceptionlessState().Organization(body.OrganizationId).Project(body.ProjectId))) {
                 if (shouldLog) _logger.LogTrace("Process web hook call: id={Id} project={1} url={Url}", context.QueueEntry.Id, body.ProjectId, body.Url);
 

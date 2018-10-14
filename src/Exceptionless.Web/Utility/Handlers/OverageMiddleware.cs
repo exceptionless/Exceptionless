@@ -51,7 +51,7 @@ namespace Exceptionless.Web.Utility {
                 return;
             }
 
-            if (Settings.Current.EventSubmissionDisabled) {
+            if (AppOptions.Current.EventSubmissionDisabled) {
                 context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
                 return;
             }
@@ -75,7 +75,7 @@ namespace Exceptionless.Web.Utility {
                 if (size > 0)
                     _metricsClient.Gauge(MetricNames.PostsSize, size);
 
-                if (size > Settings.Current.MaximumEventPostSize) {
+                if (size > AppOptions.Current.MaximumEventPostSize) {
                     if (_logger.IsEnabled(LogLevel.Warning)) {
                         using (_logger.BeginScope(new ExceptionlessState().Value(size).Tag(context.Request.Headers.TryGetAndReturn(Headers.ContentEncoding))))
                             _logger.LogWarning("Event submission discarded for being too large: {@value} bytes.", size);

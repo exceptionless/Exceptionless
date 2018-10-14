@@ -33,7 +33,7 @@ namespace Exceptionless.Web.Controllers {
 
                 StripeEvent stripeEvent;
                 try {
-                    stripeEvent = StripeEventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], Settings.Current.StripeWebHookSigningSecret);
+                    stripeEvent = StripeEventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], AppOptions.Current.StripeWebHookSigningSecret);
                 } catch (Exception ex) {
                     _logger.LogError(ex, "Unable to parse incoming event with {Signature}: {Message}", Request.Headers["Stripe-Signature"], ex.Message);
                     return BadRequest();

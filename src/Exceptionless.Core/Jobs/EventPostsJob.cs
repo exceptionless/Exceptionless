@@ -28,8 +28,8 @@ using Newtonsoft.Json;
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Processes queued events.", InitialDelay = "2s")]
     public class EventPostsJob : QueueJobBase<EventPost> {
-        private readonly long _maximumEventPostFileSize = Settings.Current.MaximumEventPostSize + 1000;
-        private readonly long _maximumUncompressedEventPostSize = Settings.Current.MaximumEventPostSize * 10;
+        private readonly long _maximumEventPostFileSize = AppOptions.Current.MaximumEventPostSize + 1000;
+        private readonly long _maximumUncompressedEventPostSize = AppOptions.Current.MaximumEventPostSize * 10;
 
         private readonly EventPostService _eventPostService;
         private readonly EventParserPluginManager _eventParserPluginManager;
@@ -70,14 +70,14 @@ namespace Exceptionless.Core.Jobs {
             _metrics.Gauge(MetricNames.PostsMessageSize, payload.LongLength);
             if (payload.LongLength > _maximumEventPostFileSize) {
                 await Task.WhenAll(_metrics.TimeAsync(() => entry.CompleteAsync(), MetricNames.PostsCompleteTime), projectTask, organizationTask).AnyContext();
-                return JobResult.FailedWithMessage($"Unable to process payload '{payloadPath}' ({payload.LongLength} bytes): Maximum event post size limit ({Settings.Current.MaximumEventPostSize} bytes) reached.");
+                return JobResult.FailedWithMessage($"Unable to process payload '{payloadPath}' ({payload.LongLength} bytes): Maximum event post size limit ({AppOptions.Current.MaximumEventPostSize} bytes) reached.");
             }
 
             using (_logger.BeginScope(new ExceptionlessState().Organization(ep.OrganizationId).Project(ep.ProjectId))) {
                 _metrics.Gauge(MetricNames.PostsCompressedSize, payload.Length);
 
                 bool isDebugLogLevelEnabled = _logger.IsEnabled(LogLevel.Debug);
-                bool isInternalProject = ep.ProjectId == Settings.Current.InternalProjectId;
+                bool isInternalProject = ep.ProjectId == AppOptions.Current.InternalProjectId;
                 if (!isInternalProject && _logger.IsEnabled(LogLevel.Information)) {
                     using (_logger.BeginScope(new ExceptionlessState().Tag("processing").Tag("compressed").Tag(ep.ContentEncoding).Value(payload.Length)))
                         _logger.LogInformation("Processing post: id={QueueEntryId} path={FilePath} project={project} ip={IpAddress} v={ApiVersion} agent={UserAgent}", entry.Id, payloadPath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent);
@@ -90,7 +90,7 @@ namespace Exceptionless.Core.Jobs {
                     return JobResult.Success;
                 }
 
-                long maxEventPostSize = Settings.Current.MaximumEventPostSize;
+                long maxEventPostSize = AppOptions.Current.MaximumEventPostSize;
                 byte[] uncompressedData = payload;
                 if (!String.IsNullOrEmpty(ep.ContentEncoding)) {
                     if (!isInternalProject && isDebugLogLevelEnabled) {

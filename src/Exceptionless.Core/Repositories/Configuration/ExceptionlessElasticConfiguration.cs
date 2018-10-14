@@ -24,10 +24,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
         private CancellationToken _shutdownToken;
 
-        public ExceptionlessElasticConfiguration(Settings settings, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
-            Settings = settings;
+        public ExceptionlessElasticConfiguration(AppOptions appOptions, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
+            AppOptions = appOptions;
 
-            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", settings.ParsedElasticsearchConnectionString.NumberOfShards, settings.ParsedElasticsearchConnectionString.NumberOfReplicas);
+            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", appOptions.ParsedElasticsearchConnectionString.NumberOfShards, appOptions.ParsedElasticsearchConnectionString.NumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
             AddIndex(Events = new EventIndex(this));
             AddIndex(Organizations = new OrganizationIndex(this));
@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             builder.Register(new StackQueryBuilder());
         }
 
-        public Settings Settings { get; }
+        public AppOptions AppOptions { get; }
         public StackIndex Stacks { get; }
         public EventIndex Events { get; }
         public OrganizationIndex Organizations { get; }
@@ -84,7 +84,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override IConnectionPool CreateConnectionPool() {
-            var serverUris = Settings.ParsedElasticsearchConnectionString?.ServerUrl.Split(',').Select(url => new Uri(url));
+            var serverUris = AppOptions.ParsedElasticsearchConnectionString?.ServerUrl.Split(',').Select(url => new Uri(url));
             return new StaticConnectionPool(serverUris);
         }
 

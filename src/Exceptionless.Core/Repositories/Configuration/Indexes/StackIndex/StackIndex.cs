@@ -4,10 +4,10 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class StackIndex : VersionedIndex {
-        private readonly Settings _settings;
+        private readonly AppOptions _appOptions;
 
-        public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Settings.AppScopePrefix + "stacks", 1) {
-            _settings = configuration.Settings;
+        public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.AppOptions.AppScopePrefix + "stacks", 1) {
+            _appOptions = configuration.AppOptions;
             AddType(Stack = new StackIndexType(this));
         }
 
@@ -15,8 +15,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
             return base.ConfigureIndex(idx.Settings(s => s
-                .NumberOfShards(_settings.ParsedElasticsearchConnectionString.NumberOfShards)
-                .NumberOfReplicas(_settings.ParsedElasticsearchConnectionString.NumberOfReplicas)
+                .NumberOfShards(_appOptions.ParsedElasticsearchConnectionString.NumberOfShards)
+                .NumberOfReplicas(_appOptions.ParsedElasticsearchConnectionString.NumberOfReplicas)
                 .Priority(5)));
         }
     }

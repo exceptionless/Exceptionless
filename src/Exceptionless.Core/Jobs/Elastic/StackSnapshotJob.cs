@@ -12,12 +12,12 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
     public class StackSnapshotJob : SnapshotJob {
         public StackSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(configuration.Client, lockProvider, loggerFactory) {
-            Repository = Settings.Current.AppScopePrefix + "ex_stacks";
+            Repository = AppOptions.Current.AppScopePrefix + "ex_stacks";
             IncludedIndexes.Add("stacks*");
         }
 
         public override Task<JobResult> RunAsync(CancellationToken cancellationToken = new CancellationToken()) {
-            if (!Settings.Current.EnableSnapshotJobs)
+            if (!AppOptions.Current.EnableSnapshotJobs)
                 return Task.FromResult(JobResult.Success);
 
             return base.RunAsync(cancellationToken);

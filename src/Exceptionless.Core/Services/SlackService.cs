@@ -30,10 +30,10 @@ namespace Exceptionless.Core.Services {
                 throw new ArgumentNullException(nameof(code));
 
             var data = new Dictionary<string, string> {
-                { "client_id", Settings.Current.SlackAppId },
-                { "client_secret", Settings.Current.SlackAppSecret },
+                { "client_id", AppOptions.Current.SlackAppId },
+                { "client_secret", AppOptions.Current.SlackAppSecret },
                 { "code", code },
-                { "redirect_uri", new Uri(Settings.Current.BaseURL).GetLeftPart(UriPartial.Authority) }
+                { "redirect_uri", new Uri(AppOptions.Current.BaseURL).GetLeftPart(UriPartial.Authority) }
             };
 
             string url = $"https://slack.com/api/oauth.access?{data.ToQueryString()}";

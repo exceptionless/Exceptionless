@@ -16,7 +16,7 @@ using Foundatio.Repositories.Queries;
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : class, IIdentity, new() {
         public RepositoryBase(IIndexType<T> indexType, IValidator<T> validator) : base(indexType, validator) {
-            NotificationsEnabled = Settings.Current.EnableRepositoryNotifications;
+            NotificationsEnabled = AppOptions.Current.EnableRepositoryNotifications;
         }
 
         protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null, TimeSpan? delay = null) {

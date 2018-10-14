@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Authentication {
         private const string AD_USERNAME = "sAMAccountName";
 
         public bool Login(string username, string password) {
-            using (var de = new DirectoryEntry(Settings.Current.LdapConnectionString.ConnectionString, username, password, AuthenticationTypes.Secure)) {
+            using (var de = new DirectoryEntry(AppOptions.Current.LdapConnectionString.ConnectionString, username, password, AuthenticationTypes.Secure)) {
                 using (var ds = new DirectorySearcher(de, $"(&({AD_USERNAME}={username}))", new[] { AD_DISTINGUISHEDNAME })) {
                     try {
                         var result = ds.FindOne();
@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Authentication {
         }
 
         public string GetUsernameFromEmailAddress(string email) {
-            using (var entry = new DirectoryEntry(Settings.Current.LdapConnectionString)) {
+            using (var entry = new DirectoryEntry(AppOptions.Current.LdapConnectionString)) {
                 using (var searcher = new DirectorySearcher(entry, $"(&({AD_EMAIL}={email}))", new[] { AD_USERNAME })) {
                     var result = searcher.FindOne();
                     return result?.Properties[AD_USERNAME][0].ToString();
@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Authentication {
         }
 
         private SearchResult FindUser(string username) {
-            using (var entry = new DirectoryEntry(Settings.Current.LdapConnectionString)) {
+            using (var entry = new DirectoryEntry(AppOptions.Current.LdapConnectionString)) {
                 using (var searcher = new DirectorySearcher(entry, $"(&({AD_USERNAME}={username}))", new[] { AD_FIRSTNAME, AD_LASTNAME, AD_EMAIL })) {
                     return searcher.FindOne();
                 }

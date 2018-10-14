@@ -17,7 +17,7 @@ namespace Exceptionless.Insulation.Configuration.ConnectionStrings {
             if (settings.TryGetValue("replicas", out string r) && Int32.TryParse(r, out int replicas) && replicas >= 0)
                 NumberOfReplicas = replicas;
             else
-                NumberOfReplicas = Settings.Current.AppMode == AppMode.Production ? 1 : 0;
+                NumberOfReplicas = AppOptions.Current.AppMode == AppMode.Production ? 1 : 0;
 
             if (settings.TryGetValue("field-limit", out string fl) && Int32.TryParse(fl, out int fieldsLimit) && fieldsLimit > 0)
                 FieldsLimit = fieldsLimit;
@@ -25,7 +25,7 @@ namespace Exceptionless.Insulation.Configuration.ConnectionStrings {
             if (settings.TryGetValue("enable-size-plugin", out string value) && Boolean.TryParse(value, out bool enableSize))
                 EnableMapperSizePlugin = enableSize;
             else
-                EnableMapperSizePlugin = Settings.Current.AppMode != AppMode.Development;
+                EnableMapperSizePlugin = AppOptions.Current.AppMode != AppMode.Development;
         }
 
         public string ServerUrl { get; }

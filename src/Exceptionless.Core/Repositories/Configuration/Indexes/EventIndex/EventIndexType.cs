@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .AddCopyToMappings()
             );
 
-            if (Settings.Current.ParsedElasticsearchConnectionString.EnableMapperSizePlugin)
+            if (AppOptions.Current.ParsedElasticsearchConnectionString.EnableMapperSizePlugin)
                 return mapping.SizeField(s => s.Enabled());
 
             return mapping;

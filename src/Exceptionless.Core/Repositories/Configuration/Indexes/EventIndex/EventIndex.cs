@@ -22,10 +22,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         internal const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
         internal const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
-        private readonly Settings _settings;
+        private readonly AppOptions _appOptions;
 
-        public EventIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Settings.AppScopePrefix + "events", 1) {
-            _settings = configuration.Settings;
+        public EventIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.AppOptions.AppScopePrefix + "events", 1) {
+            _appOptions = configuration.AppOptions;
             MaxIndexAge = TimeSpan.FromDays(180);
 
             AddType(Event = new EventIndexType(this));
@@ -41,9 +41,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
             return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(BuildAnalysis)
-                .NumberOfShards(_settings.ParsedElasticsearchConnectionString.NumberOfShards)
-                .NumberOfReplicas(_settings.ParsedElasticsearchConnectionString.NumberOfReplicas)
-                .Setting("index.mapping.total_fields.limit", _settings.ParsedElasticsearchConnectionString.FieldsLimit)
+                .NumberOfShards(_appOptions.ParsedElasticsearchConnectionString.NumberOfShards)
+                .NumberOfReplicas(_appOptions.ParsedElasticsearchConnectionString.NumberOfReplicas)
+                .Setting("index.mapping.total_fields.limit", _appOptions.ParsedElasticsearchConnectionString.FieldsLimit)
                 .Priority(1)));
         }
 

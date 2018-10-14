@@ -118,7 +118,7 @@ namespace Exceptionless.Web.Controllers {
                     return Unauthorized();
                 }
 
-                if (!Settings.Current.EnableActiveDirectoryAuth) {
+                if (!AppOptions.Current.EnableActiveDirectoryAuth) {
                     if (String.IsNullOrEmpty(user.Salt)) {
                         _logger.LogError("Login failed for {EmailAddress}: The user has no salt defined.", user.EmailAddress);
                         return Unauthorized();
@@ -223,7 +223,7 @@ namespace Exceptionless.Web.Controllers {
                     }
                 }
 
-                if (Settings.Current.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password)) {
+                if (AppOptions.Current.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password)) {
                     _logger.LogError("Signup failed for {EmailAddress}: Active Directory authentication failed.", email);
                     return BadRequest();
                 }
@@ -232,14 +232,14 @@ namespace Exceptionless.Web.Controllers {
                     IsActive = true,
                     FullName = model.Name.Trim(),
                     EmailAddress = email,
-                    IsEmailAddressVerified = Settings.Current.EnableActiveDirectoryAuth
+                    IsEmailAddressVerified = AppOptions.Current.EnableActiveDirectoryAuth
                 };
                 user.CreateVerifyEmailAddressToken();
                 user.Roles.Add(AuthorizationRoles.Client);
                 user.Roles.Add(AuthorizationRoles.User);
                 await AddGlobalAdminRoleIfFirstUserAsync(user);
 
-                if (!Settings.Current.EnableActiveDirectoryAuth) {
+                if (!AppOptions.Current.EnableActiveDirectoryAuth) {
                     user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
                     user.Password = model.Password.ToSaltedHash(user.Salt);
                 }
@@ -271,8 +271,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("github")]
         public Task<ActionResult<TokenResult>> GitHubAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                Settings.Current.GitHubAppId,
-                Settings.Current.GitHubAppSecret,
+                AppOptions.Current.GitHubAppId,
+                AppOptions.Current.GitHubAppSecret,
                 (f, c) => {
                     c.Scope = "user:email";
                     return new GitHubClient(f, c);
@@ -285,8 +285,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("google")]
         public Task<ActionResult<TokenResult>> GoogleAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                Settings.Current.GoogleAppId,
-                Settings.Current.GoogleAppSecret,
+                AppOptions.Current.GoogleAppId,
+                AppOptions.Current.GoogleAppSecret,
                 (f, c) => {
                     c.Scope = "profile email";
                     return new GoogleClient(f, c);
@@ -299,8 +299,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("facebook")]
         public Task<ActionResult<TokenResult>> FacebookAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                Settings.Current.FacebookAppId,
-                Settings.Current.FacebookAppSecret,
+                AppOptions.Current.FacebookAppId,
+                AppOptions.Current.FacebookAppSecret,
                 (f, c) => {
                     c.Scope = "email";
                     return new FacebookClient(f, c);
@@ -313,8 +313,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("live")]
         public Task<ActionResult<TokenResult>> LiveAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                Settings.Current.MicrosoftAppId,
-                Settings.Current.MicrosoftAppSecret,
+                AppOptions.Current.MicrosoftAppId,
+                AppOptions.Current.MicrosoftAppSecret,
                 (f, c) => {
                     c.Scope = "wl.emails";
                     return new WindowsLiveClient(f, c);
@@ -650,7 +650,7 @@ namespace Exceptionless.Web.Controllers {
             // Check to see if a user already exists with this email address.
             var user = !String.IsNullOrEmpty(userInfo.Email) ? await _userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
             if (user == null) {
-                if (!Settings.Current.EnableAccountCreation)
+                if (!AppOptions.Current.EnableAccountCreation)
                     throw new ApplicationException("Account Creation is currently disabled.");
 
                 user = new User { FullName = userInfo.GetFullName(), EmailAddress = userInfo.Email };
@@ -671,7 +671,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         private async Task<bool> IsAccountCreationEnabledAsync(string token) {
-            if (Settings.Current.EnableAccountCreation)
+            if (AppOptions.Current.EnableAccountCreation)
                 return true;
 
             if (String.IsNullOrEmpty(token))

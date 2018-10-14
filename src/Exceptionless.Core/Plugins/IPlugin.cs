@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Plugins {
         public PluginBase(ILoggerFactory loggerFactory = null) {
             var type = GetType();
             Name = type.Name;
-            Enabled = !Settings.Current.DisabledPlugins.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase);
+            Enabled = !AppOptions.Current.DisabledPlugins.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase);
             _logger = loggerFactory?.CreateLogger(type);
         }
 

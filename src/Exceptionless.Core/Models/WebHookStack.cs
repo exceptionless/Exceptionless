@@ -3,7 +3,7 @@
 namespace Exceptionless.Core.Models {
     public class WebHookStack {
         public string Id { get; set; }
-        public string Url => String.Concat(Settings.Current.BaseURL, "/stack/", Id);
+        public string Url => String.Concat(AppOptions.Current.BaseURL, "/stack/", Id);
         public string Title { get; set; }
         public string Description { get; set; }
 
