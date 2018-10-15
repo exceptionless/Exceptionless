@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
@@ -16,6 +17,7 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 #pragma warning disable 1998
 
@@ -25,15 +27,17 @@ namespace Exceptionless.Core.Jobs {
         private readonly SlackService _slackService;
         private readonly IMailer _mailer;
         private readonly IProjectRepository _projectRepository;
+        private readonly IOptions<EmailOptions> _emailOptions;
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly ICacheClient _cache;
         private readonly UserAgentParser _parser;
 
-        public EventNotificationsJob(IQueue<EventNotificationWorkItem> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventNotificationsJob(IQueue<EventNotificationWorkItem> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, IOptions<EmailOptions> emailOptions, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _slackService = slackService;
             _mailer = mailer;
             _projectRepository = projectRepository;
+            _emailOptions = emailOptions;
             _userRepository = userRepository;
             _eventRepository = eventRepository;
             _cache = cacheClient;
@@ -156,7 +160,7 @@ namespace Exceptionless.Core.Jobs {
             if (shouldLog) _logger.LogTrace("Loaded user: email={EmailAddress}", user.EmailAddress);
 
             // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
-            if (AppOptions.Current.AppMode != AppMode.Production && !AppOptions.Current.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
+            if (AppOptions.Current.AppMode != AppMode.Production && !_emailOptions.Value.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
                 if (shouldLog) _logger.LogInformation("Skipping because email is not on the outbound list and not in production mode.");
                 return false;
             }

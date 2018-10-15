@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using App.Metrics;
 using App.Metrics.Infrastructure;

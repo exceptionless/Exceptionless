@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
@@ -14,18 +15,21 @@ using Foundatio.Queues;
 using Foundatio.Utility;
 using HandlebarsDotNet;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Mail {
     public class Mailer : IMailer {
         private readonly ConcurrentDictionary<string, Func<object, string>> _cachedTemplates = new ConcurrentDictionary<string, Func<object, string>>();
         private readonly IQueue<MailMessage> _queue;
         private readonly FormattingPluginManager _pluginManager;
+        private readonly IOptions<EmailOptions> _emailOptions;
         private readonly IMetricsClient _metrics;
         private readonly ILogger _logger;
 
-        public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IMetricsClient metrics, ILogger<Mailer> logger) {
+        public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IOptions<EmailOptions> emailOptions, IMetricsClient metrics, ILogger<Mailer> logger) {
             _queue = queue;
             _pluginManager = pluginManager;
+            _emailOptions = emailOptions;
             _metrics = metrics;
             _logger = logger;
         }
@@ -283,16 +287,16 @@ namespace Exceptionless.Core.Mail {
             return _queue.EnqueueAsync(message);
         }
 
-        private static void CleanAddresses(MailMessage message) {
+        private void CleanAddresses(MailMessage message) {
             if (AppOptions.Current.AppMode == AppMode.Production)
                 return;
 
             string address = message.To.ToLowerInvariant();
-            if (AppOptions.Current.AllowedOutboundAddresses.Any(address.Contains))
+            if (_emailOptions.Value.AllowedOutboundAddresses.Any(address.Contains))
                 return;
 
             message.Subject = $"[{message.To}] {message.Subject}".StripInvisible();
-            message.To = AppOptions.Current.TestEmailAddress;
+            message.To = _emailOptions.Value.TestEmailAddress;
         }
     }
 }

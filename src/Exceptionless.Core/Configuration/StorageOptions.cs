@@ -1,0 +1,24 @@
+﻿using System;
+using Exceptionless.Core.Extensions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+
+namespace Exceptionless.Core.Configuration {
+    public class StorageOptions {
+        public string ConnectionString { get; internal set; }
+    }
+
+    public class ConfigureStorageOptions : IConfigureOptions<StorageOptions> {
+        private readonly IConfiguration _configuration;
+        private readonly AppOptions _appOptions;
+
+        public ConfigureStorageOptions(IConfiguration configuration, AppOptions appOptions) {
+            _configuration = configuration;
+            _appOptions = appOptions;
+        }
+
+        public void Configure(StorageOptions options) {
+            options.ConnectionString = _configuration.GetConnectionString("Storage");
+        }
+    }
+}
