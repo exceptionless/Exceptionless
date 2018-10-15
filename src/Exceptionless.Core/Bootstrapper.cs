@@ -46,6 +46,7 @@ using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -202,7 +203,8 @@ namespace Exceptionless.Core {
             if (!logger.IsEnabled(LogLevel.Warning))
                 return;
 
-            if (!appOptions.EnableMetricsReporting)
+            var metricsOptions = serviceProvider.GetRequiredService<IOptions<MetricOptions>>();
+            if (!metricsOptions.Value.EnableMetricsReporting)
                 logger.LogWarning("Metrics reporting is NOT enabled on {MachineName}.", Environment.MachineName);
 
             //if (String.IsNullOrEmpty(appOptions.RedisConnectionString))
@@ -230,7 +232,8 @@ namespace Exceptionless.Core {
             if (appOptions.EventSubmissionDisabled)
                 logger.LogWarning("Event Submission is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (!appOptions.EnableAccountCreation)
+            var authOptions = serviceProvider.GetRequiredService<IOptions<AuthOptions>>();
+            if (!authOptions.Value.EnableAccountCreation)
                 logger.LogWarning("Account Creation is NOT enabled on {MachineName}", Environment.MachineName);
         }
 

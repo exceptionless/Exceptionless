@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
@@ -11,6 +12,7 @@ using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Stripe;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
@@ -22,9 +24,10 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly IWebHookRepository _webHookRepository;
+        private readonly IOptions<StripeOptions> _stripeOptions;
         private readonly ILockProvider _lockProvider;
 
-        public RemoveOrganizationWorkItemHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public RemoveOrganizationWorkItemHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IOptions<StripeOptions> stripeOptions, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;
@@ -32,6 +35,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             _tokenRepository = tokenRepository;
             _userRepository = userRepository;
             _webHookRepository = webHookRepository;
+            _stripeOptions = stripeOptions;
             _lockProvider = new CacheLockProvider(cacheClient, messageBus);
         }
 
@@ -56,7 +60,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
                     Log.LogInformation("Canceling stripe subscription for the organization {OrganizationName} with Id: {organization}.", organization.Name, organization.Id);
 
-                    var subscriptionService = new StripeSubscriptionService(AppOptions.Current.StripeApiKey);
+                    var subscriptionService = new StripeSubscriptionService(_stripeOptions.Value.StripeApiKey);
                     var subscriptions = (await subscriptionService.ListAsync(new StripeSubscriptionListOptions { CustomerId = organization.StripeCustomerId }).AnyContext()).Where(s => !s.CanceledAt.HasValue);
                     foreach (var subscription in subscriptions)
                         await subscriptionService.CancelAsync(subscription.Id, new StripeSubscriptionCancelOptions()).AnyContext();
