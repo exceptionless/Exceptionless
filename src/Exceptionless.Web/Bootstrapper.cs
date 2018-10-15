@@ -31,14 +31,7 @@ namespace Exceptionless.Web {
             container.AddTransient<Profile, ApiMappings>();
 
             Core.Bootstrapper.RegisterServices(container);
-            bool includeInsulation = !String.IsNullOrEmpty(AppOptions.Current.RedisConnectionString) ||
-                !String.IsNullOrEmpty(AppOptions.Current.AzureStorageConnectionString) ||
-                !String.IsNullOrEmpty(AppOptions.Current.AzureStorageQueueConnectionString) ||
-                !String.IsNullOrEmpty(AppOptions.Current.AliyunStorageConnectionString) ||
-                !String.IsNullOrEmpty(AppOptions.Current.MinioStorageConnectionString) ||
-                AppOptions.Current.EnableMetricsReporting;
-            if (includeInsulation)
-                Insulation.Bootstrapper.RegisterServices(container, AppOptions.Current.RunJobsInProcess);
+            Insulation.Bootstrapper.RegisterServices(container, AppOptions.Current.RunJobsInProcess);
 
             if (AppOptions.Current.RunJobsInProcess)
                 container.AddSingleton<IHostedService, JobsHostedService>();

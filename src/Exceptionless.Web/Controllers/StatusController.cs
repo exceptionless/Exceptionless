@@ -58,11 +58,11 @@ namespace Exceptionless.Web.Controllers {
             if (!_lastHealthCheckResult.IsHealthy)
                 return StatusCodeWithMessage(StatusCodes.Status503ServiceUnavailable, _lastHealthCheckResult.Message, _lastHealthCheckResult.Message);
 
-            if (AppOptions.Current.HasAppScope) {
+            if (AppOptions.Current.HasScope) {
                 return Ok(new {
                     Message = "All Systems Check",
                     AppOptions.Current.InformationalVersion,
-                    AppOptions.Current.AppScope,
+                    AppScope = AppOptions.Current.Scope,
                     AppMode = AppOptions.Current.AppMode.ToString(),
                     Environment.MachineName
                 });

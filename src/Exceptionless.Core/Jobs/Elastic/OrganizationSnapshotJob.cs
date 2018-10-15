@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
     [Job(Description = "Takes an Elasticsearch organizations index snapshot ", IsContinuous = false)]
     public class OrganizationSnapshotJob : SnapshotJob {
         public OrganizationSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(configuration.Client, lockProvider, loggerFactory) {
-            Repository = AppOptions.Current.AppScopePrefix + "ex_organizations";
+            Repository = AppOptions.Current.ScopePrefix + "ex_organizations";
             IncludedIndexes.Add("organizations*");
         }
 
