@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
     [Job(Description = "Takes an Elasticsearch events index snapshot ", IsContinuous = false)]
     public class EventSnapshotJob : SnapshotJob {
         public EventSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(configuration.Client, lockProvider, loggerFactory) {
-            Repository = AppOptions.Current.AppScopePrefix + "ex_events";
+            Repository = AppOptions.Current.ScopePrefix + "ex_events";
             IncludedIndexes.Add("events*");
         }
 

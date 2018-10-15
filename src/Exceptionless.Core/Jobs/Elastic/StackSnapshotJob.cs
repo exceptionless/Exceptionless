@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
     public class StackSnapshotJob : SnapshotJob {
         public StackSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(configuration.Client, lockProvider, loggerFactory) {
-            Repository = AppOptions.Current.AppScopePrefix + "ex_stacks";
+            Repository = AppOptions.Current.ScopePrefix + "ex_stacks";
             IncludedIndexes.Add("stacks*");
         }
 

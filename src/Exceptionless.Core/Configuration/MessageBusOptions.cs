@@ -6,20 +6,22 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Configuration {
     public class MessageBusOptions {
         public string ConnectionString { get; internal set; }
+        public string Provider { get; internal set; }
+        public Foundatio.Utility.DataDictionary Data { get; internal set; }
     }
 
     public class ConfigureMessageBusOptions : IConfigureOptions<MessageBusOptions> {
         private readonly IConfiguration _configuration;
-        private readonly AppOptions _appOptions;
 
-        public ConfigureMessageBusOptions(IConfiguration configuration, AppOptions appOptions) {
+        public ConfigureMessageBusOptions(IConfiguration configuration) {
             _configuration = configuration;
-            _appOptions = appOptions;
         }
 
         public void Configure(MessageBusOptions options) {
-            options.ConnectionString = _configuration.GetConnectionString("MessageBus");
-
+            string cs = _configuration.GetConnectionString("messagebus");
+            options.Data = cs.ParseConnectionString();
+            options.Provider = options.Data.GetString(nameof(options.Provider).ToLowerInvariant());
+            options.ConnectionString = options.Data.GetString(nameof(options.ConnectionString).ToLowerInvariant());
         }
     }
 }

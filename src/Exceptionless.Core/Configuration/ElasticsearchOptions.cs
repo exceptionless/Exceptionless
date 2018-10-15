@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Configuration {
         }
 
         public void Configure(ElasticsearchOptions options) {
-            string connectionString = _configuration.GetConnectionString("Elasticsearch") ?? "http://localhost:9200";
+            string connectionString = _configuration.GetConnectionString("elasticsearch") ?? "http://localhost:9200";
             var pairs = connectionString.ParseConnectionString();
 
             options.ServerUrl = pairs.GetString("server", pairs.GetString(String.Empty));
