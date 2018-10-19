@@ -55,7 +55,18 @@ namespace Exceptionless.Core {
     public class Bootstrapper {
         public static void RegisterServices(IServiceCollection container) {
             container.AddSingleton<IServiceCollection>(container);
+            container.ConfigureOptions<ConfigureAppOptions>();
+            container.ConfigureOptions<ConfigureAuthOptions>();
+            container.ConfigureOptions<ConfigureCacheOptions>();
             container.ConfigureOptions<ConfigureElasticsearchOptions>();
+            container.ConfigureOptions<ConfigureEmailOptions>();
+            container.ConfigureOptions<ConfigureIntercomOptions>();
+            container.ConfigureOptions<ConfigureMessageBusOptions>();
+            container.ConfigureOptions<ConfigureMetricOptions>();
+            container.ConfigureOptions<ConfigureQueueOptions>();
+            container.ConfigureOptions<ConfigureSlackOptions>();
+            container.ConfigureOptions<ConfigureStorageOptions>();
+            container.ConfigureOptions<ConfigureStripeOptions>();
 
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
                 DateParseHandling = DateParseHandling.DateTimeOffset
@@ -204,7 +215,7 @@ namespace Exceptionless.Core {
                 return;
 
             var metricsOptions = serviceProvider.GetRequiredService<IOptions<MetricOptions>>();
-            if (!metricsOptions.Value.EnableMetricsReporting)
+            if (!String.IsNullOrEmpty(metricsOptions.Value.Provider))
                 logger.LogWarning("Metrics reporting is NOT enabled on {MachineName}.", Environment.MachineName);
 
             //if (String.IsNullOrEmpty(appOptions.RedisConnectionString))

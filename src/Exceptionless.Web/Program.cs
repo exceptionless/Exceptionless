@@ -5,10 +5,10 @@ using App.Metrics.AspNetCore;
 using App.Metrics.Formatters;
 using App.Metrics.Formatters.Prometheus;
 using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web.Utility;
 using Microsoft.ApplicationInsights.Extensibility;
-using Exceptionless.Insulation.Configuration.ConnectionStrings;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -50,8 +50,10 @@ namespace Exceptionless.Web {
             var services = new ServiceCollection();
             services.AddSingleton<IConfiguration>(config);
             services.ConfigureOptions<ConfigureAppOptions>();
+            services.ConfigureOptions<ConfigureMetricOptions>();
             var container = services.BuildServiceProvider();
             var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
+            var metricOptions = container.GetRequiredService<IOptions<MetricOptions>>().Value;
 
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
@@ -84,14 +86,14 @@ namespace Exceptionless.Web {
             if (useApplicationInsights)
                 builder.UseApplicationInsights(options.ApplicationInsightsKey);
 
-            if (options.EnableMetricsReporting)
-                ConfigureMetricsReporting(builder, options);
+            if (!String.IsNullOrEmpty(metricOptions.Provider))
+                ConfigureMetricsReporting(builder, metricOptions);
 
             return builder;
         }
 
-        private static void ConfigureMetricsReporting(IWebHostBuilder builder, AppOptions options) {
-            if (options.MetricsConnectionString is PrometheusConnectionString) {
+        private static void ConfigureMetricsReporting(IWebHostBuilder builder, MetricOptions options) {
+            if (String.Equals(options.Provider, "prometheus")) {
                 var metrics = AppMetrics.CreateDefaultBuilder()
                     .OutputMetrics.AsPrometheusPlainText()
                     .OutputMetrics.AsPrometheusProtobuf()
@@ -102,7 +104,7 @@ namespace Exceptionless.Web {
                         endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
                     };
                 });
-            } else if (!(options.MetricsConnectionString is StatsDConnectionString)) {
+            } else if (!String.Equals(options.Provider, "statsd")) {
                 builder.UseMetrics();
             }
         }
