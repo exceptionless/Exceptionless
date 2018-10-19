@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
@@ -13,17 +14,21 @@ using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Mail {
     public class MailerTests : TestWithServices {
         private readonly IMailer _mailer;
+        private IOptions<EmailOptions> _options;
 
         public MailerTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _mailer = GetService<IMailer>();
+            _options = GetService<IOptions<EmailOptions>>();
+            
             if (_mailer is NullMailer)
-                _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
+                _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), _options, GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
         }
 
         [Fact]
@@ -172,7 +177,7 @@ namespace Exceptionless.Tests.Mail {
 
             await _mailer.SendOrganizationInviteAsync(user, organization, new Invite {
                 DateAdded = SystemClock.UtcNow,
-                EmailAddress = AppOptions.Current.TestEmailAddress,
+                EmailAddress = _options.Value.TestEmailAddress,
                 Token = "1"
             });
 

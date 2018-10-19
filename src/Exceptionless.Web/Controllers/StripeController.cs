@@ -3,9 +3,11 @@ using System.IO;
 using System.Threading.Tasks;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Stripe;
 
 namespace Exceptionless.Web.Controllers {
@@ -14,10 +16,12 @@ namespace Exceptionless.Web.Controllers {
     [Authorize]
     public class StripeController : ExceptionlessApiController {
         private readonly StripeEventHandler _stripeEventHandler;
+        private readonly IOptions<StripeOptions> _stripeOptions;
         private readonly ILogger _logger;
 
-        public StripeController(StripeEventHandler stripeEventHandler, ILogger<StripeController> logger) {
+        public StripeController(StripeEventHandler stripeEventHandler, IOptions<StripeOptions> stripeOptions, ILogger<StripeController> logger) {
             _stripeEventHandler = stripeEventHandler;
+            _stripeOptions = stripeOptions;
             _logger = logger;
         }
 
@@ -33,7 +37,7 @@ namespace Exceptionless.Web.Controllers {
 
                 StripeEvent stripeEvent;
                 try {
-                    stripeEvent = StripeEventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], AppOptions.Current.StripeWebHookSigningSecret);
+                    stripeEvent = StripeEventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], _stripeOptions.Value.StripeWebHookSigningSecret);
                 } catch (Exception ex) {
                     _logger.LogError(ex, "Unable to parse incoming event with {Signature}: {Message}", Request.Headers["Stripe-Signature"], ex.Message);
                     return BadRequest();

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using App.Metrics;
 using App.Metrics.Infrastructure;
@@ -7,6 +7,7 @@ using App.Metrics.Reporting.Graphite;
 using App.Metrics.Reporting.Http;
 using App.Metrics.Reporting.InfluxDB;
 using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Mail;
@@ -14,7 +15,6 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
 using Exceptionless.Insulation.Mail;
-using Exceptionless.Insulation.Configuration.ConnectionStrings;
 using Exceptionless.Insulation.Redis;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -26,21 +26,25 @@ using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog.Sinks.Exceptionless;
 using StackExchange.Redis;
 
 namespace Exceptionless.Insulation {
     public class Bootstrapper {
         public static void RegisterServices(IServiceCollection container, bool runMaintenanceTasks) {
-            if (!String.IsNullOrEmpty(AppOptions.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(AppOptions.Current.ExceptionlessServerUrl)) {
+            var serviceProvider = container.BuildServiceProvider();
+            var appOptions = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
+            
+            if (!String.IsNullOrEmpty(appOptions.ExceptionlessApiKey) && !String.IsNullOrEmpty(appOptions.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
-                client.Configuration.ServerUrl = AppOptions.Current.ExceptionlessServerUrl;
-                client.Configuration.ApiKey = AppOptions.Current.ExceptionlessApiKey;
+                client.Configuration.ServerUrl = appOptions.ExceptionlessServerUrl;
+                client.Configuration.ApiKey = appOptions.ExceptionlessApiKey;
 
                 client.Configuration.SetDefaultMinLogLevel(Logging.LogLevel.Warn);
                 client.Configuration.UseLogger(new SelfLogLogger());
-                client.Configuration.SetVersion(AppOptions.Current.Version);
-                if (String.IsNullOrEmpty(AppOptions.Current.InternalProjectId))
+                client.Configuration.SetVersion(appOptions.Version);
+                if (String.IsNullOrEmpty(appOptions.InternalProjectId))
                     client.Configuration.Enabled = false;
 
                 client.Configuration.UseInMemoryStorage();
@@ -50,86 +54,55 @@ namespace Exceptionless.Insulation {
                 container.AddSingleton<ExceptionlessClient>(client);
             }
 
-            if (!String.IsNullOrEmpty(AppOptions.Current.GoogleGeocodingApiKey))
-                container.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(AppOptions.Current.GoogleGeocodingApiKey));
+            if (!String.IsNullOrEmpty(appOptions.GoogleGeocodingApiKey))
+                container.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(appOptions.GoogleGeocodingApiKey));
 
-            RegisterCache(container);
-            RegisterMessageBus(container);
-            RegisterMetric(container);
-            RegisterQueue(container);
-            RegisterStorage(container);
+            RegisterCache(container, serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value, appOptions);
+            RegisterMessageBus(container, serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>().Value, appOptions);
+            RegisterMetric(container, serviceProvider.GetRequiredService<IOptions<MetricOptions>>().Value);
+            RegisterQueue(container, serviceProvider.GetRequiredService<IOptions<QueueOptions>>().Value, runMaintenanceTasks);
+            RegisterStorage(container, serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value, appOptions);
 
-            if (AppOptions.Current.AppMode != AppMode.Development)
+            if (appOptions.AppMode != AppMode.Development)
                 container.ReplaceSingleton<IMailSender, MailKitMailSender>();
+        }
 
-            if (!String.IsNullOrEmpty(AppOptions.Current.RedisConnectionString)) {
-                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(AppOptions.Current.RedisConnectionString));
+        private static void RegisterCache(IServiceCollection container, CacheOptions options, AppOptions appOptions) {
+            if (String.Equals(options.Provider, "redis")) {
+                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.ConnectionString));
 
-                if (AppOptions.Current.HasScope)
-                    container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), AppOptions.Current.Scope));
+                if (appOptions.HasScope)
+                    container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), appOptions.Scope));
                 else
                     container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
 
                 container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
+            }
+        }
+
+        private static void RegisterMessageBus(IServiceCollection container, MessageBusOptions options, AppOptions appOptions) {
+            if (String.Equals(options.Provider, "redis")) {
+                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.ConnectionString));
+
                 container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
                     Subscriber = s.GetRequiredService<ConnectionMultiplexer>().GetSubscriber(),
-                    Topic = $"{AppOptions.Current.ScopePrefix}messages",
+                    Topic = $"{appOptions.ScopePrefix}messages",
                     Serializer = s.GetRequiredService<ISerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
             }
         }
 
-        private static IMetricsRoot BuildAppMetrics(IConnectionString connectionString) {
-            var metricsBuilder = AppMetrics.CreateDefaultBuilder();
-            switch (connectionString) {
-                case InfluxDbConnectionString influxConnectionString:
-                    metricsBuilder.Report.ToInfluxDb(new MetricsReportingInfluxDbOptions {
-                        InfluxDb = {
-                            BaseUri = new Uri(influxConnectionString.ServerUrl),
-                            UserName = influxConnectionString.UserName,
-                            Password = influxConnectionString.Password,
-                            Database = influxConnectionString.Database
-                        }
-                    });
-                    break;
-                case HttpConnectionString httpConnectionString:
-                    metricsBuilder.Report.OverHttp(new MetricsReportingHttpOptions {
-                        HttpSettings = {
-                            RequestUri = new Uri(httpConnectionString.ServerUrl),
-                            UserName = httpConnectionString.UserName,
-                            Password = httpConnectionString.Password
-                        }
-                    });
-                    break;
-                case GraphiteConnectionString graphiteConnectionString:
-                    metricsBuilder.Report.ToGraphite(new MetricsReportingGraphiteOptions {
-                        Graphite = {
-                            BaseUri = new Uri(graphiteConnectionString.ServerUrl)
-                        }
-                    });
-                    break;
-                default:
-                    return null;
-            }
-            return metricsBuilder.Build();
-        }
-
-        private static void RegisterCache(IServiceCollection container) { }
-
-        private static void RegisterMessageBus(IServiceCollection container) { }
-
-        private static void RegisterMetric(IServiceCollection container) {
-            var connectionString = AppOptions.Current.MetricsConnectionString;
-            if (connectionString is StatsDConnectionString statsdConnectionString) {
+        private static void RegisterMetric(IServiceCollection container, MetricOptions options) {
+            if (String.Equals(options.Provider, "statsd")) {
                 container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions {
-                    ServerName = statsdConnectionString.ServerName,
-                    Port = statsdConnectionString.ServerPort,
+                    ServerName = options.Data.GetString("server", "127.0.0.1"),
+                    Port = options.Data.GetValueOrDefault("port", 8125),
                     Prefix = "ex",
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
-            } else if (connectionString != null) {
-                var metrics = BuildAppMetrics(connectionString);
+            } else {
+                var metrics = BuildAppMetrics(options);
                 if (metrics != null) {
                     container.ReplaceSingleton(metrics.Clock);
                     container.ReplaceSingleton(metrics.Filter);
@@ -149,61 +122,94 @@ namespace Exceptionless.Insulation {
             }
         }
 
-        private static void RegisterQueue(IServiceCollection container) { }
-
-        private static void RegisterStorage(IServiceCollection container) {
-            if (!String.IsNullOrEmpty(AppOptions.Current.StorageFolder)) {
-                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions {
-                    Folder = AppOptions.Current.StorageFolder,
-                    Serializer = s.GetRequiredService<ITextSerializer>(),
-                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-                }));
+        private static IMetricsRoot BuildAppMetrics(MetricOptions options) {
+            var metricsBuilder = AppMetrics.CreateDefaultBuilder();
+            switch (options.Provider) {
+                case "influxdb":
+                    metricsBuilder.Report.ToInfluxDb(new MetricsReportingInfluxDbOptions {
+                        InfluxDb = {
+                            BaseUri = new Uri(options.Data.GetString("server")),
+                            UserName = options.Data.GetString("username"),
+                            Password = options.Data.GetString("password"),
+                            Database = options.Data.GetString("database", "exceptionless")
+                        }
+                    });
+                    break;
+                case "http":
+                    metricsBuilder.Report.OverHttp(new MetricsReportingHttpOptions {
+                        HttpSettings = {
+                            RequestUri = new Uri(options.Data.GetString("server")),
+                            UserName = options.Data.GetString("username"),
+                            Password = options.Data.GetString("password"),
+                        }
+                    });
+                    break;
+                case "graphite":
+                    metricsBuilder.Report.ToGraphite(new MetricsReportingGraphiteOptions {
+                        Graphite = {
+                            BaseUri = new Uri(options.Data.GetString("server"))
+                        }
+                    });
+                    break;
+                default:
+                    return null;
             }
-
-            if (!String.IsNullOrEmpty(AppOptions.Current.AzureStorageQueueConnectionString)) {
-                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventPost>(s, retries: 1));
-                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventUserDescription>(s));
-                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventNotificationWorkItem>(s));
-                container.ReplaceSingleton(s => CreateAzureStorageQueue<WebHookNotification>(s));
-                container.ReplaceSingleton(s => CreateAzureStorageQueue<MailMessage>(s));
-                container.ReplaceSingleton(s => CreateAzureStorageQueue<WorkItemData>(s, workItemTimeout: TimeSpan.FromHours(1)));
-            }
-            else if (!String.IsNullOrEmpty(AppOptions.Current.RedisConnectionString)) {
-                container.ReplaceSingleton(s => CreateRedisQueue<EventPost>(s, runMaintenanceTasks, retries: 1));
-                container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, runMaintenanceTasks));
-                container.ReplaceSingleton(s => CreateRedisQueue<EventNotificationWorkItem>(s, runMaintenanceTasks));
-                container.ReplaceSingleton(s => CreateRedisQueue<WebHookNotification>(s, runMaintenanceTasks));
-                container.ReplaceSingleton(s => CreateRedisQueue<MailMessage>(s, runMaintenanceTasks));
-                container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
-            }
-
-            if (!String.IsNullOrEmpty(AppOptions.Current.AzureStorageConnectionString)) {
-                container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions {
-                    ConnectionString = AppOptions.Current.AzureStorageConnectionString,
-                    ContainerName = $"{AppOptions.Current.ScopePrefix}ex-events",
-                    Serializer = s.GetRequiredService<ITextSerializer>(),
-                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-                }));
-            }
-            else if (!String.IsNullOrEmpty(AppOptions.Current.AliyunStorageConnectionString)) {
-                container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions {
-                    ConnectionString = AppOptions.Current.AliyunStorageConnectionString,
-                    Serializer = s.GetRequiredService<ITextSerializer>(),
-                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-                }));
-            } // else if (!String.IsNullOrEmpty(Settings.Current.MinioStorageConnectionString)) {
-            //    container.ReplaceSingleton<IFileStorage>(s => new MinioFileStorage(new MinioFileStorageOptions {
-            //        ConnectionString = Settings.Current.MinioStorageConnectionString,
-            //        Serializer = s.GetRequiredService<ITextSerializer>(),
-            //        LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-            //    }));
-            //}
+            
+            return metricsBuilder.Build();
         }
 
-        private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
+        private static void RegisterQueue(IServiceCollection container, QueueOptions options, bool runMaintenanceTasks) {
+            if (String.Equals(options.Provider, "redis")) {
+                container.ReplaceSingleton(s => CreateRedisQueue<EventPost>(s, options, runMaintenanceTasks, retries: 1));
+                container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, options, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<EventNotificationWorkItem>(s, options, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<WebHookNotification>(s, options, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<MailMessage>(s, options, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, options, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
+            } else if (String.Equals(options.Provider, "azurestorage")) {
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventPost>(s, options, retries: 1));
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventUserDescription>(s, options));
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventNotificationWorkItem>(s, options));
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<WebHookNotification>(s, options));
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<MailMessage>(s, options));
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<WorkItemData>(s, options, workItemTimeout: TimeSpan.FromHours(1)));
+            }
+        }
+
+        private static void RegisterStorage(IServiceCollection container, StorageOptions options, AppOptions appOptions) {
+            if (String.Equals(options.Provider, "folder")) {
+                string path = options.Data.GetString("path", "|DataDirectory|\\storage");
+                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions {
+                    Folder = PathHelper.ExpandPath(path),
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            } else if (String.Equals(options.Provider, "azurestorage")) {
+                container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions {
+                    ConnectionString = options.ConnectionString,
+                    ContainerName = $"{appOptions.ScopePrefix}ex-events",
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            } else if (String.Equals(options.Provider, "aliyun")) {
+                container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions {
+                    ConnectionString = options.ConnectionString,
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            } else if (String.Equals(options.Provider, "minio")) {
+                container.ReplaceSingleton<IFileStorage>(s => new MinioFileStorage(new MinioFileStorageOptions {
+                    ConnectionString = options.ConnectionString,
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            }
+        }
+
+        private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, QueueOptions options, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
             return new AzureStorageQueue<T>(new AzureStorageQueueOptions<T> {
-                ConnectionString = AppOptions.Current.AzureStorageQueueConnectionString,
-                Name = GetQueueName<T>().ToLowerInvariant(),
+                ConnectionString = options.ConnectionString,
+                Name = GetQueueName<T>(options).ToLowerInvariant(),
                 Retries = retries,
                 Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
                 WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
@@ -212,10 +218,10 @@ namespace Exceptionless.Insulation {
             });
         }
 
-        private static IQueue<T> CreateRedisQueue<T>(IServiceProvider container, bool runMaintenanceTasks, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
+        private static IQueue<T> CreateRedisQueue<T>(IServiceProvider container, QueueOptions options, bool runMaintenanceTasks, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
             return new RedisQueue<T>(new RedisQueueOptions<T> {
                 ConnectionMultiplexer = container.GetRequiredService<ConnectionMultiplexer>(),
-                Name = GetQueueName<T>(),
+                Name = GetQueueName<T>(options),
                 Retries = retries,
                 Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
                 WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
@@ -233,8 +239,8 @@ namespace Exceptionless.Insulation {
             });
         }
 
-        private static string GetQueueName<T>() {
-            return String.Concat(AppOptions.Current.QueueScopePrefix, typeof(T).Name);
+        private static string GetQueueName<T>(QueueOptions options) {
+            return String.Concat(options.ScopePrefix, typeof(T).Name);
         }
     }
 }
