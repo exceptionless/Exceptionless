@@ -1,5 +1,4 @@
 ﻿using System;
-using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Stripe;
@@ -15,11 +14,9 @@ namespace Exceptionless.Core.Configuration {
 
     public class ConfigureStripeOptions : IConfigureOptions<StripeOptions> {
         private readonly IConfiguration _configuration;
-        private readonly AppOptions _appOptions;
 
-        public ConfigureStripeOptions(IConfiguration configuration, AppOptions appOptions) {
+        public ConfigureStripeOptions(IConfiguration configuration) {
             _configuration = configuration;
-            _appOptions = appOptions;
         }
 
         public void Configure(StripeOptions options) {

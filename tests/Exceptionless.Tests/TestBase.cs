@@ -36,6 +36,13 @@ namespace Exceptionless.Tests {
         }
 
         protected virtual void Configure(IServiceCollection services) {
+            var config = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+            services.AddSingleton<IConfiguration>(config);
+            
             _container = services.BuildServiceProvider();
             _initialized = true;
         }

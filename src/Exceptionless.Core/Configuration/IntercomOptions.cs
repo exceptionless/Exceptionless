@@ -1,5 +1,4 @@
 ﻿using System;
-using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 

@@ -15,9 +15,9 @@ namespace Exceptionless.Core.Configuration {
 
     public class ConfigureQueueOptions : IConfigureOptions<QueueOptions> {
         private readonly IConfiguration _configuration;
-        private readonly AppOptions _appOptions;
+        private readonly IOptions<AppOptions> _appOptions;
 
-        public ConfigureQueueOptions(IConfiguration configuration, AppOptions appOptions) {
+        public ConfigureQueueOptions(IConfiguration configuration, IOptions<AppOptions> appOptions) {
             _configuration = configuration;
             _appOptions = appOptions;
         }
@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Configuration {
             options.ConnectionString = options.Data.GetString(nameof(options.ConnectionString).ToLowerInvariant());
 
             options.Scope = options.Data.GetString(nameof(options.Scope).ToLowerInvariant(), String.Empty);
-            options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : _appOptions.ScopePrefix;
+            options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : _appOptions.Value.ScopePrefix;
         }
     }
 }

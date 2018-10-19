@@ -16,6 +16,7 @@ using Foundatio.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Stripe;
 
 namespace Exceptionless.Web {
@@ -31,9 +32,12 @@ namespace Exceptionless.Web {
             container.AddTransient<Profile, ApiMappings>();
 
             Core.Bootstrapper.RegisterServices(container);
-            Insulation.Bootstrapper.RegisterServices(container, AppOptions.Current.RunJobsInProcess);
+            
+            var serviceProvider = container.BuildServiceProvider();
+            var options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
+            Insulation.Bootstrapper.RegisterServices(container, options.RunJobsInProcess);
 
-            if (AppOptions.Current.RunJobsInProcess)
+            if (options.RunJobsInProcess)
                 container.AddSingleton<IHostedService, JobsHostedService>();
 
             var logger = loggerFactory.CreateLogger<Startup>();

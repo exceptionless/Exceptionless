@@ -43,15 +43,15 @@ namespace Exceptionless.Core.Configuration {
 
     public class ConfigureEmailOptions : IConfigureOptions<EmailOptions> {
         private readonly IConfiguration _configuration;
-        private readonly AppOptions _appOptions;
+        private readonly IOptions<AppOptions> _appOptions;
 
-        public ConfigureEmailOptions(IConfiguration configuration, AppOptions appOptions) {
+        public ConfigureEmailOptions(IConfiguration configuration, IOptions<AppOptions> appOptions) {
             _configuration = configuration;
             _appOptions = appOptions;
         }
 
         public void Configure(EmailOptions options) {
-            options.EnableDailySummary = _configuration.GetValue(nameof(options.EnableDailySummary), _appOptions.AppMode == AppMode.Production);
+            options.EnableDailySummary = _configuration.GetValue(nameof(options.EnableDailySummary), _appOptions.Value.AppMode == AppMode.Production);
             options.AllowedOutboundAddresses = _configuration.GetValueList(nameof(options.AllowedOutboundAddresses), "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
             options.TestEmailAddress = _configuration.GetValue(nameof(options.TestEmailAddress), "noreply@exceptionless.io");
             options.SmtpFrom = _configuration.GetValue(nameof(options.SmtpFrom), "Exceptionless <noreply@exceptionless.io>");

@@ -22,6 +22,7 @@ using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web {
     public class Startup {
@@ -105,7 +106,7 @@ namespace Exceptionless.Web {
             });
 
             var serviceProvider = services.BuildServiceProvider();
-            var settings = serviceProvider.GetRequiredService<AppOptions>();
+            var settings = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
             Bootstrapper.RegisterServices(services, LoggerFactory);
 
             services.AddSingleton(new ThrottlingOptions {
@@ -115,7 +116,7 @@ namespace Exceptionless.Web {
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
-            var settings = app.ApplicationServices.GetRequiredService<AppOptions>();
+            var settings = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, settings, LoggerFactory);
 
             if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey) && !String.IsNullOrEmpty(settings.ExceptionlessServerUrl))
