@@ -1,5 +1,4 @@
 ﻿using System;
-using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -14,11 +13,9 @@ namespace Exceptionless.Core.Configuration {
 
     public class ConfigureSlackOptions : IConfigureOptions<SlackOptions> {
         private readonly IConfiguration _configuration;
-        private readonly AppOptions _appOptions;
 
-        public ConfigureSlackOptions(IConfiguration configuration, AppOptions appOptions) {
+        public ConfigureSlackOptions(IConfiguration configuration) {
             _configuration = configuration;
-            _appOptions = appOptions;
         }
 
         public void Configure(SlackOptions options) {

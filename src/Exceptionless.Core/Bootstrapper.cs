@@ -93,10 +93,13 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<ExceptionlessElasticConfiguration>();
             container.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
-            if (!AppOptions.Current.DisableIndexConfiguration)
+            
+            var serviceProvider = container.BuildServiceProvider();
+            var options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
+            if (!options.DisableIndexConfiguration)
                 container.AddStartupAction<ExceptionlessElasticConfiguration>();
 
-            container.AddStartupAction(CreateSampleDataAsync);
+            container.AddStartupAction(a => CreateSampleDataAsync(a, options));
 
             container.AddSingleton<IQueueBehavior<EventPost>>(s => new MetricsQueueBehavior<EventPost>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<EventUserDescription>>(s => new MetricsQueueBehavior<EventUserDescription>(s.GetRequiredService<IMetricsClient>()));
@@ -248,9 +251,8 @@ namespace Exceptionless.Core {
                 logger.LogWarning("Account Creation is NOT enabled on {MachineName}", Environment.MachineName);
         }
 
-        private static async Task CreateSampleDataAsync(IServiceProvider container) {
-            if (AppOptions.Current.AppMode != AppMode.Development
-                || AppOptions.Current.DisableIndexConfiguration)
+        private static async Task CreateSampleDataAsync(IServiceProvider container, AppOptions options) {
+            if (options.AppMode != AppMode.Development || options.DisableIndexConfiguration)
                 return;
 
             var userRepository = container.GetRequiredService<IUserRepository>();
@@ -263,7 +265,9 @@ namespace Exceptionless.Core {
 
         public static void RunJobs(IServiceProvider container, ILoggerFactory loggerFactory, CancellationToken token) {
             var logger = loggerFactory.CreateLogger("AppBuilder");
-            if (!AppOptions.Current.RunJobsInProcess) {
+            
+            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
+            if (!options.RunJobsInProcess) {
                 logger.LogInformation("Jobs running out of process.");
                 return;
             }

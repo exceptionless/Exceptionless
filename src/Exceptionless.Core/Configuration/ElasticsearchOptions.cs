@@ -14,29 +14,29 @@ namespace Exceptionless.Core.Configuration {
 
     public class ConfigureElasticsearchOptions : IConfigureOptions<ElasticsearchOptions> {
         private readonly IConfiguration _configuration;
-        private readonly AppOptions _appOptions;
+        private readonly IOptions<AppOptions> _appOptions;
 
-        public ConfigureElasticsearchOptions(IConfiguration configuration, AppOptions appOptions) {
+        public ConfigureElasticsearchOptions(IConfiguration configuration, IOptions<AppOptions> appOptions) {
             _configuration = configuration;
             _appOptions = appOptions;
         }
 
         public void Configure(ElasticsearchOptions options) {
-            string connectionString = _configuration.GetConnectionString("elasticsearch") ?? "http://localhost:9200";
+            string connectionString = _configuration.GetConnectionString("elasticsearch");
             var pairs = connectionString.ParseConnectionString();
 
-            options.ServerUrl = pairs.GetString("server", pairs.GetString(String.Empty));
+            options.ServerUrl = pairs.GetString("server", "http://localhost:9200");
 
             int shards = pairs.GetValueOrDefault<int>("shards", 1);
             options.NumberOfShards = shards > 0 ? shards : 1;
 
-            int replicas = pairs.GetValueOrDefault<int>("replicas");
-            options.NumberOfReplicas = replicas >= 0 ? replicas : _appOptions.AppMode == AppMode.Production ? 1 : 0;
+            int replicas = pairs.GetValueOrDefault<int>("replicas", _appOptions.Value.AppMode == AppMode.Production ? 1 : 0);
+            options.NumberOfReplicas = replicas > 0 ? replicas : 0;
 
-            int fieldsLimit = pairs.GetValueOrDefault("field-limit", 1);
+            int fieldsLimit = pairs.GetValueOrDefault("field-limit", 1500);
             options.FieldsLimit = fieldsLimit > 0 ? fieldsLimit : 1500;
 
-            options.EnableMapperSizePlugin = pairs.GetValueOrDefault("enable-size-plugin", _appOptions.AppMode != AppMode.Development);
+            options.EnableMapperSizePlugin = pairs.GetValueOrDefault("enable-size-plugin", _appOptions.Value.AppMode != AppMode.Development);
         }
     }
 }

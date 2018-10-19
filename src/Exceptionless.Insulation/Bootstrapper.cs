@@ -103,22 +103,23 @@ namespace Exceptionless.Insulation {
                 }));
             } else {
                 var metrics = BuildAppMetrics(options);
-                if (metrics != null) {
-                    container.ReplaceSingleton(metrics.Clock);
-                    container.ReplaceSingleton(metrics.Filter);
-                    container.ReplaceSingleton(metrics.DefaultOutputMetricsFormatter);
-                    container.ReplaceSingleton(metrics.OutputMetricsFormatters);
-                    container.ReplaceSingleton(metrics.DefaultOutputEnvFormatter);
-                    container.ReplaceSingleton(metrics.OutputEnvFormatters);
-                    container.TryAddSingleton<EnvironmentInfoProvider>();
-                    container.ReplaceSingleton<IMetrics>(metrics);
-                    container.ReplaceSingleton(metrics);
-                    container.ReplaceSingleton(metrics.Options);
-                    container.ReplaceSingleton(metrics.Reporters);
-                    container.ReplaceSingleton(metrics.ReportRunner);
-                    container.TryAddSingleton<AppMetricsMarkerService, AppMetricsMarkerService>();
-                    container.ReplaceSingleton<IMetricsClient, AppMetricsClient>();
-                }
+                if (metrics == null)
+                    return;
+
+                container.ReplaceSingleton(metrics.Clock);
+                container.ReplaceSingleton(metrics.Filter);
+                container.ReplaceSingleton(metrics.DefaultOutputMetricsFormatter);
+                container.ReplaceSingleton(metrics.OutputMetricsFormatters);
+                container.ReplaceSingleton(metrics.DefaultOutputEnvFormatter);
+                container.ReplaceSingleton(metrics.OutputEnvFormatters);
+                container.TryAddSingleton<EnvironmentInfoProvider>();
+                container.ReplaceSingleton<IMetrics>(metrics);
+                container.ReplaceSingleton(metrics);
+                container.ReplaceSingleton(metrics.Options);
+                container.ReplaceSingleton(metrics.Reporters);
+                container.ReplaceSingleton(metrics.ReportRunner);
+                container.TryAddSingleton<AppMetricsMarkerService, AppMetricsMarkerService>();
+                container.ReplaceSingleton<IMetricsClient, AppMetricsClient>();
             }
         }
 

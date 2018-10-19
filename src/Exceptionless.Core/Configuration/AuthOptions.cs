@@ -1,5 +1,4 @@
 ﻿using System;
-using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -7,10 +6,6 @@ namespace Exceptionless.Core.Configuration {
     public class AuthOptions {
         public bool EnableAccountCreation { get; internal set; }
         public bool EnableActiveDirectoryAuth { get; internal set; }
-
-        public bool EnableIntercom => !String.IsNullOrEmpty(IntercomAppSecret);
-
-        public string IntercomAppSecret { get; internal set; }
 
         public string MicrosoftAppId { get; internal set; }
 
@@ -33,11 +28,9 @@ namespace Exceptionless.Core.Configuration {
 
     public class ConfigureAuthOptions : IConfigureOptions<AuthOptions> {
         private readonly IConfiguration _configuration;
-        private readonly AppOptions _appOptions;
 
-        public ConfigureAuthOptions(IConfiguration configuration, AppOptions appOptions) {
+        public ConfigureAuthOptions(IConfiguration configuration) {
             _configuration = configuration;
-            _appOptions = appOptions;
         }
 
         public void Configure(AuthOptions options) {
@@ -46,7 +39,6 @@ namespace Exceptionless.Core.Configuration {
             options.LdapConnectionString = _configuration.GetConnectionString("Ldap");
             options.EnableActiveDirectoryAuth = _configuration.GetValue(nameof(options.EnableActiveDirectoryAuth), options.LdapConnectionString != null);
 
-            options.IntercomAppSecret = _configuration.GetValue<string>(nameof(options.IntercomAppSecret));
             options.GoogleAppId = _configuration.GetValue<string>(nameof(options.GoogleAppId));
             options.GoogleAppSecret = _configuration.GetValue<string>(nameof(options.GoogleAppSecret));
             options.MicrosoftAppId = _configuration.GetValue<string>(nameof(options.MicrosoftAppId));
