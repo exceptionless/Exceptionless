@@ -53,8 +53,7 @@ using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Core {
     public class Bootstrapper {
-        public static void RegisterServices(IServiceCollection container) {
-            container.AddSingleton<IServiceCollection>(container);
+        public static void RegisterServices(IServiceCollection container, AppOptions options) {
             container.ConfigureOptions<ConfigureAppOptions>();
             container.ConfigureOptions<ConfigureAuthOptions>();
             container.ConfigureOptions<ConfigureCacheOptions>();
@@ -93,9 +92,6 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<ExceptionlessElasticConfiguration>();
             container.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
-            
-            var serviceProvider = container.BuildServiceProvider();
-            var options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
             if (!options.DisableIndexConfiguration)
                 container.AddStartupAction<ExceptionlessElasticConfiguration>();
 

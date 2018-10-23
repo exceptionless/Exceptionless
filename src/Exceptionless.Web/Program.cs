@@ -53,7 +53,6 @@ namespace Exceptionless.Web {
             services.ConfigureOptions<ConfigureMetricOptions>();
             var container = services.BuildServiceProvider();
             var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
-            var metricOptions = container.GetRequiredService<IOptions<MetricOptions>>().Value;
 
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
@@ -86,6 +85,7 @@ namespace Exceptionless.Web {
             if (useApplicationInsights)
                 builder.UseApplicationInsights(options.ApplicationInsightsKey);
 
+            var metricOptions = container.GetRequiredService<IOptions<MetricOptions>>().Value;
             if (!String.IsNullOrEmpty(metricOptions.Provider))
                 ConfigureMetricsReporting(builder, metricOptions);
 

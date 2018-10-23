@@ -21,28 +21,28 @@ using Stripe;
 
 namespace Exceptionless.Web {
     public class Bootstrapper {
-        public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory) {
-            container.AddSingleton<WebSocketConnectionManager>();
-            container.AddSingleton<MessageBusBroker>();
-            container.AddSingleton<MessageBusBrokerMiddleware>();
+        public static void RegisterServices(IServiceCollection services, ILoggerFactory loggerFactory) {
+            services.AddSingleton<WebSocketConnectionManager>();
+            services.AddSingleton<MessageBusBroker>();
+            services.AddSingleton<MessageBusBrokerMiddleware>();
 
-            container.AddSingleton<OverageMiddleware>();
-            container.AddSingleton<ThrottlingMiddleware>();
+            services.AddSingleton<OverageMiddleware>();
+            services.AddSingleton<ThrottlingMiddleware>();
 
-            container.AddTransient<Profile, ApiMappings>();
+            services.AddTransient<Profile, ApiMappings>();
 
-            Core.Bootstrapper.RegisterServices(container);
-            
-            var serviceProvider = container.BuildServiceProvider();
+            var serviceProvider = services.BuildServiceProvider();
             var options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
-            Insulation.Bootstrapper.RegisterServices(container, options.RunJobsInProcess);
+            
+            Core.Bootstrapper.RegisterServices(services, options);
+            Insulation.Bootstrapper.RegisterServices(serviceProvider, services, options, options.RunJobsInProcess);
 
             if (options.RunJobsInProcess)
-                container.AddSingleton<IHostedService, JobsHostedService>();
+                services.AddSingleton<IHostedService, JobsHostedService>();
 
             var logger = loggerFactory.CreateLogger<Startup>();
-            container.AddStartupAction<MessageBusBroker>();
-            container.AddStartupAction((sp, ct) => {
+            services.AddStartupAction<MessageBusBroker>();
+            services.AddStartupAction((sp, ct) => {
                 var subscriber = sp.GetRequiredService<IMessageSubscriber>();
                 return subscriber.SubscribeAsync<WorkItemStatus>(workItemStatus => {
                     if (logger.IsEnabled(LogLevel.Trace))
@@ -52,8 +52,8 @@ namespace Exceptionless.Web {
                 }, ct);
             });
 
-            container.AddSingleton<EnqueueOrganizationNotificationOnPlanOverage>();
-            container.AddStartupAction<EnqueueOrganizationNotificationOnPlanOverage>();
+            services.AddSingleton<EnqueueOrganizationNotificationOnPlanOverage>();
+            services.AddStartupAction<EnqueueOrganizationNotificationOnPlanOverage>();
         }
 
         public class ApiMappings : Profile {
