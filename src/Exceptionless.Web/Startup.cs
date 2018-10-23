@@ -105,13 +105,13 @@ namespace Exceptionless.Web {
                 c.IgnoreObsoleteActions();
             });
 
-            var serviceProvider = services.BuildServiceProvider();
-            var settings = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
             Bootstrapper.RegisterServices(services, LoggerFactory);
-
-            services.AddSingleton(new ThrottlingOptions {
-                MaxRequestsForUserIdentifierFunc = userIdentifier => settings.ApiThrottleLimit,
-                Period = TimeSpan.FromMinutes(15)
+            services.AddSingleton(s => {
+                var settings = s.GetRequiredService<IOptions<AppOptions>>().Value;
+                return new ThrottlingOptions {
+                    MaxRequestsForUserIdentifierFunc = userIdentifier => settings.ApiThrottleLimit,
+                    Period = TimeSpan.FromMinutes(15)
+                };
             });
         }
 

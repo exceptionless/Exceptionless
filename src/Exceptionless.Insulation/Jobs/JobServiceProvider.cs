@@ -33,11 +33,10 @@ namespace Exceptionless.Insulation.Jobs {
             services.AddSingleton<IConfiguration>(config);
             services.ConfigureOptions<ConfigureAppOptions>();
 
-            var container = services.BuildServiceProvider();
-            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
-
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
 
+            var container = services.BuildServiceProvider();
+            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
                 client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
@@ -58,10 +57,9 @@ namespace Exceptionless.Insulation.Jobs {
             Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, options.InformationalVersion, Environment.MachineName, options, currentDirectory);
 
             services.AddLogging(b => b.AddSerilog(Log.Logger));
-            Core.Bootstrapper.RegisterServices(services);
-            Bootstrapper.RegisterServices(services, true);
-
-            container = services.BuildServiceProvider();
+            Core.Bootstrapper.RegisterServices(services, options);
+            Bootstrapper.RegisterServices(container, services, options, true);
+            
             Core.Bootstrapper.LogConfiguration(container, options, container.GetRequiredService<ILoggerFactory>());
             if (options.EnableBootstrapStartupActions)
                 container.RunStartupActionsAsync().GetAwaiter().GetResult();

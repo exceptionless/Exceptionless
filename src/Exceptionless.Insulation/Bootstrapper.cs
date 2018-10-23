@@ -32,10 +32,7 @@ using StackExchange.Redis;
 
 namespace Exceptionless.Insulation {
     public class Bootstrapper {
-        public static void RegisterServices(IServiceCollection container, bool runMaintenanceTasks) {
-            var serviceProvider = container.BuildServiceProvider();
-            var appOptions = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
-            
+        public static void RegisterServices(IServiceProvider serviceProvider, IServiceCollection services, AppOptions appOptions, bool runMaintenanceTasks) {
             if (!String.IsNullOrEmpty(appOptions.ExceptionlessApiKey) && !String.IsNullOrEmpty(appOptions.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
                 client.Configuration.ServerUrl = appOptions.ExceptionlessServerUrl;
@@ -50,21 +47,21 @@ namespace Exceptionless.Insulation {
                 client.Configuration.UseInMemoryStorage();
                 client.Configuration.UseReferenceIds();
 
-                container.ReplaceSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
-                container.AddSingleton<ExceptionlessClient>(client);
+                services.ReplaceSingleton<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
+                services.AddSingleton<ExceptionlessClient>(client);
             }
 
             if (!String.IsNullOrEmpty(appOptions.GoogleGeocodingApiKey))
-                container.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(appOptions.GoogleGeocodingApiKey));
+                services.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(appOptions.GoogleGeocodingApiKey));
 
-            RegisterCache(container, serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value, appOptions);
-            RegisterMessageBus(container, serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>().Value, appOptions);
-            RegisterMetric(container, serviceProvider.GetRequiredService<IOptions<MetricOptions>>().Value);
-            RegisterQueue(container, serviceProvider.GetRequiredService<IOptions<QueueOptions>>().Value, runMaintenanceTasks);
-            RegisterStorage(container, serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value, appOptions);
+            RegisterCache(services, serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value, appOptions);
+            RegisterMessageBus(services, serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>().Value, appOptions);
+            RegisterMetric(services, serviceProvider.GetRequiredService<IOptions<MetricOptions>>().Value);
+            RegisterQueue(services, serviceProvider.GetRequiredService<IOptions<QueueOptions>>().Value, runMaintenanceTasks);
+            RegisterStorage(services, serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value, appOptions);
 
             if (appOptions.AppMode != AppMode.Development)
-                container.ReplaceSingleton<IMailSender, MailKitMailSender>();
+                services.ReplaceSingleton<IMailSender, MailKitMailSender>();
         }
 
         private static void RegisterCache(IServiceCollection container, CacheOptions options, AppOptions appOptions) {
