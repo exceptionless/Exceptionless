@@ -388,11 +388,13 @@ namespace Exceptionless.Web.Controllers {
                     var create = new StripeSubscriptionCreateOptions { CustomerId = organization.StripeCustomerId, Items = new List<StripeSubscriptionItemOption>() };
                     bool cardUpdated = false;
 
+                    var customerUpdateOptions = new StripeCustomerUpdateOptions { Description = organization.Name, Email = CurrentUser.EmailAddress };
                     if (!String.IsNullOrEmpty(stripeToken)) {
-                        update.Source = stripeToken;
-                        create.Source = stripeToken;
+                        customerUpdateOptions.SourceToken = stripeToken;
                         cardUpdated = true;
                     }
+
+                    await customerService.UpdateAsync(organization.StripeCustomerId, customerUpdateOptions);
 
                     var subscriptionList = await subscriptionService.ListAsync(new StripeSubscriptionListOptions { CustomerId = organization.StripeCustomerId });
                     var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
@@ -403,10 +405,6 @@ namespace Exceptionless.Web.Controllers {
                         create.Items.Add(new StripeSubscriptionItemOption { PlanId = planId });
                         await subscriptionService.CreateAsync(create);
                     }
-
-                    await customerService.UpdateAsync(organization.StripeCustomerId, new StripeCustomerUpdateOptions {
-                        Email = CurrentUser.EmailAddress
-                    });
 
                     if (cardUpdated)
                         organization.CardLast4 = last4;
