@@ -24,9 +24,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         internal const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
         internal const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
-        private readonly IOptions<ElasticsearchOptions> _elasticsearchOptions;
+        private readonly IOptionsSnapshot<ElasticsearchOptions> _elasticsearchOptions;
 
-        public EventIndex(ExceptionlessElasticConfiguration configuration, IOptions<AppOptions> appOptions) : base(configuration, appOptions.Value.ScopePrefix + "events", 1) {
+        public EventIndex(ExceptionlessElasticConfiguration configuration, IOptionsSnapshot<AppOptions> appOptions) : base(configuration, appOptions.Value.ScopePrefix + "events", 1) {
             _elasticsearchOptions = configuration.ElasticsearchOptions;
             MaxIndexAge = TimeSpan.FromDays(180);
 

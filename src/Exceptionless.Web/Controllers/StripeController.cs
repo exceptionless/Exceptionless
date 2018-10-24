@@ -16,10 +16,10 @@ namespace Exceptionless.Web.Controllers {
     [Authorize]
     public class StripeController : ExceptionlessApiController {
         private readonly StripeEventHandler _stripeEventHandler;
-        private readonly IOptions<StripeOptions> _stripeOptions;
+        private readonly IOptionsSnapshot<StripeOptions> _stripeOptions;
         private readonly ILogger _logger;
 
-        public StripeController(StripeEventHandler stripeEventHandler, IOptions<StripeOptions> stripeOptions, ILogger<StripeController> logger) {
+        public StripeController(StripeEventHandler stripeEventHandler, IOptionsSnapshot<StripeOptions> stripeOptions, ILogger<StripeController> logger) {
             _stripeEventHandler = stripeEventHandler;
             _stripeOptions = stripeOptions;
             _logger = logger;

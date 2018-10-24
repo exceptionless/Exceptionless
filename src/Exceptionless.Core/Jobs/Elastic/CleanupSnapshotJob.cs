@@ -5,19 +5,23 @@ using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Jobs.Elastic {
     [Job(Description = "Removes old Elasticsearch snapshots.", IsContinuous = false)]
     public class CleanupSnapshotJob : Foundatio.Repositories.Elasticsearch.Jobs.CleanupSnapshotJob {
-        public CleanupSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory)
+        private readonly IOptionsSnapshot<AppOptions> _options;
+
+        public CleanupSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory)
             : base(configuration.Client, lockProvider, loggerFactory) {
-            AddRepository(AppOptions.Current.ScopePrefix + "ex_organizations", TimeSpan.FromDays(7));
-            AddRepository(AppOptions.Current.ScopePrefix + "ex_stacks", TimeSpan.FromDays(7));
-            AddRepository(AppOptions.Current.ScopePrefix + "ex_events", TimeSpan.FromDays(7));
+            _options = options;
+            AddRepository(_options.Value.ScopePrefix + "ex_organizations", TimeSpan.FromDays(7));
+            AddRepository(_options.Value.ScopePrefix + "ex_stacks", TimeSpan.FromDays(7));
+            AddRepository(_options.Value.ScopePrefix + "ex_events", TimeSpan.FromDays(7));
         }
 
         public override Task<JobResult> RunAsync(CancellationToken cancellationToken = new CancellationToken()) {
-            if (!AppOptions.Current.EnableSnapshotJobs)
+            if (!_options.Value.EnableSnapshotJobs)
                 return Task.FromResult(JobResult.Success);
 
             return base.RunAsync(cancellationToken);

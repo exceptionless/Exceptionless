@@ -13,9 +13,9 @@ using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Insulation.Mail {
     public class MailKitMailSender : IMailSender {
-        private readonly IOptions<EmailOptions> _emailOptions;
+        private readonly IOptionsSnapshot<EmailOptions> _emailOptions;
 
-        public MailKitMailSender(IOptions<EmailOptions> emailOptions) {
+        public MailKitMailSender(IOptionsSnapshot<EmailOptions> emailOptions) {
             _emailOptions = emailOptions;
         }
 

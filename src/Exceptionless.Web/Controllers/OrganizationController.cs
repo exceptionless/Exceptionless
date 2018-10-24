@@ -48,10 +48,10 @@ namespace Exceptionless.Web.Controllers {
         private readonly BillingManager _billingManager;
         private readonly IMailer _mailer;
         private readonly IMessagePublisher _messagePublisher;
-        private readonly IOptions<AppOptions> _appOptions;
-        private readonly IOptions<StripeOptions> _stripeOptions;
+        private readonly IOptionsSnapshot<AppOptions> _appOptions;
+        private readonly IOptionsSnapshot<StripeOptions> _stripeOptions;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IEventRepository eventRepository, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, IMapper mapper, IQueryValidator validator, IOptions<AppOptions> appOptions, IOptions<StripeOptions> stripeOptions, ILoggerFactory loggerFactory) : base(organizationRepository, mapper, validator, loggerFactory) {
+        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IEventRepository eventRepository, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, IMapper mapper, IQueryValidator validator, IOptionsSnapshot<AppOptions> appOptions, IOptionsSnapshot<StripeOptions> stripeOptions, ILoggerFactory loggerFactory) : base(organizationRepository, mapper, validator, loggerFactory) {
             _cacheClient = cacheClient;
             _eventRepository = eventRepository;
             _userRepository = userRepository;

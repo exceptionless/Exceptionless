@@ -24,14 +24,14 @@ using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Tests.Controllers {
     public class AuthControllerTests : IntegrationTestsBase {
-        private readonly IOptions<AuthOptions> _authOptions;
+        private readonly IOptionsSnapshot<AuthOptions> _authOptions;
         private readonly IUserRepository _userRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly ITokenRepository _tokenRepository;
 
         public AuthControllerTests(ITestOutputHelper output) : base(output) {
-            _authOptions = GetService<IOptions<AuthOptions>>();
+            _authOptions = GetService<IOptionsSnapshot<AuthOptions>>();
             _authOptions.Value.EnableAccountCreation = true;
             _authOptions.Value.EnableActiveDirectoryAuth = false;
             

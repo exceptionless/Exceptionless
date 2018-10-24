@@ -74,7 +74,7 @@ namespace Exceptionless.Web.Security {
                 if(isLogInformationEnabled) logger.LogInformation("Unable to redirect to SSL for non-GET requests");
                 filterContext.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
             } else {
-                var optionsAccessor = filterContext.HttpContext.RequestServices.GetRequiredService<IOptions<MvcOptions>>();
+                var optionsAccessor = filterContext.HttpContext.RequestServices.GetRequiredService<IOptionsSnapshot<MvcOptions>>();
 
                 var request = filterContext.HttpContext.Request;
 

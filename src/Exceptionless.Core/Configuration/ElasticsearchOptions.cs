@@ -14,9 +14,9 @@ namespace Exceptionless.Core.Configuration {
 
     public class ConfigureElasticsearchOptions : IConfigureOptions<ElasticsearchOptions> {
         private readonly IConfiguration _configuration;
-        private readonly IOptions<AppOptions> _appOptions;
+        private readonly IOptionsSnapshot<AppOptions> _appOptions;
 
-        public ConfigureElasticsearchOptions(IConfiguration configuration, IOptions<AppOptions> appOptions) {
+        public ConfigureElasticsearchOptions(IConfiguration configuration, IOptionsSnapshot<AppOptions> appOptions) {
             _configuration = configuration;
             _appOptions = appOptions;
         }

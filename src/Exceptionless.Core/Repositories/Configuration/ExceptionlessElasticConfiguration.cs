@@ -26,7 +26,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
         private CancellationToken _shutdownToken;
 
-        public ExceptionlessElasticConfiguration(IOptions<ElasticsearchOptions> elasticsearchOptions, IOptions<AppOptions> appOptions, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
+        public ExceptionlessElasticConfiguration(IOptionsSnapshot<ElasticsearchOptions> elasticsearchOptions, IOptionsSnapshot<AppOptions> appOptions, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
             ElasticsearchOptions = elasticsearchOptions;
 
             _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", elasticsearchOptions.Value.NumberOfShards, elasticsearchOptions.Value.NumberOfReplicas);
@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             builder.Register(new StackQueryBuilder());
         }
 
-        public IOptions<ElasticsearchOptions> ElasticsearchOptions { get; }
+        public IOptionsSnapshot<ElasticsearchOptions> ElasticsearchOptions { get; }
         public StackIndex Stacks { get; }
         public EventIndex Events { get; }
         public OrganizationIndex Organizations { get; }

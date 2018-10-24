@@ -15,9 +15,9 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public class EventIndexType : DailyIndexType<PersistentEvent>, IHavePipelinedIndexType {
-        private readonly IOptions<ElasticsearchOptions> _elasticsearchOptions;
+        private readonly IOptionsSnapshot<ElasticsearchOptions> _elasticsearchOptions;
 
-        public EventIndexType(EventIndex index, IOptions<ElasticsearchOptions> elasticsearchOptions) : base(index, "events", document => document.Date.UtcDateTime) {
+        public EventIndexType(EventIndex index, IOptionsSnapshot<ElasticsearchOptions> elasticsearchOptions) : base(index, "events", document => document.Date.UtcDateTime) {
             _elasticsearchOptions = elasticsearchOptions;
         }
 

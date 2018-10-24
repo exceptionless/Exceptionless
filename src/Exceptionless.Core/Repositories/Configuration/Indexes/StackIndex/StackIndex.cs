@@ -6,9 +6,9 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class StackIndex : VersionedIndex {
-        private readonly IOptions<ElasticsearchOptions> _elasticsearchOptions;
+        private readonly IOptionsSnapshot<ElasticsearchOptions> _elasticsearchOptions;
 
-        public StackIndex(ExceptionlessElasticConfiguration configuration, IOptions<AppOptions> appOptions) : base(configuration, appOptions.Value.ScopePrefix + "stacks", 1) {
+        public StackIndex(ExceptionlessElasticConfiguration configuration, IOptionsSnapshot<AppOptions> appOptions) : base(configuration, appOptions.Value.ScopePrefix + "stacks", 1) {
             _elasticsearchOptions = configuration.ElasticsearchOptions;
             AddType(Stack = new StackIndexType(this));
         }

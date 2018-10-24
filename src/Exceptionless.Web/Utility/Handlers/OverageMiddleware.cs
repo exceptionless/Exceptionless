@@ -10,6 +10,7 @@ using Foundatio.Metrics;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web.Utility {
     public sealed class OverageMiddleware {
@@ -17,15 +18,17 @@ namespace Exceptionless.Web.Utility {
         private readonly IProjectRepository _projectRepository;
         private readonly UsageService _usageService;
         private readonly IMetricsClient _metricsClient;
+        private readonly IOptionsSnapshot<AppOptions> _appOptions;
         private readonly ILogger _logger;
         private readonly RequestDelegate _next;
 
-        public OverageMiddleware(RequestDelegate next, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, UsageService usageService, IMetricsClient metricsClient, ILogger<OverageMiddleware> logger) {
+        public OverageMiddleware(RequestDelegate next, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, UsageService usageService, IMetricsClient metricsClient, IOptionsSnapshot<AppOptions> appOptions, ILogger<OverageMiddleware> logger) {
             _next = next;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _usageService = usageService;
             _metricsClient = metricsClient;
+            _appOptions = appOptions;
             _logger = logger;
         }
 
@@ -51,7 +54,7 @@ namespace Exceptionless.Web.Utility {
                 return;
             }
 
-            if (AppOptions.Current.EventSubmissionDisabled) {
+            if (_appOptions.Value.EventSubmissionDisabled) {
                 context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
                 return;
             }
@@ -75,7 +78,7 @@ namespace Exceptionless.Web.Utility {
                 if (size > 0)
                     _metricsClient.Gauge(MetricNames.PostsSize, size);
 
-                if (size > AppOptions.Current.MaximumEventPostSize) {
+                if (size > _appOptions.Value.MaximumEventPostSize) {
                     if (_logger.IsEnabled(LogLevel.Warning)) {
                         using (_logger.BeginScope(new ExceptionlessState().Value(size).Tag(context.Request.Headers.TryGetAndReturn(Headers.ContentEncoding))))
                             _logger.LogWarning("Event submission discarded for being too large: {@value} bytes.", size);
