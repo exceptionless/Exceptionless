@@ -28,7 +28,7 @@ namespace Exceptionless.Tests.Mail {
             _options = GetService<IOptionsSnapshot<EmailOptions>>();
             
             if (_mailer is NullMailer)
-                _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), _options, GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
+                _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<IOptionsSnapshot<AppOptions>>(), _options, GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
         }
 
         [Fact]
