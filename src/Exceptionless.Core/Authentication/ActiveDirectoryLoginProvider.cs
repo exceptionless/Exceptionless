@@ -11,9 +11,9 @@ namespace Exceptionless.Core.Authentication {
         private const string AD_DISTINGUISHEDNAME = "distinguishedName";
         private const string AD_USERNAME = "sAMAccountName";
 
-        private readonly IOptions<AuthOptions> _authOptions;
+        private readonly IOptionsSnapshot<AuthOptions> _authOptions;
 
-        public ActiveDirectoryLoginProvider(IOptions<AuthOptions> authOptions) {
+        public ActiveDirectoryLoginProvider(IOptionsSnapshot<AuthOptions> authOptions) {
             _authOptions = authOptions;
         } 
 

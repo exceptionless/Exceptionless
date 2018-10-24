@@ -18,10 +18,10 @@ namespace Exceptionless.Core.Services {
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly FormattingPluginManager _pluginManager;
         private readonly ISerializer _serializer;
-        private readonly IOptions<SlackOptions> _slackOptions;
+        private readonly IOptionsSnapshot<SlackOptions> _slackOptions;
         private readonly ILogger _logger;
 
-        public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, IOptions<SlackOptions> slackOptions, ILoggerFactory loggerFactory = null) {
+        public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, IOptionsSnapshot<SlackOptions> slackOptions, ILoggerFactory loggerFactory = null) {
             _webHookNotificationQueue = webHookNotificationQueue;
             _pluginManager = pluginManager;
             _serializer = serializer;

@@ -32,7 +32,7 @@ namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/auth")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class AuthController : ExceptionlessApiController {
-        private readonly IOptions<AuthOptions> _authOptions;
+        private readonly IOptionsSnapshot<AuthOptions> _authOptions;
         private readonly IDomainLoginProvider _domainLoginProvider;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
@@ -43,7 +43,7 @@ namespace Exceptionless.Web.Controllers {
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOptions<AuthOptions> authOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider) {
+        public AuthController(IOptionsSnapshot<AuthOptions> authOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider) {
             _authOptions = authOptions;
             _domainLoginProvider = domainLoginProvider;
             _organizationRepository = organizationRepository;

@@ -27,16 +27,18 @@ namespace Exceptionless.Core.Jobs {
         private readonly SlackService _slackService;
         private readonly IMailer _mailer;
         private readonly IProjectRepository _projectRepository;
-        private readonly IOptions<EmailOptions> _emailOptions;
+        private readonly IOptionsSnapshot<AppOptions> _appOptions;
+        private readonly IOptionsSnapshot<EmailOptions> _emailOptions;
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly ICacheClient _cache;
         private readonly UserAgentParser _parser;
 
-        public EventNotificationsJob(IQueue<EventNotificationWorkItem> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, IOptions<EmailOptions> emailOptions, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventNotificationsJob(IQueue<EventNotificationWorkItem> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, IOptionsSnapshot<AppOptions> appOptions, IOptionsSnapshot<EmailOptions> emailOptions, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _slackService = slackService;
             _mailer = mailer;
             _projectRepository = projectRepository;
+            _appOptions = appOptions;
             _emailOptions = emailOptions;
             _userRepository = userRepository;
             _eventRepository = eventRepository;
@@ -50,7 +52,7 @@ namespace Exceptionless.Core.Jobs {
             if (ev == null || ev.IsDeleted)
                 return JobResult.SuccessWithMessage($"Could not load event: {wi.EventId}");
 
-            bool shouldLog = ev.ProjectId != AppOptions.Current.InternalProjectId;
+            bool shouldLog = ev.ProjectId != _appOptions.Value.InternalProjectId;
             int sent = 0;
             if (shouldLog) _logger.LogTrace("Process notification: project={project} event={id} stack={stack}", ev.ProjectId, ev.Id, ev.StackId);
 
@@ -160,7 +162,7 @@ namespace Exceptionless.Core.Jobs {
             if (shouldLog) _logger.LogTrace("Loaded user: email={EmailAddress}", user.EmailAddress);
 
             // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
-            if (AppOptions.Current.AppMode != AppMode.Production && !_emailOptions.Value.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
+            if (_appOptions.Value.AppMode != AppMode.Production && !_emailOptions.Value.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
                 if (shouldLog) _logger.LogInformation("Skipping because email is not on the outbound list and not in production mode.");
                 return false;
             }
