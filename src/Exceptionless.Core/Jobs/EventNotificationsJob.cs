@@ -27,8 +27,8 @@ namespace Exceptionless.Core.Jobs {
         private readonly SlackService _slackService;
         private readonly IMailer _mailer;
         private readonly IProjectRepository _projectRepository;
-        private readonly IOptionsSnapshot<AppOptions> _appOptions;
-        private readonly IOptionsSnapshot<EmailOptions> _emailOptions;
+        private readonly IOptions<AppOptions> _appOptions;
+        private readonly IOptions<EmailOptions> _emailOptions;
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly ICacheClient _cache;

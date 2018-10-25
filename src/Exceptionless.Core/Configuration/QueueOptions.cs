@@ -23,13 +23,13 @@ namespace Exceptionless.Core.Configuration {
         }
 
         public void Configure(QueueOptions options) {
+            options.Scope = _configuration.GetValue<string>(nameof(options.Scope), String.Empty);
+            options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
+
             string cs = _configuration.GetConnectionString("queue");
             options.Data = cs.ParseConnectionString();
             options.Provider = options.Data.GetString(nameof(options.Provider).ToLowerInvariant());
             options.ConnectionString = options.Data.GetString(nameof(options.ConnectionString).ToLowerInvariant());
-
-            options.Scope = options.Data.GetString(nameof(options.Scope).ToLowerInvariant(), String.Empty);
-            options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : _appOptions.Value.ScopePrefix;
         }
     }
 }

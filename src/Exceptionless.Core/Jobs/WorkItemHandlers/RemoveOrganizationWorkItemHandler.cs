@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly IWebHookRepository _webHookRepository;
-        private readonly IOptionsSnapshot<StripeOptions> _stripeOptions;
+        private readonly IOptions<StripeOptions> _stripeOptions;
         private readonly ILockProvider _lockProvider;
 
         public RemoveOrganizationWorkItemHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IOptionsSnapshot<StripeOptions> stripeOptions, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {

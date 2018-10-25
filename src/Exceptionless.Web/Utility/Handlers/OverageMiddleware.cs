@@ -18,7 +18,7 @@ namespace Exceptionless.Web.Utility {
         private readonly IProjectRepository _projectRepository;
         private readonly UsageService _usageService;
         private readonly IMetricsClient _metricsClient;
-        private readonly IOptionsSnapshot<AppOptions> _appOptions;
+        private readonly IOptions<AppOptions> _appOptions;
         private readonly ILogger _logger;
         private readonly RequestDelegate _next;
 

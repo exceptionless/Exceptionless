@@ -24,13 +24,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         internal const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
         internal const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
-        private readonly IOptionsSnapshot<ElasticsearchOptions> _elasticsearchOptions;
+        private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public EventIndex(ExceptionlessElasticConfiguration configuration, IOptionsSnapshot<AppOptions> appOptions) : base(configuration, appOptions.Value.ScopePrefix + "events", 1) {
-            _elasticsearchOptions = configuration.ElasticsearchOptions;
+        public EventIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "events", 1) {
+            _configuration = configuration;
             MaxIndexAge = TimeSpan.FromDays(180);
 
-            AddType(Event = new EventIndexType(this, _elasticsearchOptions));
+            AddType(Event = new EventIndexType(this));
             AddAlias($"{Name}-today", TimeSpan.FromDays(1));
             AddAlias($"{Name}-last3days", TimeSpan.FromDays(7));
             AddAlias($"{Name}-last7days", TimeSpan.FromDays(7));
@@ -43,9 +43,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
             return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(BuildAnalysis)
-                .NumberOfShards(_elasticsearchOptions.Value.NumberOfShards)
-                .NumberOfReplicas(_elasticsearchOptions.Value.NumberOfReplicas)
-                .Setting("index.mapping.total_fields.limit", _elasticsearchOptions.Value.FieldsLimit)
+                .NumberOfShards(_configuration.Options.NumberOfShards)
+                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
+                .Setting("index.mapping.total_fields.limit", _configuration.Options.FieldsLimit)
                 .Priority(1)));
         }
 

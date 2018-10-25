@@ -50,7 +50,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly ICacheClient _cache;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
-        private readonly IOptionsSnapshot<AppOptions> _appOptions;
+        private readonly IOptions<AppOptions> _appOptions;
 
         public EventController(IEventRepository repository,
             IOrganizationRepository organizationRepository,

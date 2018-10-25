@@ -32,7 +32,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly ITokenRepository _tokenRepository;
         private readonly ICacheClient _cache;
         private readonly IMailer _mailer;
-        private readonly IOptionsSnapshot<IntercomOptions> _intercomOptions;
+        private readonly IOptions<IntercomOptions> _intercomOptions;
 
         public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, IQueryValidator validator, IOptionsSnapshot<IntercomOptions> intercomOptions, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;

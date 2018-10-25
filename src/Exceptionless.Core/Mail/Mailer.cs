@@ -22,8 +22,8 @@ namespace Exceptionless.Core.Mail {
         private readonly ConcurrentDictionary<string, Func<object, string>> _cachedTemplates = new ConcurrentDictionary<string, Func<object, string>>();
         private readonly IQueue<MailMessage> _queue;
         private readonly FormattingPluginManager _pluginManager;
-        private readonly IOptionsSnapshot<AppOptions> _appOptions;
-        private readonly IOptionsSnapshot<EmailOptions> _emailOptions;
+        private readonly IOptions<AppOptions> _appOptions;
+        private readonly IOptions<EmailOptions> _emailOptions;
         private readonly IMetricsClient _metrics;
         private readonly ILogger _logger;
 

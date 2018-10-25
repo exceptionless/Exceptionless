@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Web.Utility {
     public sealed class RecordSessionHeartbeatMiddleware {
         private readonly ICacheClient _cache;
-        private readonly IOptionsSnapshot<AppOptions> _appOptions;
+        private readonly IOptions<AppOptions> _appOptions;
         private readonly ILogger _logger;
         private readonly RequestDelegate _next;
         private static readonly PathString _heartbeatPath = new PathString("/api/v2/events/session/heartbeat");

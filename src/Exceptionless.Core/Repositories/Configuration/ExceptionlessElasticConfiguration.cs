@@ -25,17 +25,21 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
         private CancellationToken _shutdownToken;
+        private readonly IOptions<ElasticsearchOptions> _options;
 
-        public ExceptionlessElasticConfiguration(IOptionsSnapshot<ElasticsearchOptions> elasticsearchOptions, IOptionsSnapshot<AppOptions> appOptions, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
-            ElasticsearchOptions = elasticsearchOptions;
+        public ExceptionlessElasticConfiguration(IOptionsSnapshot<ElasticsearchOptions> options, IOptionsSnapshot<AppOptions> appOptions, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
+            _options = options;
 
-            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", elasticsearchOptions.Value.NumberOfShards, elasticsearchOptions.Value.NumberOfReplicas);
-            AddIndex(Stacks = new StackIndex(this, appOptions));
-            AddIndex(Events = new EventIndex(this, appOptions));
-            AddIndex(Organizations = new OrganizationIndex(this, appOptions));
+            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", options.Value.NumberOfShards, options.Value.NumberOfReplicas);
+            AddIndex(Stacks = new StackIndex(this));
+            AddIndex(Events = new EventIndex(this));
+            AddIndex(Organizations = new OrganizationIndex(this));
         }
 
         public Task RunAsync(CancellationToken shutdownToken = default) {
+            if (_options.Value.DisableIndexConfiguration)
+                return Task.CompletedTask;
+
             _shutdownToken = shutdownToken;
             return ConfigureIndexesAsync();
         }
@@ -47,7 +51,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             builder.Register(new StackQueryBuilder());
         }
 
-        public IOptionsSnapshot<ElasticsearchOptions> ElasticsearchOptions { get; }
+        public ElasticsearchOptions Options => _options.Value;
         public StackIndex Stacks { get; }
         public EventIndex Events { get; }
         public OrganizationIndex Organizations { get; }
@@ -86,7 +90,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override IConnectionPool CreateConnectionPool() {
-            var serverUris = ElasticsearchOptions.Value?.ServerUrl.Split(',').Select(url => new Uri(url));
+            var serverUris = Options?.ServerUrl.Split(',').Select(url => new Uri(url));
             return new StaticConnectionPool(serverUris);
         }
 

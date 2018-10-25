@@ -29,7 +29,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHooksQueue;
         private readonly IQueue<EventUserDescription> _userDescriptionQueue;
-        private readonly IOptionsSnapshot<AppOptions> _appOptions;
+        private readonly IOptions<AppOptions> _appOptions;
 
         private static HealthCheckResult _lastHealthCheckResult;
         private static DateTime _nextHealthCheckTimeUtc = DateTime.MinValue;
@@ -70,16 +70,6 @@ namespace Exceptionless.Web.Controllers {
 
             if (!_lastHealthCheckResult.IsHealthy)
                 return StatusCodeWithMessage(StatusCodes.Status503ServiceUnavailable, _lastHealthCheckResult.Message, _lastHealthCheckResult.Message);
-
-            if (_appOptions.Value.HasScope) {
-                return Ok(new {
-                    Message = "All Systems Check",
-                    _appOptions.Value.InformationalVersion,
-                    AppScope = _appOptions.Value.Scope,
-                    AppMode = _appOptions.Value.AppMode.ToString(),
-                    Environment.MachineName
-                });
-            }
 
             return Ok(new {
                 Message = "All Systems Check",
