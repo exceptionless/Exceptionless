@@ -10,11 +10,17 @@ namespace Exceptionless.Core.Configuration {
         public int NumberOfReplicas { get; internal set; }
         public int FieldsLimit { get; internal set; } = 1500;
         public bool EnableMapperSizePlugin { get; internal set; }
+
+        public string Scope { get; internal set; }
+        public string ScopePrefix { get; internal set; }
+
+        public bool EnableSnapshotJobs { get; set; }
+        public bool DisableIndexConfiguration { get; set; }
     }
 
     public class ConfigureElasticsearchOptions : IConfigureOptions<ElasticsearchOptions> {
         private readonly IConfiguration _configuration;
-        private readonly IOptionsSnapshot<AppOptions> _appOptions;
+        private readonly IOptions<AppOptions> _appOptions;
 
         public ConfigureElasticsearchOptions(IConfiguration configuration, IOptionsSnapshot<AppOptions> appOptions) {
             _configuration = configuration;
@@ -22,6 +28,12 @@ namespace Exceptionless.Core.Configuration {
         }
 
         public void Configure(ElasticsearchOptions options) {
+            options.Scope = _configuration.GetValue<string>(nameof(options.Scope), String.Empty);
+            options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
+
+            options.DisableIndexConfiguration = _configuration.GetValue(nameof(options.DisableIndexConfiguration), false);
+            options.EnableSnapshotJobs = _configuration.GetValue(nameof(options.EnableSnapshotJobs), String.IsNullOrEmpty(options.ScopePrefix) && _appOptions.Value.AppMode == AppMode.Production);
+
             string connectionString = _configuration.GetConnectionString("elasticsearch");
             var pairs = connectionString.ParseConnectionString();
 

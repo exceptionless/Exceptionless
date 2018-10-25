@@ -25,7 +25,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Sends daily summary emails.", InitialDelay = "1m", Interval = "1h")]
     public class DailySummaryJob : JobWithLockBase {
-        private readonly IOptionsSnapshot<EmailOptions> _emailOptions;
+        private readonly IOptions<EmailOptions> _emailOptions;
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;

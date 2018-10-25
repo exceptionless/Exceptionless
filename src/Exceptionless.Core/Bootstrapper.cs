@@ -92,8 +92,7 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<ExceptionlessElasticConfiguration>();
             container.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
-            if (!options.DisableIndexConfiguration)
-                container.AddStartupAction<ExceptionlessElasticConfiguration>();
+            container.AddStartupAction<ExceptionlessElasticConfiguration>();
 
             container.AddStartupAction(a => CreateSampleDataAsync(a, options));
 
@@ -213,21 +212,31 @@ namespace Exceptionless.Core {
             if (!logger.IsEnabled(LogLevel.Warning))
                 return;
 
+            var cacheOptions = serviceProvider.GetRequiredService<IOptions<CacheOptions>>();
+            if (!String.IsNullOrEmpty(cacheOptions.Value.Provider))
+                logger.LogWarning("Distributed cache is NOT enabled on {MachineName}.", Environment.MachineName);
+            
+            var messageBusOptions = serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>();
+            if (!String.IsNullOrEmpty(messageBusOptions.Value.Provider))
+                logger.LogWarning("Distributed message bus is NOT enabled on {MachineName}.", Environment.MachineName);
+            
             var metricsOptions = serviceProvider.GetRequiredService<IOptions<MetricOptions>>();
             if (!String.IsNullOrEmpty(metricsOptions.Value.Provider))
                 logger.LogWarning("Metrics reporting is NOT enabled on {MachineName}.", Environment.MachineName);
 
-            //if (String.IsNullOrEmpty(appOptions.RedisConnectionString))
-            //    logger.LogWarning("Redis is NOT enabled on {MachineName}.", Environment.MachineName);
+            var queueOptions = serviceProvider.GetRequiredService<IOptions<QueueOptions>>();
+            if (!String.IsNullOrEmpty(queueOptions.Value.Provider))
+                logger.LogWarning("Distributed queue is NOT enabled on {MachineName}.", Environment.MachineName);
+            
+            var storageOptions = serviceProvider.GetRequiredService<IOptions<StorageOptions>>();
+            if (!String.IsNullOrEmpty(storageOptions.Value.Provider))
+                logger.LogWarning("Distributed storage is NOT enabled on {MachineName}.", Environment.MachineName);
 
             if (!appOptions.EnableWebSockets)
                 logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
 
             if (appOptions.AppMode == AppMode.Development)
                 logger.LogWarning("Emails will NOT be sent in Development mode on {MachineName}", Environment.MachineName);
-
-            //if (String.IsNullOrEmpty(appOptions.AzureStorageConnectionString))
-            //    logger.LogWarning("Azure Storage is NOT enabled on {MachineName}", Environment.MachineName);
 
             var fileStorage = serviceProvider.GetRequiredService<IFileStorage>();
             if (fileStorage is InMemoryFileStorage)
@@ -236,7 +245,8 @@ namespace Exceptionless.Core {
             if (!appOptions.EnableBootstrapStartupActions)
                 logger.LogWarning("Startup Actions is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (appOptions.DisableIndexConfiguration)
+            var elasticsearchOptions = serviceProvider.GetRequiredService<IOptions<ElasticsearchOptions>>();
+            if (elasticsearchOptions.Value.DisableIndexConfiguration)
                 logger.LogWarning("Index Configuration is NOT enabled on {MachineName}", Environment.MachineName);
 
             if (appOptions.EventSubmissionDisabled)
@@ -248,7 +258,8 @@ namespace Exceptionless.Core {
         }
 
         private static async Task CreateSampleDataAsync(IServiceProvider container, AppOptions options) {
-            if (options.AppMode != AppMode.Development || options.DisableIndexConfiguration)
+            var elasticsearchOptions = container.GetRequiredService<IOptions<ElasticsearchOptions>>().Value;
+            if (options.AppMode != AppMode.Development || elasticsearchOptions.DisableIndexConfiguration)
                 return;
 
             var userRepository = container.GetRequiredService<IUserRepository>();

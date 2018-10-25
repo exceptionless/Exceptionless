@@ -18,13 +18,15 @@ namespace Exceptionless.Core.Services {
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly FormattingPluginManager _pluginManager;
         private readonly ISerializer _serializer;
-        private readonly IOptionsSnapshot<SlackOptions> _slackOptions;
+        private readonly IOptions<AppOptions> _appOptions;
+        private readonly IOptions<SlackOptions> _slackOptions;
         private readonly ILogger _logger;
 
-        public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, IOptionsSnapshot<SlackOptions> slackOptions, ILoggerFactory loggerFactory = null) {
+        public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, IOptionsSnapshot<AppOptions> appOptions, IOptionsSnapshot<SlackOptions> slackOptions, ILoggerFactory loggerFactory = null) {
             _webHookNotificationQueue = webHookNotificationQueue;
             _pluginManager = pluginManager;
             _serializer = serializer;
+            _appOptions = appOptions;
             _slackOptions = slackOptions;
             _logger = loggerFactory.CreateLogger<SlackService>();
         }
@@ -37,7 +39,7 @@ namespace Exceptionless.Core.Services {
                 { "client_id", _slackOptions.Value.SlackAppId },
                 { "client_secret", _slackOptions.Value.SlackAppSecret },
                 { "code", code },
-                { "redirect_uri", new Uri(AppOptions.Current.BaseURL).GetLeftPart(UriPartial.Authority) }
+                { "redirect_uri", new Uri(_appOptions.Value.BaseURL).GetLeftPart(UriPartial.Authority) }
             };
 
             string url = $"https://slack.com/api/oauth.access?{data.ToQueryString()}";

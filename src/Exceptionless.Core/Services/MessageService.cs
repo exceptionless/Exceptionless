@@ -9,23 +9,26 @@ using Exceptionless.Core.Utility;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Services {
     public class MessageService : IDisposable, IStartupAction {
         private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IConnectionMapping _connectionMapping;
+        private readonly IOptions<AppOptions> _options;
         private readonly ILogger _logger;
 
-        public MessageService(IStackRepository stackRepository, IEventRepository eventRepository, IConnectionMapping connectionMapping, ILoggerFactory loggerFactory) {
+        public MessageService(IStackRepository stackRepository, IEventRepository eventRepository, IConnectionMapping connectionMapping, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory) {
             _stackRepository = stackRepository;
             _eventRepository = eventRepository;
             _connectionMapping = connectionMapping;
+            _options = options;
             _logger = loggerFactory?.CreateLogger<MessageService>() ?? NullLogger<MessageService>.Instance;
         }
 
         public Task RunAsync(CancellationToken shutdownToken = default) {
-            if (!AppOptions.Current.EnableRepositoryNotifications)
+            if (!_options.Value.EnableRepositoryNotifications)
                 return Task.CompletedTask;
 
             if (_stackRepository is StackRepository sr)

@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
-        private readonly IOptionsSnapshot<AppOptions> _appOptions;
+        private readonly IOptions<AppOptions> _appOptions;
 
         public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metrics, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, IOptionsSnapshot<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventPostService = eventPostService;
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Jobs {
             _jsonSerializerSettings = jsonSerializerSettings;
             
             _appOptions = appOptions;
-            _maximumEventPostFileSize = _appOptions.Value.MaximumEventPostSize + 1000;
+            _maximumEventPostFileSize = _appOptions.Value.MaximumEventPostSize + 1024;
             _maximumUncompressedEventPostSize = _appOptions.Value.MaximumEventPostSize * 10;
 
             AutoComplete = false;

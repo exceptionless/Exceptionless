@@ -34,18 +34,18 @@ namespace Exceptionless.Web.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IQueue<WorkItemData> _workItemQueue;
-        private readonly IOptionsSnapshot<AppOptions> _appOptions;
-        private readonly IOptionsSnapshot<AuthOptions> _authOptions;
-        private readonly IOptionsSnapshot<CacheOptions> _cacheOptions;
-        private readonly IOptionsSnapshot<ElasticsearchOptions> _elasticsearchOptions;
-        private readonly IOptionsSnapshot<EmailOptions> _emailOptions;
-        private readonly IOptionsSnapshot<IntercomOptions> _intercomOptions;
-        private readonly IOptionsSnapshot<MessageBusOptions> _messageBusOptions;
-        private readonly IOptionsSnapshot<MetricOptions> _metricOptions;
-        private readonly IOptionsSnapshot<QueueOptions> _queueOptions;
-        private readonly IOptionsSnapshot<SlackOptions> _slackOptions;
-        private readonly IOptionsSnapshot<StorageOptions> _storageOptions;
-        private readonly IOptionsSnapshot<StripeOptions> _stripeOptions;
+        private readonly IOptions<AppOptions> _appOptions;
+        private readonly IOptions<AuthOptions> _authOptions;
+        private readonly IOptions<CacheOptions> _cacheOptions;
+        private readonly IOptions<ElasticsearchOptions> _elasticsearchOptions;
+        private readonly IOptions<EmailOptions> _emailOptions;
+        private readonly IOptions<IntercomOptions> _intercomOptions;
+        private readonly IOptions<MessageBusOptions> _messageBusOptions;
+        private readonly IOptions<MetricOptions> _metricOptions;
+        private readonly IOptions<QueueOptions> _queueOptions;
+        private readonly IOptions<SlackOptions> _slackOptions;
+        private readonly IOptions<StorageOptions> _storageOptions;
+        private readonly IOptions<StripeOptions> _stripeOptions;
 
         public AdminController(
             ExceptionlessElasticConfiguration configuration, 
@@ -169,7 +169,7 @@ namespace Exceptionless.Web.Controllers {
         public async Task<IActionResult> RunJobAsync(string name) {
             switch (name.ToLowerInvariant()) {
                 case "indexes":
-                    if (!AppOptions.Current.DisableIndexConfiguration)
+                    if (!_elasticsearchOptions.Value.DisableIndexConfiguration)
                         await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);
                     break;
                 case "update-organization-plans":

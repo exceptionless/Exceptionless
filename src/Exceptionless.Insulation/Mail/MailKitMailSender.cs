@@ -13,7 +13,7 @@ using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Insulation.Mail {
     public class MailKitMailSender : IMailSender {
-        private readonly IOptionsSnapshot<EmailOptions> _emailOptions;
+        private readonly IOptions<EmailOptions> _emailOptions;
 
         public MailKitMailSender(IOptionsSnapshot<EmailOptions> emailOptions) {
             _emailOptions = emailOptions;

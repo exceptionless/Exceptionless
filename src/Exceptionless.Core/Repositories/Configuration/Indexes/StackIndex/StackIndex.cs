@@ -1,15 +1,13 @@
 using System;
-using Exceptionless.Core.Configuration;
 using Foundatio.Repositories.Elasticsearch.Configuration;
-using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class StackIndex : VersionedIndex {
-        private readonly IOptionsSnapshot<ElasticsearchOptions> _elasticsearchOptions;
+        private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public StackIndex(ExceptionlessElasticConfiguration configuration, IOptionsSnapshot<AppOptions> appOptions) : base(configuration, appOptions.Value.ScopePrefix + "stacks", 1) {
-            _elasticsearchOptions = configuration.ElasticsearchOptions;
+        public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 1) {
+            _configuration = configuration;
             AddType(Stack = new StackIndexType(this));
         }
 
@@ -17,8 +15,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
             return base.ConfigureIndex(idx.Settings(s => s
-                .NumberOfShards(_elasticsearchOptions.Value.NumberOfShards)
-                .NumberOfReplicas(_elasticsearchOptions.Value.NumberOfReplicas)
+                .NumberOfShards(_configuration.Options.NumberOfShards)
+                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
                 .Priority(5)));
         }
     }

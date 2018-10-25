@@ -29,12 +29,6 @@ namespace Exceptionless.Core {
         [JsonConverter(typeof(StringEnumConverter))]
         public AppMode AppMode { get; internal set; }
 
-        public string Scope { get; internal set; }
-
-        public bool HasScope => !String.IsNullOrEmpty(Scope);
-
-        public string ScopePrefix => HasScope ? Scope + "-" : String.Empty;
-
         public bool RunJobsInProcess { get; internal set; }
 
         public int JobsIterationLimit { get; set; }
@@ -58,10 +52,6 @@ namespace Exceptionless.Core {
         public int MaximumRetentionDays { get; internal set; }
 
         public string ApplicationInsightsKey { get; internal set; }
-
-        public bool EnableSnapshotJobs { get; set; }
-
-        public bool DisableIndexConfiguration { get; set; }
 
         public bool EnableBootstrapStartupActions { get; internal set; }
 
@@ -94,7 +84,6 @@ namespace Exceptionless.Core {
             options.ExceptionlessServerUrl = _configuration.GetValue<string>(nameof(options.ExceptionlessServerUrl));
 
             options.AppMode = _configuration.GetValue(nameof(options.AppMode), AppMode.Production);
-            options.Scope = _configuration.GetValue(nameof(options.Scope), String.Empty);
             options.RunJobsInProcess = _configuration.GetValue(nameof(options.RunJobsInProcess), options.AppMode == AppMode.Development);
             options.JobsIterationLimit = _configuration.GetValue(nameof(options.JobsIterationLimit), -1);
             options.BotThrottleLimit = _configuration.GetValue(nameof(options.BotThrottleLimit), 25).NormalizeValue();
@@ -115,9 +104,6 @@ namespace Exceptionless.Core {
             options.EnableRepositoryNotifications = _configuration.GetValue(nameof(options.EnableRepositoryNotifications), true);
             options.EnableWebSockets = _configuration.GetValue(nameof(options.EnableWebSockets), true);
             options.EnableBootstrapStartupActions = _configuration.GetValue(nameof(options.EnableBootstrapStartupActions), true);
-
-            options.DisableIndexConfiguration = _configuration.GetValue(nameof(options.DisableIndexConfiguration), false);
-            options.EnableSnapshotJobs = _configuration.GetValue(nameof(options.EnableSnapshotJobs), String.IsNullOrEmpty(options.ScopePrefix) && options.AppMode == AppMode.Production);
 
             try {
                 var versionInfo = FileVersionInfo.GetVersionInfo(typeof(AppOptions).Assembly.Location);

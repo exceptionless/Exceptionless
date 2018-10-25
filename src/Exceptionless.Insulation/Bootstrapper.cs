@@ -54,22 +54,22 @@ namespace Exceptionless.Insulation {
             if (!String.IsNullOrEmpty(appOptions.GoogleGeocodingApiKey))
                 services.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(appOptions.GoogleGeocodingApiKey));
 
-            RegisterCache(services, serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value, appOptions);
-            RegisterMessageBus(services, serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>().Value, appOptions);
+            RegisterCache(services, serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value);
+            RegisterMessageBus(services, serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>().Value);
             RegisterMetric(services, serviceProvider.GetRequiredService<IOptions<MetricOptions>>().Value);
             RegisterQueue(services, serviceProvider.GetRequiredService<IOptions<QueueOptions>>().Value, runMaintenanceTasks);
-            RegisterStorage(services, serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value, appOptions);
+            RegisterStorage(services, serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value);
 
             if (appOptions.AppMode != AppMode.Development)
                 services.ReplaceSingleton<IMailSender, MailKitMailSender>();
         }
 
-        private static void RegisterCache(IServiceCollection container, CacheOptions options, AppOptions appOptions) {
+        private static void RegisterCache(IServiceCollection container, CacheOptions options) {
             if (String.Equals(options.Provider, "redis")) {
                 container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.ConnectionString));
 
-                if (appOptions.HasScope)
-                    container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), appOptions.Scope));
+                if (!String.IsNullOrEmpty(options.Scope))
+                    container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), options.Scope));
                 else
                     container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
 
@@ -77,13 +77,13 @@ namespace Exceptionless.Insulation {
             }
         }
 
-        private static void RegisterMessageBus(IServiceCollection container, MessageBusOptions options, AppOptions appOptions) {
+        private static void RegisterMessageBus(IServiceCollection container, MessageBusOptions options) {
             if (String.Equals(options.Provider, "redis")) {
                 container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.ConnectionString));
 
                 container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
                     Subscriber = s.GetRequiredService<ConnectionMultiplexer>().GetSubscriber(),
-                    Topic = $"{appOptions.ScopePrefix}messages",
+                    Topic = $"{options.ScopePrefix}messages",
                     Serializer = s.GetRequiredService<ISerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
@@ -174,7 +174,7 @@ namespace Exceptionless.Insulation {
             }
         }
 
-        private static void RegisterStorage(IServiceCollection container, StorageOptions options, AppOptions appOptions) {
+        private static void RegisterStorage(IServiceCollection container, StorageOptions options) {
             if (String.Equals(options.Provider, "folder")) {
                 string path = options.Data.GetString("path", "|DataDirectory|\\storage");
                 container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions {
@@ -185,7 +185,7 @@ namespace Exceptionless.Insulation {
             } else if (String.Equals(options.Provider, "azurestorage")) {
                 container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions {
                     ConnectionString = options.ConnectionString,
-                    ContainerName = $"{appOptions.ScopePrefix}ex-events",
+                    ContainerName = $"{options.ScopePrefix}ex-events",
                     Serializer = s.GetRequiredService<ITextSerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));

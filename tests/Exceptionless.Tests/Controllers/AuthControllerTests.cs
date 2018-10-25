@@ -24,7 +24,7 @@ using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Tests.Controllers {
     public class AuthControllerTests : IntegrationTestsBase {
-        private readonly IOptionsSnapshot<AuthOptions> _authOptions;
+        private readonly IOptions<AuthOptions> _authOptions;
         private readonly IUserRepository _userRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;

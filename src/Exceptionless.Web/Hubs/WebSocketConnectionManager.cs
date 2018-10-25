@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core;
 using Foundatio.Queues;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Web.Hubs {
@@ -20,10 +21,10 @@ namespace Exceptionless.Web.Hubs {
         private readonly JsonSerializerSettings _serializerSettings;
         private readonly ILogger _logger;
 
-        public WebSocketConnectionManager(JsonSerializerSettings serializerSettings, ILoggerFactory loggerFactory) {
+        public WebSocketConnectionManager(IOptions<AppOptions> options, JsonSerializerSettings serializerSettings, ILoggerFactory loggerFactory) {
             _serializerSettings = serializerSettings;
             _logger = loggerFactory.CreateLogger<WebSocketConnectionManager>();
-            if (!AppOptions.Current.EnableWebSockets)
+            if (!options.Value.EnableWebSockets)
                 return;
 
             _taskQueue = new TaskQueue(maxDegreeOfParallelism: 1, loggerFactory: loggerFactory); 

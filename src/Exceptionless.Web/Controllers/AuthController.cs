@@ -32,7 +32,7 @@ namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/auth")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class AuthController : ExceptionlessApiController {
-        private readonly IOptionsSnapshot<AuthOptions> _authOptions;
+        private readonly IOptions<AuthOptions> _authOptions;
         private readonly IDomainLoginProvider _domainLoginProvider;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
