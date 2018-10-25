@@ -12,7 +12,7 @@
     <EmbeddedResource Include="wwwroot\docs.css" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.5"/>
     <PackageReference Include="App.Metrics.AspNetCore" Version="2.0.0" />
     <PackageReference Include="Exceptionless.AspNetCore.Signed" Version="4.3.2012" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.5.1" />
