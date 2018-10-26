@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Utility {
             } else if (parts.Length == 2) {
                 User =  WebUtility.UrlDecode(parts[0]);
                 Password = WebUtility.UrlDecode(parts[1]);
-            } else {
+            } else if (parts.Length > 2) {
                 throw new ArgumentException("Unable to parse SMTP user info", nameof(uri.UserInfo));
             }
 
