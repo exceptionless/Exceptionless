@@ -31,10 +31,10 @@ namespace Exceptionless.Web {
 
             services.AddTransient<Profile, ApiMappings>();
 
+            Core.Bootstrapper.RegisterServices(services);
+            
             var serviceProvider = services.BuildServiceProvider();
             var options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
-            
-            Core.Bootstrapper.RegisterServices(services, options);
             Insulation.Bootstrapper.RegisterServices(serviceProvider, services, options, options.RunJobsInProcess);
 
             if (options.RunJobsInProcess)

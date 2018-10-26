@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Utility;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -54,12 +55,15 @@ namespace Exceptionless.Core.Configuration {
             options.EnableDailySummary = _configuration.GetValue(nameof(options.EnableDailySummary), _appOptions.Value.AppMode == AppMode.Production);
             options.AllowedOutboundAddresses = _configuration.GetValueList(nameof(options.AllowedOutboundAddresses), "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
             options.TestEmailAddress = _configuration.GetValue(nameof(options.TestEmailAddress), "noreply@exceptionless.io");
+
+            var uri = new SmtpUri(_configuration.GetConnectionString("email") ?? "smtp://localhost");
+            options.SmtpHost = uri.Host;
+            options.SmtpPort = uri.Port;
+            options.SmtpUser = uri.User;
+            options.SmtpPassword = uri.Password;
+            
             options.SmtpFrom = _configuration.GetValue(nameof(options.SmtpFrom), "Exceptionless <noreply@exceptionless.io>");
-            options.SmtpHost = _configuration.GetValue(nameof(options.SmtpHost), "localhost");
-            options.SmtpPort = _configuration.GetValue(nameof(options.SmtpPort), String.Equals(options.SmtpHost, "localhost") ? 25 : 587);
             options.SmtpEncryption = _configuration.GetValue(nameof(options.SmtpEncryption), GetDefaultSmtpEncryption(options.SmtpPort));
-            options.SmtpUser = _configuration.GetValue<string>(nameof(options.SmtpUser));
-            options.SmtpPassword = _configuration.GetValue<string>(nameof(options.SmtpPassword));
 
             if (String.IsNullOrWhiteSpace(options.SmtpUser) != String.IsNullOrWhiteSpace(options.SmtpPassword))
                 throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");

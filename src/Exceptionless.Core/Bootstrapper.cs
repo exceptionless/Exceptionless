@@ -53,7 +53,7 @@ using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Core {
     public class Bootstrapper {
-        public static void RegisterServices(IServiceCollection container, AppOptions options) {
+        public static void RegisterServices(IServiceCollection container) {
             container.ConfigureOptions<ConfigureAppOptions>();
             container.ConfigureOptions<ConfigureAuthOptions>();
             container.ConfigureOptions<ConfigureCacheOptions>();
@@ -94,7 +94,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
             container.AddStartupAction<ExceptionlessElasticConfiguration>();
 
-            container.AddStartupAction(a => CreateSampleDataAsync(a, options));
+            container.AddStartupAction(CreateSampleDataAsync);
 
             container.AddSingleton<IQueueBehavior<EventPost>>(s => new MetricsQueueBehavior<EventPost>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<EventUserDescription>>(s => new MetricsQueueBehavior<EventUserDescription>(s.GetRequiredService<IMetricsClient>()));
@@ -257,7 +257,8 @@ namespace Exceptionless.Core {
                 logger.LogWarning("Account Creation is NOT enabled on {MachineName}", Environment.MachineName);
         }
 
-        private static async Task CreateSampleDataAsync(IServiceProvider container, AppOptions options) {
+        private static async Task CreateSampleDataAsync(IServiceProvider container) {
+            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
             var elasticsearchOptions = container.GetRequiredService<IOptions<ElasticsearchOptions>>().Value;
             if (options.AppMode != AppMode.Development || elasticsearchOptions.DisableIndexConfiguration)
                 return;
