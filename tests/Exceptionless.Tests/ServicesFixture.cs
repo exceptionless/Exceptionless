@@ -25,6 +25,7 @@ namespace Exceptionless.Tests {
 
         private IServiceProvider GetServiceProvider() {
             var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(GetConfiguration());
 
             foreach (var configurator in _serviceConfigurations)
                 configurator(services);
