@@ -57,7 +57,7 @@ namespace Exceptionless.Insulation.Jobs {
             Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, options.InformationalVersion, Environment.MachineName, options, currentDirectory);
 
             services.AddLogging(b => b.AddSerilog(Log.Logger));
-            Core.Bootstrapper.RegisterServices(services, options);
+            Core.Bootstrapper.RegisterServices(services);
             Bootstrapper.RegisterServices(container, services, options, true);
             
             Core.Bootstrapper.LogConfiguration(container, options, container.GetRequiredService<ILoggerFactory>());
