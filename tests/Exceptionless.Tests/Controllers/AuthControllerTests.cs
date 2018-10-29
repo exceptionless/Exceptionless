@@ -31,7 +31,7 @@ namespace Exceptionless.Tests.Controllers {
         private readonly ITokenRepository _tokenRepository;
 
         public AuthControllerTests(ITestOutputHelper output) : base(output) {
-            _authOptions = GetService<IOptionsSnapshot<AuthOptions>>();
+            _authOptions = GetService<IOptions<AuthOptions>>();
             _authOptions.Value.EnableAccountCreation = true;
             _authOptions.Value.EnableActiveDirectoryAuth = false;
             
