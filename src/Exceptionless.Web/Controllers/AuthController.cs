@@ -43,7 +43,7 @@ namespace Exceptionless.Web.Controllers {
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOptionsSnapshot<AuthOptions> authOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider) {
+        public AuthController(IOptions<AuthOptions> authOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider) {
             _authOptions = authOptions;
             _domainLoginProvider = domainLoginProvider;
             _organizationRepository = organizationRepository;
