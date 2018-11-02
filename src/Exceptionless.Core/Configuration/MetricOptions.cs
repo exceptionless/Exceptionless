@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -21,7 +22,7 @@ namespace Exceptionless.Core.Configuration {
             string cs = _configuration.GetConnectionString("metric");
             options.Data = cs.ParseConnectionString();
             options.Provider = options.Data.GetString(nameof(options.Provider).ToLowerInvariant());
-            options.ConnectionString = options.Data.GetString(nameof(options.ConnectionString).ToLowerInvariant());
+            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider).ToLowerInvariant() });
         }
     }
 }
