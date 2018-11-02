@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Configuration {
         public void Configure(AuthOptions options) {
             options.EnableAccountCreation = _configuration.GetValue(nameof(options.EnableAccountCreation), true);
 
-            options.LdapConnectionString = _configuration.GetConnectionString("Ldap");
+            options.LdapConnectionString = _configuration.GetConnectionString("ldap");
             options.EnableActiveDirectoryAuth = _configuration.GetValue(nameof(options.EnableActiveDirectoryAuth), options.LdapConnectionString != null);
 
             options.GoogleAppId = _configuration.GetValue<string>(nameof(options.GoogleAppId));

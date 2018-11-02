@@ -173,18 +173,41 @@ namespace Exceptionless.Core.Extensions {
 
             foreach (string[] option in connectionString
                 .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
-                .Where(kvp => kvp.Contains('='))
                 .Select(kvp => kvp.Split(new[] { '=' }, 2))) {
 
-                string optionKey = option[0]?.Trim();
-                string optionValue = option[1]?.Trim();
-                if (String.IsNullOrEmpty(optionValue))
+                string optionKey = option[0]?.Trim() ?? String.Empty;
+                bool isEmptyKey = String.IsNullOrEmpty(optionKey);
+                string optionValue = option.Length > 1 ? option[1]?.Trim() : null;
+                bool isEmptyValue = String.IsNullOrEmpty(optionValue);
+                
+                if(isEmptyKey && isEmptyValue)
+                    continue;
+                
+                if (isEmptyValue)
                     options[String.Empty] = optionKey;
-                else if (!String.IsNullOrEmpty(optionKey))
+                else
                     options[optionKey] = optionValue;
             }
 
             return options;
+        }
+
+        public static string BuildConnectionString(this Foundatio.Utility.DataDictionary options, HashSet<string> excludedKeys = null) {
+            if (options == null || options.Count == 0)
+                return null;
+
+            var builder = new StringBuilder();
+            foreach (var option in options) {
+                if (excludedKeys != null && excludedKeys.Contains(option.Key))
+                    continue;
+
+                if (String.IsNullOrEmpty(option.Key))
+                    builder.Append($"{option.Value};");
+                else
+                    builder.Append($"{option.Key}={option.Value};");
+            }
+
+            return builder.ToString().TrimEnd(';');
         }
 
         public static string[] FromDelimitedString(this string value, string delimiter = ",") {

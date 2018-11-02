@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -15,11 +16,9 @@ namespace Exceptionless.Core.Configuration {
 
     public class ConfigureQueueOptions : IConfigureOptions<QueueOptions> {
         private readonly IConfiguration _configuration;
-        private readonly IOptions<AppOptions> _appOptions;
 
-        public ConfigureQueueOptions(IConfiguration configuration, IOptions<AppOptions> appOptions) {
+        public ConfigureQueueOptions(IConfiguration configuration) {
             _configuration = configuration;
-            _appOptions = appOptions;
         }
 
         public void Configure(QueueOptions options) {
@@ -29,7 +28,7 @@ namespace Exceptionless.Core.Configuration {
             string cs = _configuration.GetConnectionString("queue");
             options.Data = cs.ParseConnectionString();
             options.Provider = options.Data.GetString(nameof(options.Provider).ToLowerInvariant());
-            options.ConnectionString = options.Data.GetString(nameof(options.ConnectionString).ToLowerInvariant());
+            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider).ToLowerInvariant() });
         }
     }
 }
