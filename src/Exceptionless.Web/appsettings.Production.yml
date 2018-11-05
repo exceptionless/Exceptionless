@@ -5,6 +5,8 @@ ConnectionStrings:
   messagebus.off: provider=redis;localhost,abortConnect=false
   metric.off: provider=statsd;server=10.0.0.5;
   queue.off: provider=redis;localhost,abortConnect=false
+  storage.off: ''
+  email.off: 'smtps://user:password@domain.com:587'
   ldap.off: ''
 
   # Base url for the ui used to build links in emails and other places.
@@ -15,11 +17,6 @@ EnableAccountCreation: true
 
 # Email
 # SmtpFrom:Exceptionless <noreply@exceptionless.io>
-# SmtpHost: domain.com
-# SmtpPort: 587
-# SmtpEncryption: StartTLS
-# SmtpUser: user@domain.com
-# SmtpPassword: ''
 
 # Exceptionless Client Settings
 ExceptionlessServerUrl: https://collector.exceptionless.io

@@ -4,6 +4,7 @@ ConnectionStrings:
   cache.off: provider=redis;localhost,abortConnect=false
   messagebus.off: provider=redis;localhost,abortConnect=false
   queue.off: provider=redis;localhost,abortConnect=false
+  storage: provider=folder;path=.\storage
   ldap.off: ''
 
 # Base url for the ui used to build links in emails and other places.
@@ -11,9 +12,6 @@ BaseURL: 'http://localhost:9001/#!'
 
 # Wether or not to run the jobs in process. Requires Redis to be configured when running jobs out of process.
 RunJobsInProcess: true
-
-# Folder used to store event post data
-StorageFolder: .\storage
 
 Serilog:
   MinimumLevel:

@@ -5,6 +5,7 @@ ConnectionStrings:
   messagebus.off: provider=redis;localhost,abortConnect=false
   metric.off: provider=statsd;server=10.0.0.5
   queue.off: provider=redis;localhost,abortConnect=false
+  storage.off: ''
   ldap.off: ''
 
   # Base url for the ui used to build links in emails and other places.

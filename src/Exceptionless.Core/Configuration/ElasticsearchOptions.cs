@@ -1,5 +1,6 @@
 ﻿using System;
 using Exceptionless.Core.Extensions;
+using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -37,7 +38,7 @@ namespace Exceptionless.Core.Configuration {
             string connectionString = _configuration.GetConnectionString("elasticsearch");
             var pairs = connectionString.ParseConnectionString();
 
-            options.ServerUrl = pairs.GetString("server", pairs.GetString(String.Empty)) ?? "http://localhost:9200";
+            options.ServerUrl = pairs.GetString("server") ?? "http://localhost:9200";
 
             int shards = pairs.GetValueOrDefault<int>("shards", 1);
             options.NumberOfShards = shards > 0 ? shards : 1;
