@@ -5,6 +5,7 @@ ConnectionStrings:
   messagebus.off: provider=redis;localhost,abortConnect=false
   metric.off: provider=statsd;server=10.0.0.5;
   queue.off: provider=redis;localhost,abortConnect=false
+  storage: provider=folder;path=..\..\..\..\..\src\Exceptionless.Web\storage
 
 # Base url for the ui used to build links in emails and other places.
 BaseURL: 'http://localhost:5000/'
@@ -18,9 +19,6 @@ EnableDailySummary: false
 RunJobsInProcess: false
 EnableBootstrapStartupActions: false
 EnableWebSockets: false
-
-# Folder used to store event post data
-StorageFolder: ..\..\..\..\..\src\Exceptionless.Web\storage
 
 Logging:
   IncludeScopes: false
