@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using Amazon;
+using Amazon.Runtime;
 using App.Metrics;
 using App.Metrics.Infrastructure;
 using App.Metrics.Internal.Infrastructure;
@@ -123,13 +126,10 @@ namespace Exceptionless.Insulation {
         private static IMetricsRoot BuildAppMetrics(MetricOptions options) {
             var metricsBuilder = AppMetrics.CreateDefaultBuilder();
             switch (options.Provider) {
-                case "influxdb":
-                    metricsBuilder.Report.ToInfluxDb(new MetricsReportingInfluxDbOptions {
-                        InfluxDb = {
-                            BaseUri = new Uri(options.Data.GetString("server")),
-                            UserName = options.Data.GetString("username"),
-                            Password = options.Data.GetString("password"),
-                            Database = options.Data.GetString("database", "exceptionless")
+                case "graphite":
+                    metricsBuilder.Report.ToGraphite(new MetricsReportingGraphiteOptions {
+                        Graphite = {
+                            BaseUri = new Uri(options.Data.GetString("server"))
                         }
                     });
                     break;
@@ -142,10 +142,13 @@ namespace Exceptionless.Insulation {
                         }
                     });
                     break;
-                case "graphite":
-                    metricsBuilder.Report.ToGraphite(new MetricsReportingGraphiteOptions {
-                        Graphite = {
-                            BaseUri = new Uri(options.Data.GetString("server"))
+                case "influxdb":
+                    metricsBuilder.Report.ToInfluxDb(new MetricsReportingInfluxDbOptions {
+                        InfluxDb = {
+                            BaseUri = new Uri(options.Data.GetString("server")),
+                            UserName = options.Data.GetString("username"),
+                            Password = options.Data.GetString("password"),
+                            Database = options.Data.GetString("database", "exceptionless")
                         }
                     });
                     break;
@@ -157,28 +160,34 @@ namespace Exceptionless.Insulation {
         }
 
         private static void RegisterQueue(IServiceCollection container, QueueOptions options, bool runMaintenanceTasks) {
-            if (String.Equals(options.Provider, "redis")) {
-                container.ReplaceSingleton(s => CreateRedisQueue<EventPost>(s, options, runMaintenanceTasks, retries: 1));
-                container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, options, runMaintenanceTasks));
-                container.ReplaceSingleton(s => CreateRedisQueue<EventNotificationWorkItem>(s, options, runMaintenanceTasks));
-                container.ReplaceSingleton(s => CreateRedisQueue<WebHookNotification>(s, options, runMaintenanceTasks));
-                container.ReplaceSingleton(s => CreateRedisQueue<MailMessage>(s, options, runMaintenanceTasks));
-                container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, options, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
-            } else if (String.Equals(options.Provider, "azurestorage")) {
+            if (String.Equals(options.Provider, "azurestorage")) {
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<EventPost>(s, options, retries: 1));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<EventUserDescription>(s, options));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<EventNotificationWorkItem>(s, options));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<WebHookNotification>(s, options));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<MailMessage>(s, options));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<WorkItemData>(s, options, workItemTimeout: TimeSpan.FromHours(1)));
-            }
+            } else if (String.Equals(options.Provider, "redis")) {
+                container.ReplaceSingleton(s => CreateRedisQueue<EventPost>(s, options, runMaintenanceTasks, retries: 1));
+                container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, options, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<EventNotificationWorkItem>(s, options, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<WebHookNotification>(s, options, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<MailMessage>(s, options, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, options, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
+            } else if (String.Equals(options.Provider, "sqs")) {
+                container.ReplaceSingleton(s => CreateSQSQueue<EventPost>(s, options, retries: 1));
+                container.ReplaceSingleton(s => CreateSQSQueue<EventUserDescription>(s, options));
+                container.ReplaceSingleton(s => CreateSQSQueue<EventNotificationWorkItem>(s, options));
+                container.ReplaceSingleton(s => CreateSQSQueue<WebHookNotification>(s, options));
+                container.ReplaceSingleton(s => CreateSQSQueue<MailMessage>(s, options));
+                container.ReplaceSingleton(s => CreateSQSQueue<WorkItemData>(s, options, workItemTimeout: TimeSpan.FromHours(1)));
+            }  
         }
 
         private static void RegisterStorage(IServiceCollection container, StorageOptions options) {
-            if (String.Equals(options.Provider, "folder")) {
-                string path = options.Data.GetString("path", "|DataDirectory|\\storage");
-                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions {
-                    Folder = PathHelper.ExpandPath(path),
+            if (String.Equals(options.Provider, "aliyun")) {
+                container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions {
+                    ConnectionString = options.ConnectionString,
                     Serializer = s.GetRequiredService<ITextSerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
@@ -189,15 +198,25 @@ namespace Exceptionless.Insulation {
                     Serializer = s.GetRequiredService<ITextSerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
-            } else if (String.Equals(options.Provider, "aliyun")) {
-                container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions {
-                    ConnectionString = options.ConnectionString,
+            } else if (String.Equals(options.Provider, "folder")) {
+                string path = options.Data.GetString("path", "|DataDirectory|\\storage");
+                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions {
+                    Folder = PathHelper.ExpandPath(path),
                     Serializer = s.GetRequiredService<ITextSerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
             } else if (String.Equals(options.Provider, "minio")) {
                 container.ReplaceSingleton<IFileStorage>(s => new MinioFileStorage(new MinioFileStorageOptions {
                     ConnectionString = options.ConnectionString,
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            } else if (String.Equals(options.Provider, "s3")) {
+                 container.ReplaceSingleton<IFileStorage>(s => new S3FileStorage(new S3FileStorageOptions {
+                    ConnectionString = options.ConnectionString,
+                    Credentials = GetAWSCredentials(options.Data),
+                    Region = GetAWSRegionEndpoint(options.Data),
+                    Bucket = $"{options.ScopePrefix}{options.Data.GetString("bucket", "ex-events")}",
                     Serializer = s.GetRequiredService<ITextSerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
@@ -237,8 +256,37 @@ namespace Exceptionless.Insulation {
             });
         }
 
+        private static IQueue<T> CreateSQSQueue<T>(IServiceProvider container, QueueOptions options, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
+            return new SQSQueue<T>(new SQSQueueOptions<T> {
+                Name = GetQueueName<T>(options),
+                Credentials = GetAWSCredentials(options.Data),
+                Region = GetAWSRegionEndpoint(options.Data),
+                CanCreateQueue = false,
+                Retries = retries,
+                Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
+                WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
+                Serializer = container.GetRequiredService<ISerializer>(),
+                LoggerFactory = container.GetRequiredService<ILoggerFactory>()
+            });
+        }
+
         private static string GetQueueName<T>(QueueOptions options) {
             return String.Concat(options.ScopePrefix, typeof(T).Name);
+        }
+        
+        private static RegionEndpoint GetAWSRegionEndpoint(IDictionary<string, string> data) {
+            string region = data.GetString("region");
+            return RegionEndpoint.GetBySystemName(String.IsNullOrEmpty(region) ? "us-east-1" : region);
+        }
+
+        private static AWSCredentials GetAWSCredentials(IDictionary<string, string> data) {
+            string accessKey = data.GetString("accesskey");
+            string secretKey = data.GetString("secretkey");
+            if (String.IsNullOrEmpty(accessKey)
+                || String.IsNullOrEmpty(secretKey))
+                return FallbackCredentialsFactory.GetCredentials();
+
+            return new BasicAWSCredentials(accessKey, secretKey);
         }
     }
 }
