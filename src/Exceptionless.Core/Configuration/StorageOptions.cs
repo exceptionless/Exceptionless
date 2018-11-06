@@ -29,6 +29,11 @@ namespace Exceptionless.Core.Configuration {
             string cs = _configuration.GetConnectionString("storage");
             options.Data = cs.ParseConnectionString();
             options.Provider = options.Data.GetString(nameof(options.Provider).ToLowerInvariant());
+
+            var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? _configuration.GetConnectionString(options.Provider) : null;
+            if (!String.IsNullOrEmpty(providerConnectionString))
+                options.Data.AddRange(providerConnectionString.ParseConnectionString());
+            
             options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider).ToLowerInvariant() });
         }
         
