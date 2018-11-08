@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Pipeline {
         public PipelineActionBase(ILoggerFactory loggerFactory = null) {
             var type = GetType();
             Name = type.Name;
-            Enabled = !Settings.Current.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase);
+            Enabled = !AppOptions.Current.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase);
             _logger = loggerFactory?.CreateLogger(type);
         }
 

@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Plugins {
             var pluginTypes = TypeHelper.GetDerivedTypes<TPlugin>(new[] { typeof(Bootstrapper).Assembly });
 
             foreach (var type in pluginTypes) {
-                if (Settings.Current.DisabledPlugins.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {
+                if (AppOptions.Current.DisabledPlugins.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {
                     _logger.LogWarning("Plugin {TypeName} is currently disabled and won't be executed.", type.Name);
                     continue;
                 }

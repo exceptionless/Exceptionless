@@ -14,6 +14,7 @@ using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX)]
@@ -28,11 +29,22 @@ namespace Exceptionless.Web.Controllers {
         private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHooksQueue;
         private readonly IQueue<EventUserDescription> _userDescriptionQueue;
+        private readonly IOptions<AppOptions> _appOptions;
 
         private static HealthCheckResult _lastHealthCheckResult;
         private static DateTime _nextHealthCheckTimeUtc = DateTime.MinValue;
 
-        public StatusController(ICacheClient cacheClient, IMessagePublisher messagePublisher, SystemHealthChecker healthChecker, IQueue<EventPost> eventQueue, IQueue<MailMessage> mailQueue, IQueue<EventNotificationWorkItem> notificationQueue, IQueue<WebHookNotification> webHooksQueue, IQueue<EventUserDescription> userDescriptionQueue, IMetricsClient metricsClient) {
+        public StatusController(
+            ICacheClient cacheClient, 
+            IMessagePublisher messagePublisher, 
+            SystemHealthChecker healthChecker, 
+            IQueue<EventPost> eventQueue, 
+            IQueue<MailMessage> mailQueue, 
+            IQueue<EventNotificationWorkItem> notificationQueue, 
+            IQueue<WebHookNotification> webHooksQueue, 
+            IQueue<EventUserDescription> userDescriptionQueue, 
+            IMetricsClient metricsClient,
+            IOptionsSnapshot<AppOptions> appOptions) {
             _cacheClient = cacheClient;
             _messagePublisher = messagePublisher;
             _healthChecker = healthChecker;
@@ -41,6 +53,7 @@ namespace Exceptionless.Web.Controllers {
             _notificationQueue = notificationQueue;
             _webHooksQueue = webHooksQueue;
             _userDescriptionQueue = userDescriptionQueue;
+            _appOptions = appOptions;
         }
 
         /// <summary>
@@ -58,20 +71,10 @@ namespace Exceptionless.Web.Controllers {
             if (!_lastHealthCheckResult.IsHealthy)
                 return StatusCodeWithMessage(StatusCodes.Status503ServiceUnavailable, _lastHealthCheckResult.Message, _lastHealthCheckResult.Message);
 
-            if (Settings.Current.HasAppScope) {
-                return Ok(new {
-                    Message = "All Systems Check",
-                    Settings.Current.InformationalVersion,
-                    Settings.Current.AppScope,
-                    AppMode = Settings.Current.AppMode.ToString(),
-                    Environment.MachineName
-                });
-            }
-
             return Ok(new {
                 Message = "All Systems Check",
-                Settings.Current.InformationalVersion,
-                AppMode = Settings.Current.AppMode.ToString(),
+                _appOptions.Value.InformationalVersion,
+                AppMode = _appOptions.Value.AppMode.ToString(),
                 Environment.MachineName
             });
         }

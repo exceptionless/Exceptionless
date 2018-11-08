@@ -95,7 +95,7 @@ namespace Exceptionless.Core.Pipeline {
         private List<IPipelineAction<TContext>> LoadDefaultActions() {
             var actions = new List<IPipelineAction<TContext>>();
             foreach (var type in GetActionTypes()) {
-                if (Settings.Current.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {
+                if (AppOptions.Current.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {
                     _logger.LogWarning("Pipeline Action {Name} is currently disabled and won't be executed.", type.Name);
                     continue;
                 }

@@ -22,6 +22,7 @@ using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web {
     public class Startup {
@@ -104,34 +105,42 @@ namespace Exceptionless.Web {
                 c.IgnoreObsoleteActions();
             });
 
-            var serviceProvider = services.BuildServiceProvider();
-            var settings = serviceProvider.GetRequiredService<Settings>();
             Bootstrapper.RegisterServices(services, LoggerFactory);
-
-            services.AddSingleton(new ThrottlingOptions {
-                MaxRequestsForUserIdentifierFunc = userIdentifier => settings.ApiThrottleLimit,
-                Period = TimeSpan.FromMinutes(15)
+            services.AddSingleton(s => {
+                var settings = s.GetRequiredService<IOptions<AppOptions>>().Value;
+                return new ThrottlingOptions {
+                    MaxRequestsForUserIdentifierFunc = userIdentifier => settings.ApiThrottleLimit,
+                    Period = TimeSpan.FromMinutes(15)
+                };
             });
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
-            var settings = app.ApplicationServices.GetRequiredService<Settings>();
+            var settings = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, settings, LoggerFactory);
 
             if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey) && !String.IsNullOrEmpty(settings.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
 
             app.UseCsp(csp => {
-                csp.ByDefaultAllow.FromSelf();
+                csp.ByDefaultAllow.FromSelf()
+                    .From("https://js.stripe.com");
                 csp.AllowFonts.FromSelf()
-                    .From("https://fonts.gstatic.com");
+                    .From("https://fonts.gstatic.com")
+                    .From("https://maxcdn.bootstrapcdn.com");
                 csp.AllowImages.FromSelf()
-                    .From("data:");
+                    .From("data:")
+                    .From("https://q.stripe.com");
                 csp.AllowScripts.FromSelf()
-                    .AllowUnsafeInline();
+                    .AllowUnsafeInline()
+                    .AllowUnsafeEval()
+                    .From("https://cdnjs.cloudflare.com")
+                    .From("https://js.stripe.com")
+                    .From("https://maxcdn.bootstrapcdn.com");
                 csp.AllowStyles.FromSelf()
                     .AllowUnsafeInline()
-                    .From("https://fonts.googleapis.com");
+                    .From("https://fonts.googleapis.com")
+                    .From("https://maxcdn.bootstrapcdn.com");
             });
 
             app.Use(async (context, next) => {

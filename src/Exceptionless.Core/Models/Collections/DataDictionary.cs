@@ -28,7 +28,6 @@ namespace Exceptionless.Core.Models {
         }
 
         public string GetString(string name, string @default) {
-
             if (!TryGetValue(name, out object value))
                 return @default;
 

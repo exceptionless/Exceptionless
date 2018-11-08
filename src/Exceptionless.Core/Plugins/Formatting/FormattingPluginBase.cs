@@ -43,15 +43,15 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             var actions = new List<string> { $"• {GetSlackEventUrl(ev.Id, "View Event")}" };
             if (ev.Type == Event.KnownTypes.Error || ev.Type == Event.KnownTypes.NotFound)
-                actions.Add($"• <{Settings.Current.BaseURL}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>");
-            actions.Add($"• <{Settings.Current.BaseURL}/stack/{ev.StackId}/stop-notifications|Stop sending notifications for this event>");
-            actions.Add($"• <{Settings.Current.BaseURL}/project/{ev.ProjectId}/manage?tab=integrations|Change your notification settings for this project>");
+                actions.Add($"• <{AppOptions.Current.BaseURL}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>");
+            actions.Add($"• <{AppOptions.Current.BaseURL}/stack/{ev.StackId}/stop-notifications|Stop sending notifications for this event>");
+            actions.Add($"• <{AppOptions.Current.BaseURL}/project/{ev.ProjectId}/manage?tab=integrations|Change your notification settings for this project>");
 
             attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Other Actions", Value = String.Join("\n", actions) });
         }
 
         protected string GetSlackEventUrl(string eventId, string message = null) {
-            var parts = new List<string> { $"{Settings.Current.BaseURL}/event/{eventId}" };
+            var parts = new List<string> { $"{AppOptions.Current.BaseURL}/event/{eventId}" };
             if (!String.IsNullOrEmpty(message))
                 parts.Add($"|{message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")}");
 

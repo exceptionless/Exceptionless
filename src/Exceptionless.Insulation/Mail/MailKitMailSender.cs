@@ -1,16 +1,24 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Foundatio.Utility;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Options;
 using MimeKit;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Insulation.Mail {
     public class MailKitMailSender : IMailSender {
+        private readonly IOptions<EmailOptions> _emailOptions;
+
+        public MailKitMailSender(IOptionsSnapshot<EmailOptions> emailOptions) {
+            _emailOptions = emailOptions;
+        }
+
         public async Task SendAsync(MailMessage model) {
             var message = CreateMailMessage(model);
             message.Headers.Add("X-Mailer-Machine", Environment.MachineName);
@@ -21,13 +29,13 @@ namespace Exceptionless.Insulation.Mail {
             using (var client = new SmtpClient()) {
                 client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
-                await client.ConnectAsync(Settings.Current.SmtpHost, Settings.Current.SmtpPort, GetSecureSocketOption(Settings.Current.SmtpEncryption)).AnyContext();
+                await client.ConnectAsync(_emailOptions.Value.SmtpHost, _emailOptions.Value.SmtpPort, GetSecureSocketOption(_emailOptions.Value.SmtpEncryption)).AnyContext();
 
                 // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
                 client.AuthenticationMechanisms.Remove("XOAUTH2");
 
-                if (!String.IsNullOrEmpty(Settings.Current.SmtpUser))
-                    await client.AuthenticateAsync(Settings.Current.SmtpUser, Settings.Current.SmtpPassword).AnyContext();
+                if (!String.IsNullOrEmpty(_emailOptions.Value.SmtpUser))
+                    await client.AuthenticateAsync(_emailOptions.Value.SmtpUser, _emailOptions.Value.SmtpPassword).AnyContext();
 
                 await client.SendAsync(message).AnyContext();
                 await client.DisconnectAsync(true).AnyContext();
@@ -55,7 +63,7 @@ namespace Exceptionless.Insulation.Mail {
             if (!String.IsNullOrEmpty(notification.From))
                 message.From.AddRange(InternetAddressList.Parse(notification.From));
             else
-                message.From.AddRange(InternetAddressList.Parse(Settings.Current.SmtpFrom));
+                message.From.AddRange(InternetAddressList.Parse(_emailOptions.Value.SmtpFrom));
 
             if (!String.IsNullOrEmpty(notification.Body))
                 builder.HtmlBody = notification.Body;

@@ -16,5 +16,8 @@
 }
 
 $wwwroot = Resolve-path ".\wwwroot"
-Start-Website $wwwroot 50000
-Start-Process "http://localhost:50000"
+$env:LAUNCHER_PATH = "dotnet"
+$env:LAUNCHER_ARGS = "$wwwroot\bin\Exceptionless.Web.dll"
+
+Start-Website $wwwroot 5000
+Start-Process "http://localhost:5000"

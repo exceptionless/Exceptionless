@@ -15,7 +15,7 @@ namespace WorkItemJob {
             try {
                 serviceProvider = JobServiceProvider.GetServiceProvider();
                 var job = serviceProvider.GetService<Foundatio.Jobs.WorkItemJob>();
-                return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), initialDelay: TimeSpan.FromSeconds(2), interval: TimeSpan.Zero, iterationLimit: Settings.Current.JobsIterationLimit).RunInConsoleAsync();
+                return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), initialDelay: TimeSpan.FromSeconds(2), interval: TimeSpan.Zero, iterationLimit: AppOptions.Current.JobsIterationLimit).RunInConsoleAsync();
             } catch (Exception ex) {
                 Log.Fatal(ex, "Job terminated unexpectedly");
                 return 1;

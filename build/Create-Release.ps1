@@ -40,12 +40,12 @@ If (Test-Path -Path $releaseTempDir) {
 }
 
 ROBOCOPY "$releaseArtifactsDir\api" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\api\.git" /XF "exceptionless.png" "favicon.ico" /S /NFL /NDL /NJH /NJS /nc /ns /np
-ROBOCOPY "$releaseArtifactsDir\app" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\app\.git" /S /XF "web.config" /NFL /NDL /NJH /NJS /nc /ns /np
+ROBOCOPY "$releaseArtifactsDir\app" "$releaseTempDir\wwwroot\wwwroot" /XD "$releaseArtifactsDir\app\.git" /S /XF "web.config" /NFL /NDL /NJH /NJS /nc /ns /np
 Copy-Item -Path "$base_dir\build\Start-ElasticSearch.ps1" -Destination $releaseTempDir
 Copy-Item -Path "$base_dir\build\elasticsearch.yml" -Destination $releaseTempDir
 Copy-Item -Path "$base_dir\build\elasticsearch.prod.yml" -Destination $releaseTempDir
 Copy-Item -Path "$base_dir\build\Start-Website.ps1" -Destination $releaseTempDir
-"PowerShell .\Start-Elasticsearch.ps1`r`nPowerShell .\Start-Website.ps1" | Out-File "$releaseTempDir\Start.bat" -Encoding "ascii"
+"PowerShell .\Start-Elasticsearch.ps1 -StartKibana $false`r`nPowerShell .\Start-Website.ps1" | Out-File "$releaseTempDir\Start.bat" -Encoding "ascii"
 Copy-Item -Path "$base_dir\build\readme.txt" -Destination $releaseTempDir
 
 Write-Host "Merging configuration"
@@ -60,7 +60,7 @@ $apiConfig.Save($webConfig)
 
 $appProdSettings = "$releaseTempDir\wwwroot\appsettings.Production.yml"
 $prodConfig = (Get-Content $appProdSettings)
-$prodConfig = $prodConfig -Replace "BaseURL: https://be.exceptionless.io", "BaseURL: 'http://localhost:50000/#!'"
+$prodConfig = $prodConfig -Replace "BaseURL: https://be.exceptionless.io", "BaseURL: 'http://localhost:5000/#!'"
 $prodConfig = $prodConfig -Replace "MetricsServerName", "# MetricsServerName"
 $prodConfig = $prodConfig -Replace "ExceptionlessServerUrl", "# ExceptionlessServerUrl"
 $prodConfig = $prodConfig -Replace "InternalProjectId", "# InternalProjectId"
