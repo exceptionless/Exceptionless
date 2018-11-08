@@ -578,7 +578,7 @@ namespace Exceptionless.Web.Controllers {
 
                 UserInfo userInfo;
                 try {
-                    userInfo = client.GetUserInfo(authInfo.Code);
+                    userInfo = await client.GetUserInfoAsync(authInfo.Code);
                 } catch (Exception ex) {
                     _logger.LogCritical(ex, "External login failed: {Message}", ex.Message);
                     return BadRequest("Unable to get user info.");
