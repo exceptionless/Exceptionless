@@ -5,10 +5,10 @@ using Nest;
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class OrganizationIndex : VersionedIndex {
         internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
-        private readonly Settings _settings;
+        private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Settings.AppScopePrefix + "organizations", 1) {
-            _settings = configuration.Settings;
+        public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 1) {
+            _configuration = configuration;
             AddType(Organization = new OrganizationIndexType(this));
             AddType(Project = new ProjectIndexType(this));
             AddType(Token = new TokenIndexType(this));
@@ -19,8 +19,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
             return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
-                .NumberOfShards(_settings.ElasticsearchNumberOfShards)
-                .NumberOfReplicas(_settings.ElasticsearchNumberOfReplicas)
+                .NumberOfShards(_configuration.Options.NumberOfShards)
+                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
                 .Priority(10)));
         }
 

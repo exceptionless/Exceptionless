@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
@@ -19,10 +20,12 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Sends daily summary emails.", InitialDelay = "1m", Interval = "1h")]
     public class DailySummaryJob : JobWithLockBase {
+        private readonly IOptions<EmailOptions> _emailOptions;
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
@@ -31,7 +34,8 @@ namespace Exceptionless.Core.Jobs {
         private readonly IMailer _mailer;
         private readonly ILockProvider _lockProvider;
 
-        public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public DailySummaryJob(IOptionsSnapshot<EmailOptions> emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+            _emailOptions = emailOptions;
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
@@ -46,7 +50,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
-            if (!Settings.Current.EnableDailySummary || _mailer == null)
+            if (!_emailOptions.Value.EnableDailySummary || _mailer == null)
                 return JobResult.SuccessWithMessage("Summary notifications are disabled.");
 
             var results = await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9).AnyContext();

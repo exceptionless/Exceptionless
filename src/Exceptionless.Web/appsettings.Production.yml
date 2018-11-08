@@ -1,8 +1,13 @@
 ﻿---
 ConnectionStrings:
-  Redis.off: localhost,abortConnect=false
-  Elasticsearch.off: http://localhost:9200/
-  Ldap.off: ''
+  elasticsearch.off: server=http://localhost:9200
+  cache.off: provider=redis;server="localhost,abortConnect=false"
+  messagebus.off: provider=redis;server="localhost,abortConnect=false"
+  metric.off: provider=statsd;server=10.0.0.5;
+  queue.off: provider=redis;server="localhost,abortConnect=false"
+  storage.off: ''
+  email.off: 'smtps://user:password@domain.com:587'
+  ldap.off: ''
 
   # Base url for the ui used to build links in emails and other places.
 BaseURL: https://be.exceptionless.io
@@ -12,14 +17,6 @@ EnableAccountCreation: true
 
 # Email
 # SmtpFrom:Exceptionless <noreply@exceptionless.io>
-# SmtpHost: domain.com
-# SmtpPort: 587
-# SmtpEncryption: StartTLS
-# SmtpUser: user@domain.com
-# SmtpPassword: ''
-
-# Metrics
-MetricsServerName: 10.0.0.5
 
 # Exceptionless Client Settings
 ExceptionlessServerUrl: https://collector.exceptionless.io

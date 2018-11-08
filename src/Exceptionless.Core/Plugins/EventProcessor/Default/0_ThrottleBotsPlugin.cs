@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-            if (Settings.Current.AppMode == AppMode.Development)
+            if (AppOptions.Current.AppMode == AppMode.Development)
                 return;
 
             var firstContext = contexts.First();
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     requestCount = clientIpContexts.Count;
                 }
 
-                if (requestCount < Settings.Current.BotThrottleLimit)
+                if (requestCount < AppOptions.Current.BotThrottleLimit)
                     continue;
 
                 _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Project: {project}", clientIpAddressGroup.Key, SystemClock.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId);

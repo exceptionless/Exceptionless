@@ -15,7 +15,7 @@ namespace WebHooksJob {
             try {
                 serviceProvider = JobServiceProvider.GetServiceProvider();
                 var job = serviceProvider.GetService<Exceptionless.Core.Jobs.WebHooksJob>();
-                return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.Zero, iterationLimit: Settings.Current.JobsIterationLimit).RunInConsoleAsync();
+                return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.Zero, iterationLimit: AppOptions.Current.JobsIterationLimit).RunInConsoleAsync();
             } catch (Exception ex) {
                 Log.Fatal(ex, "Job terminated unexpectedly");
                 return 1;

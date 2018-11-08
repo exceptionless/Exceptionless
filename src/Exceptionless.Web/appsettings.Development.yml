@@ -1,17 +1,17 @@
 ﻿---
 ConnectionStrings:
-  Redis.off: localhost,abortConnect=false
-  Elasticsearch.off: http://localhost:9200/
-  Ldap.off: ''
+  elasticsearch.off: server=http://localhost:9200
+  cache.off: provider=redis;server="localhost,abortConnect=false"
+  messagebus.off: provider=redis;server="localhost,abortConnect=false"
+  queue.off: provider=redis;server="localhost,abortConnect=false"
+  storage: provider=folder;path=.\storage
+  ldap.off: ''
 
 # Base url for the ui used to build links in emails and other places.
 BaseURL: 'http://localhost:9001/#!'
 
 # Wether or not to run the jobs in process. Requires Redis to be configured when running jobs out of process.
 RunJobsInProcess: true
-
-# Folder used to store event post data
-StorageFolder: .\storage
 
 Serilog:
   MinimumLevel:

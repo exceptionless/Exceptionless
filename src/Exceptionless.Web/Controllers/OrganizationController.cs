@@ -7,6 +7,7 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
@@ -30,6 +31,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Stripe;
 
 #pragma warning disable 1998
@@ -46,8 +48,10 @@ namespace Exceptionless.Web.Controllers {
         private readonly BillingManager _billingManager;
         private readonly IMailer _mailer;
         private readonly IMessagePublisher _messagePublisher;
+        private readonly IOptions<AppOptions> _appOptions;
+        private readonly IOptions<StripeOptions> _stripeOptions;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IEventRepository eventRepository, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(organizationRepository, mapper, validator, loggerFactory) {
+        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IEventRepository eventRepository, IUserRepository userRepository, IProjectRepository projectRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, IMailer mailer, IMessagePublisher messagePublisher, IMapper mapper, IQueryValidator validator, IOptionsSnapshot<AppOptions> appOptions, IOptionsSnapshot<StripeOptions> stripeOptions, ILoggerFactory loggerFactory) : base(organizationRepository, mapper, validator, loggerFactory) {
             _cacheClient = cacheClient;
             _eventRepository = eventRepository;
             _userRepository = userRepository;
@@ -56,6 +60,8 @@ namespace Exceptionless.Web.Controllers {
             _billingManager = billingManager;
             _mailer = mailer;
             _messagePublisher = messagePublisher;
+            _appOptions = appOptions;
+            _stripeOptions = stripeOptions;
         }
 
         #region CRUD
@@ -167,7 +173,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet]
         [Route("invoice/{id:minlength(10)}")]
         public async Task<ActionResult<Invoice>> GetInvoiceAsync(string id) {
-            if (!Settings.Current.EnableBilling)
+            if (!_stripeOptions.Value.EnableBilling)
                 return NotFound();
 
             if (!id.StartsWith("in_"))
@@ -175,7 +181,7 @@ namespace Exceptionless.Web.Controllers {
 
             StripeInvoice stripeInvoice = null;
             try {
-                var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
+                var invoiceService = new StripeInvoiceService(_stripeOptions.Value.StripeApiKey);
                 stripeInvoice = await invoiceService.GetAsync(id);
             } catch (Exception ex) {
                 using (_logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
@@ -195,11 +201,11 @@ namespace Exceptionless.Web.Controllers {
                 OrganizationName = organization.Name,
                 Date = stripeInvoice.Date.GetValueOrDefault(),
                 Paid = stripeInvoice.Paid,
-                Total = stripeInvoice.Total / 100.0
+                Total = stripeInvoice.Total / 100.0m
             };
 
             foreach (var line in stripeInvoice.StripeInvoiceLineItems.Data) {
-                var item = new InvoiceLineItem { Amount = line.Amount / 100.0 };
+                var item = new InvoiceLineItem { Amount = line.Amount / 100.0m };
 
                 if (line.Plan != null) {
                     string planName = line.Plan.Nickname ?? BillingManager.GetBillingPlan(line.Plan.Id)?.Name;
@@ -215,11 +221,11 @@ namespace Exceptionless.Web.Controllers {
             var coupon = stripeInvoice.StripeDiscount?.StripeCoupon;
             if (coupon != null) {
                 if (coupon.AmountOff.HasValue) {
-                    double discountAmount = coupon.AmountOff.GetValueOrDefault() / 100.0;
+                    decimal discountAmount = coupon.AmountOff.GetValueOrDefault() / 100.0m;
                     string description = $"{coupon.Id} ({discountAmount.ToString("C")} off)";
                     invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
                 } else {
-                    double discountAmount = (stripeInvoice.Subtotal / 100.0) * (coupon.PercentOff.GetValueOrDefault() / 100.0);
+                    decimal discountAmount = (stripeInvoice.Subtotal / 100.0m) * (coupon.PercentOff.GetValueOrDefault() / 100.0m);
                     string description = $"{coupon.Id} ({coupon.PercentOff.GetValueOrDefault()}% off)";
                     invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
                 }
@@ -239,7 +245,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet]
         [Route("{id:objectid}/invoices")]
         public async Task<ActionResult<IReadOnlyCollection<Invoice>>> GetInvoicesAsync(string id, string before = null, string after = null, int limit = 12) {
-            if (!Settings.Current.EnableBilling)
+            if (!_stripeOptions.Value.EnableBilling)
                 return NotFound();
 
             var organization = await GetModelAsync(id);
@@ -255,7 +261,7 @@ namespace Exceptionless.Web.Controllers {
             if (!String.IsNullOrEmpty(after) && !after.StartsWith("in_"))
                 after = "in_" + after;
 
-            var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
+            var invoiceService = new StripeInvoiceService(_stripeOptions.Value.StripeApiKey);
             var invoiceOptions = new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
             var invoices = (await MapCollectionAsync<InvoiceGridModel>(await invoiceService.ListAsync(invoiceOptions), true)).ToList();
             return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
@@ -319,7 +325,7 @@ namespace Exceptionless.Web.Controllers {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 return NotFound();
 
-            if (!Settings.Current.EnableBilling)
+            if (!_stripeOptions.Value.EnableBilling)
                 return Ok(ChangePlanResult.FailWithMessage("Plans cannot be changed while billing is disabled."));
 
             var organization = await GetModelAsync(id, false);
@@ -340,8 +346,8 @@ namespace Exceptionless.Web.Controllers {
                     return Ok(result);
             }
 
-            var customerService = new StripeCustomerService(Settings.Current.StripeApiKey);
-            var subscriptionService = new StripeSubscriptionService(Settings.Current.StripeApiKey);
+            var customerService = new StripeCustomerService(_stripeOptions.Value.StripeApiKey);
+            var subscriptionService = new StripeSubscriptionService(_stripeOptions.Value.StripeApiKey);
 
             try {
                 // If they are on a paid plan and then downgrade to a free plan then cancel their stripe subscription.
@@ -349,7 +355,7 @@ namespace Exceptionless.Web.Controllers {
                     if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
                         var subs = await subscriptionService.ListAsync(new StripeSubscriptionListOptions { CustomerId = organization.StripeCustomerId });
                         foreach (var sub in subs.Where(s => !s.CanceledAt.HasValue))
-                            await subscriptionService.CancelAsync(sub.Id);
+                            await subscriptionService.CancelAsync(sub.Id, new StripeSubscriptionCancelOptions());
                     }
 
                     organization.BillingStatus = BillingStatus.Trialing;
@@ -379,14 +385,16 @@ namespace Exceptionless.Web.Controllers {
                         organization.CardLast4 = customer.Sources.Data.First().Card.Last4;
                 } else {
                     var update = new StripeSubscriptionUpdateOptions { Items = new List<StripeSubscriptionItemUpdateOption>() };
-                    var create = new StripeSubscriptionCreateOptions();
+                    var create = new StripeSubscriptionCreateOptions { CustomerId = organization.StripeCustomerId, Items = new List<StripeSubscriptionItemOption>() };
                     bool cardUpdated = false;
 
+                    var customerUpdateOptions = new StripeCustomerUpdateOptions { Description = organization.Name, Email = CurrentUser.EmailAddress };
                     if (!String.IsNullOrEmpty(stripeToken)) {
-                        update.Source = stripeToken;
-                        create.Source = stripeToken;
+                        customerUpdateOptions.SourceToken = stripeToken;
                         cardUpdated = true;
                     }
+
+                    await customerService.UpdateAsync(organization.StripeCustomerId, customerUpdateOptions);
 
                     var subscriptionList = await subscriptionService.ListAsync(new StripeSubscriptionListOptions { CustomerId = organization.StripeCustomerId });
                     var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
@@ -394,12 +402,9 @@ namespace Exceptionless.Web.Controllers {
                         update.Items.Add(new StripeSubscriptionItemUpdateOption { Id = subscription.Items.Data[0].Id, PlanId = planId });
                         await subscriptionService.UpdateAsync(subscription.Id, update);
                     } else {
-                        await subscriptionService.CreateAsync(organization.StripeCustomerId, planId, create);
+                        create.Items.Add(new StripeSubscriptionItemOption { PlanId = planId });
+                        await subscriptionService.CreateAsync(create);
                     }
-
-                    await customerService.UpdateAsync(organization.StripeCustomerId, new StripeCustomerUpdateOptions {
-                        Email = CurrentUser.EmailAddress
-                    });
 
                     if (cardUpdated)
                         organization.CardLast4 = last4;
@@ -639,7 +644,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         protected override async Task<Organization> AddModelAsync(Organization value) {
-            BillingManager.ApplyBillingPlan(value, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, CurrentUser);
+            BillingManager.ApplyBillingPlan(value, _stripeOptions.Value.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, CurrentUser);
 
             var organization = await base.AddModelAsync(value);
 
@@ -697,7 +702,7 @@ namespace Exceptionless.Web.Controllers {
                 var usageRetention = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
                 viewOrganization.Usage = viewOrganization.Usage.Where(u => u.Date > usageRetention).ToList();
                 viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > usageRetention).ToList();
-                viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, Settings.Current.ApiThrottleLimit);
+                viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _appOptions.Value.ApiThrottleLimit);
             }
         }
 

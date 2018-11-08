@@ -18,9 +18,9 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
     public class GeoTests : TestWithServices {
-        private const string GREEN_BAY_COORDINATES = "44.5241,-87.9056";
-        private const string GREEN_BAY_IP = "142.11.28.1";
-        private const string IRVING_COORDINATES = "32.85,-96.9613";
+        private const string GREEN_BAY_COORDINATES = "44.5463,-88.1021";
+        private const string GREEN_BAY_IP = "24.208.86.80";
+        private const string IRVING_COORDINATES = "32.8479,-96.974";
         private const string IRVING_IP = "192.91.253.248";
 
         public GeoTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) { }

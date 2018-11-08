@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -19,6 +20,7 @@ using Foundatio.Repositories;
 using Foundatio.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Web.Controllers {
@@ -32,19 +34,74 @@ namespace Exceptionless.Web.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IQueue<WorkItemData> _workItemQueue;
+        private readonly IOptions<AppOptions> _appOptions;
+        private readonly IOptions<AuthOptions> _authOptions;
+        private readonly IOptions<CacheOptions> _cacheOptions;
+        private readonly IOptions<ElasticsearchOptions> _elasticsearchOptions;
+        private readonly IOptions<EmailOptions> _emailOptions;
+        private readonly IOptions<IntercomOptions> _intercomOptions;
+        private readonly IOptions<MessageBusOptions> _messageBusOptions;
+        private readonly IOptions<MetricOptions> _metricOptions;
+        private readonly IOptions<QueueOptions> _queueOptions;
+        private readonly IOptions<SlackOptions> _slackOptions;
+        private readonly IOptions<StorageOptions> _storageOptions;
+        private readonly IOptions<StripeOptions> _stripeOptions;
 
-        public AdminController(ExceptionlessElasticConfiguration configuration, IFileStorage fileStorage, IMessagePublisher messagePublisher, IOrganizationRepository organizationRepository, IQueue<EventPost> eventPostQueue, IQueue<WorkItemData> workItemQueue) {
+        public AdminController(
+            ExceptionlessElasticConfiguration configuration, 
+            IFileStorage fileStorage, 
+            IMessagePublisher messagePublisher, 
+            IOrganizationRepository organizationRepository, 
+            IQueue<EventPost> eventPostQueue, 
+            IQueue<WorkItemData> workItemQueue, 
+            IOptionsSnapshot<AppOptions> appOptions, 
+            IOptionsSnapshot<AuthOptions> authOptions, 
+            IOptionsSnapshot<CacheOptions> cacheOptions,
+            IOptionsSnapshot<ElasticsearchOptions> elasticsearchOptions,
+            IOptionsSnapshot<EmailOptions> emailOptions,
+            IOptionsSnapshot<IntercomOptions> intercomOptions,
+            IOptionsSnapshot<MessageBusOptions> messageBusOptions,
+            IOptionsSnapshot<MetricOptions> metricOptions,
+            IOptionsSnapshot<QueueOptions> queueOptions,
+            IOptionsSnapshot<SlackOptions> slackOptions,
+            IOptionsSnapshot<StorageOptions> storageOptions,
+            IOptionsSnapshot<StripeOptions> stripeOptions) {
             _configuration = configuration;
             _fileStorage = fileStorage;
             _messagePublisher = messagePublisher;
             _organizationRepository = organizationRepository;
             _eventPostQueue = eventPostQueue;
             _workItemQueue = workItemQueue;
+            _appOptions = appOptions;
+            _authOptions = authOptions;
+            _cacheOptions = cacheOptions;
+            _elasticsearchOptions = elasticsearchOptions;
+            _emailOptions = emailOptions;
+            _intercomOptions = intercomOptions;
+            _messageBusOptions = messageBusOptions;
+            _metricOptions = metricOptions;
+            _queueOptions = queueOptions;
+            _slackOptions = slackOptions;
+            _storageOptions = storageOptions;
+            _stripeOptions = stripeOptions;
         }
 
         [HttpGet("settings")]
-        public ActionResult<Settings> SettingsRequest() {
-            return Ok(JsonConvert.SerializeObject(Settings.Current, Formatting.Indented));
+        public ActionResult SettingsRequest() {
+            return Ok(JsonConvert.SerializeObject(new {
+                App = _appOptions.Value,
+                Auth = _authOptions.Value,
+                Cache = _cacheOptions.Value,
+                Elasticsearch = _elasticsearchOptions.Value,
+                Email = _emailOptions.Value,
+                Intercom = _intercomOptions.Value,
+                MessageBus = _messageBusOptions.Value,
+                Metric = _metricOptions.Value,
+                Queue = _queueOptions.Value,
+                Slack = _slackOptions.Value,
+                Storage = _storageOptions.Value,
+                Stripe = _stripeOptions.Value
+            }, Formatting.Indented));
         }
 
         [HttpGet("assemblies")]
@@ -112,7 +169,7 @@ namespace Exceptionless.Web.Controllers {
         public async Task<IActionResult> RunJobAsync(string name) {
             switch (name.ToLowerInvariant()) {
                 case "indexes":
-                    if (!Settings.Current.DisableIndexConfiguration)
+                    if (!_elasticsearchOptions.Value.DisableIndexConfiguration)
                         await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);
                     break;
                 case "update-organization-plans":

@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless;
-using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Insulation.Jobs;
 using Foundatio.Jobs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace OrganizationSnapshotJob {
@@ -15,7 +16,8 @@ namespace OrganizationSnapshotJob {
             try {
                 serviceProvider = JobServiceProvider.GetServiceProvider();
 
-                if (!Settings.Current.EnableSnapshotJobs) {
+                var elasticOptions = serviceProvider.GetRequiredService<IOptions<ElasticsearchOptions>>();
+                if (!elasticOptions.Value.EnableSnapshotJobs) {
                     Log.Logger.Information("Snapshot Jobs are currently disabled.");
                     return 0;
                 }

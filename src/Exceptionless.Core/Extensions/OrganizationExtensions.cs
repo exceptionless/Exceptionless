@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Extensions {
             if (!oldestPossibleEventAge.HasValue || oldestPossibleEventAge.Value.IsBefore(oldestPossibleOrganizationEventAge))
                 oldestPossibleEventAge = oldestPossibleOrganizationEventAge;
 
-            int retentionDays = organization.RetentionDays > 0 ? organization.RetentionDays : Settings.Current.MaximumRetentionDays;
+            int retentionDays = organization.RetentionDays > 0 ? organization.RetentionDays : AppOptions.Current.MaximumRetentionDays;
             var retentionDate = retentionDays <= 0 ? oldestPossibleEventAge.Value : SystemClock.UtcNow.Date.AddDays(-retentionDays);
             return retentionDate.IsAfter(oldestPossibleEventAge.Value) ? retentionDate : oldestPossibleEventAge.Value;
         }

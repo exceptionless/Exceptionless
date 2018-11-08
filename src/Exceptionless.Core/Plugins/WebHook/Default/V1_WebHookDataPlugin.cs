@@ -74,7 +74,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
 
         public class VersionOneWebHookEvent {
             public string Id { get; set; }
-            public string Url => String.Concat(Settings.Current.BaseURL, "/event/", Id);
+            public string Url => String.Concat(AppOptions.Current.BaseURL, "/event/", Id);
             public DateTimeOffset OccurrenceDate { get; set; }
             public TagSet Tags { get; set; }
             public string MachineName { get; set; }
@@ -89,7 +89,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             public string OrganizationId { get; set; }
             public string OrganizationName { get; set; }
             public string ErrorStackId { get; set; }
-            public string ErrorStackUrl => String.Concat(Settings.Current.BaseURL, "/stack/", ErrorStackId);
+            public string ErrorStackUrl => String.Concat(AppOptions.Current.BaseURL, "/stack/", ErrorStackId);
             public string ErrorStackTitle { get; set; }
             public string ErrorStackDescription { get; set; }
             public TagSet ErrorStackTags { get; set; }
@@ -104,7 +104,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
 
         public class VersionOneWebHookStack {
             public string Id { get; set; }
-            public string Url => String.Concat(Settings.Current.BaseURL, "/stack/", Id);
+            public string Url => String.Concat(AppOptions.Current.BaseURL, "/stack/", Id);
             public string Title { get; set; }
             public string Description { get; set; }
 

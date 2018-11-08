@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
@@ -21,6 +22,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/users")]
@@ -30,12 +32,14 @@ namespace Exceptionless.Web.Controllers {
         private readonly ITokenRepository _tokenRepository;
         private readonly ICacheClient _cache;
         private readonly IMailer _mailer;
+        private readonly IOptions<IntercomOptions> _intercomOptions;
 
-        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, IQueryValidator validator, IOptionsSnapshot<IntercomOptions> intercomOptions, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
             _tokenRepository = tokenRepository;
             _cache = new ScopedCacheClient(cacheClient, "User");
             _mailer = mailer;
+            _intercomOptions = intercomOptions;
         }
 
         /// <summary>
@@ -48,7 +52,7 @@ namespace Exceptionless.Web.Controllers {
             if (currentUser == null)
                 return NotFound();
 
-            return Ok(new ViewCurrentUser(currentUser));
+            return Ok(new ViewCurrentUser(currentUser, _intercomOptions.Value));
         }
 
         /// <summary>
