@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Specialized;
+using System.Threading.Tasks;
 using OAuth2.Client;
 using OAuth2.Models;
 
 namespace Exceptionless.Web.Extensions {
     public static class OAuth2Extensions {
-        public static UserInfo GetUserInfo(this OAuth2Client client, string code) {
-            return client.GetUserInfo(new NameValueCollection { { "code", code} });
+        public static Task<UserInfo> GetUserInfoAsync(this OAuth2Client client, string code) {
+            return client.GetUserInfoAsync(new NameValueCollection { { "code", code} });
         }
 
         public static string GetFullName(this UserInfo user) {
