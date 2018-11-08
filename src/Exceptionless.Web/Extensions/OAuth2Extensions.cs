@@ -6,8 +6,8 @@ using OAuth2.Models;
 
 namespace Exceptionless.Web.Extensions {
     public static class OAuth2Extensions {
-        public static Task<UserInfo> GetUserInfoAsync(this OAuth2Client client, string code) {
-            return client.GetUserInfoAsync(new NameValueCollection { { "code", code} });
+        public static Task<UserInfo> GetUserInfoAsync(this OAuth2Client client, string code, string redirectUri) {
+            return client.GetUserInfoAsync(new NameValueCollection { { "code", code }, { "redirect_uri", redirectUri } });
         }
 
         public static string GetFullName(this UserInfo user) {
