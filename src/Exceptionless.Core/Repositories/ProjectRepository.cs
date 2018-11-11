@@ -9,12 +9,13 @@ using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
-        public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator)
-            : base(configuration.Organizations.Project, validator) {
+        public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, IOptionsSnapshot<AppOptions> options)
+            : base(configuration.Organizations.Project, validator, options) {
         }
 
         public Task<CountResult> GetCountByOrganizationIdAsync(string organizationId) {

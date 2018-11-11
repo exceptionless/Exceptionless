@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -20,13 +21,15 @@ namespace Exceptionless.Core.Services {
         private readonly IProjectRepository _projectRepository;
         private readonly ICacheClient _cache;
         private readonly IMessagePublisher _messagePublisher;
+        private readonly BillingManager _billingManager;
         private readonly ILogger<UsageService> _logger;
 
-        public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher, ILoggerFactory loggerFactory = null) {
+        public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher, BillingManager billingManager, ILoggerFactory loggerFactory = null) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _cache = cache;
             _messagePublisher = messagePublisher;
+            _billingManager = billingManager;
             _logger = loggerFactory.CreateLogger<UsageService>();
         }
 
@@ -42,7 +45,7 @@ namespace Exceptionless.Core.Services {
                 orgUsage.MonthlyBlocked = await _cache.IncrementAsync(GetMonthlyBlockedCacheKey(organization.Id), (int)totalBlocked, TimeSpan.FromDays(32), (uint)orgUsage.MonthlyBlocked).AnyContext();
             }
 
-            bool justWentOverHourly = orgUsage.HourlyTotal > organization.GetHourlyEventLimit() && orgUsage.HourlyTotal <= organization.GetHourlyEventLimit() + count;
+            bool justWentOverHourly = orgUsage.HourlyTotal > organization.GetHourlyEventLimit(_billingManager) && orgUsage.HourlyTotal <= organization.GetHourlyEventLimit(_billingManager) + count;
             bool justWentOverMonthly = orgUsage.MonthlyTotal > organization.GetMaxEventsPerMonthWithBonus() && orgUsage.MonthlyTotal <= organization.GetMaxEventsPerMonthWithBonus() + count;
             var projectUsage = await GetUsageAsync(organization, project, tooBig, count, overLimit, (int)totalBlocked).AnyContext();
 
@@ -111,7 +114,7 @@ namespace Exceptionless.Core.Services {
 
                 org.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig);
                 if (usage.HourlyBlocked > 0 || usage.HourlyTooBig > 0)
-                    org.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig);
+                    org.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, _billingManager);
 
                 await _organizationRepository.SaveAsync(org, o => o.Cache()).AnyContext();
                 await _cache.SetAsync(GetUsageSavedCacheKey(orgId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
@@ -136,7 +139,7 @@ namespace Exceptionless.Core.Services {
 
                 project.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig, org.GetMaxEventsPerMonthWithBonus());
                 if (usage.HourlyBlocked > 0 || usage.HourlyTooBig > 0)
-                    project.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, org.GetHourlyEventLimit());
+                    project.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, org.GetHourlyEventLimit(_billingManager));
 
                 await _projectRepository.SaveAsync(project, o => o.Cache()).AnyContext();
                 await _cache.SetAsync(GetUsageSavedCacheKey(org.Id, projectId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
@@ -180,7 +183,7 @@ namespace Exceptionless.Core.Services {
             if (organization.IsSuspended)
                 return count;
 
-            int hourlyEventLimit = organization.GetHourlyEventLimit();
+            int hourlyEventLimit = organization.GetHourlyEventLimit(_billingManager);
             int monthlyEventLimit = organization.GetMaxEventsPerMonthWithBonus();
             double originalAllowedMonthlyEventTotal = usage.MonthlyTotal - usage.MonthlyBlocked - count;
 

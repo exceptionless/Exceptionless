@@ -2,8 +2,14 @@
 
 namespace Exceptionless.Core.Models {
     public class WebHookEvent {
+        private readonly string _baseUrl;
+
+        public WebHookEvent(string baseUrl) {
+            _baseUrl = baseUrl;
+        }
+        
         public string Id { get; set; }
-        public string Url => String.Concat(AppOptions.Current.BaseURL, "/event/", Id);
+        public string Url => String.Concat(_baseUrl, "/event/", Id);
         public DateTimeOffset OccurrenceDate { get; set; }
         public TagSet Tags { get; set; }
         public string Type { get; set; }
@@ -14,7 +20,7 @@ namespace Exceptionless.Core.Models {
         public string OrganizationId { get; set; }
         public string OrganizationName { get; set; }
         public string StackId { get; set; }
-        public string StackUrl => String.Concat(AppOptions.Current.BaseURL, "/stack/", StackId);
+        public string StackUrl => String.Concat(_baseUrl, "/stack/", StackId);
         public string StackTitle { get; set; }
         public string StackDescription { get; set; }
         public TagSet StackTags { get; set; }

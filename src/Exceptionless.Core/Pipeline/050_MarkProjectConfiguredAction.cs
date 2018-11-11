@@ -8,13 +8,14 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(50)]
     public class MarkProjectConfiguredAction : EventPipelineActionBase {
         private readonly IQueue<WorkItemData> _workItemQueue;
 
-        public MarkProjectConfiguredAction(IQueue<WorkItemData> workItemQueue, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public MarkProjectConfiguredAction(IQueue<WorkItemData> workItemQueue, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _workItemQueue = workItemQueue;
             ContinueOnError = true;
         }

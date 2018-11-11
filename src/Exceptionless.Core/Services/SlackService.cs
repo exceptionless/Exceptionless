@@ -36,8 +36,8 @@ namespace Exceptionless.Core.Services {
                 throw new ArgumentNullException(nameof(code));
 
             var data = new Dictionary<string, string> {
-                { "client_id", _slackOptions.Value.SlackAppId },
-                { "client_secret", _slackOptions.Value.SlackAppSecret },
+                { "client_id", _slackOptions.Value.SlackId },
+                { "client_secret", _slackOptions.Value.SlackSecret },
                 { "code", code },
                 { "redirect_uri", new Uri(_appOptions.Value.BaseURL).GetLeftPart(UriPartial.Authority) }
             };

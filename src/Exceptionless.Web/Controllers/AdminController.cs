@@ -46,6 +46,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IOptions<SlackOptions> _slackOptions;
         private readonly IOptions<StorageOptions> _storageOptions;
         private readonly IOptions<StripeOptions> _stripeOptions;
+        private readonly BillingManager _billingManager;
 
         public AdminController(
             ExceptionlessElasticConfiguration configuration, 
@@ -65,7 +66,8 @@ namespace Exceptionless.Web.Controllers {
             IOptionsSnapshot<QueueOptions> queueOptions,
             IOptionsSnapshot<SlackOptions> slackOptions,
             IOptionsSnapshot<StorageOptions> storageOptions,
-            IOptionsSnapshot<StripeOptions> stripeOptions) {
+            IOptionsSnapshot<StripeOptions> stripeOptions,
+            BillingManager billingManager) {
             _configuration = configuration;
             _fileStorage = fileStorage;
             _messagePublisher = messagePublisher;
@@ -84,6 +86,7 @@ namespace Exceptionless.Web.Controllers {
             _slackOptions = slackOptions;
             _storageOptions = storageOptions;
             _stripeOptions = stripeOptions;
+            _billingManager = billingManager;
         }
 
         [HttpGet("settings")]
@@ -119,13 +122,13 @@ namespace Exceptionless.Web.Controllers {
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            var plan = BillingManager.GetBillingPlan(planId);
+            var plan = _billingManager.GetBillingPlan(planId);
             if (plan == null)
                 return Ok(new { Success = false, Message = "Invalid PlanId." });
 
-            organization.BillingStatus = !String.Equals(plan.Id, BillingManager.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
+            organization.BillingStatus = !String.Equals(plan.Id, _billingManager.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
             organization.RemoveSuspension();
-            BillingManager.ApplyBillingPlan(organization, plan, CurrentUser, false);
+            _billingManager.ApplyBillingPlan(organization, plan, CurrentUser, false);
 
             await _organizationRepository.SaveAsync(organization, o => o.Cache());
             await _messagePublisher.PublishAsync(new PlanChanged {
@@ -158,7 +161,7 @@ namespace Exceptionless.Web.Controllers {
 
             int enqueued = 0;
             foreach (var file in await _fileStorage.GetFileListAsync(path)) {
-                await _eventPostQueue.EnqueueAsync(new EventPost { FilePath = file.Path, ShouldArchive = archive });
+                await _eventPostQueue.EnqueueAsync(new EventPost(_appOptions.Value.EnableArchive) { FilePath = file.Path, ShouldArchive = archive });
                 enqueued++;
             }
 

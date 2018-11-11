@@ -13,6 +13,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
@@ -20,8 +21,8 @@ namespace Exceptionless.Core.Repositories {
         private const string STACKING_VERSION = "v2";
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, IValidator<Stack> validator)
-            : base(configuration.Stacks.Stack, validator) {
+        public StackRepository(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, IValidator<Stack> validator, IOptionsSnapshot<AppOptions> options)
+            : base(configuration.Stacks.Stack, validator, options) {
             _eventRepository = eventRepository;
             DocumentsChanging.AddHandler(OnDocumentChangingAsync);
             FieldsRequiredForRemove.Add(ElasticType.GetFieldName(s => s.SignatureHash));

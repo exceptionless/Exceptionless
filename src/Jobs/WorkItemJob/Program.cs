@@ -6,6 +6,7 @@ using Exceptionless.Insulation.Jobs;
 using Foundatio.Jobs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace WorkItemJob {
@@ -14,8 +15,9 @@ namespace WorkItemJob {
             IServiceProvider serviceProvider = null;
             try {
                 serviceProvider = JobServiceProvider.GetServiceProvider();
+                var options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
                 var job = serviceProvider.GetService<Foundatio.Jobs.WorkItemJob>();
-                return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), initialDelay: TimeSpan.FromSeconds(2), interval: TimeSpan.Zero, iterationLimit: AppOptions.Current.JobsIterationLimit).RunInConsoleAsync();
+                return await new JobRunner(job, serviceProvider.GetRequiredService<ILoggerFactory>(), initialDelay: TimeSpan.FromSeconds(2), interval: TimeSpan.Zero, iterationLimit: options.JobsIterationLimit).RunInConsoleAsync();
             } catch (Exception ex) {
                 Log.Fatal(ex, "Job terminated unexpectedly");
                 return 1;

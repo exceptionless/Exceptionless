@@ -32,9 +32,10 @@ namespace Exceptionless.Core.Jobs {
         private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IMailer _mailer;
+        private readonly BillingManager _billingManager;
         private readonly ILockProvider _lockProvider;
 
-        public DailySummaryJob(IOptionsSnapshot<EmailOptions> emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public DailySummaryJob(IOptionsSnapshot<EmailOptions> emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, BillingManager billingManager, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _emailOptions = emailOptions;
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
@@ -42,6 +43,7 @@ namespace Exceptionless.Core.Jobs {
             _stackRepository = stackRepository;
             _eventRepository = eventRepository;
             _mailer = mailer;
+            _billingManager = billingManager;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
         }
 
@@ -135,7 +137,7 @@ namespace Exceptionless.Core.Jobs {
             double newTotal = result.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
             double uniqueTotal = result.Aggregations.Cardinality("cardinality_stack_id")?.Value ?? 0;
             bool hasSubmittedEvents = total > 0 || project.IsConfigured.GetValueOrDefault();
-            bool isFreePlan = organization.PlanId == BillingManager.FreePlan.Id;
+            bool isFreePlan = organization.PlanId == _billingManager.FreePlan.Id;
 
             string fixedFilter = $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error} {EventIndexType.Alias.IsHidden}:false {EventIndexType.Alias.IsFixed}:true";
             var fixedResult = await _eventRepository.CountBySearchAsync(systemFilter, fixedFilter, "sum:count~1").AnyContext();

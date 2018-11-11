@@ -8,32 +8,32 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Tests.Utility {
     internal static class OrganizationData {
-        public static IEnumerable<Organization> GenerateOrganizations(int count = 10, bool generateId = false, string id = null) {
+        public static IEnumerable<Organization> GenerateOrganizations(BillingManager billingManager, int count = 10, bool generateId = false, string id = null) {
             for (int i = 0; i < count; i++)
-                yield return GenerateOrganization(generateId, id);
+                yield return GenerateOrganization(billingManager, generateId, id);
         }
 
-        public static List<Organization> GenerateSampleOrganizations() {
+        public static List<Organization> GenerateSampleOrganizations(BillingManager billingManager) {
             return new List<Organization> {
-                GenerateSampleOrganization(),
-                GenerateOrganization(id: TestConstants.OrganizationId2, inviteEmail: TestConstants.InvitedOrganizationUserEmail),
-                GenerateOrganization(id: TestConstants.OrganizationId3, inviteEmail: TestConstants.InvitedOrganizationUserEmail),
-                GenerateOrganization(id: TestConstants.OrganizationId4, inviteEmail: TestConstants.InvitedOrganizationUserEmail),
-                GenerateOrganization(id: TestConstants.SuspendedOrganizationId, inviteEmail: TestConstants.InvitedOrganizationUserEmail, isSuspended: true),
+                GenerateSampleOrganization(billingManager),
+                GenerateOrganization(billingManager, id: TestConstants.OrganizationId2, inviteEmail: TestConstants.InvitedOrganizationUserEmail),
+                GenerateOrganization(billingManager, id: TestConstants.OrganizationId3, inviteEmail: TestConstants.InvitedOrganizationUserEmail),
+                GenerateOrganization(billingManager, id: TestConstants.OrganizationId4, inviteEmail: TestConstants.InvitedOrganizationUserEmail),
+                GenerateOrganization(billingManager, id: TestConstants.SuspendedOrganizationId, inviteEmail: TestConstants.InvitedOrganizationUserEmail, isSuspended: true),
             };
         }
 
-        public static Organization GenerateSampleOrganization() {
-            return GenerateOrganization(id: TestConstants.OrganizationId, name: "Acme", inviteEmail: TestConstants.InvitedOrganizationUserEmail);
+        public static Organization GenerateSampleOrganization(BillingManager billingManager) {
+            return GenerateOrganization(billingManager, id: TestConstants.OrganizationId, name: "Acme", inviteEmail: TestConstants.InvitedOrganizationUserEmail);
         }
 
-        public static Organization GenerateOrganization(bool generateId = false, string name = null, string id = null, string inviteEmail = null, bool isSuspended = false) {
+        public static Organization GenerateOrganization(BillingManager billingManager, bool generateId = false, string name = null, string id = null, string inviteEmail = null, bool isSuspended = false) {
             var organization = new Organization {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.OrganizationId : id,
                 Name = name ?? $"Organization{id}"
             };
 
-            BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan);
+            billingManager.ApplyBillingPlan(organization, billingManager.UnlimitedPlan);
 
             if (!String.IsNullOrEmpty(inviteEmail)) {
                 organization.Invites.Add(new Invite {

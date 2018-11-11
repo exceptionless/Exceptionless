@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -14,6 +15,7 @@ using Foundatio.Queues;
 using Foundatio.Storage;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
@@ -30,6 +32,8 @@ namespace Exceptionless.Tests.Jobs {
         private readonly IUserRepository _userRepository;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         private readonly EventPostService _eventPostService;
+        private readonly BillingManager _billingManager;
+        private readonly IOptions<AppOptions> _options;
 
         public EventPostJobTests(ITestOutputHelper output) : base(output) {
             _job = GetService<EventPostsJob>();
@@ -41,6 +45,8 @@ namespace Exceptionless.Tests.Jobs {
             _eventRepository = GetService<IEventRepository>();
             _userRepository = GetService<IUserRepository>();
             _jsonSerializerSettings = GetService<JsonSerializerSettings>();
+            _billingManager = GetService<BillingManager>();
+            _options = GetService<IOptions<AppOptions>>();
 
             CreateDataAsync().GetAwaiter().GetResult();
         }
@@ -104,11 +110,11 @@ namespace Exceptionless.Tests.Jobs {
         }
 
         private async Task CreateDataAsync() {
-            foreach (var organization in OrganizationData.GenerateSampleOrganizations()) {
+            foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager)) {
                 if (organization.Id == TestConstants.OrganizationId3)
-                    BillingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, UserData.GenerateSampleUser());
+                    _billingManager.ApplyBillingPlan(organization, _billingManager.FreePlan, UserData.GenerateSampleUser());
                 else
-                    BillingManager.ApplyBillingPlan(organization, BillingManager.SmallPlan, UserData.GenerateSampleUser());
+                    _billingManager.ApplyBillingPlan(organization, _billingManager.SmallPlan, UserData.GenerateSampleUser());
 
                 organization.StripeCustomerId = Guid.NewGuid().ToString("N");
                 organization.CardLast4 = "1234";
@@ -139,7 +145,7 @@ namespace Exceptionless.Tests.Jobs {
         }
 
         private async Task<string> EnqueueEventPostAsync(PersistentEvent ev) {
-            var eventPostInfo = new EventPost {
+            var eventPostInfo = new EventPost(_options.Value.EnableArchive) {
                 OrganizationId = ev.OrganizationId,
                 ProjectId = ev.ProjectId,
                 ApiVersion = 2,

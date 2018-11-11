@@ -15,11 +15,8 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
-        private readonly IOptions<AppOptions> _options;
-
         public EventRepository(ExceptionlessElasticConfiguration configuration, IOptionsSnapshot<AppOptions> options, IValidator<PersistentEvent> validator)
-            : base(configuration.Events.Event, validator) {
-            _options = options;
+            : base(configuration.Events.Event, validator, options) {
             DisableCache();
             BatchNotifications = true;
             DefaultExcludes.Add(ElasticType.GetFieldName(e => e.Idx));

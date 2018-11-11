@@ -26,9 +26,11 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
         private CancellationToken _shutdownToken;
         private readonly IOptions<ElasticsearchOptions> _options;
+        private readonly IOptionsSnapshot<AppOptions> _appOptions;
 
         public ExceptionlessElasticConfiguration(IOptionsSnapshot<ElasticsearchOptions> options, IOptionsSnapshot<AppOptions> appOptions, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
             _options = options;
+            _appOptions = appOptions;
 
             _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", options.Value.NumberOfShards, options.Value.NumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
@@ -45,7 +47,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder) {
-            builder.Register(new ExceptionlessSystemFilterQueryBuilder());
+            builder.Register(new ExceptionlessSystemFilterQueryBuilder(_appOptions));
             builder.Register(new OrganizationQueryBuilder());
             builder.Register(new ProjectQueryBuilder());
             builder.Register(new StackQueryBuilder());

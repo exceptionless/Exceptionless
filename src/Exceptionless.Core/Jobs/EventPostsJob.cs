@@ -265,7 +265,7 @@ namespace Exceptionless.Core.Jobs {
                     var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings));
 
                     // Put this single event back into the queue so we can retry it separately.
-                    await _eventPostService.EnqueueAsync(new EventPost {
+                    await _eventPostService.EnqueueAsync(new EventPost(_appOptions.Value.EnableArchive) {
                         ApiVersion = ep.ApiVersion,
                         CharSet = ep.CharSet,
                         ContentEncoding = null,

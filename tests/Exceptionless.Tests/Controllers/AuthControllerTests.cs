@@ -6,6 +6,7 @@ using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -803,7 +804,7 @@ namespace Exceptionless.Tests.Controllers {
 
         private Task CreateOrganizationAndProjectsAsync() {
             return Task.WhenAll(
-                _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(), o => o.ImmediateConsistency()),
+                _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>()), o => o.ImmediateConsistency()),
                 _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency())
             );
         }

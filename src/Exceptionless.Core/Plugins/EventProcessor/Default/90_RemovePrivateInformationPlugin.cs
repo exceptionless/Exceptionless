@@ -3,11 +3,12 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(90)]
     public sealed class RemovePrivateInformationPlugin : EventProcessorPluginBase {
-        public RemovePrivateInformationPlugin(ILoggerFactory loggerFactory = null) : base(loggerFactory) { }
+        public RemovePrivateInformationPlugin(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public override Task EventProcessingAsync(EventContext context) {
             if (context.IncludePrivateInformation)

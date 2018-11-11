@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Exceptionless.Core.Billing;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Utility;
 using Exceptionless.Core.Jobs;
@@ -227,7 +228,7 @@ namespace Exceptionless.Tests.Controllers {
 
         private Task CreateOrganizationAndProjectsAsync() {
             return Task.WhenAll(
-                _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(), o => o.ImmediateConsistency()),
+                _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>()), o => o.ImmediateConsistency()),
                 _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency()),
                 _tokenRepository.AddAsync(TokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency())
             );

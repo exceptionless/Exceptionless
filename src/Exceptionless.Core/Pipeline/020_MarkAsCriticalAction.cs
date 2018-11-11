@@ -2,11 +2,12 @@
 using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(20)]
     public class MarkAsCriticalAction : EventPipelineActionBase {
-        public MarkAsCriticalAction(ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public MarkAsCriticalAction(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             ContinueOnError = true;
         }
 

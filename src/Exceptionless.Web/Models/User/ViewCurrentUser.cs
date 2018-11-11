@@ -30,7 +30,7 @@ namespace Exceptionless.Web.Models {
             if (!options.EnableIntercom)
                 return null;
 
-            byte[] secretKey = Encoding.UTF8.GetBytes(options.IntercomAppSecret);
+            byte[] secretKey = Encoding.UTF8.GetBytes(options.IntercomSecret);
             byte[] bytes = Encoding.UTF8.GetBytes(value);
             using (var hmac = new HMACSHA256(secretKey)) {
                 hmac.ComputeHash(bytes);

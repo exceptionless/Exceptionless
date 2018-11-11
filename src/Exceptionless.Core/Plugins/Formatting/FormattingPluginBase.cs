@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin {
+        public FormattingPluginBase(IOptionsSnapshot<AppOptions> options) : base(options) {}
+
         public virtual SummaryData GetStackSummaryData(Stack stack) {
             return null;
         }
@@ -41,17 +44,18 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!String.IsNullOrEmpty(version))
                 attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Version", Value = version, Short = true });
 
+            string baseUrl = _options.Value.BaseURL;
             var actions = new List<string> { $"• {GetSlackEventUrl(ev.Id, "View Event")}" };
             if (ev.Type == Event.KnownTypes.Error || ev.Type == Event.KnownTypes.NotFound)
-                actions.Add($"• <{AppOptions.Current.BaseURL}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>");
-            actions.Add($"• <{AppOptions.Current.BaseURL}/stack/{ev.StackId}/stop-notifications|Stop sending notifications for this event>");
-            actions.Add($"• <{AppOptions.Current.BaseURL}/project/{ev.ProjectId}/manage?tab=integrations|Change your notification settings for this project>");
+                actions.Add($"• <{baseUrl}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>");
+            actions.Add($"• <{baseUrl}/stack/{ev.StackId}/stop-notifications|Stop sending notifications for this event>");
+            actions.Add($"• <{baseUrl}/project/{ev.ProjectId}/manage?tab=integrations|Change your notification settings for this project>");
 
             attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Other Actions", Value = String.Join("\n", actions) });
         }
 
         protected string GetSlackEventUrl(string eventId, string message = null) {
-            var parts = new List<string> { $"{AppOptions.Current.BaseURL}/event/{eventId}" };
+            var parts = new List<string> { $"{_options.Value.BaseURL}/event/{eventId}" };
             if (!String.IsNullOrEmpty(message))
                 parts.Add($"|{message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")}");
 

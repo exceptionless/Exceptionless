@@ -66,8 +66,6 @@ namespace Exceptionless.Core {
         public string GoogleGeocodingApiKey { get; internal set; }
 
         public int BulkBatchSize { get; internal set; }
-
-        public static AppOptions Current { get; internal set; }
     }
 
     public class ConfigureAppOptions : IConfigureOptions<AppOptions> {
@@ -110,8 +108,6 @@ namespace Exceptionless.Core {
                 options.Version = versionInfo.FileVersion;
                 options.InformationalVersion = versionInfo.ProductVersion;
             } catch { }
-
-            AppOptions.Current = options;
         }
     }
 

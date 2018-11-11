@@ -2,11 +2,15 @@
 using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(850)]
     public class V1R850EventUpgrade : PluginBase, IEventUpgraderPlugin {
+        public V1R850EventUpgrade(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        
         public void Upgrade(EventUpgraderContext ctx) {
             if (ctx.Version > new Version(1, 0, 0, 850))
                 return;
