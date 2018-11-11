@@ -15,10 +15,12 @@ namespace Exceptionless.Tests.Repositories {
     public sealed class OrganizationRepositoryTests : ElasticTestBase {
         private readonly InMemoryCacheClient _cache;
         private readonly IOrganizationRepository _repository;
+        private readonly BillingManager _billingManager;
 
         public OrganizationRepositoryTests(ITestOutputHelper output) : base(output) {
             _cache = GetService<ICacheClient>() as InMemoryCacheClient;
             _repository = GetService<IOrganizationRepository>();
+            _billingManager = GetService<BillingManager>();
 
             Log.SetLogLevel<OrganizationRepository>(LogLevel.Trace);
         }
@@ -27,7 +29,7 @@ namespace Exceptionless.Tests.Repositories {
         public async Task CanCreateUpdateRemoveAsync() {
             Assert.Equal(0, await _repository.CountAsync());
 
-            var organization = new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id };
+            var organization = new Organization { Name = "Test Organization", PlanId = _billingManager.FreePlan.Id };
             Assert.Null(organization.Id);
 
             await _repository.AddAsync(organization);
@@ -48,9 +50,9 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(0, await _repository.CountAsync());
 
             await _repository.AddAsync(new[] {
-                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 0 },
-                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 1 },
-                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 2 }
+                new Organization { Name = "Test Organization", PlanId = _billingManager.FreePlan.Id, RetentionDays = 0 },
+                new Organization { Name = "Test Organization", PlanId = _billingManager.FreePlan.Id, RetentionDays = 1 },
+                new Organization { Name = "Test Organization", PlanId = _billingManager.FreePlan.Id, RetentionDays = 2 }
             });
 
             await _configuration.Client.RefreshAsync(Indices.All);
@@ -80,7 +82,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Fact]
         public async Task CanAddAndGetByCachedAsync() {
-            var organization = new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id };
+            var organization = new Organization { Name = "Test Organization", PlanId = _billingManager.FreePlan.Id };
             Assert.Null(organization.Id);
 
             Assert.Equal(0, _cache.Count);

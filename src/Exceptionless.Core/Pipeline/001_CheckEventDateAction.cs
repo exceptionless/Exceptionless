@@ -4,11 +4,12 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(1)]
     public class CheckEventDateAction : EventPipelineActionBase {
-        public CheckEventDateAction(ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public CheckEventDateAction(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             ContinueOnError = true;
         }
 

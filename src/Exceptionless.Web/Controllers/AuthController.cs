@@ -275,8 +275,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("github")]
         public Task<ActionResult<TokenResult>> GitHubAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                _authOptions.Value.GitHubAppId,
-                _authOptions.Value.GitHubAppSecret,
+                _authOptions.Value.GitHubId,
+                _authOptions.Value.GitHubSecret,
                 (f, c) => {
                     c.Scope = "user:email";
                     return new GitHubClient(f, c);
@@ -289,8 +289,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("google")]
         public Task<ActionResult<TokenResult>> GoogleAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                _authOptions.Value.GoogleAppId,
-                _authOptions.Value.GoogleAppSecret,
+                _authOptions.Value.GoogleId,
+                _authOptions.Value.GoogleSecret,
                 (f, c) => {
                     c.Scope = "profile email";
                     return new GoogleClient(f, c);
@@ -303,8 +303,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("facebook")]
         public Task<ActionResult<TokenResult>> FacebookAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                _authOptions.Value.FacebookAppId,
-                _authOptions.Value.FacebookAppSecret,
+                _authOptions.Value.FacebookId,
+                _authOptions.Value.FacebookSecret,
                 (f, c) => {
                     c.Scope = "email";
                     return new FacebookClient(f, c);
@@ -317,8 +317,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("live")]
         public Task<ActionResult<TokenResult>> LiveAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                _authOptions.Value.MicrosoftAppId,
-                _authOptions.Value.MicrosoftAppSecret,
+                _authOptions.Value.MicrosoftId,
+                _authOptions.Value.MicrosoftSecret,
                 (f, c) => {
                     c.Scope = "wl.emails";
                     return new WindowsLiveClient(f, c);

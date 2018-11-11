@@ -26,6 +26,7 @@ namespace Exceptionless.Tests.Jobs {
         private readonly IEventRepository _eventRepository;
         private readonly IUserRepository _userRepository;
         private readonly EventPipeline _pipeline;
+        private readonly BillingManager _billingManager;
 
         public CloseInactiveSessionsJobTests(ITestOutputHelper output) : base(output) {
             _job = GetService<CloseInactiveSessionsJob>();
@@ -35,6 +36,7 @@ namespace Exceptionless.Tests.Jobs {
             _eventRepository = GetService<IEventRepository>();
             _userRepository = GetService<IUserRepository>();
             _pipeline = GetService<EventPipeline>();
+            _billingManager = GetService<BillingManager>();
 
             CreateDataAsync().GetAwaiter().GetResult();
         }
@@ -45,7 +47,7 @@ namespace Exceptionless.Tests.Jobs {
             var event1 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
             var event2 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId, sessionId: "123456789");
 
-            var contexts = await _pipeline.RunAsync(new []{ event1, event2 }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
+            var contexts = await _pipeline.RunAsync(new []{ event1, event2 }, OrganizationData.GenerateSampleOrganization(_billingManager), ProjectData.GenerateSampleProject());
             Assert.True(contexts.All(c => !c.HasError));
             Assert.True(contexts.All(c => !c.IsCancelled));
             Assert.True(contexts.All(c => c.IsProcessed));
@@ -80,7 +82,7 @@ namespace Exceptionless.Tests.Jobs {
             var event1 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
             var event2 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId, sessionId: sessionId);
 
-            var contexts = await _pipeline.RunAsync(new[] { event1, event2 }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
+            var contexts = await _pipeline.RunAsync(new[] { event1, event2 }, OrganizationData.GenerateSampleOrganization(_billingManager), ProjectData.GenerateSampleProject());
             Assert.True(contexts.All(c => !c.HasError));
             Assert.True(contexts.All(c => !c.IsCancelled));
             Assert.True(contexts.All(c => c.IsProcessed));
@@ -119,7 +121,7 @@ namespace Exceptionless.Tests.Jobs {
             const string userId = "blake@exceptionless.io";
             var ev = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
 
-            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
+            var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
@@ -157,11 +159,11 @@ namespace Exceptionless.Tests.Jobs {
         }
 
         private async Task CreateDataAsync() {
-            foreach (var organization in OrganizationData.GenerateSampleOrganizations()) {
+            foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager)) {
                 if (organization.Id == TestConstants.OrganizationId3)
-                    BillingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, UserData.GenerateSampleUser());
+                    _billingManager.ApplyBillingPlan(organization, _billingManager.FreePlan, UserData.GenerateSampleUser());
                 else
-                    BillingManager.ApplyBillingPlan(organization, BillingManager.SmallPlan, UserData.GenerateSampleUser());
+                    _billingManager.ApplyBillingPlan(organization, _billingManager.SmallPlan, UserData.GenerateSampleUser());
 
                 organization.StripeCustomerId = Guid.NewGuid().ToString("N");
                 organization.CardLast4 = "1234";

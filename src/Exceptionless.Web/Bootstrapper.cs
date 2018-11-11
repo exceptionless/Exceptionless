@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using AutoMapper;
 using Exceptionless.Core;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Models;
@@ -57,12 +58,12 @@ namespace Exceptionless.Web {
         }
 
         public class ApiMappings : Profile {
-            public ApiMappings() {
+            public ApiMappings(BillingManager billingManager) {
                 CreateMap<UserDescription, EventUserDescription>();
 
                 CreateMap<NewOrganization, Organization>();
                 CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
-                    vo.IsOverHourlyLimit = o.IsOverHourlyLimit();
+                    vo.IsOverHourlyLimit = o.IsOverHourlyLimit(billingManager);
                     vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
                 });
 

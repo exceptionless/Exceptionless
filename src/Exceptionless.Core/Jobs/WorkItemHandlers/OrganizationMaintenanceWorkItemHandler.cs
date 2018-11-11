@@ -18,10 +18,12 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly BillingManager _billingManager;
         private readonly ILockProvider _lockProvider;
 
-        public OrganizationMaintenanceWorkItemHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public OrganizationMaintenanceWorkItemHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMessageBus messageBus, BillingManager billingManager, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _organizationRepository = organizationRepository;
+            _billingManager = billingManager;
             _lockProvider = new CacheLockProvider(cacheClient, messageBus);
         }
 
@@ -65,13 +67,13 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         }
 
         private void UpgradePlan(Organization organization) {
-            var plan = BillingManager.GetBillingPlan(organization.PlanId);
+            var plan = _billingManager.GetBillingPlan(organization.PlanId);
             if (plan == null) {
                 Log.LogError("Unable to find a valid plan for organization: {organization}", organization.Id);
                 return;
             }
 
-            BillingManager.ApplyBillingPlan(organization, plan, user: null, updateBillingPrice: false);
+            _billingManager.ApplyBillingPlan(organization, plan, user: null, updateBillingPrice: false);
         }
     }
 }

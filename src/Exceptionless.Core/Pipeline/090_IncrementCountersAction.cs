@@ -4,18 +4,20 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(90)]
     public class IncrementCountersAction : EventPipelineActionBase {
         private readonly IMetricsClient _metricsClient;
+        private readonly BillingManager _billingManager;
 
-        public IncrementCountersAction(IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public IncrementCountersAction(IMetricsClient metricsClient, BillingManager billingManager, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _metricsClient = metricsClient;
+            _billingManager = billingManager;
             ContinueOnError = true;
         }
 
@@ -23,7 +25,7 @@ namespace Exceptionless.Core.Pipeline {
             try {
                 _metricsClient.Counter(MetricNames.EventsProcessed, contexts.Count);
 
-                if (contexts.First().Organization.PlanId != BillingManager.FreePlan.Id)
+                if (contexts.First().Organization.PlanId != _billingManager.FreePlan.Id)
                     _metricsClient.Counter(MetricNames.EventsPaidProcessed, contexts.Count);
             } catch (Exception ex) {
                 foreach (var context in contexts) {

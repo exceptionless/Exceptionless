@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(20)]
     public sealed class ErrorFormattingPlugin : FormattingPluginBase {
+        public ErrorFormattingPlugin(IOptionsSnapshot<AppOptions> options) : base(options) { }
+        
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
         }

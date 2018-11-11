@@ -4,11 +4,12 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(80)]
     public sealed class AngularPlugin : EventProcessorPluginBase {
-        public AngularPlugin(ILoggerFactory loggerFactory = null) : base(loggerFactory) {}
+        public AngularPlugin(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public override Task EventProcessingAsync(EventContext context) {
             if (!context.Event.IsError())
