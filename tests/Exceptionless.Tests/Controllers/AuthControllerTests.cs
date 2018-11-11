@@ -804,7 +804,7 @@ namespace Exceptionless.Tests.Controllers {
 
         private Task CreateOrganizationAndProjectsAsync() {
             return Task.WhenAll(
-                _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>()), o => o.ImmediateConsistency()),
+                _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>()), o => o.ImmediateConsistency()),
                 _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency())
             );
         }

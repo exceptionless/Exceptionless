@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Extensions {
             organization.SuspendedByUserId = null;
         }
 
-        public static int GetHourlyEventLimit(this Organization organization, BillingManager manager) {
+        public static int GetHourlyEventLimit(this Organization organization, BillingPlans plans) {
             if (organization.MaxEventsPerMonth <= 0)
                 return Int32.MaxValue;
 
@@ -56,7 +56,7 @@ namespace Exceptionless.Core.Extensions {
             if (eventsLeftInMonth < 0)
                 return 0;
 
-            if (organization.PlanId == manager.FreePlan.Id)
+            if (organization.PlanId == plans.FreePlan.Id)
                 return eventsLeftInMonth;
 
             var utcNow = SystemClock.UtcNow;
@@ -93,10 +93,10 @@ namespace Exceptionless.Core.Extensions {
             return usageInfo != null && (usageInfo.Total - usageInfo.Blocked) >= organization.GetMaxEventsPerMonthWithBonus();
         }
 
-        public static bool IsOverHourlyLimit(this Organization organization, BillingManager manager) {
+        public static bool IsOverHourlyLimit(this Organization organization, BillingPlans plans) {
             var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null && usageInfo.Total > organization.GetHourlyEventLimit(manager);
+            return usageInfo != null && usageInfo.Total > organization.GetHourlyEventLimit(plans);
         }
 
        public static int GetCurrentHourlyTotal(this Organization organization) {
@@ -135,9 +135,9 @@ namespace Exceptionless.Core.Extensions {
             return usageInfo?.TooBig ?? 0;
         }
 
-        public static void SetHourlyOverage(this Organization organization, double total, double blocked, double tooBig, BillingManager billingManager) {
+        public static void SetHourlyOverage(this Organization organization, double total, double blocked, double tooBig, BillingPlans plans) {
             var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-            organization.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetHourlyEventLimit(billingManager), TimeSpan.FromDays(3));
+            organization.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetHourlyEventLimit(plans), TimeSpan.FromDays(3));
         }
 
         public static void SetMonthlyUsage(this Organization organization, double total, double blocked, double tooBig) {

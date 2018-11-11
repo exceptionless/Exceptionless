@@ -24,11 +24,13 @@ namespace Exceptionless.Tests.Mail {
         private readonly IMailer _mailer;
         private readonly IOptionsSnapshot<EmailOptions> _options;
         private readonly BillingManager _billingManager;
+        private readonly BillingPlans _plans;
 
         public MailerTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _mailer = GetService<IMailer>();
             _options = GetService<IOptionsSnapshot<EmailOptions>>();
             _billingManager = GetService<BillingManager>();
+            _plans = GetService<BillingPlans>();
             
             if (_mailer is NullMailer)
                 _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<IOptionsSnapshot<AppOptions>>(), _options, GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
@@ -167,7 +169,7 @@ namespace Exceptionless.Tests.Mail {
         [Fact]
         public async Task SendOrganizationAddedAsync() {
             var user = UserData.GenerateSampleUser();
-            var organization = OrganizationData.GenerateSampleOrganization(_billingManager);
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
             await _mailer.SendOrganizationAddedAsync(user, organization, user);
             await RunMailJobAsync();
@@ -176,7 +178,7 @@ namespace Exceptionless.Tests.Mail {
         [Fact]
         public async Task SendOrganizationInviteAsync() {
             var user = UserData.GenerateSampleUser();
-            var organization = OrganizationData.GenerateSampleOrganization(_billingManager);
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
             await _mailer.SendOrganizationInviteAsync(user, organization, new Invite {
                 DateAdded = SystemClock.UtcNow,
@@ -193,7 +195,7 @@ namespace Exceptionless.Tests.Mail {
         [Fact]
         public async Task SendOrganizationHourlyOverageNoticeAsync() {
             var user = UserData.GenerateSampleUser();
-            var organization = OrganizationData.GenerateSampleOrganization(_billingManager);
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
             await _mailer.SendOrganizationNoticeAsync(user, organization, false, true);
             await RunMailJobAsync();
@@ -202,7 +204,7 @@ namespace Exceptionless.Tests.Mail {
         [Fact]
         public async Task SendOrganizationMonthlyOverageNoticeAsync() {
             var user = UserData.GenerateSampleUser();
-            var organization = OrganizationData.GenerateSampleOrganization(_billingManager);
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
             await _mailer.SendOrganizationNoticeAsync(user, organization, true, false);
             await RunMailJobAsync();
@@ -211,7 +213,7 @@ namespace Exceptionless.Tests.Mail {
         [Fact]
         public async Task SendOrganizationPaymentFailedAsync() {
             var user = UserData.GenerateSampleUser();
-            var organization = OrganizationData.GenerateSampleOrganization(_billingManager);
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
             await _mailer.SendOrganizationPaymentFailedAsync(user, organization);
             await RunMailJobAsync();

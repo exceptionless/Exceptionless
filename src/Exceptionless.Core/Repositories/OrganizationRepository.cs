@@ -14,11 +14,11 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository {
-        private readonly BillingManager _billingManager;
+        private readonly BillingPlans _plans;
 
-        public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator, BillingManager billingManager, IOptionsSnapshot<AppOptions> options)
+        public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator, BillingPlans plans, IOptionsSnapshot<AppOptions> options)
             : base(configuration.Organizations.Organization, validator, options) {
-            _billingManager = billingManager;
+            _plans = plans;
         }
 
         public async Task<Organization> GetByInviteTokenAsync(string token) {
@@ -51,9 +51,9 @@ namespace Exceptionless.Core.Repositories {
 
             if (paid.HasValue) {
                 if (paid.Value)
-                    filter &= !Query<Organization>.Term(o => o.PlanId, _billingManager.FreePlan.Id);
+                    filter &= !Query<Organization>.Term(o => o.PlanId, _plans.FreePlan.Id);
                 else
-                    filter &= Query<Organization>.Term(o => o.PlanId, _billingManager.FreePlan.Id);
+                    filter &= Query<Organization>.Term(o => o.PlanId, _plans.FreePlan.Id);
             }
 
             if (suspended.HasValue) {
@@ -94,16 +94,16 @@ namespace Exceptionless.Core.Repositories {
                 .SortDescending((Organization o) => o.PlanId);
 
             var results = (await FindAsync(query).AnyContext()).Documents;
-            var smallOrganizations = results.Where(o => String.Equals(o.PlanId, _billingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
-            var mediumOrganizations = results.Where(o => String.Equals(o.PlanId, _billingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();
-            var largeOrganizations = results.Where(o => String.Equals(o.PlanId, _billingManager.LargePlan.Id) && o.BillingPrice > 0).ToList();
+            var smallOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.SmallPlan.Id) && o.BillingPrice > 0).ToList();
+            var mediumOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.MediumPlan.Id) && o.BillingPrice > 0).ToList();
+            var largeOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.LargePlan.Id) && o.BillingPrice > 0).ToList();
             decimal monthlyTotalPaid = smallOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
                 + mediumOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
                 + largeOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
 
-            var smallYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, _billingManager.SmallYearlyPlan.Id) && o.BillingPrice > 0).ToList();
-            var mediumYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, _billingManager.MediumYearlyPlan.Id) && o.BillingPrice > 0).ToList();
-            var largeYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, _billingManager.LargeYearlyPlan.Id) && o.BillingPrice > 0).ToList();
+            var smallYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.SmallYearlyPlan.Id) && o.BillingPrice > 0).ToList();
+            var mediumYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.MediumYearlyPlan.Id) && o.BillingPrice > 0).ToList();
+            var largeYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.LargeYearlyPlan.Id) && o.BillingPrice > 0).ToList();
             decimal yearlyTotalPaid = smallYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
                 + mediumYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
                 + largeYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
@@ -119,9 +119,9 @@ namespace Exceptionless.Core.Repositories {
                 YearlyTotal = (monthlyTotalPaid * 12) + yearlyTotalPaid,
                 MonthlyTotalAccounts = smallOrganizations.Count + mediumOrganizations.Count + largeOrganizations.Count,
                 YearlyTotalAccounts = smallYearlyOrganizations.Count + mediumYearlyOrganizations.Count + largeYearlyOrganizations.Count,
-                FreeAccounts = results.Count(o => String.Equals(o.PlanId, _billingManager.FreePlan.Id)),
-                PaidAccounts = results.Count(o => !String.Equals(o.PlanId, _billingManager.FreePlan.Id) && o.BillingPrice > 0),
-                FreeloaderAccounts = results.Count(o => !String.Equals(o.PlanId, _billingManager.FreePlan.Id) && o.BillingPrice <= 0),
+                FreeAccounts = results.Count(o => String.Equals(o.PlanId, _plans.FreePlan.Id)),
+                PaidAccounts = results.Count(o => !String.Equals(o.PlanId, _plans.FreePlan.Id) && o.BillingPrice > 0),
+                FreeloaderAccounts = results.Count(o => !String.Equals(o.PlanId, _plans.FreePlan.Id) && o.BillingPrice <= 0),
                 SuspendedAccounts = results.Count(o => o.IsSuspended),
             };
         }
