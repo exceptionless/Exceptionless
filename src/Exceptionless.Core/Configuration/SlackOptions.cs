@@ -1,14 +1,16 @@
 ﻿using System;
+using Exceptionless.Core.Extensions;
+using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Configuration {
     public class SlackOptions {
-        public string SlackAppId { get; internal set; }
+        public string SlackId { get; internal set; }
 
-        public string SlackAppSecret { get; internal set; }
+        public string SlackSecret { get; internal set; }
 
-        public bool EnableSlack => !String.IsNullOrEmpty(SlackAppId);
+        public bool EnableSlack => !String.IsNullOrEmpty(SlackId);
     }
 
     public class ConfigureSlackOptions : IConfigureOptions<SlackOptions> {
@@ -19,8 +21,9 @@ namespace Exceptionless.Core.Configuration {
         }
 
         public void Configure(SlackOptions options) {
-            options.SlackAppId = _configuration.GetValue<string>(nameof(options.SlackAppId));
-            options.SlackAppSecret = _configuration.GetValue<string>(nameof(options.SlackAppSecret));
+            var oAuth = _configuration.GetConnectionString("OAuth").ParseConnectionString();
+            options.SlackId = oAuth.GetString(nameof(options.SlackId));
+            options.SlackSecret = oAuth.GetString(nameof(options.SlackSecret));
         }
     }
 }

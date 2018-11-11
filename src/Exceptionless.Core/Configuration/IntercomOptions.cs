@@ -1,12 +1,14 @@
 ﻿using System;
+using Exceptionless.Core.Extensions;
+using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Configuration {
     public class IntercomOptions {
-        public bool EnableIntercom => !String.IsNullOrEmpty(IntercomAppSecret);
+        public bool EnableIntercom => !String.IsNullOrEmpty(IntercomSecret);
 
-        public string IntercomAppSecret { get; internal set; }
+        public string IntercomSecret { get; internal set; }
     }
 
     public class ConfigureIntercomOptions : IConfigureOptions<IntercomOptions> {
@@ -17,7 +19,8 @@ namespace Exceptionless.Core.Configuration {
         }
 
         public void Configure(IntercomOptions options) {
-            options.IntercomAppSecret = _configuration.GetValue<string>(nameof(options.IntercomAppSecret));
+            var oAuth = _configuration.GetConnectionString("OAuth").ParseConnectionString();
+            options.IntercomSecret = oAuth.GetString(nameof(options.IntercomSecret));
         }
     }
 }
