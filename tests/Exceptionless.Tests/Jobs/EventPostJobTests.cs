@@ -33,6 +33,7 @@ namespace Exceptionless.Tests.Jobs {
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         private readonly EventPostService _eventPostService;
         private readonly BillingManager _billingManager;
+        private readonly BillingPlans _plans;
         private readonly IOptions<AppOptions> _options;
 
         public EventPostJobTests(ITestOutputHelper output) : base(output) {
@@ -46,6 +47,7 @@ namespace Exceptionless.Tests.Jobs {
             _userRepository = GetService<IUserRepository>();
             _jsonSerializerSettings = GetService<JsonSerializerSettings>();
             _billingManager = GetService<BillingManager>();
+            _plans = GetService<BillingPlans>();
             _options = GetService<IOptions<AppOptions>>();
 
             CreateDataAsync().GetAwaiter().GetResult();
@@ -110,11 +112,11 @@ namespace Exceptionless.Tests.Jobs {
         }
 
         private async Task CreateDataAsync() {
-            foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager)) {
+            foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans)) {
                 if (organization.Id == TestConstants.OrganizationId3)
-                    _billingManager.ApplyBillingPlan(organization, _billingManager.FreePlan, UserData.GenerateSampleUser());
+                    _billingManager.ApplyBillingPlan(organization, _plans.FreePlan, UserData.GenerateSampleUser());
                 else
-                    _billingManager.ApplyBillingPlan(organization, _billingManager.SmallPlan, UserData.GenerateSampleUser());
+                    _billingManager.ApplyBillingPlan(organization, _plans.SmallPlan, UserData.GenerateSampleUser());
 
                 organization.StripeCustomerId = Guid.NewGuid().ToString("N");
                 organization.CardLast4 = "1234";

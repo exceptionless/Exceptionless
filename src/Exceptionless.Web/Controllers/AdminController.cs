@@ -47,6 +47,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IOptions<StorageOptions> _storageOptions;
         private readonly IOptions<StripeOptions> _stripeOptions;
         private readonly BillingManager _billingManager;
+        private readonly BillingPlans _plans;
 
         public AdminController(
             ExceptionlessElasticConfiguration configuration, 
@@ -67,7 +68,8 @@ namespace Exceptionless.Web.Controllers {
             IOptionsSnapshot<SlackOptions> slackOptions,
             IOptionsSnapshot<StorageOptions> storageOptions,
             IOptionsSnapshot<StripeOptions> stripeOptions,
-            BillingManager billingManager) {
+            BillingManager billingManager,
+            BillingPlans plans) {
             _configuration = configuration;
             _fileStorage = fileStorage;
             _messagePublisher = messagePublisher;
@@ -87,6 +89,7 @@ namespace Exceptionless.Web.Controllers {
             _storageOptions = storageOptions;
             _stripeOptions = stripeOptions;
             _billingManager = billingManager;
+            _plans = plans;
         }
 
         [HttpGet("settings")]
@@ -126,7 +129,7 @@ namespace Exceptionless.Web.Controllers {
             if (plan == null)
                 return Ok(new { Success = false, Message = "Invalid PlanId." });
 
-            organization.BillingStatus = !String.Equals(plan.Id, _billingManager.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
+            organization.BillingStatus = !String.Equals(plan.Id, _plans.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
             organization.RemoveSuspension();
             _billingManager.ApplyBillingPlan(organization, plan, CurrentUser, false);
 

@@ -27,6 +27,7 @@ namespace Exceptionless.Tests.Stats {
         private readonly IProjectRepository _projectRepository;
         private readonly StackService _stackService;
         private readonly BillingManager _billingManager;
+        private readonly BillingPlans _plans;
 
         public AggregationTests(ITestOutputHelper output) : base(output) {
             _pipeline = GetService<EventPipeline>();
@@ -36,6 +37,7 @@ namespace Exceptionless.Tests.Stats {
             _projectRepository = GetService<IProjectRepository>();
             _stackService = GetService<StackService>();
             _billingManager = GetService<BillingManager>();
+            _plans = GetService<BillingPlans>();
         }
 
         [Fact]
@@ -195,7 +197,7 @@ namespace Exceptionless.Tests.Stats {
         }
 
         private async Task CreateDataAsync(int eventCount = 0, bool multipleProjects = true) {
-            var orgs = OrganizationData.GenerateSampleOrganizations(_billingManager);
+            var orgs = OrganizationData.GenerateSampleOrganizations(_billingManager, _plans);
             await _organizationRepository.AddAsync(orgs, o => o.Cache());
 
             var projects = ProjectData.GenerateSampleProjects();
@@ -209,7 +211,7 @@ namespace Exceptionless.Tests.Stats {
         private async Task CreateEventsAsync(int eventCount, string[] projectIds, decimal? value = -1) {
             var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: SystemClock.OffsetUtcNow.SubtractDays(3), endDate: SystemClock.OffsetUtcNow, value: value);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
-                await _pipeline.RunAsync(eventGroup, OrganizationData.GenerateSampleOrganization(_billingManager), ProjectData.GenerateSampleProject());
+                await _pipeline.RunAsync(eventGroup, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             await _stackService.SaveStackUsagesAsync();
 
             await _configuration.Client.RefreshAsync(Indices.All);
@@ -226,7 +228,7 @@ namespace Exceptionless.Tests.Stats {
                 EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(50), userIdentity: "3")
             };
 
-            await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager), ProjectData.GenerateSampleProject());
+            await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             await _configuration.Client.RefreshAsync(Indices.All);
 
             var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);

@@ -46,6 +46,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
+        private readonly BillingPlans _plans;
         private readonly IMailer _mailer;
         private readonly IMessagePublisher _messagePublisher;
         private readonly IOptions<AppOptions> _options;
@@ -65,7 +66,8 @@ namespace Exceptionless.Web.Controllers {
             IQueryValidator validator, 
             IOptionsSnapshot<AppOptions> options, 
             IOptionsSnapshot<StripeOptions> stripeOptions, 
-            ILoggerFactory loggerFactory) : base(organizationRepository, mapper, validator, loggerFactory) {
+            ILoggerFactory loggerFactory,
+            BillingPlans plans) : base(organizationRepository, mapper, validator, loggerFactory) {
             _cacheClient = cacheClient;
             _eventRepository = eventRepository;
             _userRepository = userRepository;
@@ -76,6 +78,7 @@ namespace Exceptionless.Web.Controllers {
             _messagePublisher = messagePublisher;
             _options = options;
             _stripeOptions = stripeOptions;
+            _plans = plans;
         }
 
         #region CRUD
@@ -296,7 +299,7 @@ namespace Exceptionless.Web.Controllers {
             if (organization == null)
                 return NotFound();
 
-            var plans = _billingManager.Plans;
+            var plans = _plans.Plans;
             if (!Request.IsGlobalAdmin())
                 plans = plans.Where(p => !p.IsHidden || p.Id == organization.PlanId).ToList();
 
@@ -350,7 +353,7 @@ namespace Exceptionless.Web.Controllers {
             if (plan == null)
                 return Ok(ChangePlanResult.FailWithMessage("Invalid PlanId."));
 
-            if (String.Equals(organization.PlanId, plan.Id) && String.Equals(_billingManager.FreePlan.Id, plan.Id))
+            if (String.Equals(organization.PlanId, plan.Id) && String.Equals(_plans.FreePlan.Id, plan.Id))
                 return Ok(ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan."));
 
             // Only see if they can downgrade a plan if the plans are different.
@@ -365,7 +368,7 @@ namespace Exceptionless.Web.Controllers {
 
             try {
                 // If they are on a paid plan and then downgrade to a free plan then cancel their stripe subscription.
-                if (!String.Equals(organization.PlanId, _billingManager.FreePlan.Id) && String.Equals(plan.Id, _billingManager.FreePlan.Id)) {
+                if (!String.Equals(organization.PlanId, _plans.FreePlan.Id) && String.Equals(plan.Id, _plans.FreePlan.Id)) {
                     if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
                         var subs = await subscriptionService.ListAsync(new StripeSubscriptionListOptions { CustomerId = organization.StripeCustomerId });
                         foreach (var sub in subs.Where(s => !s.CanceledAt.HasValue))
@@ -658,7 +661,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         protected override async Task<Organization> AddModelAsync(Organization value) {
-            _billingManager.ApplyBillingPlan(value, _stripeOptions.Value.EnableBilling ? _billingManager.FreePlan : _billingManager.UnlimitedPlan, CurrentUser);
+            _billingManager.ApplyBillingPlan(value, _stripeOptions.Value.EnableBilling ? _plans.FreePlan : _plans.UnlimitedPlan, CurrentUser);
 
             var organization = await base.AddModelAsync(value);
 

@@ -14,6 +14,7 @@ namespace Exceptionless.Core.Utility {
         private readonly IProjectRepository _projectRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly BillingManager _billingManager;
+        private readonly BillingPlans _billingPlans;
         private readonly IUserRepository _userRepository;
 
         public const string TEST_USER_EMAIL = "test@exceptionless.io";
@@ -25,12 +26,13 @@ namespace Exceptionless.Core.Utility {
         public const string INTERNAL_API_KEY = "Bx7JgglstPG544R34Tw9T7RlCed3OIwtYXVeyhT2";
         public const string INTERNAL_PROJECT_ID = "54b56e480ef9605a88a13153";
 
-        public SampleDataService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, ITokenRepository tokenRepository, BillingManager billingManager) {
+        public SampleDataService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, ITokenRepository tokenRepository, BillingManager billingManager, BillingPlans billingPlans) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
             _billingManager = billingManager;
+            _billingPlans = billingPlans;
         }
 
         public async Task CreateDataAsync() {
@@ -60,7 +62,7 @@ namespace Exceptionless.Core.Utility {
 
             var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
             var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme" };
-            _billingManager.ApplyBillingPlan(organization, _billingManager.UnlimitedPlan, user);
+            _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
             organization = await _organizationRepository.AddAsync(organization, o => o.Cache()).AnyContext();
 
             var project = new Project { Id = TEST_PROJECT_ID, Name = "Disintegrating Pistol", OrganizationId = organization.Id };
@@ -96,7 +98,7 @@ namespace Exceptionless.Core.Utility {
 
             var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
             var organization = new Organization { Name = "Exceptionless" };
-            _billingManager.ApplyBillingPlan(organization, _billingManager.UnlimitedPlan, user);
+            _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
             organization = await _organizationRepository.AddAsync(organization, o => o.Cache()).AnyContext();
 
             var project = new Project { Id = INTERNAL_PROJECT_ID, Name = "API", OrganizationId = organization.Id };

@@ -174,6 +174,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<ILockProvider>(s => s.GetRequiredService<CacheLockProvider>());
             container.AddTransient<StripeEventHandler>();
             container.AddSingleton<BillingManager>();
+            container.AddSingleton<BillingPlans>();
             container.AddSingleton<EventPostService>();
             container.AddSingleton<SampleDataService>();
             container.AddSingleton<SemanticVersionParser>();

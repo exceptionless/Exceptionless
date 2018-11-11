@@ -58,12 +58,12 @@ namespace Exceptionless.Web {
         }
 
         public class ApiMappings : Profile {
-            public ApiMappings(BillingManager billingManager) {
+            public ApiMappings(BillingPlans plans) {
                 CreateMap<UserDescription, EventUserDescription>();
 
                 CreateMap<NewOrganization, Organization>();
                 CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
-                    vo.IsOverHourlyLimit = o.IsOverHourlyLimit(billingManager);
+                    vo.IsOverHourlyLimit = o.IsOverHourlyLimit(plans);
                     vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
                 });
 
