@@ -7,6 +7,7 @@ ConnectionStrings:
   Queue.off: provider=redis;server="localhost,abortConnect=false"
   Storage.off: ''
   LDAP.off: ''
+  OAuth: FacebookId=395178683904310;GitHubId=7ef1dd5bfbc4ccf7f5ef;GoogleId=809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com;MicrosoftId=000000004C137E8B;SlackId=34500115540.177239122322;
 
   # Base url for the ui used to build links in emails and other places.
 BaseURL: https://dev.exceptionless.io
@@ -15,9 +16,4 @@ BaseURL: https://dev.exceptionless.io
 ExceptionlessServerUrl: https://dev-api.exceptionless.io
 InternalProjectId: 50ca6b2423d6c8493020b823
 
-FacebookAppId: 395178683904310
-GitHubAppId: 7ef1dd5bfbc4ccf7f5ef
-GoogleAppId: enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com
-MicrosoftAppId: 000000004C137E8B
-SlackAppId: 34500115540.177239122322
 StripePublishableApiKey: pk_test_nStD8zuwsiyVjPhfxxxMEFeE
