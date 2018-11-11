@@ -56,7 +56,7 @@ namespace Exceptionless.Core.Configuration {
             options.AllowedOutboundAddresses = _configuration.GetValueList(nameof(options.AllowedOutboundAddresses), "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
             options.TestEmailAddress = _configuration.GetValue(nameof(options.TestEmailAddress), "noreply@exceptionless.io");
 
-            var uri = new SmtpUri(_configuration.GetConnectionString("email") ?? "smtp://localhost");
+            var uri = new SmtpUri(_configuration.GetConnectionString("Email") ?? "smtp://localhost");
             options.SmtpHost = uri.Host;
             options.SmtpPort = uri.Port;
             options.SmtpUser = uri.User;

@@ -109,8 +109,7 @@ namespace Exceptionless.Core {
                 var versionInfo = FileVersionInfo.GetVersionInfo(typeof(AppOptions).Assembly.Location);
                 options.Version = versionInfo.FileVersion;
                 options.InformationalVersion = versionInfo.ProductVersion;
-            }
-            catch { }
+            } catch { }
 
             AppOptions.Current = options;
         }

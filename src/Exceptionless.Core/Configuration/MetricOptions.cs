@@ -20,15 +20,15 @@ namespace Exceptionless.Core.Configuration {
         }
 
         public void Configure(MetricOptions options) {
-            string cs = _configuration.GetConnectionString("metric");
+            string cs = _configuration.GetConnectionString("Metric");
             options.Data = cs.ParseConnectionString();
-            options.Provider = options.Data.GetString(nameof(options.Provider).ToLowerInvariant());
+            options.Provider = options.Data.GetString(nameof(options.Provider));
             
             var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? _configuration.GetConnectionString(options.Provider) : null;
             if (!String.IsNullOrEmpty(providerConnectionString))
                 options.Data.AddRange(providerConnectionString.ParseConnectionString());
             
-            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider).ToLowerInvariant() });
+            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
         }
     }
 }

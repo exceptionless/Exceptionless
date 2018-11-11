@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Configuration {
             options.DisableIndexConfiguration = _configuration.GetValue(nameof(options.DisableIndexConfiguration), false);
             options.EnableSnapshotJobs = _configuration.GetValue(nameof(options.EnableSnapshotJobs), String.IsNullOrEmpty(options.ScopePrefix) && _appOptions.Value.AppMode == AppMode.Production);
 
-            string connectionString = _configuration.GetConnectionString("elasticsearch");
+            string connectionString = _configuration.GetConnectionString("Elasticsearch");
             var pairs = connectionString.ParseConnectionString();
 
             options.ServerUrl = pairs.GetString("server", "http://localhost:9200");

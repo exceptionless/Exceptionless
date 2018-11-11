@@ -26,15 +26,15 @@ namespace Exceptionless.Core.Configuration {
             options.Scope = _configuration.GetValue<string>(nameof(options.Scope), String.Empty);
             options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
 
-            string cs = _configuration.GetConnectionString("storage");
+            string cs = _configuration.GetConnectionString("Storage");
             options.Data = cs.ParseConnectionString();
-            options.Provider = options.Data.GetString(nameof(options.Provider).ToLowerInvariant());
+            options.Provider = options.Data.GetString(nameof(options.Provider));
 
             var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? _configuration.GetConnectionString(options.Provider) : null;
             if (!String.IsNullOrEmpty(providerConnectionString))
                 options.Data.AddRange(providerConnectionString.ParseConnectionString());
             
-            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider).ToLowerInvariant() });
+            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
         }
         
     }
