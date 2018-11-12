@@ -58,3 +58,26 @@ spec:
       name: https
   selector:
     component: {{ template "exceptionless.fullname" . }}-app
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-app-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    certmanager.k8s.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - hosts:
+    - {{.Values.app.domain}}
+    secretName: {{ template "exceptionless.fullname" . }}-app-tls
+  rules:
+  - host: {{.Values.app.domain}}
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: {{ template "exceptionless.fullname" . }}-app
+          servicePort: 80

@@ -19,4 +19,4 @@ data:
 {{- else }}
     StorageFolder: /app/storage
 {{- end }}
-    BaseUrl: http://ex-api.localtest.me:5000
+    BaseUrl: https://{{.Values.api.domain}}
