@@ -57,7 +57,7 @@ kubectl apply -f certificates.yaml
 helm install --name exceptionless-test --namespace test ./exceptionless \
     --set "storage.azureConnectionString=DefaultEndpointsProtocol=https;AccountName=testex;AccountKey=$AZURE_ACCOUNT_KEY;EndpointSuffix=core.windows.net" \
     --set "elasticsearch.connectionString=http://10.0.0.4:9200" \
-    --set "redis.connectionString=test-ex-cache.redis.cache.windows.net:6380,password=$REDIS_PASSWORD,ssl=True,abortConnect=False" \
+    --set "redis.connectionString=test-ex-cache.redis.cache.windows.net:6380\,password=$REDIS_PASSWORD\,ssl=True\,abortConnect=False" \
     --set "api.domain=test-api.exceptionless.io" \
     --set "app.domain=test-app.exceptionless.io"
 
