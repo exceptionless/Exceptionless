@@ -1,6 +1,6 @@
 ﻿{
   "id": "1ecd0826e447a44e78877ab1",
-  "url": "http://localhost:50000/stack/1ecd0826e447a44e78877ab1",
+  "url": "http://localhost:5000/stack/1ecd0826e447a44e78877ab1",
   "title": "A potentially dangerous Request.Path value was detected from the client (&).",
   "tags": [
     "Test"
