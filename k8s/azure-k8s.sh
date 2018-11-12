@@ -54,12 +54,18 @@ kubectl apply -f cluster-issuer.yaml
 # TODO: update this file using the cluster name for the dns
 kubectl apply -f certificates.yaml
 
+# install exceptionless app
 helm install --name exceptionless-test --namespace test ./exceptionless \
     --set "storage.azureConnectionString=DefaultEndpointsProtocol=https;AccountName=testex;AccountKey=$AZURE_ACCOUNT_KEY;EndpointSuffix=core.windows.net" \
     --set "elasticsearch.connectionString=http://10.0.0.4:9200" \
     --set "redis.connectionString=test-ex-cache.redis.cache.windows.net:6380\,password=$REDIS_PASSWORD\,ssl=True\,abortConnect=False" \
     --set "api.domain=test-api.exceptionless.io" \
-    --set "app.domain=test-app.exceptionless.io"
+    --set "app.domain=test-app.exceptionless.io" \
+    --set "api.image.tag=305" \
+    --set "jobs.image.tag=305"
+
+# upgrade exceptionless app to a new docker image tag
+helm upgrade --set "api.image.tag=305" --set "jobs.image.tag=305" --reuse-values exceptionless-test ./exceptionless
 
 # read about cluster autoscaler
 https://docs.microsoft.com/en-us/azure/aks/autoscaler
