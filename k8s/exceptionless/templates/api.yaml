@@ -64,9 +64,28 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-    - port: 443
-      targetPort: https
-      protocol: TCP
-      name: https
   selector:
     component: {{ template "exceptionless.fullname" . }}-api
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-api-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    certmanager.k8s.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - hosts:
+    - {{.Values.api.domain}}
+    secretName: {{ template "exceptionless.fullname" . }}-api-tls
+  rules:
+  - host: {{.Values.api.domain}}
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: {{ template "exceptionless.fullname" . }}-api
+          servicePort: 80

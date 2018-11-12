@@ -1,3 +1,5 @@
+# TODO: Set AZURE_ACCOUNT_KEY and REDIS_PASSWORD environment variables
+
 RESOURCE_GROUP=exceptionless-test
 CLUSTER=ex-k8s-test2
 VNET=test-net
@@ -52,12 +54,14 @@ kubectl apply -f cluster-issuer.yaml
 # TODO: update this file using the cluster name for the dns
 kubectl apply -f certificates.yaml
 
-helm repo add azure-samples https://azure-samples.github.io/helm-charts/
-helm install azure-samples/aks-helloworld
-helm install azure-samples/aks-helloworld --set title="AKS Ingress Demo" --set serviceName="ingress-demo"
-kubectl apply -f hello-world-ingress.yaml
+helm install --name exceptionless-test --namespace test ./exceptionless \
+    --set "storage.azureConnectionString=DefaultEndpointsProtocol=https;AccountName=testex;AccountKey=$AZURE_ACCOUNT_KEY;EndpointSuffix=core.windows.net" \
+    --set "elasticsearch.connectionString=http://10.0.0.4:9200" \
+    --set "redis.connectionString=test-ex-cache.redis.cache.windows.net:6380,password=$REDIS_PASSWORD,ssl=True,abortConnect=False" \
+    --set "api.domain=test-api.exceptionless.io" \
+    --set "app.domain=test-app.exceptionless.io"
 
-https://ex-k8s-test2.eastus.cloudapp.azure.com/
-https://ex-k8s-test2.eastus.cloudapp.azure.com/hello-world-two
+# read about cluster autoscaler
+https://docs.microsoft.com/en-us/azure/aks/autoscaler
 
 az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
