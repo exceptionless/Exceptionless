@@ -32,11 +32,10 @@ namespace Exceptionless.Insulation.Jobs {
             var services = new ServiceCollection();
             services.AddSingleton<IConfiguration>(config);
             services.ConfigureOptions<ConfigureAppOptions>();
-
-            var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
-
             var container = services.BuildServiceProvider();
             var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
+            
+            var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
                 client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
@@ -60,6 +59,7 @@ namespace Exceptionless.Insulation.Jobs {
             Core.Bootstrapper.RegisterServices(services);
             Bootstrapper.RegisterServices(container, services, options, true);
             
+            container = services.BuildServiceProvider();
             Core.Bootstrapper.LogConfiguration(container, options, container.GetRequiredService<ILoggerFactory>());
             if (options.EnableBootstrapStartupActions)
                 container.RunStartupActionsAsync().GetAwaiter().GetResult();
