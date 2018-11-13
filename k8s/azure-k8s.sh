@@ -65,9 +65,19 @@ helm install --name exceptionless-test --namespace test ./exceptionless \
     --set "jobs.image.tag=305"
 
 # upgrade exceptionless app to a new docker image tag
-helm upgrade --set "api.image.tag=305" --set "jobs.image.tag=305" --reuse-values exceptionless-test ./exceptionless
+helm upgrade --set "api.image.tag=306" --set "jobs.image.tag=306" --reuse-values exceptionless-test ./exceptionless
+
+# create service principal for talking to k8s
+ACCOUNT=`az account show -o json`
+SUBSCRIPTION_ID=`echo $ACCOUNT | jq -r '.id'`
+AZ_TENANT=`echo $ACCOUNT | jq -r '.tenantId'`
+SERVICE_PRINCIPAL=`az ad sp create-for-rbac --role="Azure Kubernetes Service Cluster User Role" --name http://$CLUSTER-build --scopes="/subscriptions/$SUBSCRIPTION_ID" -o json`
+AZ_USERNAME=`echo $SERVICE_PRINCIPAL | jq -r '.appId'`
+AZ_PASSWORD=`echo $SERVICE_PRINCIPAL | jq -r '.password'`
+echo "AZ_USERNAME=$AZ_USERNAME AZ_PASSWORD=$AZ_PASSWORD AZ_TENANT=$AZ_TENANT | az login --service-principal --username \$AZ_USERNAME --password \$AZ_PASSWORD --tenant \$AZ_TENANT"
 
 # read about cluster autoscaler
 https://docs.microsoft.com/en-us/azure/aks/autoscaler
 
 az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
+87d9819d-dc55-4187-8ce7-35e9a12cb1bd
