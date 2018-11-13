@@ -80,4 +80,3 @@ echo "AZ_USERNAME=$AZ_USERNAME AZ_PASSWORD=$AZ_PASSWORD AZ_TENANT=$AZ_TENANT | a
 https://docs.microsoft.com/en-us/azure/aks/autoscaler
 
 az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
-87d9819d-dc55-4187-8ce7-35e9a12cb1bd
