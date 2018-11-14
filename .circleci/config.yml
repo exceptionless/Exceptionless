@@ -54,7 +54,11 @@ jobs:
       - run:
           name: Deploy new images
           working_directory: k8s
-          command: helm upgrade --set "api.image.tag=$CIRCLE_BUILD_NUM" --set "jobs.image.tag=$CIRCLE_BUILD_NUM" --reuse-values exceptionless-test ./exceptionless
+          command: |
+            curl https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz -o helm.tar.gz
+            tar -zxvf helm.tar.gz
+            mv linux-amd64/helm /usr/local/bin/helm
+            helm upgrade --set "api.image.tag=$CIRCLE_BUILD_NUM" --set "jobs.image.tag=$CIRCLE_BUILD_NUM" --reuse-values exceptionless-test ./exceptionless
 
   deploy-prod:
     docker:
@@ -70,7 +74,11 @@ jobs:
       - run:
           name: Deploy new images
           working_directory: k8s
-          command: helm upgrade --set "api.image.tag=$CIRCLE_BUILD_NUM" --set "jobs.image.tag=$CIRCLE_BUILD_NUM" --reuse-values exceptionless-test ./exceptionless
+          command: |
+            curl https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz -o helm.tar.gz
+            tar -zxvf helm.tar.gz
+            mv linux-amd64/helm /usr/local/bin/helm
+            helm upgrade --set "api.image.tag=$CIRCLE_BUILD_NUM" --set "jobs.image.tag=$CIRCLE_BUILD_NUM" --reuse-values exceptionless-test ./exceptionless
 
 workflows:
   version: 2

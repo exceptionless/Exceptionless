@@ -55,17 +55,18 @@ kubectl apply -f cluster-issuer.yaml
 kubectl apply -f certificates.yaml
 
 # install exceptionless app
+API_TAG=310
 helm install --name exceptionless-test --namespace test ./exceptionless \
     --set "storage.azureConnectionString=DefaultEndpointsProtocol=https;AccountName=testex;AccountKey=$AZURE_ACCOUNT_KEY;EndpointSuffix=core.windows.net" \
     --set "elasticsearch.connectionString=http://10.0.0.4:9200" \
     --set "redis.connectionString=test-ex-cache.redis.cache.windows.net:6380\,password=$REDIS_PASSWORD\,ssl=True\,abortConnect=False" \
     --set "api.domain=test-api.exceptionless.io" \
     --set "app.domain=test-app.exceptionless.io" \
-    --set "api.image.tag=305" \
-    --set "jobs.image.tag=305"
+    --set "api.image.tag=$API_TAG" \
+    --set "jobs.image.tag=$API_TAG"
 
 # upgrade exceptionless app to a new docker image tag
-helm upgrade --set "api.image.tag=306" --set "jobs.image.tag=306" --reuse-values exceptionless-test ./exceptionless
+helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values exceptionless-test ./exceptionless
 
 # create service principal for talking to k8s
 ACCOUNT=`az account show -o json`
