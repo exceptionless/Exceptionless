@@ -48,6 +48,8 @@ spec:
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-close-inactive-sessions
@@ -82,6 +84,8 @@ spec:
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-daily-summary
@@ -143,6 +147,8 @@ spec:
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-notifications
@@ -177,6 +183,8 @@ spec:
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-posts
@@ -238,6 +246,8 @@ spec:
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-user-descriptions
@@ -272,6 +282,8 @@ spec:
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-mail-message
@@ -360,6 +372,8 @@ spec:
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-retention-limits
@@ -394,6 +408,8 @@ spec:
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-stack-event-count
@@ -455,6 +471,8 @@ spec:
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-web-hooks
@@ -489,6 +507,8 @@ spec:
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-work-item
