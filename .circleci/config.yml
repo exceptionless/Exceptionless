@@ -23,7 +23,7 @@ jobs:
       - run:
           name: Build API docker image
           command: docker build --target api -t $API_DOCKER_IMAGE .
-      - deploy:
+      - run:
           name: Push docker images
           command: |
             # Login to Docker
@@ -39,61 +39,24 @@ jobs:
               done
             done
             wait
-
-  deploy-test:
-    docker:
-      - image: microsoft/azure-cli:latest
-    steps:
-      - checkout
       - run:
-          name: Login to Azure
-          command: az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
+          name: Install Azure CLI
+          command: |
+            AZ_REPO=$(lsb_release -cs)
+            echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | \
+              sudo tee /etc/apt/sources.list.d/azure-cli.list
+            curl -L https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+            sudo apt-get update
+            sudo apt-get install libssl-dev libffi-dev python-dev apt-transport-https azure-cli
       - run:
-          name: Login to Azure
-          command: az aks get-credentials --resource-group exceptionless-test --name ex-k8s-test2
-      - run:
-          name: Deploy new images
-          working_directory: k8s
+          name: Install Helm
           command: |
             curl https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz -o helm.tar.gz
             tar -zxvf helm.tar.gz
             mv linux-amd64/helm /usr/local/bin/helm
-            helm upgrade --set "api.image.tag=$CIRCLE_BUILD_NUM" --set "jobs.image.tag=$CIRCLE_BUILD_NUM" --reuse-values exceptionless-test ./exceptionless
-
-  deploy-prod:
-    docker:
-      - image: microsoft/azure-cli:latest
-    steps:
-      - checkout
       - run:
-          name: Login to Azure
-          command: az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
-      - run:
-          name: Login to Azure
-          command: az aks get-credentials --resource-group exceptionless-test --name ex-k8s-test2
-      - run:
-          name: Deploy new images
-          working_directory: k8s
+          name: Upgrade Helm Charts
           command: |
-            curl https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz -o helm.tar.gz
-            tar -zxvf helm.tar.gz
-            mv linux-amd64/helm /usr/local/bin/helm
+            az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
+            az aks get-credentials --resource-group exceptionless-test --name ex-k8s-test2
             helm upgrade --set "api.image.tag=$CIRCLE_BUILD_NUM" --set "jobs.image.tag=$CIRCLE_BUILD_NUM" --reuse-values exceptionless-test ./exceptionless
-
-workflows:
-  version: 2
-  build-deploy:
-    jobs:
-      - build
-      - deploy-test:
-          requires:
-            - build
-          filters:
-            branches:
-              only: /feature\/.*/
-      - deploy-prod:
-          requires:
-            - build
-          filters:
-            branches:
-              only: master
