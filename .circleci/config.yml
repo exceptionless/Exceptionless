@@ -82,7 +82,7 @@ workflows:
             - build
           filters:
             branches:
-              only: /feature//.*/
+              only: /feature\/.*/
       - deploy-prod:
           requires:
             - build
