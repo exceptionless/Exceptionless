@@ -3,7 +3,7 @@ ConnectionStrings:
   Elasticsearch.off: http://localhost:9200
   Cache.off: provider=redis;server="localhost,abortConnect=false"
   MessageBus.off: provider=redis;server="localhost,abortConnect=false"
-  Metric.off: provider=statsd;server=10.0.0.5
+  Metrics.off: provider=statsd;server=10.0.0.5
   Queue.off: provider=redis;server="localhost,abortConnect=false"
   Storage.off: ''
   LDAP.off: ''

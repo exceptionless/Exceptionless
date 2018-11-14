@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Configuration {
         }
 
         public void Configure(MetricOptions options) {
-            string cs = _configuration.GetConnectionString("Metric");
+            string cs = _configuration.GetConnectionString("Metrics");
             options.Data = cs.ParseConnectionString();
             options.Provider = options.Data.GetString(nameof(options.Provider));
             

@@ -214,23 +214,23 @@ namespace Exceptionless.Core {
                 return;
 
             var cacheOptions = serviceProvider.GetRequiredService<IOptions<CacheOptions>>();
-            if (!String.IsNullOrEmpty(cacheOptions.Value.Provider))
+            if (String.IsNullOrEmpty(cacheOptions.Value.Provider))
                 logger.LogWarning("Distributed cache is NOT enabled on {MachineName}.", Environment.MachineName);
             
             var messageBusOptions = serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>();
-            if (!String.IsNullOrEmpty(messageBusOptions.Value.Provider))
+            if (String.IsNullOrEmpty(messageBusOptions.Value.Provider))
                 logger.LogWarning("Distributed message bus is NOT enabled on {MachineName}.", Environment.MachineName);
             
             var metricsOptions = serviceProvider.GetRequiredService<IOptions<MetricOptions>>();
-            if (!String.IsNullOrEmpty(metricsOptions.Value.Provider))
+            if (String.IsNullOrEmpty(metricsOptions.Value.Provider))
                 logger.LogWarning("Metrics reporting is NOT enabled on {MachineName}.", Environment.MachineName);
 
             var queueOptions = serviceProvider.GetRequiredService<IOptions<QueueOptions>>();
-            if (!String.IsNullOrEmpty(queueOptions.Value.Provider))
+            if (String.IsNullOrEmpty(queueOptions.Value.Provider))
                 logger.LogWarning("Distributed queue is NOT enabled on {MachineName}.", Environment.MachineName);
             
             var storageOptions = serviceProvider.GetRequiredService<IOptions<StorageOptions>>();
-            if (!String.IsNullOrEmpty(storageOptions.Value.Provider))
+            if (String.IsNullOrEmpty(storageOptions.Value.Provider))
                 logger.LogWarning("Distributed storage is NOT enabled on {MachineName}.", Environment.MachineName);
 
             if (!appOptions.EnableWebSockets)
