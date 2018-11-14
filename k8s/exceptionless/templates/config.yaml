@@ -7,7 +7,7 @@ data:
 {{- if (.Values.elasticsearch.connectionString) }}
     ConnectionStrings__Elasticsearch: {{.Values.elasticsearch.connectionString}}
 {{- else }}
-    ConnectionStrings__Elasticsearch: http://{{ template "exceptionless.fullname" . }}-elasticsearch:9200
+    ConnectionStrings__Elasticsearch: server=http://{{ template "exceptionless.fullname" . }}-elasticsearch:9200
 {{- end }}
 {{- if (.Values.redis.connectionString) }}
     ConnectionStrings__Redis: {{.Values.redis.connectionString}}
