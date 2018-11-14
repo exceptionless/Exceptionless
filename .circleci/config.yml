@@ -39,7 +39,8 @@ jobs:
               done
             done
             wait
-  deploy_to_azure:
+
+  deploy-test:
     docker:
       - image: microsoft/azure-cli:latest
     steps:
@@ -55,3 +56,36 @@ jobs:
           working_directory: k8s
           command: helm upgrade --set "api.image.tag=$CIRCLE_BUILD_NUM" --set "jobs.image.tag=$CIRCLE_BUILD_NUM" --reuse-values exceptionless-test ./exceptionless
 
+  deploy-prod:
+    docker:
+      - image: microsoft/azure-cli:latest
+    steps:
+      - checkout
+      - run:
+          name: Login to Azure
+          command: az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
+      - run:
+          name: Login to Azure
+          command: az aks get-credentials --resource-group exceptionless-test --name ex-k8s-test2
+      - run:
+          name: Deploy new images
+          working_directory: k8s
+          command: helm upgrade --set "api.image.tag=$CIRCLE_BUILD_NUM" --set "jobs.image.tag=$CIRCLE_BUILD_NUM" --reuse-values exceptionless-test ./exceptionless
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build
+      - deploy-test:
+          requires:
+            - build
+          filters:
+            branches:
+              only: /feature//.*/
+      - deploy-prod:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
