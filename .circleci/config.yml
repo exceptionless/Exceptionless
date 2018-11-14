@@ -56,6 +56,7 @@ jobs:
             sudo mv linux-amd64/helm /usr/local/bin/helm
       - run:
           name: Upgrade Helm Charts
+          working_directory: k8s
           command: |
             az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
             az aks get-credentials --resource-group exceptionless-test --name ex-k8s-test2
