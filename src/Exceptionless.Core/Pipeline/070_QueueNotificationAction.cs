@@ -74,6 +74,12 @@ namespace Exceptionless.Core.Pipeline {
             if (ctx.Event.IsCritical() && ctx.Event.IsError() && hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalError))
                 return true;
 
+            if (ctx.Event.IsError() && hook.EventTypes.Contains(WebHookRepository.EventTypes.Error))
+                return true;
+
+            if (ctx.Event.IsLogError() && hook.EventTypes.Contains(WebHookRepository.EventTypes.LogError))
+                return true;
+
             if (ctx.IsRegression && hook.EventTypes.Contains(WebHookRepository.EventTypes.StackRegression))
                 return true;
 

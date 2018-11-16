@@ -94,6 +94,13 @@ namespace Exceptionless {
         }
 
         /// <summary>
+        /// Returns true if the event type is log, but log level is error.
+        /// </summary>
+        public static bool IsLogError(this Event ev) {
+            return ev.Data.TryGetValue(Event.KnownDataKeys.Level, out var value) && value.ToString() == "Error";
+        }
+
+        /// <summary>
         /// Returns true if the event type is log.
         /// </summary>
         public static bool IsLog(this Event ev) {
