@@ -4,6 +4,7 @@ metadata:
     name: {{ template "exceptionless.fullname" . }}-config
 data:
     AppMode: Development
+    BaseUrl: https://{{.Values.api.domain}}
 {{- if (.Values.elasticsearch.connectionString) }}
     ConnectionStrings__Elasticsearch: {{.Values.elasticsearch.connectionString}}
 {{- else }}
@@ -12,11 +13,15 @@ data:
 {{- if (.Values.redis.connectionString) }}
     ConnectionStrings__Redis: {{.Values.redis.connectionString}}
 {{- else }}
-    ConnectionStrings__Redis: {{ template "exceptionless.fullname" . }}-redis,abortConnect=false
+    ConnectionStrings__Redis: server="{{ template "exceptionless.fullname" . }}-redis,abortConnect=false"
 {{- end }}
 {{- if (.Values.storage.azureConnectionString) }}
-    ConnectionStrings__AzureStorage: {{.Values.storage.azureConnectionString}}
+    ConnectionStrings__Storage: provider=azurestorage;{{.Values.storage.azureConnectionString}}
 {{- else }}
-    StorageFolder: /app/storage
+    ConnectionStrings__Storage: provider=folder;path=/app/storage
 {{- end }}
-    BaseUrl: https://{{.Values.api.domain}}
+
+    ConnectionStrings__Cache: provider=redis;
+    ConnectionStrings__MessageBus: provider=redis;
+    ConnectionStrings__Metrics.off: provider=statsd;server=10.0.0.5;
+    ConnectionStrings__Queue: provider=redis;
