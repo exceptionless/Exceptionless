@@ -56,7 +56,7 @@ deploy_script:
     # deploy latest images to k8s cluster
     az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
     az aks get-credentials --resource-group exceptionless-test --name ex-k8s-test2
-    helm upgrade --set "api.image.tag=$FULL_VERSION" --set "jobs.image.tag=$FULL_VERSION" --reuse-values exceptionless-test ./exceptionless
+    helm upgrade --set "api.image.tag=$FULL_VERSION" --set "jobs.image.tag=$FULL_VERSION" --reuse-values exceptionless-test ./k8s/exceptionless
 
 artifacts:
   - path: artifacts/*.trx
