@@ -21,11 +21,12 @@ before_build:
     if [ $APPVEYOR_REPO_TAG != "true" ]; then
       BUILD_NUMBER="$APPVEYOR_BUILD_NUMBER-pre"
       FULL_VERSION="$VERSION.$BUILD_NUMBER"
+      echo "Version: $FULL_VERSION"
     else
       BUILD_NUMBER=$APPVEYOR_BUILD_NUMBER
       FULL_VERSION="$VERSION.$BUILD_NUMBER"
+      echo "Version: $FULL_VERSION Tag: $APPVEYOR_REPO_TAG_NAME"
     fi
-    echo "Version: $FULL_VERSION Tag: $APPVEYOR_REPO_TAG_NAME"
     appveyor UpdateBuild -Version $FULL_VERSION
 
 install:
@@ -38,8 +39,8 @@ build_script:
   - docker build --target testrunner -t exceptionless:test --build-arg build=${BUILD_NUMBER} .
   - docker run -d -m 2g -p 9200:9200 -p 9300:9300 -e discovery.type=single-node -e xpack.security.enabled=false -e ES_JAVA_OPTS='-Xms512m -Xmx512m' slideroom/elasticsearch:98
   - docker run -e APPVEYOR_API_URL --net=host -v $(pwd)/artifacts:/app/artifacts exceptionless:test
-  - docker build --target api -t $API_DOCKER_IMAGE .
-  - docker build --target job -t $JOB_DOCKER_IMAGE .
+  - docker build --target api -t $API_DOCKER_IMAGE --build-arg build=${BUILD_NUMBER} .
+  - docker build --target job -t $JOB_DOCKER_IMAGE --build-arg build=${BUILD_NUMBER} .
 
 deploy_script:
   - echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
@@ -47,13 +48,10 @@ deploy_script:
     # tag and push docker image
     for image in {$API_DOCKER_IMAGE,$JOB_DOCKER_IMAGE}; do  
       for tag in {$FULL_VERSION,latest}; do
-        (
-          docker tag $image exceptionless/$image:$tag
-          docker push exceptionless/$image:$tag
-        ) &
+        docker tag $image exceptionless/$image:$tag
+        docker push exceptionless/$image:$tag
       done
     done
-    wait
   - |
     # deploy latest images to k8s cluster
     az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
