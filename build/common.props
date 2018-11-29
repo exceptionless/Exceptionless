@@ -1,22 +1,27 @@
 <Project ToolsVersion="15.0">
-  <PropertyGroup>
-    <BuildNumber Condition="'$(BuildNumber)' == ''">0</BuildNumber>
-    <VersionPrefix>5.0.$(BuildNumber)</VersionPrefix>
+
+  <PropertyGroup Label="Version">
+    <VersionPrefix>5.0</VersionPrefix>
+    <VersionSuffix>0-dev</VersionSuffix>
+    <Version>$(VersionPrefix).$(VersionSuffix)</Version>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="AsyncFixer" Version="1.1.6" PrivateAssets="All" />
-  </ItemGroup>
-
   <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <Product>Exceptionless</Product>
     <Copyright>Copyright (c) 2018 Exceptionless.  All rights reserved.</Copyright>
+    <RepositoryUrl>https://github.com/exceptionless/exceptionless</RepositoryUrl>
+    <Authors>Exceptionless</Authors>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <WarningsAsErrors>true</WarningsAsErrors>
     <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PackageOutputPath>$(SolutionDir)artifacts\</PackageOutputPath>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/exceptionless/exceptionless</RepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
+    <PackageReference Include="AsyncFixer" Version="1.1.6" PrivateAssets="All" />
+  </ItemGroup>
+
 </Project>
