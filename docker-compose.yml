@@ -4,6 +4,11 @@ services:
   api:
     depends_on:
       - elasticsearch
+    build:
+      context: .
+      target: api
+      args:
+        - buildno=1
     image: exceptionless/api-ci:latest
     environment:
       AppMode: Development
@@ -19,6 +24,11 @@ services:
   jobs:
     depends_on:
       - api
+    build:
+      context: .
+      target: job
+      args:
+        - buildno=1
     image: exceptionless/job-ci:latest
     command: run-all
     environment:
