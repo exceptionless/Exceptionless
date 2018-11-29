@@ -14,6 +14,8 @@ pull_requests:
 
 init:
   - git config --global core.autocrlf input
+
+before_build:
   - |
     VERSION=$(sed -n 's/.*<VersionPrefix>\([^<]*\)<\/VersionPrefix>.*/\1/p' <<< cat ./build/common.props)
     if [ $APPVEYOR_REPO_TAG != "true" ]; then
@@ -24,7 +26,7 @@ init:
       FULL_VERSION="$VERSION.$BUILD_NUMBER"
     fi
     echo "Version: $FULL_VERSION Tag: $APPVEYOR_REPO_TAG_NAME"
-    Update-AppveyorBuild -Version $FULL_VERSION
+    appveyor UpdateBuild -Version $FULL_VERSION
 
 install:
   - |
