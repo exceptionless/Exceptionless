@@ -48,10 +48,10 @@ namespace Exceptionless.Tests.Plugins {
 
 #if DEBUG
         [Theory]
-        [MemberData(nameof(Events))]
 #else
-        [Fact(Skip = "Only for testing")]
+        [Theory(Skip = "Only for testing")]
 #endif
+        [MemberData(nameof(Events))]
         public void VerifyEventParserSerialization(string eventsFilePath) {
             string json = File.ReadAllText(eventsFilePath);
 
