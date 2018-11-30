@@ -30,6 +30,9 @@ namespace Exceptionless.Insulation.Jobs {
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
+            
+            var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
+            Log.Logger = loggerConfig.CreateLogger();
 
             var services = new ServiceCollection();
             services.AddSingleton<IConfiguration>(config);
@@ -40,8 +43,6 @@ namespace Exceptionless.Insulation.Jobs {
             var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
             Bootstrapper.RegisterServices(container, services, options, true);
             
-            var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
-            Log.Logger = loggerConfig.CreateLogger();
 
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
