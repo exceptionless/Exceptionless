@@ -11,6 +11,8 @@ using LogLevel = Exceptionless.Logging.LogLevel;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Exceptionless.Insulation.Jobs {
     public class JobServiceProvider {
@@ -57,7 +59,8 @@ namespace Exceptionless.Insulation.Jobs {
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
             }
 
-            Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, options.InformationalVersion, Environment.MachineName, options, currentDirectory);
+            var configDictionary = config.ToDictionary();
+            Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Config} loaded from {Folder}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
             
             container = services.BuildServiceProvider();
             Core.Bootstrapper.LogConfiguration(container, options, container.GetRequiredService<ILoggerFactory>());
