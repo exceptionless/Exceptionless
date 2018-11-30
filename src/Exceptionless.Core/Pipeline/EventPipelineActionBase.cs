@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     public abstract class EventPipelineActionBase : PipelineActionBase<EventContext> {
-        public EventPipelineActionBase(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {}
+        public EventPipelineActionBase(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {}
 
         protected virtual bool IsCritical => false;
         protected virtual string[] ErrorTags => new string[0];

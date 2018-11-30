@@ -9,8 +9,8 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(60)]
     public sealed class LogFormattingPlugin : FormattingPluginBase {
-        public LogFormattingPlugin(IOptionsSnapshot<AppOptions> options) : base(options) { }
-        
+        public LogFormattingPlugin(IOptions<AppOptions> options) : base(options) { }
+
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsLog();
         }

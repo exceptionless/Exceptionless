@@ -16,9 +16,9 @@ using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : class, IIdentity, new() {
-        protected readonly IOptionsSnapshot<AppOptions> _options;
+        protected readonly IOptions<AppOptions> _options;
 
-        public RepositoryBase(IIndexType<T> indexType, IValidator<T> validator, IOptionsSnapshot<AppOptions> options) : base(indexType, validator) {
+        public RepositoryBase(IIndexType<T> indexType, IValidator<T> validator, IOptions<AppOptions> options) : base(indexType, validator) {
             _options = options;
             NotificationsEnabled = options.Value.EnableRepositoryNotifications;
         }

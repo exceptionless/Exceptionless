@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(20)]
     public sealed class ErrorPlugin : EventProcessorPluginBase {
-        public ErrorPlugin(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {}
+        public ErrorPlugin(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {}
 
         public override Task EventProcessingAsync(EventContext context) {
             if (!context.Event.IsError())

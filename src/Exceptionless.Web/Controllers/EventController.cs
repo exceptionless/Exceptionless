@@ -64,7 +64,7 @@ namespace Exceptionless.Web.Controllers {
             JsonSerializerSettings jsonSerializerSettings,
             IMapper mapper,
             PersistentEventQueryValidator validator,
-            IOptionsSnapshot<AppOptions> appOptions,
+            IOptions<AppOptions> appOptions,
             ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;

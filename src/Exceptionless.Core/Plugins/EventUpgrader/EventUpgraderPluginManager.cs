@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     public class EventUpgraderPluginManager : PluginManagerBase<IEventUpgraderPlugin> {
-        public EventUpgraderPluginManager(IServiceProvider serviceProvider, IOptionsSnapshot<AppOptions> options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) { }
+        public EventUpgraderPluginManager(IServiceProvider serviceProvider, IOptions<AppOptions> options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) { }
 
         /// <summary>
         /// Runs all of the event upgrade plugins upgrade method.

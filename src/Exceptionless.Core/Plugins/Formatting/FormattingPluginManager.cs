@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin> {
-        public FormattingPluginManager(IServiceProvider serviceProvider, IOptionsSnapshot<AppOptions> options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) { }
+        public FormattingPluginManager(IServiceProvider serviceProvider, IOptions<AppOptions> options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) { }
 
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.

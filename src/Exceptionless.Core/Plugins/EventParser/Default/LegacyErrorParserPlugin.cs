@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
         private readonly EventUpgraderPluginManager _manager;
         private readonly JsonSerializerSettings _settings;
 
-        public LegacyErrorParserPlugin(EventUpgraderPluginManager manager, JsonSerializerSettings settings, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory) : base(options, loggerFactory) {
+        public LegacyErrorParserPlugin(EventUpgraderPluginManager manager, JsonSerializerSettings settings, IOptions<AppOptions> options, ILoggerFactory loggerFactory) : base(options, loggerFactory) {
             _manager = manager;
             _settings = settings;
         }

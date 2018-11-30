@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         private readonly IOptions<AppOptions> _appOptions;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metrics, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, IOptionsSnapshot<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metrics, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, IOptions<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventPostService = eventPostService;
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;

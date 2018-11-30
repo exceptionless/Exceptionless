@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(10)]
     public sealed class NotFoundPlugin : EventProcessorPluginBase {
-        public NotFoundPlugin(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {}
+        public NotFoundPlugin(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {}
 
         public override Task EventProcessingAsync(EventContext context) {
             if (context.Event.Type != Event.KnownTypes.NotFound)

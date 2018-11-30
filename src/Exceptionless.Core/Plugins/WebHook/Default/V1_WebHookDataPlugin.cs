@@ -8,8 +8,8 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(10)]
     public sealed class VersionOne : WebHookDataPluginBase {
-        public VersionOne(IOptionsSnapshot<AppOptions> options) : base(options) {}
-        
+        public VersionOne(IOptions<AppOptions> options) : base(options) {}
+
         public override Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
             if (ctx.Version.Major != 1)
                 return Task.FromResult<object>(null);
@@ -81,7 +81,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             public VersionOneWebHookEvent(string baseUrl) {
                 _baseUrl = baseUrl;
             }
-            
+
             public string Id { get; set; }
             public string Url => String.Concat(_baseUrl, "/event/", Id);
             public DateTimeOffset OccurrenceDate { get; set; }
@@ -117,7 +117,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             public VersionOneWebHookStack(string baseUrl) {
                 _baseUrl = baseUrl;
             }
-            
+
             public string Id { get; set; }
             public string Url => String.Concat(_baseUrl, "/stack/", Id);
             public string Title { get; set; }

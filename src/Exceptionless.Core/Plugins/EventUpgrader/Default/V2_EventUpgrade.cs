@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(2000)]
     public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin {
-        public V2EventUpgrade(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory) : base(options, loggerFactory) {}
+        public V2EventUpgrade(IOptions<AppOptions> options, ILoggerFactory loggerFactory) : base(options, loggerFactory) {}
 
         public void Upgrade(EventUpgraderContext ctx) {
             if (ctx.Version > new Version(2, 0))

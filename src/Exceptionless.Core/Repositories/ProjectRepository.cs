@@ -14,7 +14,7 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
-        public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, IOptionsSnapshot<AppOptions> options)
+        public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, IOptions<AppOptions> options)
             : base(configuration.Organizations.Project, validator, options) {
         }
 

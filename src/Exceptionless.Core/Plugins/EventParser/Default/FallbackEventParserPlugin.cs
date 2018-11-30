@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(Int32.MaxValue)]
     public class FallbackEventParserPlugin : PluginBase, IEventParserPlugin {
-        public FallbackEventParserPlugin(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public FallbackEventParserPlugin(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
             var events = input.SplitLines().Select(entry => new PersistentEvent {

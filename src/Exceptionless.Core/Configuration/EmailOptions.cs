@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Configuration {
         private readonly IConfiguration _configuration;
         private readonly IOptions<AppOptions> _appOptions;
 
-        public ConfigureEmailOptions(IConfiguration configuration, IOptionsSnapshot<AppOptions> appOptions) {
+        public ConfigureEmailOptions(IConfiguration configuration, IOptions<AppOptions> appOptions) {
             _configuration = configuration;
             _appOptions = appOptions;
         }

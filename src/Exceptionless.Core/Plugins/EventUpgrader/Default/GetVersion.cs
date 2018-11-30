@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(0)]
     public class GetVersion : PluginBase, IEventUpgraderPlugin {
-        public GetVersion(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public GetVersion(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public void Upgrade(EventUpgraderContext ctx) {
             if (ctx.Version != null)
@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
             }
 
-            // old version format                
+            // old version format
             ctx.Version = new Version(clientInfo["Version"].ToString());
         }
     }

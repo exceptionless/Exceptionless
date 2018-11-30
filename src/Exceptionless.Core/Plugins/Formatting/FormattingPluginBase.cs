@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin {
-        public FormattingPluginBase(IOptionsSnapshot<AppOptions> options) : base(options) {}
+        public FormattingPluginBase(IOptions<AppOptions> options) : base(options) {}
 
         public virtual SummaryData GetStackSummaryData(Stack stack) {
             return null;

@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
     public sealed class CheckForDuplicateReferenceIdPlugin : EventProcessorPluginBase {
         private readonly ICacheClient _cacheClient;
 
-        public CheckForDuplicateReferenceIdPlugin(ICacheClient cacheClient, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public CheckForDuplicateReferenceIdPlugin(ICacheClient cacheClient, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _cacheClient = cacheClient;
         }
 

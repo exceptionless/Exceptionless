@@ -49,20 +49,20 @@ namespace Exceptionless.Web.Controllers {
         private readonly IOptions<AppOptions> _options;
 
         public StackController(
-            IStackRepository stackRepository, 
-            IOrganizationRepository organizationRepository, 
-            IProjectRepository projectRepository, 
-            IEventRepository eventRepository, 
-            IQueue<WorkItemData> workItemQueue, 
-            IWebHookRepository webHookRepository, 
-            WebHookDataPluginManager webHookDataPluginManager, 
-            IQueue<WebHookNotification> webHookNotificationQueue, 
-            ICacheClient cacheClient, 
-            BillingManager billingManager, 
-            FormattingPluginManager formattingPluginManager, 
-            IMapper mapper, 
-            StackQueryValidator validator, 
-            IOptionsSnapshot<AppOptions> options, 
+            IStackRepository stackRepository,
+            IOrganizationRepository organizationRepository,
+            IProjectRepository projectRepository,
+            IEventRepository eventRepository,
+            IQueue<WorkItemData> workItemQueue,
+            IWebHookRepository webHookRepository,
+            WebHookDataPluginManager webHookDataPluginManager,
+            IQueue<WebHookNotification> webHookNotificationQueue,
+            ICacheClient cacheClient,
+            BillingManager billingManager,
+            FormattingPluginManager formattingPluginManager,
+            IMapper mapper,
+            StackQueryValidator validator,
+            IOptions<AppOptions> options,
             ILoggerFactory loggerFactory
             ) : base(stackRepository, mapper, validator, loggerFactory) {
             _stackRepository = stackRepository;

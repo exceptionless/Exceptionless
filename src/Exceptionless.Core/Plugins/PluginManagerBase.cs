@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Plugins {
         protected readonly IMetricsClient _metricsClient;
         protected readonly ILogger _logger;
 
-        public PluginManagerBase(IServiceProvider serviceProvider, IOptionsSnapshot<AppOptions> options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
+        public PluginManagerBase(IServiceProvider serviceProvider, IOptions<AppOptions> options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
             var type = GetType();
             _metricPrefix = String.Concat(type.Name.ToLower(), ".");
             _metricsClient = metricsClient ?? new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = loggerFactory });

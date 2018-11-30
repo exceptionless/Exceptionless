@@ -14,7 +14,7 @@ using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
-        public EventPipeline(IServiceProvider serviceProvider, IOptionsSnapshot<AppOptions> options, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) {}
+        public EventPipeline(IServiceProvider serviceProvider, IOptions<AppOptions> options, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) {}
 
         public Task<EventContext> RunAsync(PersistentEvent ev, Organization organization, Project project, EventPostInfo epi = null) {
             return RunAsync(new EventContext(ev, organization, project, epi));

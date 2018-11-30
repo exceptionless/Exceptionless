@@ -9,8 +9,8 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(10)]
     public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
-        public SimpleErrorFormattingPlugin(IOptionsSnapshot<AppOptions> options) : base(options) { }
-        
+        public SimpleErrorFormattingPlugin(IOptions<AppOptions> options) : base(options) { }
+
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
         }

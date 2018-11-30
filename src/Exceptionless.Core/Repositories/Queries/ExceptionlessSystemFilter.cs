@@ -78,7 +78,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         private readonly string _stackLastOccurrenceFieldName;
         private readonly string _eventDateFieldName;
 
-        public ExceptionlessSystemFilterQueryBuilder(IOptionsSnapshot<AppOptions> options) {
+        public ExceptionlessSystemFilterQueryBuilder(IOptions<AppOptions> options) {
             _options = options;
             _organizationIdFieldName = nameof(IOwnedByOrganization.OrganizationId).ToLowerUnderscoredWords();
             _projectIdFieldName = nameof(IOwnedByProject.ProjectId).ToLowerUnderscoredWords();

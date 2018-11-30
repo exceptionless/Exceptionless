@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     public abstract class EventProcessorPluginBase : PluginBase, IEventProcessorPlugin {
-        public EventProcessorPluginBase(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public EventProcessorPluginBase(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         protected bool ContinueOnError { get; set; }
 

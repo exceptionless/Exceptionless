@@ -26,9 +26,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
         private CancellationToken _shutdownToken;
         private readonly IOptions<ElasticsearchOptions> _options;
-        private readonly IOptionsSnapshot<AppOptions> _appOptions;
+        private readonly IOptions<AppOptions> _appOptions;
 
-        public ExceptionlessElasticConfiguration(IOptionsSnapshot<ElasticsearchOptions> options, IOptionsSnapshot<AppOptions> appOptions, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
+        public ExceptionlessElasticConfiguration(IOptions<ElasticsearchOptions> options, IOptions<AppOptions> appOptions, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
             _options = options;
             _appOptions = appOptions;
 

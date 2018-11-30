@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IOptions<AppOptions> _options;
         protected readonly ILogger _logger;
 
-        public PipelineActionBase(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) {
+        public PipelineActionBase(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) {
             _options = options;
             var type = GetType();
             Name = type.Name;

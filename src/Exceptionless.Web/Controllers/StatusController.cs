@@ -35,16 +35,16 @@ namespace Exceptionless.Web.Controllers {
         private static DateTime _nextHealthCheckTimeUtc = DateTime.MinValue;
 
         public StatusController(
-            ICacheClient cacheClient, 
-            IMessagePublisher messagePublisher, 
-            SystemHealthChecker healthChecker, 
-            IQueue<EventPost> eventQueue, 
-            IQueue<MailMessage> mailQueue, 
-            IQueue<EventNotificationWorkItem> notificationQueue, 
-            IQueue<WebHookNotification> webHooksQueue, 
-            IQueue<EventUserDescription> userDescriptionQueue, 
+            ICacheClient cacheClient,
+            IMessagePublisher messagePublisher,
+            SystemHealthChecker healthChecker,
+            IQueue<EventPost> eventQueue,
+            IQueue<MailMessage> mailQueue,
+            IQueue<EventNotificationWorkItem> notificationQueue,
+            IQueue<WebHookNotification> webHooksQueue,
+            IQueue<EventUserDescription> userDescriptionQueue,
             IMetricsClient metricsClient,
-            IOptionsSnapshot<AppOptions> appOptions) {
+            IOptions<AppOptions> appOptions) {
             _cacheClient = cacheClient;
             _messagePublisher = messagePublisher;
             _healthChecker = healthChecker;

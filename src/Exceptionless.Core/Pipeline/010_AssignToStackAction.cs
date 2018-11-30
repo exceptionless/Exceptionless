@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IMessagePublisher _publisher;
 
-        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager, IMessagePublisher publisher, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager, IMessagePublisher publisher, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _stackRepository = stackRepository ?? throw new ArgumentNullException(nameof(stackRepository));
             _formattingPluginManager = formattingPluginManager ?? throw new ArgumentNullException(nameof(formattingPluginManager));
             _publisher = publisher;

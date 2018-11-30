@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
         private readonly UserAgentParser _parser;
 
-        public RequestInfoPlugin(UserAgentParser parser, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public RequestInfoPlugin(UserAgentParser parser, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _parser = parser;
         }
 

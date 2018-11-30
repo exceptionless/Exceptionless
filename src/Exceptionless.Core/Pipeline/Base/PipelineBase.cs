@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Pipeline {
         protected readonly IMetricsClient _metricsClient;
         protected readonly ILogger _logger;
 
-        public PipelineBase(IServiceProvider serviceProvider, IOptionsSnapshot<AppOptions> options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
+        public PipelineBase(IServiceProvider serviceProvider, IOptions<AppOptions> options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
             _serviceProvider = serviceProvider;
             _options = options;
 

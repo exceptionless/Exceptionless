@@ -17,7 +17,7 @@ namespace Exceptionless.Web.Utility {
         private readonly RequestDelegate _next;
         private static readonly PathString _heartbeatPath = new PathString("/api/v2/events/session/heartbeat");
 
-        public RecordSessionHeartbeatMiddleware(RequestDelegate next, ICacheClient cache, IOptionsSnapshot<AppOptions> appOptions, ILogger<ProjectConfigMiddleware> logger) {
+        public RecordSessionHeartbeatMiddleware(RequestDelegate next, ICacheClient cache, IOptions<AppOptions> appOptions, ILogger<ProjectConfigMiddleware> logger) {
             _next = next;
             _cache = cache;
             _appOptions = appOptions;

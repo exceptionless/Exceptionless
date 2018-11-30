@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Pipeline {
     [Priority(6)]
     public class TruncateFieldsAction : EventPipelineActionBase {
-        public TruncateFieldsAction(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public TruncateFieldsAction(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         protected override bool IsCritical => true;
 

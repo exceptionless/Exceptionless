@@ -12,7 +12,7 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
-        public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator, IOptionsSnapshot<AppOptions> options)
+        public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator, IOptions<AppOptions> options)
             : base(configuration.Organizations.WebHook, validator, options) {}
 
         public Task<FindResults<WebHook>> GetByUrlAsync(string targetUrl) {

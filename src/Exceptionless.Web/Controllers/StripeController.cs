@@ -19,7 +19,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IOptions<StripeOptions> _stripeOptions;
         private readonly ILogger _logger;
 
-        public StripeController(StripeEventHandler stripeEventHandler, IOptionsSnapshot<StripeOptions> stripeOptions, ILogger<StripeController> logger) {
+        public StripeController(StripeEventHandler stripeEventHandler, IOptions<StripeOptions> stripeOptions, ILogger<StripeController> logger) {
             _stripeEventHandler = stripeEventHandler;
             _stripeOptions = stripeOptions;
             _logger = logger;

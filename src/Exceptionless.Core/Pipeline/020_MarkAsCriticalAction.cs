@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Pipeline {
     [Priority(20)]
     public class MarkAsCriticalAction : EventPipelineActionBase {
-        public MarkAsCriticalAction(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public MarkAsCriticalAction(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             ContinueOnError = true;
         }
 

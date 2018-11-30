@@ -53,19 +53,19 @@ namespace Exceptionless.Web.Controllers {
         private readonly IOptions<StripeOptions> _stripeOptions;
 
         public OrganizationController(
-            IOrganizationRepository organizationRepository, 
-            ICacheClient cacheClient, 
-            IEventRepository eventRepository, 
-            IUserRepository userRepository, 
-            IProjectRepository projectRepository, 
-            IQueue<WorkItemData> workItemQueue, 
-            BillingManager billingManager, 
-            IMailer mailer, 
-            IMessagePublisher messagePublisher, 
-            IMapper mapper, 
-            IQueryValidator validator, 
-            IOptionsSnapshot<AppOptions> options, 
-            IOptionsSnapshot<StripeOptions> stripeOptions, 
+            IOrganizationRepository organizationRepository,
+            ICacheClient cacheClient,
+            IEventRepository eventRepository,
+            IUserRepository userRepository,
+            IProjectRepository projectRepository,
+            IQueue<WorkItemData> workItemQueue,
+            BillingManager billingManager,
+            IMailer mailer,
+            IMessagePublisher messagePublisher,
+            IMapper mapper,
+            IQueryValidator validator,
+            IOptions<AppOptions> options,
+            IOptions<StripeOptions> stripeOptions,
             ILoggerFactory loggerFactory,
             BillingPlans plans) : base(organizationRepository, mapper, validator, loggerFactory) {
             _cacheClient = cacheClient;

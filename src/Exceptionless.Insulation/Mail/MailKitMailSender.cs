@@ -15,7 +15,7 @@ namespace Exceptionless.Insulation.Mail {
     public class MailKitMailSender : IMailSender {
         private readonly IOptions<EmailOptions> _emailOptions;
 
-        public MailKitMailSender(IOptionsSnapshot<EmailOptions> emailOptions) {
+        public MailKitMailSender(IOptions<EmailOptions> emailOptions) {
             _emailOptions = emailOptions;
         }
 

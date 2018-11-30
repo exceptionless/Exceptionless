@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         private readonly IOptions<AppOptions> _appOptions;
 
-        public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, JsonSerializerSettings settings, IOptionsSnapshot<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, JsonSerializerSettings settings, IOptions<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _projectRepository = projectRepository;
             _slackService = slackService;
             _webHookRepository = webHookRepository;

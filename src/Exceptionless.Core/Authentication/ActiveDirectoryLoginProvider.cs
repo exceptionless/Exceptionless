@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Authentication {
 
         private readonly IOptions<AuthOptions> _authOptions;
 
-        public ActiveDirectoryLoginProvider(IOptionsSnapshot<AuthOptions> authOptions) {
+        public ActiveDirectoryLoginProvider(IOptions<AuthOptions> authOptions) {
             _authOptions = authOptions;
         } 
 

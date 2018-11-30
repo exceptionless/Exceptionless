@@ -22,7 +22,7 @@ namespace Exceptionless.Web.Utility {
         private readonly ILogger _logger;
         private readonly RequestDelegate _next;
 
-        public OverageMiddleware(RequestDelegate next, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, UsageService usageService, IMetricsClient metricsClient, IOptionsSnapshot<AppOptions> appOptions, ILogger<OverageMiddleware> logger) {
+        public OverageMiddleware(RequestDelegate next, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, UsageService usageService, IMetricsClient metricsClient, IOptions<AppOptions> appOptions, ILogger<OverageMiddleware> logger) {
             _next = next;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;

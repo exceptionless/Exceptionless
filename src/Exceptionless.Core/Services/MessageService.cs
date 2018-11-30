@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Services {
         private readonly IOptions<AppOptions> _options;
         private readonly ILogger _logger;
 
-        public MessageService(IStackRepository stackRepository, IEventRepository eventRepository, IConnectionMapping connectionMapping, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory) {
+        public MessageService(IStackRepository stackRepository, IEventRepository eventRepository, IConnectionMapping connectionMapping, IOptions<AppOptions> options, ILoggerFactory loggerFactory) {
             _stackRepository = stackRepository;
             _eventRepository = eventRepository;
             _connectionMapping = connectionMapping;
