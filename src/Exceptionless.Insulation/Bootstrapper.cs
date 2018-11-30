@@ -69,7 +69,7 @@ namespace Exceptionless.Insulation {
 
         private static void RegisterCache(IServiceCollection container, CacheOptions options) {
             if (String.Equals(options.Provider, "redis")) {
-                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.ConnectionString));
+                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.Data.GetString("server")));
 
                 if (!String.IsNullOrEmpty(options.Scope))
                     container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), options.Scope));
@@ -82,7 +82,7 @@ namespace Exceptionless.Insulation {
 
         private static void RegisterMessageBus(IServiceCollection container, MessageBusOptions options) {
             if (String.Equals(options.Provider, "redis")) {
-                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.ConnectionString));
+                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.Data.GetString("server")));
 
                 container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
                     Subscriber = s.GetRequiredService<ConnectionMultiplexer>().GetSubscriber(),
