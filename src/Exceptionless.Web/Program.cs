@@ -6,6 +6,7 @@ using App.Metrics.Formatters;
 using App.Metrics.Formatters.Prometheus;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web.Utility;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -59,7 +60,8 @@ namespace Exceptionless.Web {
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
             Log.Logger = loggerConfig.CreateLogger();
-            Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, options.InformationalVersion, Environment.MachineName, options, currentDirectory);
+            var configDictionary = config.ToDictionary();
+            Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
 
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
 

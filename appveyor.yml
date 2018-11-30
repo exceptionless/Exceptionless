@@ -17,17 +17,17 @@ init:
 
 before_build:
   - |
-    VERSION=$(sed -n 's/.*<VersionPrefix>\([^<]*\)<\/VersionPrefix>.*/\1/p' <<< cat ./build/common.props)
+    VERSION_PREFIX=$(sed -n 's/.*<VersionPrefix>\([^<]*\)<\/VersionPrefix>.*/\1/p' <<< cat ./build/common.props)
     if [ $APPVEYOR_REPO_TAG != "true" ]; then
-      BUILD_NUMBER="$APPVEYOR_BUILD_NUMBER-pre"
-      FULL_VERSION="$VERSION.$BUILD_NUMBER"
-      echo "Version: $FULL_VERSION"
+      VERSION_SUFFIX="$APPVEYOR_BUILD_NUMBER-pre"
+      VERSION="$VERSION_PREFIX.$VERSION_SUFFIX"
+      echo "Version: $VERSION"
     else
-      BUILD_NUMBER=$APPVEYOR_BUILD_NUMBER
-      FULL_VERSION="$VERSION.$BUILD_NUMBER"
-      echo "Version: $FULL_VERSION Tag: $APPVEYOR_REPO_TAG_NAME"
+      VERSION_SUFFIX=$APPVEYOR_BUILD_NUMBER
+      VERSION="$VERSION_PREFIX.$VERSION_SUFFIX"
+      echo "Version: $VERSION Tag: $APPVEYOR_REPO_TAG_NAME"
     fi
-    appveyor UpdateBuild -Version $FULL_VERSION
+    appveyor UpdateBuild -Version $VERSION
 
 install:
   - |
@@ -36,18 +36,18 @@ install:
     sudo mv linux-amd64/helm /usr/local/bin/helm
 
 build_script:
-  - docker build --target testrunner -t exceptionless:test --build-arg build=${BUILD_NUMBER} .
+  - docker build --target testrunner -t exceptionless:test --build-arg VERSION_SUFFIX=$VERSION_SUFFIX .
   - docker run -d -m 2g -p 9200:9200 -p 9300:9300 -e discovery.type=single-node -e xpack.security.enabled=false -e ES_JAVA_OPTS='-Xms512m -Xmx512m' slideroom/elasticsearch:98
   - docker run -e APPVEYOR_API_URL --net=host -v $(pwd)/artifacts:/app/artifacts exceptionless:test
-  - docker build --target api -t $API_DOCKER_IMAGE --build-arg build=${BUILD_NUMBER} .
-  - docker build --target job -t $JOB_DOCKER_IMAGE --build-arg build=${BUILD_NUMBER} .
+  - docker build --target api -t $API_DOCKER_IMAGE --build-arg VERSION_SUFFIX=$VERSION_SUFFIX .
+  - docker build --target job -t $JOB_DOCKER_IMAGE --build-arg VERSION_SUFFIX=$VERSION_SUFFIX .
 
 deploy_script:
   - echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
   - |
     # tag and push docker image
     for image in {$API_DOCKER_IMAGE,$JOB_DOCKER_IMAGE}; do  
-      for tag in {$FULL_VERSION,latest}; do
+      for tag in {$VERSION,latest}; do
         docker tag $image exceptionless/$image:$tag
         docker push exceptionless/$image:$tag
       done
@@ -56,7 +56,7 @@ deploy_script:
     # deploy latest images to k8s cluster
     az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
     az aks get-credentials --resource-group exceptionless-test --name ex-k8s-test2
-    helm upgrade --set "api.image.tag=$FULL_VERSION" --set "jobs.image.tag=$FULL_VERSION" --reuse-values exceptionless-test ./k8s/exceptionless
+    helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values exceptionless-test ./k8s/exceptionless
 
 artifacts:
   - path: artifacts/*.trx
