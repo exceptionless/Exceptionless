@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         private readonly AssignToStackAction _assignToStack;
         private readonly LocationPlugin _locationPlugin;
 
-        public SessionPlugin(ICacheClient cacheClient, IEventRepository eventRepository, AssignToStackAction assignToStack, UpdateStatsAction updateStats, LocationPlugin locationPlugin, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public SessionPlugin(ICacheClient cacheClient, IEventRepository eventRepository, AssignToStackAction assignToStack, UpdateStatsAction updateStats, LocationPlugin locationPlugin, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _cache = new ScopedCacheClient(cacheClient, "session");
             _eventRepository = eventRepository;
             _assignToStack = assignToStack;
@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             var manualSessionsEvents = contexts.Where(c => !String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
 
             return Task.WhenAll(
-                ProcessAutoSessionsAsync(autoSessionEvents), 
+                ProcessAutoSessionsAsync(autoSessionEvents),
                 ProcessManualSessionsAsync(manualSessionsEvents)
             );
         }

@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(7)]
     public sealed class SubmissionClientPlugin : EventProcessorPluginBase {
-        public SubmissionClientPlugin(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public SubmissionClientPlugin(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
             contexts.ForEach(c => c.Event.Data.Remove(Event.KnownDataKeys.SubmissionClient));

@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Pipeline {
     public class UpdateStatsAction : EventPipelineActionBase {
         private readonly StackService _stackService;
 
-        public UpdateStatsAction(StackService stackService, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public UpdateStatsAction(StackService stackService, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _stackService = stackService;
         }
 

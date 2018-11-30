@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
-        public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _cache = cacheClient;
             _workItemQueue = workItemQueue;
         }

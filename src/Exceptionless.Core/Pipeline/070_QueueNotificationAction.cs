@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
 
-        public QueueNotificationAction(IQueue<EventNotificationWorkItem> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public QueueNotificationAction(IQueue<EventNotificationWorkItem> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _notificationQueue = notificationQueue;
             _webHookNotificationQueue = webHookNotificationQueue;
             _webHookRepository = webHookRepository;

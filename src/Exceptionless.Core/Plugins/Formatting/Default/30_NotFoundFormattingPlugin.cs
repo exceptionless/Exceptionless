@@ -8,8 +8,8 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(30)]
     public sealed class NotFoundFormattingPlugin : FormattingPluginBase {
-        public NotFoundFormattingPlugin(IOptionsSnapshot<AppOptions> options) : base(options) { }
-        
+        public NotFoundFormattingPlugin(IOptions<AppOptions> options) : base(options) { }
+
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsNotFound();
         }

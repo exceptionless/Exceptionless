@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(80)]
     public sealed class AngularPlugin : EventProcessorPluginBase {
-        public AngularPlugin(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public AngularPlugin(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public override Task EventProcessingAsync(EventContext context) {
             if (!context.Event.IsError())

@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
 
-        public LoadDefaults(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, IOptionsSnapshot<AppOptions> options) : base(options) {
+        public LoadDefaults(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, IOptions<AppOptions> options) : base(options) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;

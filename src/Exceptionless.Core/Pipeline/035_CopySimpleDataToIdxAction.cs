@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Pipeline {
     public class CopySimpleDataToIdxAction : EventPipelineActionBase {
         private readonly IMetricsClient _metricsClient;
 
-        public CopySimpleDataToIdxAction(IMetricsClient metricsClient, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public CopySimpleDataToIdxAction(IMetricsClient metricsClient, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _metricsClient = metricsClient;
         }
 

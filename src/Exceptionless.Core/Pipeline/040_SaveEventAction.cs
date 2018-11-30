@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Pipeline {
     public class SaveEventAction : EventPipelineActionBase {
         private readonly IEventRepository _eventRepository;
 
-        public SaveEventAction(IEventRepository eventRepository, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public SaveEventAction(IEventRepository eventRepository, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _eventRepository = eventRepository;
         }
 

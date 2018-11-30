@@ -22,18 +22,18 @@ using Xunit.Abstractions;
 namespace Exceptionless.Tests.Mail {
     public class MailerTests : TestWithServices {
         private readonly IMailer _mailer;
-        private readonly IOptionsSnapshot<EmailOptions> _options;
+        private readonly IOptions<EmailOptions> _options;
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
 
         public MailerTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _mailer = GetService<IMailer>();
-            _options = GetService<IOptionsSnapshot<EmailOptions>>();
+            _options = GetService<IOptions<EmailOptions>>();
             _billingManager = GetService<BillingManager>();
             _plans = GetService<BillingPlans>();
-            
+
             if (_mailer is NullMailer)
-                _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<IOptionsSnapshot<AppOptions>>(), _options, GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
+                _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<IOptions<AppOptions>>(), _options, GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
         }
 
         [Fact]

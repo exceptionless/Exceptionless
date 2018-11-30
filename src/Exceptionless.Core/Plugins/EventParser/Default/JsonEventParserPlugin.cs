@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
     public class JsonEventParserPlugin : PluginBase, IEventParserPlugin {
         private readonly JsonSerializerSettings _settings;
 
-        public JsonEventParserPlugin(IOptionsSnapshot<AppOptions> options, JsonSerializerSettings settings) : base(options) {
+        public JsonEventParserPlugin(IOptions<AppOptions> options, JsonSerializerSettings settings) : base(options) {
             _settings = settings;
         }
 

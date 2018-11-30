@@ -8,8 +8,8 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(99)]
     public sealed class DefaultFormattingPlugin : FormattingPluginBase {
-        public DefaultFormattingPlugin(IOptionsSnapshot<AppOptions> options) : base(options) { }
-        
+        public DefaultFormattingPlugin(IOptions<AppOptions> options) : base(options) { }
+
         public override string GetStackTitle(PersistentEvent ev) {
             if (String.IsNullOrWhiteSpace(ev.Message) && ev.IsError())
                 return "Unknown Error";

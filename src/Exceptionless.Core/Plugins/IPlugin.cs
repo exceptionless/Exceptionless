@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Plugins {
         protected readonly ILogger _logger;
         protected readonly IOptions<AppOptions> _options;
 
-        public PluginBase(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) {
+        public PluginBase(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) {
             _options = options;
             var type = GetType();
             Name = type.Name;

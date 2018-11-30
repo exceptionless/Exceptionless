@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(3)]
     public sealed class ManualStackingPlugin : EventProcessorPluginBase {
-        public ManualStackingPlugin(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public ManualStackingPlugin(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public override Task EventProcessingAsync(EventContext context) {
             var msi = context.Event.GetManualStackingInfo();

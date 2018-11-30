@@ -39,15 +39,15 @@ namespace Exceptionless.Web.Controllers {
         private readonly IOptions<AppOptions> _options;
 
         public ProjectController(
-            IProjectRepository projectRepository, 
-            IOrganizationRepository organizationRepository, 
-            IEventRepository eventRepository, 
-            IQueue<WorkItemData> workItemQueue, 
-            BillingManager billingManager, 
-            SlackService slackService, 
-            IMapper mapper, 
-            IQueryValidator validator, 
-            IOptionsSnapshot<AppOptions> options, 
+            IProjectRepository projectRepository,
+            IOrganizationRepository organizationRepository,
+            IEventRepository eventRepository,
+            IQueue<WorkItemData> workItemQueue,
+            BillingManager billingManager,
+            SlackService slackService,
+            IMapper mapper,
+            IQueryValidator validator,
+            IOptions<AppOptions> options,
             ILoggerFactory loggerFactory
             ) : base(projectRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
@@ -169,13 +169,13 @@ namespace Exceptionless.Web.Controllers {
         }
 
         #endregion
-        
+
         [Obsolete]
         [HttpGet("~/api/v1/project/config")]
         public Task<ActionResult<ClientConfiguration>> GetV1ConfigAsync(int? v = null) {
             return GetConfigAsync(null, v);
         }
-        
+
         /// <summary>
         /// Get configuration settings
         /// </summary>

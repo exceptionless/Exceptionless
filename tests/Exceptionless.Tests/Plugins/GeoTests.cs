@@ -27,18 +27,18 @@ namespace Exceptionless.Tests.Plugins {
         private const string IRVING_IP = "192.91.253.248";
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
-        private readonly IOptionsSnapshot<AppOptions> _options;
+        private readonly IOptions<AppOptions> _options;
 
         public GeoTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _billingManager = GetService<BillingManager>();
             _plans = GetService<BillingPlans>();
-            _options = GetService<IOptionsSnapshot<AppOptions>>();
+            _options = GetService<IOptions<AppOptions>>();
         }
 
         private async Task<IGeoIpService> GetResolverAsync(ILoggerFactory loggerFactory) {
             string dataDirectory = PathHelper.ExpandPath(".\\");
             var storage = new FolderFileStorage(new FolderFileStorageOptions {
-                Folder = dataDirectory, 
+                Folder = dataDirectory,
                 LoggerFactory = loggerFactory
             });
 

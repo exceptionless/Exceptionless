@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly SemanticVersionParser _semanticVersionParser;
 
-        public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue, SemanticVersionParser semanticVersionParser, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue, SemanticVersionParser semanticVersionParser, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _stackRepository = stackRepository;
             _workItemQueue = workItemQueue;
             _semanticVersionParser = semanticVersionParser;
@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Pipeline {
                             var version = await _semanticVersionParser.ParseAsync(versionGroup.Key).AnyContext() ?? _semanticVersionParser.Default;
                             if (version < fixedInVersion)
                                 continue;
-                            
+
                             regressedVersion = version;
                             regressedContext = versionGroup.First();
                             break;

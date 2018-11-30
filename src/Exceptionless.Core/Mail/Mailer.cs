@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Mail {
         private readonly IMetricsClient _metrics;
         private readonly ILogger _logger;
 
-        public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IOptionsSnapshot<AppOptions> appOptions, IOptionsSnapshot<EmailOptions> emailOptions, IMetricsClient metrics, ILogger<Mailer> logger) {
+        public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IOptions<AppOptions> appOptions, IOptions<EmailOptions> emailOptions, IMetricsClient metrics, ILogger<Mailer> logger) {
             _queue = queue;
             _pluginManager = pluginManager;
             _appOptions = appOptions;

@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IOptions<AppOptions> _appOptions;
         private readonly ILockProvider _lockProvider;
 
-        public RetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ICacheClient cacheClient, IOptionsSnapshot<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public RetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ICacheClient cacheClient, IOptions<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _organizationRepository = organizationRepository;
             _eventRepository = eventRepository;
             _appOptions = appOptions;

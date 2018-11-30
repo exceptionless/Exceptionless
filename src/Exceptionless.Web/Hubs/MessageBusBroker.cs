@@ -23,7 +23,7 @@ namespace Exceptionless.Web.Hubs {
         private readonly IOptions<AppOptions> _options;
         private readonly ILogger _logger;
 
-        public MessageBusBroker(WebSocketConnectionManager connectionManager, IConnectionMapping connectionMapping, IMessageSubscriber subscriber, IOptionsSnapshot<AppOptions> options, ILogger<MessageBusBroker> logger) {
+        public MessageBusBroker(WebSocketConnectionManager connectionManager, IConnectionMapping connectionMapping, IMessageSubscriber subscriber, IOptions<AppOptions> options, ILogger<MessageBusBroker> logger) {
             _connectionManager = connectionManager;
             _connectionMapping = connectionMapping;
             _subscriber = subscriber;

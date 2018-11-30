@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Pipeline {
     public class RunEventProcessedPluginsAction : EventPipelineActionBase {
         private readonly EventPluginManager _pluginManager;
 
-        public RunEventProcessedPluginsAction(EventPluginManager pluginManager, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public RunEventProcessedPluginsAction(EventPluginManager pluginManager, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _pluginManager = pluginManager;
             ContinueOnError = true;
         }

@@ -13,7 +13,7 @@ using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Core.Repositories {
     public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository {
-        public TokenRepository(ExceptionlessElasticConfiguration configuration, IValidator<Token> validator, IOptionsSnapshot<AppOptions> options)
+        public TokenRepository(ExceptionlessElasticConfiguration configuration, IValidator<Token> validator, IOptions<AppOptions> options)
             : base(configuration.Organizations.Token, validator, options) {
         }
 

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(20)]
     public sealed class VersionTwo : WebHookDataPluginBase {
-        public VersionTwo(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public VersionTwo(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public override Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
             if (ctx.Version.Major != 2)

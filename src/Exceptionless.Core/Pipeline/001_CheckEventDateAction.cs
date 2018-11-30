@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Core.Pipeline {
     [Priority(1)]
     public class CheckEventDateAction : EventPipelineActionBase {
-        public CheckEventDateAction(IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public CheckEventDateAction(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             ContinueOnError = true;
         }
 

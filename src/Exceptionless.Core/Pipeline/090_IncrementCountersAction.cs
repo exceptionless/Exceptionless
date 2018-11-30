@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IMetricsClient _metricsClient;
         private readonly BillingPlans _plans;
 
-        public IncrementCountersAction(IMetricsClient metricsClient, BillingPlans plans, IOptionsSnapshot<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public IncrementCountersAction(IMetricsClient metricsClient, BillingPlans plans, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _metricsClient = metricsClient;
             _plans = plans;
             ContinueOnError = true;
