@@ -25,6 +25,9 @@ jobs:
     tag: latest
     pullPolicy: IfNotPresent
 
+extraConfig: |
+#  key: value
+
 service:
   type: ClusterIP
 

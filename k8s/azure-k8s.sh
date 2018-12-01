@@ -54,15 +54,21 @@ kubectl apply -f cluster-issuer.yaml
 # TODO: update this file using the cluster name for the dns
 kubectl apply -f certificates.yaml
 
+# install redis server
+helm install stable/redis --values redis-values.yaml --name redis
+export REDIS_PASSWORD=$(kubectl get secret --namespace test redis -o jsonpath="{.data.redis-password}" | base64 --decode)
+
 # install exceptionless app
 API_TAG=310
 helm install --name exceptionless-test --namespace test ./exceptionless \
     --set "storage.azureConnectionString=DefaultEndpointsProtocol=https;AccountName=testex;AccountKey=$AZURE_ACCOUNT_KEY;EndpointSuffix=core.windows.net" \
     --set "elasticsearch.connectionString=http://10.0.0.4:9200" \
-    --set "redis.connectionString=test-ex-cache.redis.cache.windows.net:6380\,password=$REDIS_PASSWORD\,ssl=True\,abortConnect=False" \
+    --set "redis.connectionString=redis-master\,password=$REDIS_PASSWORD\,abortConnect=False" \
     --set "api.domain=test-api.exceptionless.io" \
     --set "app.domain=test-app.exceptionless.io" \
     --set "collector.domain=test-collector.exceptionless.io" \
+    --set "extraConfig.ConnectionStrings__OAuth=test-collector.exceptionless.io" \
+    --set "extraConfig.ExceptionlessApiKey=$EXCEPTIONLESS_API_KEY" \
     --set "api.image.tag=$API_TAG" \
     --set "jobs.image.tag=$API_TAG"
 
