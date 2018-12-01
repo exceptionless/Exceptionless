@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "exceptionless.fullname" . }}-api
+  name: {{ template "exceptionless.fullname" . }}-collector
   labels:
     app: {{ template "exceptionless.name" . }}
-    component: {{ template "exceptionless.fullname" . }}-api
+    component: {{ template "exceptionless.fullname" . }}-collector
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.api.replicaCount }}
+  replicas: {{ .Values.collector.replicaCount }}
   selector:
     matchLabels:
-      component: {{ template "exceptionless.fullname" . }}-api
+      component: {{ template "exceptionless.fullname" . }}-collector
   template:
     metadata:
       labels:
         app: {{ template "exceptionless.name" . }}
-        component: {{ template "exceptionless.fullname" . }}-api
+        component: {{ template "exceptionless.fullname" . }}-collector
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
@@ -25,7 +25,7 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
       containers:
-        - name: {{ template "exceptionless.name" . }}-api
+        - name: {{ template "exceptionless.name" . }}-collector
           image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
           imagePullPolicy: {{ .Values.api.image.pullPolicy }}
           ports:
@@ -37,6 +37,8 @@ spec:
                 name: {{ template "exceptionless.fullname" . }}-config
           env:
             - name: RunJobsInProcess
+              value: 'false'
+            - name: EnableWebSockets
               value: 'false'
 {{- if (empty .Values.storage.azureConnectionString) }}
           volumeMounts:
@@ -52,10 +54,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "exceptionless.fullname" . }}-api
+  name: {{ template "exceptionless.fullname" . }}-collector
   labels:
     app: {{ template "exceptionless.name" . }}
-    component: {{ template "exceptionless.fullname" . }}-api
+    component: {{ template "exceptionless.fullname" . }}-collector
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -67,29 +69,29 @@ spec:
       protocol: TCP
       name: http
   selector:
-    component: {{ template "exceptionless.fullname" . }}-api
+    component: {{ template "exceptionless.fullname" . }}-collector
 
 ---
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: {{ template "exceptionless.fullname" . }}-api-ingress
+  name: {{ template "exceptionless.fullname" . }}-collector-ingress
   annotations:
     kubernetes.io/ingress.class: nginx
     certmanager.k8s.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/cors-allow-headers: DNT,Keep-Alive,User-Agent,If-Modified-Since,Cache-Control,Content-Type,Authorization,ETag,Link,v,X-Requested-With,X-Exceptionless-Client,X-Result-Count,X-RateLimit-Limit,X-RateLimit-Remaining,X-Exceptionless-ConfigVersion
-    nginx.ingress.kubernetes.io/enable-cors: true
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
 spec:
   tls:
   - hosts:
-    - {{.Values.api.domain}}
-    secretName: {{ template "exceptionless.fullname" . }}-api-tls
+    - {{.Values.collector.domain}}
+    secretName: {{ template "exceptionless.fullname" . }}-collector-tls
   rules:
-  - host: {{.Values.api.domain}}
+  - host: {{.Values.collector.domain}}
     http:
       paths:
       - path: /
         backend:
-          serviceName: {{ template "exceptionless.fullname" . }}-api
+          serviceName: {{ template "exceptionless.fullname" . }}-collector
           servicePort: 80

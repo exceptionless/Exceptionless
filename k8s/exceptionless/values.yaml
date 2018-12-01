@@ -1,13 +1,17 @@
 api:
-  replicaCount: 1
+  replicaCount: 2
   domain:
   image:
     repository: exceptionless/api-ci
     tag: latest
     pullPolicy: IfNotPresent
 
+collector:
+  replicaCount: 3
+  domain:
+
 app:
-  replicaCount: 1
+  replicaCount: 2
   domain:
   image:
     repository: exceptionless/ui-ci
