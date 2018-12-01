@@ -62,6 +62,7 @@ helm install --name exceptionless-test --namespace test ./exceptionless \
     --set "redis.connectionString=test-ex-cache.redis.cache.windows.net:6380\,password=$REDIS_PASSWORD\,ssl=True\,abortConnect=False" \
     --set "api.domain=test-api.exceptionless.io" \
     --set "app.domain=test-app.exceptionless.io" \
+    --set "collector.domain=test-collector.exceptionless.io" \
     --set "api.image.tag=$API_TAG" \
     --set "jobs.image.tag=$API_TAG"
 
@@ -72,12 +73,22 @@ helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --re
 ACCOUNT=`az account show -o json`
 SUBSCRIPTION_ID=`echo $ACCOUNT | jq -r '.id'`
 AZ_TENANT=`echo $ACCOUNT | jq -r '.tenantId'`
-SERVICE_PRINCIPAL=`az ad sp create-for-rbac --role="Azure Kubernetes Service Cluster User Role" --name http://$CLUSTER-build --scopes="/subscriptions/$SUBSCRIPTION_ID" -o json`
+SERVICE_PRINCIPAL=`az ad sp create-for-rbac --role="Azure Kubernetes Service Cluster User Role" --name http://$CLUSTER-build2 --scopes="/subscriptions/$SUBSCRIPTION_ID" -o json`
 AZ_USERNAME=`echo $SERVICE_PRINCIPAL | jq -r '.appId'`
 AZ_PASSWORD=`echo $SERVICE_PRINCIPAL | jq -r '.password'`
 echo "AZ_USERNAME=$AZ_USERNAME AZ_PASSWORD=$AZ_PASSWORD AZ_TENANT=$AZ_TENANT | az login --service-principal --username \$AZ_USERNAME --password \$AZ_PASSWORD --tenant \$AZ_TENANT"
 
 # read about cluster autoscaler
 https://docs.microsoft.com/en-us/azure/aks/autoscaler
+
+# delete all pods for the exceptionless app
+kubectl get pods -l app=exceptionless
+
+# install helper tools for using kubernetes CLI
+brew install kubectx
+
+# install tool to view pod logs
+brew tap johanhaleby/kubetail
+brew install kubetail
 
 az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
