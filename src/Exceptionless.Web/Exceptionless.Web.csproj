@@ -8,7 +8,7 @@
     <EmbeddedResource Include="wwwroot\docs.css" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Exceptionless.AspNetCore.Signed" Version="4.3.2012" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.5.1" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="2.7.0" /> 
