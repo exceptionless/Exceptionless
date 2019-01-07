@@ -29,6 +29,7 @@ namespace Exceptionless.Core.Repositories {
             // TODO: Add support for these new web hook types.
             public const string NewError = "NewError";
             public const string Error = "Error";
+            public const string LogWarn = "LogWarn";
             public const string LogError = "LogError";
             public const string CriticalError = "CriticalError";
             public const string NewEvent = "NewEvent";
