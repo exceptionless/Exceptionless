@@ -31,7 +31,7 @@ before_build:
 
 install:
   - |
-    curl https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz -o helm.tar.gz
+    curl https://storage.googleapis.com/kubernetes-helm/helm-v2.12.1-linux-amd64.tar.gz -o helm.tar.gz
     tar -zxvf helm.tar.gz
     sudo mv linux-amd64/helm /usr/local/bin/helm
 
@@ -54,9 +54,9 @@ deploy_script:
     done
   - |
     # deploy latest images to k8s cluster
-    az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
-    az aks get-credentials --resource-group exceptionless-test --name ex-k8s-test2
-    helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values exceptionless-test ./k8s/exceptionless
+    # az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
+    # az aks get-credentials --resource-group exceptionless-test --name ex-k8s-test2
+    # helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values exceptionless-test ./k8s/exceptionless
 
 artifacts:
   - path: artifacts/*.trx
