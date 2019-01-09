@@ -5,13 +5,13 @@ metadata:
 spec:
   secretName: tls-secret
   dnsNames:
-  - ex-k8s-test2.eastus.cloudapp.azure.com
+  - ex-prod-k8s.eastus.cloudapp.azure.com
   acme:
     config:
     - http01:
         ingressClass: nginx
       domains:
-      - ex-k8s-test2.eastus.cloudapp.azure.com
+      - ex-prod-k8s.eastus.cloudapp.azure.com
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
