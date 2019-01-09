@@ -36,7 +36,7 @@ namespace Exceptionless.Web {
             services.AddCors(b => b.AddPolicy("AllowAny", p => p
                 .AllowAnyHeader()
                 .AllowAnyMethod()
-                .AllowAnyOrigin()
+                .SetIsOriginAllowed(isOriginAllowed: _ => true)
                 .AllowCredentials()
                 .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
                 .WithExposedHeaders("ETag", "Link", Headers.RateLimit, Headers.RateLimitRemaining, "X-Result-Count", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion)));
