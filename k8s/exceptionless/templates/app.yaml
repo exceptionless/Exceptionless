@@ -5,7 +5,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-app
-    tier: {{ template "exceptionless.fullname" . }}-frontend
+    tier: {{ template "exceptionless.fullname" . }}-app
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -19,7 +19,7 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-app
-        tier: {{ template "exceptionless.fullname" . }}-frontend
+        tier: {{ template "exceptionless.fullname" . }}-app
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}

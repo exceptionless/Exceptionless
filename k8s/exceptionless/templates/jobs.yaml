@@ -5,7 +5,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-cleanup-snapshot
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -33,7 +33,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -47,7 +47,7 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
-        tier: {{ template "exceptionless.fullname" . }}-backend
+        tier: {{ template "exceptionless.fullname" . }}-job
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
@@ -71,7 +71,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -85,7 +85,7 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
-        tier: {{ template "exceptionless.fullname" . }}-backend
+        tier: {{ template "exceptionless.fullname" . }}-job
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
@@ -109,7 +109,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-download-geoip-database
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -137,7 +137,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -151,7 +151,7 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
-        tier: {{ template "exceptionless.fullname" . }}-backend
+        tier: {{ template "exceptionless.fullname" . }}-job
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
@@ -175,7 +175,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -189,7 +189,7 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
-        tier: {{ template "exceptionless.fullname" . }}-backend
+        tier: {{ template "exceptionless.fullname" . }}-job
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
@@ -213,7 +213,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-event-snapshot
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -241,7 +241,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -255,7 +255,7 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
-        tier: {{ template "exceptionless.fullname" . }}-backend
+        tier: {{ template "exceptionless.fullname" . }}-job
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
@@ -279,7 +279,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -293,7 +293,7 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
-        tier: {{ template "exceptionless.fullname" . }}-backend
+        tier: {{ template "exceptionless.fullname" . }}-job
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
@@ -317,7 +317,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-maintain-indexes
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -345,7 +345,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-organization-snapshot
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -373,7 +373,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-retention-limits
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -387,7 +387,7 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-jobs-retention-limits
-        tier: {{ template "exceptionless.fullname" . }}-backend
+        tier: {{ template "exceptionless.fullname" . }}-job
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
@@ -411,7 +411,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -425,7 +425,7 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
-        tier: {{ template "exceptionless.fullname" . }}-backend
+        tier: {{ template "exceptionless.fullname" . }}-job
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
@@ -449,7 +449,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-stack-snapshot
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -477,7 +477,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -491,7 +491,7 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
-        tier: {{ template "exceptionless.fullname" . }}-backend
+        tier: {{ template "exceptionless.fullname" . }}-job
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
@@ -515,7 +515,7 @@ metadata:
   labels:
     app: {{ template "exceptionless.name" . }}
     component: {{ template "exceptionless.fullname" . }}-jobs-work-item
-    tier: {{ template "exceptionless.fullname" . }}-backend
+    tier: {{ template "exceptionless.fullname" . }}-job
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -529,7 +529,7 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-jobs-work-item
-        tier: {{ template "exceptionless.fullname" . }}-backend
+        tier: {{ template "exceptionless.fullname" . }}-job
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
