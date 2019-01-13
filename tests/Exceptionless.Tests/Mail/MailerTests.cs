@@ -10,6 +10,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.Formatting;
+using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Foundatio.Metrics;
 using Foundatio.Queues;
@@ -36,6 +37,18 @@ namespace Exceptionless.Tests.Mail {
                 _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<IOptions<AppOptions>>(), _options, GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
         }
 
+
+        [Fact]
+        public void CanParseSmtpUri() {
+            var uri = new SmtpUri("smtps://test%40test.com:testpass@smtp.test.com:587");
+            Assert.NotNull(uri);
+            Assert.True(uri.IsSecure);
+            Assert.Equal("smtp.test.com", uri.Host);
+            Assert.Equal(587, uri.Port);
+            Assert.Equal("test@test.com", uri.User);
+            Assert.Equal("testpass", uri.Password);
+        }
+        
         [Fact]
         public Task SendEventNoticeSimpleErrorAsync() {
             var ex = GetException();
