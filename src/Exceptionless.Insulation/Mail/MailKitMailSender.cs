@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
@@ -39,7 +40,9 @@ namespace Exceptionless.Insulation.Mail {
                 int port = _emailOptions.Value.SmtpPort;
                 var encryption = GetSecureSocketOption(_emailOptions.Value.SmtpEncryption);
                 if (isTraceLogEnabled) _logger.LogTrace("Connecting to SMTP server: {SmtpHost}:{SmtpPort} using {Encryption}", host, port, encryption);
-                await client.ConnectAsync(host, port, encryption).AnyContext();
+                using (var tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30))) {
+                    await client.ConnectAsync(host, port, encryption, tokenSource.Token).AnyContext();
+                }
                 if (isTraceLogEnabled) _logger.LogTrace("Connected to SMTP server");
 
                 // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
