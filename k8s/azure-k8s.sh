@@ -72,7 +72,7 @@ helm install stable/redis-ha --set "persistentVolume.storageClass=managed-premiu
 kubectl exec -it redis-redis-ha-server-0 bash -n ex-prod
 
 # install exceptionless app
-API_TAG=5.0.3339-pre
+API_TAG=5.0.3346-pre
 helm install --name exceptionless --namespace ex-prod ./exceptionless \
     --set "storage.azureConnectionString=DefaultEndpointsProtocol=https;AccountName=ex4events;AccountKey=$AZURE_ACCOUNT_KEY;EndpointSuffix=core.windows.net" \
     --set "elasticsearch.connectionString=http://10.0.0.4:9200" \

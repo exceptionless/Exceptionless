@@ -7,6 +7,7 @@ using Exceptionless.Core.Mail;
 using Foundatio.Utility;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
@@ -14,12 +15,17 @@ using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 namespace Exceptionless.Insulation.Mail {
     public class MailKitMailSender : IMailSender {
         private readonly IOptions<EmailOptions> _emailOptions;
+        private readonly ILogger _logger;
 
-        public MailKitMailSender(IOptions<EmailOptions> emailOptions) {
+        public MailKitMailSender(IOptions<EmailOptions> emailOptions, ILoggerFactory loggerFactory) {
             _emailOptions = emailOptions;
+            _logger = loggerFactory.CreateLogger<MailKitMailSender>();
         }
 
         public async Task SendAsync(MailMessage model) {
+            bool isTraceLogEnabled = _logger.IsEnabled(LogLevel.Trace);
+            if (isTraceLogEnabled) _logger.LogTrace("Creating Mail Message from model");
+            
             var message = CreateMailMessage(model);
             message.Headers.Add("X-Mailer-Machine", Environment.MachineName);
             message.Headers.Add("X-Mailer-Date", SystemClock.UtcNow.ToString());
@@ -29,17 +35,29 @@ namespace Exceptionless.Insulation.Mail {
             using (var client = new SmtpClient()) {
                 client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
-                await client.ConnectAsync(_emailOptions.Value.SmtpHost, _emailOptions.Value.SmtpPort, GetSecureSocketOption(_emailOptions.Value.SmtpEncryption)).AnyContext();
+                string host = _emailOptions.Value.SmtpHost;
+                int port = _emailOptions.Value.SmtpPort;
+                var encryption = GetSecureSocketOption(_emailOptions.Value.SmtpEncryption);
+                if (isTraceLogEnabled) _logger.LogTrace("Connecting to SMTP server: {SmtpHost}:{SmtpPort} using {Encryption}", host, port, encryption);
+                await client.ConnectAsync(host, port, encryption).AnyContext();
+                if (isTraceLogEnabled) _logger.LogTrace("Connected to SMTP server");
 
                 // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
                 client.AuthenticationMechanisms.Remove("XOAUTH2");
 
-                if (!String.IsNullOrEmpty(_emailOptions.Value.SmtpUser))
-                    await client.AuthenticateAsync(_emailOptions.Value.SmtpUser, _emailOptions.Value.SmtpPassword).AnyContext();
+                string user = _emailOptions.Value.SmtpUser;
+                if (!String.IsNullOrEmpty(user)) {
+                    if (isTraceLogEnabled) _logger.LogTrace("Authenticating {SmtpUser} to SMTP server", user);
+                    await client.AuthenticateAsync(user, _emailOptions.Value.SmtpPassword).AnyContext();
+                    if (isTraceLogEnabled) _logger.LogTrace("Authenticated to SMTP server", user);
+                }
 
+                if (isTraceLogEnabled) _logger.LogTrace("Sending message: to={To} subject={Subject}", message.Subject, message.To);
                 await client.SendAsync(message).AnyContext();
+                if (isTraceLogEnabled) _logger.LogTrace("Sent Message");
                 await client.DisconnectAsync(true).AnyContext();
             }
+            if (isTraceLogEnabled) _logger.LogTrace("Disconnected from SMTP server");
         }
 
         private SecureSocketOptions GetSecureSocketOption(SmtpEncryption encryption) {
