@@ -68,10 +68,10 @@ spec:
           resources:
             requests:
               memory: 100Mi
-              cpu: 100m
+              cpu: 50m
             limits:
               memory: 200Mi
-              cpu: 200m
+              cpu: 250m
           args: [CloseInactiveSessions]
           envFrom:
             - configMapRef:
@@ -193,10 +193,10 @@ spec:
           resources:
             requests:
               memory: 100Mi
-              cpu: 100m
+              cpu: 200m
             limits:
               memory: 200Mi
-              cpu: 200m
+              cpu: 500m
           args: [EventNotifications]
           envFrom:
             - configMapRef:
@@ -481,7 +481,7 @@ spec:
               cpu: 50m
             limits:
               memory: 125Mi
-              cpu: 150m
+              cpu: 250m
           args: [RetentionLimits]
           envFrom:
             - configMapRef:
@@ -606,7 +606,7 @@ spec:
               cpu: 50m
             limits:
               memory: 125Mi
-              cpu: 400m
+              cpu: 500m
           args: [WebHooks]
           envFrom:
             - configMapRef:
