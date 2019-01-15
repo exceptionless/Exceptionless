@@ -30,6 +30,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-collector
           image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
           imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 2Gi
+              cpu: 500m
+            limits:
+              memory: 3Gi
+              cpu: 3000m
           ports:
             - name: http
               containerPort: 80
