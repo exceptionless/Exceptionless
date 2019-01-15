@@ -19,6 +19,13 @@ spec:
             - name: {{ template "exceptionless.name" . }}-jobs-cleanup-snapshot
               image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 200m
+                limits:
+                  memory: 125Mi
+                  cpu: 400m
               args: [CleanupSnapshot]
               envFrom:
                 - configMapRef:
@@ -58,6 +65,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs-close-inactive-sessions
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 100Mi
+              cpu: 100m
+            limits:
+              memory: 200Mi
+              cpu: 200m
           args: [CloseInactiveSessions]
           envFrom:
             - configMapRef:
@@ -96,6 +110,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs-daily-summary
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 250Mi
+              cpu: 400m
+            limits:
+              memory: 500Mi
+              cpu: 1000m
           args: [DailySummary]
           envFrom:
             - configMapRef:
@@ -123,6 +144,13 @@ spec:
             - name: {{ template "exceptionless.name" . }}-jobs-download-geoip-database
               image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 100Mi
+                  cpu: 100m
+                limits:
+                  memory: 200Mi
+                  cpu: 200m
               args: [DownloadGeoIPDatabase]
               envFrom:
                 - configMapRef:
@@ -162,6 +190,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs-event-notifications
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 100Mi
+              cpu: 50m
+            limits:
+              memory: 200Mi
+              cpu: 100m
           args: [EventNotifications]
           envFrom:
             - configMapRef:
@@ -200,6 +235,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs-event-posts
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 150Mi
+              cpu: 100m
+            limits:
+              memory: 300Mi
+              cpu: 500m
           args: [EventPosts]
           envFrom:
             - configMapRef:
@@ -227,6 +269,13 @@ spec:
             - name: {{ template "exceptionless.name" . }}-jobs-event-snapshot
               image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 200m
+                limits:
+                  memory: 125Mi
+                  cpu: 400m
               args: [EventSnapshot]
               envFrom:
                 - configMapRef:
@@ -266,6 +315,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs-event-user-descriptions
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 50m
+            limits:
+              memory: 100Mi
+              cpu: 300m
           args: [EventUserDescriptions]
           envFrom:
             - configMapRef:
@@ -304,6 +360,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs-mail-message
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 75Mi
+              cpu: 10m
+            limits:
+              memory: 125Mi
+              cpu: 250m
           args: [MailMessage]
           envFrom:
             - configMapRef:
@@ -331,6 +394,13 @@ spec:
             - name: {{ template "exceptionless.name" . }}-jobs-maintain-indexes
               image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 200m
+                limits:
+                  memory: 125Mi
+                  cpu: 400m
               args: [MaintainIndexes]
               envFrom:
                 - configMapRef:
@@ -359,6 +429,13 @@ spec:
             - name: {{ template "exceptionless.name" . }}-jobs-organization-snapshot
               image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 200m
+                limits:
+                  memory: 125Mi
+                  cpu: 400m
               args: [OrganizationSnapshot]
               envFrom:
                 - configMapRef:
@@ -398,6 +475,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs-retention-limits
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 75Mi
+              cpu: 10m
+            limits:
+              memory: 125Mi
+              cpu: 20m
           args: [RetentionLimits]
           envFrom:
             - configMapRef:
@@ -436,6 +520,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs-stack-event-count
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 75Mi
+              cpu: 50m
+            limits:
+              memory: 125Mi
+              cpu: 300m
           args: [StackEventCount]
           envFrom:
             - configMapRef:
@@ -463,6 +554,13 @@ spec:
             - name: {{ template "exceptionless.name" . }}-jobs-stack-snapshot
               image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 200m
+                limits:
+                  memory: 125Mi
+                  cpu: 400m
               args: [StackSnapshot]
               envFrom:
                 - configMapRef:
@@ -502,6 +600,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs-web-hooks
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 75Mi
+              cpu: 10m
+            limits:
+              memory: 125Mi
+              cpu: 300m
           args: [WebHooks]
           envFrom:
             - configMapRef:
@@ -540,6 +645,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-jobs-work-item
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 125Mi
+              cpu: 100m
+            limits:
+              memory: 500Mi
+              cpu: 1000m
           args: [WorkItem]
           envFrom:
             - configMapRef:
