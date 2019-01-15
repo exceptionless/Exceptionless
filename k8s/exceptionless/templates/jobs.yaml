@@ -71,7 +71,7 @@ spec:
               cpu: 50m
             limits:
               memory: 200Mi
-              cpu: 250m
+              cpu: 300m
           args: [CloseInactiveSessions]
           envFrom:
             - configMapRef:
@@ -605,7 +605,7 @@ spec:
               memory: 75Mi
               cpu: 50m
             limits:
-              memory: 125Mi
+              memory: 150Mi
               cpu: 500m
           args: [WebHooks]
           envFrom:
