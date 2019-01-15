@@ -193,10 +193,10 @@ spec:
           resources:
             requests:
               memory: 100Mi
-              cpu: 50m
+              cpu: 100m
             limits:
               memory: 200Mi
-              cpu: 100m
+              cpu: 200m
           args: [EventNotifications]
           envFrom:
             - configMapRef:
@@ -363,10 +363,10 @@ spec:
           resources:
             requests:
               memory: 75Mi
-              cpu: 10m
+              cpu: 50m
             limits:
               memory: 125Mi
-              cpu: 250m
+              cpu: 300m
           args: [MailMessage]
           envFrom:
             - configMapRef:
@@ -478,10 +478,10 @@ spec:
           resources:
             requests:
               memory: 75Mi
-              cpu: 10m
+              cpu: 50m
             limits:
               memory: 125Mi
-              cpu: 20m
+              cpu: 150m
           args: [RetentionLimits]
           envFrom:
             - configMapRef:
@@ -603,10 +603,10 @@ spec:
           resources:
             requests:
               memory: 75Mi
-              cpu: 10m
+              cpu: 50m
             limits:
               memory: 125Mi
-              cpu: 300m
+              cpu: 400m
           args: [WebHooks]
           envFrom:
             - configMapRef:
