@@ -650,8 +650,8 @@ spec:
               memory: 125Mi
               cpu: 100m
             limits:
-              memory: 500Mi
-              cpu: 1000m
+              memory: 1Gi
+              cpu: 1500m
           args: [WorkItem]
           envFrom:
             - configMapRef:
