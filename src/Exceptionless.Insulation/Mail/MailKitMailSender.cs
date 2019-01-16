@@ -34,8 +34,6 @@ namespace Exceptionless.Insulation.Mail {
             message.Headers.Add("Auto-Submitted", "auto-generated");
 
             using (var client = new SmtpClient()) {
-                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-
                 string host = _emailOptions.Value.SmtpHost;
                 int port = _emailOptions.Value.SmtpPort;
                 var encryption = GetSecureSocketOption(_emailOptions.Value.SmtpEncryption);
