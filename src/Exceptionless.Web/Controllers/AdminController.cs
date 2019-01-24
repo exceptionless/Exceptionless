@@ -13,6 +13,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
+using Exceptionless.Web.Extensions;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
@@ -110,6 +111,15 @@ namespace Exceptionless.Web.Controllers {
             }, Formatting.Indented));
         }
 
+        
+        [HttpGet("echo")]
+        public ActionResult EchoRequest() {
+            return Ok(JsonConvert.SerializeObject(new {
+                Headers = Request.Headers,
+                IpAddress = Request.GetClientIpAddress()
+            }, Formatting.Indented));
+        }
+        
         [HttpGet("assemblies")]
         public ActionResult<IReadOnlyCollection<AssemblyDetail>> Assemblies() {
             var details = AssemblyDetail.ExtractAll();

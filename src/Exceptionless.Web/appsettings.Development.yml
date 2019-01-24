@@ -1,11 +1,11 @@
 ﻿---
 ConnectionStrings:
-  Elasticsearch.off: server=http://localhost:9200
-  Cache.off: provider=redis;server="localhost,abortConnect=false"
-  MessageBus.off: provider=redis;server="localhost,abortConnect=false"
-  Queue.off: provider=redis;server="localhost,abortConnect=false"
+#  Elasticsearch: server=http://localhost:9200
+#  Cache: provider=redis;server="localhost,abortConnect=false"
+#  MessageBus: provider=redis;server="localhost,abortConnect=false"
+#  Queue: provider=redis;server="localhost,abortConnect=false"
   Storage: provider=folder;path=.\storage
-  LDAP.off: ''
+#  LDAP: ''
 
 # Base url for the ui used to build links in emails and other places.
 BaseURL: 'http://localhost:9001/#!'
