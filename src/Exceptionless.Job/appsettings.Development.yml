@@ -1,7 +1,7 @@
 ---
-ConnectionStrings:
-  Redis.off: localhost,abortConnect=false
-  Elasticsearch.off: http://localhost:9200/
+#ConnectionStrings:
+#  Elasticsearch: server=http://localhost:9200
+#  Cache: provider=redis;server="localhost,abortConnect=false"
 
 # Base url for the ui used to build links in emails and other places.
 BaseURL: 'http://localhost:9001/#!'

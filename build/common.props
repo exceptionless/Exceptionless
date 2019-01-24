@@ -9,7 +9,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <Product>Exceptionless</Product>
-    <Copyright>Copyright (c) 2018 Exceptionless.  All rights reserved.</Copyright>
+    <Copyright>Copyright (c) 2019 Exceptionless.  All rights reserved.</Copyright>
     <RepositoryUrl>https://github.com/exceptionless/exceptionless</RepositoryUrl>
     <Authors>Exceptionless</Authors>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
