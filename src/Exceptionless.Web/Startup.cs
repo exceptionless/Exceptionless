@@ -120,7 +120,7 @@ namespace Exceptionless.Web {
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, settings, LoggerFactory);
 
             if (settings.EnableHealthChecks)
-                app.UseHealthChecks("health");
+                app.UseHealthChecks("/health");
 
             if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey) && !String.IsNullOrEmpty(settings.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
