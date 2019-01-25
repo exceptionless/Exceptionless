@@ -9,6 +9,7 @@ using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     /// <summary>
@@ -25,13 +26,15 @@ namespace Exceptionless.Core.Pipeline {
     public abstract class PipelineBase<TContext, TAction> where TAction : class, IPipelineAction<TContext> where TContext : IPipelineContext {
         protected static readonly ConcurrentDictionary<Type, IList<Type>> _actionTypeCache = new ConcurrentDictionary<Type, IList<Type>>();
         private readonly IServiceProvider _serviceProvider;
+        private readonly IOptions<AppOptions> _options;
         private readonly IList<IPipelineAction<TContext>> _actions;
         protected readonly string _metricPrefix;
         protected readonly IMetricsClient _metricsClient;
         protected readonly ILogger _logger;
 
-        public PipelineBase(IServiceProvider serviceProvider, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
+        public PipelineBase(IServiceProvider serviceProvider, IOptions<AppOptions> options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
             _serviceProvider = serviceProvider;
+            _options = options;
 
             var type = GetType();
             _metricPrefix = String.Concat(type.Name.ToLower(), ".");
@@ -95,7 +98,7 @@ namespace Exceptionless.Core.Pipeline {
         private List<IPipelineAction<TContext>> LoadDefaultActions() {
             var actions = new List<IPipelineAction<TContext>>();
             foreach (var type in GetActionTypes()) {
-                if (Settings.Current.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {
+                if (_options.Value.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {
                     _logger.LogWarning("Pipeline Action {Name} is currently disabled and won't be executed.", type.Name);
                     continue;
                 }

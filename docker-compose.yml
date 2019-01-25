@@ -4,13 +4,21 @@ services:
   api:
     depends_on:
       - elasticsearch
+    build:
+      context: .
+      target: api
     image: exceptionless/api-ci:latest
     environment:
       AppMode: Development
-      ConnectionStrings__Elasticsearch: http://elasticsearch:9200
-      ConnectionStrings__Redis: redis,abortConnect=false
+      ConnectionStrings__Cache: provider=redis
+      ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
+      #ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
+      ConnectionStrings__MessageBus: provider=redis
+      #ConnectionStrings__Metrics: provider=statsd;server=statsd;
+      ConnectionStrings__Queue: provider=redis
+      ConnectionStrings__Redis: server=redis,abortConnect=false
+      ConnectionStrings__Storage: provider=folder;path=/app/storage
       RunJobsInProcess: 'false'
-      StorageFolder: /app/storage
     ports:
       - 5000:80
     volumes:
@@ -19,13 +27,21 @@ services:
   jobs:
     depends_on:
       - api
+    build:
+      context: .
+      target: job
     image: exceptionless/job-ci:latest
     command: run-all
     environment:
       AppMode: Development
-      ConnectionStrings__Elasticsearch: http://elasticsearch:9200
-      ConnectionStrings__Redis: redis,abortConnect=false
-      StorageFolder: /app/storage
+      ConnectionStrings__Cache: provider=redis
+      ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
+      #ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
+      ConnectionStrings__MessageBus: provider=redis
+      #ConnectionStrings__Metrics: provider=statsd;server=statsd;
+      ConnectionStrings__Queue: provider=redis
+      ConnectionStrings__Redis: server=redis,abortConnect=false
+      ConnectionStrings__Storage: provider=folder;path=/app/storage
     volumes:
       - appdata:/app/storage
 

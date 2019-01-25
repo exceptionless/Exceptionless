@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using Exceptionless.Core;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -24,6 +25,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/projects")]
@@ -34,13 +36,26 @@ namespace Exceptionless.Web.Controllers {
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
         private readonly SlackService _slackService;
+        private readonly IOptions<AppOptions> _options;
 
-        public ProjectController(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IEventRepository eventRepository, IQueue<WorkItemData> workItemQueue, BillingManager billingManager, SlackService slackService, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(projectRepository, mapper, validator, loggerFactory) {
+        public ProjectController(
+            IProjectRepository projectRepository,
+            IOrganizationRepository organizationRepository,
+            IEventRepository eventRepository,
+            IQueue<WorkItemData> workItemQueue,
+            BillingManager billingManager,
+            SlackService slackService,
+            IMapper mapper,
+            IQueryValidator validator,
+            IOptions<AppOptions> options,
+            ILoggerFactory loggerFactory
+            ) : base(projectRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
             _eventRepository = eventRepository;
             _workItemQueue = workItemQueue;
             _billingManager = billingManager;
             _slackService = slackService;
+            _options = options;
         }
 
         #region CRUD
@@ -154,13 +169,13 @@ namespace Exceptionless.Web.Controllers {
         }
 
         #endregion
-        
+
         [Obsolete]
         [HttpGet("~/api/v1/project/config")]
         public Task<ActionResult<ClientConfiguration>> GetV1ConfigAsync(int? v = null) {
             return GetConfigAsync(null, v);
         }
-        
+
         /// <summary>
         /// Get configuration settings
         /// </summary>
@@ -672,10 +687,11 @@ namespace Exceptionless.Web.Controllers {
             if (viewProjects.Count <= 0)
                 return viewProjects;
 
+            int maximumRetentionDays = _options.Value.MaximumRetentionDays;
             var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
             var projects = viewProjects.Select(p => new Project { Id = p.Id, CreatedUtc = p.CreatedUtc, OrganizationId = p.OrganizationId }).ToList();
             var sf = new ExceptionlessSystemFilter(projects, organizations);
-            var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(), SystemClock.UtcNow);
+            var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);
             var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(project_id~{viewProjects.Count} cardinality:stack_id)");
             foreach (var project in viewProjects) {
                 var term = result.Aggregations.Terms<string>("terms_project_id")?.Buckets.FirstOrDefault(t => t.Key == project.Id);

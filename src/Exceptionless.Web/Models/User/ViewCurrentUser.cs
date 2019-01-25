@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
-using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models;
 
 namespace Exceptionless.Web.Models {
     public class ViewCurrentUser : ViewUser {
-        public ViewCurrentUser(User user) {
+        public ViewCurrentUser(User user, IntercomOptions options) {
             Id = user.Id;
             OrganizationIds = user.OrganizationIds;
             FullName = user.FullName;
@@ -17,7 +17,7 @@ namespace Exceptionless.Web.Models {
             IsActive = user.IsActive;
             Roles = user.Roles;
 
-            Hash = HMACSHA256HashString(user.Id);
+            Hash = HMACSHA256HashString(user.Id, options);
             HasLocalAccount = !String.IsNullOrWhiteSpace(user.Password);
             OAuthAccounts = user.OAuthAccounts;
         }
@@ -26,11 +26,11 @@ namespace Exceptionless.Web.Models {
         public bool HasLocalAccount { get; set; }
         public ICollection<OAuthAccount> OAuthAccounts { get; set; }
 
-        private string HMACSHA256HashString(string value) {
-            if (!Settings.Current.EnableIntercom)
+        private string HMACSHA256HashString(string value, IntercomOptions options) {
+            if (!options.EnableIntercom)
                 return null;
 
-            byte[] secretKey = Encoding.UTF8.GetBytes(Settings.Current.IntercomAppSecret);
+            byte[] secretKey = Encoding.UTF8.GetBytes(options.IntercomSecret);
             byte[] bytes = Encoding.UTF8.GetBytes(value);
             using (var hmac = new HMACSHA256(secretKey)) {
                 hmac.ComputeHash(bytes);

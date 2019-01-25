@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Security.Cryptography;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Extensions {
     public static class StringExtensions {

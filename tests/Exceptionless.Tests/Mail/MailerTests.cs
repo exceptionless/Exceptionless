@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core;
+using Exceptionless.Core.Billing;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
@@ -8,24 +10,45 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.Formatting;
+using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Mail {
     public class MailerTests : TestWithServices {
         private readonly IMailer _mailer;
+        private readonly IOptions<EmailOptions> _options;
+        private readonly BillingManager _billingManager;
+        private readonly BillingPlans _plans;
 
         public MailerTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _mailer = GetService<IMailer>();
+            _options = GetService<IOptions<EmailOptions>>();
+            _billingManager = GetService<BillingManager>();
+            _plans = GetService<BillingPlans>();
+
             if (_mailer is NullMailer)
-                _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
+                _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<IOptions<AppOptions>>(), _options, GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
         }
 
+
+        [Fact]
+        public void CanParseSmtpUri() {
+            var uri = new SmtpUri("smtps://test%40test.com:testpass@smtp.test.com:587");
+            Assert.NotNull(uri);
+            Assert.True(uri.IsSecure);
+            Assert.Equal("smtp.test.com", uri.Host);
+            Assert.Equal(587, uri.Port);
+            Assert.Equal("test@test.com", uri.User);
+            Assert.Equal("testpass", uri.Password);
+        }
+        
         [Fact]
         public Task SendEventNoticeSimpleErrorAsync() {
             var ex = GetException();
@@ -159,7 +182,7 @@ namespace Exceptionless.Tests.Mail {
         [Fact]
         public async Task SendOrganizationAddedAsync() {
             var user = UserData.GenerateSampleUser();
-            var organization = OrganizationData.GenerateSampleOrganization();
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
             await _mailer.SendOrganizationAddedAsync(user, organization, user);
             await RunMailJobAsync();
@@ -168,11 +191,11 @@ namespace Exceptionless.Tests.Mail {
         [Fact]
         public async Task SendOrganizationInviteAsync() {
             var user = UserData.GenerateSampleUser();
-            var organization = OrganizationData.GenerateSampleOrganization();
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
             await _mailer.SendOrganizationInviteAsync(user, organization, new Invite {
                 DateAdded = SystemClock.UtcNow,
-                EmailAddress = Settings.Current.TestEmailAddress,
+                EmailAddress = _options.Value.TestEmailAddress,
                 Token = "1"
             });
 
@@ -185,7 +208,7 @@ namespace Exceptionless.Tests.Mail {
         [Fact]
         public async Task SendOrganizationHourlyOverageNoticeAsync() {
             var user = UserData.GenerateSampleUser();
-            var organization = OrganizationData.GenerateSampleOrganization();
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
             await _mailer.SendOrganizationNoticeAsync(user, organization, false, true);
             await RunMailJobAsync();
@@ -194,7 +217,7 @@ namespace Exceptionless.Tests.Mail {
         [Fact]
         public async Task SendOrganizationMonthlyOverageNoticeAsync() {
             var user = UserData.GenerateSampleUser();
-            var organization = OrganizationData.GenerateSampleOrganization();
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
             await _mailer.SendOrganizationNoticeAsync(user, organization, true, false);
             await RunMailJobAsync();
@@ -203,7 +226,7 @@ namespace Exceptionless.Tests.Mail {
         [Fact]
         public async Task SendOrganizationPaymentFailedAsync() {
             var user = UserData.GenerateSampleUser();
-            var organization = OrganizationData.GenerateSampleOrganization();
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
             await _mailer.SendOrganizationPaymentFailedAsync(user, organization);
             await RunMailJobAsync();

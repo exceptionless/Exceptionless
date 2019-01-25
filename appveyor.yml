@@ -1,70 +1,69 @@
-﻿version: 5.0.{build}
-os: Visual Studio 2017
-configuration: Release
+version: '{build}'
+image: ubuntu
 clone_depth: 2
+
+services:
+  - docker
+
+environment:
+  API_DOCKER_IMAGE: api-ci
+  JOB_DOCKER_IMAGE: job-ci
 
 pull_requests:
   do_not_increment_build_number: true
 
-environment:
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-  DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  JAVA_HOME: C:\Progra~1\Java\jdk1.8.0
-  API_URL: https://#{api.hostheader}
-  BUILD_REPO_URL:
-    secure: vuYBT6D5arel88+Py/H3nnMPd4hInIXvr2cwhJaZSSSvJnmg+9sX1P5+bTWaJskYpGztHVMg0Iq7hgUCMKjh23w8WBrutLiUsixRE0LBjroIVJaRsYG1okSko0fNKVOCUMQAue0lh2sYqQ/TQlDbwg==
-  BUILD_APP_REPO_URL:
-     secure: vuYBT6D5arel88+Py/H3nnMPd4hInIXvr2cwhJaZSSSvJnmg+9sX1P5+bTWaJskYpGztHVMg0Iq7hgUCMKjh23w8WBrutLiUsixRE0LBjroIVJaRsYG1okSko0fNKVOCyOLKGt19Qrk45/TrTFlGMQ==
-
 init:
-  - git config --global core.autocrlf true
-  - git config --global user.email "builds@exceptionless.io"
-  - git config --global user.name "AppVeyor CI"
-  - ps: $env:GIT_HASH = $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
+  - git config --global core.autocrlf input
+
+before_build:
+  - |
+    VERSION_PREFIX=$(sed -n 's/.*<VersionPrefix>\([^<]*\)<\/VersionPrefix>.*/\1/p' <<< cat ./build/common.props)
+    if [ $APPVEYOR_REPO_TAG != "true" ]; then
+      VERSION_SUFFIX="$APPVEYOR_BUILD_NUMBER-pre"
+      VERSION="$VERSION_PREFIX.$VERSION_SUFFIX"
+      echo "Version: $VERSION"
+    else
+      VERSION_SUFFIX=$APPVEYOR_BUILD_NUMBER
+      VERSION="$VERSION_PREFIX.$VERSION_SUFFIX"
+      echo "Version: $VERSION Tag: $APPVEYOR_REPO_TAG_NAME"
+    fi
+    appveyor UpdateBuild -Version $VERSION
 
 install:
-  - cmd: curl -O https://download.visualstudio.microsoft.com/download/pr/45f93081-cdb4-41c1-8d8d-e6c3bbf2872b/62d6a598956fdfe585acb1f15268d930/dotnet-sdk-2.1.403-win-x64.exe
-  - cmd: dotnet-sdk-2.1.403-win-x64.exe /install /quiet /norestart /log install.log
+  - |
+    curl https://storage.googleapis.com/kubernetes-helm/helm-v2.12.1-linux-amd64.tar.gz -o helm.tar.gz
+    tar -zxvf helm.tar.gz
+    sudo mv linux-amd64/helm /usr/local/bin/helm
 
 build_script:
-  - ps: dotnet publish -c Release /p:BuildNumber=$env:APPVEYOR_BUILD_NUMBER
+  - docker build --target testrunner -t exceptionless:test --build-arg VERSION_SUFFIX=$VERSION_SUFFIX .
+  - docker run -d -m 2g -p 9200:9200 -p 9300:9300 -e discovery.type=single-node -e xpack.security.enabled=false -e ES_JAVA_OPTS='-Xms512m -Xmx512m' slideroom/elasticsearch:98
+  - docker run -e APPVEYOR_API_URL --net=host -v $(pwd)/artifacts:/app/artifacts exceptionless:test
+  - docker build --target api -t $API_DOCKER_IMAGE --build-arg VERSION_SUFFIX=$VERSION_SUFFIX .
+  - docker build --target job -t $JOB_DOCKER_IMAGE --build-arg VERSION_SUFFIX=$VERSION_SUFFIX .
 
-on_failure:
-#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-
-before_test:
-  - ps: .\build\Start-ElasticSearch.ps1 -StartKibana $false
-
-test_script:
-  - ps: Push-Location .\tests\Exceptionless.Tests
-  - ps: dotnet test -c Release --no-build
-  - ps: Pop-Location
-
-after_test:
-  - ps: .\build\Push-Artifacts.ps1
+deploy_script:
+  - echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+  - |
+    # tag and push docker image
+    for image in {$API_DOCKER_IMAGE,$JOB_DOCKER_IMAGE}; do  
+      for tag in {$VERSION,latest}; do
+        docker tag $image exceptionless/$image:$tag
+        docker push exceptionless/$image:$tag
+      done
+    done
+  - |
+    # deploy latest images to k8s cluster
+    # az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
+    # az aks get-credentials --resource-group exceptionless-test --name ex-k8s-test2
+    # helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values exceptionless-test ./k8s/exceptionless
 
 artifacts:
-  - path: release\*.zip
-    name: ReleaseArtifacts
-
-before_deploy:
-  - ps: .\build\Create-Release.ps1
-
-deploy:
-  provider: GitHub
-  auth_token:
-    secure: 0s81q7bweVLTFSOKxnIhan7el6bIFiN8HJ1kYJzOkeFXX7wgGSq9bs/rV53X9qpf
-  artifact: ReleaseArtifacts
-  draft: true
-  on:
-    branch: master
-    appveyor_repo_tag: true
+  - path: artifacts/*.trx
+    name: Test Results
 
 notifications:
   - provider: Slack
-    channel: '#notifications'
     auth_token:
       secure: GniMpFE62HprSyQNQoej/VSBnxn2GNnTrca3BnF8+ikMdqduO4Ts4t297teZF6wDAmGwnOtXusctUla8+WxLFkIztvVCS2Z1RG/DvEDYoc0=
-    on_build_success: true
-    on_build_failure: true
-    on_build_status_changed: false
+    channel: '#notifications'

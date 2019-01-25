@@ -5,10 +5,11 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
-        public EventPluginManager(IServiceProvider serviceProvider, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, metricsClient, loggerFactory) { }
+        public EventPluginManager(IServiceProvider serviceProvider, IOptions<AppOptions> options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) { }
 
         /// <summary>
         /// Runs all of the event plugins startup method.

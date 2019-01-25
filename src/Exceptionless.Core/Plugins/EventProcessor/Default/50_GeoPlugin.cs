@@ -7,13 +7,14 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(50)]
     public sealed class GeoPlugin : EventProcessorPluginBase {
         private readonly IGeoIpService _geoIpService;
 
-        public GeoPlugin(IGeoIpService geoIpService, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public GeoPlugin(IGeoIpService geoIpService, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _geoIpService = geoIpService;
         }
 
@@ -30,7 +31,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 // The geo coordinates are all the same, set the location from the result of any of the ip addresses.
                 if (!String.IsNullOrEmpty(group.Key)) {
                     var ips = group.SelectMany(c => c.Event.GetIpAddresses()).Union(new[] { group.First().EventPostInfo?.IpAddress }).Distinct().ToList();
-                    if (ips.Count > 0) 
+                    if (ips.Count > 0)
                         tasks.Add(UpdateGeoInformationAsync(group, ips));
                     continue;
                 }

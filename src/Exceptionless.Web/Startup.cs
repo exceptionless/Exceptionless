@@ -22,6 +22,7 @@ using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web {
     public class Startup {
@@ -35,7 +36,7 @@ namespace Exceptionless.Web {
             services.AddCors(b => b.AddPolicy("AllowAny", p => p
                 .AllowAnyHeader()
                 .AllowAnyMethod()
-                .AllowAnyOrigin()
+                .SetIsOriginAllowed(isOriginAllowed: _ => true)
                 .AllowCredentials()
                 .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
                 .WithExposedHeaders("ETag", "Link", Headers.RateLimit, Headers.RateLimitRemaining, "X-Result-Count", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion)));
@@ -50,7 +51,7 @@ namespace Exceptionless.Web {
                 o.Filters.Add<ApiExceptionFilter>();
                 o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
                 o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
-            }).SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+            }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
               .AddJsonOptions(o => {
                 o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
                 o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
@@ -104,18 +105,18 @@ namespace Exceptionless.Web {
                 c.IgnoreObsoleteActions();
             });
 
-            var serviceProvider = services.BuildServiceProvider();
-            var settings = serviceProvider.GetRequiredService<Settings>();
             Bootstrapper.RegisterServices(services, LoggerFactory);
-
-            services.AddSingleton(new ThrottlingOptions {
-                MaxRequestsForUserIdentifierFunc = userIdentifier => settings.ApiThrottleLimit,
-                Period = TimeSpan.FromMinutes(15)
+            services.AddSingleton(s => {
+                var settings = s.GetRequiredService<IOptions<AppOptions>>().Value;
+                return new ThrottlingOptions {
+                    MaxRequestsForUserIdentifierFunc = userIdentifier => settings.ApiThrottleLimit,
+                    Period = TimeSpan.FromMinutes(15)
+                };
             });
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
-            var settings = app.ApplicationServices.GetRequiredService<Settings>();
+            var settings = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, settings, LoggerFactory);
 
             if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey) && !String.IsNullOrEmpty(settings.ExceptionlessServerUrl))

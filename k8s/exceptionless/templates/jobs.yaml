@@ -1,0 +1,667 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-cleanup-snapshot
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-cleanup-snapshot
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "5 */1 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: {{ template "exceptionless.name" . }}-jobs-cleanup-snapshot
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 200m
+                limits:
+                  memory: 125Mi
+                  cpu: 400m
+              args: [CleanupSnapshot]
+              envFrom:
+                - configMapRef:
+                    name: {{ template "exceptionless.fullname" . }}-config
+          restartPolicy: OnFailure
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
+        tier: {{ template "exceptionless.fullname" . }}-job
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-jobs-close-inactive-sessions
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 100Mi
+              cpu: 50m
+            limits:
+              memory: 200Mi
+              cpu: 300m
+          args: [CloseInactiveSessions]
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
+        tier: {{ template "exceptionless.fullname" . }}-job
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-jobs-daily-summary
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 250Mi
+              cpu: 400m
+            limits:
+              memory: 500Mi
+              cpu: 1000m
+          args: [DailySummary]
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
+
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-download-geoip-database
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-download-geoip-database
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "0 1 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: {{ template "exceptionless.name" . }}-jobs-download-geoip-database
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 100Mi
+                  cpu: 100m
+                limits:
+                  memory: 200Mi
+                  cpu: 200m
+              args: [DownloadGeoIPDatabase]
+              envFrom:
+                - configMapRef:
+                    name: {{ template "exceptionless.fullname" . }}-config
+          restartPolicy: OnFailure
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.jobs.replicaCount }}
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
+        tier: {{ template "exceptionless.fullname" . }}-job
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-jobs-event-notifications
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 100Mi
+              cpu: 200m
+            limits:
+              memory: 200Mi
+              cpu: 500m
+          args: [EventNotifications]
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-event-posts
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.jobs.replicaCount }}
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
+        tier: {{ template "exceptionless.fullname" . }}-job
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-jobs-event-posts
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 150Mi
+              cpu: 100m
+            limits:
+              memory: 300Mi
+              cpu: 500m
+          args: [EventPosts]
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
+
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-event-snapshot
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-event-snapshot
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "0 */12 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: {{ template "exceptionless.name" . }}-jobs-event-snapshot
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 200m
+                limits:
+                  memory: 125Mi
+                  cpu: 400m
+              args: [EventSnapshot]
+              envFrom:
+                - configMapRef:
+                    name: {{ template "exceptionless.fullname" . }}-config
+          restartPolicy: OnFailure
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.jobs.replicaCount }}
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
+        tier: {{ template "exceptionless.fullname" . }}-job
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-jobs-event-user-descriptions
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 50m
+            limits:
+              memory: 100Mi
+              cpu: 300m
+          args: [EventUserDescriptions]
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-mail-message
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.jobs.replicaCount }}
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
+        tier: {{ template "exceptionless.fullname" . }}-job
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-jobs-mail-message
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 75Mi
+              cpu: 50m
+            limits:
+              memory: 125Mi
+              cpu: 300m
+          args: [MailMessage]
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
+
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-maintain-indexes
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-maintain-indexes
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "10 */2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: {{ template "exceptionless.name" . }}-jobs-maintain-indexes
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 200m
+                limits:
+                  memory: 125Mi
+                  cpu: 400m
+              args: [MaintainIndexes]
+              envFrom:
+                - configMapRef:
+                    name: {{ template "exceptionless.fullname" . }}-config
+          restartPolicy: OnFailure
+
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-organization-snapshot
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-organization-snapshot
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "30 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: {{ template "exceptionless.name" . }}-jobs-organization-snapshot
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 200m
+                limits:
+                  memory: 125Mi
+                  cpu: 400m
+              args: [OrganizationSnapshot]
+              envFrom:
+                - configMapRef:
+                    name: {{ template "exceptionless.fullname" . }}-config
+          restartPolicy: OnFailure
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-retention-limits
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-retention-limits
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-jobs-retention-limits
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-jobs-retention-limits
+        tier: {{ template "exceptionless.fullname" . }}-job
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-jobs-retention-limits
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 75Mi
+              cpu: 50m
+            limits:
+              memory: 125Mi
+              cpu: 250m
+          args: [RetentionLimits]
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
+        tier: {{ template "exceptionless.fullname" . }}-job
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-jobs-stack-event-count
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 75Mi
+              cpu: 50m
+            limits:
+              memory: 125Mi
+              cpu: 300m
+          args: [StackEventCount]
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
+
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-stack-snapshot
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-stack-snapshot
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "40 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: {{ template "exceptionless.name" . }}-jobs-stack-snapshot
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 200m
+                limits:
+                  memory: 125Mi
+                  cpu: 400m
+              args: [StackSnapshot]
+              envFrom:
+                - configMapRef:
+                    name: {{ template "exceptionless.fullname" . }}-config
+          restartPolicy: OnFailure
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.jobs.replicaCount }}
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
+        tier: {{ template "exceptionless.fullname" . }}-job
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-jobs-web-hooks
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 75Mi
+              cpu: 50m
+            limits:
+              memory: 150Mi
+              cpu: 500m
+          args: [WebHooks]
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-work-item
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-work-item
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.jobs.replicaCount }}
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-jobs-work-item
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-jobs-work-item
+        tier: {{ template "exceptionless.fullname" . }}-job
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-jobs-work-item
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 125Mi
+              cpu: 100m
+            limits:
+              memory: 1Gi
+              cpu: 1500m
+          args: [WorkItem]
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
+{{- if (empty .Values.storage.azureConnectionString) }}
+          volumeMounts:
+            - mountPath: "/app/storage"
+              name: storage
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ template "exceptionless.fullname" . }}-storage
+{{- end }}

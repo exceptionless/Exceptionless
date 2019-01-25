@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-app
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-app
+    tier: {{ template "exceptionless.fullname" . }}-app
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-app
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-app
+        tier: {{ template "exceptionless.fullname" . }}-app
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-app
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 50m
+            limits:
+              memory: 100Mi
+              cpu: 100m
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ template "exceptionless.fullname" . }}-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-app
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-app
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 443
+      targetPort: https
+      protocol: TCP
+      name: https
+  selector:
+    component: {{ template "exceptionless.fullname" . }}-app
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-app-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    certmanager.k8s.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - hosts:
+    - {{.Values.app.domain}}
+    secretName: {{ template "exceptionless.fullname" . }}-app-tls
+  rules:
+  - host: {{.Values.app.domain}}
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: {{ template "exceptionless.fullname" . }}-app
+          servicePort: 80

@@ -15,5 +15,22 @@ namespace Exceptionless.Core.Extensions {
 
             return value.Split(separators, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
         }
+
+        public static Dictionary<string, object> ToDictionary(this IConfiguration section) {
+            var dict = new Dictionary<string, object>();
+            foreach (var value in section.GetChildren()) {
+                if (String.IsNullOrEmpty(value.Key))
+                    continue;
+                
+                if (value.Value != null)
+                    dict.Add(value.Key, value.Value);
+                
+                var subDict = ToDictionary(value);
+                if (subDict.Count > 0)
+                    dict.Add(value.Key, subDict);
+            }
+
+            return dict;
+        }
     }
 }

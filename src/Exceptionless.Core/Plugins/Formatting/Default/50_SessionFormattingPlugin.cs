@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(50)]
     public sealed class SessionFormattingPlugin : FormattingPluginBase {
+        public SessionFormattingPlugin(IOptions<AppOptions> options) : base(options) { }
+
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsSessionStart() || ev.IsSessionEnd() || ev.IsSessionHeartbeat();
         }

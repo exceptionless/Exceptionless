@@ -6,6 +6,8 @@ using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Billing;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
@@ -19,18 +21,21 @@ using Xunit;
 using Xunit.Abstractions;
 using User = Exceptionless.Core.Models.User;
 using FluentRest;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Tests.Controllers {
     public class AuthControllerTests : IntegrationTestsBase {
+        private readonly IOptions<AuthOptions> _authOptions;
         private readonly IUserRepository _userRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly ITokenRepository _tokenRepository;
 
         public AuthControllerTests(ITestOutputHelper output) : base(output) {
-            Settings.Current.EnableAccountCreation = true;
-            Settings.Current.EnableActiveDirectoryAuth = false;
-
+            _authOptions = GetService<IOptions<AuthOptions>>();
+            _authOptions.Value.EnableAccountCreation = true;
+            _authOptions.Value.EnableActiveDirectoryAuth = false;
+            
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();
             _userRepository = GetService<IUserRepository>();
@@ -56,8 +61,8 @@ namespace Exceptionless.Tests.Controllers {
         [InlineData(true, "test1.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
         [InlineData(false, "test1@exceptionless.io", "Password1$")]
         public async Task CannotSignupWhenAccountCreationDisabledWithNoTokenAsync(bool enableAdAuth, string email, string password) {
-            Settings.Current.EnableAccountCreation = false;
-            Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
+            _authOptions.Value.EnableAccountCreation = false;
+            _authOptions.Value.EnableActiveDirectoryAuth = enableAdAuth;
 
             if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername) {
                 var provider = new TestDomainLoginProvider();
@@ -82,8 +87,8 @@ namespace Exceptionless.Tests.Controllers {
         [InlineData(true, "test2.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
         [InlineData(false, "test2@exceptionless.io", "Password1$")]
         public async Task CannotSignupWhenAccountCreationDisabledWithInvalidTokenAsync(bool enableAdAuth, string email, string password) {
-            Settings.Current.EnableAccountCreation = false;
-            Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
+            _authOptions.Value.EnableAccountCreation = false;
+            _authOptions.Value.EnableActiveDirectoryAuth = enableAdAuth;
 
             if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername) {
                 var provider = new TestDomainLoginProvider();
@@ -107,8 +112,8 @@ namespace Exceptionless.Tests.Controllers {
         [InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
         [InlineData(false, "test3@exceptionless.io", "Password1$")]
         public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAsync(bool enableAdAuth, string email, string password) {
-            Settings.Current.EnableAccountCreation = false;
-            Settings.Current.EnableActiveDirectoryAuth = enableAdAuth;
+            _authOptions.Value.EnableAccountCreation = false;
+            _authOptions.Value.EnableActiveDirectoryAuth = enableAdAuth;
 
             if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername) {
                 var provider = new TestDomainLoginProvider();
@@ -145,8 +150,8 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAndInvalidAdAccountAsync() {
-            Settings.Current.EnableAccountCreation = false;
-            Settings.Current.EnableActiveDirectoryAuth = true;
+            _authOptions.Value.EnableAccountCreation = false;
+            _authOptions.Value.EnableActiveDirectoryAuth = true;
 
             string email = "testuser1@exceptionless.io";
             string password = "invalidAccount1";
@@ -178,7 +183,7 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAsync() {
-            Settings.Current.EnableAccountCreation = true;
+            _authOptions.Value.EnableAccountCreation = true;
 
             var result = await SendRequestAs<TokenResult>(r => r
                .Post()
@@ -198,8 +203,8 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndValidAdAccountAsync() {
-            Settings.Current.EnableAccountCreation = true;
-            Settings.Current.EnableActiveDirectoryAuth = true;
+            _authOptions.Value.EnableAccountCreation = true;
+            _authOptions.Value.EnableActiveDirectoryAuth = true;
 
             var provider = new TestDomainLoginProvider();
             string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
@@ -222,8 +227,8 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndInvalidAdAccountAsync() {
-            Settings.Current.EnableAccountCreation = true;
-            Settings.Current.EnableActiveDirectoryAuth = true;
+            _authOptions.Value.EnableAccountCreation = true;
+            _authOptions.Value.EnableActiveDirectoryAuth = true;
 
             await SendRequest(r => r
                .Post()
@@ -240,7 +245,7 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAsync() {
-            Settings.Current.EnableAccountCreation = true;
+            _authOptions.Value.EnableAccountCreation = true;
 
             var orgs = await _organizationRepository.GetAllAsync();
             var organization = orgs.Documents.First();
@@ -298,8 +303,8 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndValidAdAccountAsync() {
-            Settings.Current.EnableAccountCreation = true;
-            Settings.Current.EnableActiveDirectoryAuth = true;
+            _authOptions.Value.EnableAccountCreation = true;
+            _authOptions.Value.EnableActiveDirectoryAuth = true;
 
             var provider = new TestDomainLoginProvider();
             string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
@@ -333,8 +338,8 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndInvalidAdAccountAsync() {
-            Settings.Current.EnableAccountCreation = true;
-            Settings.Current.EnableActiveDirectoryAuth = true;
+            _authOptions.Value.EnableAccountCreation = true;
+            _authOptions.Value.EnableActiveDirectoryAuth = true;
 
             string email = "testuser4@exceptionless.io";
             var results = await _organizationRepository.GetAllAsync();
@@ -403,7 +408,7 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task LoginValidAsync() {
-            Settings.Current.EnableActiveDirectoryAuth = false;
+            _authOptions.Value.EnableActiveDirectoryAuth = false;
 
             const string email = "test6@exceptionless.io";
             const string password = "Test6 password";
@@ -434,7 +439,7 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task LoginInvalidPasswordAsync() {
-            Settings.Current.EnableActiveDirectoryAuth = false;
+            _authOptions.Value.EnableActiveDirectoryAuth = false;
 
             const string email = "test7@exceptionless.io";
             const string password = "Test7 password";
@@ -464,7 +469,7 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task LoginNoSuchUserAsync() {
-            Settings.Current.EnableActiveDirectoryAuth = false;
+            _authOptions.Value.EnableActiveDirectoryAuth = false;
 
             const string email = "test8@exceptionless.io";
             const string password = "Test8 password";
@@ -492,7 +497,7 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task LoginValidExistingActiveDirectoryAsync() {
-            Settings.Current.EnableActiveDirectoryAuth = true;
+            _authOptions.Value.EnableActiveDirectoryAuth = true;
 
             var provider = new TestDomainLoginProvider();
             string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
@@ -520,7 +525,7 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task LoginValidNonExistantActiveDirectoryAsync() {
-            Settings.Current.EnableActiveDirectoryAuth = true;
+            _authOptions.Value.EnableActiveDirectoryAuth = true;
 
             var provider = new TestDomainLoginProvider();
             string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
@@ -538,7 +543,7 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task LoginInvalidNonExistantActiveDirectoryAsync() {
-            Settings.Current.EnableActiveDirectoryAuth = true;
+            _authOptions.Value.EnableActiveDirectoryAuth = true;
 
             await SendRequest(r => r
                .Post()
@@ -559,7 +564,7 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task LoginInvalidExistingActiveDirectoryAsync() {
-            Settings.Current.EnableActiveDirectoryAuth = true;
+            _authOptions.Value.EnableActiveDirectoryAuth = true;
 
             var provider = new TestDomainLoginProvider();
             string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
@@ -799,7 +804,7 @@ namespace Exceptionless.Tests.Controllers {
 
         private Task CreateOrganizationAndProjectsAsync() {
             return Task.WhenAll(
-                _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(), o => o.ImmediateConsistency()),
+                _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>()), o => o.ImmediateConsistency()),
                 _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency())
             );
         }

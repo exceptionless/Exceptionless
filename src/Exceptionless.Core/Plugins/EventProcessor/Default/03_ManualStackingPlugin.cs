@@ -3,11 +3,12 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(3)]
     public sealed class ManualStackingPlugin : EventProcessorPluginBase {
-        public ManualStackingPlugin(ILoggerFactory loggerFactory = null) : base(loggerFactory) {}
+        public ManualStackingPlugin(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public override Task EventProcessingAsync(EventContext context) {
             var msi = context.Event.GetManualStackingInfo();

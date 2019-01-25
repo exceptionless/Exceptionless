@@ -5,11 +5,12 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models.Data;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(30)]
     public sealed class SimpleErrorPlugin : EventProcessorPluginBase {
-        public SimpleErrorPlugin(ILoggerFactory loggerFactory = null) : base(loggerFactory) {}
+        public SimpleErrorPlugin(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {}
 
         public override Task EventProcessingAsync(EventContext context) {
             if (!context.Event.IsError())
@@ -18,10 +19,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             var error = context.Event.GetSimpleError();
             if (error == null)
                 return Task.CompletedTask;
-            
+
             if (String.IsNullOrWhiteSpace(context.Event.Message))
                 context.Event.Message = error.Message;
-            
+
             if (context.StackSignatureData.Count > 0)
                 return Task.CompletedTask;
 

@@ -5,10 +5,11 @@ using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Models;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganizationAndProject<T> : RepositoryOwnedByOrganization<T>, IRepositoryOwnedByProject<T> where T : class, IOwnedByProject, IIdentity, IOwnedByOrganization, new() {
-        public RepositoryOwnedByOrganizationAndProject(IIndexType<T> indexType, IValidator<T> validator) : base(indexType, validator) {
+        public RepositoryOwnedByOrganizationAndProject(IIndexType<T> indexType, IValidator<T> validator, IOptions<AppOptions> options) : base(indexType, validator, options) {
             FieldsRequiredForRemove.Add("project_id");
         }
 
