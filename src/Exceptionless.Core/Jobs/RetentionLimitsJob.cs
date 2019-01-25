@@ -12,17 +12,20 @@ using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Deletes old events that are outside of a plans retention period.", InitialDelay = "15m", Interval = "1h")]
     public class RetentionLimitsJob : JobWithLockBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IEventRepository _eventRepository;
+        private readonly IOptions<AppOptions> _appOptions;
         private readonly ILockProvider _lockProvider;
 
-        public RetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public RetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ICacheClient cacheClient, IOptions<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _organizationRepository = organizationRepository;
             _eventRepository = eventRepository;
+            _appOptions = appOptions;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
         }
 
@@ -57,8 +60,8 @@ namespace Exceptionless.Core.Jobs {
 
             try {
                 int retentionDays = organization.RetentionDays;
-                if (Settings.Current.MaximumRetentionDays > 0 && retentionDays > Settings.Current.MaximumRetentionDays)
-                    retentionDays = Settings.Current.MaximumRetentionDays;
+                if (_appOptions.Value.MaximumRetentionDays > 0 && retentionDays > _appOptions.Value.MaximumRetentionDays)
+                    retentionDays = _appOptions.Value.MaximumRetentionDays;
 
                 var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
                 await _eventRepository.RemoveAllByDateAsync(organization.Id, cutoff).AnyContext();

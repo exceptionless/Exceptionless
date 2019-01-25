@@ -1,5 +1,7 @@
 ﻿using System;
+using Exceptionless.Core.Configuration;
 using Foundatio.Repositories.Elasticsearch.Configuration;
+using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
@@ -22,10 +24,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         internal const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
         internal const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
-        private readonly Settings _settings;
+        private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public EventIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Settings.AppScopePrefix + "events", 1) {
-            _settings = configuration.Settings;
+        public EventIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "events", 1) {
+            _configuration = configuration;
             MaxIndexAge = TimeSpan.FromDays(180);
 
             AddType(Event = new EventIndexType(this));
@@ -41,9 +43,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
             return base.ConfigureIndex(idx.Settings(s => s
                 .Analysis(BuildAnalysis)
-                .NumberOfShards(_settings.ElasticsearchNumberOfShards)
-                .NumberOfReplicas(_settings.ElasticsearchNumberOfReplicas)
-                .Setting("index.mapping.total_fields.limit", _settings.ElasticsearchFieldsLimit)
+                .NumberOfShards(_configuration.Options.NumberOfShards)
+                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
+                .Setting("index.mapping.total_fields.limit", _configuration.Options.FieldsLimit)
                 .Priority(1)));
         }
 

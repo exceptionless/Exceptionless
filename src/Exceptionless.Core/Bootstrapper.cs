@@ -6,6 +6,7 @@ using AutoMapper;
 using AutoMapper.EquivalencyExpression;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
@@ -45,6 +46,7 @@ using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -52,7 +54,19 @@ using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 namespace Exceptionless.Core {
     public class Bootstrapper {
         public static void RegisterServices(IServiceCollection container) {
-            container.AddSingleton<IServiceCollection>(container);
+            container.ConfigureOptions<ConfigureAppOptions>();
+            container.ConfigureOptions<ConfigureAuthOptions>();
+            container.ConfigureOptions<ConfigureCacheOptions>();
+            container.ConfigureOptions<ConfigureElasticsearchOptions>();
+            container.ConfigureOptions<ConfigureEmailOptions>();
+            container.ConfigureOptions<ConfigureIntercomOptions>();
+            container.ConfigureOptions<ConfigureMessageBusOptions>();
+            container.ConfigureOptions<ConfigureMetricOptions>();
+            container.ConfigureOptions<ConfigureQueueOptions>();
+            container.ConfigureOptions<ConfigureSlackOptions>();
+            container.ConfigureOptions<ConfigureStorageOptions>();
+            container.ConfigureOptions<ConfigureStripeOptions>();
+
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
                 DateParseHandling = DateParseHandling.DateTimeOffset
             };
@@ -78,8 +92,7 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<ExceptionlessElasticConfiguration>();
             container.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
-            if (!Settings.Current.DisableIndexConfiguration)
-                container.AddStartupAction<ExceptionlessElasticConfiguration>();
+            container.AddStartupAction<ExceptionlessElasticConfiguration>();
 
             container.AddStartupAction(CreateSampleDataAsync);
 
@@ -121,18 +134,10 @@ namespace Exceptionless.Core {
             container.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
             container.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
 
-            if (!String.IsNullOrEmpty(Settings.Current.StorageFolder)) {
-                container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions {
-                    Folder = Settings.Current.StorageFolder,
-                    Serializer = s.GetRequiredService<ITextSerializer>(),
-                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-                }));
-            } else {
-                container.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(new InMemoryFileStorageOptions {
-                    Serializer = s.GetRequiredService<ITextSerializer>(),
-                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-                }));
-            }
+            container.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(new InMemoryFileStorageOptions {
+                Serializer = s.GetRequiredService<ITextSerializer>(),
+                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+            }));
 
             container.AddSingleton<IStackRepository, StackRepository>();
             container.AddSingleton<IEventRepository, EventRepository>();
@@ -169,6 +174,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<ILockProvider>(s => s.GetRequiredService<CacheLockProvider>());
             container.AddTransient<StripeEventHandler>();
             container.AddSingleton<BillingManager>();
+            container.AddSingleton<BillingPlans>();
             container.AddSingleton<EventPostService>();
             container.AddSingleton<SampleDataService>();
             container.AddSingleton<SemanticVersionParser>();
@@ -190,7 +196,7 @@ namespace Exceptionless.Core {
             container.AddTransient<AutoMapper.Profile, CoreMappings>();
             container.AddSingleton<IMapper>(s => {
                 var profiles = s.GetServices<AutoMapper.Profile>();
-                var config = new MapperConfiguration(cfg => {
+                var c = new MapperConfiguration(cfg => {
                     cfg.AddCollectionMappers();
                     cfg.ConstructServicesUsing(s.GetRequiredService);
 
@@ -198,50 +204,64 @@ namespace Exceptionless.Core {
                         cfg.AddProfile(profile);
                 });
 
-                return config.CreateMapper();
+                return c.CreateMapper();
             });
         }
 
-        public static void LogConfiguration(IServiceProvider serviceProvider, Settings settings, ILoggerFactory loggerFactory) {
+        public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILoggerFactory loggerFactory) {
             var logger = loggerFactory.CreateLogger<Bootstrapper>();
             if (!logger.IsEnabled(LogLevel.Warning))
                 return;
 
-            if (!settings.EnableMetricsReporting)
+            var cacheOptions = serviceProvider.GetRequiredService<IOptions<CacheOptions>>();
+            if (String.IsNullOrEmpty(cacheOptions.Value.Provider))
+                logger.LogWarning("Distributed cache is NOT enabled on {MachineName}.", Environment.MachineName);
+            
+            var messageBusOptions = serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>();
+            if (String.IsNullOrEmpty(messageBusOptions.Value.Provider))
+                logger.LogWarning("Distributed message bus is NOT enabled on {MachineName}.", Environment.MachineName);
+            
+            var metricsOptions = serviceProvider.GetRequiredService<IOptions<MetricOptions>>();
+            if (String.IsNullOrEmpty(metricsOptions.Value.Provider))
                 logger.LogWarning("Metrics reporting is NOT enabled on {MachineName}.", Environment.MachineName);
 
-            if (String.IsNullOrEmpty(settings.RedisConnectionString))
-                logger.LogWarning("Redis is NOT enabled on {MachineName}.", Environment.MachineName);
+            var queueOptions = serviceProvider.GetRequiredService<IOptions<QueueOptions>>();
+            if (String.IsNullOrEmpty(queueOptions.Value.Provider))
+                logger.LogWarning("Distributed queue is NOT enabled on {MachineName}.", Environment.MachineName);
+            
+            var storageOptions = serviceProvider.GetRequiredService<IOptions<StorageOptions>>();
+            if (String.IsNullOrEmpty(storageOptions.Value.Provider))
+                logger.LogWarning("Distributed storage is NOT enabled on {MachineName}.", Environment.MachineName);
 
-            if (!settings.EnableWebSockets)
+            if (!appOptions.EnableWebSockets)
                 logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (settings.AppMode == AppMode.Development)
+            if (appOptions.AppMode == AppMode.Development)
                 logger.LogWarning("Emails will NOT be sent in Development mode on {MachineName}", Environment.MachineName);
-
-            if (String.IsNullOrEmpty(settings.AzureStorageConnectionString))
-                logger.LogWarning("Azure Storage is NOT enabled on {MachineName}", Environment.MachineName);
 
             var fileStorage = serviceProvider.GetRequiredService<IFileStorage>();
             if (fileStorage is InMemoryFileStorage)
                 logger.LogWarning("Using in memory file storage on {MachineName}", Environment.MachineName);
 
-            if (!settings.EnableBootstrapStartupActions)
+            if (!appOptions.EnableBootstrapStartupActions)
                 logger.LogWarning("Startup Actions is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (settings.DisableIndexConfiguration)
+            var elasticsearchOptions = serviceProvider.GetRequiredService<IOptions<ElasticsearchOptions>>();
+            if (elasticsearchOptions.Value.DisableIndexConfiguration)
                 logger.LogWarning("Index Configuration is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (settings.EventSubmissionDisabled)
+            if (appOptions.EventSubmissionDisabled)
                 logger.LogWarning("Event Submission is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (!settings.EnableAccountCreation)
+            var authOptions = serviceProvider.GetRequiredService<IOptions<AuthOptions>>();
+            if (!authOptions.Value.EnableAccountCreation)
                 logger.LogWarning("Account Creation is NOT enabled on {MachineName}", Environment.MachineName);
         }
 
         private static async Task CreateSampleDataAsync(IServiceProvider container) {
-            if (Settings.Current.AppMode != AppMode.Development
-                || Settings.Current.DisableIndexConfiguration)
+            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
+            var elasticsearchOptions = container.GetRequiredService<IOptions<ElasticsearchOptions>>().Value;
+            if (options.AppMode != AppMode.Development || elasticsearchOptions.DisableIndexConfiguration)
                 return;
 
             var userRepository = container.GetRequiredService<IUserRepository>();
@@ -254,7 +274,9 @@ namespace Exceptionless.Core {
 
         public static void RunJobs(IServiceProvider container, ILoggerFactory loggerFactory, CancellationToken token) {
             var logger = loggerFactory.CreateLogger("AppBuilder");
-            if (!Settings.Current.RunJobsInProcess) {
+            
+            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
+            if (!options.RunJobsInProcess) {
                 logger.LogInformation("Jobs running out of process.");
                 return;
             }

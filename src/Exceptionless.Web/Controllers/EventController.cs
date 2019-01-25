@@ -31,6 +31,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 
@@ -49,6 +50,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly ICacheClient _cache;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
+        private readonly IOptions<AppOptions> _appOptions;
 
         public EventController(IEventRepository repository,
             IOrganizationRepository organizationRepository,
@@ -62,6 +64,7 @@ namespace Exceptionless.Web.Controllers {
             JsonSerializerSettings jsonSerializerSettings,
             IMapper mapper,
             PersistentEventQueryValidator validator,
+            IOptions<AppOptions> appOptions,
             ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -72,6 +75,7 @@ namespace Exceptionless.Web.Controllers {
             _formattingPluginManager = formattingPluginManager;
             _cache = cacheClient;
             _jsonSerializerSettings = jsonSerializerSettings;
+            _appOptions = appOptions;
 
             AllowedDateFields.Add(EventIndexType.Alias.Date);
             DefaultDateField = EventIndexType.Alias.Date;
@@ -92,7 +96,7 @@ namespace Exceptionless.Web.Controllers {
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(CountResult.Empty);
 
-            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetCountImplAsync(sf, ti, filter, aggregations);
         }
@@ -116,7 +120,7 @@ namespace Exceptionless.Web.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(organization);
             return await GetCountImplAsync(sf, ti, filter, aggregations);
         }
@@ -144,7 +148,7 @@ namespace Exceptionless.Web.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(project, organization);
             return await GetCountImplAsync(sf, ti, filter, aggregations);
         }
@@ -179,7 +183,7 @@ namespace Exceptionless.Web.Controllers {
             if (!pr.IsValid)
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(organization);
             var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, filter, ti.Range.UtcStart, ti.Range.UtcEnd);
             return OkWithLinks(model, new [] { GetEntityResourceLink(result.Previous, "previous"), GetEntityResourceLink(result.Next, "next"), GetEntityResourceLink<Stack>(model.StackId, "parent") });
@@ -203,7 +207,7 @@ namespace Exceptionless.Web.Controllers {
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
-            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
@@ -269,7 +273,7 @@ namespace Exceptionless.Web.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(organization);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
@@ -302,7 +306,7 @@ namespace Exceptionless.Web.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(project, organization);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
@@ -335,7 +339,7 @@ namespace Exceptionless.Web.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(stack));
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(stack, _appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(stack, organization);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
         }
@@ -356,7 +360,7 @@ namespace Exceptionless.Web.Controllers {
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
-            var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit);
         }
@@ -387,7 +391,7 @@ namespace Exceptionless.Web.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff(project));
+            var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff(project, _appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(project, organization);
             return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null,  mode, page, limit);
         }
@@ -411,7 +415,7 @@ namespace Exceptionless.Web.Controllers {
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
-            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, true);
         }
@@ -445,7 +449,7 @@ namespace Exceptionless.Web.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(project, organization);
             return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, true);
         }
@@ -468,7 +472,7 @@ namespace Exceptionless.Web.Controllers {
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(EmptyModels);
 
-            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }
@@ -497,7 +501,7 @@ namespace Exceptionless.Web.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff());
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(organization);
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }
@@ -530,7 +534,7 @@ namespace Exceptionless.Web.Controllers {
             if (organization.IsSuspended)
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project));
+            var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.Value.MaximumRetentionDays));
             var sf = new ExceptionlessSystemFilter(project, organization);
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, true);
         }
@@ -609,7 +613,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">No project was found.</response>
         [HttpGet("session/heartbeat")]
         public async Task<IActionResult> RecordHeartbeatAsync(string id = null, bool close = false) {
-            if (Settings.Current.EventSubmissionDisabled || String.IsNullOrEmpty(id))
+            if (_appOptions.Value.EventSubmissionDisabled || String.IsNullOrEmpty(id))
                 return Ok();
 
             string projectId = Request.GetDefaultProjectId();
@@ -624,7 +628,7 @@ namespace Exceptionless.Web.Controllers {
                     close ? _cache.SetAsync(String.Concat(heartbeatCacheKey, "-close"), true, TimeSpan.FromHours(2)) : Task.CompletedTask
                 );
             } catch (Exception ex) {
-                if (projectId != Settings.Current.InternalProjectId) {
+                if (projectId != _appOptions.Value.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).Property("Id", id).Property("Close", close).SetHttpContext(HttpContext)))
                         _logger.LogError(ex, "Error enqueuing session heartbeat.");
                 }
@@ -826,7 +830,7 @@ namespace Exceptionless.Web.Controllers {
                 }
 
                 var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings));
-                await _eventPostService.EnqueueAsync(new EventPost {
+                await _eventPostService.EnqueueAsync(new EventPost(_appOptions.Value.EnableArchive) {
                     ApiVersion = apiVersion,
                     CharSet = charSet,
                     ContentEncoding = contentEncoding,
@@ -837,7 +841,7 @@ namespace Exceptionless.Web.Controllers {
                     UserAgent = userAgent
                 }, stream);
             } catch (Exception ex) {
-                if (projectId != Settings.Current.InternalProjectId) {
+                if (projectId != _appOptions.Value.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                         _logger.LogError(ex, "Error enqueuing event post.");
                 }
@@ -1009,7 +1013,7 @@ namespace Exceptionless.Web.Controllers {
                     charSet = contentType.Charset.ToString();
                 }
 
-                await _eventPostService.EnqueueAsync(new EventPost {
+                await _eventPostService.EnqueueAsync(new EventPost(_appOptions.Value.EnableArchive) {
                     ApiVersion = apiVersion,
                     CharSet = charSet,
                     ContentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding),
@@ -1020,7 +1024,7 @@ namespace Exceptionless.Web.Controllers {
                     UserAgent = userAgent,
                 }, Request.Body);
             } catch (Exception ex) {
-                if (projectId != Settings.Current.InternalProjectId) {
+                if (projectId != _appOptions.Value.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                         _logger.LogError(ex, "Error enqueuing event post.");
                 }

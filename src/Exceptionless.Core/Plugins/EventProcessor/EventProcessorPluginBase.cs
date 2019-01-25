@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     public abstract class EventProcessorPluginBase : PluginBase, IEventProcessorPlugin {
-        public EventProcessorPluginBase(ILoggerFactory loggerFactory = null) : base(loggerFactory) { }
+        public EventProcessorPluginBase(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         protected bool ContinueOnError { get; set; }
 

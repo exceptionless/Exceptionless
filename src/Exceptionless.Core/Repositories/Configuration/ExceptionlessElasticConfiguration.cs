@@ -4,8 +4,10 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -15,6 +17,7 @@ using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -22,28 +25,35 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
         private CancellationToken _shutdownToken;
+        private readonly IOptions<ElasticsearchOptions> _options;
+        private readonly IOptions<AppOptions> _appOptions;
 
-        public ExceptionlessElasticConfiguration(Settings settings, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
-            Settings = settings;
-            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", Settings.ElasticsearchNumberOfShards, Settings.ElasticsearchNumberOfReplicas);
+        public ExceptionlessElasticConfiguration(IOptions<ElasticsearchOptions> options, IOptions<AppOptions> appOptions, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
+            _options = options;
+            _appOptions = appOptions;
+
+            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", options.Value.NumberOfShards, options.Value.NumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
             AddIndex(Events = new EventIndex(this));
             AddIndex(Organizations = new OrganizationIndex(this));
         }
 
         public Task RunAsync(CancellationToken shutdownToken = default) {
+            if (_options.Value.DisableIndexConfiguration)
+                return Task.CompletedTask;
+
             _shutdownToken = shutdownToken;
             return ConfigureIndexesAsync();
         }
 
         public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder) {
-            builder.Register(new ExceptionlessSystemFilterQueryBuilder());
+            builder.Register(new ExceptionlessSystemFilterQueryBuilder(_appOptions));
             builder.Register(new OrganizationQueryBuilder());
             builder.Register(new ProjectQueryBuilder());
             builder.Register(new StackQueryBuilder());
         }
 
-        public Settings Settings { get; }
+        public ElasticsearchOptions Options => _options.Value;
         public StackIndex Stacks { get; }
         public EventIndex Events { get; }
         public OrganizationIndex Organizations { get; }
@@ -82,7 +92,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override IConnectionPool CreateConnectionPool() {
-            var serverUris = Settings.ElasticsearchConnectionString.Split(',').Select(url => new Uri(url));
+            var serverUris = Options?.ServerUrl.Split(',').Select(url => new Uri(url));
             return new StaticConnectionPool(serverUris);
         }
 

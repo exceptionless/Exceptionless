@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Tests.Utility;
@@ -17,7 +18,7 @@ namespace Exceptionless.Tests.Plugins {
             var ev = new PersistentEvent();
             ev.SetManualStackingKey(stackingKey);
 
-            var context = new EventContext(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
+            var context = new EventContext(ev, OrganizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>()), ProjectData.GenerateSampleProject());
             var plugin = GetService<ManualStackingPlugin>();
             await plugin.EventBatchProcessingAsync(new List<EventContext> { context });
             Assert.Equal(willAddManualStackSignature, context.StackSignatureData.Count > 0);

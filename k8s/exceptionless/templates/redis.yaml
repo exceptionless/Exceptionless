@@ -1,0 +1,54 @@
+{{- if (empty .Values.redis.connectionString) -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-redis
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-redis
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: {{ template "exceptionless.fullname" . }}-redis
+  template:
+    metadata:
+      labels:
+        app: {{ template "exceptionless.name" . }}
+        component: {{ template "exceptionless.fullname" . }}-redis
+        chart: {{ template "exceptionless.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ template "exceptionless.name" . }}-redis
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          ports:
+            - containerPort: 6379
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-redis
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-redis
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: redis
+      port: 6379
+  selector:
+    component: {{ template "exceptionless.fullname" . }}-redis
+
+{{- end -}}

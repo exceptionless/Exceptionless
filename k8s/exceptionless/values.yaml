@@ -1,0 +1,49 @@
+api:
+  replicaCount: 2
+  domain:
+  image:
+    repository: exceptionless/api-ci
+    tag: latest
+    pullPolicy: IfNotPresent
+
+collector:
+  replicaCount: 3
+  domain:
+
+app:
+  replicaCount: 2
+  domain:
+  image:
+    repository: exceptionless/ui-ci
+    tag: latest
+    pullPolicy: IfNotPresent
+
+jobs:
+  replicaCount: 1
+  image:
+    repository: exceptionless/job-ci
+    tag: latest
+    pullPolicy: IfNotPresent
+
+extraConfig: |
+#  key: value
+
+service:
+  type: ClusterIP
+
+elasticsearch:
+  connectionString: 
+  image:
+    repository: slideroom/elasticsearch
+    tag: 98
+    pullPolicy: IfNotPresent
+
+redis:
+  connectionString: 
+  image:
+    repository: redis
+    tag: latest
+    pullPolicy: IfNotPresent
+
+storage:
+  azureConnectionString: 

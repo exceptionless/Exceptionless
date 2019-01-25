@@ -17,27 +17,27 @@ namespace Exceptionless.Core.Extensions {
             return organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
         }
 
-        public static DateTime GetRetentionUtcCutoff(this Organization organization, Project project) {
-            return organization.GetRetentionUtcCutoff(project.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3)));
+        public static DateTime GetRetentionUtcCutoff(this Organization organization, Project project, int maximumRetentionDays) {
+            return organization.GetRetentionUtcCutoff(maximumRetentionDays, project.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3)));
         }
 
-        public static DateTime GetRetentionUtcCutoff(this Organization organization, Stack stack) {
-            return organization.GetRetentionUtcCutoff(stack.FirstOccurrence);
+        public static DateTime GetRetentionUtcCutoff(this Organization organization, Stack stack, int maximumRetentionDays) {
+            return organization.GetRetentionUtcCutoff(maximumRetentionDays, stack.FirstOccurrence);
         }
 
-        public static DateTime GetRetentionUtcCutoff(this Organization organization, DateTime? oldestPossibleEventAge = null) {
+        public static DateTime GetRetentionUtcCutoff(this Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null) {
             // NOTE: We allow you to submit events 3 days before your creation date.
             var oldestPossibleOrganizationEventAge = organization.CreatedUtc.Date.SafeSubtract(TimeSpan.FromDays(3));
             if (!oldestPossibleEventAge.HasValue || oldestPossibleEventAge.Value.IsBefore(oldestPossibleOrganizationEventAge))
                 oldestPossibleEventAge = oldestPossibleOrganizationEventAge;
 
-            int retentionDays = organization.RetentionDays > 0 ? organization.RetentionDays : Settings.Current.MaximumRetentionDays;
+            int retentionDays = organization.RetentionDays > 0 ? organization.RetentionDays : maximumRetentionDays;
             var retentionDate = retentionDays <= 0 ? oldestPossibleEventAge.Value : SystemClock.UtcNow.Date.AddDays(-retentionDays);
             return retentionDate.IsAfter(oldestPossibleEventAge.Value) ? retentionDate : oldestPossibleEventAge.Value;
         }
 
-        public static DateTime GetRetentionUtcCutoff(this IReadOnlyCollection<Organization> organizations) {
-            return organizations.Count > 0 ? organizations.Min(o => o.GetRetentionUtcCutoff()) : DateTime.MinValue;
+        public static DateTime GetRetentionUtcCutoff(this IReadOnlyCollection<Organization> organizations, int maximumRetentionDays) {
+            return organizations.Count > 0 ? organizations.Min(o => o.GetRetentionUtcCutoff(maximumRetentionDays)) : DateTime.MinValue;
         }
 
         public static void RemoveSuspension(this Organization organization) {
@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Extensions {
             organization.SuspendedByUserId = null;
         }
 
-        public static int GetHourlyEventLimit(this Organization organization) {
+        public static int GetHourlyEventLimit(this Organization organization, BillingPlans plans) {
             if (organization.MaxEventsPerMonth <= 0)
                 return Int32.MaxValue;
 
@@ -56,7 +56,7 @@ namespace Exceptionless.Core.Extensions {
             if (eventsLeftInMonth < 0)
                 return 0;
 
-            if (organization.PlanId == BillingManager.FreePlan.Id)
+            if (organization.PlanId == plans.FreePlan.Id)
                 return eventsLeftInMonth;
 
             var utcNow = SystemClock.UtcNow;
@@ -93,10 +93,10 @@ namespace Exceptionless.Core.Extensions {
             return usageInfo != null && (usageInfo.Total - usageInfo.Blocked) >= organization.GetMaxEventsPerMonthWithBonus();
         }
 
-        public static bool IsOverHourlyLimit(this Organization organization) {
+        public static bool IsOverHourlyLimit(this Organization organization, BillingPlans plans) {
             var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null && usageInfo.Total > organization.GetHourlyEventLimit();
+            return usageInfo != null && usageInfo.Total > organization.GetHourlyEventLimit(plans);
         }
 
        public static int GetCurrentHourlyTotal(this Organization organization) {
@@ -135,9 +135,9 @@ namespace Exceptionless.Core.Extensions {
             return usageInfo?.TooBig ?? 0;
         }
 
-        public static void SetHourlyOverage(this Organization organization, double total, double blocked, double tooBig) {
+        public static void SetHourlyOverage(this Organization organization, double total, double blocked, double tooBig, BillingPlans plans) {
             var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-            organization.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetHourlyEventLimit(), TimeSpan.FromDays(3));
+            organization.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetHourlyEventLimit(plans), TimeSpan.FromDays(3));
         }
 
         public static void SetMonthlyUsage(this Organization organization, double total, double blocked, double tooBig) {

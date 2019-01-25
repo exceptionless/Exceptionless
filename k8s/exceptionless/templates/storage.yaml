@@ -1,0 +1,14 @@
+{{- if (empty .Values.storage.azureConnectionString) -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-storage
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: managed-premium
+  resources:
+    requests:
+      storage: 5Gi
+
+{{- end -}}

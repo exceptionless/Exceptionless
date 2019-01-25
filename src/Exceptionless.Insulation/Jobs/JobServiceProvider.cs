@@ -1,15 +1,18 @@
 ﻿using System;
 using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
-using Exceptionless.Insulation.Metrics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using LogLevel = Exceptionless.Logging.LogLevel;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Exceptionless.Insulation.Jobs {
     public class JobServiceProvider {
@@ -27,44 +30,42 @@ namespace Exceptionless.Insulation.Jobs {
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
-
-            var settings = Settings.ReadFromConfiguration(config, environment);
-            settings.DisableIndexConfiguration = true;
-
+            
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
+            Log.Logger = loggerConfig.CreateLogger();
 
-            if (!String.IsNullOrEmpty(Settings.Current.ExceptionlessApiKey) && !String.IsNullOrEmpty(Settings.Current.ExceptionlessServerUrl)) {
+            var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(config);
+            services.ConfigureOptions<ConfigureAppOptions>();
+            services.AddLogging(b => b.AddSerilog(Log.Logger));
+            Core.Bootstrapper.RegisterServices(services);
+            var container = services.BuildServiceProvider();
+            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
+            Bootstrapper.RegisterServices(container, services, options, true);
+            
+
+            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
                 client.Configuration.SetDefaultMinLogLevel(LogLevel.Warn);
                 client.Configuration.UseLogger(new SelfLogLogger());
-                client.Configuration.SetVersion(Settings.Current.Version);
+                client.Configuration.SetVersion(options.Version);
                 client.Configuration.UseInMemoryStorage();
 
-                if (String.IsNullOrEmpty(Settings.Current.InternalProjectId))
+                if (String.IsNullOrEmpty(options.InternalProjectId))
                     client.Configuration.Enabled = false;
 
-                client.Configuration.ServerUrl = Settings.Current.ExceptionlessServerUrl;
-                client.Startup(Settings.Current.ExceptionlessApiKey);
+                client.Configuration.ServerUrl = options.ExceptionlessServerUrl;
+                client.Startup(options.ExceptionlessApiKey);
 
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
             }
 
-            Log.Logger = loggerConfig.CreateLogger();
-            Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current, currentDirectory);
-
-            if (settings.EnableMetricsReporting)
-                settings.MetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString?.ConnectionString);
-
-            var services = new ServiceCollection();
-            services.AddLogging(b => b.AddSerilog(Log.Logger));
-            services.AddSingleton(settings);
-            Core.Bootstrapper.RegisterServices(services);
-            Bootstrapper.RegisterServices(services, true);
-
-            var container = services.BuildServiceProvider();
-
-            Core.Bootstrapper.LogConfiguration(container, settings, container.GetRequiredService<ILoggerFactory>());
-            if (Settings.Current.EnableBootstrapStartupActions)
+            var configDictionary = config.ToDictionary();
+            Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Config} loaded from {Folder}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
+            
+            container = services.BuildServiceProvider();
+            Core.Bootstrapper.LogConfiguration(container, options, container.GetRequiredService<ILoggerFactory>());
+            if (options.EnableBootstrapStartupActions)
                 container.RunStartupActionsAsync().GetAwaiter().GetResult();
 
             return container;

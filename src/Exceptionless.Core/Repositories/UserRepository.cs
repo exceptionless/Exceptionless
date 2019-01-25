@@ -8,13 +8,14 @@ using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
+using Microsoft.Extensions.Options;
 using Nest;
 using User = Exceptionless.Core.Models.User;
 
 namespace Exceptionless.Core.Repositories {
     public class UserRepository : RepositoryBase<User>, IUserRepository {
-        public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator)
-            : base(configuration.Organizations.User, validator) {
+        public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator, IOptions<AppOptions> options)
+            : base(configuration.Organizations.User, validator, options) {
             FieldsRequiredForRemove.AddRange(new Field[] { ElasticType.GetPropertyName(u => u.EmailAddress), ElasticType.GetPropertyName(u => u.OrganizationIds) });
             DocumentsAdded.AddHandler(OnDocumentsAdded);
         }

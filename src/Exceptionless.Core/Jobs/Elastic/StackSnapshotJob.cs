@@ -11,13 +11,16 @@ namespace Exceptionless.Core.Jobs.Elastic {
     [Job(Description = "Takes an Elasticsearch stacks index snapshot ", IsContinuous = false)]
 
     public class StackSnapshotJob : SnapshotJob {
+        private readonly ExceptionlessElasticConfiguration _configuration;
+
         public StackSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(configuration.Client, lockProvider, loggerFactory) {
-            Repository = Settings.Current.AppScopePrefix + "ex_stacks";
+            _configuration = configuration;
+            Repository = configuration.Options.ScopePrefix + "ex_stacks";
             IncludedIndexes.Add("stacks*");
         }
 
         public override Task<JobResult> RunAsync(CancellationToken cancellationToken = new CancellationToken()) {
-            if (!Settings.Current.EnableSnapshotJobs)
+            if (!_configuration.Options.EnableSnapshotJobs)
                 return Task.FromResult(JobResult.Success);
 
             return base.RunAsync(cancellationToken);

@@ -4,6 +4,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Foundatio.Repositories;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(0)]
@@ -12,7 +13,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
 
-        public LoadDefaults(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository) {
+        public LoadDefaults(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, IOptions<AppOptions> options) : base(options) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;

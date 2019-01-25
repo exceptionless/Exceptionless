@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     public interface IPipelineAction<TContext> where TContext : IPipelineContext {
@@ -37,12 +38,14 @@ namespace Exceptionless.Core.Pipeline {
     /// </summary>
     /// <typeparam name="TContext">The type of the pipeline context.</typeparam>
     public abstract class PipelineActionBase<TContext> : IPipelineAction<TContext> where TContext : class, IPipelineContext {
+        private readonly IOptions<AppOptions> _options;
         protected readonly ILogger _logger;
 
-        public PipelineActionBase(ILoggerFactory loggerFactory = null) {
+        public PipelineActionBase(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) {
+            _options = options;
             var type = GetType();
             Name = type.Name;
-            Enabled = !Settings.Current.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase);
+            Enabled = !_options.Value.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase);
             _logger = loggerFactory?.CreateLogger(type);
         }
 

@@ -9,7 +9,9 @@ namespace Exceptionless.Tests.Billing {
 
         [Fact]
         public void GetBillingPlan() {
-            Assert.Equal(BillingManager.FreePlan.Id, BillingManager.GetBillingPlan(BillingManager.FreePlan.Id).Id);
+            var billingManager = GetService<BillingManager>();
+            var plans = GetService<BillingPlans>();
+            Assert.Equal(plans.FreePlan.Id, billingManager.GetBillingPlan(plans.FreePlan.Id).Id);
         }
     }
 }
