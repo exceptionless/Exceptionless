@@ -91,7 +91,7 @@ namespace Exceptionless.Insulation {
 
             if (appOptions.AppMode != AppMode.Development) {
                 services.ReplaceSingleton<IMailSender, MailKitMailSender>();
-                healthCheckBuilder.Add(new HealthCheckRegistration("email", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "email" }));
+                healthCheckBuilder.Add(new HealthCheckRegistration("mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "mail" }));
             }
         }
 
