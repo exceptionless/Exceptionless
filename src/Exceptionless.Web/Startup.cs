@@ -104,7 +104,7 @@ namespace Exceptionless.Web {
                 
                 c.IgnoreObsoleteActions();
             });
-
+            
             Bootstrapper.RegisterServices(services, LoggerFactory);
             services.AddSingleton(s => {
                 var settings = s.GetRequiredService<IOptions<AppOptions>>().Value;
@@ -118,6 +118,9 @@ namespace Exceptionless.Web {
         public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
             var settings = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, settings, LoggerFactory);
+
+            if (settings.EnableHealthChecks)
+                app.UseHealthChecks("health");
 
             if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey) && !String.IsNullOrEmpty(settings.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);

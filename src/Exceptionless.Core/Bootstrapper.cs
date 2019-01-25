@@ -184,7 +184,6 @@ namespace Exceptionless.Core {
             container.AddSingleton<FormattingPluginManager>();
             container.AddSingleton<WebHookDataPluginManager>();
             container.AddSingleton<UserAgentParser>();
-            container.AddSingleton<SystemHealthChecker>();
             container.AddSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
             container.AddSingleton<UsageService>();

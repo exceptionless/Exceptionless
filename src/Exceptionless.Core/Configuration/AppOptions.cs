@@ -54,6 +54,8 @@ namespace Exceptionless.Core {
         public string ApplicationInsightsKey { get; internal set; }
 
         public bool EnableBootstrapStartupActions { get; internal set; }
+        
+        public bool EnableHealthChecks { get; internal set; }
 
         public bool EnableRepositoryNotifications { get; internal set; }
 
@@ -99,9 +101,10 @@ namespace Exceptionless.Core {
 
             options.BulkBatchSize = _configuration.GetValue(nameof(options.BulkBatchSize), 1000);
 
+            options.EnableBootstrapStartupActions = _configuration.GetValue(nameof(options.EnableBootstrapStartupActions), true);
+            options.EnableHealthChecks = _configuration.GetValue(nameof(options.EnableHealthChecks), true);
             options.EnableRepositoryNotifications = _configuration.GetValue(nameof(options.EnableRepositoryNotifications), true);
             options.EnableWebSockets = _configuration.GetValue(nameof(options.EnableWebSockets), true);
-            options.EnableBootstrapStartupActions = _configuration.GetValue(nameof(options.EnableBootstrapStartupActions), true);
 
             try {
                 var versionInfo = FileVersionInfo.GetVersionInfo(typeof(AppOptions).Assembly.Location);
