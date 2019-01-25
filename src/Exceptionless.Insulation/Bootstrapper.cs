@@ -17,6 +17,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
+using Exceptionless.Insulation.HealthChecks;
 using Exceptionless.Insulation.Mail;
 using Exceptionless.Insulation.Redis;
 using Foundatio.Caching;
@@ -28,6 +29,7 @@ using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog.Sinks.Exceptionless;
@@ -57,14 +59,40 @@ namespace Exceptionless.Insulation {
             if (!String.IsNullOrEmpty(appOptions.GoogleGeocodingApiKey))
                 services.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(appOptions.GoogleGeocodingApiKey));
 
-            RegisterCache(services, serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value);
-            RegisterMessageBus(services, serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>().Value);
-            RegisterMetric(services, serviceProvider.GetRequiredService<IOptions<MetricOptions>>().Value);
-            RegisterQueue(services, serviceProvider.GetRequiredService<IOptions<QueueOptions>>().Value, runMaintenanceTasks);
-            RegisterStorage(services, serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value);
+            var cacheOptions = serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value;
+            RegisterCache(services, cacheOptions);
 
-            if (appOptions.AppMode != AppMode.Development)
+            var messageBusOptions = serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>().Value;
+            RegisterMessageBus(services, messageBusOptions);
+
+            var metricOptions = serviceProvider.GetRequiredService<IOptions<MetricOptions>>().Value;
+            RegisterMetric(services, metricOptions);
+
+            var queueOptions = serviceProvider.GetRequiredService<IOptions<QueueOptions>>().Value;
+            RegisterQueue(services, queueOptions, runMaintenanceTasks);
+
+            var storageOptions = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
+            RegisterStorage(services, storageOptions);
+
+            services.AddSingleton<ElasticsearchHealthCheck>();
+            services.AddSingleton<CacheHealthCheck>();
+            services.AddSingleton<MessageBusHealthCheck>();
+            services.AddSingleton<MetricHealthCheck>();
+            services.AddSingleton<QueueHealthCheck>();
+            services.AddSingleton<StorageHealthCheck>();
+            
+            var healthCheckBuilder = services.AddHealthChecks()
+                .Add(new HealthCheckRegistration("elasticsearch", s => s.GetRequiredService<ElasticsearchHealthCheck>(), null, new []{ "elasticsearch" }))
+                .Add(new HealthCheckRegistration("cache", s => s.GetRequiredService<CacheHealthCheck>(), null, new []{ "cache", cacheOptions.Provider }))
+                .Add(new HealthCheckRegistration("messagebus", s => s.GetRequiredService<MessageBusHealthCheck>(), null, new[] { "messagebus", messageBusOptions.Provider }))
+                .Add(new HealthCheckRegistration("metric", s => s.GetRequiredService<MetricHealthCheck>(), null, new[] { "metric", metricOptions.Provider }))
+                .Add(new HealthCheckRegistration("queue", s => s.GetRequiredService<QueueHealthCheck>(), null, new[] { "queue", queueOptions.Provider }))
+                .Add(new HealthCheckRegistration("storage", s => s.GetRequiredService<StorageHealthCheck>(), null, new[] { "storage", storageOptions.Provider }));
+
+            if (appOptions.AppMode != AppMode.Development) {
                 services.ReplaceSingleton<IMailSender, MailKitMailSender>();
+                healthCheckBuilder.Add(new HealthCheckRegistration("email", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "email" }));
+            }
         }
 
         private static void RegisterCache(IServiceCollection container, CacheOptions options) {
