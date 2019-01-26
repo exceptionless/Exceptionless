@@ -89,6 +89,12 @@ helm install --name exceptionless --namespace ex-prod ./exceptionless \
     --set "jobs.image.tag=$API_TAG" \
     --set "jobs.replicaCount=0"
 
+helm install stable/kibana --name kibana --namespace ex-prod \
+    --set="image.repository=docker.elastic.co/kibana/kibana" \
+    --set="image.tag=5.6.14" \
+    --set="env.ELASTICSEARCH_URL=http://10.0.0.4:9200" \
+    --set="resources.limits.cpu=200m"
+
 # upgrade exceptionless app to a new docker image tag
 helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values exceptionless ./exceptionless
 
