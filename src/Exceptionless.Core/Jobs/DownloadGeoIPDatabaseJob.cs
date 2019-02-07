@@ -11,13 +11,15 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Storage;
 using Foundatio.Utility;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Downloads Geo IP database.", IsContinuous = false)]
-    public class DownloadGeoIPDatabaseJob : JobWithLockBase {
+    public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck {
         private readonly IFileStorage _storage;
         private readonly ILockProvider _lockProvider;
+        private DateTime? _lastRun;
 
         public DownloadGeoIPDatabaseJob(ICacheClient cacheClient, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _storage = storage;
@@ -29,6 +31,8 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+            _lastRun = SystemClock.UtcNow;
+            
             try {
                 var fi = await _storage.GetFileInfoAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH).AnyContext();
                 if (fi != null && fi.Modified.IsAfter(SystemClock.UtcNow.StartOfDay())) {
@@ -52,6 +56,16 @@ namespace Exceptionless.Core.Jobs {
 
             _logger.LogInformation("Finished downloading GeoIP database.");
             return JobResult.Success;
+        }
+        
+        public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+            if (!_lastRun.HasValue)
+                return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
+
+            if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromHours(25))
+                return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 25 hours."));
+
+            return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 25 hours."));
         }
     }
 }
