@@ -22,6 +22,7 @@ using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web {
@@ -119,8 +120,11 @@ namespace Exceptionless.Web {
             var settings = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, settings, LoggerFactory);
 
-            if (settings.EnableHealthChecks)
-                app.UseHealthChecks("/health");
+            if (settings.EnableHealthChecks) {
+                app.UseHealthChecks("/health", new HealthCheckOptions {
+                    Predicate = hcr => settings.RunJobsInProcess || !hcr.Tags.Contains("Job")
+                });
+            }
 
             if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey) && !String.IsNullOrEmpty(settings.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
