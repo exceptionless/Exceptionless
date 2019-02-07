@@ -19,6 +19,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stripe;
+using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Web {
     public class Bootstrapper {
@@ -67,7 +68,7 @@ namespace Exceptionless.Web {
                     vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
                 });
 
-                CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
+                CreateMap<Stripe.Invoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
 
                 CreateMap<NewProject, Project>();
                 CreateMap<Project, ViewProject>().AfterMap((p, vp) => vp.HasSlackIntegration = p.Data.ContainsKey(Project.KnownDataKeys.SlackToken));

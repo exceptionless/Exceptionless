@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\build\common.props" />
   <ItemGroup>
     <None Remove="Mail\Templates\event-notice.html" />
@@ -23,10 +23,10 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="8.0.0" />
     <PackageReference Include="AutoMapper.Collection" Version="5.0.0" />
-    <PackageReference Include="FluentValidation" Version="8.1.2" />
-    <PackageReference Include="Foundatio" Version="7.2.1887-pre" />
-    <PackageReference Include="Foundatio.Jobs.Commands" Version="7.2.1887-pre" />
-    <PackageReference Include="Foundatio.JsonNet" Version="7.2.1887-pre" />
+    <PackageReference Include="FluentValidation" Version="8.1.3" />
+    <PackageReference Include="Foundatio" Version="7.2.1893-pre" />
+    <PackageReference Include="Foundatio.Jobs.Commands" Version="7.2.1893-pre" />
+    <PackageReference Include="Foundatio.JsonNet" Version="7.2.1893-pre" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="5.6.815" />
     <PackageReference Include="Handlebars.Net" Version="1.9.5" />
     <PackageReference Include="MaxMind.GeoIP2" Version="3.0.0" />
@@ -40,9 +40,9 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
     <PackageReference Include="NEST" Version="5.6.5" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-    <PackageReference Include="Stripe.net" Version="19.10.0" />
+    <PackageReference Include="Stripe.net" Version="22.8.1" />
     <PackageReference Include="System.DirectoryServices" Version="4.5.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
-    <PackageReference Include="UAParser" Version="3.1.35" />
+    <PackageReference Include="UAParser" Version="3.1.36" />
   </ItemGroup>
 </Project>

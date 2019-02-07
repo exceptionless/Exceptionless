@@ -76,9 +76,10 @@ namespace Exceptionless.Web {
                 .SuppressStatusMessages(true)
                 .UseConfiguration(config)
                 .ConfigureServices(s => {
+                    s.AddHttpContextAccessor();
+                    
                     if (useApplicationInsights) {
                         s.AddSingleton<ITelemetryInitializer, ExceptionlessTelemetryInitializer>();
-                        s.AddHttpContextAccessor();
                         s.AddApplicationInsightsTelemetry();
                     }
                 })
