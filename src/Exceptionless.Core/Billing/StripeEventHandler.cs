@@ -23,25 +23,25 @@ namespace Exceptionless.Core.Billing {
             _mailer = mailer;
         }
 
-        public async Task HandleEventAsync(StripeEvent stripeEvent) {
+        public async Task HandleEventAsync(Stripe.Event stripeEvent) {
             switch (stripeEvent.Type) {
                 case "customer.subscription.updated": {
-                    StripeSubscription stripeSubscription = Mapper<StripeSubscription>.MapFromJson(stripeEvent.Data.Object.ToString());
+                    var stripeSubscription = Mapper<Subscription>.MapFromJson(stripeEvent.Data.Object.ToString());
                     await SubscriptionUpdatedAsync(stripeSubscription).AnyContext();
                     break;
                 }
                 case "customer.subscription.deleted": {
-                    StripeSubscription stripeSubscription = Mapper<StripeSubscription>.MapFromJson(stripeEvent.Data.Object.ToString());
+                    var stripeSubscription = Mapper<Subscription>.MapFromJson(stripeEvent.Data.Object.ToString());
                     await SubscriptionDeletedAsync(stripeSubscription).AnyContext();
                     break;
                 }
                 case "invoice.payment_succeeded": {
-                    StripeInvoice stripeInvoice = Mapper<StripeInvoice>.MapFromJson(stripeEvent.Data.Object.ToString());
+                    var stripeInvoice = Mapper<Invoice>.MapFromJson(stripeEvent.Data.Object.ToString());
                     await InvoicePaymentSucceededAsync(stripeInvoice).AnyContext();
                     break;
                 }
                 case "invoice.payment_failed": {
-                    StripeInvoice stripeInvoice = Mapper<StripeInvoice>.MapFromJson(stripeEvent.Data.Object.ToString());
+                    var stripeInvoice = Mapper<Invoice>.MapFromJson(stripeEvent.Data.Object.ToString());
                     await InvoicePaymentFailedAsync(stripeInvoice).AnyContext();
                     break;
                 }
@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Billing {
             }
         }
 
-        private async Task SubscriptionUpdatedAsync(StripeSubscription sub) {
+        private async Task SubscriptionUpdatedAsync(Subscription sub) {
             var org = await _organizationRepository.GetByStripeCustomerIdAsync(sub.CustomerId).AnyContext();
             if (org == null) {
                 _logger.LogError("Unknown customer id in updated subscription: {CustomerId}", sub.CustomerId);
@@ -103,7 +103,7 @@ namespace Exceptionless.Core.Billing {
             await _organizationRepository.SaveAsync(org, o => o.Cache()).AnyContext();
         }
 
-        private async Task SubscriptionDeletedAsync(StripeSubscription sub) {
+        private async Task SubscriptionDeletedAsync(Subscription sub) {
             var org = await _organizationRepository.GetByStripeCustomerIdAsync(sub.CustomerId).AnyContext();
             if (org == null) {
                 _logger.LogError("Unknown customer id in deleted subscription: {CustomerId}", sub.CustomerId);
@@ -123,7 +123,7 @@ namespace Exceptionless.Core.Billing {
             await _organizationRepository.SaveAsync(org, o => o.Cache()).AnyContext();
         }
 
-        private async Task InvoicePaymentSucceededAsync(StripeInvoice inv) {
+        private async Task InvoicePaymentSucceededAsync(Invoice inv) {
             var org = await _organizationRepository.GetByStripeCustomerIdAsync(inv.CustomerId).AnyContext();
             if (org == null) {
                 _logger.LogError("Unknown customer id in payment succeeded notification: {CustomerId}", inv.CustomerId);
@@ -139,7 +139,7 @@ namespace Exceptionless.Core.Billing {
             _logger.LogInformation("Stripe payment succeeded. Customer: {CustomerId} Org: {organization} Org Name: {OrganizationName}", inv.CustomerId, org.Id, org.Name);
         }
 
-        private async Task InvoicePaymentFailedAsync(StripeInvoice inv) {
+        private async Task InvoicePaymentFailedAsync(Invoice inv) {
             var org = await _organizationRepository.GetByStripeCustomerIdAsync(inv.CustomerId).AnyContext();
             if (org == null) {
                 _logger.LogError("Unknown customer id in payment failed notification: {CustomerId}", inv.CustomerId);
