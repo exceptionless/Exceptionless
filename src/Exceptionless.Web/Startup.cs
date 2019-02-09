@@ -22,6 +22,7 @@ using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web {
@@ -116,13 +117,16 @@ namespace Exceptionless.Web {
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
-            var settings = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
-            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, settings, LoggerFactory);
+            var options = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
+            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, LoggerFactory);
 
-            if (settings.EnableHealthChecks)
-                app.UseHealthChecks("/health");
+            if (options.EnableHealthChecks) {
+                app.UseHealthChecks("/health", new HealthCheckOptions {
+                    Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Core") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
+                });
+            }
 
-            if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey) && !String.IsNullOrEmpty(settings.ExceptionlessServerUrl))
+            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
 
             app.UseCsp(csp => {
@@ -163,7 +167,7 @@ namespace Exceptionless.Web {
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
 
-            if (settings.ApiThrottleLimit < Int32.MaxValue) {
+            if (options.ApiThrottleLimit < Int32.MaxValue) {
                 // Throttle api calls to X every 15 minutes by IP address.
                 app.UseMiddleware<ThrottlingMiddleware>();
             }
@@ -181,13 +185,13 @@ namespace Exceptionless.Web {
                 s.InjectStylesheet("/docs.css");
             });
 
-            if (settings.EnableWebSockets) {
+            if (options.EnableWebSockets) {
                 app.UseWebSockets();
                 app.UseMiddleware<MessageBusBrokerMiddleware>();
             }
 
             // run startup actions registered in the container
-            if (settings.EnableBootstrapStartupActions) {
+            if (options.EnableBootstrapStartupActions) {
                 var lifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
                 lifetime.ApplicationStarted.Register(() => {
                     var shutdownSource = new CancellationTokenSource();

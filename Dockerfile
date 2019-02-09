@@ -39,7 +39,7 @@ RUN dotnet publish --version-suffix $VERSION_SUFFIX -c Release -o out
 
 # job
 
-FROM microsoft/dotnet:2.2.0-runtime AS job
+FROM microsoft/dotnet:2.2.0-aspnetcore-runtime AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]

@@ -5,91 +5,117 @@
       "commandLineArgs": "run-all",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "EventPostsJob": {
       "commandName": "Project",
       "commandLineArgs": "EventPosts",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "EventUserDescriptionsJob": {
       "commandName": "Project",
       "commandLineArgs": "EventUserDescriptions",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "EventNotificationsJob": {
       "commandName": "Project",
       "commandLineArgs": "EventNotifications",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "MailMessageJob": {
       "commandName": "Project",
       "commandLineArgs": "MailMessage",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "WebHooksJob": {
       "commandName": "Project",
       "commandLineArgs": "WebHooks",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "CloseInactiveSessionsJob": {
       "commandName": "Project",
       "commandLineArgs": "CloseInactiveSessions",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "DailySummaryJob": {
       "commandName": "Project",
       "commandLineArgs": "DailySummary",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "DownloadGeoIPDatabaseJob": {
       "commandName": "Project",
       "commandLineArgs": "DownloadGeoipDatabase",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "RetentionLimitsJob": {
       "commandName": "Project",
       "commandLineArgs": "RetentionLimits",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "WorkItemJob": {
       "commandName": "Project",
       "commandLineArgs": "WorkItem",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "MaintainIndexesJob": {
       "commandName": "Project",
       "commandLineArgs": "MaintainIndexes",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     },
     "StackEventCountJob": {
       "commandName": "Project",
       "commandLineArgs": "StackEventCount",
       "environmentVariables": {
         "AppMode": "Development"
-      }
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     }
   }
 }
