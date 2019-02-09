@@ -9,7 +9,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Insulation.HealthChecks {
-    public class MessageBusHealthCheck : IHealthCheck {
+    public class MessageBusHealthCheck : IStartupAction, IHealthCheck {
         private readonly IMessageBus _messageBus;
         private readonly ILogger _logger;
         private readonly string _id = Guid.NewGuid().ToString();
@@ -48,6 +48,10 @@ namespace Exceptionless.Insulation.HealthChecks {
             _logger.LogTrace("Received Health Check Notification: {SentOn}", notification.Sent);
             _lastReceivedNotification = SystemClock.UtcNow;
             return Task.CompletedTask;
+        }
+
+        public Task RunAsync(CancellationToken shutdownToken = default) {
+            return CheckHealthAsync(new HealthCheckContext(), shutdownToken);
         }
     }
 

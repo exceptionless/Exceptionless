@@ -22,7 +22,7 @@ namespace Exceptionless.Insulation.HealthChecks {
         
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
             if (_queue is IQueueActivity qa) {
-                if (qa.LastDequeueActivity.HasValue && qa.LastDequeueActivity.Value.IsBefore(SystemClock.UtcNow.AddMinutes(1)))
+                if (qa.LastDequeueActivity.HasValue && qa.LastDequeueActivity.Value.IsBefore(SystemClock.UtcNow.SubtractMinutes(1)))
                     return HealthCheckResult.Unhealthy("Last Dequeue was over a minute ago");
                     
                 return HealthCheckResult.Healthy();
