@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Exceptionless.Core.Authentication;
+using Exceptionless.Core.Mail;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Tests.Authentication;
 using FluentRest;
 using Foundatio.Serializer;
 using Xunit.Abstractions;
@@ -11,6 +14,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Exceptionless.Web;
 using Newtonsoft.Json;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Mail;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Tests {
     public class IntegrationTestsBase : TestBase {
@@ -43,6 +48,15 @@ namespace Exceptionless.Tests {
 
         protected override TService GetService<TService>() {
             return _server.Host.Services.GetRequiredService<TService>();
+        }
+
+        protected override void RegisterServices(IServiceCollection services) {
+            // NOTE: We override this method because the web bootstrapper gets called for us.
+            services.AddSingleton<ILoggerFactory>(Log);
+            services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
+
+            services.AddSingleton<IMailer, NullMailer>();
+            services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
         }
 
         protected async Task<HttpResponseMessage> SendRequest(Action<AppSendBuilder> configure) {
