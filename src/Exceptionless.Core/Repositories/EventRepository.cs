@@ -19,13 +19,14 @@ namespace Exceptionless.Core.Repositories {
             : base(configuration.Events.Event, validator, options) {
             DisableCache();
             BatchNotifications = true;
-            DefaultExcludes.Add(ElasticType.GetFieldName(e => e.Idx));
+            
+            AddDefaultExclude(e => e.Idx);
             // copy to fields
-            DefaultExcludes.Add(EventIndexType.Alias.IpAddress);
-            DefaultExcludes.Add(EventIndexType.Alias.OperatingSystem);
-            DefaultExcludes.Add("error");
+            AddDefaultExclude(EventIndexType.Alias.IpAddress);
+            AddDefaultExclude(EventIndexType.Alias.OperatingSystem);
+            AddDefaultExclude("error");
 
-            FieldsRequiredForRemove.Add(ElasticType.GetFieldName(e => e.Date));
+            AddPropertyRequiredForRemove(e => e.Date);
         }
 
         // TODO: We need to index and search by the created time.
