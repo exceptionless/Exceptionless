@@ -13,6 +13,8 @@ using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
+using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
@@ -74,25 +76,51 @@ namespace Exceptionless.Insulation {
             var storageOptions = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
             RegisterStorage(services, storageOptions);
 
+            IHealthChecksBuilder healthCheckBuilder = null;
+            if (appOptions.EnableHealthChecks) {
+                healthCheckBuilder = RegisterHealthChecks(services, cacheOptions, messageBusOptions, metricOptions, storageOptions, queueOptions);
+                services.AddStartupAction<MessageBusHealthCheck>();
+            }
+
+            if (appOptions.AppMode != AppMode.Development) {
+                services.ReplaceSingleton<IMailSender, MailKitMailSender>();
+                healthCheckBuilder?.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "Job", "MailMessage" }));
+            }
+        }
+
+        private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services, CacheOptions cacheOptions, MessageBusOptions messageBusOptions, MetricOptions metricOptions, StorageOptions storageOptions, QueueOptions queueOptions) {
             services.AddSingleton<ElasticsearchHealthCheck>();
             services.AddSingleton<CacheHealthCheck>();
             services.AddSingleton<MessageBusHealthCheck>();
             services.AddSingleton<MetricHealthCheck>();
-            services.AddSingleton<QueueHealthCheck>();
+            services.AddSingleton<QueueHealthCheck<EventPost>>();
+            services.AddSingleton<QueueHealthCheck<EventUserDescription>>();
+            services.AddSingleton<QueueHealthCheck<EventNotificationWorkItem>>();
+            services.AddSingleton<QueueHealthCheck<WebHookNotification>>();
+            services.AddSingleton<QueueHealthCheck<MailMessage>>();
+            services.AddSingleton<QueueHealthCheck<WorkItemData>>();
             services.AddSingleton<StorageHealthCheck>();
             
-            var healthCheckBuilder = services.AddHealthChecks()
-                .Add(new HealthCheckRegistration("elasticsearch", s => s.GetRequiredService<ElasticsearchHealthCheck>(), null, new []{ "elasticsearch" }))
-                .Add(new HealthCheckRegistration("cache", s => s.GetRequiredService<CacheHealthCheck>(), null, new []{ "cache", cacheOptions.Provider }))
-                .Add(new HealthCheckRegistration("messagebus", s => s.GetRequiredService<MessageBusHealthCheck>(), null, new[] { "messagebus", messageBusOptions.Provider }))
-                .Add(new HealthCheckRegistration("metric", s => s.GetRequiredService<MetricHealthCheck>(), null, new[] { "metric", metricOptions.Provider }))
-                .Add(new HealthCheckRegistration("queue", s => s.GetRequiredService<QueueHealthCheck>(), null, new[] { "queue", queueOptions.Provider }))
-                .Add(new HealthCheckRegistration("storage", s => s.GetRequiredService<StorageHealthCheck>(), null, new[] { "storage", storageOptions.Provider }));
+            return services.AddHealthChecks()
+                .Add(new HealthCheckRegistration("Elasticsearch", s => s.GetRequiredService<ElasticsearchHealthCheck>(), null, new []{ "Elasticsearch", "Core" }))
+                .Add(new HealthCheckRegistration("Cache", s => s.GetRequiredService<CacheHealthCheck>(), null, new []{ "Cache", "Core", cacheOptions.Provider }))
+                .Add(new HealthCheckRegistration("MessageBus", s => s.GetRequiredService<MessageBusHealthCheck>(), null, new[] { "MessageBus", "Core", messageBusOptions.Provider }))
+                .Add(new HealthCheckRegistration("Metric", s => s.GetRequiredService<MetricHealthCheck>(), null, new[] { "Metric", "Core", metricOptions.Provider }))
+                .Add(new HealthCheckRegistration("Storage", s => s.GetRequiredService<StorageHealthCheck>(), null, new[] { "Storage", "Job", "EventPosts", "DownloadGeoipDatabase", storageOptions.Provider }))
+                
+                .Add(new HealthCheckRegistration("EventPosts Queue", s => s.GetRequiredService<QueueHealthCheck<EventPost>>(), null, new[] { "Queue", "Job", "EventPosts", queueOptions.Provider }))
+                .Add(new HealthCheckRegistration("EventUserDescriptions Queue", s => s.GetRequiredService<QueueHealthCheck<EventUserDescription>>(), null, new[] { "Queue", "Job", "EventUserDescriptions", queueOptions.Provider }))
+                .Add(new HealthCheckRegistration("EventNotifications Queue", s => s.GetRequiredService<QueueHealthCheck<EventNotificationWorkItem>>(), null, new[] { "Queue", "Job", "EventNotifications", queueOptions.Provider }))
+                .Add(new HealthCheckRegistration("WebHooks Queue", s => s.GetRequiredService<QueueHealthCheck<WebHookNotification>>(), null, new[] { "Queue", "Job", "WebHooks", queueOptions.Provider }))
+                .Add(new HealthCheckRegistration("MailMessage Queue", s => s.GetRequiredService<QueueHealthCheck<MailMessage>>(), null, new[] { "Queue", "Job", "MailMessage", queueOptions.Provider }))
+                .Add(new HealthCheckRegistration("WorkItem Queue", s => s.GetRequiredService<QueueHealthCheck<WorkItemData>>(), null, new[] { "Queue", "Job", "WorkItem", queueOptions.Provider }))
 
-            if (appOptions.AppMode != AppMode.Development) {
-                services.ReplaceSingleton<IMailSender, MailKitMailSender>();
-                healthCheckBuilder.Add(new HealthCheckRegistration("mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "mail" }));
-            }
+                .Add(new HealthCheckRegistration("CloseInactiveSessions", s => s.GetRequiredService<CloseInactiveSessionsJob>(), null, new[] { "Job", "CloseInactiveSessions", storageOptions.Provider }))
+                .Add(new HealthCheckRegistration("DailySummary", s => s.GetRequiredService<DailySummaryJob>(), null, new[] { "Job", "DailySummary", storageOptions.Provider }))
+                .Add(new HealthCheckRegistration("DownloadGeoipDatabase", s => s.GetRequiredService<DownloadGeoIPDatabaseJob>(), null, new[] { "Job", "DownloadGeoipDatabase", storageOptions.Provider }))
+                .Add(new HealthCheckRegistration("MaintainIndexes", s => s.GetRequiredService<MaintainIndexesJob>(), null, new[] { "Job", "MaintainIndexes", storageOptions.Provider }))
+                .Add(new HealthCheckRegistration("RetentionLimits", s => s.GetRequiredService<RetentionLimitsJob>(), null, new[] { "Job", "RetentionLimits", storageOptions.Provider }))
+                .Add(new HealthCheckRegistration("StackEventCount", s => s.GetRequiredService<StackEventCountJob>(), null, new[] { "Job", "StackEventCount", storageOptions.Provider }));
         }
 
         private static void RegisterCache(IServiceCollection container, CacheOptions options) {
