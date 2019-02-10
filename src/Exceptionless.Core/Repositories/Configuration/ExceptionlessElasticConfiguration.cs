@@ -14,6 +14,7 @@ using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Startup;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;

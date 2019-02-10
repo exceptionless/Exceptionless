@@ -22,6 +22,7 @@ using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
+using Foundatio.Hosting.Startup;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
@@ -120,15 +121,15 @@ namespace Exceptionless.Web {
             var options = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, LoggerFactory);
 
+            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
+                app.UseExceptionless(ExceptionlessClient.Default);
+                
             if (options.EnableHealthChecks) {
                 app.UseHealthChecks("/health", new HealthCheckOptions {
                     Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Core") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
                 });
             }
-
-            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
-                app.UseExceptionless(ExceptionlessClient.Default);
-
+            
             app.UseCsp(csp => {
                 csp.ByDefaultAllow.FromSelf()
                     .From("https://js.stripe.com");
@@ -164,6 +165,10 @@ namespace Exceptionless.Web {
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
             app.UseAuthentication();
+            
+            if (options.EnableBootstrapStartupActions)
+                app.UseStartupMiddleware();
+            
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
 
@@ -188,21 +193,6 @@ namespace Exceptionless.Web {
             if (options.EnableWebSockets) {
                 app.UseWebSockets();
                 app.UseMiddleware<MessageBusBrokerMiddleware>();
-            }
-
-            // run startup actions registered in the container
-            if (options.EnableBootstrapStartupActions) {
-                var lifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
-                lifetime.ApplicationStarted.Register(() => {
-                    var shutdownSource = new CancellationTokenSource();
-                    Console.CancelKeyPress += (sender, args) => {
-                        shutdownSource.Cancel();
-                        args.Cancel = true;
-                    };
-
-                    var combined = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping, shutdownSource.Token);
-                    app.ApplicationServices.RunStartupActionsAsync(combined.Token).GetAwaiter().GetResult();
-                });
             }
         }
     }

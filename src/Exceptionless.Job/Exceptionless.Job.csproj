@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Foundatio.Jobs.Hosting" Version="7.2.1893-pre" />
+    <PackageReference Include="Foundatio.Hosting" Version="7.2.1897-pre" />
     <PackageReference Include="Exceptionless.AspNetCore.Signed" Version="4.3.2022" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.6.0" />
     <PackageReference Include="App.Metrics.AspNetCore" Version="3.0.0" />

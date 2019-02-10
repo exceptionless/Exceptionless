@@ -4,12 +4,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
+using Foundatio.Startup;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
