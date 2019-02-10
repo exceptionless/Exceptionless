@@ -12,8 +12,9 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Insulation.Configuration;
+using Foundatio.Hosting.Jobs;
+using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
-using Foundatio.Jobs.Hosting;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -31,7 +32,7 @@ namespace Exceptionless.Job {
     public class Program {
         public static int Main(string[] args) {
             try {
-                CreateWebHostBuilder(args).Build().Run();
+                CreateWebHostBuilder(args).RunJobHost();
                 return 0;
             } catch (Exception ex) {
                 Log.Fatal(ex, "Job host terminated unexpectedly");
@@ -99,31 +100,19 @@ namespace Exceptionless.Job {
                     var loggerFactory = app.ApplicationServices.GetRequiredService<ILoggerFactory>();
                     Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, loggerFactory);
 
+                    if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
+                        app.UseExceptionless(ExceptionlessClient.Default);
+                    
                     if (options.EnableHealthChecks) {
                         app.UseHealthChecks("/health", new HealthCheckOptions {
                             Predicate = hcr => hcr.Tags.Contains("Core") || hcr.Tags.Contains(jobName ?? "Job")
                         });
                     }
-
-                    if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
-                        app.UseExceptionless(ExceptionlessClient.Default);
-
-                    app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobName ?? "All"}"));
                     
-                    // run startup actions registered in the container
-                    if (options.EnableBootstrapStartupActions) {
-                        var lifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
-                        lifetime.ApplicationStarted.Register(() => {
-                            var shutdownSource = new CancellationTokenSource();
-                            Console.CancelKeyPress += (sender, args1) => {
-                                shutdownSource.Cancel();
-                                args1.Cancel = true;
-                            };
-
-                            var combined = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping, shutdownSource.Token);
-                            app.ApplicationServices.RunStartupActionsAsync(combined.Token).GetAwaiter().GetResult();
-                        });
-                    }
+                    if (options.EnableBootstrapStartupActions)
+                        app.UseStartupMiddleware();
+                    
+                    app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobName ?? "All"}"));
                 });
             
             if (useApplicationInsights)
@@ -137,76 +126,75 @@ namespace Exceptionless.Job {
         }
 
         private static void AddJobs(IServiceCollection serviceCollection, string jobName) {
-            string job = jobName ?? "all";
-            switch (job) {
+            switch (jobName) {
                 case "CleanupSnapshot":
-                    serviceCollection.AddJob<CleanupSnapshotJob>();
+                    serviceCollection.AddJob<CleanupSnapshotJob>(true);
                     break;
                 case "CloseInactiveSessions":
-                    serviceCollection.AddJob<CloseInactiveSessionsJob>();
+                    serviceCollection.AddJob<CloseInactiveSessionsJob>(true);
                     break;
                 case "DailySummary":
-                    serviceCollection.AddJob<DailySummaryJob>();
+                    serviceCollection.AddJob<DailySummaryJob>(true);
                     break;
                 case "DownloadGeoipDatabase":
-                    serviceCollection.AddJob<DownloadGeoIPDatabaseJob>();
+                    serviceCollection.AddJob<DownloadGeoIPDatabaseJob>(true);
                     break;
                 case "EventNotifications":
-                    serviceCollection.AddJob<EventNotificationsJob>();
+                    serviceCollection.AddJob<EventNotificationsJob>(true);
                     break;
                 case "EventPosts":
-                    serviceCollection.AddJob<EventPostsJob>();
+                    serviceCollection.AddJob<EventPostsJob>(true);
                     break;
                 case "EventSnapshot":
-                    serviceCollection.AddJob<EventSnapshotJob>();
+                    serviceCollection.AddJob<EventSnapshotJob>(true);
                     break;
                 case "EventUserDescriptions":
-                    serviceCollection.AddJob<EventUserDescriptionsJob>();
+                    serviceCollection.AddJob<EventUserDescriptionsJob>(true);
                     break;
                 case "MailMessage":
-                    serviceCollection.AddJob<MailMessageJob>();
+                    serviceCollection.AddJob<MailMessageJob>(true);
                     break;
                 case "MaintainIndexes":
-                    serviceCollection.AddJob<MaintainIndexesJob>();
+                    serviceCollection.AddJob<MaintainIndexesJob>(true);
                     break;
                 case "OrganizationSnapshot":
-                    serviceCollection.AddJob<OrganizationSnapshotJob>();
+                    serviceCollection.AddJob<OrganizationSnapshotJob>(true);
                     break;
                 case "RetentionLimits":
-                    serviceCollection.AddJob<RetentionLimitsJob>();
+                    serviceCollection.AddJob<RetentionLimitsJob>(true);
                     break;
                 case "StackEventCount":
-                    serviceCollection.AddJob<StackEventCountJob>();
+                    serviceCollection.AddJob<StackEventCountJob>(true);
                     break;
                 case "StackSnapshot":
-                    serviceCollection.AddJob<StackSnapshotJob>();
+                    serviceCollection.AddJob<StackSnapshotJob>(true);
                     break;
                 case "WebHooks":
-                    serviceCollection.AddJob<WebHooksJob>();
+                    serviceCollection.AddJob<WebHooksJob>(true);
                     break;
                 case "WorkItem":
-                    serviceCollection.AddJob<WorkItemJob>();
+                    serviceCollection.AddJob<WorkItemJob>(true);
                     break;
-                case "all":
-                    serviceCollection.AddJob<CleanupSnapshotJob>();
-                    serviceCollection.AddJob<CloseInactiveSessionsJob>();
-                    serviceCollection.AddJob<DailySummaryJob>();
-                    serviceCollection.AddJob<DownloadGeoIPDatabaseJob>();
-                    serviceCollection.AddJob<EventNotificationsJob>();
-                    serviceCollection.AddJob<EventPostsJob>();
-                    serviceCollection.AddJob<EventSnapshotJob>();
-                    serviceCollection.AddJob<EventUserDescriptionsJob>();
-                    serviceCollection.AddJob<MailMessageJob>();
-                    serviceCollection.AddJob<MaintainIndexesJob>();
-                    serviceCollection.AddJob<OrganizationSnapshotJob>();
-                    serviceCollection.AddJob<RetentionLimitsJob>();
-                    serviceCollection.AddJob<StackEventCountJob>();
-                    serviceCollection.AddJob<StackSnapshotJob>();
-                    serviceCollection.AddJob<WebHooksJob>();
-                    serviceCollection.AddJob<WorkItemJob>();
+                case null:
+                    serviceCollection.AddJob<CleanupSnapshotJob>(true);
+                    serviceCollection.AddJob<CloseInactiveSessionsJob>(true);
+                    serviceCollection.AddJob<DailySummaryJob>(true);
+                    serviceCollection.AddJob<DownloadGeoIPDatabaseJob>(true);
+                    serviceCollection.AddJob<EventNotificationsJob>(true);
+                    serviceCollection.AddJob<EventPostsJob>(true);
+                    serviceCollection.AddJob<EventSnapshotJob>(true);
+                    serviceCollection.AddJob<EventUserDescriptionsJob>(true);
+                    serviceCollection.AddJob<MailMessageJob>(true);
+                    serviceCollection.AddJob<MaintainIndexesJob>(true);
+                    serviceCollection.AddJob<OrganizationSnapshotJob>(true);
+                    serviceCollection.AddJob<RetentionLimitsJob>(true);
+                    serviceCollection.AddJob<StackEventCountJob>(true);
+                    serviceCollection.AddJob<StackSnapshotJob>(true);
+                    serviceCollection.AddJob<WebHooksJob>(true);
+                    serviceCollection.AddJob<WorkItemJob>(true);
                     break;
                 default:
-                    throw new ArgumentException($"Job not found: ${job}", nameof(jobName));
+                    throw new ArgumentException($"Job not found: ${jobName}", nameof(jobName));
             }
         }
 

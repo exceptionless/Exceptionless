@@ -14,11 +14,11 @@ using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
+using Foundatio.Startup;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Stripe;
 using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Web {
