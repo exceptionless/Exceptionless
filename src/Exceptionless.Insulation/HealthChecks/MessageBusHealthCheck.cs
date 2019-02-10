@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Messaging;
+using Foundatio.Startup;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;

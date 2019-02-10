@@ -42,6 +42,7 @@ using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Jobs;
 using Foundatio.Serializer;
+using Foundatio.Startup;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.DependencyInjection;
