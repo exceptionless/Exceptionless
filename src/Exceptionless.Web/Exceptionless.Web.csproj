@@ -21,7 +21,7 @@
     <ProjectReference Include="..\Exceptionless.Insulation\Exceptionless.Insulation.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="appsettings.yml" CopyToOutputDirectory="Always" />
-    <None Update="appsettings.*.yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
+    <Content Include="appsettings.yml" CopyToOutputDirectory="Always" />
+    <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>

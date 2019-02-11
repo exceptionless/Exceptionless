@@ -74,7 +74,7 @@ namespace Exceptionless.Job {
 
             Log.Logger = loggerConfig.CreateLogger();
             var configDictionary = config.ToDictionary();
-            Log.Information("Bootstrapping {AppMode} mode job ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
+            Log.Information("Bootstrapping {JobDescription} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", jobOptions.Description, environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
 
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
 
@@ -106,16 +106,18 @@ namespace Exceptionless.Job {
                     if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                         app.UseExceptionless(ExceptionlessClient.Default);
                     
-                    if (options.EnableHealthChecks) {
-                        app.UseHealthChecks("/health", new HealthCheckOptions {
-                            Predicate = hcr => hcr.Tags.Contains("Core") || hcr.Tags.Contains(jobOptions.Description ?? "Job")
-                        });
-                    }
-                    
+                    app.UseHealthChecks("/health", new HealthCheckOptions {
+                        Predicate = hcr => hcr.Tags.Contains("Core") || hcr.Tags.Contains(jobOptions.Description)
+                    });
+
+                    app.UseHealthChecks("/ready", new HealthCheckOptions {
+                        Predicate = hcr => hcr.Tags.Contains("Core") || hcr.Tags.Contains(jobOptions.Description)
+                    });
+
                     if (options.EnableBootstrapStartupActions)
                         app.UseStartupMiddleware();
                     
-                    app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobOptions.Description ?? "All"}"));
+                    app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobOptions.Description}"));
                 });
             
             if (useApplicationInsights)

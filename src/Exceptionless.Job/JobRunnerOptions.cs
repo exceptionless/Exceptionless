@@ -1,80 +1,78 @@
 ﻿using System;
 using System.Linq;
-using System.Text;
 
 namespace Exceptionless.Job {
     public class JobRunnerOptions {
         public JobRunnerOptions(string[] args) {
-            var description = new StringBuilder();
+            if (args.Length > 1)
+                throw new ArgumentException("More than one job argument specified. You must either specify 1 named job or don't pass any arguments to run all jobs.");
 
             CleanupSnapshot = args.Length == 0 || args.Contains("CleanupSnapshot", StringComparer.OrdinalIgnoreCase);
             if (CleanupSnapshot)
-                description.Append("CleanupSnapshot,");
+                Description = "CleanupSnapshot";
 
             CloseInactiveSessions = args.Length == 0 || args.Contains("CloseInactiveSessions", StringComparer.OrdinalIgnoreCase);
             if (CloseInactiveSessions)
-                description.Append("CloseInactiveSessions,");
+                Description = "CloseInactiveSessions";
 
             DailySummary = args.Length == 0 || args.Contains("DailySummary", StringComparer.OrdinalIgnoreCase);
             if (DailySummary)
-                description.Append("DailySummary,");
+                Description = "DailySummary";
 
             DownloadGeoipDatabase = args.Length == 0 || args.Contains("DownloadGeoipDatabase", StringComparer.OrdinalIgnoreCase);
             if (DownloadGeoipDatabase)
-                description.Append("DownloadGeoipDatabase,");
+                Description = "DownloadGeoipDatabase";
 
             EventNotifications = args.Length == 0 || args.Contains("EventNotifications", StringComparer.OrdinalIgnoreCase);
             if (EventNotifications)
-                description.Append("EventNotifications,");
+                Description = "EventNotifications";
 
             EventPosts = args.Length == 0 || args.Contains("EventPosts", StringComparer.OrdinalIgnoreCase);
             if (EventPosts)
-                description.Append("EventPosts,");
+                Description = "EventPosts";
 
             EventSnapshot = args.Length == 0 || args.Contains("EventSnapshot", StringComparer.OrdinalIgnoreCase);
             if (EventSnapshot)
-                description.Append("EventSnapshot,");
+                Description = "EventSnapshot";
 
             EventUserDescriptions = args.Length == 0 || args.Contains("EventUserDescriptions", StringComparer.OrdinalIgnoreCase);
             if (EventUserDescriptions)
-                description.Append("EventUserDescriptions,");
+                Description = "EventUserDescriptions";
 
             MailMessage = args.Length == 0 || args.Contains("MailMessage", StringComparer.OrdinalIgnoreCase);
             if (MailMessage)
-                description.Append("MailMessage,");
+                Description = "MailMessage";
 
             MaintainIndexes = args.Length == 0 || args.Contains("MaintainIndexes", StringComparer.OrdinalIgnoreCase);
             if (MaintainIndexes)
-                description.Append("MaintainIndexes,");
+                Description = "MaintainIndexes";
 
             OrganizationSnapshot = args.Length == 0 || args.Contains("OrganizationSnapshot", StringComparer.OrdinalIgnoreCase);
             if (OrganizationSnapshot)
-                description.Append("OrganizationSnapshot,");
+                Description = "OrganizationSnapshot";
 
             RetentionLimits = args.Length == 0 || args.Contains("RetentionLimits", StringComparer.OrdinalIgnoreCase);
             if (RetentionLimits)
-                description.Append("RetentionLimits,");
+                Description = "RetentionLimits";
 
             StackEventCount = args.Length == 0 || args.Contains("StackEventCount", StringComparer.OrdinalIgnoreCase);
             if (StackEventCount)
-                description.Append("StackEventCount,");
+                Description = "StackEventCount";
 
             StackSnapshot = args.Length == 0 || args.Contains("StackSnapshot", StringComparer.OrdinalIgnoreCase);
             if (StackSnapshot)
-                description.Append("StackSnapshot,");
+                Description = "StackSnapshot";
 
             WebHooks = args.Length == 0 || args.Contains("WebHooks", StringComparer.OrdinalIgnoreCase);
             if (WebHooks)
-                description.Append("WebHooks,");
+                Description = "WebHooks";
 
             WorkItem = args.Length == 0 || args.Contains("WorkItem", StringComparer.OrdinalIgnoreCase);
             if (WorkItem)
-                description.Append("WorkItem,");
+                Description = "WorkItem";
 
-            if (description.Length == 0)
-                Description = "(None)";
-            else
-                Description = description.ToString(0, description.Length - 1);
+            if (args.Length == 0)
+                Description = "All";
         }
 
         public string Description { get; }
