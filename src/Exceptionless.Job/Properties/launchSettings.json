@@ -2,7 +2,6 @@
   "profiles": {
     "AllJobs": {
       "commandName": "Project",
-      "commandLineArgs": "run-all",
       "environmentVariables": {
         "AppMode": "Development"
       },

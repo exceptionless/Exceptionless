@@ -78,15 +78,12 @@ namespace Exceptionless.Insulation {
             var storageOptions = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
             RegisterStorage(services, storageOptions);
 
-            IHealthChecksBuilder healthCheckBuilder = null;
-            if (appOptions.EnableHealthChecks) {
-                healthCheckBuilder = RegisterHealthChecks(services, cacheOptions, messageBusOptions, metricOptions, storageOptions, queueOptions);
-                services.AddStartupAction<MessageBusHealthCheck>();
-            }
+            var healthCheckBuilder = RegisterHealthChecks(services, cacheOptions, messageBusOptions, metricOptions, storageOptions, queueOptions);
+            services.AddStartupAction<MessageBusHealthCheck>();
 
             if (appOptions.AppMode != AppMode.Development) {
                 services.ReplaceSingleton<IMailSender, MailKitMailSender>();
-                healthCheckBuilder?.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "Job", "MailMessage" }));
+                healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "Job", "MailMessage" }));
             }
             
             if (appOptions.EnableBootstrapStartupActions)

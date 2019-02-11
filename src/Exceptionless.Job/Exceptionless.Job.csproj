@@ -13,9 +13,9 @@
     <PackageReference Include="App.Metrics.AspNetCore" Version="3.0.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="2.1.1" />
   </ItemGroup>
-
+  
   <ItemGroup>
-    <None Include="appsettings.yml" Link="appsettings.yml" CopyToOutputDirectory="Always" />
-    <None Include="appsettings.*.yml" Link="%(Filename).yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
+    <Content Include="appsettings.yml" CopyToOutputDirectory="Always" />
+    <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>

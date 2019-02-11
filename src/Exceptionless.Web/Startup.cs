@@ -124,12 +124,13 @@ namespace Exceptionless.Web {
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
                 
-            if (options.EnableHealthChecks) {
-                app.UseHealthChecks("/health", new HealthCheckOptions {
-                    Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Core") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
-                });
-            }
-            
+            app.UseHealthChecks("/health", new HealthCheckOptions {
+                Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Core") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
+            });
+            app.UseHealthChecks("/ready", new HealthCheckOptions {
+                Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Core") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
+            });
+
             app.UseCsp(csp => {
                 csp.ByDefaultAllow.FromSelf()
                     .From("https://js.stripe.com");
