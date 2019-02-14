@@ -39,6 +39,8 @@ namespace Exceptionless.Web {
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
+            Console.Title = "Exceptionless Web";
+
             string currentDirectory = Directory.GetCurrentDirectory();
             var config = new ConfigurationBuilder()
                 .SetBasePath(currentDirectory)
@@ -61,7 +63,7 @@ namespace Exceptionless.Web {
 
             Log.Logger = loggerConfig.CreateLogger();
             var configDictionary = config.ToDictionary("Serilog");
-            Log.Information("Bootstrapping Exceptionless in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
+            Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
 
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
 
