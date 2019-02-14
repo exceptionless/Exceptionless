@@ -98,7 +98,7 @@ namespace Exceptionless.Insulation {
                 .Add<CacheHealthCheck>("Cache", services, "Cache", "Readiness", "Liveness", cacheOptions.Provider)
                 .Add<MessageBusHealthCheck>("MessageBus", services,"MessageBus", "Readiness", "Liveness", messageBusOptions.Provider)
                 .Add<MetricHealthCheck>("Metric", services,"Metric", "Readiness", "Liveness", metricOptions.Provider)
-                .Add<StartupHealthCheck>("Startup", services,"Startup", "Readiness", "Liveness")
+                .Add<StartupHealthCheck>("Startup", services,"Startup", "Readiness")
                 .Add<StorageHealthCheck>("Storage", services,"Storage", "All", "EventPosts", "DownloadGeoipDatabase", storageOptions.Provider)
                 
                 .Add<QueueHealthCheck<EventPost>>("EventPosts Queue", services,"Queue", "All", "EventPosts", queueOptions.Provider)

@@ -31,8 +31,10 @@ namespace Exceptionless.Insulation.HealthChecks {
             container.AddStartupAction(async (sp, t) => {
                 var healthCheckService = sp.GetService<HealthCheckService>();
                 var result = await healthCheckService.CheckHealthAsync(h => h.Tags.Contains("Readiness"), t);
-                while (result.Status != HealthStatus.Healthy)
+                while (result.Status != HealthStatus.Healthy) {
                     result = await healthCheckService.CheckHealthAsync(h => h.Tags.Contains("Readiness") && h.Name != "Startup", t);
+                    await Task.Delay(1000, t);
+                }
             }, -100);
         }
 
