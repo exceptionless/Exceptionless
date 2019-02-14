@@ -25,6 +25,7 @@
     <PackageReference Include="AutoMapper.Collection" Version="5.0.0" />
     <PackageReference Include="FluentValidation" Version="8.1.3" />
     <PackageReference Include="Foundatio" Version="7.2.1903-pre" />
+    <PackageReference Include="Foundatio.Hosting" Version="7.2.1903-pre" />
     <PackageReference Include="Foundatio.Jobs.Commands" Version="7.2.1903-pre" />
     <PackageReference Include="Foundatio.JsonNet" Version="7.2.1903-pre" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="5.6.829-pre" />
@@ -45,10 +46,5 @@
     <PackageReference Include="System.DirectoryServices" Version="4.5.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
     <PackageReference Include="UAParser" Version="3.1.36" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="Foundatio.Hosting">
-      <HintPath>..\..\..\.nuget\packages\foundatio.hosting\7.2.1903-pre\lib\netstandard2.0\Foundatio.Hosting.dll</HintPath>
-    </Reference>
   </ItemGroup>
 </Project>
