@@ -15,7 +15,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs {
-    [Job(Description = "Downloads Geo IP database.", IsContinuous = false)]
+    [Job(Description = "Downloads Geo IP database.", IsContinuous = false, Interval = "1d")]
     public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck {
         private readonly IFileStorage _storage;
         private readonly ILockProvider _lockProvider;

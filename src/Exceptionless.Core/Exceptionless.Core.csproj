@@ -46,4 +46,9 @@
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
     <PackageReference Include="UAParser" Version="3.1.36" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Foundatio.Hosting">
+      <HintPath>..\..\..\.nuget\packages\foundatio.hosting\7.2.1903-pre\lib\netstandard2.0\Foundatio.Hosting.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

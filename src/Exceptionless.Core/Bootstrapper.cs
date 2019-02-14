@@ -10,6 +10,7 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
@@ -32,6 +33,7 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.Caching;
+using Foundatio.Hosting.Jobs;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Messaging;
@@ -50,7 +52,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using CleanupSnapshotJob = Foundatio.Repositories.Elasticsearch.Jobs.CleanupSnapshotJob;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
+using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob;
 
 namespace Exceptionless.Core {
     public class Bootstrapper {
@@ -272,27 +276,22 @@ namespace Exceptionless.Core {
             await dataHelper.CreateDataAsync().AnyContext();
         }
 
-        public static void RunJobs(IServiceProvider container, ILoggerFactory loggerFactory, CancellationToken token) {
+        public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory) {
             var logger = loggerFactory.CreateLogger("AppBuilder");
-            
-            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
-            if (!options.RunJobsInProcess) {
-                logger.LogInformation("Jobs running out of process.");
-                return;
-            }
 
-            new JobRunner(container.GetRequiredService<EventPostsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2)).RunInBackground(token);
-            new JobRunner(container.GetRequiredService<EventUserDescriptionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(3)).RunInBackground(token);
-            new JobRunner(container.GetRequiredService<EventNotificationsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
-            new JobRunner(container.GetRequiredService<MailMessageJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
-            new JobRunner(container.GetRequiredService<WebHooksJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5)).RunInBackground(token);
-            new JobRunner(container.GetRequiredService<CloseInactiveSessionsJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(30), interval: TimeSpan.FromSeconds(30)).RunInBackground(token);
-            new JobRunner(container.GetRequiredService<DailySummaryJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(1), interval: TimeSpan.FromHours(1)).RunInBackground(token);
-            new JobRunner(container.GetRequiredService<DownloadGeoIPDatabaseJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(5), interval: TimeSpan.FromDays(1)).RunInBackground(token);
-            new JobRunner(container.GetRequiredService<RetentionLimitsJob>(), loggerFactory, initialDelay: TimeSpan.FromMinutes(15), interval: TimeSpan.FromHours(1)).RunInBackground(token);
-            new JobRunner(container.GetRequiredService<WorkItemJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), instanceCount: 2).RunInBackground(token);
-            new JobRunner(container.GetRequiredService<MaintainIndexesJob>(), loggerFactory, initialDelay: SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)) - SystemClock.UtcNow, interval: TimeSpan.FromHours(1)).RunInBackground(token);
-            new JobRunner(container.GetRequiredService<StackEventCountJob>(), loggerFactory, initialDelay: TimeSpan.FromSeconds(2), interval: TimeSpan.FromSeconds(5)).RunInBackground(token);
+            services.AddJobLifetime();
+            services.AddJob<CloseInactiveSessionsJob>(true);
+            services.AddJob<DailySummaryJob>(true);
+            services.AddJob<DownloadGeoIPDatabaseJob>(true);
+            services.AddJob<EventNotificationsJob>(true);
+            services.AddJob<EventPostsJob>(true);
+            services.AddJob<EventUserDescriptionsJob>(true);
+            services.AddJob<MailMessageJob>(true);
+            services.AddJob<MaintainIndexesJob>(true);
+            services.AddJob<RetentionLimitsJob>(true);
+            services.AddJob<StackEventCountJob>(true);
+            services.AddJob<WebHooksJob>(true);
+            services.AddJob<WorkItemJob>(true);
 
             logger.LogWarning("Jobs running in process.");
         }
