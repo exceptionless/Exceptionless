@@ -18,7 +18,6 @@ using Foundatio.Jobs;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -63,7 +62,7 @@ namespace Exceptionless.Core.Jobs {
             var entry = context.QueueEntry;
             var ep = entry.Value;
             string payloadPath = Path.ChangeExtension(entry.Value.FilePath, ".payload");
-            var payloadTask = _metrics.TimeAsync(() => _eventPostService.GetEventPostPayloadAsync(payloadPath, context.CancellationToken), MetricNames.PostsMarkFileActiveTime);
+            var payloadTask = _metrics.TimeAsync(() => _eventPostService.GetEventPostPayloadAsync(payloadPath), MetricNames.PostsMarkFileActiveTime);
             var projectTask = _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache());
             var organizationTask = _organizationRepository.GetByIdAsync(ep.OrganizationId, o => o.Cache());
 

@@ -85,7 +85,7 @@ namespace Exceptionless.Core.Helpers {
             return Convert.ToBoolean(value);
         }
 
-        public static IEnumerable<Type> GetDerivedTypes<TAction>(IEnumerable<Assembly> assemblies = null) {
+        public static IEnumerable<Type> GetDerivedTypes<TAction>() {
             return GetDerivedTypes(typeof(TAction));
         }
 

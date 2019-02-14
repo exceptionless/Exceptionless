@@ -1,15 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using Exceptionless.Core.Helpers;
-using Exceptionless.Core.Pipeline;
-using Foundatio.Repositories.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions {
     public static class ContainerExtensions {
