@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:2.2.103-sdk AS build
+FROM microsoft/dotnet:2.2.104-sdk AS build
 WORKDIR /app
 
 ARG VERSION_SUFFIX=0-dev
