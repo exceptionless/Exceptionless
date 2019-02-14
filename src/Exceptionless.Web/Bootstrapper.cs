@@ -16,7 +16,6 @@ using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Startup;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Token = Exceptionless.Core.Models.Token;
@@ -40,7 +39,7 @@ namespace Exceptionless.Web {
             Insulation.Bootstrapper.RegisterServices(serviceProvider, services, options, options.RunJobsInProcess);
 
             if (options.RunJobsInProcess)
-                services.AddSingleton<IHostedService, JobsHostedService>();
+                Core.Bootstrapper.AddHostedJobs(services, loggerFactory);
 
             var logger = loggerFactory.CreateLogger<Startup>();
             services.AddStartupAction<MessageBusBroker>();
