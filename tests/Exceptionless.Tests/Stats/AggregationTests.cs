@@ -87,7 +87,7 @@ namespace Exceptionless.Tests.Stats {
         [Fact]
         public async Task CanGetNumericAggregationsAsync() {
             // capture start date before generating data to make sure that our time range for stats includes all items
-            var startDate = SystemClock.UtcNow.SubtractDays(3);
+            SystemClock.UtcNow.SubtractDays(3);
             await CreateDataAsync(0, false);
 
             decimal?[] values = new decimal?[] { null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
