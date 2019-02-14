@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Plugins {
         }
 
         private void LoadDefaultPlugins() {
-            var pluginTypes = TypeHelper.GetDerivedTypes<TPlugin>(new[] { typeof(Bootstrapper).Assembly });
+            var pluginTypes = TypeHelper.GetDerivedTypes<TPlugin>();
 
             foreach (var type in pluginTypes) {
                 if (_options.Value.DisabledPlugins.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {

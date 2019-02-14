@@ -89,8 +89,8 @@ namespace Exceptionless.Core {
             options.ApiThrottleLimit = _configuration.GetValue(nameof(options.ApiThrottleLimit), options.AppMode == AppMode.Development ? Int32.MaxValue : 3500).NormalizeValue();
             options.EnableArchive = _configuration.GetValue(nameof(options.EnableArchive), true);
             options.EventSubmissionDisabled = _configuration.GetValue(nameof(options.EventSubmissionDisabled), false);
-            options.DisabledPipelineActions = _configuration.GetValueList(nameof(options.DisabledPipelineActions), String.Empty);
-            options.DisabledPlugins = _configuration.GetValueList(nameof(options.DisabledPlugins), String.Empty);
+            options.DisabledPipelineActions = _configuration.GetValueList(nameof(options.DisabledPipelineActions));
+            options.DisabledPlugins = _configuration.GetValueList(nameof(options.DisabledPlugins));
             options.MaximumEventPostSize = _configuration.GetValue(nameof(options.MaximumEventPostSize), 200000).NormalizeValue();
             options.MaximumRetentionDays = _configuration.GetValue(nameof(options.MaximumRetentionDays), 180).NormalizeValue();
             options.ApplicationInsightsKey = _configuration.GetValue<string>(nameof(options.ApplicationInsightsKey));

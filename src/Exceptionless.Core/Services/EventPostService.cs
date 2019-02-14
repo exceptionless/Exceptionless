@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Services {
             return await _queue.EnqueueAsync(data).AnyContext();
         }
 
-        public async Task<byte[]> GetEventPostPayloadAsync(string path, CancellationToken cancellationToken = default) {
+        public async Task<byte[]> GetEventPostPayloadAsync(string path) {
             if (String.IsNullOrEmpty(path))
                 return null;
 

@@ -35,7 +35,7 @@ namespace Exceptionless.Web {
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) {
-            string environment = Environment.GetEnvironmentVariable("AppMode");
+            string environment = Environment.GetEnvironmentVariable("EX_AppMode");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
@@ -44,7 +44,7 @@ namespace Exceptionless.Web {
                 .SetBasePath(currentDirectory)
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables()
+                .AddEnvironmentVariables("EX")
                 .AddCommandLine(args)
                 .Build();
 
@@ -60,8 +60,8 @@ namespace Exceptionless.Web {
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
             Log.Logger = loggerConfig.CreateLogger();
-            var configDictionary = config.ToDictionary();
-            Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
+            var configDictionary = config.ToDictionary("Serilog");
+            Log.Information("Bootstrapping Exceptionless in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
 
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
 

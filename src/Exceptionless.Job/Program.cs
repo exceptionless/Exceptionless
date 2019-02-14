@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading;
+using System.Threading.Tasks;
 using App.Metrics;
 using App.Metrics.AspNetCore;
 using App.Metrics.Formatters;
@@ -31,7 +30,7 @@ using Serilog.Sinks.Exceptionless;
 
 namespace Exceptionless.Job {
     public class Program {
-        public static int Main(string[] args) {
+        public static async Task<int> Main(string[] args) {
             try {
                 CreateWebHostBuilder(args).RunJobHost();
                 return 0;
@@ -40,7 +39,7 @@ namespace Exceptionless.Job {
                 return 1;
             } finally {
                 Log.CloseAndFlush();
-                ExceptionlessClient.Default.ProcessQueue();
+                await ExceptionlessClient.Default.ProcessQueueAsync();
                 if (Debugger.IsAttached)
                     Console.ReadKey();
             }
@@ -48,7 +47,8 @@ namespace Exceptionless.Job {
         
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) {
             var jobOptions = new JobRunnerOptions(args);
-            string environment = Environment.GetEnvironmentVariable("AppMode");
+            Console.Title = jobOptions.JobName != null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
+            string environment = Environment.GetEnvironmentVariable("EX_AppMode");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
@@ -57,7 +57,7 @@ namespace Exceptionless.Job {
                 .SetBasePath(currentDirectory)
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables()
+                .AddEnvironmentVariables("EX_")
                 .AddCommandLine(args)
                 .Build();
 
@@ -73,8 +73,8 @@ namespace Exceptionless.Job {
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
             Log.Logger = loggerConfig.CreateLogger();
-            var configDictionary = config.ToDictionary();
-            Log.Information("Bootstrapping {JobDescription} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", jobOptions.Description, environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
+            var configDictionary = config.ToDictionary("Serilog");
+            Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
 
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
 
@@ -89,35 +89,34 @@ namespace Exceptionless.Job {
                 .ConfigureServices(s => {
                     s.AddHttpContextAccessor();
                     
-                    s.AddJobLifetime();
                     AddJobs(s, jobOptions);
                     
                     if (useApplicationInsights)
                         s.AddApplicationInsightsTelemetry();
                     
-                    Core.Bootstrapper.RegisterServices(s);
+                    Bootstrapper.RegisterServices(s);
                     var serviceProvider = s.BuildServiceProvider();
                     Insulation.Bootstrapper.RegisterServices(serviceProvider, s, options, true);
                 })
                 .Configure(app => {
                     var loggerFactory = app.ApplicationServices.GetRequiredService<ILoggerFactory>();
-                    Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, loggerFactory);
+                    Bootstrapper.LogConfiguration(app.ApplicationServices, options, loggerFactory);
 
                     if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                         app.UseExceptionless(ExceptionlessClient.Default);
                     
                     app.UseHealthChecks("/health", new HealthCheckOptions {
-                        Predicate = hcr => hcr.Tags.Contains("Liveness") || hcr.Tags.Contains(jobOptions.Description)
+                        Predicate = hcr => hcr.Tags.Contains("Liveness") || hcr.Tags.Contains(jobOptions.JobName)
                     });
 
                     app.UseHealthChecks("/ready", new HealthCheckOptions {
-                        Predicate = hcr => hcr.Tags.Contains("Readiness") || hcr.Tags.Contains(jobOptions.Description)
+                        Predicate = hcr => hcr.Tags.Contains("Readiness") || hcr.Tags.Contains(jobOptions.JobName)
                     });
 
                     if (options.EnableBootstrapStartupActions)
                         app.UseStartupMiddleware();
                     
-                    app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobOptions.Description}"));
+                    app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobOptions.JobName}"));
                 });
             
             if (useApplicationInsights)

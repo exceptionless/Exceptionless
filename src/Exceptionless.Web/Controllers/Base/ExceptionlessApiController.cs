@@ -202,7 +202,13 @@ namespace Exceptionless.Web.Controllers {
         }
 
         protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
-            return new OkWithResourceLinks<TEntity>(content, hasMore, page, total);
+            var headersToAdd = new HeaderDictionary();
+            if (headers != null) {
+                foreach (var kvp in headers)
+                    headersToAdd.Add(kvp.Key, kvp.Value.ToArray());
+            }
+
+            return new OkWithResourceLinks<TEntity>(content, hasMore, page, total, headers: headersToAdd);
         }
 
         protected string GetResourceLink(string url, string type) {

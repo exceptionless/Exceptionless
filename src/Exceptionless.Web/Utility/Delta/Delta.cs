@@ -18,7 +18,7 @@ namespace Exceptionless.Web.Utility {
     /// <typeparam name="TEntityType">TEntityType is the base type of entity this delta tracks changes for.</typeparam>
     public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType : class {
         // cache property accessors for this type and all its derived types.
-        private static ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>> _propertyCache = new ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>>();
+        private static readonly ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>> _propertyCache = new ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>>();
 
         private Dictionary<string, IMemberAccessor> _propertiesThatExist;
         private readonly Dictionary<string, object> _unknownProperties = new Dictionary<string, object>();

@@ -2668,4 +2668,5 @@ $END$&#xD;
 	<s:String x:Key="/Default/PatternsAndTemplates/LiveTemplates/Template/=FC109C13CFDF334E9544F78FC7874784/Scope/=2C285F182AC98D44B0B4F29D4D2149EC/Type/@EntryValue">InCSharpStatement</s:String>
 	<s:String x:Key="/Default/PatternsAndTemplates/LiveTemplates/Template/=FC109C13CFDF334E9544F78FC7874784/Shortcut/@EntryValue">ann</s:String>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/LiveTemplates/Template/=FC109C13CFDF334E9544F78FC7874784/ShortenQualifiedReferences/@EntryValue">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/LiveTemplates/Template/=FC109C13CFDF334E9544F78FC7874784/Text/@EntryValue">Assert.NotNull($Object$);$END$</s:String></wpf:ResourceDictionary>
+	<s:String x:Key="/Default/PatternsAndTemplates/LiveTemplates/Template/=FC109C13CFDF334E9544F78FC7874784/Text/@EntryValue">Assert.NotNull($Object$);$END$</s:String>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=Exceptionless/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>

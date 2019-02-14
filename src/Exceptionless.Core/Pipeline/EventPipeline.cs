@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         protected override IList<Type> GetActionTypes() {
-            return _actionTypeCache.GetOrAdd(typeof(EventPipelineActionBase), t => TypeHelper.GetDerivedTypes<EventPipelineActionBase>(new[] { typeof(EventPipeline).Assembly }).SortByPriority());
+            return _actionTypeCache.GetOrAdd(typeof(EventPipelineActionBase), t => TypeHelper.GetDerivedTypes<EventPipelineActionBase>().SortByPriority());
         }
     }
 }

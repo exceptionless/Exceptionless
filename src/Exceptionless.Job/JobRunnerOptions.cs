@@ -8,74 +8,71 @@ namespace Exceptionless.Job {
                 throw new ArgumentException("More than one job argument specified. You must either specify 1 named job or don't pass any arguments to run all jobs.");
 
             CleanupSnapshot = args.Length == 0 || args.Contains("CleanupSnapshot", StringComparer.OrdinalIgnoreCase);
-            if (CleanupSnapshot)
-                Description = "CleanupSnapshot";
+            if (CleanupSnapshot && args.Length != 0)
+                JobName = "CleanupSnapshot";
 
             CloseInactiveSessions = args.Length == 0 || args.Contains("CloseInactiveSessions", StringComparer.OrdinalIgnoreCase);
-            if (CloseInactiveSessions)
-                Description = "CloseInactiveSessions";
+            if (CloseInactiveSessions && args.Length != 0)
+                JobName = "CloseInactiveSessions";
 
             DailySummary = args.Length == 0 || args.Contains("DailySummary", StringComparer.OrdinalIgnoreCase);
-            if (DailySummary)
-                Description = "DailySummary";
+            if (DailySummary && args.Length != 0)
+                JobName = "DailySummary";
 
             DownloadGeoipDatabase = args.Length == 0 || args.Contains("DownloadGeoipDatabase", StringComparer.OrdinalIgnoreCase);
-            if (DownloadGeoipDatabase)
-                Description = "DownloadGeoipDatabase";
+            if (DownloadGeoipDatabase && args.Length != 0)
+                JobName = "DownloadGeoipDatabase";
 
             EventNotifications = args.Length == 0 || args.Contains("EventNotifications", StringComparer.OrdinalIgnoreCase);
-            if (EventNotifications)
-                Description = "EventNotifications";
+            if (EventNotifications && args.Length != 0)
+                JobName = "EventNotifications";
 
             EventPosts = args.Length == 0 || args.Contains("EventPosts", StringComparer.OrdinalIgnoreCase);
-            if (EventPosts)
-                Description = "EventPosts";
+            if (EventPosts && args.Length != 0)
+                JobName = "EventPosts";
 
             EventSnapshot = args.Length == 0 || args.Contains("EventSnapshot", StringComparer.OrdinalIgnoreCase);
-            if (EventSnapshot)
-                Description = "EventSnapshot";
+            if (EventSnapshot && args.Length != 0)
+                JobName = "EventSnapshot";
 
             EventUserDescriptions = args.Length == 0 || args.Contains("EventUserDescriptions", StringComparer.OrdinalIgnoreCase);
-            if (EventUserDescriptions)
-                Description = "EventUserDescriptions";
+            if (EventUserDescriptions && args.Length != 0)
+                JobName = "EventUserDescriptions";
 
             MailMessage = args.Length == 0 || args.Contains("MailMessage", StringComparer.OrdinalIgnoreCase);
-            if (MailMessage)
-                Description = "MailMessage";
+            if (MailMessage && args.Length != 0)
+                JobName = "MailMessage";
 
             MaintainIndexes = args.Length == 0 || args.Contains("MaintainIndexes", StringComparer.OrdinalIgnoreCase);
-            if (MaintainIndexes)
-                Description = "MaintainIndexes";
+            if (MaintainIndexes && args.Length != 0)
+                JobName = "MaintainIndexes";
 
             OrganizationSnapshot = args.Length == 0 || args.Contains("OrganizationSnapshot", StringComparer.OrdinalIgnoreCase);
-            if (OrganizationSnapshot)
-                Description = "OrganizationSnapshot";
+            if (OrganizationSnapshot && args.Length != 0)
+                JobName = "OrganizationSnapshot";
 
             RetentionLimits = args.Length == 0 || args.Contains("RetentionLimits", StringComparer.OrdinalIgnoreCase);
-            if (RetentionLimits)
-                Description = "RetentionLimits";
+            if (RetentionLimits && args.Length != 0)
+                JobName = "RetentionLimits";
 
             StackEventCount = args.Length == 0 || args.Contains("StackEventCount", StringComparer.OrdinalIgnoreCase);
-            if (StackEventCount)
-                Description = "StackEventCount";
+            if (StackEventCount && args.Length != 0)
+                JobName = "StackEventCount";
 
             StackSnapshot = args.Length == 0 || args.Contains("StackSnapshot", StringComparer.OrdinalIgnoreCase);
-            if (StackSnapshot)
-                Description = "StackSnapshot";
+            if (StackSnapshot && args.Length != 0)
+                JobName = "StackSnapshot";
 
             WebHooks = args.Length == 0 || args.Contains("WebHooks", StringComparer.OrdinalIgnoreCase);
-            if (WebHooks)
-                Description = "WebHooks";
+            if (WebHooks && args.Length != 0)
+                JobName = "WebHooks";
 
             WorkItem = args.Length == 0 || args.Contains("WorkItem", StringComparer.OrdinalIgnoreCase);
-            if (WorkItem)
-                Description = "WorkItem";
-
-            if (args.Length == 0)
-                Description = "All";
+            if (WorkItem && args.Length != 0)
+                JobName = "WorkItem";
         }
 
-        public string Description { get; }
+        public string JobName { get; }
 
         public bool CleanupSnapshot { get; }
         public bool CloseInactiveSessions { get; }

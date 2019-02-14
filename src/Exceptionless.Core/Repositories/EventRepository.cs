@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Repositories {
 
         public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true) {
             var ev = await GetByIdAsync(id).AnyContext();
-            if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd, hasError))
+            if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd))
                 return false;
 
             await this.SaveAsync(ev, o => o.Notifications(sendNotifications)).AnyContext();

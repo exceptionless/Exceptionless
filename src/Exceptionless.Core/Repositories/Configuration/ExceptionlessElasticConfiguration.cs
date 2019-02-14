@@ -22,7 +22,6 @@ using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
-        private CancellationToken _shutdownToken;
         private readonly IOptions<ElasticsearchOptions> _options;
         private readonly IOptions<AppOptions> _appOptions;
 
@@ -40,7 +39,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
             if (_options.Value.DisableIndexConfiguration)
                 return Task.CompletedTask;
 
-            _shutdownToken = shutdownToken;
             return ConfigureIndexesAsync();
         }
 

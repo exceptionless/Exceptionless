@@ -115,7 +115,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("echo")]
         public ActionResult EchoRequest() {
             return Ok(JsonConvert.SerializeObject(new {
-                Headers = Request.Headers,
+                Request.Headers,
                 IpAddress = Request.GetClientIpAddress()
             }, Formatting.Indented));
         }
