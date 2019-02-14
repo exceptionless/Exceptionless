@@ -3,26 +3,26 @@ kind: ConfigMap
 metadata:
     name: {{ template "exceptionless.fullname" . }}-config
 data:
-    AppMode: Development
-    BaseUrl: https://{{.Values.api.domain}}
+    EX_AppMode: Development
+    EX_BaseUrl: https://{{.Values.api.domain}}
 {{- if (.Values.elasticsearch.connectionString) }}
-    ConnectionStrings__Elasticsearch: {{.Values.elasticsearch.connectionString}}
+    EX_ConnectionStrings__Elasticsearch: {{.Values.elasticsearch.connectionString}}
 {{- else }}
-    ConnectionStrings__Elasticsearch: server=http://{{ template "exceptionless.fullname" . }}-elasticsearch:9200
+    EX_ConnectionStrings__Elasticsearch: server=http://{{ template "exceptionless.fullname" . }}-elasticsearch:9200
 {{- end }}
 {{- if (.Values.redis.connectionString) }}
-    ConnectionStrings__Redis: {{.Values.redis.connectionString}}
+    EX_ConnectionStrings__Redis: {{.Values.redis.connectionString}}
 {{- else }}
-    ConnectionStrings__Redis: server=redis-master,abortConnect=false"
+    EX_ConnectionStrings__Redis: server=redis-master,abortConnect=false"
 {{- end }}
 {{- if (.Values.storage.azureConnectionString) }}
-    ConnectionStrings__Storage: provider=azurestorage;{{.Values.storage.azureConnectionString}}
+    EX_ConnectionStrings__Storage: provider=azurestorage;{{.Values.storage.azureConnectionString}}
 {{- else }}
-    ConnectionStrings__Storage: provider=folder;path=/app/storage
+    EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
 {{- end }}
-    ConnectionStrings__Cache: provider=redis;
-    ConnectionStrings__MessageBus: provider=redis;
-    ConnectionStrings__Metrics.off: provider=statsd;server=10.0.0.5;
-    ConnectionStrings__Queue: provider=redis;
-    ExceptionlessServerUrl: https://{{.Values.collector.domain}}
+    EX_ConnectionStrings__Cache: provider=redis;
+    EX_ConnectionStrings__MessageBus: provider=redis;
+    EX_ConnectionStrings__Metrics.off: provider=statsd;server=10.0.0.5;
+    EX_ConnectionStrings__Queue: provider=redis;
+    EX_ExceptionlessServerUrl: https://{{.Values.collector.domain}}
 {{ .Values.extraConfig | indent 4 }}

@@ -9,16 +9,16 @@ services:
       target: api
     image: exceptionless/api-ci:latest
     environment:
-      AppMode: Development
-      ConnectionStrings__Cache: provider=redis
-      ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
-      #ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
-      ConnectionStrings__MessageBus: provider=redis
-      #ConnectionStrings__Metrics: provider=statsd;server=statsd;
-      ConnectionStrings__Queue: provider=redis
-      ConnectionStrings__Redis: server=redis,abortConnect=false
-      ConnectionStrings__Storage: provider=folder;path=/app/storage
-      RunJobsInProcess: 'false'
+      EX_AppMode: Development
+      EX_ConnectionStrings__Cache: provider=redis
+      EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
+      #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
+      EX_ConnectionStrings__MessageBus: provider=redis
+      #EX_ConnectionStrings__Metrics: provider=statsd;server=statsd;
+      EX_ConnectionStrings__Queue: provider=redis
+      EX_ConnectionStrings__Redis: server=redis,abortConnect=false
+      EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
+      EX_RunJobsInProcess: 'false'
     ports:
       - 5000:80
     volumes:
@@ -33,15 +33,15 @@ services:
     image: exceptionless/job-ci:latest
     command: run-all
     environment:
-      AppMode: Development
-      ConnectionStrings__Cache: provider=redis
-      ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
-      #ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
-      ConnectionStrings__MessageBus: provider=redis
-      #ConnectionStrings__Metrics: provider=statsd;server=statsd;
-      ConnectionStrings__Queue: provider=redis
-      ConnectionStrings__Redis: server=redis,abortConnect=false
-      ConnectionStrings__Storage: provider=folder;path=/app/storage
+      EX_AppMode: Development
+      EX_ConnectionStrings__Cache: provider=redis
+      EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
+      #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
+      EX_ConnectionStrings__MessageBus: provider=redis
+      #EX_ConnectionStrings__Metrics: provider=statsd;server=statsd;
+      EX_ConnectionStrings__Queue: provider=redis
+      EX_ConnectionStrings__Redis: server=redis,abortConnect=false
+      EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
     volumes:
       - appdata:/app/storage
 
