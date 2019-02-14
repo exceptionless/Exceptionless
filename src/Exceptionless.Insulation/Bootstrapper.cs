@@ -91,6 +91,8 @@ namespace Exceptionless.Insulation {
         }
 
         private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services, CacheOptions cacheOptions, MessageBusOptions messageBusOptions, MetricOptions metricOptions, StorageOptions storageOptions, QueueOptions queueOptions) {
+            services.AddWaitForHealthChecksStartupAction();
+
             return services.AddHealthChecks()
                 .Add<ElasticsearchHealthCheck>("Elasticsearch", services, "Elasticsearch", "Readiness", "Liveness")
                 .Add<CacheHealthCheck>("Cache", services, "Cache", "Readiness", "Liveness", cacheOptions.Provider)

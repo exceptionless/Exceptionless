@@ -1,4 +1,7 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Foundatio.Startup;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -22,5 +25,16 @@ namespace Exceptionless.Insulation.HealthChecks {
             services.AddSingleton<T>();
             return builder.Add(new HealthCheckRegistration(name, s => s.GetRequiredService<T>(), null, tags));
         }
+
+
+        public static void AddWaitForHealthChecksStartupAction(this IServiceCollection container) {
+            container.AddStartupAction(async (sp, t) => {
+                var healthCheckService = sp.GetService<HealthCheckService>();
+                var result = await healthCheckService.CheckHealthAsync(h => h.Tags.Contains("Readiness"), t);
+                while (result.Status != HealthStatus.Healthy)
+                    result = await healthCheckService.CheckHealthAsync(h => h.Tags.Contains("Readiness") && h.Name != "Startup", t);
+            }, -100);
+        }
+
     }
 }
