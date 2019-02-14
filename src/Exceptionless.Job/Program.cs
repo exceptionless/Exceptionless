@@ -68,7 +68,7 @@ namespace Exceptionless.Job {
             services.ConfigureOptions<ConfigureMetricOptions>();
             var container = services.BuildServiceProvider();
             var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
-
+ 
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
@@ -81,8 +81,9 @@ namespace Exceptionless.Job {
 
             var builder = WebHost.CreateDefaultBuilder(args)
                 .UseEnvironment(environment)
-                .UseKestrel(c => {
+                .ConfigureKestrel(c => {
                     c.AddServerHeader = false;
+                    c.AllowSynchronousIO = false;
                 })
                 .UseSerilog(Log.Logger)
                 .SuppressStatusMessages(true)
