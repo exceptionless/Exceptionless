@@ -12,7 +12,6 @@ using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Cors.Internal;
@@ -117,7 +116,7 @@ namespace Exceptionless.Web {
             });
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
+        public void Configure(IApplicationBuilder app) {
             var options = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, LoggerFactory);
 
