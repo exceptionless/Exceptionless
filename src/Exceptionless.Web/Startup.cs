@@ -125,10 +125,10 @@ namespace Exceptionless.Web {
                 app.UseExceptionless(ExceptionlessClient.Default);
                 
             app.UseHealthChecks("/health", new HealthCheckOptions {
-                Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Core") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
+                Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Liveness") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
             });
             app.UseHealthChecks("/ready", new HealthCheckOptions {
-                Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Core") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
+                Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Readiness") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
             });
 
             app.UseCsp(csp => {

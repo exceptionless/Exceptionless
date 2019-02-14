@@ -107,11 +107,11 @@ namespace Exceptionless.Job {
                         app.UseExceptionless(ExceptionlessClient.Default);
                     
                     app.UseHealthChecks("/health", new HealthCheckOptions {
-                        Predicate = hcr => hcr.Tags.Contains("Core") || hcr.Tags.Contains(jobOptions.Description)
+                        Predicate = hcr => hcr.Tags.Contains("Liveness") || hcr.Tags.Contains(jobOptions.Description)
                     });
 
                     app.UseHealthChecks("/ready", new HealthCheckOptions {
-                        Predicate = hcr => hcr.Tags.Contains("Core") || hcr.Tags.Contains(jobOptions.Description)
+                        Predicate = hcr => hcr.Tags.Contains("Readiness") || hcr.Tags.Contains(jobOptions.Description)
                     });
 
                     if (options.EnableBootstrapStartupActions)
