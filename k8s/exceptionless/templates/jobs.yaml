@@ -27,7 +27,7 @@ spec:
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
-                  path: /health
+                  path: /ready
                   port: 80
                 initialDelaySeconds: 5
                 periodSeconds: 10
@@ -85,7 +85,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -142,7 +142,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -188,7 +188,7 @@ spec:
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
-                  path: /health
+                  path: /ready
                   port: 80
                 initialDelaySeconds: 5
                 periodSeconds: 10
@@ -246,7 +246,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -303,7 +303,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -349,7 +349,7 @@ spec:
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
-                  path: /health
+                  path: /ready
                   port: 80
                 initialDelaySeconds: 5
                 periodSeconds: 10
@@ -407,7 +407,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -464,7 +464,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -510,7 +510,7 @@ spec:
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
-                  path: /health
+                  path: /ready
                   port: 80
                 initialDelaySeconds: 5
                 periodSeconds: 10
@@ -557,7 +557,7 @@ spec:
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
-                  path: /health
+                  path: /ready
                   port: 80
                 initialDelaySeconds: 5
                 periodSeconds: 10
@@ -615,7 +615,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -672,7 +672,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -718,7 +718,7 @@ spec:
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
-                  path: /health
+                  path: /ready
                   port: 80
                 initialDelaySeconds: 5
                 periodSeconds: 10
@@ -776,7 +776,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -833,7 +833,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
