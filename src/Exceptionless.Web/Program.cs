@@ -69,8 +69,10 @@ namespace Exceptionless.Web {
 
             var builder = WebHost.CreateDefaultBuilder(args)
                 .UseEnvironment(environment)
-                .UseKestrel(c => {
+                .ConfigureKestrel(c => {
                     c.AddServerHeader = false;
+                    c.AllowSynchronousIO = false;
+                    
                     if (options.MaximumEventPostSize > 0)
                         c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
                 })
