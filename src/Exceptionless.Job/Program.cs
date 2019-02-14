@@ -47,10 +47,11 @@ namespace Exceptionless.Job {
         
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) {
             var jobOptions = new JobRunnerOptions(args);
-            Console.Title = jobOptions.JobName != null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
             string environment = Environment.GetEnvironmentVariable("EX_AppMode");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
+
+            Console.Title = jobOptions.JobName != null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
 
             string currentDirectory = Directory.GetCurrentDirectory();
             var config = new ConfigurationBuilder()
