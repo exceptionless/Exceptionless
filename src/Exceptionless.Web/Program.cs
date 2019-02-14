@@ -46,7 +46,7 @@ namespace Exceptionless.Web {
                 .SetBasePath(currentDirectory)
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables("EX")
+                .AddEnvironmentVariables("EX_")
                 .AddCommandLine(args)
                 .Build();
 
