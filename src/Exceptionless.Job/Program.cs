@@ -92,7 +92,6 @@ namespace Exceptionless.Job {
                     c.AddServerHeader = false;
                     c.AllowSynchronousIO = false;
                 })
-                .SuppressStatusMessages(true)
                 .UseConfiguration(config)
                 .ConfigureServices(s => {
                     s.AddSingleton<ILoggerFactory>(loggerFactory);

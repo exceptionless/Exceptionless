@@ -88,7 +88,6 @@ namespace Exceptionless.Web {
                     if (options.MaximumEventPostSize > 0)
                         c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
                 })
-                .SuppressStatusMessages(true)
                 .UseConfiguration(config)
                 .ConfigureServices(s => {
                     s.AddSingleton<ILoggerFactory>(loggerFactory);

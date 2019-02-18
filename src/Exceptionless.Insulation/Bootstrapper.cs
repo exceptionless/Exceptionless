@@ -84,35 +84,32 @@ namespace Exceptionless.Insulation {
                 services.ReplaceSingleton<IMailSender, MailKitMailSender>();
                 healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "Liveness", "MailMessage" }));
             }
-            
-            if (appOptions.EnableBootstrapStartupActions)
-                services.AddStartupActionToWaitForHealthChecks();
         }
 
         private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services, CacheOptions cacheOptions, MessageBusOptions messageBusOptions, MetricOptions metricOptions, StorageOptions storageOptions, QueueOptions queueOptions) {
-            services.AddWaitForHealthChecksStartupAction();
+            services.AddStartupActionToWaitForHealthChecks();
 
             return services.AddHealthChecks()
                 .AddCheckForStartupActionsComplete()
-                .Add<ElasticsearchHealthCheck>("Elasticsearch", services, "Elasticsearch", "Critical", "Liveness")
-                .Add<CacheHealthCheck>("Cache", services, "Cache", "Critical", "Liveness", cacheOptions.Provider)
-                .Add<MessageBusHealthCheck>("MessageBus", services,"MessageBus", "Critical", "Liveness", messageBusOptions.Provider)
-                .Add<MetricHealthCheck>("Metric", services,"Metric", "Critical", "Liveness", metricOptions.Provider)
-                .Add<StorageHealthCheck>("Storage", services,"Storage", "All", "EventPosts", "DownloadGeoipDatabase", storageOptions.Provider)
+                .AddCheck<ElasticsearchHealthCheck>("Elasticsearch", "Elasticsearch", "Critical", "Liveness")
+                .AddCheck<CacheHealthCheck>("Cache", "Cache", "Critical", "Liveness", cacheOptions.Provider)
+                .AddCheck<MessageBusHealthCheck>("MessageBus" ,"MessageBus", "Critical", "Liveness", messageBusOptions.Provider)
+                .AddCheck<MetricHealthCheck>("Metric", "Metric", "Critical", "Liveness", metricOptions.Provider)
+                .AddCheck<StorageHealthCheck>("Storage", "Storage", "All", "EventPosts", "DownloadGeoipDatabase", storageOptions.Provider)
                 
-                .Add<QueueHealthCheck<EventPost>>("EventPosts Queue", services,"Queue", "All", "EventPosts", queueOptions.Provider)
-                .Add<QueueHealthCheck<EventUserDescription>>("EventUserDescriptions Queue", services,"Queue", "All", "EventUserDescriptions", queueOptions.Provider)
-                .Add<QueueHealthCheck<EventNotificationWorkItem>>("EventNotifications Queue", services,"Queue", "All", "EventNotifications", queueOptions.Provider)
-                .Add<QueueHealthCheck<WebHookNotification>>("WebHooks Queue", services,"Queue", "All", "WebHooks", queueOptions.Provider)
-                .Add<QueueHealthCheck<MailMessage>>("MailMessage Queue", services,"Queue", "All", "MailMessage", queueOptions.Provider)
-                .Add<QueueHealthCheck<WorkItemData>>("WorkItem Queue", services,"Queue", "All", "WorkItem", queueOptions.Provider)
+                .AddCheck<QueueHealthCheck<EventPost>>("EventPosts Queue","Queue", "All", "EventPosts", queueOptions.Provider)
+                .AddCheck<QueueHealthCheck<EventUserDescription>>("EventUserDescriptions Queue", "Queue", "All", "EventUserDescriptions", queueOptions.Provider)
+                .AddCheck<QueueHealthCheck<EventNotificationWorkItem>>("EventNotifications Queue", "Queue", "All", "EventNotifications", queueOptions.Provider)
+                .AddCheck<QueueHealthCheck<WebHookNotification>>("WebHooks Queue", "Queue", "All", "WebHooks", queueOptions.Provider)
+                .AddCheck<QueueHealthCheck<MailMessage>>("MailMessage Queue", "Queue", "All", "MailMessage", queueOptions.Provider)
+                .AddCheck<QueueHealthCheck<WorkItemData>>("WorkItem Queue", "Queue", "All", "WorkItem", queueOptions.Provider)
 
-                .Add<CloseInactiveSessionsJob>("CloseInactiveSessions", "All", "CloseInactiveSessions", storageOptions.Provider)
-                .Add<DailySummaryJob>("DailySummary", "All", "DailySummary", storageOptions.Provider)
-                .Add<DownloadGeoIPDatabaseJob>("DownloadGeoipDatabase", "All", "DownloadGeoipDatabase", storageOptions.Provider)
-                .Add<MaintainIndexesJob>("MaintainIndexes", "All", "MaintainIndexes", storageOptions.Provider)
-                .Add<RetentionLimitsJob>("RetentionLimits", "All", "RetentionLimits", storageOptions.Provider)
-                .Add<StackEventCountJob>("StackEventCount", "All", "StackEventCount", storageOptions.Provider);
+                .AddCheck<CloseInactiveSessionsJob>("CloseInactiveSessions", "All", "CloseInactiveSessions", storageOptions.Provider)
+                .AddCheck<DailySummaryJob>("DailySummary", "All", "DailySummary", storageOptions.Provider)
+                .AddCheck<DownloadGeoIPDatabaseJob>("DownloadGeoipDatabase", "All", "DownloadGeoipDatabase", storageOptions.Provider)
+                .AddCheck<MaintainIndexesJob>("MaintainIndexes", "All", "MaintainIndexes", storageOptions.Provider)
+                .AddCheck<RetentionLimitsJob>("RetentionLimits", "All", "RetentionLimits", storageOptions.Provider)
+                .AddCheck<StackEventCountJob>("StackEventCount", "All", "StackEventCount", storageOptions.Provider);
         }
 
         private static void RegisterCache(IServiceCollection container, CacheOptions options) {
