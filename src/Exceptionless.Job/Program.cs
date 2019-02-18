@@ -90,7 +90,7 @@ namespace Exceptionless.Job {
                 .UseEnvironment(environment)
                 .ConfigureKestrel(c => {
                     c.AddServerHeader = false;
-                    c.AllowSynchronousIO = false;
+                    //c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
                 })
                 .UseConfiguration(config)
                 .ConfigureServices(s => {
