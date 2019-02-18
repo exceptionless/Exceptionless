@@ -1,7 +1,6 @@
 ﻿using System;
 using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Mail;
-using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
 using Exceptionless.Insulation.Configuration;

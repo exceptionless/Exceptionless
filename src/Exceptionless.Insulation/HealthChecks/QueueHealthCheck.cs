@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
