@@ -120,9 +120,7 @@ namespace Exceptionless.Job {
                         Predicate = hcr => hcr.Tags.Contains("Critical") || hcr.Tags.Contains(jobOptions.JobName)
                     });
 
-                    if (options.EnableBootstrapStartupActions)
-                        app.UseWaitForStartupActionsBeforeServingRequests();
-                    
+                    app.UseWaitForStartupActionsBeforeServingRequests();
                     app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobOptions.JobName}"));
                 });
             
