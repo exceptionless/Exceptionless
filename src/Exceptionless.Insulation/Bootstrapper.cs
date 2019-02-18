@@ -29,7 +29,6 @@ using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
-using Foundatio.Startup;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -87,18 +86,18 @@ namespace Exceptionless.Insulation {
             }
             
             if (appOptions.EnableBootstrapStartupActions)
-                services.AddStartupTaskService();
+                services.AddStartupActionToWaitForHealthChecks();
         }
 
         private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services, CacheOptions cacheOptions, MessageBusOptions messageBusOptions, MetricOptions metricOptions, StorageOptions storageOptions, QueueOptions queueOptions) {
             services.AddWaitForHealthChecksStartupAction();
 
             return services.AddHealthChecks()
-                .Add<ElasticsearchHealthCheck>("Elasticsearch", services, "Elasticsearch", "Readiness", "Liveness")
-                .Add<CacheHealthCheck>("Cache", services, "Cache", "Readiness", "Liveness", cacheOptions.Provider)
-                .Add<MessageBusHealthCheck>("MessageBus", services,"MessageBus", "Readiness", "Liveness", messageBusOptions.Provider)
-                .Add<MetricHealthCheck>("Metric", services,"Metric", "Readiness", "Liveness", metricOptions.Provider)
-                .Add<StartupHealthCheck>("Startup", services,"Startup", "Readiness")
+                .AddCheckForStartupActionsComplete()
+                .Add<ElasticsearchHealthCheck>("Elasticsearch", services, "Elasticsearch", "Critical", "Liveness")
+                .Add<CacheHealthCheck>("Cache", services, "Cache", "Critical", "Liveness", cacheOptions.Provider)
+                .Add<MessageBusHealthCheck>("MessageBus", services,"MessageBus", "Critical", "Liveness", messageBusOptions.Provider)
+                .Add<MetricHealthCheck>("Metric", services,"Metric", "Critical", "Liveness", metricOptions.Provider)
                 .Add<StorageHealthCheck>("Storage", services,"Storage", "All", "EventPosts", "DownloadGeoipDatabase", storageOptions.Provider)
                 
                 .Add<QueueHealthCheck<EventPost>>("EventPosts Queue", services,"Queue", "All", "EventPosts", queueOptions.Provider)

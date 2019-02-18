@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using App.Metrics;
 using App.Metrics.AspNetCore;
 using App.Metrics.Formatters;
@@ -9,28 +11,36 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web.Utility;
+using Foundatio.Hosting;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.AspNetCore;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
 
 namespace Exceptionless.Web {
     public class Program {
-        public static int Main(string[] args) {
+        private static Microsoft.Extensions.Logging.ILogger _logger;
+        
+        public static async Task<int> Main(string[] args) {
             try {
-                CreateWebHostBuilder(args).Build().Run();
+                await CreateWebHostBuilder(args).Build().RunAsync(_logger);
                 return 0;
             } catch (Exception ex) {
-                Log.Fatal(ex, "Host terminated unexpectedly");
+                _logger.LogCritical(ex, "Job host terminated unexpectedly");
                 return 1;
             } finally {
                 Log.CloseAndFlush();
-                ExceptionlessClient.Default.ProcessQueue();
+                await ExceptionlessClient.Default.ProcessQueueAsync();
+                
+                if (Debugger.IsAttached)
+                    Console.ReadKey();
             }
         }
 
@@ -61,9 +71,11 @@ namespace Exceptionless.Web {
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
-            Log.Logger = loggerConfig.CreateLogger();
+            var loggerFactory = new SerilogLoggerFactory(loggerConfig.CreateLogger());
+            _logger = loggerFactory.CreateLogger<Program>();
+            
             var configDictionary = config.ToDictionary("Serilog");
-            Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
+            _logger.LogInformation("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
 
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
 
@@ -76,10 +88,10 @@ namespace Exceptionless.Web {
                     if (options.MaximumEventPostSize > 0)
                         c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
                 })
-                .UseSerilog(Log.Logger)
                 .SuppressStatusMessages(true)
                 .UseConfiguration(config)
                 .ConfigureServices(s => {
+                    s.AddSingleton<ILoggerFactory>(loggerFactory);
                     s.AddHttpContextAccessor();
                     
                     if (useApplicationInsights) {

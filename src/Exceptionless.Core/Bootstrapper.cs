@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using AutoMapper.EquivalencyExpression;
@@ -10,7 +9,6 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
@@ -29,11 +27,11 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Hosting.Jobs;
+using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Messaging;
@@ -44,15 +42,12 @@ using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Jobs;
 using Foundatio.Serializer;
-using Foundatio.Startup;
 using Foundatio.Storage;
-using Foundatio.Utility;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using CleanupSnapshotJob = Foundatio.Repositories.Elasticsearch.Jobs.CleanupSnapshotJob;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob;
 
@@ -279,7 +274,7 @@ namespace Exceptionless.Core {
         public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory) {
             var logger = loggerFactory.CreateLogger("AppBuilder");
 
-            services.AddJobLifetime();
+            services.AddJobLifetimeService();
             services.AddJob<CloseInactiveSessionsJob>(true);
             services.AddJob<DailySummaryJob>(true);
             services.AddJob<DownloadGeoIPDatabaseJob>(true);
@@ -287,7 +282,7 @@ namespace Exceptionless.Core {
             services.AddJob<EventPostsJob>(true);
             services.AddJob<EventUserDescriptionsJob>(true);
             services.AddJob<MailMessageJob>(true);
-            services.AddJob<MaintainIndexesJob>(true);
+            services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
             services.AddJob<RetentionLimitsJob>(true);
             services.AddJob<StackEventCountJob>(true);
             services.AddJob<WebHooksJob>(true);
