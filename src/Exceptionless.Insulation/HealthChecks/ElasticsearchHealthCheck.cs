@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -21,17 +22,24 @@ namespace Exceptionless.Insulation.HealthChecks {
             var sw = Stopwatch.StartNew();
             
             try {
-                var response = await _config.Client.PingAsync(cancellationToken: cancellationToken).AnyContext();
+                var response = await _config.Client.ClusterHealthAsync(cancellationToken: cancellationToken).AnyContext();
                 if (!response.IsValid)
-                    return HealthCheckResult.Unhealthy("Elasticsearch Ping Failed", response.OriginalException);
+                    return HealthCheckResult.Unhealthy("Elasticsearch health check failed.", response.OriginalException);
+
+                switch (response.Status) {
+                    case "green":
+                        return HealthCheckResult.Healthy();
+                    case "yellow":
+                        return HealthCheckResult.Degraded($"Elasticsearch cluster health was yellow");
+                    default:
+                        return HealthCheckResult.Unhealthy($"Elasticsearch Not Working... Cluster health was: {response.Status}");
+                }
             } catch (Exception ex) {
                 return HealthCheckResult.Unhealthy("Elasticsearch Not Working.", ex);
             } finally {
                 sw.Stop();
                 _logger.LogTrace("Checking Elasticsearch took {Duration:g}", sw.Elapsed);
             }
-            
-            return HealthCheckResult.Healthy();
         }
     }
 }
