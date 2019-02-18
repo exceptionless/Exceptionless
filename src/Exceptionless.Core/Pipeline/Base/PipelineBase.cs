@@ -7,8 +7,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Helpers;
 using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {

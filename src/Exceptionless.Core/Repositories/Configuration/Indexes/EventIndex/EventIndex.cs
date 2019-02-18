@@ -1,7 +1,5 @@
 ﻿using System;
-using Exceptionless.Core.Configuration;
 using Foundatio.Repositories.Elasticsearch.Configuration;
-using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {

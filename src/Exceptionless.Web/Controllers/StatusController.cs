@@ -4,15 +4,12 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Core.Utility;
 using Exceptionless.Web.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
-using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 

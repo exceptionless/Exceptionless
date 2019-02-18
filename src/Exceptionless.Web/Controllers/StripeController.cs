@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
 using Microsoft.AspNetCore.Authorization;
