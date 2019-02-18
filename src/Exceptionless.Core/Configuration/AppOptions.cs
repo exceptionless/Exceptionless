@@ -53,8 +53,6 @@ namespace Exceptionless.Core {
 
         public string ApplicationInsightsKey { get; internal set; }
 
-        public bool EnableBootstrapStartupActions { get; internal set; }
-
         public bool EnableRepositoryNotifications { get; internal set; }
 
         public bool EnableWebSockets { get; internal set; }
@@ -98,8 +96,7 @@ namespace Exceptionless.Core {
             options.GoogleGeocodingApiKey = _configuration.GetValue<string>(nameof(options.GoogleGeocodingApiKey));
 
             options.BulkBatchSize = _configuration.GetValue(nameof(options.BulkBatchSize), 1000);
-
-            options.EnableBootstrapStartupActions = _configuration.GetValue(nameof(options.EnableBootstrapStartupActions), true);
+            
             options.EnableRepositoryNotifications = _configuration.GetValue(nameof(options.EnableRepositoryNotifications), true);
             options.EnableWebSockets = _configuration.GetValue(nameof(options.EnableWebSockets), true);
 

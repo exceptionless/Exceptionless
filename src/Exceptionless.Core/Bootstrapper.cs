@@ -242,9 +242,6 @@ namespace Exceptionless.Core {
             if (fileStorage is InMemoryFileStorage)
                 logger.LogWarning("Using in memory file storage on {MachineName}", Environment.MachineName);
 
-            if (!appOptions.EnableBootstrapStartupActions)
-                logger.LogWarning("Startup Actions is NOT enabled on {MachineName}", Environment.MachineName);
-
             var elasticsearchOptions = serviceProvider.GetRequiredService<IOptions<ElasticsearchOptions>>();
             if (elasticsearchOptions.Value.DisableIndexConfiguration)
                 logger.LogWarning("Index Configuration is NOT enabled on {MachineName}", Environment.MachineName);

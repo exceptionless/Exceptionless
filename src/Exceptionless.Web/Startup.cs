@@ -127,8 +127,7 @@ namespace Exceptionless.Web {
                 Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Critical") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
             });
 
-            if (options.EnableBootstrapStartupActions)
-                app.UseWaitForStartupActionsBeforeServingRequests();
+            app.UseWaitForStartupActionsBeforeServingRequests();
             
             app.UseCsp(csp => {
                 csp.ByDefaultAllow.FromSelf()
