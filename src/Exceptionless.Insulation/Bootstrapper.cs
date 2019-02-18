@@ -78,7 +78,6 @@ namespace Exceptionless.Insulation {
             RegisterStorage(services, storageOptions);
 
             var healthCheckBuilder = RegisterHealthChecks(services, cacheOptions, messageBusOptions, metricOptions, storageOptions, queueOptions);
-            services.AddStartupAction<MessageBusHealthCheck>();
 
             if (appOptions.AppMode != AppMode.Development) {
                 services.ReplaceSingleton<IMailSender, MailKitMailSender>();
@@ -93,7 +92,6 @@ namespace Exceptionless.Insulation {
                 .AddCheckForStartupActionsComplete()
                 .AddCheck<ElasticsearchHealthCheck>("Elasticsearch", "Elasticsearch", "Critical", "Liveness")
                 .AddCheck<CacheHealthCheck>("Cache", "Cache", "Critical", "Liveness", cacheOptions.Provider)
-                .AddCheck<MessageBusHealthCheck>("MessageBus" ,"MessageBus", "Critical", "Liveness", messageBusOptions.Provider)
                 .AddCheck<MetricHealthCheck>("Metric", "Metric", "Critical", "Liveness", metricOptions.Provider)
                 .AddCheck<StorageHealthCheck>("Storage", "Storage", "All", "EventPosts", "DownloadGeoipDatabase", storageOptions.Provider)
                 
