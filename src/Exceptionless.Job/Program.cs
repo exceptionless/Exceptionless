@@ -12,6 +12,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Insulation.Configuration;
+using Foundatio.Hosting;
 using Foundatio.Hosting.Jobs;
 using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
@@ -25,21 +26,25 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.AspNetCore;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
 
 namespace Exceptionless.Job {
     public class Program {
+        private static Microsoft.Extensions.Logging.ILogger _logger;
+        
         public static async Task<int> Main(string[] args) {
             try {
-                CreateWebHostBuilder(args).RunJobHost();
+                await CreateWebHostBuilder(args).Build().RunAsync(_logger);
                 return 0;
             } catch (Exception ex) {
-                Log.Fatal(ex, "Job host terminated unexpectedly");
+                _logger.LogCritical(ex, "Job host terminated unexpectedly");
                 return 1;
             } finally {
                 Log.CloseAndFlush();
                 await ExceptionlessClient.Default.ProcessQueueAsync();
+                
                 if (Debugger.IsAttached)
                     Console.ReadKey();
             }
@@ -73,9 +78,11 @@ namespace Exceptionless.Job {
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
-            Log.Logger = loggerConfig.CreateLogger();
+            var loggerFactory = new SerilogLoggerFactory(loggerConfig.CreateLogger());
+            _logger = loggerFactory.CreateLogger<Program>();
+            
             var configDictionary = config.ToDictionary("Serilog");
-            Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
+            _logger.LogInformation("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
 
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
 
@@ -85,10 +92,10 @@ namespace Exceptionless.Job {
                     c.AddServerHeader = false;
                     c.AllowSynchronousIO = false;
                 })
-                .UseSerilog(Log.Logger)
                 .SuppressStatusMessages(true)
                 .UseConfiguration(config)
                 .ConfigureServices(s => {
+                    s.AddSingleton<ILoggerFactory>(loggerFactory);
                     s.AddHttpContextAccessor();
                     
                     AddJobs(s, jobOptions);
@@ -101,7 +108,6 @@ namespace Exceptionless.Job {
                     Insulation.Bootstrapper.RegisterServices(serviceProvider, s, options, true);
                 })
                 .Configure(app => {
-                    var loggerFactory = app.ApplicationServices.GetRequiredService<ILoggerFactory>();
                     Bootstrapper.LogConfiguration(app.ApplicationServices, options, loggerFactory);
 
                     if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
@@ -112,11 +118,11 @@ namespace Exceptionless.Job {
                     });
 
                     app.UseHealthChecks("/ready", new HealthCheckOptions {
-                        Predicate = hcr => hcr.Tags.Contains("Readiness") || hcr.Tags.Contains(jobOptions.JobName)
+                        Predicate = hcr => hcr.Tags.Contains("Critical") || hcr.Tags.Contains(jobOptions.JobName)
                     });
 
                     if (options.EnableBootstrapStartupActions)
-                        app.UseStartupMiddleware();
+                        app.UseWaitForStartupActionsBeforeServingRequests();
                     
                     app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobOptions.JobName}"));
                 });
@@ -131,39 +137,41 @@ namespace Exceptionless.Job {
             return builder;
         }
 
-        private static void AddJobs(IServiceCollection serviceCollection, JobRunnerOptions options) {
+        private static void AddJobs(IServiceCollection services, JobRunnerOptions options) {
+            services.AddJobLifetimeService();
+            
             if (options.CleanupSnapshot)
-                serviceCollection.AddJob<CleanupSnapshotJob>(true);
+                services.AddJob<CleanupSnapshotJob>(true);
             if (options.CloseInactiveSessions)
-                serviceCollection.AddJob<CloseInactiveSessionsJob>(true);
+                services.AddJob<CloseInactiveSessionsJob>(true);
             if (options.DailySummary)
-                serviceCollection.AddJob<DailySummaryJob>(true);
+                services.AddJob<DailySummaryJob>(true);
             if (options.DownloadGeoipDatabase)
-                serviceCollection.AddJob<DownloadGeoIPDatabaseJob>(true);
+                services.AddJob<DownloadGeoIPDatabaseJob>(true);
             if (options.EventNotifications)
-                serviceCollection.AddJob<EventNotificationsJob>(true);
+                services.AddJob<EventNotificationsJob>(true);
             if (options.EventPosts)
-                serviceCollection.AddJob<EventPostsJob>(true);
+                services.AddJob<EventPostsJob>(true);
             if (options.EventSnapshot)
-                serviceCollection.AddJob<EventSnapshotJob>(true);
+                services.AddJob<EventSnapshotJob>(true);
             if (options.EventUserDescriptions)
-                serviceCollection.AddJob<EventUserDescriptionsJob>(true);
+                services.AddJob<EventUserDescriptionsJob>(true);
             if (options.MailMessage)
-                serviceCollection.AddJob<MailMessageJob>(true);
+                services.AddJob<MailMessageJob>(true);
             if (options.MaintainIndexes)
-                serviceCollection.AddJob<MaintainIndexesJob>(true);
+                services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
             if (options.OrganizationSnapshot)
-                serviceCollection.AddJob<OrganizationSnapshotJob>(true);
+                services.AddJob<OrganizationSnapshotJob>(true);
             if (options.RetentionLimits)
-                serviceCollection.AddJob<RetentionLimitsJob>(true);
+                services.AddJob<RetentionLimitsJob>(true);
             if (options.StackEventCount)
-                serviceCollection.AddJob<StackEventCountJob>(true);
+                services.AddJob<StackEventCountJob>(true);
             if (options.StackSnapshot)
-                serviceCollection.AddJob<StackSnapshotJob>(true);
+                services.AddJob<StackSnapshotJob>(true);
             if (options.WebHooks)
-                serviceCollection.AddJob<WebHooksJob>(true);
+                services.AddJob<WebHooksJob>(true);
             if (options.WorkItem)
-                serviceCollection.AddJob<WorkItemJob>(true);
+                services.AddJob<WorkItemJob>(true);
         }
 
         private static void ConfigureMetricsReporting(IWebHostBuilder builder, MetricOptions options) {

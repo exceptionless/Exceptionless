@@ -1,11 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Security.Claims;
-using System.Threading;
-using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
@@ -127,7 +124,7 @@ namespace Exceptionless.Web {
                 Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Liveness") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
             });
             app.UseHealthChecks("/ready", new HealthCheckOptions {
-                Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Readiness") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
+                Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Critical") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
             });
 
             app.UseCsp(csp => {
@@ -167,7 +164,7 @@ namespace Exceptionless.Web {
             app.UseAuthentication();
             
             if (options.EnableBootstrapStartupActions)
-                app.UseStartupMiddleware();
+                app.UseWaitForStartupActionsBeforeServingRequests();
             
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
