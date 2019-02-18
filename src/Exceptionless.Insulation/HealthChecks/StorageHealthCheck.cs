@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Foundatio.Storage;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ namespace Exceptionless.Insulation.HealthChecks {
             var sw = Stopwatch.StartNew();
             
             try {
-                await _storage.GetPagedFileListAsync(1, cancellationToken: cancellationToken);
+                await _storage.GetPagedFileListAsync(1, cancellationToken: cancellationToken).AnyContext();
             } catch (Exception ex) {
                 return HealthCheckResult.Unhealthy("Storage Not Working.", ex);
             } finally {
