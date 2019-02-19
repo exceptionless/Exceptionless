@@ -19,9 +19,9 @@ namespace Exceptionless.Job {
             if (DailySummary && args.Length != 0)
                 JobName = "DailySummary";
 
-            DownloadGeoipDatabase = args.Length == 0 || args.Contains("DownloadGeoipDatabase", StringComparer.OrdinalIgnoreCase);
+            DownloadGeoipDatabase = args.Length == 0 || args.Contains("DownloadGeoIPDatabase", StringComparer.OrdinalIgnoreCase);
             if (DownloadGeoipDatabase && args.Length != 0)
-                JobName = "DownloadGeoipDatabase";
+                JobName = "DownloadGeoIPDatabase";
 
             EventNotifications = args.Length == 0 || args.Contains("EventNotifications", StringComparer.OrdinalIgnoreCase);
             if (EventNotifications && args.Length != 0)

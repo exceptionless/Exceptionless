@@ -119,12 +119,13 @@ namespace Exceptionless.Web {
 
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
-                
+
             app.UseHealthChecks("/health", new HealthCheckOptions {
-                Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Liveness") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
+                Predicate = hcr => options.RunJobsInProcess && hcr.Tags.Contains("AllJobs")
             });
+
             app.UseHealthChecks("/ready", new HealthCheckOptions {
-                Predicate = hcr => options.RunJobsInProcess || hcr.Tags.Contains("Critical") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
+                Predicate = hcr => hcr.Tags.Contains("Critical")
             });
 
             app.UseWaitForStartupActionsBeforeServingRequests();
