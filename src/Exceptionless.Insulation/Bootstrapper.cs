@@ -81,7 +81,7 @@ namespace Exceptionless.Insulation {
 
             if (appOptions.AppMode != AppMode.Development) {
                 services.ReplaceSingleton<IMailSender, MailKitMailSender>();
-                healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "Liveness", "MailMessage" }));
+                healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "MailMessage", "AllJobs" }));
             }
         }
 
@@ -93,7 +93,7 @@ namespace Exceptionless.Insulation {
 
                 .AddAutoNamedCheck<ElasticsearchHealthCheck>("Critical")
                 .AddAutoNamedCheck<CacheHealthCheck>("Critical")
-                .AddAutoNamedCheck<StorageHealthCheck>("Critical")
+                .AddAutoNamedCheck<StorageHealthCheck>("EventPosts", "AllJobs")
                 
                 .AddAutoNamedCheck<QueueHealthCheck<EventPost>>("EventPosts", "AllJobs")
                 .AddAutoNamedCheck<QueueHealthCheck<EventUserDescription>>("EventUserDescriptions", "AllJobs")

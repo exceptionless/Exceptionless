@@ -18,9 +18,7 @@ namespace Exceptionless.Insulation.HealthChecks {
             if (name.EndsWith("Job", StringComparison.OrdinalIgnoreCase))
                 name = name.Substring(0, name.Length - 3);
 
-            var allTags = new List<string>(tags);
-            allTags.Add(name);
-
+            var allTags = new List<string>(tags) { name };
             return builder.AddCheck<T>(name, null, allTags);
         }
     }

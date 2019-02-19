@@ -125,7 +125,7 @@ namespace Exceptionless.Web {
             });
 
             app.UseHealthChecks("/ready", new HealthCheckOptions {
-                Predicate = hcr => hcr.Tags.Contains("Critical")
+                Predicate = hcr => hcr.Tags.Contains("Critical") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
             });
 
             app.UseWaitForStartupActionsBeforeServingRequests();
