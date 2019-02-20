@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
@@ -11,16 +10,18 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Deletes old events that are outside of a plans retention period.", InitialDelay = "15m", Interval = "1h")]
-    public class RetentionLimitsJob : JobWithLockBase {
+    public class RetentionLimitsJob : JobWithLockBase, IHealthCheck {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IOptions<AppOptions> _appOptions;
         private readonly ILockProvider _lockProvider;
+        private DateTime? _lastRun;
 
         public RetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ICacheClient cacheClient, IOptions<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _organizationRepository = organizationRepository;
@@ -34,6 +35,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+            _lastRun = SystemClock.UtcNow;
             var results = await _organizationRepository.GetByRetentionDaysEnabledAsync(o => o.SnapshotPaging().PageLimit(100)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in results.Documents) {
@@ -48,8 +50,10 @@ namespace Exceptionless.Core.Jobs {
                 if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
                     break;
 
-                if (results.Documents.Count > 0)
+                if (results.Documents.Count > 0) {
                     await context.RenewLockAsync().AnyContext();
+                    _lastRun = SystemClock.UtcNow;
+                }
             }
 
             return JobResult.Success;
@@ -68,6 +72,16 @@ namespace Exceptionless.Core.Jobs {
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error enforcing limits: org={OrganizationName} id={organization} message={Message}", organization.Name, organization.Id, ex.Message);
             }
+        }
+
+        public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+            if (!_lastRun.HasValue)
+                return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
+
+            if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(65))
+                return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 65 minutes."));
+
+            return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 65 minutes."));
         }
     }
 }

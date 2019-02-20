@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Amazon;
@@ -13,13 +13,17 @@ using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
+using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
+using Exceptionless.Insulation.HealthChecks;
 using Exceptionless.Insulation.Mail;
 using Exceptionless.Insulation.Redis;
 using Foundatio.Caching;
+using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
@@ -28,6 +32,7 @@ using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog.Sinks.Exceptionless;
@@ -57,14 +62,52 @@ namespace Exceptionless.Insulation {
             if (!String.IsNullOrEmpty(appOptions.GoogleGeocodingApiKey))
                 services.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(appOptions.GoogleGeocodingApiKey));
 
-            RegisterCache(services, serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value);
-            RegisterMessageBus(services, serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>().Value);
-            RegisterMetric(services, serviceProvider.GetRequiredService<IOptions<MetricOptions>>().Value);
-            RegisterQueue(services, serviceProvider.GetRequiredService<IOptions<QueueOptions>>().Value, runMaintenanceTasks);
-            RegisterStorage(services, serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value);
+            var cacheOptions = serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value;
+            RegisterCache(services, cacheOptions);
 
-            if (appOptions.AppMode != AppMode.Development)
+            var messageBusOptions = serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>().Value;
+            RegisterMessageBus(services, messageBusOptions);
+
+            var metricOptions = serviceProvider.GetRequiredService<IOptions<MetricOptions>>().Value;
+            RegisterMetric(services, metricOptions);
+
+            var queueOptions = serviceProvider.GetRequiredService<IOptions<QueueOptions>>().Value;
+            RegisterQueue(services, queueOptions, runMaintenanceTasks);
+
+            var storageOptions = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
+            RegisterStorage(services, storageOptions);
+
+            var healthCheckBuilder = RegisterHealthChecks(services, cacheOptions, messageBusOptions, metricOptions, storageOptions, queueOptions);
+
+            if (appOptions.AppMode != AppMode.Development) {
                 services.ReplaceSingleton<IMailSender, MailKitMailSender>();
+                healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "MailMessage", "AllJobs" }));
+            }
+        }
+
+        private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services, CacheOptions cacheOptions, MessageBusOptions messageBusOptions, MetricOptions metricOptions, StorageOptions storageOptions, QueueOptions queueOptions) {
+            services.AddStartupActionToWaitForHealthChecks();
+
+            return services.AddHealthChecks()
+                .AddCheckForStartupActionsComplete()
+
+                .AddAutoNamedCheck<ElasticsearchHealthCheck>("Critical")
+                .AddAutoNamedCheck<CacheHealthCheck>("Critical")
+                .AddAutoNamedCheck<StorageHealthCheck>("EventPosts", "AllJobs")
+                
+                .AddAutoNamedCheck<QueueHealthCheck<EventPost>>("EventPosts", "AllJobs")
+                .AddAutoNamedCheck<QueueHealthCheck<EventUserDescription>>("EventUserDescriptions", "AllJobs")
+                .AddAutoNamedCheck<QueueHealthCheck<EventNotificationWorkItem>>("EventNotifications", "AllJobs")
+                .AddAutoNamedCheck<QueueHealthCheck<WebHookNotification>>("WebHooks", "AllJobs")
+                .AddAutoNamedCheck<QueueHealthCheck<MailMessage>>("AllJobs")
+                .AddAutoNamedCheck<QueueHealthCheck<WorkItemData>>("WorkItem", "AllJobs")
+
+                .AddAutoNamedCheck<CloseInactiveSessionsJob>("AllJobs")
+                .AddAutoNamedCheck<DailySummaryJob>("AllJobs")
+                .AddAutoNamedCheck<DownloadGeoIPDatabaseJob>("AllJobs")
+                .AddAutoNamedCheck<MaintainIndexesJob>("AllJobs")
+                .AddAutoNamedCheck<RetentionLimitsJob>("AllJobs")
+                .AddAutoNamedCheck<StackEventCountJob>("AllJobs");
         }
 
         private static void RegisterCache(IServiceCollection container, CacheOptions options) {

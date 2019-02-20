@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using App.Metrics;
 using App.Metrics.AspNetCore;
 using App.Metrics.Formatters;
@@ -9,42 +11,52 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web.Utility;
+using Foundatio.Hosting;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.AspNetCore;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
 
 namespace Exceptionless.Web {
     public class Program {
-        public static int Main(string[] args) {
+        private static Microsoft.Extensions.Logging.ILogger _logger;
+        
+        public static async Task<int> Main(string[] args) {
             try {
-                CreateWebHostBuilder(args).Build().Run();
+                await CreateWebHostBuilder(args).Build().RunAsync(_logger);
                 return 0;
             } catch (Exception ex) {
-                Log.Fatal(ex, "Host terminated unexpectedly");
+                _logger.LogCritical(ex, "Job host terminated unexpectedly");
                 return 1;
             } finally {
                 Log.CloseAndFlush();
-                ExceptionlessClient.Default.ProcessQueue();
+                await ExceptionlessClient.Default.ProcessQueueAsync();
+                
+                if (Debugger.IsAttached)
+                    Console.ReadKey();
             }
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) {
-            string environment = Environment.GetEnvironmentVariable("AppMode");
+            string environment = Environment.GetEnvironmentVariable("EX_AppMode");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
+
+            Console.Title = "Exceptionless Web";
 
             string currentDirectory = Directory.GetCurrentDirectory();
             var config = new ConfigurationBuilder()
                 .SetBasePath(currentDirectory)
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables()
+                .AddEnvironmentVariables("EX_")
                 .AddCommandLine(args)
                 .Build();
 
@@ -59,26 +71,30 @@ namespace Exceptionless.Web {
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
-            Log.Logger = loggerConfig.CreateLogger();
-            var configDictionary = config.ToDictionary();
-            Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
+            var loggerFactory = new SerilogLoggerFactory(loggerConfig.CreateLogger());
+            _logger = loggerFactory.CreateLogger<Program>();
+            
+            var configDictionary = config.ToDictionary("Serilog");
+            _logger.LogInformation("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
 
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
 
             var builder = WebHost.CreateDefaultBuilder(args)
                 .UseEnvironment(environment)
-                .UseKestrel(c => {
+                .ConfigureKestrel(c => {
                     c.AddServerHeader = false;
+                    // c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
+                    
                     if (options.MaximumEventPostSize > 0)
                         c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
                 })
-                .UseSerilog(Log.Logger)
-                .SuppressStatusMessages(true)
                 .UseConfiguration(config)
                 .ConfigureServices(s => {
+                    s.AddSingleton<ILoggerFactory>(loggerFactory);
+                    s.AddHttpContextAccessor();
+                    
                     if (useApplicationInsights) {
                         s.AddSingleton<ITelemetryInitializer, ExceptionlessTelemetryInitializer>();
-                        s.AddHttpContextAccessor();
                         s.AddApplicationInsightsTelemetry();
                     }
                 })

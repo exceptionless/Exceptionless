@@ -6,12 +6,13 @@
     <PackageReference Include="App.Metrics.Reporting.Graphite" Version="3.0.0" />
     <PackageReference Include="App.Metrics.Reporting.Http" Version="3.0.0" />
     <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="3.0.0" />
-    <PackageReference Include="Foundatio.Aliyun" Version="7.2.37-pre" />
-    <PackageReference Include="Foundatio.AppMetrics" Version="7.2.1887-pre" />
-    <PackageReference Include="Foundatio.AWS" Version="7.2.1521-pre" />
-    <PackageReference Include="Foundatio.AzureStorage" Version="7.2.1518-pre" />
-    <PackageReference Include="Foundatio.Minio" Version="7.2.38-pre" />
-    <PackageReference Include="Foundatio.Redis" Version="7.2.1617-pre" />
+    <PackageReference Include="Foundatio.Aliyun" Version="7.2.38-pre" />
+    <PackageReference Include="Foundatio.AppMetrics" Version="7.2.1932-pre" />
+    <PackageReference Include="Foundatio.AWS" Version="7.2.1522-pre" />
+    <PackageReference Include="Foundatio.AzureStorage" Version="7.2.1520-pre" />
+    <PackageReference Include="Foundatio.Hosting" Version="7.2.1932-pre" />
+    <PackageReference Include="Foundatio.Minio" Version="7.2.39-pre" />
+    <PackageReference Include="Foundatio.Redis" Version="7.2.1618-pre" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MailKit" Version="2.1.2" />
     <PackageReference Include="MimeKit" Version="2.1.2" />
@@ -19,13 +20,15 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.2.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="2.0.2" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.0.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="3.1.0" />
-    <PackageReference Include="YamlDotNet" Version="5.3.0" />
+    <PackageReference Include="YamlDotNet" Version="5.4.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj" />

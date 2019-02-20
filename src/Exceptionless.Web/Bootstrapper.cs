@@ -12,13 +12,13 @@ using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
+using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Stripe;
+using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Web {
     public class Bootstrapper {
@@ -39,7 +39,7 @@ namespace Exceptionless.Web {
             Insulation.Bootstrapper.RegisterServices(serviceProvider, services, options, options.RunJobsInProcess);
 
             if (options.RunJobsInProcess)
-                services.AddSingleton<IHostedService, JobsHostedService>();
+                Core.Bootstrapper.AddHostedJobs(services, loggerFactory);
 
             var logger = loggerFactory.CreateLogger<Startup>();
             services.AddStartupAction<MessageBusBroker>();
@@ -67,7 +67,7 @@ namespace Exceptionless.Web {
                     vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
                 });
 
-                CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
+                CreateMap<Stripe.Invoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
 
                 CreateMap<NewProject, Project>();
                 CreateMap<Project, ViewProject>().AfterMap((p, vp) => vp.HasSlackIntegration = p.Data.ContainsKey(Project.KnownDataKeys.SlackToken));

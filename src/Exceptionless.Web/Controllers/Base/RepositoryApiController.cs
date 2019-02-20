@@ -106,8 +106,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         protected virtual async Task<PermissionResult> CanAddAsync(TModel value) {
-            var orgModel = value as IOwnedByOrganization;
-            if (_isOrganization || orgModel == null)
+            if (_isOrganization || !(value is IOwnedByOrganization orgModel))
                 return PermissionResult.Allow;
 
             if (!CanAccessOrganization(orgModel.OrganizationId))

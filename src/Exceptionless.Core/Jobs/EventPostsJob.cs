@@ -18,7 +18,6 @@ using Foundatio.Jobs;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -63,7 +62,7 @@ namespace Exceptionless.Core.Jobs {
             var entry = context.QueueEntry;
             var ep = entry.Value;
             string payloadPath = Path.ChangeExtension(entry.Value.FilePath, ".payload");
-            var payloadTask = _metrics.TimeAsync(() => _eventPostService.GetEventPostPayloadAsync(payloadPath, context.CancellationToken), MetricNames.PostsMarkFileActiveTime);
+            var payloadTask = _metrics.TimeAsync(() => _eventPostService.GetEventPostPayloadAsync(payloadPath), MetricNames.PostsMarkFileActiveTime);
             var projectTask = _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache());
             var organizationTask = _organizationRepository.GetByIdAsync(ep.OrganizationId, o => o.Cache());
 
@@ -128,7 +127,7 @@ namespace Exceptionless.Core.Jobs {
                 }
 
                 var createdUtc = SystemClock.UtcNow;
-                var events = ParseEventPost(ep, payload, createdUtc, uncompressedData, entry.Id, isInternalProject);
+                var events = ParseEventPost(ep, createdUtc, uncompressedData, entry.Id, isInternalProject);
                 if (events == null || events.Count == 0) {
                     await Task.WhenAll(CompleteEntryAsync(entry, ep, createdUtc), organizationTask).AnyContext();
                     return JobResult.Success;
@@ -217,7 +216,7 @@ namespace Exceptionless.Core.Jobs {
             }
         }
 
-        private List<PersistentEvent> ParseEventPost(EventPostInfo ep, byte[] data, DateTime createdUtc, byte[] uncompressedData, string queueEntryId, bool isInternalProject) {
+        private List<PersistentEvent> ParseEventPost(EventPostInfo ep, DateTime createdUtc, byte[] uncompressedData, string queueEntryId, bool isInternalProject) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("parsing"))) {
                 if (!isInternalProject && _logger.IsEnabled(LogLevel.Debug))
                     _logger.LogDebug("Parsing EventPost: {QueueEntryId}", queueEntryId);

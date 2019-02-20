@@ -120,7 +120,7 @@ namespace Exceptionless {
             return null;
         }
 
-        public static bool UpdateSessionStart(this PersistentEvent ev, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false) {
+        public static bool UpdateSessionStart(this PersistentEvent ev, DateTime lastActivityUtc, bool isSessionEnd = false) {
             if (ev == null || !ev.IsSessionStart())
                 return false;
 

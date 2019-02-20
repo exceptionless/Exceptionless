@@ -1,18 +1,14 @@
 ﻿using System;
 using System.IO;
 using System.Security.Claims;
-using System.Threading;
-using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Cors.Internal;
@@ -22,6 +18,8 @@ using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
+using Foundatio.Hosting.Startup;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web {
@@ -104,7 +102,7 @@ namespace Exceptionless.Web {
                 
                 c.IgnoreObsoleteActions();
             });
-
+            
             Bootstrapper.RegisterServices(services, LoggerFactory);
             services.AddSingleton(s => {
                 var settings = s.GetRequiredService<IOptions<AppOptions>>().Value;
@@ -115,13 +113,23 @@ namespace Exceptionless.Web {
             });
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
-            var settings = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
-            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, settings, LoggerFactory);
+        public void Configure(IApplicationBuilder app) {
+            var options = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
+            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, LoggerFactory);
 
-            if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey) && !String.IsNullOrEmpty(settings.ExceptionlessServerUrl))
+            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
 
+            app.UseHealthChecks("/health", new HealthCheckOptions {
+                Predicate = hcr => options.RunJobsInProcess && hcr.Tags.Contains("AllJobs")
+            });
+
+            app.UseHealthChecks("/ready", new HealthCheckOptions {
+                Predicate = hcr => hcr.Tags.Contains("Critical") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
+            });
+
+            app.UseWaitForStartupActionsBeforeServingRequests();
+            
             app.UseCsp(csp => {
                 csp.ByDefaultAllow.FromSelf()
                     .From("https://js.stripe.com");
@@ -157,10 +165,12 @@ namespace Exceptionless.Web {
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
             app.UseAuthentication();
+            
+            
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
 
-            if (settings.ApiThrottleLimit < Int32.MaxValue) {
+            if (options.ApiThrottleLimit < Int32.MaxValue) {
                 // Throttle api calls to X every 15 minutes by IP address.
                 app.UseMiddleware<ThrottlingMiddleware>();
             }
@@ -178,24 +188,9 @@ namespace Exceptionless.Web {
                 s.InjectStylesheet("/docs.css");
             });
 
-            if (settings.EnableWebSockets) {
+            if (options.EnableWebSockets) {
                 app.UseWebSockets();
                 app.UseMiddleware<MessageBusBrokerMiddleware>();
-            }
-
-            // run startup actions registered in the container
-            if (settings.EnableBootstrapStartupActions) {
-                var lifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
-                lifetime.ApplicationStarted.Register(() => {
-                    var shutdownSource = new CancellationTokenSource();
-                    Console.CancelKeyPress += (sender, args) => {
-                        shutdownSource.Cancel();
-                        args.Cancel = true;
-                    };
-
-                    var combined = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping, shutdownSource.Token);
-                    app.ApplicationServices.RunStartupActionsAsync(combined.Token).GetAwaiter().GetResult();
-                });
             }
         }
     }
