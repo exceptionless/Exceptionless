@@ -43,7 +43,7 @@ namespace Exceptionless.Web {
 
             var logger = loggerFactory.CreateLogger<Startup>();
             services.AddStartupAction<MessageBusBroker>();
-            services.AddStartupAction((sp, ct) => {
+            services.AddStartupAction("Subscribe to Log Work Item Progress", (sp, ct) => {
                 var subscriber = sp.GetRequiredService<IMessageSubscriber>();
                 return subscriber.SubscribeAsync<WorkItemStatus>(workItemStatus => {
                     if (logger.IsEnabled(LogLevel.Trace))
