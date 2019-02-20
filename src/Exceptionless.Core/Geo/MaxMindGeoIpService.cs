@@ -8,7 +8,6 @@ using Foundatio.Storage;
 using Foundatio.Utility;
 using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
-using MaxMind.GeoIP2.Responses;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Geo {

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Configuration;
@@ -116,7 +115,7 @@ namespace Exceptionless.Core.Jobs {
                     bool processed;
                     switch (kv.Key) {
                         case Project.NotificationIntegrations.Slack:
-                            processed = await _slackService.SendEventNoticeAsync(ev, project, wi.IsNew, wi.IsRegression, wi.TotalOccurrences).AnyContext();
+                            processed = await _slackService.SendEventNoticeAsync(ev, project, wi.IsNew, wi.IsRegression).AnyContext();
                             break;
                         default:
                             processed = await SendEmailNotificationAsync(kv.Key, project, ev, wi, shouldLog).AnyContext();

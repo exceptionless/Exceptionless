@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Web.Extensions;
-using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;

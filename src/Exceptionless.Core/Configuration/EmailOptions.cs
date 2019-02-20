@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Configuration {
 
         public void Configure(EmailOptions options) {
             options.EnableDailySummary = _configuration.GetValue(nameof(options.EnableDailySummary), _appOptions.Value.AppMode == AppMode.Production);
-            options.AllowedOutboundAddresses = _configuration.GetValueList(nameof(options.AllowedOutboundAddresses), "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
+            options.AllowedOutboundAddresses = _configuration.GetValueList(nameof(options.AllowedOutboundAddresses)).Select(v => v.ToLowerInvariant()).ToList();
             options.TestEmailAddress = _configuration.GetValue(nameof(options.TestEmailAddress), "noreply@exceptionless.io");
 
             var uri = new SmtpUri(_configuration.GetConnectionString("Email") ?? "smtp://localhost");

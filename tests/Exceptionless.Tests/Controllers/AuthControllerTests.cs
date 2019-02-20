@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Exceptionless.Web.Models;
 using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Extensions;
-using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
@@ -25,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
             : base(configuration.Stacks.Stack, validator, options) {
             _eventRepository = eventRepository;
             DocumentsChanging.AddHandler(OnDocumentChangingAsync);
-            FieldsRequiredForRemove.Add(ElasticType.GetFieldName(s => s.SignatureHash));
+            AddPropertyRequiredForRemove(s => s.SignatureHash);
         }
 
         private async Task OnDocumentChangingAsync(object sender, DocumentsChangeEventArgs<Stack> args) {

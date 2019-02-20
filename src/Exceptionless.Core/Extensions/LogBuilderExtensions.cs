@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Microsoft.Extensions.Logging {
     public class ExceptionlessState : Dictionary<string, object> {

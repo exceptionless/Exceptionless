@@ -53,8 +53,6 @@ namespace Exceptionless.Core {
 
         public string ApplicationInsightsKey { get; internal set; }
 
-        public bool EnableBootstrapStartupActions { get; internal set; }
-
         public bool EnableRepositoryNotifications { get; internal set; }
 
         public bool EnableWebSockets { get; internal set; }
@@ -89,8 +87,8 @@ namespace Exceptionless.Core {
             options.ApiThrottleLimit = _configuration.GetValue(nameof(options.ApiThrottleLimit), options.AppMode == AppMode.Development ? Int32.MaxValue : 3500).NormalizeValue();
             options.EnableArchive = _configuration.GetValue(nameof(options.EnableArchive), true);
             options.EventSubmissionDisabled = _configuration.GetValue(nameof(options.EventSubmissionDisabled), false);
-            options.DisabledPipelineActions = _configuration.GetValueList(nameof(options.DisabledPipelineActions), String.Empty);
-            options.DisabledPlugins = _configuration.GetValueList(nameof(options.DisabledPlugins), String.Empty);
+            options.DisabledPipelineActions = _configuration.GetValueList(nameof(options.DisabledPipelineActions));
+            options.DisabledPlugins = _configuration.GetValueList(nameof(options.DisabledPlugins));
             options.MaximumEventPostSize = _configuration.GetValue(nameof(options.MaximumEventPostSize), 200000).NormalizeValue();
             options.MaximumRetentionDays = _configuration.GetValue(nameof(options.MaximumRetentionDays), 180).NormalizeValue();
             options.ApplicationInsightsKey = _configuration.GetValue<string>(nameof(options.ApplicationInsightsKey));
@@ -98,10 +96,9 @@ namespace Exceptionless.Core {
             options.GoogleGeocodingApiKey = _configuration.GetValue<string>(nameof(options.GoogleGeocodingApiKey));
 
             options.BulkBatchSize = _configuration.GetValue(nameof(options.BulkBatchSize), 1000);
-
+            
             options.EnableRepositoryNotifications = _configuration.GetValue(nameof(options.EnableRepositoryNotifications), true);
             options.EnableWebSockets = _configuration.GetValue(nameof(options.EnableWebSockets), true);
-            options.EnableBootstrapStartupActions = _configuration.GetValue(nameof(options.EnableBootstrapStartupActions), true);
 
             try {
                 var versionInfo = FileVersionInfo.GetVersionInfo(typeof(AppOptions).Assembly.Location);

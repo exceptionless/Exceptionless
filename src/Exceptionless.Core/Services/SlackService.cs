@@ -11,6 +11,7 @@ using Foundatio.Queues;
 using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+// ReSharper disable InconsistentNaming
 
 namespace Exceptionless.Core.Services {
     public class SlackService {
@@ -112,7 +113,7 @@ namespace Exceptionless.Core.Services {
             return _webHookNotificationQueue.EnqueueAsync(notification);
         }
 
-        public async Task<bool> SendEventNoticeAsync(PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
+        public async Task<bool> SendEventNoticeAsync(PersistentEvent ev, Project project, bool isNew, bool isRegression) {
             var token = project.GetSlackToken();
             if (token?.IncomingWebhook?.Url == null)
                 return false;

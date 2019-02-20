@@ -7,24 +7,21 @@ using Elasticsearch.Net;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
-using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
 using Foundatio.Caching;
+using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
-using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
-        private CancellationToken _shutdownToken;
         private readonly IOptions<ElasticsearchOptions> _options;
         private readonly IOptions<AppOptions> _appOptions;
 
@@ -42,7 +39,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
             if (_options.Value.DisableIndexConfiguration)
                 return Task.CompletedTask;
 
-            _shutdownToken = shutdownToken;
             return ConfigureIndexesAsync();
         }
 
@@ -58,8 +54,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public EventIndex Events { get; }
         public OrganizationIndex Organizations { get; }
 
-        private static Lazy<DateTime> _maxWaitTime = new Lazy<DateTime>(() => SystemClock.UtcNow.AddMinutes(1));
-        private static bool _isFirstAttempt = true;
         protected override IElasticClient CreateElasticClient() {
             var connectionPool = CreateConnectionPool();
             var settings = new ConnectionSettings(connectionPool, s => new ElasticsearchJsonNetSerializer(s, _logger));
@@ -68,26 +62,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 index.ConfigureSettings(settings);
 
             var client = new ElasticClient(settings);
-            var nodes = connectionPool.Nodes.Select(n => n.Uri.ToString());
-            var startTime = SystemClock.UtcNow;
-            if (SystemClock.UtcNow > _maxWaitTime.Value || !_isFirstAttempt)
-                return client;
-            
-            while (!_shutdownToken.IsCancellationRequested && !client.Ping().IsValid) {
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("Waiting for Elasticsearch {Server} after {Duration:g}...", nodes, SystemClock.UtcNow.Subtract(startTime));
-
-                if (SystemClock.UtcNow > _maxWaitTime.Value) {
-                    if (_logger.IsEnabled(LogLevel.Error))
-                        _logger.LogError("Unable to connect to Elasticsearch {Server} after attempting for {Duration:g}", nodes, SystemClock.UtcNow.Subtract(startTime));
-                    
-                    break;
-                }
-
-                Thread.Sleep(1000);
-            }
-            _isFirstAttempt = true;
-
             return client;
         }
 

@@ -4,15 +4,12 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Core.Utility;
 using Exceptionless.Web.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
-using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -23,7 +20,6 @@ namespace Exceptionless.Web.Controllers {
     public class StatusController : ExceptionlessApiController {
         private readonly ICacheClient _cacheClient;
         private readonly IMessagePublisher _messagePublisher;
-        private readonly SystemHealthChecker _healthChecker;
         private readonly IQueue<EventPost> _eventQueue;
         private readonly IQueue<MailMessage> _mailQueue;
         private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
@@ -31,23 +27,17 @@ namespace Exceptionless.Web.Controllers {
         private readonly IQueue<EventUserDescription> _userDescriptionQueue;
         private readonly IOptions<AppOptions> _appOptions;
 
-        private static HealthCheckResult _lastHealthCheckResult;
-        private static DateTime _nextHealthCheckTimeUtc = DateTime.MinValue;
-
         public StatusController(
             ICacheClient cacheClient,
             IMessagePublisher messagePublisher,
-            SystemHealthChecker healthChecker,
             IQueue<EventPost> eventQueue,
             IQueue<MailMessage> mailQueue,
             IQueue<EventNotificationWorkItem> notificationQueue,
             IQueue<WebHookNotification> webHooksQueue,
             IQueue<EventUserDescription> userDescriptionQueue,
-            IMetricsClient metricsClient,
             IOptions<AppOptions> appOptions) {
             _cacheClient = cacheClient;
             _messagePublisher = messagePublisher;
-            _healthChecker = healthChecker;
             _eventQueue = eventQueue;
             _mailQueue = mailQueue;
             _notificationQueue = notificationQueue;
@@ -57,22 +47,12 @@ namespace Exceptionless.Web.Controllers {
         }
 
         /// <summary>
-        /// Get the status of the API
+        /// Get the info of the API
         /// </summary>
-        /// <response code="503">Contains a message detailing the service outage message.</response>
         [AllowAnonymous]
-        [HttpGet("status")]
-        public async Task<IActionResult> IndexAsync() {
-            if (_lastHealthCheckResult == null || _nextHealthCheckTimeUtc < SystemClock.UtcNow) {
-                _nextHealthCheckTimeUtc = SystemClock.UtcNow.AddSeconds(5);
-                _lastHealthCheckResult = await _healthChecker.CheckAllAsync();
-            }
-
-            if (!_lastHealthCheckResult.IsHealthy)
-                return StatusCodeWithMessage(StatusCodes.Status503ServiceUnavailable, _lastHealthCheckResult.Message, _lastHealthCheckResult.Message);
-
+        [HttpGet("about")]
+        public IActionResult IndexAsync() {
             return Ok(new {
-                Message = "All Systems Check",
                 _appOptions.Value.InformationalVersion,
                 AppMode = _appOptions.Value.AppMode.ToString(),
                 Environment.MachineName

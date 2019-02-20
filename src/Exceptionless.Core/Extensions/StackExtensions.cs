@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Extensions {
             stack.FixedInVersion = version?.ToString();
         }
 
-        public static void MarkNotFixed(this Stack stack, string version = null) {
+        public static void MarkNotFixed(this Stack stack) {
             stack.IsRegressed = false;
             stack.DateFixed = null;
             stack.FixedInVersion = null;

@@ -1,21 +1,25 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Utility;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Insulation.Mail {
-    public class MailKitMailSender : IMailSender {
+    public class MailKitMailSender : IMailSender, IHealthCheck {
         private readonly IOptions<EmailOptions> _emailOptions;
         private readonly ILogger _logger;
+        private DateTime _lastSuccessfullConnection = DateTime.MinValue;
 
         public MailKitMailSender(IOptions<EmailOptions> emailOptions, ILoggerFactory loggerFactory) {
             _emailOptions = emailOptions;
@@ -63,6 +67,8 @@ namespace Exceptionless.Insulation.Mail {
                 if (isTraceLogEnabled) _logger.LogTrace("Disconnected from SMTP server took {Duration:g}", sw.Elapsed);
                 sw.Stop();
             }
+
+            _lastSuccessfullConnection = SystemClock.UtcNow;
         }
 
         private SecureSocketOptions GetSecureSocketOption(SmtpEncryption encryption) {
@@ -93,6 +99,42 @@ namespace Exceptionless.Insulation.Mail {
 
             message.Body = builder.ToMessageBody();
             return message;
+        }
+
+        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+            if (_lastSuccessfullConnection.IsAfter(SystemClock.UtcNow.Subtract(TimeSpan.FromMinutes(5))))
+                return HealthCheckResult.Healthy();
+            
+            var sw = Stopwatch.StartNew();
+            
+            try {
+                using (var client = new SmtpClient(new ExtensionsProtocolLogger(_logger))) {
+                    string host = _emailOptions.Value.SmtpHost;
+                    int port = _emailOptions.Value.SmtpPort;
+                    var encryption = GetSecureSocketOption(_emailOptions.Value.SmtpEncryption);
+                
+                    await client.ConnectAsync(host, port, encryption).AnyContext();
+                
+                    // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
+                    client.AuthenticationMechanisms.Remove("XOAUTH2");
+
+                    string user = _emailOptions.Value.SmtpUser;
+                    if (!String.IsNullOrEmpty(user)) {
+                        await client.AuthenticateAsync(user, _emailOptions.Value.SmtpPassword).AnyContext();
+                    }
+                
+                    await client.DisconnectAsync(true).AnyContext();
+                }
+
+                _lastSuccessfullConnection = SystemClock.UtcNow;
+            } catch (Exception ex) {
+                return HealthCheckResult.Unhealthy("Email Not Working.", ex);
+            } finally {
+                sw.Stop();
+                _logger.LogTrace("Checking email took {Duration:g}", sw.Elapsed);
+            }
+            
+            return HealthCheckResult.Healthy();
         }
     }
 }

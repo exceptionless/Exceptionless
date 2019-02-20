@@ -5,7 +5,6 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Helpers;
 using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins {
@@ -39,7 +38,7 @@ namespace Exceptionless.Core.Plugins {
         }
 
         private void LoadDefaultPlugins() {
-            var pluginTypes = TypeHelper.GetDerivedTypes<TPlugin>(new[] { typeof(Bootstrapper).Assembly });
+            var pluginTypes = TypeHelper.GetDerivedTypes<TPlugin>();
 
             foreach (var type in pluginTypes) {
                 if (_options.Value.DisabledPlugins.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {

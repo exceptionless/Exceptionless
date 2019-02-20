@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
 using Microsoft.AspNetCore.Authorization;
@@ -35,9 +34,9 @@ namespace Exceptionless.Web.Controllers {
                     return BadRequest();
                 }
 
-                StripeEvent stripeEvent;
+                Stripe.Event stripeEvent;
                 try {
-                    stripeEvent = StripeEventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], _stripeOptions.Value.StripeWebHookSigningSecret);
+                    stripeEvent = EventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], _stripeOptions.Value.StripeWebHookSigningSecret);
                 } catch (Exception ex) {
                     _logger.LogError(ex, "Unable to parse incoming event with {Signature}: {Message}", Request.Headers["Stripe-Signature"], ex.Message);
                     return BadRequest();

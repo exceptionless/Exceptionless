@@ -16,7 +16,7 @@ using Xunit;
 namespace Exceptionless.Tests {
     public class ServicesFixture : IDisposable {
         private readonly IDisposable _testSystemClock = TestSystemClock.Install();
-        private Lazy<IServiceProvider> _serviceProvider;
+        private readonly Lazy<IServiceProvider> _serviceProvider;
         private readonly List<Action<IServiceCollection>> _serviceConfigurations = new List<Action<IServiceCollection>>();
 
         public ServicesFixture() {
