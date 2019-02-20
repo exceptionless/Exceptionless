@@ -94,7 +94,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
             container.AddStartupAction<ExceptionlessElasticConfiguration>();
 
-            container.AddStartupAction(CreateSampleDataAsync);
+            container.AddStartupAction("Create Sample Data", CreateSampleDataAsync);
 
             container.AddSingleton<IQueueBehavior<EventPost>>(s => new MetricsQueueBehavior<EventPost>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<EventUserDescription>>(s => new MetricsQueueBehavior<EventUserDescription>(s.GetRequiredService<IMetricsClient>()));
