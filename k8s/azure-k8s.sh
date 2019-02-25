@@ -121,8 +121,8 @@ kubectl run -it --rm aks-ssh --image=ubuntu
 # ssh to k8s node https://docs.microsoft.com/en-us/azure/aks/ssh
 
 # update image on all deployments and cronjobs
-kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/api-ci:5.0.3399-pre
-kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3399-pre
+kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/api-ci:5.0.3401-pre
+kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3401-pre
 
 # view pod log tail
 kubectl logs -f exceptionless-jobs-event-posts-6c7b78d745-xd5ln
