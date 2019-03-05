@@ -10,21 +10,23 @@ using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
-        public EventRepository(ExceptionlessElasticConfiguration configuration, IValidator<PersistentEvent> validator)
-            : base(configuration.Events.Event, validator) {
+        public EventRepository(ExceptionlessElasticConfiguration configuration, IOptions<AppOptions> options, IValidator<PersistentEvent> validator)
+            : base(configuration.Events.Event, validator, options) {
             DisableCache();
             BatchNotifications = true;
-            DefaultExcludes.Add(ElasticType.GetFieldName(e => e.Idx));
+            
+            AddDefaultExclude(e => e.Idx);
             // copy to fields
-            DefaultExcludes.Add(EventIndexType.Alias.IpAddress);
-            DefaultExcludes.Add(EventIndexType.Alias.OperatingSystem);
-            DefaultExcludes.Add("error");
+            AddDefaultExclude(EventIndexType.Alias.IpAddress);
+            AddDefaultExclude(EventIndexType.Alias.OperatingSystem);
+            AddDefaultExclude("error");
 
-            FieldsRequiredForRemove.Add(ElasticType.GetFieldName(e => e.Date));
+            AddPropertyRequiredForRemove(e => e.Date);
         }
 
         // TODO: We need to index and search by the created time.
@@ -38,7 +40,7 @@ namespace Exceptionless.Core.Repositories {
 
         public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true) {
             var ev = await GetByIdAsync(id).AnyContext();
-            if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd, hasError))
+            if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd))
                 return false;
 
             await this.SaveAsync(ev, o => o.Notifications(sendNotifications)).AnyContext();
@@ -127,7 +129,7 @@ namespace Exceptionless.Core.Repositories {
             if (ev == null)
                 return null;
 
-            var retentionDate = Settings.Current.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(Settings.Current.MaximumRetentionDays) : DateTime.MinValue;
+            var retentionDate = _options.Value.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(_options.Value.MaximumRetentionDays) : DateTime.MinValue;
             if (!utcStart.HasValue || utcStart.Value.IsBefore(retentionDate))
                 utcStart = retentionDate;
 

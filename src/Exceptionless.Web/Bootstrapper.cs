@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using AutoMapper;
 using Exceptionless.Core;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Models;
@@ -11,41 +12,38 @@ using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
+using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Stripe;
+using Microsoft.Extensions.Options;
+using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Web {
     public class Bootstrapper {
-        public static void RegisterServices(IServiceCollection container, ILoggerFactory loggerFactory) {
-            container.AddSingleton<WebSocketConnectionManager>();
-            container.AddSingleton<MessageBusBroker>();
-            container.AddSingleton<MessageBusBrokerMiddleware>();
+        public static void RegisterServices(IServiceCollection services, ILoggerFactory loggerFactory) {
+            services.AddSingleton<WebSocketConnectionManager>();
+            services.AddSingleton<MessageBusBroker>();
+            services.AddSingleton<MessageBusBrokerMiddleware>();
 
-            container.AddSingleton<OverageMiddleware>();
-            container.AddSingleton<ThrottlingMiddleware>();
+            services.AddSingleton<OverageMiddleware>();
+            services.AddSingleton<ThrottlingMiddleware>();
 
-            container.AddTransient<Profile, ApiMappings>();
+            services.AddTransient<Profile, ApiMappings>();
 
-            Core.Bootstrapper.RegisterServices(container);
-            bool includeInsulation = !String.IsNullOrEmpty(Settings.Current.RedisConnectionString) ||
-                !String.IsNullOrEmpty(Settings.Current.AzureStorageConnectionString) ||
-                !String.IsNullOrEmpty(Settings.Current.AzureStorageQueueConnectionString) ||
-                !String.IsNullOrEmpty(Settings.Current.AliyunStorageConnectionString) ||
-                !String.IsNullOrEmpty(Settings.Current.MinioStorageConnectionString) ||
-                Settings.Current.EnableMetricsReporting;
-            if (includeInsulation)
-                Insulation.Bootstrapper.RegisterServices(container, Settings.Current.RunJobsInProcess);
+            Core.Bootstrapper.RegisterServices(services);
+            
+            var serviceProvider = services.BuildServiceProvider();
+            var options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
+            Insulation.Bootstrapper.RegisterServices(serviceProvider, services, options, options.RunJobsInProcess);
 
-            if (Settings.Current.RunJobsInProcess)
-                container.AddSingleton<IHostedService, JobsHostedService>();
+            if (options.RunJobsInProcess)
+                Core.Bootstrapper.AddHostedJobs(services, loggerFactory);
 
             var logger = loggerFactory.CreateLogger<Startup>();
-            container.AddStartupAction<MessageBusBroker>();
-            container.AddStartupAction((sp, ct) => {
+            services.AddStartupAction<MessageBusBroker>();
+            services.AddStartupAction("Subscribe to Log Work Item Progress", (sp, ct) => {
                 var subscriber = sp.GetRequiredService<IMessageSubscriber>();
                 return subscriber.SubscribeAsync<WorkItemStatus>(workItemStatus => {
                     if (logger.IsEnabled(LogLevel.Trace))
@@ -55,21 +53,21 @@ namespace Exceptionless.Web {
                 }, ct);
             });
 
-            container.AddSingleton<EnqueueOrganizationNotificationOnPlanOverage>();
-            container.AddStartupAction<EnqueueOrganizationNotificationOnPlanOverage>();
+            services.AddSingleton<EnqueueOrganizationNotificationOnPlanOverage>();
+            services.AddStartupAction<EnqueueOrganizationNotificationOnPlanOverage>();
         }
 
         public class ApiMappings : Profile {
-            public ApiMappings() {
+            public ApiMappings(BillingPlans plans) {
                 CreateMap<UserDescription, EventUserDescription>();
 
                 CreateMap<NewOrganization, Organization>();
                 CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
-                    vo.IsOverHourlyLimit = o.IsOverHourlyLimit();
+                    vo.IsOverHourlyLimit = o.IsOverHourlyLimit(plans);
                     vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
                 });
 
-                CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
+                CreateMap<Stripe.Invoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
 
                 CreateMap<NewProject, Project>();
                 CreateMap<Project, ViewProject>().AfterMap((p, vp) => vp.HasSlackIntegration = p.Data.ContainsKey(Project.KnownDataKeys.SlackToken));

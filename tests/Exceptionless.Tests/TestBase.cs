@@ -1,7 +1,6 @@
 ﻿using System;
 using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Mail;
-using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
 using Exceptionless.Insulation.Configuration;
@@ -36,19 +35,15 @@ namespace Exceptionless.Tests {
         }
 
         protected virtual void Configure(IServiceCollection services) {
-            services.AddSingleton(ReadSettings());
-            _container = services.BuildServiceProvider();
-            _initialized = true;
-        }
-
-        protected virtual Settings ReadSettings() {
             var config = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
-                .AddYamlFile("appsettings.yml", optional: true)
+                .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
-
-            return Settings.ReadFromConfiguration(config, "Development");
+            services.AddSingleton<IConfiguration>(config);
+            
+            _container = services.BuildServiceProvider();
+            _initialized = true;
         }
 
         protected virtual void RegisterServices(IServiceCollection services) {

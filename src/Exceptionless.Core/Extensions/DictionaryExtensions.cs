@@ -110,5 +110,34 @@ namespace Exceptionless.Core.Extensions {
 
             return hashCode;
         }
+        
+        public static T GetValueOrDefault<T>(this IDictionary<string, string> source, string key, T defaultValue = default) {
+            if (!source.ContainsKey(key))
+                return defaultValue;
+
+            object data = source[key];
+            if (data is T variable)
+                return variable;
+
+            if (data == null)
+                return defaultValue;
+
+            try {
+                return data.ToType<T>();
+            } catch {}
+
+            return defaultValue;
+        }
+
+        public static string GetString(this IDictionary<string, string> source, string name) {
+            return source.GetString(name, String.Empty);
+        }
+
+        public static string GetString(this IDictionary<string, string> source, string name, string @default) {
+            if (!source.TryGetValue(name, out string value))
+                return @default;
+
+            return value ?? @default;
+        }
     }
 }

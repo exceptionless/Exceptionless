@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
@@ -16,6 +16,7 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 #pragma warning disable 1998
 
@@ -25,15 +26,19 @@ namespace Exceptionless.Core.Jobs {
         private readonly SlackService _slackService;
         private readonly IMailer _mailer;
         private readonly IProjectRepository _projectRepository;
+        private readonly IOptions<AppOptions> _appOptions;
+        private readonly IOptions<EmailOptions> _emailOptions;
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly ICacheClient _cache;
         private readonly UserAgentParser _parser;
 
-        public EventNotificationsJob(IQueue<EventNotificationWorkItem> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventNotificationsJob(IQueue<EventNotificationWorkItem> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, IOptions<AppOptions> appOptions, IOptions<EmailOptions> emailOptions, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _slackService = slackService;
             _mailer = mailer;
             _projectRepository = projectRepository;
+            _appOptions = appOptions;
+            _emailOptions = emailOptions;
             _userRepository = userRepository;
             _eventRepository = eventRepository;
             _cache = cacheClient;
@@ -46,7 +51,7 @@ namespace Exceptionless.Core.Jobs {
             if (ev == null || ev.IsDeleted)
                 return JobResult.SuccessWithMessage($"Could not load event: {wi.EventId}");
 
-            bool shouldLog = ev.ProjectId != Settings.Current.InternalProjectId;
+            bool shouldLog = ev.ProjectId != _appOptions.Value.InternalProjectId;
             int sent = 0;
             if (shouldLog) _logger.LogTrace("Process notification: project={project} event={id} stack={stack}", ev.ProjectId, ev.Id, ev.StackId);
 
@@ -110,7 +115,7 @@ namespace Exceptionless.Core.Jobs {
                     bool processed;
                     switch (kv.Key) {
                         case Project.NotificationIntegrations.Slack:
-                            processed = await _slackService.SendEventNoticeAsync(ev, project, wi.IsNew, wi.IsRegression, wi.TotalOccurrences).AnyContext();
+                            processed = await _slackService.SendEventNoticeAsync(ev, project, wi.IsNew, wi.IsRegression).AnyContext();
                             break;
                         default:
                             processed = await SendEmailNotificationAsync(kv.Key, project, ev, wi, shouldLog).AnyContext();
@@ -156,7 +161,7 @@ namespace Exceptionless.Core.Jobs {
             if (shouldLog) _logger.LogTrace("Loaded user: email={EmailAddress}", user.EmailAddress);
 
             // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
-            if (Settings.Current.AppMode != AppMode.Production && !Settings.Current.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
+            if (_appOptions.Value.AppMode != AppMode.Production && !_emailOptions.Value.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
                 if (shouldLog) _logger.LogInformation("Skipping because email is not on the outbound list and not in production mode.");
                 return false;
             }

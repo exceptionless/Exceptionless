@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ template "exceptionless.fullname" . }}-config
+data:
+    EX_AppMode: Development
+    EX_BaseUrl: https://{{.Values.api.domain}}
+{{- if (.Values.elasticsearch.connectionString) }}
+    EX_ConnectionStrings__Elasticsearch: {{.Values.elasticsearch.connectionString}}
+{{- else }}
+    EX_ConnectionStrings__Elasticsearch: server=http://{{ template "exceptionless.fullname" . }}-elasticsearch:9200
+{{- end }}
+{{- if (.Values.redis.connectionString) }}
+    EX_ConnectionStrings__Redis: {{.Values.redis.connectionString}}
+{{- else }}
+    EX_ConnectionStrings__Redis: server=redis-master,abortConnect=false"
+{{- end }}
+{{- if (.Values.storage.azureConnectionString) }}
+    EX_ConnectionStrings__Storage: provider=azurestorage;{{.Values.storage.azureConnectionString}}
+{{- else }}
+    EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
+{{- end }}
+    EX_ConnectionStrings__Cache: provider=redis;
+    EX_ConnectionStrings__MessageBus: provider=redis;
+    EX_ConnectionStrings__Metrics.off: provider=statsd;server=10.0.0.5;
+    EX_ConnectionStrings__Queue: provider=redis;
+    EX_ExceptionlessServerUrl: https://{{.Values.collector.domain}}
+{{ .Values.extraConfig | indent 4 }}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Queries;
@@ -46,7 +47,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .AddCopyToMappings()
             );
 
-            if (Settings.Current.EnableElasticsearchMapperSizePlugin)
+            if (Options != null && Options.EnableMapperSizePlugin)
                 return mapping.SizeField(s => s.Enabled());
 
             return mapping;
@@ -159,6 +160,8 @@ ctx.error.code = codes;";
             public const string ErrorTargetType = "error.targettype";
             public const string ErrorTargetMethod = "error.targetmethod";
         }
+
+        public ElasticsearchOptions Options => (Configuration as ExceptionlessElasticConfiguration)?.Options;
     }
 
     internal static class EventIndexTypeExtensions {

@@ -1,32 +1,34 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\build\common.props" />
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="App.Metrics.Extensions.DependencyInjection" Version="2.0.0" />
-    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="2.0.0" />
-    <PackageReference Include="App.Metrics.Reporting.Graphite" Version="2.0.0" />
-    <PackageReference Include="App.Metrics.Reporting.Http" Version="2.0.0" />
-    <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="2.0.0" />
-    <PackageReference Include="Foundatio.Aliyun" Version="7.0.30" />
-    <PackageReference Include="Foundatio.AppMetrics" Version="7.0.1738" />
-    <PackageReference Include="Foundatio.AzureStorage" Version="7.0.1507" />
-    <PackageReference Include="Foundatio.Redis" Version="7.0.1570" />
+    <PackageReference Include="App.Metrics.Extensions.DependencyInjection" Version="3.0.0" />
+    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="3.0.0" />
+    <PackageReference Include="App.Metrics.Reporting.Graphite" Version="3.0.0" />
+    <PackageReference Include="App.Metrics.Reporting.Http" Version="3.0.0" />
+    <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="3.0.0" />
+    <PackageReference Include="Foundatio.Aliyun" Version="8.0.43" />
+    <PackageReference Include="Foundatio.AppMetrics" Version="8.0.1965" />
+    <PackageReference Include="Foundatio.AWS" Version="8.0.1533" />
+    <PackageReference Include="Foundatio.AzureStorage" Version="8.0.1525" />
+    <PackageReference Include="Foundatio.Hosting" Version="8.0.1965" />
+    <PackageReference Include="Foundatio.Minio" Version="8.0.44" />
+    <PackageReference Include="Foundatio.Redis" Version="8.0.1627" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
-    <PackageReference Include="MailKit" Version="2.0.6" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.1.1" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.1" />
+    <PackageReference Include="MailKit" Version="2.1.3" />
+    <PackageReference Include="MimeKit" Version="2.1.3" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.1" />
-    <PackageReference Include="MimeKit" Version="2.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.2.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="2.0.2" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.0.0" />
-    <PackageReference Include="Serilog.Settings.Configuration" Version="2.6.1" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="3.1.0" />
-    <PackageReference Include="YamlDotNet" Version="5.0.1" />
+    <PackageReference Include="YamlDotNet" Version="5.4.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj" />

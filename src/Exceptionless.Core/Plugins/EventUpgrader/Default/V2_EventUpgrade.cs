@@ -4,12 +4,13 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Data;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(2000)]
     public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin {
-        public V2EventUpgrade(ILoggerFactory loggerFactory) : base(loggerFactory) {}
+        public V2EventUpgrade(IOptions<AppOptions> options, ILoggerFactory loggerFactory) : base(options, loggerFactory) {}
 
         public void Upgrade(EventUpgraderContext ctx) {
             if (ctx.Version > new Version(2, 0))
@@ -80,11 +81,11 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
 
                     string id = doc["Id"]?.Value<string>();
                     string projectId = doc["ProjectId"]?.Value<string>();
-                    RenameAndValidateExtraExceptionProperties(projectId, id, error);
+                    RenameAndValidateExtraExceptionProperties(id, error);
 
                     var inner = error["Inner"] as JObject;
                     while (inner != null) {
-                        RenameAndValidateExtraExceptionProperties(projectId, id, inner);
+                        RenameAndValidateExtraExceptionProperties(id, inner);
                         inner = inner["Inner"] as JObject;
                     }
 
@@ -105,11 +106,8 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             }
         }
 
-        private void RenameAndValidateExtraExceptionProperties(string projectId, string id, JObject error) {
-            if (error == null)
-                return;
-
-            var extendedData = error["Data"] as JObject;
+        private void RenameAndValidateExtraExceptionProperties(string id, JObject error) {
+            var extendedData = error?["Data"] as JObject;
             if (extendedData?["__ExceptionInfo"] == null)
                 return;
 

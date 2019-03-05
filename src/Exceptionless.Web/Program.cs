@@ -1,107 +1,128 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using App.Metrics;
 using App.Metrics.AspNetCore;
 using App.Metrics.Formatters;
 using App.Metrics.Formatters.Prometheus;
 using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web.Utility;
+using Foundatio.Hosting;
 using Microsoft.ApplicationInsights.Extensibility;
-using Exceptionless.Insulation.Metrics;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.AspNetCore;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
 
 namespace Exceptionless.Web {
     public class Program {
-        public static int Main(string[] args) {
+        private static Microsoft.Extensions.Logging.ILogger _logger;
+        
+        public static async Task<int> Main(string[] args) {
             try {
-                CreateWebHostBuilder(args).Build().Run();
+                await CreateWebHostBuilder(args).Build().RunAsync(_logger);
                 return 0;
             } catch (Exception ex) {
-                Log.Fatal(ex, "Host terminated unexpectedly");
+                _logger.LogCritical(ex, "Job host terminated unexpectedly");
                 return 1;
             } finally {
                 Log.CloseAndFlush();
-                ExceptionlessClient.Default.ProcessQueue();
+                await ExceptionlessClient.Default.ProcessQueueAsync();
+                
+                if (Debugger.IsAttached)
+                    Console.ReadKey();
             }
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) {
-            string environment = Environment.GetEnvironmentVariable("AppMode");
+            string environment = Environment.GetEnvironmentVariable("EX_AppMode");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
+
+            Console.Title = "Exceptionless Web";
 
             string currentDirectory = Directory.GetCurrentDirectory();
             var config = new ConfigurationBuilder()
                 .SetBasePath(currentDirectory)
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables()
+                .AddEnvironmentVariables("EX_")
                 .AddCommandLine(args)
                 .Build();
 
-            var settings = Settings.ReadFromConfiguration(config, environment);
+            var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(config);
+            services.ConfigureOptions<ConfigureAppOptions>();
+            services.ConfigureOptions<ConfigureMetricOptions>();
+            var container = services.BuildServiceProvider();
+            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
 
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
-            if (!String.IsNullOrEmpty(settings.ExceptionlessApiKey))
+            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
-            Log.Logger = loggerConfig.CreateLogger();
+            var loggerFactory = new SerilogLoggerFactory(loggerConfig.CreateLogger());
+            _logger = loggerFactory.CreateLogger<Program>();
+            
+            var configDictionary = config.ToDictionary("Serilog");
+            _logger.LogInformation("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary, currentDirectory);
 
-            Log.Information("Bootstrapping {AppMode} mode API ({InformationalVersion}) on {MachineName} using {@Settings} loaded from {Folder}", environment, Settings.Current.InformationalVersion, Environment.MachineName, Settings.Current, currentDirectory);
-
-            bool useApplicationInsights = !String.IsNullOrEmpty(Settings.Current.ApplicationInsightsKey);
+            bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
 
             var builder = WebHost.CreateDefaultBuilder(args)
                 .UseEnvironment(environment)
-                .UseKestrel(c => {
+                .ConfigureKestrel(c => {
                     c.AddServerHeader = false;
-                    if (Settings.Current.MaximumEventPostSize > 0)
-                        c.Limits.MaxRequestBodySize = Settings.Current.MaximumEventPostSize;
+                    // c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
+                    
+                    if (options.MaximumEventPostSize > 0)
+                        c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
                 })
-                .UseSerilog(Log.Logger)
-                .SuppressStatusMessages(true)
                 .UseConfiguration(config)
                 .ConfigureServices(s => {
+                    s.AddSingleton<ILoggerFactory>(loggerFactory);
+                    s.AddHttpContextAccessor();
+                    
                     if (useApplicationInsights) {
                         s.AddSingleton<ITelemetryInitializer, ExceptionlessTelemetryInitializer>();
-                        s.AddHttpContextAccessor();
                         s.AddApplicationInsightsTelemetry();
                     }
-                    s.AddSingleton(settings);
                 })
                 .UseStartup<Startup>();
 
             if (useApplicationInsights)
-                builder.UseApplicationInsights(Settings.Current.ApplicationInsightsKey);
+                builder.UseApplicationInsights(options.ApplicationInsightsKey);
 
-            if (settings.EnableMetricsReporting) {
-                settings.MetricsConnectionString = MetricsConnectionString.Parse(settings.MetricsConnectionString?.ConnectionString);
-                ConfigureMetricsReporting(builder);
-            }
+            var metricOptions = container.GetRequiredService<IOptions<MetricOptions>>().Value;
+            if (!String.IsNullOrEmpty(metricOptions.Provider))
+                ConfigureMetricsReporting(builder, metricOptions);
 
             return builder;
         }
 
-        private static void ConfigureMetricsReporting(IWebHostBuilder builder) {
-            if (Settings.Current.MetricsConnectionString is PrometheusMetricsConnectionString) {
+        private static void ConfigureMetricsReporting(IWebHostBuilder builder, MetricOptions options) {
+            if (String.Equals(options.Provider, "prometheus")) {
                 var metrics = AppMetrics.CreateDefaultBuilder()
                     .OutputMetrics.AsPrometheusPlainText()
                     .OutputMetrics.AsPrometheusProtobuf()
                     .Build();
-                builder.ConfigureMetrics(metrics).UseMetrics(options => {
-                    options.EndpointOptions = endpointsOptions => {
+                builder.ConfigureMetrics(metrics).UseMetrics(o => {
+                    o.EndpointOptions = endpointsOptions => {
                         endpointsOptions.MetricsTextEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusTextOutputFormatter>();
                         endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
                     };
                 });
-            } else if (!(Settings.Current.MetricsConnectionString is StatsDMetricsConnectionString)) {
+            } else if (!String.Equals(options.Provider, "statsd")) {
                 builder.UseMetrics();
             }
         }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Exceptionless.Core.Billing;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -73,7 +74,7 @@ namespace Exceptionless.Tests.Plugins {
             ev.StackId = TestConstants.StackId;
             ev.Id = TestConstants.EventId;
 
-            var context = new WebHookDataContext(version, ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()) {
+            var context = new WebHookDataContext(version, ev, OrganizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>()), ProjectData.GenerateSampleProject()) {
                 Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: _formatter.GetStackTitle(ev), signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc")
             };
             context.Stack.Tags = new TagSet { "Test" };

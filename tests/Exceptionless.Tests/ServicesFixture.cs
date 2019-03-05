@@ -1,7 +1,6 @@
 ﻿using System;
 using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Mail;
-using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
 using Exceptionless.Insulation.Configuration;
@@ -17,18 +16,16 @@ using Xunit;
 namespace Exceptionless.Tests {
     public class ServicesFixture : IDisposable {
         private readonly IDisposable _testSystemClock = TestSystemClock.Install();
-        private Lazy<IServiceProvider> _serviceProvider;
+        private readonly Lazy<IServiceProvider> _serviceProvider;
         private readonly List<Action<IServiceCollection>> _serviceConfigurations = new List<Action<IServiceCollection>>();
 
         public ServicesFixture() {
-            _serviceProvider = new Lazy<IServiceProvider>(() => GetServiceProvider());
-            var config = GetConfiguration();
-            Settings = Settings.ReadFromConfiguration(config, "Development");
+            _serviceProvider = new Lazy<IServiceProvider>(GetServiceProvider);
         }
 
         private IServiceProvider GetServiceProvider() {
             var services = new ServiceCollection();
-            services.AddSingleton(Settings);
+            services.AddSingleton<IConfiguration>(GetConfiguration());
 
             foreach (var configurator in _serviceConfigurations)
                 configurator(services);
@@ -37,7 +34,6 @@ namespace Exceptionless.Tests {
         }
 
         public IServiceProvider Services => _serviceProvider.Value;
-        public Settings Settings { get; }
 
         public void AddServicesConfiguration(Action<IServiceCollection> configuration) {
             _serviceConfigurations.Add(configuration);
@@ -76,6 +72,5 @@ namespace Exceptionless.Tests {
         }
 
         protected virtual TService GetService<TService>() => _fixture.Services.GetRequiredService<TService>();
-        protected Settings Settings => _fixture.Settings;
     }
 }

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Exceptionless.Core;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
@@ -13,6 +15,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Storage;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -20,15 +23,22 @@ namespace Exceptionless.Tests.Plugins {
     public class GeoTests : TestWithServices {
         private const string GREEN_BAY_COORDINATES = "44.5463,-88.1021";
         private const string GREEN_BAY_IP = "24.208.86.80";
-        private const string IRVING_COORDINATES = "32.8479,-96.974";
+        private const string IRVING_COORDINATES = "32.8489,-96.9667";
         private const string IRVING_IP = "192.91.253.248";
+        private readonly BillingManager _billingManager;
+        private readonly BillingPlans _plans;
+        private readonly IOptions<AppOptions> _options;
 
-        public GeoTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) { }
+        public GeoTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+            _billingManager = GetService<BillingManager>();
+            _plans = GetService<BillingPlans>();
+            _options = GetService<IOptions<AppOptions>>();
+        }
 
         private async Task<IGeoIpService> GetResolverAsync(ILoggerFactory loggerFactory) {
             string dataDirectory = PathHelper.ExpandPath(".\\");
             var storage = new FolderFileStorage(new FolderFileStorageOptions {
-                Folder = dataDirectory, 
+                Folder = dataDirectory,
                 LoggerFactory = loggerFactory
             });
 
@@ -44,9 +54,9 @@ namespace Exceptionless.Tests.Plugins {
 
         [Fact]
         public async Task WillNotSetLocation() {
-            var plugin = new GeoPlugin(await GetResolverAsync(Log));
+            var plugin = new GeoPlugin(await GetResolverAsync(Log), _options);
             var ev = new PersistentEvent { Geo = GREEN_BAY_COORDINATES };
-            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()) });
+            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
             Assert.Equal(GREEN_BAY_COORDINATES, ev.Geo);
             Assert.Null(ev.GetLocation());
@@ -59,10 +69,10 @@ namespace Exceptionless.Tests.Plugins {
         [InlineData("x,y")]
         [InlineData("190,180")]
         public async Task WillResetLocation(string geo) {
-            var plugin = new GeoPlugin(await GetResolverAsync(Log));
+            var plugin = new GeoPlugin(await GetResolverAsync(Log), _options);
 
             var ev = new PersistentEvent { Geo = geo };
-            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()) });
+            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
             Assert.Null(ev.Geo);
             Assert.Null(ev.GetLocation());
@@ -70,9 +80,9 @@ namespace Exceptionless.Tests.Plugins {
 
         [Fact]
         public async Task WillSetLocationFromGeo() {
-            var plugin = new GeoPlugin(await GetResolverAsync(Log));
+            var plugin = new GeoPlugin(await GetResolverAsync(Log), _options);
             var ev = new PersistentEvent { Geo = GREEN_BAY_IP };
-            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()) });
+            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
             Assert.NotNull(ev.Geo);
             Assert.NotEqual(GREEN_BAY_IP, ev.Geo);
@@ -85,10 +95,10 @@ namespace Exceptionless.Tests.Plugins {
 
         [Fact]
         public async Task WillSetLocationFromRequestInfo() {
-            var plugin = new GeoPlugin(await GetResolverAsync(Log));
+            var plugin = new GeoPlugin(await GetResolverAsync(Log), _options);
             var ev = new PersistentEvent();
             ev.AddRequestInfo(new RequestInfo { ClientIpAddress = GREEN_BAY_IP });
-            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()) });
+            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
             Assert.NotNull(ev.Geo);
 
@@ -100,10 +110,10 @@ namespace Exceptionless.Tests.Plugins {
 
         [Fact]
         public async Task WillSetLocationFromEnvironmentInfoInfo() {
-            var plugin = new GeoPlugin(await GetResolverAsync(Log));
+            var plugin = new GeoPlugin(await GetResolverAsync(Log), _options);
             var ev = new PersistentEvent();
             ev.SetEnvironmentInfo(new EnvironmentInfo { IpAddress = $"127.0.0.1,{GREEN_BAY_IP}" });
-            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()) });
+            await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
             Assert.NotNull(ev.Geo);
 
@@ -115,11 +125,11 @@ namespace Exceptionless.Tests.Plugins {
 
         [Fact]
         public async Task WillSetFromSingleGeo() {
-            var plugin = new GeoPlugin(await GetResolverAsync(Log));
+            var plugin = new GeoPlugin(await GetResolverAsync(Log), _options);
 
             var contexts = new List<EventContext> {
-                new EventContext(new PersistentEvent { Geo = GREEN_BAY_IP }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
-                new EventContext(new PersistentEvent { Geo = GREEN_BAY_IP }, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject())
+                new EventContext(new PersistentEvent { Geo = GREEN_BAY_IP }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new EventContext(new PersistentEvent { Geo = GREEN_BAY_IP }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             };
 
             await plugin.EventBatchProcessingAsync(contexts);
@@ -136,15 +146,15 @@ namespace Exceptionless.Tests.Plugins {
 
         [Fact]
         public async Task WillNotSetFromMultipleGeo() {
-            var plugin = new GeoPlugin(await GetResolverAsync(Log));
+            var plugin = new GeoPlugin(await GetResolverAsync(Log), _options);
 
             var ev = new PersistentEvent();
             var greenBayEvent = new PersistentEvent { Geo = GREEN_BAY_IP };
             var irvingEvent = new PersistentEvent { Geo = IRVING_IP };
             await plugin.EventBatchProcessingAsync(new List<EventContext> {
-                new EventContext(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
-                new EventContext(greenBayEvent, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
-                new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject())
+                new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new EventContext(greenBayEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             });
 
             Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
@@ -176,7 +186,7 @@ namespace Exceptionless.Tests.Plugins {
 
         [Fact]
         public async Task WillSetMultipleFromEmptyGeo() {
-            var plugin = new GeoPlugin(await GetResolverAsync(Log));
+            var plugin = new GeoPlugin(await GetResolverAsync(Log), _options);
 
             var ev = new PersistentEvent();
             var greenBayEvent = new PersistentEvent();
@@ -184,9 +194,9 @@ namespace Exceptionless.Tests.Plugins {
             var irvingEvent = new PersistentEvent();
             irvingEvent.SetEnvironmentInfo(new EnvironmentInfo { IpAddress = IRVING_IP });
             await plugin.EventBatchProcessingAsync(new List<EventContext> {
-                new EventContext(ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
-                new EventContext(greenBayEvent, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject()),
-                new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject())
+                new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new EventContext(greenBayEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             });
 
             Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);

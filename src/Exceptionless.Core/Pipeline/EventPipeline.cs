@@ -10,10 +10,11 @@ using Exceptionless.Core.Helpers;
 using Exceptionless.Core.Queues.Models;
 using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
-        public EventPipeline(IServiceProvider serviceProvider, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(serviceProvider, metricsClient, loggerFactory) {}
+        public EventPipeline(IServiceProvider serviceProvider, IOptions<AppOptions> options, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) {}
 
         public Task<EventContext> RunAsync(PersistentEvent ev, Organization organization, Project project, EventPostInfo epi = null) {
             return RunAsync(new EventContext(ev, organization, project, epi));
@@ -67,7 +68,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         protected override IList<Type> GetActionTypes() {
-            return _actionTypeCache.GetOrAdd(typeof(EventPipelineActionBase), t => TypeHelper.GetDerivedTypes<EventPipelineActionBase>(new[] { typeof(EventPipeline).Assembly }).SortByPriority());
+            return _actionTypeCache.GetOrAdd(typeof(EventPipelineActionBase), t => TypeHelper.GetDerivedTypes<EventPipelineActionBase>().SortByPriority());
         }
     }
 }

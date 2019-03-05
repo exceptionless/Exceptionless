@@ -4,13 +4,14 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
+using Foundatio.Hosting.Startup;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web.Hubs {
     public sealed class MessageBusBroker : IStartupAction {
@@ -19,17 +20,19 @@ namespace Exceptionless.Web.Hubs {
         private readonly WebSocketConnectionManager _connectionManager;
         private readonly IConnectionMapping _connectionMapping;
         private readonly IMessageSubscriber _subscriber;
+        private readonly IOptions<AppOptions> _options;
         private readonly ILogger _logger;
 
-        public MessageBusBroker(WebSocketConnectionManager connectionManager, IConnectionMapping connectionMapping, IMessageSubscriber subscriber, ILogger<MessageBusBroker> logger) {
+        public MessageBusBroker(WebSocketConnectionManager connectionManager, IConnectionMapping connectionMapping, IMessageSubscriber subscriber, IOptions<AppOptions> options, ILogger<MessageBusBroker> logger) {
             _connectionManager = connectionManager;
             _connectionMapping = connectionMapping;
             _subscriber = subscriber;
+            _options = options;
             _logger = logger;
         }
 
         public async Task RunAsync(CancellationToken shutdownToken = default) {
-            if (!Settings.Current.EnableWebSockets)
+            if (!_options.Value.EnableWebSockets)
                 return;
 
             _logger.LogDebug("Subscribing to message bus notifications");

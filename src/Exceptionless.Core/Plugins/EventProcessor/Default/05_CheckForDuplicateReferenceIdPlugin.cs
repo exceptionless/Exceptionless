@@ -6,13 +6,14 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Foundatio.Caching;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(5)]
     public sealed class CheckForDuplicateReferenceIdPlugin : EventProcessorPluginBase {
         private readonly ICacheClient _cacheClient;
 
-        public CheckForDuplicateReferenceIdPlugin(ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public CheckForDuplicateReferenceIdPlugin(ICacheClient cacheClient, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _cacheClient = cacheClient;
         }
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
@@ -18,26 +19,33 @@ using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Sends daily summary emails.", InitialDelay = "1m", Interval = "1h")]
-    public class DailySummaryJob : JobWithLockBase {
+    public class DailySummaryJob : JobWithLockBase, IHealthCheck {
+        private readonly IOptions<EmailOptions> _emailOptions;
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IMailer _mailer;
+        private readonly BillingPlans _plans;
         private readonly ILockProvider _lockProvider;
+        private DateTime? _lastRun;
 
-        public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public DailySummaryJob(IOptions<EmailOptions> emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, BillingPlans plans, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+            _emailOptions = emailOptions;
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _stackRepository = stackRepository;
             _eventRepository = eventRepository;
             _mailer = mailer;
+            _plans = plans;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
         }
 
@@ -46,7 +54,9 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
-            if (!Settings.Current.EnableDailySummary || _mailer == null)
+            _lastRun = SystemClock.UtcNow;
+            
+            if (!_emailOptions.Value.EnableDailySummary || _mailer == null)
                 return JobResult.SuccessWithMessage("Summary notifications are disabled.");
 
             var results = await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9).AnyContext();
@@ -92,8 +102,10 @@ namespace Exceptionless.Core.Jobs {
                 if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
                     break;
 
-                if (results.Documents.Count > 0)
+                if (results.Documents.Count > 0) {
                     await context.RenewLockAsync().AnyContext();
+                    _lastRun = SystemClock.UtcNow;
+                }
             }
 
             return JobResult.SuccessWithMessage("Successfully sent summary notifications.");
@@ -131,7 +143,7 @@ namespace Exceptionless.Core.Jobs {
             double newTotal = result.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
             double uniqueTotal = result.Aggregations.Cardinality("cardinality_stack_id")?.Value ?? 0;
             bool hasSubmittedEvents = total > 0 || project.IsConfigured.GetValueOrDefault();
-            bool isFreePlan = organization.PlanId == BillingManager.FreePlan.Id;
+            bool isFreePlan = organization.PlanId == _plans.FreePlan.Id;
 
             string fixedFilter = $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error} {EventIndexType.Alias.IsHidden}:false {EventIndexType.Alias.IsFixed}:true";
             var fixedResult = await _eventRepository.CountBySearchAsync(systemFilter, fixedFilter, "sum:count~1").AnyContext();
@@ -158,6 +170,16 @@ namespace Exceptionless.Core.Jobs {
 
             _logger.LogInformation("Done sending daily summary: users={UserCount} project={ProjectName} events={EventCount}", users.Count, project.Name, total);
             return true;
+        }
+
+        public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+            if (!_lastRun.HasValue)
+                return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
+
+            if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(65))
+                return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 65 minutes."));
+
+            return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 65 minutes."));
         }
     }
 }

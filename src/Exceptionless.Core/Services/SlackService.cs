@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -9,6 +10,8 @@ using Exceptionless.Core.Queues.Models;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+// ReSharper disable InconsistentNaming
 
 namespace Exceptionless.Core.Services {
     public class SlackService {
@@ -16,12 +19,16 @@ namespace Exceptionless.Core.Services {
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly FormattingPluginManager _pluginManager;
         private readonly ISerializer _serializer;
+        private readonly IOptions<AppOptions> _appOptions;
+        private readonly IOptions<SlackOptions> _slackOptions;
         private readonly ILogger _logger;
 
-        public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, ILoggerFactory loggerFactory = null) {
+        public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, IOptions<AppOptions> appOptions, IOptions<SlackOptions> slackOptions, ILoggerFactory loggerFactory = null) {
             _webHookNotificationQueue = webHookNotificationQueue;
             _pluginManager = pluginManager;
             _serializer = serializer;
+            _appOptions = appOptions;
+            _slackOptions = slackOptions;
             _logger = loggerFactory.CreateLogger<SlackService>();
         }
 
@@ -30,10 +37,10 @@ namespace Exceptionless.Core.Services {
                 throw new ArgumentNullException(nameof(code));
 
             var data = new Dictionary<string, string> {
-                { "client_id", Settings.Current.SlackAppId },
-                { "client_secret", Settings.Current.SlackAppSecret },
+                { "client_id", _slackOptions.Value.SlackId },
+                { "client_secret", _slackOptions.Value.SlackSecret },
                 { "code", code },
-                { "redirect_uri", new Uri(Settings.Current.BaseURL).GetLeftPart(UriPartial.Authority) }
+                { "redirect_uri", new Uri(_appOptions.Value.BaseURL).GetLeftPart(UriPartial.Authority) }
             };
 
             string url = $"https://slack.com/api/oauth.access?{data.ToQueryString()}";
@@ -106,7 +113,7 @@ namespace Exceptionless.Core.Services {
             return _webHookNotificationQueue.EnqueueAsync(notification);
         }
 
-        public async Task<bool> SendEventNoticeAsync(PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
+        public async Task<bool> SendEventNoticeAsync(PersistentEvent ev, Project project, bool isNew, bool isRegression) {
             var token = project.GetSlackToken();
             if (token?.IncomingWebhook?.Url == null)
                 return false;

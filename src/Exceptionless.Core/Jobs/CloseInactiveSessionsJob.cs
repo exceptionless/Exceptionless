@@ -12,14 +12,16 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Closes inactive user sessions.", InitialDelay = "30s", Interval = "30s")]
-    public class CloseInactiveSessionsJob : JobWithLockBase {
+    public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck {
         private readonly IEventRepository _eventRepository;
         private readonly ICacheClient _cache;
         private readonly ILockProvider _lockProvider;
+        private DateTime? _lastRun;
 
         public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _eventRepository = eventRepository;
@@ -32,6 +34,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+            _lastRun = SystemClock.UtcNow;
             var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), o => o.SnapshotPaging().PageLimit(100)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 var inactivePeriodUtc = SystemClock.UtcNow.Subtract(DefaultInactivePeriod);
@@ -76,8 +79,10 @@ namespace Exceptionless.Core.Jobs {
                 if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
                     break;
 
-                if (results.Documents.Count > 0)
+                if (results.Documents.Count > 0) {
                     await context.RenewLockAsync().AnyContext();
+                    _lastRun = SystemClock.UtcNow;
+                }
             }
 
             return JobResult.Success;
@@ -114,6 +119,16 @@ namespace Exceptionless.Core.Jobs {
             public DateTime ActivityUtc { get; set; }
             public string CacheKey { get; set; }
             public bool Close { get; set; }
+        }
+
+        public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+            if (!_lastRun.HasValue)
+                return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
+
+            if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromSeconds(40))
+                return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 40 seconds."));
+
+            return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 40 seconds."));
         }
     }
 }

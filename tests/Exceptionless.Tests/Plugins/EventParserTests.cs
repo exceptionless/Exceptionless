@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
@@ -48,8 +46,10 @@ namespace Exceptionless.Tests.Plugins {
 
 #if DEBUG
         [Theory]
-        [MemberData(nameof(Events))]
+#else
+        [Theory(Skip = "Only for testing")]
 #endif
+        [MemberData(nameof(Events))]
         public void VerifyEventParserSerialization(string eventsFilePath) {
             string json = File.ReadAllText(eventsFilePath);
 
