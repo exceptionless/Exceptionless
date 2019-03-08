@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Security.Claims;
 using Exceptionless.Core;
@@ -20,6 +20,7 @@ using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
 using Foundatio.Hosting.Startup;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web {
@@ -138,7 +139,8 @@ namespace Exceptionless.Web {
                     .From("https://maxcdn.bootstrapcdn.com");
                 csp.AllowImages.FromSelf()
                     .From("data:")
-                    .From("https://q.stripe.com");
+                    .From("https://q.stripe.com")
+                    .From("https://www.gravatar.com");
                 csp.AllowScripts.FromSelf()
                     .AllowUnsafeInline()
                     .AllowUnsafeEval()
@@ -149,6 +151,16 @@ namespace Exceptionless.Web {
                     .AllowUnsafeInline()
                     .From("https://fonts.googleapis.com")
                     .From("https://maxcdn.bootstrapcdn.com");
+            });
+
+            var contentTypeProvider = new FileExtensionContentTypeProvider {
+                Mappings = {
+                    [".less"] = "plain/text"
+                }
+            };
+
+            app.UseStaticFiles(new StaticFileOptions {
+                ContentTypeProvider = contentTypeProvider
             });
 
             app.Use(async (context, next) => {
