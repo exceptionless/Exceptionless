@@ -70,14 +70,14 @@ kubectl apply -f cluster-issuer.yaml
 kubectl apply -f certificates.yaml
 
 # install redis server
-helm install stable/redis --values redis-values.yaml --name redis
+helm install stable/redis --version 5.2.0 --values redis-values.yaml --name redis --namespace ex-prod
 export REDIS_PASSWORD=$(kubectl get secret --namespace test redis -o jsonpath="{.data.redis-password}" | base64 --decode)
 
 helm install stable/redis-ha --set "persistentVolume.storageClass=managed-premium" --set "fullnameOverride=exceptionless-redis" --name exceptionless-redis
 kubectl exec -it redis-redis-ha-server-0 bash -n ex-prod
 
 # install exceptionless app
-API_TAG=5.0.3346-pre
+API_TAG=5.0.3352-pre
 helm install --name exceptionless --namespace ex-prod ./exceptionless \
     --set "storage.azureConnectionString=DefaultEndpointsProtocol=https;AccountName=ex4events;AccountKey=$AZURE_ACCOUNT_KEY;EndpointSuffix=core.windows.net" \
     --set "elasticsearch.connectionString=http://10.0.0.4:9200" \
@@ -123,6 +123,52 @@ kubectl run -it --rm aks-ssh --image=ubuntu
 # update image on all deployments and cronjobs
 kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/api-ci:5.0.3401-pre
 kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3401-pre
+
+# stop the entire app
+kubectl scale deployment/exceptionless-api --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-app --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-collector --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-close-inactive-sessions --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-daily-summary --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-notifications --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-posts --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-user-descriptions --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-mail-message --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-retention-limits --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-stack-event-count --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-web-hooks --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-work-item --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-statsd --replicas=0 --namespace ex-prod
+
+kubectl patch cronjob/exceptionless-jobs-cleanup-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-download-geoip-database -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-event-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-maintain-indexes -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-organization-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-stack-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
+
+# resume the app
+kubectl scale deployment/exceptionless-api --replicas=5 --namespace ex-prod
+kubectl scale deployment/exceptionless-app --replicas=2 --namespace ex-prod
+kubectl scale deployment/exceptionless-collector --replicas=12 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-close-inactive-sessions --replicas=1 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-daily-summary --replicas=1 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-notifications --replicas=2 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-posts --replicas=6 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-user-descriptions --replicas=2 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-mail-message --replicas=2 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-retention-limits --replicas=1 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-stack-event-count --replicas=1 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-web-hooks --replicas=4 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-work-item --replicas=5 --namespace ex-prod
+kubectl scale deployment/exceptionless-statsd --replicas=1 --namespace ex-prod
+
+kubectl patch cronjob/exceptionless-jobs-cleanup-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-event-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-organization-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-stack-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
 
 # view pod log tail
 kubectl logs -f exceptionless-jobs-event-posts-6c7b78d745-xd5ln
