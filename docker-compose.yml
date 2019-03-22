@@ -4,6 +4,7 @@ services:
   api:
     depends_on:
       - elasticsearch
+      - redis
     build:
       context: .
       target: api
@@ -54,18 +55,21 @@ services:
       - 5100:80
 
   elasticsearch:
-    image: slideroom/elasticsearch:98
+    image: exceptionless/elasticsearch:latest
     environment:
+      cluster.name: 'exceptionless'
       bootstrap.memory_lock: 'true'
       discovery.type: single-node
       ES_JAVA_OPTS: '-Xms512m -Xmx512m'
       xpack.security.enabled: 'false'
+      xpack.graph.enabled: 'false'
+      xpack.watcher.enabled: 'false'
     ports:
       - 9200:9200
       - 9300:9300
     ulimits:
       memlock:
-        soft: -1 
+        soft: -1
         hard: -1
     volumes:
       - esdata:/usr/share/elasticsearch/data
@@ -73,7 +77,9 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: slideroom/kibana:116
+    image: exceptionless/kibana:latest
+    environment:
+      xpack.security.enabled: 'false'
     ports:
       - 5601:5601
 
@@ -81,7 +87,7 @@ services:
     image: redis:alpine
     ports:
       - 6379:6379
- 
+
 volumes:
   esdata:
     driver: local
