@@ -1,19 +1,18 @@
 ---
-#ConnectionStrings:
-#  Elasticsearch: server=http://localhost:9200
-#  Cache: provider=redis;server="localhost,abortConnect=false"
+ConnectionStrings:
+#  Redis: server="localhost,abortConnect=false"
+#  Elasticsearch: server=http://localhost:9200;replicas=0
+#  Cache: provider=redis;
+#  MessageBus: provider=redis;
+#  Metrics: provider=statsd;server=10.0.0.5;
+#  Queue: provider=redis;
+# Storage: provider=folder;path=.\storage=
+  OAuth: FacebookId=395178683904310;GitHubId=7ef1dd5bfbc4ccf7f5ef;GoogleId=809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com;MicrosoftId=000000004C137E8B;SlackId=34500115540.177239122322;
 
   # Base url for the ui used to build links in emails and other places.
+ApiURL: https://dev-api.exceptionless.io
 BaseURL: https://dev.exceptionless.io
-
-# Metrics
-MetricsServerName: 10.0.0.5
-
-# Elasticsearch
-ElasticsearchNumberOfReplicas: 0
 
 # Exceptionless Client Settings
 ExceptionlessServerUrl: https://dev-api.exceptionless.io
 InternalProjectId: 50ca6b2423d6c8493020b823
-
-SlackAppId: 34500115540.177239122322
