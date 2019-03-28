@@ -218,7 +218,7 @@ namespace Exceptionless.Web.Controllers {
                 Id = stripeInvoice.Id.Substring(3),
                 OrganizationId = organization.Id,
                 OrganizationName = organization.Name,
-                Date = stripeInvoice.Date.GetValueOrDefault(),
+                Date = stripeInvoice.Created,
                 Paid = stripeInvoice.Paid,
                 Total = stripeInvoice.Total / 100.0m
             };
