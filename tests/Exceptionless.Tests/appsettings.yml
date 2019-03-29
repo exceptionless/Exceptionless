@@ -9,7 +9,7 @@ ConnectionStrings:
 
 # Base url for the ui used to build links in emails and other places.
 ApiURL: 'http://localhost:5000'
-BaseURL: 'http://localhost:9001/#!'
+BaseURL: 'http://localhost:5000'
 
 AppMode: Development
 Scope: test
