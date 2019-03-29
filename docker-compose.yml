@@ -55,7 +55,7 @@ services:
       - 5100:80
 
   elasticsearch:
-    image: exceptionless/elasticsearch:latest
+    image: exceptionless/elasticsearch:1
     environment:
       cluster.name: 'exceptionless'
       bootstrap.memory_lock: 'true'
@@ -77,7 +77,7 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: exceptionless/kibana:latest
+    image: exceptionless/kibana:1
     environment:
       xpack.security.enabled: 'false'
     ports:
