@@ -8,10 +8,8 @@ ConnectionStrings:
   Storage: provider=folder;path=..\..\..\..\..\src\Exceptionless.Web\storage
 
 # Base url for the ui used to build links in emails and other places.
-ApiURL: 'http://localhost:5000'
 BaseURL: 'http://localhost:5000'
 
-AppMode: Development
 Scope: test
 
 # Controls whether daily summary emails are sent

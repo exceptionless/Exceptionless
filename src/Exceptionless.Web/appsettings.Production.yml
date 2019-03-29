@@ -11,7 +11,6 @@ ConnectionStrings:
   OAuth: FacebookId=395178683904310;GitHubId=7ef1dd5bfbc4ccf7f5ef;GoogleId=809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com;MicrosoftId=000000004C137E8B;SlackId=34500115540.177239122322;
 
 # Base url for the ui used to build links in emails and other places.
-ApiURL: https://api.exceptionless.io
 BaseURL: https://be.exceptionless.io
 
 # Controls whether users can signup.

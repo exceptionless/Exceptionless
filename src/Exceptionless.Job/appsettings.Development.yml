@@ -8,7 +8,6 @@
   Storage: provider=folder;path=..\..\..\..\Exceptionless.Web\storage
 
 # Base url for the ui used to build links in emails and other places.
-ApiURL: http://localhost:5000
 BaseURL: 'http://localhost:9001/#!'
 
 Serilog:
