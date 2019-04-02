@@ -1,0 +1,10 @@
+﻿{
+  "id": "5c59abbfa6fc240001efbe3d",
+  "date": "2015-02-12T17:25:27.1172014+00:00",
+  "template_key": "event-summary",
+  "data": {
+    "Message": "custom Event",
+    "Source": null,
+    "Type": "custom"
+  }
+}
