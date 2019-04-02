@@ -440,8 +440,8 @@ namespace Exceptionless.Tests.Repositories {
         //[InlineData("data.FriendlyErrorIdentifier:\"Foo-7967BB\"", 1)]
         [InlineData("data.some-date:>2015-01-01", 1)]
         [InlineData("data.some-date:<2015-01-01", 0)]
-        [InlineData("data.EntityId:b2df3f71-c888-42a7-12c4-08d67c7d888", 1)]
-        [InlineData("data.UserId:3db4f3c2-88c7-4e37-b692-3a545036088", 1)]
+        [InlineData("data.EntityId:\"88df3f71-c888-42a7-12c4-08d67c7d888\"", 1)]
+        [InlineData("data.UserId:\"3db4f3c2-88c7-4e37-b692-3a545036088\"", 1)]
         public async Task GetByCustomDataAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
