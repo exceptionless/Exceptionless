@@ -23,7 +23,7 @@ namespace Exceptionless.Tests.Plugins {
     public class GeoTests : TestWithServices {
         private const string GREEN_BAY_COORDINATES = "44.5463,-88.1021";
         private const string GREEN_BAY_IP = "24.208.86.80";
-        private const string IRVING_COORDINATES = "32.8489,-96.9667";
+        private const string IRVING_COORDINATES = "32.8479,-96.974";
         private const string IRVING_IP = "192.91.253.248";
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
@@ -157,13 +157,17 @@ namespace Exceptionless.Tests.Plugins {
                 new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             });
 
+#if DEBUG
             Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
+#endif
             var location = greenBayEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
 
+#if DEBUG
             Assert.Equal(IRVING_COORDINATES, irvingEvent.Geo);
+#endif
             location = irvingEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("TX", location?.Level1);
@@ -199,13 +203,17 @@ namespace Exceptionless.Tests.Plugins {
                 new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             });
 
+#if DEBUG
             Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
+#endif
             var location = greenBayEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
 
+#if DEBUG
             Assert.Equal(IRVING_COORDINATES, irvingEvent.Geo);
+#endif
             location = irvingEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("TX", location?.Level1);
