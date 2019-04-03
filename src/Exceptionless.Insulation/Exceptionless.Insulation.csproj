@@ -12,7 +12,7 @@
     <PackageReference Include="Foundatio.AzureStorage" Version="8.0.1525" />
     <PackageReference Include="Foundatio.Hosting" Version="8.0.1965" />
     <PackageReference Include="Foundatio.Minio" Version="8.0.44" />
-    <PackageReference Include="Foundatio.Redis" Version="8.0.1627" />
+    <PackageReference Include="Foundatio.Redis" Version="8.0.1631" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MailKit" Version="2.1.3" />
     <PackageReference Include="MimeKit" Version="2.1.3" />
