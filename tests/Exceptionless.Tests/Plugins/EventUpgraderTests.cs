@@ -17,10 +17,8 @@ namespace Exceptionless.Tests.Plugins {
             _parser = GetService<EventParserPluginManager>();
         }
 
-#if DEBUG
         [Theory]
         [MemberData(nameof(Errors))]
-#endif
         public void ParseErrors(string errorFilePath) {
             string json = File.ReadAllText(errorFilePath);
             var ctx = new EventUpgraderContext(json);
