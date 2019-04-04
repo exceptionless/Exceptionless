@@ -12,10 +12,8 @@ namespace Exceptionless.Tests.Plugins {
     public class SummaryDataTests : TestWithServices {
         public SummaryDataTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {}
 
-#if DEBUG
         [Theory]
         [MemberData(nameof(Events))]
-#endif
         public void EventSummaryData(string path) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
@@ -37,10 +35,8 @@ namespace Exceptionless.Tests.Plugins {
             Assert.Equal(expectedContent, JsonConvert.SerializeObject(summary, settings));
         }
 
-#if DEBUG
         [Theory]
         [MemberData(nameof(Stacks))]
-#endif
         public void StackSummaryData(string path) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;

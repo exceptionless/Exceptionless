@@ -157,13 +157,17 @@ namespace Exceptionless.Tests.Plugins {
                 new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             });
 
+#if DEBUG
             Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
+#endif
             var location = greenBayEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
 
+#if DEBUG
             Assert.Equal(IRVING_COORDINATES, irvingEvent.Geo);
+#endif
             location = irvingEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("TX", location?.Level1);
@@ -199,13 +203,17 @@ namespace Exceptionless.Tests.Plugins {
                 new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             });
 
+#if DEBUG
             Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
+#endif
             var location = greenBayEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
 
+#if DEBUG
             Assert.Equal(IRVING_COORDINATES, irvingEvent.Geo);
+#endif
             location = irvingEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("TX", location?.Level1);
