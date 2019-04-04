@@ -139,7 +139,7 @@ namespace Exceptionless.Core.Jobs {
             string filter = $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error} {EventIndexType.Alias.IsHidden}:false {EventIndexType.Alias.IsFixed}:false";
             var result = await _eventRepository.CountBySearchAsync(systemFilter, filter, "terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1").AnyContext();
 
-            double total = result.Aggregations.Sum("sum_count").Value ?? result.Total;
+            double total = result.Aggregations.Sum("sum_count")?.Value ?? result.Total;
             double newTotal = result.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
             double uniqueTotal = result.Aggregations.Cardinality("cardinality_stack_id")?.Value ?? 0;
             bool hasSubmittedEvents = total > 0 || project.IsConfigured.GetValueOrDefault();
@@ -147,7 +147,7 @@ namespace Exceptionless.Core.Jobs {
 
             string fixedFilter = $"{EventIndexType.Alias.Type}:{Event.KnownTypes.Error} {EventIndexType.Alias.IsHidden}:false {EventIndexType.Alias.IsFixed}:true";
             var fixedResult = await _eventRepository.CountBySearchAsync(systemFilter, fixedFilter, "sum:count~1").AnyContext();
-            double fixedTotal = fixedResult.Aggregations.Sum("sum_count").Value ?? fixedResult.Total;
+            double fixedTotal = fixedResult.Aggregations.Sum("sum_count")?.Value ?? fixedResult.Total;
 
             var range = new DateTimeRange(data.UtcStartTime, data.UtcEndTime);
             var usages = project.OverageHours.Where(u => range.Contains(u.Date)).ToList();
