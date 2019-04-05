@@ -95,7 +95,7 @@ spec:
               memory: 100Mi
               cpu: 50m
             limits:
-              memory: 200Mi
+              memory: 300Mi
               cpu: 300m
           args: [CloseInactiveSessions]
           envFrom:
@@ -152,7 +152,7 @@ spec:
               memory: 250Mi
               cpu: 400m
             limits:
-              memory: 500Mi
+              memory: 750Mi
               cpu: 1000m
           args: [DailySummary]
           envFrom:
@@ -257,7 +257,7 @@ spec:
               memory: 100Mi
               cpu: 200m
             limits:
-              memory: 200Mi
+              memory: 300Mi
               cpu: 500m
           args: [EventNotifications]
           envFrom:
@@ -314,8 +314,8 @@ spec:
               memory: 150Mi
               cpu: 100m
             limits:
-              memory: 300Mi
-              cpu: 500m
+              memory: 450Mi
+              cpu: 600m
           args: [EventPosts]
           envFrom:
             - configMapRef:
@@ -419,8 +419,8 @@ spec:
               memory: 50Mi
               cpu: 50m
             limits:
-              memory: 100Mi
-              cpu: 300m
+              memory: 250Mi
+              cpu: 600m
           args: [EventUserDescriptions]
           envFrom:
             - configMapRef:
@@ -476,8 +476,8 @@ spec:
               memory: 75Mi
               cpu: 50m
             limits:
-              memory: 125Mi
-              cpu: 300m
+              memory: 250Mi
+              cpu: 600m
           args: [MailMessage]
           envFrom:
             - configMapRef:
@@ -523,8 +523,8 @@ spec:
                   memory: 75Mi
                   cpu: 200m
                 limits:
-                  memory: 125Mi
-                  cpu: 400m
+                  memory: 25Mi
+                  cpu: 800m
               args: [MaintainIndexes]
               envFrom:
                 - configMapRef:
@@ -629,7 +629,7 @@ spec:
               memory: 75Mi
               cpu: 50m
             limits:
-              memory: 125Mi
+              memory: 250Mi
               cpu: 250m
           args: [RetentionLimits]
           envFrom:
@@ -686,8 +686,8 @@ spec:
               memory: 75Mi
               cpu: 50m
             limits:
-              memory: 125Mi
-              cpu: 300m
+              memory: 300Mi
+              cpu: 450m
           args: [StackEventCount]
           envFrom:
             - configMapRef:
@@ -791,8 +791,8 @@ spec:
               memory: 75Mi
               cpu: 50m
             limits:
-              memory: 150Mi
-              cpu: 500m
+              memory: 250Mi
+              cpu: 1000m
           args: [WebHooks]
           envFrom:
             - configMapRef:
