@@ -1,5 +1,5 @@
 ---
-#ConnectionStrings:
+ConnectionStrings:
 #  Redis: server="localhost,abortConnect=false"
 #  Elasticsearch: server=http://localhost:9200
 #  Cache: provider=redis;
