@@ -22,7 +22,7 @@ using Newtonsoft.Json.Linq;
 namespace Exceptionless.App.Controllers.API {
     [Route(API_PREFIX + "/webhooks")]
     [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
-    public class WebHookController : RepositoryApiController<IWebHookRepository, WebHook, WebHook, NewWebHook, NewWebHook> {
+    public class WebHookController : RepositoryApiController<IWebHookRepository, WebHook, WebHook, NewWebHook, UpdateWebHook> {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
 
