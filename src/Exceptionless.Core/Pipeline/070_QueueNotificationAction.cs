@@ -45,7 +45,8 @@ namespace Exceptionless.Core.Pipeline {
                     TotalOccurrences = ctx.Stack.TotalOccurrences
                 }).AnyContext();
 
-            foreach (var hook in (await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId).AnyContext()).Documents) {
+            var webHooks = await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId).AnyContext();
+            foreach (var hook in webHooks.Documents) {
                 if (!ShouldCallWebHook(hook, ctx))
                     continue;
 
@@ -66,6 +67,9 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         private bool ShouldCallWebHook(WebHook hook, EventContext ctx) {
+            if (!hook.IsEnabled)
+                return false;
+            
             if (!String.IsNullOrEmpty(hook.ProjectId) && !String.Equals(ctx.Project.Id, hook.ProjectId))
                 return false;
 
