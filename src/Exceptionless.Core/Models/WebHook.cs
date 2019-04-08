@@ -8,6 +8,8 @@ namespace Exceptionless.Core.Models {
         public string ProjectId { get; set; }
         public string Url { get; set; }
         public string[] EventTypes { get; set; }
+        
+        public bool IsEnabled { get; set; } = true;
 
         /// <summary>
         /// The schema version that should be used.
