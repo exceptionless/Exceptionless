@@ -17,6 +17,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(e => e.ProjectId))
                     .Keyword(f => f.Name(e => e.Url))
                     .Keyword(f => f.Name(e => e.EventTypes))
+                    .Boolean(f => f.Name(e => e.IsEnabled))
                 );
         }
     }
