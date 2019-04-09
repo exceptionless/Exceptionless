@@ -24,13 +24,13 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
@@ -82,13 +82,13 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
@@ -139,13 +139,13 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
@@ -186,13 +186,13 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
@@ -244,13 +244,13 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
@@ -301,13 +301,13 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
@@ -348,13 +348,13 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
@@ -406,13 +406,13 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
@@ -463,13 +463,13 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
@@ -510,13 +510,13 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
@@ -558,13 +558,13 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
@@ -616,13 +616,13 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
@@ -673,13 +673,13 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
@@ -720,13 +720,13 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
@@ -778,13 +778,13 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
@@ -835,13 +835,13 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
