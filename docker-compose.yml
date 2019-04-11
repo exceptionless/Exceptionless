@@ -10,7 +10,7 @@ services:
       target: api
     image: exceptionless/api-ci:latest
     environment:
-      EX_AppMode: Development
+      EX_AppMode: Production
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
       #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
@@ -34,7 +34,7 @@ services:
     image: exceptionless/job-ci:latest
     command: run-all
     environment:
-      EX_AppMode: Development
+      EX_AppMode: Production
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
       #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
