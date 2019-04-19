@@ -13,6 +13,7 @@ namespace Exceptionless.Core.Configuration {
 
         public string Scope { get; internal set; }
         public string ScopePrefix { get; internal set; }
+        public string Topic { get; internal set; }
     }
 
     public class ConfigureMessageBusOptions : IConfigureOptions<MessageBusOptions> {
@@ -26,6 +27,8 @@ namespace Exceptionless.Core.Configuration {
             options.Scope = _configuration.GetValue<string>(nameof(options.Scope), String.Empty);
             options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
 
+            options.Topic = _configuration.GetValue<string>(nameof(options.Topic), $"{options.ScopePrefix}messages");
+            
             string cs = _configuration.GetConnectionString("MessageBus");
             options.Data = cs.ParseConnectionString();
             options.Provider = options.Data.GetString(nameof(options.Provider));
