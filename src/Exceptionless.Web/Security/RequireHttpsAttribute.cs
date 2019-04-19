@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using Exceptionless.Web.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -23,7 +24,7 @@ namespace Exceptionless.Web.Security {
             if (IsSecure(filterContext.HttpContext.Request, logger))
                 return;
 
-            if (IgnoreLocalRequests && IsLocal(filterContext.HttpContext.Request))
+            if (IgnoreLocalRequests && filterContext.HttpContext.Request.IsLocal())
                 return;
 
             HandleNonHttpsRequest(filterContext);
@@ -39,28 +40,6 @@ namespace Exceptionless.Web.Security {
 
             if (isLogTraceEnabled) logger.LogTrace("X-Forwarded-Proto not present");
             return request.IsHttps;
-        }
-
-        private const string NullIpAddress = "::1";
-
-        public bool IsLocal(HttpRequest request) {
-            if (request.Host.Host.Contains("localtest.me") ||
-                request.Host.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            var connection = request.HttpContext.Connection;
-
-            if (IsSet(connection.RemoteIpAddress)) {
-                return IsSet(connection.LocalIpAddress)
-                    ? connection.RemoteIpAddress.Equals(connection.LocalIpAddress)
-                    : IPAddress.IsLoopback(connection.RemoteIpAddress);
-            }
-
-            return true;
-        }
-
-        private bool IsSet(IPAddress address) {
-            return address != null && address.ToString() != NullIpAddress;
         }
 
         protected virtual void HandleNonHttpsRequest(AuthorizationFilterContext filterContext) {
