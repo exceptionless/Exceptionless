@@ -23,17 +23,17 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="8.0.0" />
     <PackageReference Include="AutoMapper.Collection" Version="5.0.0" />
-    <PackageReference Include="FluentValidation" Version="8.2.2" />
-    <PackageReference Include="Foundatio" Version="8.0.1965" />
-    <PackageReference Include="Foundatio.Hosting" Version="8.0.1965" />
-    <PackageReference Include="Foundatio.JsonNet" Version="8.0.1965" />
-    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="5.6.845" />
+    <PackageReference Include="FluentValidation" Version="8.2.3" />
+    <PackageReference Include="Foundatio" Version="8.1.2027" />
+    <PackageReference Include="Foundatio.Hosting" Version="8.1.2027" />
+    <PackageReference Include="Foundatio.JsonNet" Version="8.1.2027" />
+    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="5.6.848" />
     <PackageReference Include="Handlebars.Net" Version="1.10.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="3.0.0" />
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.2.1" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.2.4" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" Version="2.2.0" />
@@ -41,7 +41,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
     <PackageReference Include="NEST" Version="5.6.6" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-    <PackageReference Include="Stripe.net" Version="25.4.0" />
+    <PackageReference Include="Stripe.net" Version="25.9.0" />
     <PackageReference Include="System.DirectoryServices" Version="4.5.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
     <PackageReference Include="UAParser" Version="3.1.36" />
