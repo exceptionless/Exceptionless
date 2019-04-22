@@ -131,6 +131,28 @@ kubectl run -it --rm aks-ssh --image=ubuntu
 kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/api-ci:5.0.3427-pre
 kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3427-pre
 
+
+API_TAG=5.0.3432-pre
+kubectl set image deployment exceptionless-api exceptionless-api=exceptionless/api-ci:$API_TAG
+kubectl set image deployment exceptionless-collector exceptionless-collector=exceptionless/api-ci:$API_TAG
+JOB_TAG=5.0.3432-pre
+kubectl set image deployment exceptionless-jobs-close-inactive-sessions exceptionless-jobs-close-inactive-sessions=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-daily-summary exceptionless-jobs-daily-summary=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-event-notifications exceptionless-jobs-event-notifications=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-event-posts exceptionless-jobs-event-posts=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-event-user-descriptions exceptionless-jobs-event-user-descriptions=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-mail-message exceptionless-jobs-mail-message=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-retention-limits exceptionless-jobs-retention-limits=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-stack-event-count exceptionless-jobs-stack-event-count=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-web-hooks exceptionless-jobs-web-hooks=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-work-item exceptionless-jobs-work-item=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-cleanup-snapshot exceptionless-jobs-cleanup-snapshot=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-download-geoip-database exceptionless-jobs-download-geoip-database=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-event-snapshot exceptionless-jobs-event-snapshot=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-maintain-indexes exceptionless-jobs-maintain-indexes=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-organization-snapshot exceptionless-jobs-organization-snapshot=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-stack-snapshot exceptionless-jobs-stack-snapshot=exceptionless/job-ci:$JOB_TAG
+
 # stop the entire app
 kubectl scale deployment/exceptionless-api --replicas=0 --namespace ex-prod
 kubectl scale deployment/exceptionless-app --replicas=0 --namespace ex-prod
