@@ -27,7 +27,7 @@ using Microsoft.Extensions.Options;
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/users")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, UpdateUser> {
+    public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, ViewUser, UpdateUser> {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly ICacheClient _cache;
