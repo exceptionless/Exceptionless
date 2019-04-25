@@ -67,7 +67,10 @@ namespace Exceptionless.Web {
                     vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
                 });
 
-                CreateMap<Stripe.Invoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
+                CreateMap<Stripe.Invoice, InvoiceGridModel>().AfterMap((si, igm) => {
+                   igm.Id = igm.Id.Substring(3);
+                   igm.Date = si.Created;
+                });
 
                 CreateMap<NewProject, Project>();
                 CreateMap<Project, ViewProject>().AfterMap((p, vp) => vp.HasSlackIntegration = p.Data.ContainsKey(Project.KnownDataKeys.SlackToken));
