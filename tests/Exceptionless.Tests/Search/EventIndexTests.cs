@@ -437,11 +437,11 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("data.anumber:12", 1)]
         [InlineData("data.anumber:>11", 1)]
         [InlineData("data.anumber2:>11", 0)]
-        [InlineData("data.FriendlyErrorIdentifier.keyword:\"Foo-7967BB\"", 1)]
+        //[InlineData("data.FriendlyErrorIdentifier.keyword:\"Foo-7967BB\"", 1)]
         [InlineData("data.some-date:>2015-01-01", 1)]
         [InlineData("data.some-date:<2015-01-01", 0)]
-        [InlineData("data.EntityId.keyword:88df3f71-c888-42a7-12c4-08d67c7d888", 1)]
-        [InlineData("data.UserId.keyword:\"3db4f3c2-88c7-4e37-b692-3a545036088\"", 1)]
+        //[InlineData("data.EntityId.keyword:88df3f71-c888-42a7-12c4-08d67c7d888", 1)]
+        //[InlineData("data.UserId.keyword:\"3db4f3c2-88c7-4e37-b692-3a545036088\"", 1)]
         public async Task GetByCustomDataAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
