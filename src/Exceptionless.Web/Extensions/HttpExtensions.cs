@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using Exceptionless.Core.Authorization;
@@ -116,6 +117,28 @@ namespace Exceptionless.Web.Extensions {
                 Username = credentials[0],
                 Password = credentials[1]
             };
+        }
+        
+        public static bool IsLocal(this HttpRequest request) {
+            if (request.Host.Host.Contains("localtest.me", StringComparison.OrdinalIgnoreCase) ||
+                request.Host.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var connection = request.HttpContext.Connection;
+
+            if (IsSet(connection.RemoteIpAddress)) {
+                return IsSet(connection.LocalIpAddress)
+                    ? connection.RemoteIpAddress.Equals(connection.LocalIpAddress)
+                    : IPAddress.IsLoopback(connection.RemoteIpAddress);
+            }
+
+            return true;
+        }
+
+        private const string NullIpAddress = "::1";
+        
+        private static bool IsSet(IPAddress address) {
+            return address != null && address.ToString() != NullIpAddress;
         }
     }
 

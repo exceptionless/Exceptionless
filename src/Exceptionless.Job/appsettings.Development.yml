@@ -1,13 +1,14 @@
 ---
-#ConnectionStrings:
+ConnectionStrings:
+#  Redis: server="localhost,abortConnect=false"
 #  Elasticsearch: server=http://localhost:9200
-#  Cache: provider=redis;server="localhost,abortConnect=false"
+#  Cache: provider=redis;
+#  MessageBus: provider=redis;
+#  Queue: provider=redis;
+  Storage: provider=folder;path=..\..\..\..\Exceptionless.Web\storage
 
 # Base url for the ui used to build links in emails and other places.
 BaseURL: 'http://localhost:9001/#!'
-
-# Folder used to store event post data
-StorageFolder: ..\..\..\..\Exceptionless.Web\storage
 
 Serilog:
   MinimumLevel:

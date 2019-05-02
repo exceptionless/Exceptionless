@@ -11,6 +11,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   schedule: "5 */1 * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
@@ -23,13 +24,13 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
@@ -81,20 +82,20 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
               memory: 100Mi
               cpu: 50m
             limits:
-              memory: 200Mi
+              memory: 300Mi
               cpu: 300m
           args: [CloseInactiveSessions]
           envFrom:
@@ -138,20 +139,20 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
               memory: 250Mi
               cpu: 400m
             limits:
-              memory: 500Mi
+              memory: 750Mi
               cpu: 1000m
           args: [DailySummary]
           envFrom:
@@ -172,6 +173,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   schedule: "0 1 * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
@@ -184,13 +186,13 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
@@ -242,20 +244,20 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
               memory: 100Mi
               cpu: 200m
             limits:
-              memory: 200Mi
+              memory: 300Mi
               cpu: 500m
           args: [EventNotifications]
           envFrom:
@@ -299,21 +301,21 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
               memory: 150Mi
               cpu: 100m
             limits:
-              memory: 300Mi
-              cpu: 500m
+              memory: 450Mi
+              cpu: 600m
           args: [EventPosts]
           envFrom:
             - configMapRef:
@@ -333,6 +335,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   schedule: "0 */12 * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
@@ -345,13 +348,13 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
@@ -403,21 +406,21 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
               memory: 50Mi
               cpu: 50m
             limits:
-              memory: 100Mi
-              cpu: 300m
+              memory: 250Mi
+              cpu: 600m
           args: [EventUserDescriptions]
           envFrom:
             - configMapRef:
@@ -460,21 +463,21 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
               memory: 75Mi
               cpu: 50m
             limits:
-              memory: 125Mi
-              cpu: 300m
+              memory: 250Mi
+              cpu: 600m
           args: [MailMessage]
           envFrom:
             - configMapRef:
@@ -494,6 +497,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   schedule: "10 */2 * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
@@ -506,21 +510,21 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
                   memory: 75Mi
                   cpu: 200m
                 limits:
-                  memory: 125Mi
-                  cpu: 400m
+                  memory: 25Mi
+                  cpu: 800m
               args: [MaintainIndexes]
               envFrom:
                 - configMapRef:
@@ -541,6 +545,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   schedule: "30 * * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
@@ -553,13 +558,13 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
@@ -611,20 +616,20 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
               memory: 75Mi
               cpu: 50m
             limits:
-              memory: 125Mi
+              memory: 250Mi
               cpu: 250m
           args: [RetentionLimits]
           envFrom:
@@ -668,21 +673,21 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
               memory: 75Mi
               cpu: 50m
             limits:
-              memory: 125Mi
-              cpu: 300m
+              memory: 300Mi
+              cpu: 450m
           args: [StackEventCount]
           envFrom:
             - configMapRef:
@@ -702,6 +707,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   schedule: "40 * * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
@@ -714,13 +720,13 @@ spec:
                 httpGet:
                   path: /health
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 5
+                initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
                 requests:
@@ -772,21 +778,21 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:
               memory: 75Mi
               cpu: 50m
             limits:
-              memory: 150Mi
-              cpu: 500m
+              memory: 250Mi
+              cpu: 1000m
           args: [WebHooks]
           envFrom:
             - configMapRef:
@@ -829,13 +835,13 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           resources:
             requests:

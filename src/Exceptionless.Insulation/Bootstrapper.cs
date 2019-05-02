@@ -129,7 +129,14 @@ namespace Exceptionless.Insulation {
 
                 container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
                     Subscriber = s.GetRequiredService<ConnectionMultiplexer>().GetSubscriber(),
-                    Topic = $"{options.ScopePrefix}messages",
+                    Topic = options.Topic,
+                    Serializer = s.GetRequiredService<ISerializer>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                }));
+            } else if (String.Equals(options.Provider, "rabbitmq")) {
+                container.ReplaceSingleton<IMessageBus>(s => new RabbitMQMessageBus(new RabbitMQMessageBusOptions {
+                    ConnectionString = options.ConnectionString,
+                    Topic = options.Topic,
                     Serializer = s.GetRequiredService<ISerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
@@ -224,7 +231,7 @@ namespace Exceptionless.Insulation {
                 container.ReplaceSingleton(s => CreateSQSQueue<WebHookNotification>(s, options));
                 container.ReplaceSingleton(s => CreateSQSQueue<MailMessage>(s, options));
                 container.ReplaceSingleton(s => CreateSQSQueue<WorkItemData>(s, options, workItemTimeout: TimeSpan.FromHours(1)));
-            }  
+            }
         }
 
         private static void RegisterStorage(IServiceCollection container, StorageOptions options) {

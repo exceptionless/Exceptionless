@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
@@ -26,6 +27,15 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(q => q.ElasticFilter(filter), o => o.CacheKey(String.Concat("paged:Organization:", organizationId, ":Project:", projectId)));
         }
 
+        public async Task MarkDisabledAsync(string id) {
+            var webHook = await GetByIdAsync(id).AnyContext();
+            if (!webHook.IsEnabled)
+                return;
+            
+            webHook.IsEnabled = false;
+            await this.SaveAsync(webHook, o => o.Cache()).AnyContext();
+        }
+        
         public static class EventTypes {
             // TODO: Add support for these new web hook types.
             public const string NewError = "NewError";

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Security.Claims;
 using Exceptionless.Core;
@@ -18,8 +18,10 @@ using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
+using Exceptionless.Web.Extensions;
 using Foundatio.Hosting.Startup;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web {
@@ -138,7 +140,8 @@ namespace Exceptionless.Web {
                     .From("https://maxcdn.bootstrapcdn.com");
                 csp.AllowImages.FromSelf()
                     .From("data:")
-                    .From("https://q.stripe.com");
+                    .From("https://q.stripe.com")
+                    .From("https://www.gravatar.com");
                 csp.AllowScripts.FromSelf()
                     .AllowUnsafeInline()
                     .AllowUnsafeEval()
@@ -151,9 +154,21 @@ namespace Exceptionless.Web {
                     .From("https://maxcdn.bootstrapcdn.com");
             });
 
+            var contentTypeProvider = new FileExtensionContentTypeProvider {
+                Mappings = {
+                    [".less"] = "plain/text"
+                }
+            };
+
+            app.UseStaticFiles(new StaticFileOptions {
+                ContentTypeProvider = contentTypeProvider
+            });
+
             app.Use(async (context, next) => {
+                if (context.Request.IsLocal() == false && options.AppMode != AppMode.Development)
+                    context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+                
                 context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
-                context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
                 context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
                 context.Response.Headers.Add("X-Frame-Options", "DENY");
                 context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");

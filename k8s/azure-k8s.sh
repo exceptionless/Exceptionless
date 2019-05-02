@@ -42,14 +42,21 @@ kubectl apply -f helm-rbac.yaml
 helm init --service-account tiller
 
 # install nginx ingress
-helm install stable/nginx-ingress --namespace kube-system --name nginx-ingress --set controller.replicaCount=2
+helm install stable/nginx-ingress \
+    --namespace kube-system \
+    --name nginx-ingress \
+    --set controller.service.externalTrafficPolicy=Local \
+    --set controller.stats.enabled=true \
+    --set controller.metrics.enabled=true \
+    --set controller.replicaCount=2
 
+# TODO: Figure out how to get these settings added to the helm config for nginx-ingress
 #nginx ingress configmap
 #    "ssl-ciphers": "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA",
 #    "ssl-protocols": "TLSv1 TLSv1.1 TLSv1.2",
 #    "use-forwarded-headers": "true"
 
-helm upgrade --set "controller.stats.enabled=true" --set "controller.metrics.enabled=true" --reuse-values nginx-ingress nginx-ingress stable/nginx-ingress
+helm upgrade --set controller.stats.enabled=true --set controller.metrics.enabled=true --reuse-values nginx-ingress nginx-ingress stable/nginx-ingress
 
 # wait for external ip to be assigned
 kubectl get service -l app=nginx-ingress --namespace kube-system
@@ -70,14 +77,14 @@ kubectl apply -f cluster-issuer.yaml
 kubectl apply -f certificates.yaml
 
 # install redis server
-helm install stable/redis --values redis-values.yaml --name redis
+helm install stable/redis --version 5.2.0 --values redis-values.yaml --name redis --namespace ex-prod
 export REDIS_PASSWORD=$(kubectl get secret --namespace test redis -o jsonpath="{.data.redis-password}" | base64 --decode)
 
 helm install stable/redis-ha --set "persistentVolume.storageClass=managed-premium" --set "fullnameOverride=exceptionless-redis" --name exceptionless-redis
 kubectl exec -it redis-redis-ha-server-0 bash -n ex-prod
 
 # install exceptionless app
-API_TAG=5.0.3346-pre
+API_TAG=5.0.3352-pre
 helm install --name exceptionless --namespace ex-prod ./exceptionless \
     --set "storage.azureConnectionString=DefaultEndpointsProtocol=https;AccountName=ex4events;AccountKey=$AZURE_ACCOUNT_KEY;EndpointSuffix=core.windows.net" \
     --set "elasticsearch.connectionString=http://10.0.0.4:9200" \
@@ -121,8 +128,76 @@ kubectl run -it --rm aks-ssh --image=ubuntu
 # ssh to k8s node https://docs.microsoft.com/en-us/azure/aks/ssh
 
 # update image on all deployments and cronjobs
-kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/api-ci:5.0.3401-pre
-kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3401-pre
+kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/api-ci:5.0.3427-pre
+kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3427-pre
+
+
+API_TAG=5.0.3432-pre
+kubectl set image deployment exceptionless-api exceptionless-api=exceptionless/api-ci:$API_TAG
+kubectl set image deployment exceptionless-collector exceptionless-collector=exceptionless/api-ci:$API_TAG
+JOB_TAG=5.0.3432-pre
+kubectl set image deployment exceptionless-jobs-close-inactive-sessions exceptionless-jobs-close-inactive-sessions=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-daily-summary exceptionless-jobs-daily-summary=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-event-notifications exceptionless-jobs-event-notifications=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-event-posts exceptionless-jobs-event-posts=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-event-user-descriptions exceptionless-jobs-event-user-descriptions=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-mail-message exceptionless-jobs-mail-message=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-retention-limits exceptionless-jobs-retention-limits=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-stack-event-count exceptionless-jobs-stack-event-count=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-web-hooks exceptionless-jobs-web-hooks=exceptionless/job-ci:$JOB_TAG
+kubectl set image deployment exceptionless-jobs-work-item exceptionless-jobs-work-item=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-cleanup-snapshot exceptionless-jobs-cleanup-snapshot=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-download-geoip-database exceptionless-jobs-download-geoip-database=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-event-snapshot exceptionless-jobs-event-snapshot=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-maintain-indexes exceptionless-jobs-maintain-indexes=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-organization-snapshot exceptionless-jobs-organization-snapshot=exceptionless/job-ci:$JOB_TAG
+kubectl set image cronjob exceptionless-jobs-stack-snapshot exceptionless-jobs-stack-snapshot=exceptionless/job-ci:$JOB_TAG
+
+# stop the entire app
+kubectl scale deployment/exceptionless-api --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-app --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-collector --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-close-inactive-sessions --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-daily-summary --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-notifications --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-posts --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-user-descriptions --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-mail-message --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-retention-limits --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-stack-event-count --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-web-hooks --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-work-item --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-statsd --replicas=0 --namespace ex-prod
+
+kubectl patch cronjob/exceptionless-jobs-cleanup-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-download-geoip-database -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-event-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-maintain-indexes -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-organization-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-stack-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
+
+# resume the app
+kubectl scale deployment/exceptionless-api --replicas=5 --namespace ex-prod
+kubectl scale deployment/exceptionless-app --replicas=2 --namespace ex-prod
+kubectl scale deployment/exceptionless-collector --replicas=12 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-close-inactive-sessions --replicas=1 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-daily-summary --replicas=1 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-notifications --replicas=2 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-posts --replicas=6 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-event-user-descriptions --replicas=2 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-mail-message --replicas=2 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-retention-limits --replicas=1 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-stack-event-count --replicas=1 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-web-hooks --replicas=4 --namespace ex-prod
+kubectl scale deployment/exceptionless-jobs-work-item --replicas=5 --namespace ex-prod
+kubectl scale deployment/exceptionless-statsd --replicas=1 --namespace ex-prod
+
+kubectl patch cronjob/exceptionless-jobs-cleanup-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-event-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-organization-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-stack-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
 
 # view pod log tail
 kubectl logs -f exceptionless-jobs-event-posts-6c7b78d745-xd5ln

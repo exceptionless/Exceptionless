@@ -191,24 +191,12 @@ namespace Exceptionless.Web.Controllers {
             return new OkWithHeadersContentResult<T>(content, headers);
         }
 
-        protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
-            var headersToAdd = new HeaderDictionary();
-            if (headers != null) {
-                foreach (var kvp in headers)
-                    headersToAdd.Add(kvp.Key, kvp.Value.ToArray());
-            }
-
-            return new OkWithResourceLinks<TEntity>(content, hasMore, null, pagePropertyAccessor, headersToAdd, isDescending);
+        protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IHeaderDictionary headers = null, bool isDescending = false) where TEntity : class {
+            return new OkWithResourceLinks<TEntity>(content, hasMore, null, pagePropertyAccessor, headers, isDescending);
         }
 
-        protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
-            var headersToAdd = new HeaderDictionary();
-            if (headers != null) {
-                foreach (var kvp in headers)
-                    headersToAdd.Add(kvp.Key, kvp.Value.ToArray());
-            }
-
-            return new OkWithResourceLinks<TEntity>(content, hasMore, page, total, headers: headersToAdd);
+        protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IHeaderDictionary headers = null) where TEntity : class {
+            return new OkWithResourceLinks<TEntity>(content, hasMore, page, total, headers: headers);
         }
 
         protected string GetResourceLink(string url, string type) {

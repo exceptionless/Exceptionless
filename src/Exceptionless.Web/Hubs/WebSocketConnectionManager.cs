@@ -16,7 +16,6 @@ namespace Exceptionless.Web.Hubs {
     public class WebSocketConnectionManager : IDisposable {
         private static readonly ArraySegment<byte> _keepAliveMessage = new ArraySegment<byte>(Encoding.ASCII.GetBytes("{}"), 0, 2);
         private readonly ConcurrentDictionary<string, WebSocket> _connections = new ConcurrentDictionary<string, WebSocket>();
-        private readonly TaskQueue _taskQueue; 
         private readonly Timer _timer;
         private readonly JsonSerializerSettings _serializerSettings;
         private readonly ILogger _logger;
@@ -27,7 +26,6 @@ namespace Exceptionless.Web.Hubs {
             if (!options.Value.EnableWebSockets)
                 return;
 
-            _taskQueue = new TaskQueue(maxDegreeOfParallelism: 1, loggerFactory: loggerFactory); 
             _timer = new Timer(KeepAlive, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
         }
 
@@ -35,7 +33,7 @@ namespace Exceptionless.Web.Hubs {
             if (_connections.IsEmpty && _connections.Count == 0) 
                 return; 
 
-            _taskQueue.Enqueue(async () => { 
+            Task.Factory.StartNew(async () => { 
                 var sockets = GetAll();
                 var openSockets = sockets.Where(s => s.State == WebSocketState.Open).ToArray();
                 if (_logger.IsEnabled(LogLevel.Trace))
@@ -106,7 +104,7 @@ namespace Exceptionless.Web.Hubs {
                 return Task.CompletedTask;
 
             string serializedMessage = JsonConvert.SerializeObject(message, _serializerSettings);
-            _taskQueue.Enqueue(async () => { 
+            Task.Factory.StartNew(async () => { 
                 if (!CanSendWebSocketMessage(socket)) 
                     return; 
  
@@ -152,7 +150,6 @@ namespace Exceptionless.Web.Hubs {
 
         public void Dispose() {
             _timer?.Dispose();
-            _taskQueue?.Dispose();
         }
     }
 }

@@ -27,7 +27,9 @@ before_build:
       VERSION="$VERSION_PREFIX.$VERSION_SUFFIX"
       echo "Version: $VERSION Tag: $APPVEYOR_REPO_TAG_NAME"
     fi
-    appveyor UpdateBuild -Version $VERSION
+    if [ -z $APPVEYOR_PULL_REQUEST_NUMBER ]; then
+      appveyor UpdateBuild -Version $VERSION
+    fi
 
 install:
   - |

@@ -1,24 +1,21 @@
 ---
-#ConnectionStrings:
+ConnectionStrings:
 #  Elasticsearch: server=http://localhost:9200
 #  Cache: provider=redis;server="localhost,abortConnect=false"
+#  MessageBus: provider=redis;server="localhost,abortConnect=false"
+#  Metrics: provider=statsd;server=10.0.0.5;
+#  Queue: provider=redis;server="localhost,abortConnect=false"
+#  Storage: ''
+#  Email: 'smtps://user:password@domain.com:587'
+#  LDAP: ''
+  OAuth: FacebookId=395178683904310;GitHubId=7ef1dd5bfbc4ccf7f5ef;GoogleId=809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com;MicrosoftId=000000004C137E8B;SlackId=34500115540.177239122322;
 
-  # Base url for the ui used to build links in emails and other places.
+# Base url for the ui used to build links in emails and other places.
 BaseURL: https://be.exceptionless.io
 
-# Email
-# SmtpFrom:Exceptionless <noreply@exceptionless.io>
-# SmtpHost: domain.com
-# SmtpPort: 587
-# SmtpEncryption: StartTLS
-# SmtpUser: user@domain.com
-# SmtpPassword: ''
-
-# Metrics
-MetricsServerName: 10.0.0.5
+# Controls whether users can signup.
+EnableAccountCreation: true
 
 # Exceptionless Client Settings
 ExceptionlessServerUrl: https://collector.exceptionless.io
 InternalProjectId: 50ca6b2423d6c8493020b823
-
-SlackAppId: 34500115540.177239122322
