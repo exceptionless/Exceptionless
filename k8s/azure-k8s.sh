@@ -131,6 +131,8 @@ kubectl run -it --rm aks-ssh --image=ubuntu
 kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/api-ci:5.0.3427-pre
 kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3427-pre
 
+APP_TAG=1471
+kubectl set image deployment exceptionless-app exceptionless-app=exceptionless/ui-ci:$APP_TAG
 
 API_TAG=5.0.3432-pre
 kubectl set image deployment exceptionless-api exceptionless-api=exceptionless/api-ci:$API_TAG
