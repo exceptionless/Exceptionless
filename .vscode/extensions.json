@@ -3,6 +3,7 @@
     "ms-vscode.csharp",
     "streetsidesoftware.code-spell-checker",
     "tintoy.msbuild-project-tools",
-    "humao.rest-client"
+    "humao.rest-client",
+    "ms-kubernetes-tools.vscode-kubernetes-tools"
   ]
 }
