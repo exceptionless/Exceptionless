@@ -60,7 +60,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
             ConfigureSettings(settings);
             foreach (var index in Indexes)
                 index.ConfigureSettings(settings);
-
+            if (!string.IsNullOrEmpty(Options?.UserName)) {
+                settings.BasicAuthentication(Options?.UserName, Options?.Password);
+            }
             var client = new ElasticClient(settings);
             return client;
         }
