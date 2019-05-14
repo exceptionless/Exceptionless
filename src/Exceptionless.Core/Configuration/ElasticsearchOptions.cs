@@ -17,6 +17,9 @@ namespace Exceptionless.Core.Configuration {
 
         public bool EnableSnapshotJobs { get; set; }
         public bool DisableIndexConfiguration { get; set; }
+
+        public string Password { get; internal set; }
+        public string UserName { get; internal set; }
     }
 
     public class ConfigureElasticsearchOptions : IConfigureOptions<ElasticsearchOptions> {
@@ -50,6 +53,10 @@ namespace Exceptionless.Core.Configuration {
             options.FieldsLimit = fieldsLimit > 0 ? fieldsLimit : 1500;
 
             options.EnableMapperSizePlugin = pairs.GetValueOrDefault("enable-size-plugin", _appOptions.Value.AppMode != AppMode.Development);
+
+            options.UserName = pairs.GetString("username", "");
+
+            options.Password = pairs.GetString("password", "");
         }
     }
 }
