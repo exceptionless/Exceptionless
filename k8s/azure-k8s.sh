@@ -128,16 +128,16 @@ kubectl run -it --rm aks-ssh --image=ubuntu
 # ssh to k8s node https://docs.microsoft.com/en-us/azure/aks/ssh
 
 # update image on all deployments and cronjobs
-kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/api-ci:5.0.3427-pre
-kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3427-pre
+kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/api-ci:5.0.3443-pre --all --v 8
+kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3443-pre --all --v 8
 
 APP_TAG=1471
 kubectl set image deployment exceptionless-app exceptionless-app=exceptionless/ui-ci:$APP_TAG
 
-API_TAG=5.0.3438-pre
+API_TAG=5.0.3443-pre
 kubectl set image deployment exceptionless-api exceptionless-api=exceptionless/api-ci:$API_TAG
 kubectl set image deployment exceptionless-collector exceptionless-collector=exceptionless/api-ci:$API_TAG
-JOB_TAG=5.0.3438-pre
+JOB_TAG=5.0.3443-pre
 kubectl set image deployment exceptionless-jobs-close-inactive-sessions exceptionless-jobs-close-inactive-sessions=exceptionless/job-ci:$JOB_TAG
 kubectl set image deployment exceptionless-jobs-daily-summary exceptionless-jobs-daily-summary=exceptionless/job-ci:$JOB_TAG
 kubectl set image deployment exceptionless-jobs-event-notifications exceptionless-jobs-event-notifications=exceptionless/job-ci:$JOB_TAG
