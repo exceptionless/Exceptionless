@@ -55,7 +55,6 @@ namespace Exceptionless.Core.Configuration {
             options.EnableMapperSizePlugin = pairs.GetValueOrDefault("enable-size-plugin", _appOptions.Value.AppMode != AppMode.Development);
 
             options.UserName = pairs.GetString("username");
-
             options.Password = pairs.GetString("password");
         }
     }

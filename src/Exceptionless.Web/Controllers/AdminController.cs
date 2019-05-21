@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using QueueOptions = Exceptionless.Core.Configuration.QueueOptions;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/admin")]
