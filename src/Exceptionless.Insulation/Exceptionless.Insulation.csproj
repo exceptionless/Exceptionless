@@ -1,30 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\build\common.props" />
   <ItemGroup>
-    <PackageReference Include="App.Metrics.Extensions.DependencyInjection" Version="3.0.0" />
-    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="3.0.0" />
-    <PackageReference Include="App.Metrics.Reporting.Graphite" Version="3.0.0" />
-    <PackageReference Include="App.Metrics.Reporting.Http" Version="3.0.0" />
-    <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="3.0.0" />
-    <PackageReference Include="Foundatio.Aliyun" Version="8.0.46" />
-    <PackageReference Include="Foundatio.AppMetrics" Version="8.1.2027" />
-    <PackageReference Include="Foundatio.AWS" Version="8.0.1541" />
-    <PackageReference Include="Foundatio.AzureStorage" Version="8.0.1528" />
-    <PackageReference Include="Foundatio.Hosting" Version="8.1.2027" />
-    <PackageReference Include="Foundatio.Minio" Version="8.0.50" />
-    <PackageReference Include="Foundatio.RabbitMQ" Version="8.1.1512" />
-    <PackageReference Include="Foundatio.Redis" Version="8.1.1638" />
+    <PackageReference Include="App.Metrics.Extensions.DependencyInjection" Version="3.1.0" />
+    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="3.1.0" />
+    <PackageReference Include="App.Metrics.Reporting.Graphite" Version="3.1.0" />
+    <PackageReference Include="App.Metrics.Reporting.Http" Version="3.1.0" />
+    <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="3.1.0" />
+    <PackageReference Include="Foundatio.Aliyun" Version="8.0.48" />
+    <PackageReference Include="Foundatio.AppMetrics" Version="8.1.2058" />
+    <PackageReference Include="Foundatio.AWS" Version="8.0.1547" />
+    <PackageReference Include="Foundatio.AzureStorage" Version="8.0.1530" />
+    <PackageReference Include="Foundatio.Hosting" Version="8.1.2058" />
+    <PackageReference Include="Foundatio.Minio" Version="8.0.52" />
+    <PackageReference Include="Foundatio.RabbitMQ" Version="8.1.1517" />
+    <PackageReference Include="Foundatio.Redis" Version="8.1.1642" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
-    <PackageReference Include="MailKit" Version="2.1.4" />
-    <PackageReference Include="MimeKit" Version="2.1.4" />
+    <PackageReference Include="MailKit" Version="2.1.5.1" />
+    <PackageReference Include="MimeKit" Version="2.1.5.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.4" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="2.2.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.2.0" />
-    <PackageReference Include="Serilog.Extensions.Logging" Version="2.0.2" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="2.0.4" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.0.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />

@@ -57,12 +57,14 @@ namespace Exceptionless.Core.Repositories.Configuration {
         protected override IElasticClient CreateElasticClient() {
             var connectionPool = CreateConnectionPool();
             var settings = new ConnectionSettings(connectionPool, s => new ElasticsearchJsonNetSerializer(s, _logger));
+            
             ConfigureSettings(settings);
             foreach (var index in Indexes)
                 index.ConfigureSettings(settings);
-            if (!string.IsNullOrEmpty(_options.Value.UserName) && !string.IsNullOrEmpty(_options.Value.Password)) {
+                
+            if (!String.IsNullOrEmpty(_options.Value.UserName) && !String.IsNullOrEmpty(_options.Value.Password))
                 settings.BasicAuthentication(_options.Value.UserName, _options.Value.Password);
-            }
+                
             var client = new ElasticClient(settings);
             return client;
         }

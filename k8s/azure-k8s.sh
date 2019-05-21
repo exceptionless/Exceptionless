@@ -134,10 +134,10 @@ kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/j
 APP_TAG=1471
 kubectl set image deployment exceptionless-app exceptionless-app=exceptionless/ui-ci:$APP_TAG
 
-API_TAG=5.0.3432-pre
+API_TAG=5.0.3438-pre
 kubectl set image deployment exceptionless-api exceptionless-api=exceptionless/api-ci:$API_TAG
 kubectl set image deployment exceptionless-collector exceptionless-collector=exceptionless/api-ci:$API_TAG
-JOB_TAG=5.0.3432-pre
+JOB_TAG=5.0.3438-pre
 kubectl set image deployment exceptionless-jobs-close-inactive-sessions exceptionless-jobs-close-inactive-sessions=exceptionless/job-ci:$JOB_TAG
 kubectl set image deployment exceptionless-jobs-daily-summary exceptionless-jobs-daily-summary=exceptionless/job-ci:$JOB_TAG
 kubectl set image deployment exceptionless-jobs-event-notifications exceptionless-jobs-event-notifications=exceptionless/job-ci:$JOB_TAG

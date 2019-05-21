@@ -37,6 +37,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog.Sinks.Exceptionless;
 using StackExchange.Redis;
+using QueueOptions = Exceptionless.Core.Configuration.QueueOptions;
 
 namespace Exceptionless.Insulation {
     public class Bootstrapper {

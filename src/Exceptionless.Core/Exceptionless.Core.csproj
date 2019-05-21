@@ -21,12 +21,12 @@
     <EmbeddedResource Include="Mail\Templates\user-password-reset.html" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="8.0.0" />
+    <PackageReference Include="AutoMapper" Version="8.1.0" />
     <PackageReference Include="AutoMapper.Collection" Version="5.0.0" />
-    <PackageReference Include="FluentValidation" Version="8.2.3" />
-    <PackageReference Include="Foundatio" Version="8.1.2027" />
-    <PackageReference Include="Foundatio.Hosting" Version="8.1.2027" />
-    <PackageReference Include="Foundatio.JsonNet" Version="8.1.2027" />
+    <PackageReference Include="FluentValidation" Version="8.4.0" />
+    <PackageReference Include="Foundatio" Version="8.1.2058" />
+    <PackageReference Include="Foundatio.Hosting" Version="8.1.2058" />
+    <PackageReference Include="Foundatio.JsonNet" Version="8.1.2058" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="5.6.848" />
     <PackageReference Include="Handlebars.Net" Version="1.10.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="3.0.0" />
@@ -40,8 +40,8 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
     <PackageReference Include="NEST" Version="5.6.6" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-    <PackageReference Include="Stripe.net" Version="25.9.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="Stripe.net" Version="25.19.0" />
     <PackageReference Include="System.DirectoryServices" Version="4.5.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
     <PackageReference Include="UAParser" Version="3.1.36" />
