@@ -96,7 +96,7 @@ spec:
               cpu: 50m
             limits:
               memory: 300Mi
-              cpu: 300m
+              cpu: 500m
           args: [CloseInactiveSessions]
           envFrom:
             - configMapRef:
@@ -152,7 +152,7 @@ spec:
               memory: 250Mi
               cpu: 400m
             limits:
-              memory: 750Mi
+              memory: 800Mi
               cpu: 1000m
           args: [DailySummary]
           envFrom:
@@ -314,8 +314,8 @@ spec:
               memory: 150Mi
               cpu: 100m
             limits:
-              memory: 450Mi
-              cpu: 600m
+              memory: 600Mi
+              cpu: 700m
           args: [EventPosts]
           envFrom:
             - configMapRef:
@@ -630,7 +630,7 @@ spec:
               cpu: 50m
             limits:
               memory: 250Mi
-              cpu: 250m
+              cpu: 400m
           args: [RetentionLimits]
           envFrom:
             - configMapRef:
