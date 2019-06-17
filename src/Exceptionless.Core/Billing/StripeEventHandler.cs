@@ -26,23 +26,19 @@ namespace Exceptionless.Core.Billing {
         public async Task HandleEventAsync(Stripe.Event stripeEvent) {
             switch (stripeEvent.Type) {
                 case "customer.subscription.updated": {
-                    var stripeSubscription = Mapper<Subscription>.MapFromJson(stripeEvent.Data.Object.ToString());
-                    await SubscriptionUpdatedAsync(stripeSubscription).AnyContext();
+                    await SubscriptionUpdatedAsync((Subscription)stripeEvent.Data.Object).AnyContext();
                     break;
                 }
                 case "customer.subscription.deleted": {
-                    var stripeSubscription = Mapper<Subscription>.MapFromJson(stripeEvent.Data.Object.ToString());
-                    await SubscriptionDeletedAsync(stripeSubscription).AnyContext();
+                    await SubscriptionDeletedAsync((Subscription)stripeEvent.Data.Object).AnyContext();
                     break;
                 }
                 case "invoice.payment_succeeded": {
-                    var stripeInvoice = Mapper<Invoice>.MapFromJson(stripeEvent.Data.Object.ToString());
-                    await InvoicePaymentSucceededAsync(stripeInvoice).AnyContext();
+                    await InvoicePaymentSucceededAsync((Invoice)stripeEvent.Data.Object).AnyContext();
                     break;
                 }
                 case "invoice.payment_failed": {
-                    var stripeInvoice = Mapper<Invoice>.MapFromJson(stripeEvent.Data.Object.ToString());
-                    await InvoicePaymentFailedAsync(stripeInvoice).AnyContext();
+                    await InvoicePaymentFailedAsync((Invoice)stripeEvent.Data.Object).AnyContext();
                     break;
                 }
                 default: {

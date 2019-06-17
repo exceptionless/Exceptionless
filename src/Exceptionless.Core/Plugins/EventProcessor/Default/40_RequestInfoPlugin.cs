@@ -72,11 +72,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         private async Task SetBrowserOsAndDeviceFromUserAgent(RequestInfo request, EventContext context) {
             var info = await _parser.ParseAsync(request.UserAgent).AnyContext();
             if (info != null) {
-                if (!String.Equals(info.UserAgent.Family, "Other")) {
-                    request.Data[RequestInfo.KnownDataKeys.Browser] = info.UserAgent.Family;
-                    if (!String.IsNullOrEmpty(info.UserAgent.Major)) {
-                        request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = String.Join(".", new[] { info.UserAgent.Major, info.UserAgent.Minor, info.UserAgent.Patch }.Where(v => !String.IsNullOrEmpty(v)));
-                        request.Data[RequestInfo.KnownDataKeys.BrowserMajorVersion] = info.UserAgent.Major;
+                if (!String.Equals(info.UA.Family, "Other")) {
+                    request.Data[RequestInfo.KnownDataKeys.Browser] = info.UA.Family;
+                    if (!String.IsNullOrEmpty(info.UA.Major)) {
+                        request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = String.Join(".", new[] { info.UA.Major, info.UA.Minor, info.UA.Patch }.Where(v => !String.IsNullOrEmpty(v)));
+                        request.Data[RequestInfo.KnownDataKeys.BrowserMajorVersion] = info.UA.Major;
                     }
                 }
 
