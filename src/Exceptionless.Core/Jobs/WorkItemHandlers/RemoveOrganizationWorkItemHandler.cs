@@ -60,7 +60,8 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
                     Log.LogInformation("Canceling stripe subscription for the organization {OrganizationName} with Id: {organization}.", organization.Name, organization.Id);
 
-                    var subscriptionService = new SubscriptionService(_stripeOptions.Value.StripeApiKey);
+                    var client = new StripeClient(_stripeOptions.Value.StripeApiKey);
+                    var subscriptionService = new SubscriptionService(client);
                     var subscriptions = (await subscriptionService.ListAsync(new SubscriptionListOptions { CustomerId = organization.StripeCustomerId }).AnyContext()).Where(s => !s.CanceledAt.HasValue);
                     foreach (var subscription in subscriptions)
                         await subscriptionService.CancelAsync(subscription.Id, new SubscriptionCancelOptions()).AnyContext();

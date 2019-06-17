@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Configuration {
             options.StripeApiKey = _configuration.GetValue<string>(nameof(options.StripeApiKey));
             options.StripeWebHookSigningSecret = _configuration.GetValue<string>(nameof(options.StripeWebHookSigningSecret));
             if (options.EnableBilling)
-                StripeConfiguration.SetApiKey(options.StripeApiKey);
+                StripeConfiguration.ApiKey = options.StripeApiKey;
         }
     }
 }

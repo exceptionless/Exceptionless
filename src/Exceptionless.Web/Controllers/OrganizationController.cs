@@ -200,7 +200,8 @@ namespace Exceptionless.Web.Controllers {
 
             Stripe.Invoice stripeInvoice = null;
             try {
-                var invoiceService = new InvoiceService(_stripeOptions.Value.StripeApiKey);
+                var client = new StripeClient(_stripeOptions.Value.StripeApiKey);
+                var invoiceService = new InvoiceService(client);
                 stripeInvoice = await invoiceService.GetAsync(id);
             } catch (Exception ex) {
                 using (_logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
@@ -280,7 +281,8 @@ namespace Exceptionless.Web.Controllers {
             if (!String.IsNullOrEmpty(after) && !after.StartsWith("in_"))
                 after = "in_" + after;
 
-            var invoiceService = new InvoiceService(_stripeOptions.Value.StripeApiKey);
+            var client = new StripeClient(_stripeOptions.Value.StripeApiKey);
+            var invoiceService = new InvoiceService(client);
             var invoiceOptions = new InvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
             var invoices = (await MapCollectionAsync<InvoiceGridModel>(await invoiceService.ListAsync(invoiceOptions), true)).ToList();
             return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
@@ -365,8 +367,9 @@ namespace Exceptionless.Web.Controllers {
                     return Ok(result);
             }
 
-            var customerService = new CustomerService(_stripeOptions.Value.StripeApiKey);
-            var subscriptionService = new SubscriptionService(_stripeOptions.Value.StripeApiKey);
+            var client = new StripeClient(_stripeOptions.Value.StripeApiKey);
+            var customerService = new CustomerService(client);
+            var subscriptionService = new SubscriptionService(client);
 
             try {
                 // If they are on a paid plan and then downgrade to a free plan then cancel their stripe subscription.
@@ -386,7 +389,7 @@ namespace Exceptionless.Web.Controllers {
                     organization.SubscribeDate = SystemClock.UtcNow;
 
                     var createCustomer = new CustomerCreateOptions {
-                        SourceToken = stripeToken,
+                        Source = stripeToken,
                         PlanId = planId,
                         Description = organization.Name,
                         Email = CurrentUser.EmailAddress
@@ -409,7 +412,7 @@ namespace Exceptionless.Web.Controllers {
 
                     var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name, Email = CurrentUser.EmailAddress };
                     if (!String.IsNullOrEmpty(stripeToken)) {
-                        customerUpdateOptions.SourceToken = stripeToken;
+                        customerUpdateOptions.Source = stripeToken;
                         cardUpdated = true;
                     }
 
