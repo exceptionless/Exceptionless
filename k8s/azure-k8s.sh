@@ -74,16 +74,11 @@ kubectl exec -it redis-redis-ha-server-0 bash -n ex-prod
 
 # install exceptionless app
 API_TAG=5.0.3352-pre
-helm install --name exceptionless --namespace ex-prod ./exceptionless \
-    --set "storage.azureConnectionString=DefaultEndpointsProtocol=https;AccountName=ex4events;AccountKey=$AZURE_ACCOUNT_KEY;EndpointSuffix=core.windows.net" \
-    --set "elasticsearch.connectionString=http://10.0.0.4:9200" \
-    --set "redis.connectionString=ex4-cache.redis.cache.windows.net:6380,password=$REDIS_PASSWORD,ssl=True,abortConnect=False" \
-    --set "api.domain=prod-api.exceptionless.io" \
-    --set "app.domain=prod-app.exceptionless.io" \
-    --set "collector.domain=prod-collector.exceptionless.io" \
-    --set "api.image.tag=$API_TAG" \
-    --set "jobs.image.tag=$API_TAG" \
-    --set "jobs.replicaCount=0"
+helm install ./exceptionless --name exceptionless --namespace ex-prod --values ex-prod-values.yaml --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --set "jobs.replicaCount=0"
+
+# render locally
+helm template ./exceptionless --name exceptionless --namespace ex-prod --values ex-prod-values.yaml --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --set "jobs.replicaCount=0" > ex-prod.yaml
+kubectl diff -f ex-prod.yaml
 
 helm install stable/kibana --name kibana --namespace ex-prod \
     --set="image.repository=docker.elastic.co/kibana/kibana" \
@@ -120,8 +115,8 @@ kubectl run -it --rm aks-ssh --image=ubuntu
 kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/api-ci:5.0.3443-pre --all --v 8
 kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3443-pre --all --v 8
 
-APP_TAG=1471
-kubectl set image deployment exceptionless-app exceptionless-app=exceptionless/ui-ci:$APP_TAG
+UI_TAG=2.8.1474
+kubectl set image deployment exceptionless-app exceptionless-app=exceptionless/ui-ci:$UI_TAG
 
 API_TAG=5.0.3443-pre
 kubectl set image deployment exceptionless-api exceptionless-api=exceptionless/api-ci:$API_TAG
