@@ -523,7 +523,7 @@ spec:
                   memory: 75Mi
                   cpu: 200m
                 limits:
-                  memory: 25Mi
+                  memory: 200Mi
                   cpu: 800m
               args: [MaintainIndexes]
               envFrom:

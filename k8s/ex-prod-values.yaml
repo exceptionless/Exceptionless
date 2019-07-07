@@ -1,0 +1,14 @@
+storage:
+  azureConnectionString: DefaultEndpointsProtocol=https;AccountName=ex4events;AccountKey=$AZURE_ACCOUNT_KEY;EndpointSuffix=core.windows.net
+elasticsearch:
+  connectionString: http://10.0.0.4:9200
+redis:
+  connectionString: ex4-cache.redis.cache.windows.net:6380,password=$REDIS_PASSWORD,ssl=True,abortConnect=False
+api:
+  domain: prod-api.exceptionless.io
+app:
+  domain: prod-app.exceptionless.io
+collector:
+  domain: prod-collector.exceptionless.io
+jobs:
+  replicaCount: 0
