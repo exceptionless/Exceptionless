@@ -73,12 +73,12 @@ helm install stable/redis-ha --set "persistentVolume.storageClass=managed-premiu
 kubectl exec -it redis-redis-ha-server-0 bash -n ex-prod
 
 # install exceptionless app
-API_TAG=5.0.3352-pre
+API_TAG=5.0.3445-pre
 helm install ./exceptionless --name exceptionless --namespace ex-prod --values ex-prod-values.yaml --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --set "jobs.replicaCount=0"
 
 # render locally
 helm template ./exceptionless --name exceptionless --namespace ex-prod --values ex-prod-values.yaml --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --set "jobs.replicaCount=0" > ex-prod.yaml
-kubectl diff -f ex-prod.yaml
+kubectl diff -f ex-prod.yaml > ex-prod.diff
 
 helm install stable/kibana --name kibana --namespace ex-prod \
     --set="image.repository=docker.elastic.co/kibana/kibana" \

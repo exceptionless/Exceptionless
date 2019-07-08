@@ -1,14 +1,38 @@
-storage:
-  azureConnectionString: DefaultEndpointsProtocol=https;AccountName=ex4events;AccountKey=$AZURE_ACCOUNT_KEY;EndpointSuffix=core.windows.net
 elasticsearch:
-  connectionString: http://10.0.0.4:9200
-redis:
-  connectionString: ex4-cache.redis.cache.windows.net:6380,password=$REDIS_PASSWORD,ssl=True,abortConnect=False
+  connectionString: server=http://10.0.0.4:9200;field-limit=2000
 api:
-  domain: prod-api.exceptionless.io
+  replicaCount: 5
+  defaultDomain: api.exceptionless.io
+  domains:
+    - api.exceptionless.io
+    - api.exceptionless.com
 app:
-  domain: prod-app.exceptionless.io
+  image:
+    tag: "2.8.1474"
+  defaultDomain: be.exceptionless.io
+  domains:
+    - be.exceptionless.io
+    - app.exceptionless.io
+    - app.exceptionless.com
+    - www.exceptionless.io
 collector:
-  domain: prod-collector.exceptionless.io
+  replicaCount: 12
+  defaultDomain: collector.exceptionless.io
+  domains:
+    - collector.exceptionless.io
+    - collector.exceptionless.com
+    - config.exceptionless.io
+    - heartbeat.exceptionless.io
 jobs:
-  replicaCount: 0
+  eventNotifications:
+    replicaCount: 2
+  eventPosts:
+    replicaCount: 6
+  eventUserDescriptions:
+    replicaCount: 2
+  mailMessage:
+    replicaCount: 4
+  webhooks:
+    replicaCount: 4
+  workitem:
+    replicaCount: 6
