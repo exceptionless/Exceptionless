@@ -92,7 +92,7 @@ helm install ./exceptionless --name exceptionless --namespace ex-prod --values e
     --set "extraConfig=$EXTRA_CONFIG"
 
 # render locally
-helm template ./exceptionless --name exceptionless --namespace ex-prod --values ex-prod-values.yaml  \
+rm -f ex-prod.yaml && helm template ./exceptionless --name exceptionless --namespace ex-prod --values ex-prod-values.yaml  \
     --set "api.image.tag=$API_TAG" \
     --set "jobs.image.tag=$API_TAG" \
     --set "email.connectionString=$EMAIL_CONNECTIONSTRING" \
@@ -101,8 +101,16 @@ helm template ./exceptionless --name exceptionless --namespace ex-prod --values 
     --set "storage.connectionString=$STORAGE_CONNECTIONSTRING" \
     --set "statsd.token=$STATSD_TOKEN" \
     --set "statsd.user=$STATSD_USER" \
-    --set "extraConfig=$EXTRA_CONFIG" > ex-prod.yaml
-kubectl diff -f ex-prod.yaml > ex-prod.diff
+    --set "extraConfig.EX_ApplicationInsightsKey=$EX_ApplicationInsightsKey" \
+    --set "extraConfig.EX_ConnectionStrings__OAuth=$EX_ConnectionStrings__OAuth" \
+    --set "extraConfig.EX_ExceptionlessApiKey=$EX_ExceptionlessApiKey" \
+    --set "extraConfig.EX_GoogleGeocodingApiKey=$EX_GoogleGeocodingApiKey" \
+    --set "extraConfig.EX_GoogleTagManagerId=$EX_GoogleTagManagerId" \
+    --set "extraConfig.EX_StripeApiKey=$EX_StripeApiKey" \
+    --set "extraConfig.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" \
+    --set "extraConfig.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret" > ex-prod.yaml
+
+rm -f ex-prod.diff && kubectl diff -f ex-prod.yaml > ex-prod.diff
 
 helm install stable/kibana --name kibana --namespace ex-prod \
     --set="image.repository=docker.elastic.co/kibana/kibana" \
