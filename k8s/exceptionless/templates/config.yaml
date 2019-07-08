@@ -3,26 +3,21 @@ kind: ConfigMap
 metadata:
     name: {{ template "exceptionless.fullname" . }}-config
 data:
-    EX_AppMode: Development
-    EX_BaseUrl: https://{{.Values.api.domain}}
-{{- if (.Values.elasticsearch.connectionString) }}
-    EX_ConnectionStrings__Elasticsearch: {{.Values.elasticsearch.connectionString}}
-{{- else }}
-    EX_ConnectionStrings__Elasticsearch: server=http://{{ template "exceptionless.fullname" . }}-elasticsearch:9200
-{{- end }}
-{{- if (.Values.redis.connectionString) }}
-    EX_ConnectionStrings__Redis: {{.Values.redis.connectionString}}
-{{- else }}
-    EX_ConnectionStrings__Redis: server=redis-master,abortConnect=false"
-{{- end }}
-{{- if (.Values.storage.azureConnectionString) }}
-    EX_ConnectionStrings__Storage: provider=azurestorage;{{.Values.storage.azureConnectionString}}
-{{- else }}
-    EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
-{{- end }}
-    EX_ConnectionStrings__Cache: provider=redis;
-    EX_ConnectionStrings__MessageBus: provider=redis;
-    EX_ConnectionStrings__Metrics.off: provider=statsd;server=10.0.0.5;
-    EX_ConnectionStrings__Queue: provider=redis;
-    EX_ExceptionlessServerUrl: https://{{.Values.collector.domain}}
+    EX_AppMode: {{ default "Production" .Values.appMode }}
+    EX_ApiUrl: https://{{.Values.api.defaultDomain}}
+    EX_BaseUrl: https://{{.Values.app.defaultDomain}}
+    EX_ExceptionlessServerUrl: https://{{.Values.collector.defaultDomain}}
+    EX_DisabledPlugins: GeoPlugin,LocationPlugin
+    EX_EnableSsl: true
+    EX_Html5Mode: true
+    EX_ConnectionStrings__Elasticsearch: {{ default "server=http://elasticsearch:9200" .Values.elasticsearch.connectionString }}
+    EX_ConnectionStrings__Redis: {{ default "server=redis-master,abortConnect=false" .Values.redis.connectionString }}
+    EX_ConnectionStrings__Storage: {{ default "provider=folder;path=/app/storage" .Values.storage.connectionString }}
+    EX_ConnectionStrings__Cache: {{ default "provider=redis;" .Values.cache.connectionString }}
+    EX_ConnectionStrings__MessageBus: {{ default "provider=redis;" .Values.messagebus.connectionString }}
+    EX_ConnectionStrings__Metrics: {{ default "provider=statsd;server=10.10.244.5;" .Values.metrics.connectionString }}
+    EX_ConnectionStrings__Queue: {{ default "provider=redis;" .Values.queue.connectionString }}
+    EX_ConnectionStrings__Email: {{ default "smtp://localhost" .Values.email.connectionString }}
+{{- if .Values.extraConfig }}
 {{ .Values.extraConfig | indent 4 }}
+{{- end }}

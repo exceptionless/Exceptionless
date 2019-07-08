@@ -220,7 +220,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.replicaCount }}
+  replicas: {{ .Values.jobs.eventNotifications.replicaCount }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
@@ -277,7 +277,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.replicaCount }}
+  replicas: {{ .Values.jobs.eventPosts.replicaCount }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
@@ -382,7 +382,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.replicaCount }}
+  replicas: {{ .Values.jobs.eventUserDescriptions.replicaCount }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
@@ -439,7 +439,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.replicaCount }}
+  replicas: {{ .Values.jobs.mailMessage.replicaCount }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
@@ -523,7 +523,7 @@ spec:
                   memory: 75Mi
                   cpu: 200m
                 limits:
-                  memory: 200Mi
+                  memory: 250Mi
                   cpu: 800m
               args: [MaintainIndexes]
               envFrom:
@@ -754,7 +754,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.replicaCount }}
+  replicas: {{ .Values.jobs.webhooks.replicaCount }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
@@ -811,7 +811,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.replicaCount }}
+  replicas: {{ .Values.jobs.workitem.replicaCount }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-work-item

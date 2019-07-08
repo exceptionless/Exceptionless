@@ -104,13 +104,17 @@ metadata:
 spec:
   tls:
   - hosts:
-    - {{.Values.api.domain}}
+    {{- range .Values.api.domains }}
+    - {{ . }}
+    {{- end }}
     secretName: {{ template "exceptionless.fullname" . }}-api-tls
   rules:
-  - host: {{.Values.api.domain}}
+  {{- range .Values.api.domains }}
+  - host: {{ . }}
     http:
       paths:
       - path: /
         backend:
-          serviceName: {{ template "exceptionless.fullname" . }}-api
+          serviceName: {{ template "exceptionless.fullname" $ }}-api
           servicePort: 80
+  {{- end }}

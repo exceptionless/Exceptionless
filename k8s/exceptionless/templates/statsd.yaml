@@ -28,10 +28,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-statsd
           image: everydayhero/statsd:latest
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
-          envFrom:
-            - configMapRef:
-                name: {{ template "exceptionless.fullname" . }}-config
-
+          env:
+            - name: LIBRATO_SOURCE
+              value: unique-per-statsd-instance
+            - name: LIBRATO_TOKEN
+              value: {{ .Values.statsd.token }}
+            - name: LIBRATO_USER
+              value: {{ .Values.statsd.user }}
 ---
 apiVersion: v1
 kind: Service

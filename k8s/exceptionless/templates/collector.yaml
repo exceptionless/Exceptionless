@@ -106,13 +106,17 @@ metadata:
 spec:
   tls:
   - hosts:
-    - {{.Values.collector.domain}}
+    {{- range .Values.collector.domains }}
+    - {{ . }}
+    {{- end }}
     secretName: {{ template "exceptionless.fullname" . }}-collector-tls
   rules:
-  - host: {{.Values.collector.domain}}
+  {{- range .Values.collector.domains }}
+  - host: {{ . }}
     http:
       paths:
       - path: /
         backend:
-          serviceName: {{ template "exceptionless.fullname" . }}-collector
+          serviceName: {{ template "exceptionless.fullname" $ }}-collector
           servicePort: 80
+  {{- end }}
