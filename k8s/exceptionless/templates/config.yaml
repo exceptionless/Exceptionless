@@ -19,5 +19,5 @@ data:
     EX_ConnectionStrings__Queue: {{ default "provider=redis;" .Values.queue.connectionString }}
     EX_ConnectionStrings__Email: {{ default "smtp://localhost" .Values.email.connectionString }}
 {{- if .Values.extraConfig }}
-{{ .Values.extraConfig | indent 4 }}
+{{ toYaml .Values.extraConfig | indent 4 }}
 {{- end }}
