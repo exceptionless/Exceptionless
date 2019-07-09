@@ -16,9 +16,11 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
+using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Xunit;
@@ -30,19 +32,16 @@ namespace Exceptionless.Tests.Controllers {
         private readonly IEventRepository _eventRepository;
         private readonly IQueue<EventPost> _eventQueue;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
-        private readonly IOrganizationRepository _organizationRepository;
-        private readonly IProjectRepository _projectRepository;
-        private readonly ITokenRepository _tokenRepository;
 
-        public EventControllerTests(ITestOutputHelper output) : base(output) {
-            _organizationRepository = GetService<IOrganizationRepository>();
-            _projectRepository = GetService<IProjectRepository>();
-            _tokenRepository = GetService<ITokenRepository>();
+        public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             _eventRepository = GetService<IEventRepository>();
             _eventQueue = GetService<IQueue<EventPost>>();
             _eventUserDescriptionQueue = GetService<IQueue<EventUserDescription>>();
+        }
 
-            CreateOrganizationAndProjectsAsync().GetAwaiter().GetResult();
+        protected override void RegisterServices(IServiceCollection services) {
+            base.RegisterServices(services);
+            services.AddStartupAction("Create organization and projects", CreateOrganizationAndProjectsAsync);
         }
 
         [Fact]
@@ -84,7 +83,7 @@ namespace Exceptionless.Tests.Controllers {
 
             var processEventsJob = GetService<EventPostsJob>();
             await processEventsJob.RunAsync();
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshData();
 
             stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(1, stats.Completed);
@@ -124,7 +123,7 @@ namespace Exceptionless.Tests.Controllers {
 
             var processEventsJob = GetService<EventPostsJob>();
             await processEventsJob.RunAsync();
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshData();
 
             stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(1, stats.Completed);
@@ -153,7 +152,7 @@ namespace Exceptionless.Tests.Controllers {
 
             var processEventsJob = GetService<EventPostsJob>();
             await processEventsJob.RunAsync();
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshData();
 
             stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(1, stats.Completed);
@@ -179,7 +178,7 @@ namespace Exceptionless.Tests.Controllers {
                 );
             });
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshData();
             var stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(batchCount, stats.Enqueued);
             Assert.Equal(0, stats.Completed);
@@ -190,7 +189,7 @@ namespace Exceptionless.Tests.Controllers {
             sw.Stop();
             _logger.LogInformation("{Duration:g}", sw.Elapsed);
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshData();
             stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(batchCount, stats.Completed);
             Assert.Equal(batchSize * batchCount, await _eventRepository.CountAsync());
@@ -227,10 +226,14 @@ namespace Exceptionless.Tests.Controllers {
         //}
 
         private Task CreateOrganizationAndProjectsAsync() {
+            var organizationRepository = GetService<IOrganizationRepository>();
+            var projectRepository = GetService<IProjectRepository>();
+            var tokenRepository = GetService<ITokenRepository>();
+
             return Task.WhenAll(
-                _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>()), o => o.ImmediateConsistency()),
-                _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency()),
-                _tokenRepository.AddAsync(TokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency())
+                organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>()), o => o.ImmediateConsistency()),
+                projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency()),
+                tokenRepository.AddAsync(TokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency())
             );
         }
     }

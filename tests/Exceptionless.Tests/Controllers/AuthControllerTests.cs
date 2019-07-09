@@ -20,6 +20,8 @@ using Xunit;
 using Xunit.Abstractions;
 using User = Exceptionless.Core.Models.User;
 using FluentRest;
+using Foundatio.Hosting.Startup;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Tests.Controllers {
@@ -30,7 +32,7 @@ namespace Exceptionless.Tests.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly ITokenRepository _tokenRepository;
 
-        public AuthControllerTests(ITestOutputHelper output) : base(output) {
+        public AuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             _authOptions = GetService<IOptions<AuthOptions>>();
             _authOptions.Value.EnableAccountCreation = true;
             _authOptions.Value.EnableActiveDirectoryAuth = false;
@@ -39,7 +41,11 @@ namespace Exceptionless.Tests.Controllers {
             _projectRepository = GetService<IProjectRepository>();
             _userRepository = GetService<IUserRepository>();
             _tokenRepository = GetService<ITokenRepository>();
-            CreateOrganizationAndProjectsAsync().GetAwaiter().GetResult();
+        }
+
+        protected override void RegisterServices(IServiceCollection services) {
+            base.RegisterServices(services);
+            services.AddStartupAction("Create Test Organization And Projects", CreateTestOrganizationAndProjectsAsync);
         }
 
         [Fact]
@@ -278,7 +284,7 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(result);
             Assert.False(String.IsNullOrEmpty(result.Token));
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshData();
 
             var user = await _userRepository.GetByEmailAddressAsync(email);
             Assert.NotNull(user);
@@ -801,7 +807,7 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(await _tokenRepository.GetByIdAsync(result.Token));
         }
 
-        private Task CreateOrganizationAndProjectsAsync() {
+        private Task CreateTestOrganizationAndProjectsAsync() {
             return Task.WhenAll(
                 _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>()), o => o.ImmediateConsistency()),
                 _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency())

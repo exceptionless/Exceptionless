@@ -29,13 +29,12 @@ namespace Exceptionless.Tests.Services {
         private readonly BillingPlans _plans;
 
         public UsageServiceTests(ITestOutputHelper output) : base(output) {
+            Log.SetLogLevel<OrganizationRepository>(LogLevel.Information);
             _cache = GetService<ICacheClient>();
             _usageService = GetService<UsageService>();
             _organizationRepository = GetService<IOrganizationRepository>();
             _projectRepository = GetService<IProjectRepository>();
             _plans = GetService<BillingPlans>();
-
-            Log.SetLogLevel<OrganizationRepository>(LogLevel.Information);
         }
 
         [Fact]

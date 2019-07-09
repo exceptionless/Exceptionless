@@ -11,10 +11,12 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
+using Foundatio.Hosting.Startup;
 using Foundatio.Queues;
 using Foundatio.Storage;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
@@ -49,8 +51,11 @@ namespace Exceptionless.Tests.Jobs {
             _billingManager = GetService<BillingManager>();
             _plans = GetService<BillingPlans>();
             _options = GetService<IOptions<AppOptions>>();
+        }
 
-            CreateDataAsync().GetAwaiter().GetResult();
+        protected override void RegisterServices(IServiceCollection services) {
+            base.RegisterServices(services);
+            services.AddStartupAction("CreateDataAsync", CreateDataAsync);
         }
 
         [Fact]

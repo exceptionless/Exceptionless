@@ -26,19 +26,19 @@ namespace Exceptionless.Tests.Repositories {
         public async Task CanGetByStackHashAsync() {
             Assert.Equal(0, _cache.Count);
             Assert.Equal(0, _cache.Hits);
-            Assert.Equal(0, _cache.Misses);
+            Assert.Equal(1, _cache.Misses);
 
             var stack = await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.Cache());
             Assert.NotNull(stack?.Id);
             Assert.Equal(2, _cache.Count);
             Assert.Equal(0, _cache.Hits);
-            Assert.Equal(0, _cache.Misses);
+            Assert.Equal(1, _cache.Misses);
 
             var result = await _repository.GetStackBySignatureHashAsync(stack.ProjectId, stack.SignatureHash);
             Assert.Equal(stack.ToJson(), result.ToJson());
             Assert.Equal(2, _cache.Count);
             Assert.Equal(1, _cache.Hits);
-            Assert.Equal(0, _cache.Misses);
+            Assert.Equal(1, _cache.Misses);
         }
 
         [Fact]

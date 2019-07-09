@@ -17,9 +17,9 @@ namespace Exceptionless.Tests.Repositories {
         private readonly IProjectRepository _repository;
 
         public ProjectRepositoryTests(ITestOutputHelper output) : base(output) {
+            Log.MinimumLevel = LogLevel.Trace;
             _cache = _configuration.Cache;
             _repository = GetService<IProjectRepository>();
-            Log.MinimumLevel = LogLevel.Trace;
         }
 
         [Fact]

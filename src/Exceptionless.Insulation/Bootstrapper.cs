@@ -90,7 +90,7 @@ namespace Exceptionless.Insulation {
             services.AddStartupActionToWaitForHealthChecks();
 
             return services.AddHealthChecks()
-                .AddCheckForStartupActionsComplete()
+                .AddCheckForStartupActions("Critical")
 
                 .AddAutoNamedCheck<ElasticsearchHealthCheck>("Critical")
                 .AddAutoNamedCheck<CacheHealthCheck>("Critical")
