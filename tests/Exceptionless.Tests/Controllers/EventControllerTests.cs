@@ -22,7 +22,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Nest;
 using Xunit;
 using Xunit.Abstractions;
 using Run = Exceptionless.Tests.Utility.Run;
