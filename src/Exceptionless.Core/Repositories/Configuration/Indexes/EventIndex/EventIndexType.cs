@@ -56,7 +56,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public override async Task ConfigureAsync() {
             const string FLATTEN_ERRORS_SCRIPT = @"
 if (!ctx.containsKey('data') || !(ctx.data.containsKey('@error') || ctx.data.containsKey('@simple_error')))
-    return null;
+  return null;
 
 def types = [];
 def messages = [];
@@ -64,24 +64,24 @@ def codes = [];
 def err = ctx.data.containsKey('@error') ? ctx.data['@error'] : ctx.data['@simple_error'];
 def curr = err;
 while (curr != null) {
-    if (curr.containsKey('type'))
-        types.add(curr.type);
-    if (curr.containsKey('message'))
-        messages.add(curr.message);
-    if (curr.containsKey('code'))
-        codes.add(curr.code);
-    curr = curr.inner;
+  if (curr.containsKey('type'))
+    types.add(curr.type);
+  if (curr.containsKey('message'))
+    messages.add(curr.message);
+  if (curr.containsKey('code'))
+    codes.add(curr.code);
+  curr = curr.inner;
 }
 
 if (ctx.error == null)
-    ctx.error = new HashMap();
+  ctx.error = new HashMap();
 
 ctx.error.type = types;
 ctx.error.message = messages;
 ctx.error.code = codes;";
 
             var response = await Configuration.Client.PutPipelineAsync(Pipeline, d => d.Processors(p => p
-                .Script(s => new ScriptProcessor { Inline = FLATTEN_ERRORS_SCRIPT.Replace("\r\n", String.Empty).Replace("    ", " ") })));
+                .Script(s => new ScriptProcessor { Inline = FLATTEN_ERRORS_SCRIPT.Replace("\r", String.Empty).Replace("\n", String.Empty).Replace("  ", " ") })));
 
             var logger = Configuration.LoggerFactory.CreateLogger<EventIndexType>();
             if (logger.IsEnabled(LogLevel.Trace))
