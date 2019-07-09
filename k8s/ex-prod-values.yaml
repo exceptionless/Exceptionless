@@ -38,4 +38,4 @@ jobs:
     replicaCount: 6
 
 extraConfig:
-  EX_EnableSnapshotJobs: true
+  EX_EnableSnapshotJobs: "true"

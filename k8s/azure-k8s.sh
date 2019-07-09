@@ -89,7 +89,32 @@ helm install ./exceptionless --name exceptionless --namespace ex-prod --values e
     --set "storage.connectionString=$STORAGE_CONNECTIONSTRING" \
     --set "statsd.token=$STATSD_TOKEN" \
     --set "statsd.user=$STATSD_USER" \
-    --set "extraConfig=$EXTRA_CONFIG"
+    --set "extraConfig.EX_ApplicationInsightsKey=$EX_ApplicationInsightsKey" \
+    --set "extraConfig.EX_ConnectionStrings__OAuth=$EX_ConnectionStrings__OAuth" \
+    --set "extraConfig.EX_ExceptionlessApiKey=$EX_ExceptionlessApiKey" \
+    --set "extraConfig.EX_GoogleGeocodingApiKey=$EX_GoogleGeocodingApiKey" \
+    --set "extraConfig.EX_GoogleTagManagerId=$EX_GoogleTagManagerId" \
+    --set "extraConfig.EX_StripeApiKey=$EX_StripeApiKey" \
+    --set "extraConfig.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" \
+    --set "extraConfig.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
+
+helm upgrade exceptionless ./exceptionless --namespace ex-prod --values ex-prod-values.yaml \
+    --set "api.image.tag=$API_TAG" \
+    --set "jobs.image.tag=$API_TAG" \
+    --set "email.connectionString=$EMAIL_CONNECTIONSTRING" \
+    --set "queue.connectionString=$QUEUE_CONNECTIONSTRING" \
+    --set "redis.connectionString=$REDIS_CONNECTIONSTRING" \
+    --set "storage.connectionString=$STORAGE_CONNECTIONSTRING" \
+    --set "statsd.token=$STATSD_TOKEN" \
+    --set "statsd.user=$STATSD_USER" \
+    --set "extraConfig.EX_ApplicationInsightsKey=$EX_ApplicationInsightsKey" \
+    --set "extraConfig.EX_ConnectionStrings__OAuth=$EX_ConnectionStrings__OAuth" \
+    --set "extraConfig.EX_ExceptionlessApiKey=$EX_ExceptionlessApiKey" \
+    --set "extraConfig.EX_GoogleGeocodingApiKey=$EX_GoogleGeocodingApiKey" \
+    --set "extraConfig.EX_GoogleTagManagerId=$EX_GoogleTagManagerId" \
+    --set "extraConfig.EX_StripeApiKey=$EX_StripeApiKey" \
+    --set "extraConfig.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" \
+    --set "extraConfig.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
 
 # render locally
 rm -f ex-prod.yaml && helm template ./exceptionless --name exceptionless --namespace ex-prod --values ex-prod-values.yaml  \

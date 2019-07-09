@@ -1,6 +1,7 @@
 api:
   replicaCount: 2
-  domain:
+  defaultDomain:
+  domains: []
   image:
     repository: exceptionless/api-ci
     tag: latest
@@ -8,22 +9,39 @@ api:
 
 collector:
   replicaCount: 3
-  domain:
+  defaultDomain:
+  domains: []
 
 app:
   replicaCount: 2
-  domain:
+  defaultDomain:
+  domains: []
   image:
     repository: exceptionless/ui-ci
     tag: latest
     pullPolicy: IfNotPresent
 
 jobs:
-  replicaCount: 1
   image:
     repository: exceptionless/job-ci
     tag: latest
     pullPolicy: IfNotPresent
+  eventNotifications:
+    replicaCount: 1
+  eventPosts:
+    replicaCount: 1
+  eventUserDescriptions:
+    replicaCount: 1
+  mailMessage:
+    replicaCount: 1
+  webhooks:
+    replicaCount: 1
+  workitem:
+    replicaCount: 1
+
+statsd:
+  token:
+  user:
 
 extraConfig: {}
 #  key: value
