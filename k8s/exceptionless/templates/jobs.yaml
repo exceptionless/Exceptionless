@@ -30,8 +30,8 @@ spec:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 10
-                periodSeconds: 10
+                initialDelaySeconds: 2
+                periodSeconds: 1
               resources:
                 requests:
                   memory: 75Mi
@@ -88,8 +88,8 @@ spec:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 1
           resources:
             requests:
               memory: 100Mi
@@ -145,8 +145,8 @@ spec:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 1
           resources:
             requests:
               memory: 250Mi
@@ -192,8 +192,8 @@ spec:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 10
-                periodSeconds: 10
+                initialDelaySeconds: 2
+                periodSeconds: 1
               resources:
                 requests:
                   memory: 100Mi
@@ -250,8 +250,8 @@ spec:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 1
           resources:
             requests:
               memory: 100Mi
@@ -307,8 +307,8 @@ spec:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 1
           resources:
             requests:
               memory: 150Mi
@@ -354,8 +354,8 @@ spec:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 10
-                periodSeconds: 10
+                initialDelaySeconds: 2
+                periodSeconds: 1
               resources:
                 requests:
                   memory: 75Mi
@@ -412,8 +412,8 @@ spec:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 1
           resources:
             requests:
               memory: 50Mi
@@ -469,8 +469,8 @@ spec:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 1
           resources:
             requests:
               memory: 75Mi
@@ -516,8 +516,8 @@ spec:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 10
-                periodSeconds: 10
+                initialDelaySeconds: 2
+                periodSeconds: 1
               resources:
                 requests:
                   memory: 75Mi
@@ -564,8 +564,8 @@ spec:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 10
-                periodSeconds: 10
+                initialDelaySeconds: 2
+                periodSeconds: 1
               resources:
                 requests:
                   memory: 75Mi
@@ -622,8 +622,8 @@ spec:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 1
           resources:
             requests:
               memory: 75Mi
@@ -679,8 +679,8 @@ spec:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 1
           resources:
             requests:
               memory: 75Mi
@@ -726,8 +726,8 @@ spec:
                 httpGet:
                   path: /ready
                   port: 80
-                initialDelaySeconds: 10
-                periodSeconds: 10
+                initialDelaySeconds: 2
+                periodSeconds: 1
               resources:
                 requests:
                   memory: 75Mi
@@ -784,8 +784,8 @@ spec:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 1
           resources:
             requests:
               memory: 75Mi
@@ -841,8 +841,8 @@ spec:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 1
           resources:
             requests:
               memory: 125Mi
@@ -854,7 +854,7 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ template "exceptionless.fullname" . }}-config
-{{- if (empty .Values.storage.azureConnectionString) }}
+{{- if (empty .Values.storage.connectionString) }}
           volumeMounts:
             - mountPath: "/app/storage"
               name: storage

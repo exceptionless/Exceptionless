@@ -8,14 +8,14 @@ data:
     EX_BaseUrl: https://{{.Values.app.defaultDomain}}
     EX_ExceptionlessServerUrl: https://{{.Values.collector.defaultDomain}}
     EX_DisabledPlugins: GeoPlugin,LocationPlugin
-    EX_EnableSsl: true
-    EX_Html5Mode: true
+    EX_EnableSsl: "true"
+    EX_Html5Mode: "true"
     EX_ConnectionStrings__Elasticsearch: {{ default "server=http://elasticsearch:9200" .Values.elasticsearch.connectionString }}
     EX_ConnectionStrings__Redis: {{ default "server=redis-master,abortConnect=false" .Values.redis.connectionString }}
     EX_ConnectionStrings__Storage: {{ default "provider=folder;path=/app/storage" .Values.storage.connectionString }}
     EX_ConnectionStrings__Cache: {{ default "provider=redis;" .Values.cache.connectionString }}
     EX_ConnectionStrings__MessageBus: {{ default "provider=redis;" .Values.messagebus.connectionString }}
-    EX_ConnectionStrings__Metrics: {{ default "provider=statsd;server=10.10.244.5;" .Values.metrics.connectionString }}
+    EX_ConnectionStrings__Metrics: {{ default "provider=statsd;server=10.10.244.5" .Values.metrics.connectionString }}
     EX_ConnectionStrings__Queue: {{ default "provider=redis;" .Values.queue.connectionString }}
     EX_ConnectionStrings__Email: {{ default "smtp://localhost" .Values.email.connectionString }}
 {{- if .Values.extraConfig }}

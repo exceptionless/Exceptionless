@@ -1,4 +1,4 @@
-{{- if (empty .Values.storage.azureConnectionString) -}}
+{{- if (empty .Values.storage.connectionString) -}}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

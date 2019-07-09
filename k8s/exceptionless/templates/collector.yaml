@@ -40,8 +40,8 @@ spec:
             httpGet:
               path: /ready
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 1
           resources:
             requests:
               memory: 2Gi
@@ -61,7 +61,7 @@ spec:
               value: 'false'
             - name: EnableWebSockets
               value: 'false'
-{{- if (empty .Values.storage.azureConnectionString) }}
+{{- if (empty .Values.storage.connectionString) }}
           volumeMounts:
             - mountPath: "/app/storage"
               name: storage
