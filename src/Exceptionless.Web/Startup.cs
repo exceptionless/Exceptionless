@@ -181,7 +181,6 @@ namespace Exceptionless.Web {
             app.UseForwardedHeaders();
             app.UseAuthentication();
             
-            
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
 
