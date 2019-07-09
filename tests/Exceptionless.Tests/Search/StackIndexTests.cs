@@ -3,7 +3,10 @@ using System.IO;
 using System.Threading.Tasks;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
+using Foundatio.Hosting.Startup;
 using Foundatio.Repositories.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
@@ -15,7 +18,11 @@ namespace Exceptionless.Tests.Repositories {
 
         public StackIndexTests(ITestOutputHelper output) : base(output) {
             _repository = GetService<IStackRepository>();
-            CreateDataAsync().GetAwaiter().GetResult();
+        }
+
+        protected override void RegisterServices(IServiceCollection services) {
+            base.RegisterServices(services);
+            services.AddStartupAction("CreateDataAsync", CreateDataAsync);
         }
 
         [Theory]
@@ -172,9 +179,9 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(count, result.Total);
         }
 
-        private async Task CreateDataAsync() {
+        private async Task CreateDataAsync(IServiceProvider serviceProvider) {
             string path = Path.Combine("..", "..", "..", "Search", "Data");
-            var serializer = GetService<JsonSerializer>();
+            var serializer = serviceProvider.GetService<JsonSerializer>();
             foreach (string file in Directory.GetFiles(path, "stack*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
                     continue;

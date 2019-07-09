@@ -18,11 +18,10 @@ namespace Exceptionless.Tests.Repositories {
         private readonly BillingPlans _plans;
 
         public OrganizationRepositoryTests(ITestOutputHelper output) : base(output) {
+            Log.SetLogLevel<OrganizationRepository>(LogLevel.Trace);
             _cache = GetService<ICacheClient>() as InMemoryCacheClient;
             _repository = GetService<IOrganizationRepository>();
             _plans = GetService<BillingPlans>();
-
-            Log.SetLogLevel<OrganizationRepository>(LogLevel.Trace);
         }
 
         [Fact]

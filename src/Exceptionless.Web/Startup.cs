@@ -125,10 +125,11 @@ namespace Exceptionless.Web {
             app.UseHealthChecks("/health", new HealthCheckOptions {
                 Predicate = hcr => options.RunJobsInProcess && hcr.Tags.Contains("AllJobs")
             });
-
-            app.UseHealthChecks("/ready", new HealthCheckOptions {
-                Predicate = hcr => hcr.Tags.Contains("Critical") || (!options.EventSubmissionDisabled && hcr.Tags.Contains("Storage"))
-            });
+            
+            var readyTags = new List<string> { "Critical" };
+            if (!options.EventSubmissionDisabled)
+                readyTags.Add("Storage");
+            app.UseReadyHealthChecks(readyTags.ToArray());
 
             app.UseWaitForStartupActionsBeforeServingRequests();
             

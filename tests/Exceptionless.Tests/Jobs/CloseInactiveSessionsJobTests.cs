@@ -10,9 +10,11 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
+using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.DependencyInjection;
 using Nest;
 using Xunit;
 using Xunit.Abstractions;
@@ -39,8 +41,11 @@ namespace Exceptionless.Tests.Jobs {
             _pipeline = GetService<EventPipeline>();
             _billingManager = GetService<BillingManager>();
             _plans = GetService<BillingPlans>();
+        }
 
-            CreateDataAsync().GetAwaiter().GetResult();
+        protected override void RegisterServices(IServiceCollection services) {
+            base.RegisterServices(services);
+            services.AddStartupAction("Create sample data", CreateDataAsync);
         }
 
         [Fact]

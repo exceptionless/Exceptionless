@@ -1,10 +1,14 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Insulation.Configuration;
 using Exceptionless.Tests.Authentication;
 using FluentRest;
 using Foundatio.Serializer;
@@ -15,50 +19,70 @@ using Exceptionless.Web;
 using Newtonsoft.Json;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Mail;
+using Foundatio.Hosting.Startup;
+using Foundatio.Logging.Xunit;
+using Foundatio.Utility;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Nest;
+using Xunit;
+using IAsyncLifetime = Xunit.IAsyncLifetime;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests {
-    public class IntegrationTestsBase : TestBase {
-        protected readonly ExceptionlessElasticConfiguration _configuration;
+    public class IntegrationTestsBase : TestWithLoggingBase, IAsyncLifetime, IClassFixture<AppWebHostFactory> {
+        private readonly IDisposable _testSystemClock = TestSystemClock.Install();
         protected readonly TestServer _server;
         protected readonly FluentClient _client;
         protected readonly HttpClient _httpClient;
-        protected readonly ISerializer _serializer;
 
-        public IntegrationTestsBase(ITestOutputHelper output) : base(output) {
-            var builder = new MvcWebApplicationBuilder<Startup>()
-                .UseSolutionRelativeContentRoot("src/Exceptionless.Web")
-                .ConfigureBeforeStartup(Configure)
-                .ConfigureAfterStartup(RegisterServices)
-                .UseApplicationAssemblies();
+        public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output) {
+            Log.MinimumLevel = LogLevel.Information;
+            Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
 
-            _server = builder.Build();
+            string currentDirectory = Directory.GetCurrentDirectory();
+            var configuredFactory = factory.WithWebHostBuilder(builder => {
+                builder.ConfigureAppConfiguration(config => config.SetBasePath(currentDirectory).AddYamlFile("appsettings.yml"));
+                builder.ConfigureTestServices(RegisterServices); // happens after normal container configure and overrides services
+            });
+            
+            _httpClient = configuredFactory.CreateClient();
+            _server = configuredFactory.Server;
+            _httpClient.BaseAddress = new Uri(_server.BaseAddress + "api/v2/");
 
-            var settings = GetService<JsonSerializerSettings>();
-            _serializer = GetService<ITextSerializer>();
-            _httpClient = new HttpClient(_server.CreateHandler()) {
-                BaseAddress = new Uri(_server.BaseAddress + "api/v2/")
-            };
+            var settings = _server.Host.Services.GetRequiredService<JsonSerializerSettings>();
             _client = new FluentClient(_httpClient, new JsonContentSerializer(settings));
-
-            _configuration = GetService<ExceptionlessElasticConfiguration>();
-            _configuration.DeleteIndexesAsync().GetAwaiter().GetResult();
-            _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false).GetAwaiter().GetResult();
         }
 
-        protected override TService GetService<TService>() {
+        public virtual async Task InitializeAsync() {
+            await _server.WaitForReadyAsync();
+        }
+
+        protected TService GetService<TService>() {
             return _server.Host.Services.GetRequiredService<TService>();
         }
 
-        protected override void RegisterServices(IServiceCollection services) {
-            // NOTE: We override this method because the web bootstrapper gets called for us.
+        protected virtual void RegisterServices(IServiceCollection services) {
             services.AddSingleton<ILoggerFactory>(Log);
             services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
 
             services.AddSingleton<IMailer, NullMailer>();
             services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
+            services.AddStartupAction("Delete indexes", DeleteIndexesAsync, 0);
         }
 
+        protected async Task DeleteIndexesAsync(IServiceProvider serviceProvider) {
+            var configuration = serviceProvider.GetRequiredService<ExceptionlessElasticConfiguration>();
+            await configuration.DeleteIndexesAsync();
+        }
+        
+        protected Task RefreshData(Indices indices = null) {
+            var configuration = GetService<ExceptionlessElasticConfiguration>();
+            return configuration.Client.RefreshAsync(indices ?? Indices.All);
+        }
+        
         protected async Task<HttpResponseMessage> SendRequest(Action<AppSendBuilder> configure) {
             var request = new HttpRequestMessage(HttpMethod.Get, _client.HttpClient.BaseAddress);
             var builder = new AppSendBuilder(request);
@@ -99,10 +123,10 @@ namespace Exceptionless.Tests {
             return await response.DeserializeAsync<T>();
         }
 
-        public override void Dispose() {
+        public virtual Task DisposeAsync() {
+            _testSystemClock.Dispose();
             _server?.Dispose();
-            _configuration.Dispose();
-            base.Dispose();
+            return Task.CompletedTask;
         }
     }
 }

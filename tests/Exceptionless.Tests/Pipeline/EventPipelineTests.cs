@@ -18,10 +18,12 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Hosting.Startup;
 using Foundatio.Repositories;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using McSherry.SemanticVersioning;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
@@ -48,8 +50,11 @@ namespace Exceptionless.Tests.Pipeline {
             _pipeline = GetService<EventPipeline>();
             _billingManager = GetService<BillingManager>();
             _plans = GetService<BillingPlans>();
+        }
 
-            CreateProjectDataAsync().GetAwaiter().GetResult();
+        protected override void RegisterServices(IServiceCollection services) {
+            base.RegisterServices(services);
+            services.AddStartupAction("CreateProjectDataAsync", CreateProjectDataAsync);
         }
 
         [Fact]
@@ -1015,7 +1020,7 @@ namespace Exceptionless.Tests.Pipeline {
             }
         }
 
-        private async Task CreateProjectDataAsync() {
+        private async Task CreateProjectDataAsync(IServiceProvider serviceProvider) {
             foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans)) {
                 if (organization.Id == TestConstants.OrganizationId3)
                     _billingManager.ApplyBillingPlan(organization, _plans.FreePlan, UserData.GenerateSampleUser());
