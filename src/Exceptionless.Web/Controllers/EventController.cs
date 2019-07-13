@@ -77,8 +77,8 @@ namespace Exceptionless.Web.Controllers {
             _jsonSerializerSettings = jsonSerializerSettings;
             _appOptions = appOptions;
 
-            AllowedDateFields.Add(EventIndexType.Alias.Date);
-            DefaultDateField = EventIndexType.Alias.Date;
+            AllowedDateFields.Add(EventIndex.Alias.Date);
+            DefaultDateField = EventIndex.Alias.Date;
         }
 
         /// <summary>

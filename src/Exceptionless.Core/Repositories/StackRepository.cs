@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Repositories {
         private readonly IEventRepository _eventRepository;
 
         public StackRepository(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, IValidator<Stack> validator, IOptions<AppOptions> options)
-            : base(configuration.Stacks.Stack, validator, options) {
+            : base(configuration.Stacks, validator, options) {
             _eventRepository = eventRepository;
             DocumentsChanging.AddHandler(OnDocumentChangingAsync);
             AddPropertyRequiredForRemove(s => s.SignatureHash);

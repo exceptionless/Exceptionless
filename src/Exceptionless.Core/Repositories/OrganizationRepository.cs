@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Repositories {
         private readonly BillingPlans _plans;
 
         public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator, BillingPlans plans, IOptions<AppOptions> options)
-            : base(configuration.Organizations.Organization, validator, options) {
+            : base(configuration.Organizations, validator, options) {
             _plans = plans;
         }
 

@@ -14,7 +14,7 @@ using Token = Exceptionless.Core.Models.Token;
 namespace Exceptionless.Core.Repositories {
     public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository {
         public TokenRepository(ExceptionlessElasticConfiguration configuration, IValidator<Token> validator, IOptions<AppOptions> options)
-            : base(configuration.Organizations.Token, validator, options) {
+            : base(configuration.Tokens, validator, options) {
         }
 
         public Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token> options = null) {

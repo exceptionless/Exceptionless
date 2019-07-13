@@ -14,7 +14,7 @@ using Nest;
 namespace Exceptionless.Core.Repositories {
     public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
         public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator, IOptions<AppOptions> options)
-            : base(configuration.Organizations.WebHook, validator, options) {}
+            : base(configuration.WebHooks, validator, options) {}
 
         public Task<FindResults<WebHook>> GetByUrlAsync(string targetUrl) {
             return FindAsync(q => q.FieldEquals(w => w.Url, targetUrl));

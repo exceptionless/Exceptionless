@@ -70,16 +70,17 @@ if (ctx.error == null)
 ctx.error.type = types;
 ctx.error.message = messages;
 ctx.error.code = codes;";
-            
-            var response = await Configuration.Client.Ingest.PutPipelineAsync(Pipeline, d => d.Processors(p => p
+            var pipeline = "events-pipeline";
+
+            var response = await Configuration.Client.Ingest.PutPipelineAsync(pipeline, d => d.Processors(p => p
                 .Script(s => new ScriptProcessor { Source = FLATTEN_ERRORS_SCRIPT.Replace("\r", String.Empty).Replace("\n", String.Empty).Replace("  ", " ") })));
 
             var logger = Configuration.LoggerFactory.CreateLogger<EventIndex>();
             logger.LogTrace(response.GetRequest());
 
             if (!response.IsValid) {
-                logger.LogError(response.OriginalException, "Error creating the pipeline {Pipeline}: {Message}", Pipeline, response.GetErrorMessage());
-                throw new ApplicationException($"Error creating the pipeline {Pipeline}: {response.GetErrorMessage()}", response.OriginalException);
+                logger.LogError(response.OriginalException, "Error creating the pipeline {Pipeline}: {Message}", pipeline, response.GetErrorMessage());
+                throw new ApplicationException($"Error creating the pipeline {pipeline}: {response.GetErrorMessage()}", response.OriginalException);
             }
 
             await base.ConfigureAsync();
@@ -101,23 +102,41 @@ ctx.error.code = codes;";
                 .AllField(a => a.Analyzer(EventIndex.STANDARDPLUS_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER))
                 .Properties(p => p
                     .SetupDefaults()
-                    .Keyword(f => f.Name(e => e.Id).Alias(Alias.Id).IncludeInAll())
-                    .Keyword(f => f.Name(e => e.OrganizationId).Alias(Alias.OrganizationId))
-                    .Keyword(f => f.Name(e => e.ProjectId).Alias(Alias.ProjectId))
-                    .Keyword(f => f.Name(e => e.StackId).Alias(Alias.StackId))
-                    .Keyword(f => f.Name(e => e.ReferenceId).Alias(Alias.ReferenceId))
-                    .Keyword(f => f.Name(e => e.Type).Alias(Alias.Type))
-                    .Text(f => f.Name(e => e.Source).Alias(Alias.Source).IncludeInAll().AddKeywordField())
-                    .Date(f => f.Name(e => e.Date).Alias(Alias.Date))
-                    .Text(f => f.Name(e => e.Message).Alias(Alias.Message).IncludeInAll())
-                    .Text(f => f.Name(e => e.Tags).Alias(Alias.Tags).IncludeInAll().Boost(1.2).AddKeywordField())
-                    .GeoPoint(f => f.Name(e => e.Geo).Alias(Alias.Geo))
-                    .Scalar(f => f.Value, f => f.Alias(Alias.Value))
-                    .Scalar(f => f.Count, f => f.Alias(Alias.Count))
-                    .Boolean(f => f.Name(e => e.IsFirstOccurrence).Alias(Alias.IsFirstOccurrence))
-                    .Boolean(f => f.Name(e => e.IsFixed).Alias(Alias.IsFixed))
-                    .Boolean(f => f.Name(e => e.IsHidden).Alias(Alias.IsHidden))
-                    .Object<object>(f => f.Name(e => e.Idx).Alias(Alias.IDX).Dynamic())
+                    .Text(f => f.Name("_all"))
+                    .Keyword(f => f.Name(e => e.Id).IncludeInAll())
+                    .FieldAlias(a => a.Name(Alias.Id).Path(f => f.Id))
+                    .Keyword(f => f.Name(e => e.OrganizationId))
+                    .FieldAlias(a => a.Name(Alias.OrganizationId).Path(f => f.OrganizationId))
+                    .Keyword(f => f.Name(e => e.ProjectId))
+                    .FieldAlias(a => a.Name(Alias.ProjectId).Path(f => f.ProjectId))
+                    .Keyword(f => f.Name(e => e.StackId))
+                    .FieldAlias(a => a.Name(Alias.StackId).Path(f => f.StackId))
+                    .Keyword(f => f.Name(e => e.ReferenceId))
+                    .FieldAlias(a => a.Name(Alias.ReferenceId).Path(f => f.ReferenceId))
+                    .Keyword(f => f.Name(e => e.Type))
+                    .FieldAlias(a => a.Name(Alias.Type).Path(f => f.Type))
+                    .Text(f => f.Name(e => e.Source).IncludeInAll().AddKeywordField())
+                    .FieldAlias(a => a.Name(Alias.Source).Path(f => f.Source))
+                    .Date(f => f.Name(e => e.Date))
+                    .FieldAlias(a => a.Name(Alias.Date).Path(f => f.Date))
+                    .Text(f => f.Name(e => e.Message).IncludeInAll())
+                    .FieldAlias(a => a.Name(Alias.Message).Path(f => f.Message))
+                    .Text(f => f.Name(e => e.Tags).IncludeInAll().Boost(1.2).AddKeywordField())
+                    .FieldAlias(a => a.Name(Alias.Tags).Path(f => f.Tags))
+                    .GeoPoint(f => f.Name(e => e.Geo))
+                    .FieldAlias(a => a.Name(Alias.Geo).Path(f => f.Geo))
+                    .Scalar(f => f.Value)
+                    .FieldAlias(a => a.Name(Alias.Value).Path(f => f.Value))
+                    .Scalar(f => f.Count)
+                    .FieldAlias(a => a.Name(Alias.Count).Path(f => f.Count))
+                    .Boolean(f => f.Name(e => e.IsFirstOccurrence))
+                    .FieldAlias(a => a.Name(Alias.IsFirstOccurrence).Path(f => f.IsFirstOccurrence))
+                    .Boolean(f => f.Name(e => e.IsFixed))
+                    .FieldAlias(a => a.Name(Alias.IsFixed).Path(f => f.IsFixed))
+                    .Boolean(f => f.Name(e => e.IsHidden))
+                    .FieldAlias(a => a.Name(Alias.IsHidden).Path(f => f.IsHidden))
+                    .Object<object>(f => f.Name(e => e.Idx).Dynamic())
+                    .FieldAlias(a => a.Name(Alias.IDX).Path(f => f.Idx))
                     .AddDataDictionaryMappings()
                     .AddCopyToMappings()
             );
