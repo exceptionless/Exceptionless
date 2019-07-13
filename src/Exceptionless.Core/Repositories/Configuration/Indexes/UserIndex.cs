@@ -1,16 +1,19 @@
 using System;
-using System.Linq;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class UserIndexType : IndexTypeBase<Models.User> {
-        public UserIndexType(OrganizationIndex index) : base(index, "user") { }
+    public sealed class UserIndex : VersionedIndex<User> {
+        private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public override TypeMappingDescriptor<Models.User> BuildMapping(TypeMappingDescriptor<Models.User> map) {
-            return base.BuildMapping(map)
+        public UserIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "users", 1) {
+            _configuration = configuration;
+        }
+
+        public override ITypeMapping ConfigureIndexMapping(TypeMappingDescriptor<User> map) {
+            return map
                 .Dynamic(false)
                 .Properties(p => p
                     .SetupDefaults()
@@ -25,6 +28,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
                         .Keyword(fu => fu.Name(m => m.ProviderUserId))
                         .Keyword(fu => fu.Name(m => m.Username))))
                 );
+        }
+
+        public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+            return base.ConfigureIndex(idx.Settings(s => s
+                .NumberOfShards(_configuration.Options.NumberOfShards)
+                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
+                .Priority(5)));
         }
     }
 }

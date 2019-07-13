@@ -1,20 +1,22 @@
-﻿using System;
+using System;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Parsers.ElasticQueries;
-using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class StackIndexType : IndexTypeBase<Stack> {
-        public StackIndexType(StackIndex index) : base(index, "stacks") { }
+    public sealed class StackIndex : VersionedIndex<Stack> {
+        private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public override TypeMappingDescriptor<Stack> BuildMapping(TypeMappingDescriptor<Stack> map) {
-            return base.BuildMapping(map)
+        public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 1) {
+            _configuration = configuration;
+        }
+
+        public override ITypeMapping ConfigureIndexMapping(TypeMappingDescriptor<Stack> map) {
+            return map
                 .Dynamic(false)
-                .IncludeInAll(false)
                 .Properties(p => p
                     .SetupDefaults()
                     .Keyword(f => f.Name(s => s.OrganizationId).Alias(Alias.OrganizationId))
@@ -40,6 +42,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
         protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {
             string dateFixedFieldName = Configuration.Client.Infer.PropertyName(Infer.Property<Stack>(f => f.DateFixed));
             config.AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName));
+        }
+
+        public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+            return base.ConfigureIndex(idx.Settings(s => s
+                .NumberOfShards(_configuration.Options.NumberOfShards)
+                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
+                .Priority(5)));
         }
 
         public class Alias {
