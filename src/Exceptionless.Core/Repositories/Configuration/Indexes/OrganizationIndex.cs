@@ -6,11 +6,16 @@ using Foundatio.Repositories.Elasticsearch.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class OrganizationIndexType : IndexTypeBase<Organization> {
-        public OrganizationIndexType(OrganizationIndex index) : base(index, "organization") { }
+    public sealed class OrganizationIndex : VersionedIndex<Organization> {
+        internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
+        private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public override TypeMappingDescriptor<Organization> BuildMapping(TypeMappingDescriptor<Organization> map) {
-            return base.BuildMapping(map)
+        public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 1) {
+            _configuration = configuration;
+        }
+
+        public override ITypeMapping ConfigureIndexMapping(TypeMappingDescriptor<Organization> map) {
+            return map
                 .Dynamic(false)
                 .Properties(p => p
                     .SetupDefaults()
@@ -26,12 +31,20 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Scalar(f => f.RetentionDays, f => f)
                     .Object<Invite>(f => f.Name(o => o.Invites.First()).Properties(ip => ip
                         .Keyword(fu => fu.Name(i => i.Token))
-                        .Text(fu => fu.Name(i => i.EmailAddress).Analyzer(OrganizationIndex.KEYWORD_LOWERCASE_ANALYZER))))
+                        .Text(fu => fu.Name(i => i.EmailAddress).Analyzer(KEYWORD_LOWERCASE_ANALYZER))))
                     .AddUsageMappings());
+        }
+
+        public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+            return base.ConfigureIndex(idx.Settings(s => s
+                .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
+                .NumberOfShards(_configuration.Options.NumberOfShards)
+                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
+                .Priority(10)));
         }
     }
 
-    internal static class OrganizationIndexTypeExtensions {
+    internal static class OrganizationIndexExtensions {
         public static PropertiesDescriptor<Organization> AddUsageMappings(this PropertiesDescriptor<Organization> descriptor) {
             return descriptor
                 .Object<UsageInfo>(ui => ui.Name(o => o.Usage.First()).Properties(p => p

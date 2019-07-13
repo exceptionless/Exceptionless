@@ -19,7 +19,8 @@ namespace Exceptionless.Core.Repositories {
             : base(configuration.Events.Event, validator, options) {
             DisableCache();
             BatchNotifications = true;
-            
+            DefaultPipeline = "events-pipeline";
+
             AddDefaultExclude(e => e.Idx);
             // copy to fields
             AddDefaultExclude(EventIndexType.Alias.IpAddress);

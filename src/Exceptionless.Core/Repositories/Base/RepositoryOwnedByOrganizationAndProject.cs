@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganizationAndProject<T> : RepositoryOwnedByOrganization<T>, IRepositoryOwnedByProject<T> where T : class, IOwnedByProject, IIdentity, IOwnedByOrganization, new() {
-        public RepositoryOwnedByOrganizationAndProject(IIndexType<T> indexType, IValidator<T> validator, IOptions<AppOptions> options) : base(indexType, validator, options) {
+        public RepositoryOwnedByOrganizationAndProject(IIndex index, IValidator<T> validator, IOptions<AppOptions> options) : base(index, validator, options) {
             AddPropertyRequiredForRemove(o => o.ProjectId);
         }
 
