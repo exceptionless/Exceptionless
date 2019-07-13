@@ -16,15 +16,15 @@ using Nest;
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
         public EventRepository(ExceptionlessElasticConfiguration configuration, IOptions<AppOptions> options, IValidator<PersistentEvent> validator)
-            : base(configuration.Events.Event, validator, options) {
+            : base(configuration.Events, validator, options) {
             DisableCache();
             BatchNotifications = true;
             DefaultPipeline = "events-pipeline";
 
             AddDefaultExclude(e => e.Idx);
             // copy to fields
-            AddDefaultExclude(EventIndexType.Alias.IpAddress);
-            AddDefaultExclude(EventIndexType.Alias.OperatingSystem);
+            AddDefaultExclude(EventIndex.Alias.IpAddress);
+            AddDefaultExclude(EventIndex.Alias.OperatingSystem);
             AddDefaultExclude("error");
 
             AddPropertyRequiredForRemove(e => e.Date);
@@ -93,7 +93,7 @@ namespace Exceptionless.Core.Repositories {
         public Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
             return PatchAllAsync(q => q
                     .Organization(organizationId)
-                    .ElasticFilter(Query<PersistentEvent>.Term(EventIndexType.Alias.IpAddress, clientIp))
+                    .ElasticFilter(Query<PersistentEvent>.Term(EventIndex.Alias.IpAddress, clientIp))
                     .DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date)
                     .Index(utcStart, utcEnd)
                 , new PartialPatch(new { is_hidden = true, updated_utc = SystemClock.UtcNow }));
@@ -101,7 +101,7 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<FindResults<PersistentEvent>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
             IRepositoryQuery<PersistentEvent> query = new RepositoryQuery<PersistentEvent>()
-                .DateRange(utcStart, utcEnd, field ?? ElasticType.GetFieldName(e => e.Date))
+                .DateRange(utcStart, utcEnd, field ?? ElasticIndex.GetFieldName(e => e.Date))
                 .Index(utcStart, utcEnd)
                 .SystemFilter(systemFilter)
                 .FilterExpression(userFilter);
@@ -143,7 +143,7 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             if (String.IsNullOrEmpty(userFilter))
-                userFilter = String.Concat(EventIndexType.Alias.StackId, ":", ev.StackId);
+                userFilter = String.Concat(EventIndex.Alias.StackId, ":", ev.StackId);
 
             var results = await FindAsync(q => q
                 .DateRange(utcStart, utcEventDate, (PersistentEvent e) => e.Date)
@@ -187,7 +187,7 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             if (String.IsNullOrEmpty(userFilter))
-                userFilter = String.Concat(EventIndexType.Alias.StackId, ":", ev.StackId);
+                userFilter = String.Concat(EventIndex.Alias.StackId, ":", ev.StackId);
 
             var results = await FindAsync(q => q
                 .DateRange(utcEventDate, utcEnd, (PersistentEvent e) => e.Date)

@@ -228,7 +228,7 @@ namespace Exceptionless.Tests.Stats {
             await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             await RefreshDataAsync();
 
-            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(6, results.Total);
             Assert.Equal(3, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 

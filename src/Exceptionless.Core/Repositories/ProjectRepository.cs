@@ -16,7 +16,7 @@ using Nest;
 namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
         public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, IOptions<AppOptions> options)
-            : base(configuration.Organizations.Project, validator, options) {
+            : base(configuration.Projects, validator, options) {
         }
 
         public Task<CountResult> GetCountByOrganizationIdAsync(string organizationId) {
