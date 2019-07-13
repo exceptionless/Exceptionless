@@ -193,8 +193,7 @@ namespace Exceptionless.Tests.Repositories {
                 }
             }
 
-            var configuration = GetService<ExceptionlessElasticConfiguration>();
-            await configuration.Client.RefreshAsync(Indices.All);
+            await _configuration.Client.Indices.RefreshAsync(Indices.All);
         }
 
         private Task<FindResults<Stack>> GetByFilterAsync(string filter) {
