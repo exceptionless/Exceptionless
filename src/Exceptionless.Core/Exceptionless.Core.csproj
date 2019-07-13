@@ -27,6 +27,9 @@
     <PackageReference Include="Foundatio.Hosting" Version="8.1.2126" />
     <PackageReference Include="Foundatio.JsonNet" Version="8.1.2126" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="5.6.900" />
+    <PackageReference Include="Foundatio.Hosting" Version="8.1.2081-pre" />
+    <PackageReference Include="Foundatio.JsonNet" Version="8.1.2081-pre" />
+    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.0.865" />
     <PackageReference Include="Handlebars.Net" Version="1.10.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="3.0.0" />
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.3.0" />

@@ -6,11 +6,17 @@ using Foundatio.Repositories.Elasticsearch.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class ProjectIndexType : IndexTypeBase<Project> {
-        public ProjectIndexType(OrganizationIndex index) : base(index, "project") { }
+    public sealed class ProjectIndex : VersionedIndex<Project> {
+        internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
+        private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public override TypeMappingDescriptor<Project> BuildMapping(TypeMappingDescriptor<Project> map) {
-            return base.BuildMapping(map)
+        public ProjectIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "projects", 1) {
+            _configuration = configuration;
+        }
+
+
+        public override ITypeMapping ConfigureIndexMapping(TypeMappingDescriptor<Project> map) {
+            return map
                 .Dynamic(false)
                 .Properties(p => p
                     .SetupDefaults()
@@ -20,9 +26,17 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .AddUsageMappings()
                 );
         }
+
+        public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+            return base.ConfigureIndex(idx.Settings(s => s
+                .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
+                .NumberOfShards(_configuration.Options.NumberOfShards)
+                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
+                .Priority(10)));
+        }
     }
 
-    internal static class ProjectIndexTypeExtensions {
+    internal static class ProjectIndexExtensions {
         public static PropertiesDescriptor<Project> AddUsageMappings(this PropertiesDescriptor<Project> descriptor) {
             return descriptor
                 .Object<UsageInfo>(ui => ui.Name(o => o.Usage.First()).Properties(p => p
