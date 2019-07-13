@@ -33,6 +33,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddIndex(Stacks = new StackIndex(this));
             AddIndex(Events = new EventIndex(this));
             AddIndex(Organizations = new OrganizationIndex(this));
+            AddIndex(Projects = new ProjectIndex(this));
+            AddIndex(Tokens = new TokenIndex(this));
+            AddIndex(Users = new UserIndex(this));
+            AddIndex(WebHooks = new WebHookIndex(this));
         }
 
         public Task RunAsync(CancellationToken shutdownToken = default) {
@@ -53,6 +57,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public StackIndex Stacks { get; }
         public EventIndex Events { get; }
         public OrganizationIndex Organizations { get; }
+        public ProjectIndex Projects { get; }
+        public TokenIndex Tokens { get; }
+        public UserIndex Users { get; }
+        public WebHookIndex WebHooks { get; }
 
         protected override IElasticClient CreateElasticClient() {
             var connectionPool = CreateConnectionPool();
