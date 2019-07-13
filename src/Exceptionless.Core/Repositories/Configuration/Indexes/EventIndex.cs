@@ -104,39 +104,39 @@ ctx.error.code = codes;";
                     .SetupDefaults()
                     .Text(f => f.Name("_all"))
                     .Keyword(f => f.Name(e => e.Id).IncludeInAll())
-                    .FieldAlias(a => a.Name(Alias.Id).Path(f => f.Id))
+                        .FieldAlias(a => a.Name(Alias.Id).Path(f => f.Id))
                     .Keyword(f => f.Name(e => e.OrganizationId))
-                    .FieldAlias(a => a.Name(Alias.OrganizationId).Path(f => f.OrganizationId))
+                        .FieldAlias(a => a.Name(Alias.OrganizationId).Path(f => f.OrganizationId))
                     .Keyword(f => f.Name(e => e.ProjectId))
-                    .FieldAlias(a => a.Name(Alias.ProjectId).Path(f => f.ProjectId))
+                        .FieldAlias(a => a.Name(Alias.ProjectId).Path(f => f.ProjectId))
                     .Keyword(f => f.Name(e => e.StackId))
-                    .FieldAlias(a => a.Name(Alias.StackId).Path(f => f.StackId))
+                        .FieldAlias(a => a.Name(Alias.StackId).Path(f => f.StackId))
                     .Keyword(f => f.Name(e => e.ReferenceId))
-                    .FieldAlias(a => a.Name(Alias.ReferenceId).Path(f => f.ReferenceId))
+                        .FieldAlias(a => a.Name(Alias.ReferenceId).Path(f => f.ReferenceId))
                     .Keyword(f => f.Name(e => e.Type))
-                    .FieldAlias(a => a.Name(Alias.Type).Path(f => f.Type))
+                        .FieldAlias(a => a.Name(Alias.Type).Path(f => f.Type))
                     .Text(f => f.Name(e => e.Source).IncludeInAll().AddKeywordField())
-                    .FieldAlias(a => a.Name(Alias.Source).Path(f => f.Source))
+                        .FieldAlias(a => a.Name(Alias.Source).Path(f => f.Source))
                     .Date(f => f.Name(e => e.Date))
-                    .FieldAlias(a => a.Name(Alias.Date).Path(f => f.Date))
+                        .FieldAlias(a => a.Name(Alias.Date).Path(f => f.Date))
                     .Text(f => f.Name(e => e.Message).IncludeInAll())
-                    .FieldAlias(a => a.Name(Alias.Message).Path(f => f.Message))
+                        .FieldAlias(a => a.Name(Alias.Message).Path(f => f.Message))
                     .Text(f => f.Name(e => e.Tags).IncludeInAll().Boost(1.2).AddKeywordField())
-                    .FieldAlias(a => a.Name(Alias.Tags).Path(f => f.Tags))
+                        .FieldAlias(a => a.Name(Alias.Tags).Path(f => f.Tags))
                     .GeoPoint(f => f.Name(e => e.Geo))
-                    .FieldAlias(a => a.Name(Alias.Geo).Path(f => f.Geo))
+                        .FieldAlias(a => a.Name(Alias.Geo).Path(f => f.Geo))
                     .Scalar(f => f.Value)
-                    .FieldAlias(a => a.Name(Alias.Value).Path(f => f.Value))
+                        .FieldAlias(a => a.Name(Alias.Value).Path(f => f.Value))
                     .Scalar(f => f.Count)
-                    .FieldAlias(a => a.Name(Alias.Count).Path(f => f.Count))
+                        .FieldAlias(a => a.Name(Alias.Count).Path(f => f.Count))
                     .Boolean(f => f.Name(e => e.IsFirstOccurrence))
-                    .FieldAlias(a => a.Name(Alias.IsFirstOccurrence).Path(f => f.IsFirstOccurrence))
+                        .FieldAlias(a => a.Name(Alias.IsFirstOccurrence).Path(f => f.IsFirstOccurrence))
                     .Boolean(f => f.Name(e => e.IsFixed))
-                    .FieldAlias(a => a.Name(Alias.IsFixed).Path(f => f.IsFixed))
+                        .FieldAlias(a => a.Name(Alias.IsFixed).Path(f => f.IsFixed))
                     .Boolean(f => f.Name(e => e.IsHidden))
-                    .FieldAlias(a => a.Name(Alias.IsHidden).Path(f => f.IsHidden))
+                        .FieldAlias(a => a.Name(Alias.IsHidden).Path(f => f.IsHidden))
                     .Object<object>(f => f.Name(e => e.Idx).Dynamic())
-                    .FieldAlias(a => a.Name(Alias.IDX).Path(f => f.Idx))
+                        .FieldAlias(a => a.Name(Alias.IDX).Path(f => f.Idx))
                     .AddDataDictionaryMappings()
                     .AddCopyToMappings()
             );
@@ -268,11 +268,13 @@ ctx.error.code = codes;";
         }
 
         private static PropertiesDescriptor<DataDictionary> AddVersionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
-            return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.Version).RootAlias(EventIndex.Alias.Version).Analyzer(EventIndex.VERSION_INDEX_ANALYZER).SearchAnalyzer(EventIndex.VERSION_SEARCH_ANALYZER).AddKeywordField());
+            return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.Version).Analyzer(EventIndex.VERSION_INDEX_ANALYZER).SearchAnalyzer(EventIndex.VERSION_SEARCH_ANALYZER).AddKeywordField())
+                .FieldAlias(a => a.Name(EventIndex.Alias.Version).Path(Event.KnownDataKeys.Version));
         }
 
         private static PropertiesDescriptor<DataDictionary> AddLevelMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
-            return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.Level).RootAlias(EventIndex.Alias.Level).AddKeywordField());
+            return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.Level).AddKeywordField())
+                .FieldAlias(a => a.Name(EventIndex.Alias.Level).Path(Event.KnownDataKeys.Level));
         }
 
         private static PropertiesDescriptor<DataDictionary> AddSubmissionMethodMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
