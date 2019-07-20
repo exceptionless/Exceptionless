@@ -1,0 +1,27 @@
+slackinTheme: "light"
+slackinPort: 3000
+slackSubdomain: "exceptionless"
+replicaCount: 1
+
+image:
+  repository: banzaicloud/slackin-extended
+  tag: 0.13.2
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    certmanager.k8s.io/cluster-issuer: letsencrypt-prod
+  path: /
+  hosts:
+    - slack.exceptionless.com
+  tls:
+    - secretName: slack-exceptionless-tls
+      hosts:
+        - slack.exceptionless.com

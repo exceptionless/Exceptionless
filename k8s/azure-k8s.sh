@@ -168,35 +168,6 @@ kubectl delete pods -l app=exceptionless
 kubectl run -it --rm aks-ssh --image=ubuntu
 # ssh to k8s node https://docs.microsoft.com/en-us/azure/aks/ssh
 
-# update image on all deployments and cronjobs
-kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/api-ci:5.0.3445-pre --all --v 8
-kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3445-pre --all --v 8
-
-UI_TAG=2.8.1474
-UI_TAG=2.8.1502-pre
-kubectl set image deployment exceptionless-app exceptionless-app=exceptionless/ui-ci:$UI_TAG
-
-API_TAG=5.0.3499-pre
-kubectl set image deployment exceptionless-api exceptionless-api=exceptionless/api-ci:$API_TAG
-kubectl set image deployment exceptionless-collector exceptionless-collector=exceptionless/api-ci:$API_TAG
-JOB_TAG=5.0.3499-pre
-kubectl set image deployment exceptionless-jobs-close-inactive-sessions exceptionless-jobs-close-inactive-sessions=exceptionless/job-ci:$JOB_TAG
-kubectl set image deployment exceptionless-jobs-daily-summary exceptionless-jobs-daily-summary=exceptionless/job-ci:$JOB_TAG
-kubectl set image deployment exceptionless-jobs-event-notifications exceptionless-jobs-event-notifications=exceptionless/job-ci:$JOB_TAG
-kubectl set image deployment exceptionless-jobs-event-posts exceptionless-jobs-event-posts=exceptionless/job-ci:$JOB_TAG
-kubectl set image deployment exceptionless-jobs-event-user-descriptions exceptionless-jobs-event-user-descriptions=exceptionless/job-ci:$JOB_TAG
-kubectl set image deployment exceptionless-jobs-mail-message exceptionless-jobs-mail-message=exceptionless/job-ci:$JOB_TAG
-kubectl set image deployment exceptionless-jobs-retention-limits exceptionless-jobs-retention-limits=exceptionless/job-ci:$JOB_TAG
-kubectl set image deployment exceptionless-jobs-stack-event-count exceptionless-jobs-stack-event-count=exceptionless/job-ci:$JOB_TAG
-kubectl set image deployment exceptionless-jobs-web-hooks exceptionless-jobs-web-hooks=exceptionless/job-ci:$JOB_TAG
-kubectl set image deployment exceptionless-jobs-work-item exceptionless-jobs-work-item=exceptionless/job-ci:$JOB_TAG
-kubectl set image cronjob exceptionless-jobs-cleanup-snapshot exceptionless-jobs-cleanup-snapshot=exceptionless/job-ci:$JOB_TAG
-kubectl set image cronjob exceptionless-jobs-download-geoip-database exceptionless-jobs-download-geoip-database=exceptionless/job-ci:$JOB_TAG
-kubectl set image cronjob exceptionless-jobs-event-snapshot exceptionless-jobs-event-snapshot=exceptionless/job-ci:$JOB_TAG
-kubectl set image cronjob exceptionless-jobs-maintain-indexes exceptionless-jobs-maintain-indexes=exceptionless/job-ci:$JOB_TAG
-kubectl set image cronjob exceptionless-jobs-organization-snapshot exceptionless-jobs-organization-snapshot=exceptionless/job-ci:$JOB_TAG
-kubectl set image cronjob exceptionless-jobs-stack-snapshot exceptionless-jobs-stack-snapshot=exceptionless/job-ci:$JOB_TAG
-
 # stop the entire app
 kubectl scale deployment/exceptionless-api --replicas=0 --namespace ex-prod
 kubectl scale deployment/exceptionless-app --replicas=0 --namespace ex-prod
@@ -246,12 +217,6 @@ kubectl patch cronjob/exceptionless-jobs-stack-snapshot -p '{"spec":{"suspend": 
 # view pod log tail
 kubectl logs -f exceptionless-jobs-event-posts-6c7b78d745-xd5ln
 
-# patch cronjob json doc
-kubectl patch cronjob/exceptionless-jobs-download-geoip-database -p '{"spec":{"suspend": false}}'
-
-# get config map checksum
-kubectl get configmaps exceptionless-config -o yaml | shasum -a 256 | awk '{print $1}'
-
 # install helper tools for using kubernetes CLI
 brew install kubectx
 
@@ -260,3 +225,7 @@ brew tap johanhaleby/kubetail
 brew install kubetail
 
 az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
+
+# install exceptionless slack
+
+helm install banzaicloud-stable/slackin --name exceptionless-slack --namespace ex-prod --values ex-slack-values.yaml --set "slackApiToken=$SLACK_API_TOKEN" --set "googleCaptchaSecret=$CAPTCHA_SECRET" --set "googleCaptchaSiteKey=$CAPTCHA_KEY"
