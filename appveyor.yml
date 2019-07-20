@@ -1,6 +1,7 @@
 version: '{build}'
 image: ubuntu
 clone_depth: 2
+skip_branch_with_pr: true
 
 services:
   - docker
@@ -55,10 +56,14 @@ deploy_script:
       done
     done
   - |
-    # deploy latest images to k8s cluster
-    # az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
-    # az aks get-credentials --resource-group exceptionless-test --name ex-k8s-test2
-    # helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values exceptionless-test ./k8s/exceptionless
+    echo "Branch: $APPVEYOR_REPO_BRANCH"
+    echo "PR: $APPVEYOR_PULL_REQUEST_NUMBER"
+    if [[ "$APPVEYOR_REPO_BRANCH" == "master" ]]; then
+      # deploy to k8s cluster
+      az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
+      az aks get-credentials --resource-group exceptionless-v4 --name ex-prod-k8s
+      # helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values exceptionless-test ./k8s/exceptionless
+    fi
 
 artifacts:
   - path: artifacts/*.trx
