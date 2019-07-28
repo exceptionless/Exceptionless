@@ -11,6 +11,7 @@ services:
     image: exceptionless/api-ci:latest
     environment:
       EX_AppMode: Production
+      EX_BaseURL: http://ex-ui.localtest.me:5100 #URL to UI
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
       #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
@@ -35,6 +36,7 @@ services:
     command: run-all
     environment:
       EX_AppMode: Production
+      EX_BaseURL: http://ex-ui.localtest.me:5100
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
       #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
@@ -50,7 +52,10 @@ services:
     image: exceptionless/ui-ci:latest
     environment:
       AppMode: Development
-      BaseUrl: http://ex-api.localtest.me:5000
+      EX_ApiUrl: http://ex-api.localtest.me:5000
+      #EX_Html5Mode: 'false'
+      #EX_EnableSsl: 'false'
+      #EX_EnableAccountCreation: 'false'
     ports:
       - 5100:80
 
