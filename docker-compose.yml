@@ -33,7 +33,6 @@ services:
       context: .
       target: job
     image: exceptionless/job-ci:latest
-    command: run-all
     environment:
       EX_AppMode: Production
       EX_BaseURL: http://ex-ui.localtest.me:5100

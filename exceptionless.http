@@ -31,7 +31,7 @@ Authorization: Bearer {{token}}
 
 ### post a sample JSON event
 
-POST {{apiUrl}}/events
+POST {{apiUrl}}/projects/{{projectId}}/events
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
