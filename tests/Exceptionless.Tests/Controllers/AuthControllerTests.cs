@@ -15,13 +15,10 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Foundatio.Repositories;
-using Nest;
 using Xunit;
 using Xunit.Abstractions;
 using User = Exceptionless.Core.Models.User;
 using FluentRest;
-using Foundatio.Hosting.Startup;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Tests.Controllers {
@@ -43,9 +40,9 @@ namespace Exceptionless.Tests.Controllers {
             _tokenRepository = GetService<ITokenRepository>();
         }
 
-        protected override void RegisterServices(IServiceCollection services) {
-            base.RegisterServices(services);
-            services.AddStartupAction("Create Test Organization And Projects", CreateTestOrganizationAndProjectsAsync);
+        protected override async Task ResetDataAsync() {
+            await base.ResetDataAsync();
+            await CreateTestOrganizationAndProjectsAsync();
         }
 
         [Fact]

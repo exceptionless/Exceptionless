@@ -67,19 +67,14 @@ namespace Exceptionless.Job {
                 .AddCommandLine(args)
                 .Build();
 
-            var services = new ServiceCollection();
-            services.AddSingleton<IConfiguration>(config);
-            services.ConfigureOptions<ConfigureAppOptions>();
-            services.ConfigureOptions<ConfigureMetricOptions>();
-            var container = services.BuildServiceProvider();
-            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
+            var options = AppOptions.ReadFromConfiguration(config);
  
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
-            var loggerFactory = new SerilogLoggerFactory(loggerConfig.CreateLogger());
-            _logger = loggerFactory.CreateLogger<Program>();
+            var serilogLogger = loggerConfig.CreateLogger();
+            _logger = new SerilogLoggerFactory(serilogLogger).CreateLogger<Program>();
             
             var configDictionary = config.ToDictionary("Serilog");
             _logger.LogInformation("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
@@ -88,13 +83,13 @@ namespace Exceptionless.Job {
 
             var builder = WebHost.CreateDefaultBuilder(args)
                 .UseEnvironment(environment)
+                .UseConfiguration(config)
                 .ConfigureKestrel(c => {
                     c.AddServerHeader = false;
                     //c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
                 })
-                .UseConfiguration(config)
+                .UseSerilog(serilogLogger, true)
                 .ConfigureServices(s => {
-                    s.AddSingleton<ILoggerFactory>(loggerFactory);
                     s.AddHttpContextAccessor();
                     
                     AddJobs(s, jobOptions);
@@ -107,7 +102,7 @@ namespace Exceptionless.Job {
                     Insulation.Bootstrapper.RegisterServices(serviceProvider, s, options, true);
                 })
                 .Configure(app => {
-                    Bootstrapper.LogConfiguration(app.ApplicationServices, options, loggerFactory);
+                    Bootstrapper.LogConfiguration(app.ApplicationServices, options, _logger);
 
                     if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                         app.UseExceptionless(ExceptionlessClient.Default);
@@ -127,7 +122,7 @@ namespace Exceptionless.Job {
             if (useApplicationInsights)
                 builder.UseApplicationInsights(options.ApplicationInsightsKey);
 
-            var metricOptions = container.GetRequiredService<IOptions<MetricOptions>>().Value;
+            var metricOptions = MetricOptions.ReadFromConfiguration(config);
             if (!String.IsNullOrEmpty(metricOptions.Provider))
                 ConfigureMetricsReporting(builder, metricOptions);
 

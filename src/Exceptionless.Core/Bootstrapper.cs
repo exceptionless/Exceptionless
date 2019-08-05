@@ -207,8 +207,7 @@ namespace Exceptionless.Core {
             });
         }
 
-        public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILoggerFactory loggerFactory) {
-            var logger = loggerFactory.CreateLogger<Bootstrapper>();
+        public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger) {
             if (!logger.IsEnabled(LogLevel.Warning))
                 return;
 

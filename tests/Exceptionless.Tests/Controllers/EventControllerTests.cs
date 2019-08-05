@@ -16,11 +16,9 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
-using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
@@ -38,9 +36,9 @@ namespace Exceptionless.Tests.Controllers {
             _eventUserDescriptionQueue = GetService<IQueue<EventUserDescription>>();
         }
 
-        protected override void RegisterServices(IServiceCollection services) {
-            base.RegisterServices(services);
-            services.AddStartupAction("Create organization and projects", CreateOrganizationAndProjectsAsync);
+        protected override async Task ResetDataAsync() {
+            await base.ResetDataAsync();
+            await CreateOrganizationAndProjectsAsync();
         }
 
         [Fact]
