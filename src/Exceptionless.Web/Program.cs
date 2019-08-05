@@ -18,7 +18,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.AspNetCore;
 using Serilog.Events;
@@ -49,8 +48,6 @@ namespace Exceptionless.Web {
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
-            Console.Title = "Exceptionless Web";
-
             string currentDirectory = Directory.GetCurrentDirectory();
             var config = new ConfigurationBuilder()
                 .SetBasePath(currentDirectory)
@@ -60,27 +57,29 @@ namespace Exceptionless.Web {
                 .AddCommandLine(args)
                 .Build();
 
-            var services = new ServiceCollection();
-            services.AddSingleton<IConfiguration>(config);
-            services.ConfigureOptions<ConfigureAppOptions>();
-            services.ConfigureOptions<ConfigureMetricOptions>();
-            var container = services.BuildServiceProvider();
-            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
-
+            return CreateWebHostBuilder(config, environment);
+        }
+        
+        public static IWebHostBuilder CreateWebHostBuilder(IConfiguration config, string environment) {
+            Console.Title = "Exceptionless Web";
+            
+            var options = AppOptions.ReadFromConfiguration(config);
+            
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
-            var loggerFactory = new SerilogLoggerFactory(loggerConfig.CreateLogger());
-            _logger = loggerFactory.CreateLogger<Program>();
-            
+            var serilogLogger = loggerConfig.CreateLogger();
+            _logger = new SerilogLoggerFactory(serilogLogger).CreateLogger<Program>();
+
             var configDictionary = config.ToDictionary("Serilog");
             _logger.LogInformation("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
 
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
 
-            var builder = WebHost.CreateDefaultBuilder(args)
+            var builder = WebHost.CreateDefaultBuilder()
                 .UseEnvironment(environment)
+                .UseConfiguration(config)
                 .ConfigureKestrel(c => {
                     c.AddServerHeader = false;
                     // c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
@@ -88,9 +87,9 @@ namespace Exceptionless.Web {
                     if (options.MaximumEventPostSize > 0)
                         c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
                 })
-                .UseConfiguration(config)
+                .UseSerilog(serilogLogger, true)
                 .ConfigureServices(s => {
-                    s.AddSingleton<ILoggerFactory>(loggerFactory);
+                    s.AddSingleton(config);
                     s.AddHttpContextAccessor();
                     
                     if (useApplicationInsights) {
@@ -103,7 +102,7 @@ namespace Exceptionless.Web {
             if (useApplicationInsights)
                 builder.UseApplicationInsights(options.ApplicationInsightsKey);
 
-            var metricOptions = container.GetRequiredService<IOptions<MetricOptions>>().Value;
+            var metricOptions = MetricOptions.ReadFromConfiguration(config);
             if (!String.IsNullOrEmpty(metricOptions.Provider))
                 ConfigureMetricsReporting(builder, metricOptions);
 

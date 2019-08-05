@@ -47,7 +47,6 @@ namespace Exceptionless.Web {
             });
             services.AddMvc(o => {
                 o.Filters.Add(new CorsAuthorizationFilterFactory("AllowAny"));
-                o.Filters.Add<RequireHttpsExceptLocalAttribute>();
                 o.Filters.Add<ApiExceptionFilter>();
                 o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
                 o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
@@ -117,7 +116,7 @@ namespace Exceptionless.Web {
 
         public void Configure(IApplicationBuilder app) {
             var options = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
-            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, LoggerFactory);
+            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, LoggerFactory.CreateLogger<Startup>());
 
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
@@ -130,7 +129,6 @@ namespace Exceptionless.Web {
             if (!options.EventSubmissionDisabled)
                 readyTags.Add("Storage");
             app.UseReadyHealthChecks(readyTags.ToArray());
-
             app.UseWaitForStartupActionsBeforeServingRequests();
             
             app.UseCsp(csp => {
@@ -153,16 +151,6 @@ namespace Exceptionless.Web {
                     .AllowUnsafeInline()
                     .From("https://fonts.googleapis.com")
                     .From("https://maxcdn.bootstrapcdn.com");
-            });
-
-            var contentTypeProvider = new FileExtensionContentTypeProvider {
-                Mappings = {
-                    [".less"] = "plain/text"
-                }
-            };
-
-            app.UseStaticFiles(new StaticFileOptions {
-                ContentTypeProvider = contentTypeProvider
             });
 
             app.Use(async (context, next) => {
@@ -192,6 +180,15 @@ namespace Exceptionless.Web {
 
             // Reject event posts in organizations over their max event limits.
             app.UseMiddleware<OverageMiddleware>();
+            
+            app.UseStaticFiles(new StaticFileOptions {
+                ContentTypeProvider = new FileExtensionContentTypeProvider {
+                    Mappings = {
+                        [".less"] = "plain/text"
+                    }
+                }
+            });
+            
             app.UseFileServer();
             app.UseMvc();
             app.UseSwagger(c => {

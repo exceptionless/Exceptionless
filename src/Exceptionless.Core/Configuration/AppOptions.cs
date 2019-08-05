@@ -64,6 +64,13 @@ namespace Exceptionless.Core {
         public string GoogleGeocodingApiKey { get; internal set; }
 
         public int BulkBatchSize { get; internal set; }
+        
+        public static AppOptions ReadFromConfiguration(IConfiguration config) {
+            var options = new AppOptions();
+            var configureOptions = new ConfigureAppOptions(config);
+            configureOptions.Configure(options);
+            return options;
+        }
     }
 
     public class ConfigureAppOptions : IConfigureOptions<AppOptions> {
