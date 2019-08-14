@@ -45,12 +45,18 @@ namespace Exceptionless.Web {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
                 options.RequireHeaderSymmetry = false;
             });
-            services.AddMvc(o => {
+            services.AddMvcCore(o => {
                 o.Filters.Add(new CorsAuthorizationFilterFactory("AllowAny"));
                 o.Filters.Add<ApiExceptionFilter>();
                 o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
                 o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
             }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
+              .AddApiExplorer()
+              .AddAuthorization()
+              .AddFormatterMappings()
+              .AddDataAnnotations()
+              .AddJsonFormatters()
+              .AddCors()
               .AddJsonOptions(o => {
                 o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
                 o.SerializerSettings.NullValueHandling = NullValueHandling.Include;

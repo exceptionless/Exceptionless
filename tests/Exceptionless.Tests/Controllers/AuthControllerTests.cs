@@ -47,7 +47,7 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task CannotSignupWithoutPassword() {
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                 .Post()
                 .AppendPath("auth/signup")
                 .Content(new SignupModel {
@@ -71,7 +71,7 @@ namespace Exceptionless.Tests.Controllers {
                 email = provider.GetEmailAddressFromUsername(email);
             }
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                 .Post()
                 .AppendPath("auth/signup")
                 .Content(new SignupModel {
@@ -97,7 +97,7 @@ namespace Exceptionless.Tests.Controllers {
                 email = provider.GetEmailAddressFromUsername(email);
             }
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                 .Post()
                 .AppendPath("auth/signup")
                 .Content(new SignupModel {
@@ -134,7 +134,7 @@ namespace Exceptionless.Tests.Controllers {
             organization = await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
             Assert.NotNull(organization.GetInvite(invite.Token));
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            var result = await SendRequestAsAsync<TokenResult>(r => r
                .Post()
                .AppendPath("auth/signup")
                .Content(new SignupModel {
@@ -170,7 +170,7 @@ namespace Exceptionless.Tests.Controllers {
             await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
             Assert.NotNull(organization.GetInvite(invite.Token));
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                .Post()
                .AppendPath("auth/signup")
                .Content(new SignupModel {
@@ -187,7 +187,7 @@ namespace Exceptionless.Tests.Controllers {
         public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAsync() {
             _authOptions.Value.EnableAccountCreation = true;
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            var result = await SendRequestAsAsync<TokenResult>(r => r
                .Post()
                .AppendPath("auth/signup")
                .Content(new SignupModel {
@@ -211,7 +211,7 @@ namespace Exceptionless.Tests.Controllers {
             var provider = new TestDomainLoginProvider();
             string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            var result = await SendRequestAsAsync<TokenResult>(r => r
                .Post()
                .AppendPath("auth/signup")
                .Content(new SignupModel {
@@ -232,7 +232,7 @@ namespace Exceptionless.Tests.Controllers {
             _authOptions.Value.EnableAccountCreation = true;
             _authOptions.Value.EnableActiveDirectoryAuth = true;
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                .Post()
                .AppendPath("auth/signup")
                .Content(new SignupModel {
@@ -266,7 +266,7 @@ namespace Exceptionless.Tests.Controllers {
             await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
             Assert.NotNull(organization.GetInvite(invite.Token));
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            var result = await SendRequestAsAsync<TokenResult>(r => r
                .Post()
                .AppendPath("auth/signup")
                .Content(new SignupModel {
@@ -281,7 +281,7 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(result);
             Assert.False(String.IsNullOrEmpty(result.Token));
 
-            await RefreshData();
+            await RefreshDataAsync();
 
             var user = await _userRepository.GetByEmailAddressAsync(email);
             Assert.NotNull(user);
@@ -322,7 +322,7 @@ namespace Exceptionless.Tests.Controllers {
             await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
             Assert.NotNull(organization.GetInvite(invite.Token));
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            var result = await SendRequestAsAsync<TokenResult>(r => r
                .Post()
                .AppendPath("auth/signup")
                .Content(new SignupModel {
@@ -355,7 +355,7 @@ namespace Exceptionless.Tests.Controllers {
             await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
             Assert.NotNull(organization.GetInvite(invite.Token));
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                .Post()
                .AppendPath("auth/signup")
                .Content(new SignupModel {
@@ -386,7 +386,7 @@ namespace Exceptionless.Tests.Controllers {
             };
             await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                 .Post()
                 .AppendPath("auth/signup")
                 .Content(new SignupModel {
@@ -396,7 +396,7 @@ namespace Exceptionless.Tests.Controllers {
                 .StatusCodeShouldBeBadRequest()
             );
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                 .Post()
                 .AppendPath("auth/signup")
                 .Content(new SignupModel {
@@ -425,7 +425,7 @@ namespace Exceptionless.Tests.Controllers {
             };
             await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            var result = await SendRequestAsAsync<TokenResult>(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -458,7 +458,7 @@ namespace Exceptionless.Tests.Controllers {
 
             await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -486,7 +486,7 @@ namespace Exceptionless.Tests.Controllers {
             };
             await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -511,7 +511,7 @@ namespace Exceptionless.Tests.Controllers {
 
             await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            var result = await SendRequestAsAsync<TokenResult>(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -532,7 +532,7 @@ namespace Exceptionless.Tests.Controllers {
             var provider = new TestDomainLoginProvider();
             string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -547,7 +547,7 @@ namespace Exceptionless.Tests.Controllers {
         public async Task LoginInvalidNonExistantActiveDirectoryAsync() {
             _authOptions.Value.EnableActiveDirectoryAuth = true;
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -577,7 +577,7 @@ namespace Exceptionless.Tests.Controllers {
             };
             await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                .Post()
                .AppendPath("auth/login")
                .Content(new LoginModel {
@@ -606,7 +606,7 @@ namespace Exceptionless.Tests.Controllers {
 
             await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            var result = await SendRequestAsAsync<TokenResult>(r => r
                 .Post()
                 .AppendPath("auth/login")
                 .Content(new LoginModel {
@@ -627,7 +627,7 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(email, actualUser.EmailAddress);
 
             const string newPassword = "NewP@ssword2";
-            var changePasswordResult = await SendRequestAs<TokenResult>(r => r
+            var changePasswordResult = await SendRequestAsAsync<TokenResult>(r => r
                 .Post()
                 .BasicAuthorization(email, password)
                 .AppendPath("auth/change-password")
@@ -663,7 +663,7 @@ namespace Exceptionless.Tests.Controllers {
 
             await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            var result = await SendRequestAsAsync<TokenResult>(r => r
                 .Post()
                 .AppendPath("auth/login")
                 .Content(new LoginModel {
@@ -683,7 +683,7 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(actualUser);
             Assert.Equal(email, actualUser.EmailAddress);
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                 .Post()
                 .BasicAuthorization(email, password)
                 .AppendPath("auth/change-password")
@@ -716,7 +716,7 @@ namespace Exceptionless.Tests.Controllers {
             user.CreatePasswordResetToken();
             await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            var result = await SendRequestAsAsync<TokenResult>(r => r
                 .Post()
                 .AppendPath("auth/login")
                 .Content(new LoginModel {
@@ -737,7 +737,7 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(email, actualUser.EmailAddress);
 
             const string newPassword = "NewP@ssword2";
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                 .Post()
                 .BasicAuthorization(email, password)
                 .AppendPath("auth/reset-password")
@@ -770,7 +770,7 @@ namespace Exceptionless.Tests.Controllers {
             user.CreatePasswordResetToken();
             await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
 
-            var result = await SendRequestAs<TokenResult>(r => r
+            var result = await SendRequestAsAsync<TokenResult>(r => r
                 .Post()
                 .AppendPath("auth/login")
                 .Content(new LoginModel {
@@ -790,7 +790,7 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(actualUser);
             Assert.Equal(email, actualUser.EmailAddress);
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                 .Post()
                 .BasicAuthorization(email, password)
                 .AppendPath("auth/reset-password")

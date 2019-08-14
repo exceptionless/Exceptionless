@@ -14,10 +14,13 @@ using Exceptionless.Web.Utility;
 using Foundatio.Hosting;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HostFiltering;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.AspNetCore;
 using Serilog.Events;
@@ -80,6 +83,9 @@ namespace Exceptionless.Web {
             var builder = WebHost.CreateDefaultBuilder()
                 .UseEnvironment(environment)
                 .UseConfiguration(config)
+                .UseDefaultServiceProvider((ctx, o) => {
+                    o.ValidateScopes = ctx.HostingEnvironment.IsDevelopment();
+                })
                 .ConfigureKestrel(c => {
                     c.AddServerHeader = false;
                     // c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
@@ -88,17 +94,32 @@ namespace Exceptionless.Web {
                         c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
                 })
                 .UseSerilog(serilogLogger, true)
-                .ConfigureServices(s => {
-                    s.AddSingleton(config);
-                    s.AddHttpContextAccessor();
+                .ConfigureServices((ctx, services) => {
+                    services.AddSingleton(config);
+                    services.AddHttpContextAccessor();
                     
                     if (useApplicationInsights) {
-                        s.AddSingleton<ITelemetryInitializer, ExceptionlessTelemetryInitializer>();
-                        s.AddApplicationInsightsTelemetry();
+                        services.AddSingleton<ITelemetryInitializer, ExceptionlessTelemetryInitializer>();
+                        services.AddApplicationInsightsTelemetry();
                     }
+                    
+                    services.PostConfigure<HostFilteringOptions>(o => {
+                        if (o.AllowedHosts == null || o.AllowedHosts.Count == 0) {
+                            // "AllowedHosts": "localhost;127.0.0.1;[::1]"
+                            var hosts = ctx.Configuration["AllowedHosts"]?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            // Fall back to "*" to disable.
+                            o.AllowedHosts = (hosts?.Length > 0 ? hosts : new[] { "*" });
+                        }
+                    });
+                    
+                    services.AddSingleton<IOptionsChangeTokenSource<HostFilteringOptions>>(new ConfigurationChangeTokenSource<HostFilteringOptions>(ctx.Configuration));
+                    services.AddTransient<IStartupFilter, HostFilteringStartupFilter>();
                 })
                 .UseStartup<Startup>();
-
+            
+            if (String.IsNullOrEmpty(builder.GetSetting(WebHostDefaults.ContentRootKey)))
+                builder.UseContentRoot(Directory.GetCurrentDirectory());
+            
             if (useApplicationInsights)
                 builder.UseApplicationInsights(options.ApplicationInsightsKey);
 
@@ -123,6 +144,15 @@ namespace Exceptionless.Web {
                 });
             } else if (!String.Equals(options.Provider, "statsd")) {
                 builder.UseMetrics();
+            }
+        }
+
+        internal class HostFilteringStartupFilter : IStartupFilter {
+            public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) {
+                return app => {
+                    app.UseHostFiltering();
+                    next(app);
+                };
             }
         }
     }

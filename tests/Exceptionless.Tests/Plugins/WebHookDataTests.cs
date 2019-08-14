@@ -12,7 +12,7 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    public class WebHookDataTests : TestWithServices {
+    public sealed class WebHookDataTests : TestWithServices {
         private readonly WebHookDataPluginManager _webHookData;
         private readonly FormattingPluginManager _formatter;
 

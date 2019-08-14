@@ -38,12 +38,13 @@ namespace Exceptionless.Tests.Controllers {
 
         protected override async Task ResetDataAsync() {
             await base.ResetDataAsync();
+            await _eventQueue.DeleteQueueAsync();
             await CreateOrganizationAndProjectsAsync();
         }
 
         [Fact]
         public async Task CanPostUserDescriptionAsync() {
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                .Post()
                .AsClientUser()
                .AppendPath("events/by-ref/TestReferenceId/user-description")
@@ -66,7 +67,7 @@ namespace Exceptionless.Tests.Controllers {
         [Fact]
         public async Task CanPostStringAsync() {
             const string message = "simple string";
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                 .Post()
                 .AsClientUser()
                 .AppendPath("events")
@@ -80,7 +81,7 @@ namespace Exceptionless.Tests.Controllers {
 
             var processEventsJob = GetService<EventPostsJob>();
             await processEventsJob.RunAsync();
-            await RefreshData();
+            await RefreshDataAsync();
 
             stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(1, stats.Completed);
@@ -120,7 +121,7 @@ namespace Exceptionless.Tests.Controllers {
 
             var processEventsJob = GetService<EventPostsJob>();
             await processEventsJob.RunAsync();
-            await RefreshData();
+            await RefreshDataAsync();
 
             stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(1, stats.Completed);
@@ -135,7 +136,7 @@ namespace Exceptionless.Tests.Controllers {
             if (String.IsNullOrEmpty(ev.Message))
                 ev.Message = "Generated message.";
 
-            await SendRequest(r => r
+            await SendRequestAsync(r => r
                 .Post()
                 .AsClientUser()
                 .AppendPath("events")
@@ -149,7 +150,7 @@ namespace Exceptionless.Tests.Controllers {
 
             var processEventsJob = GetService<EventPostsJob>();
             await processEventsJob.RunAsync();
-            await RefreshData();
+            await RefreshDataAsync();
 
             stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(1, stats.Completed);
@@ -166,7 +167,7 @@ namespace Exceptionless.Tests.Controllers {
 
             await Run.InParallelAsync(batchCount, async i => {
                 var events = new RandomEventGenerator().Generate(batchSize, false);
-                await SendRequest(r => r
+                await SendRequestAsync(r => r
                    .Post()
                    .AsClientUser()
                    .AppendPath("events")
@@ -175,7 +176,7 @@ namespace Exceptionless.Tests.Controllers {
                 );
             });
 
-            await RefreshData();
+            await RefreshDataAsync();
             var stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(batchCount, stats.Enqueued);
             Assert.Equal(0, stats.Completed);
@@ -186,7 +187,7 @@ namespace Exceptionless.Tests.Controllers {
             sw.Stop();
             _logger.LogInformation("{Duration:g}", sw.Elapsed);
 
-            await RefreshData();
+            await RefreshDataAsync();
             stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(batchCount, stats.Completed);
             Assert.Equal(batchSize * batchCount, await _eventRepository.CountAsync());

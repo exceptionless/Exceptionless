@@ -21,7 +21,7 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Mail {
-    public class MailerTests : TestWithServices {
+    public sealed class MailerTests : TestWithServices {
         private readonly IMailer _mailer;
         private readonly IOptions<EmailOptions> _options;
         private readonly BillingManager _billingManager;

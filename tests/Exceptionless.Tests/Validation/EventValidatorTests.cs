@@ -12,7 +12,7 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Validation {
-    public class EventValidatorTests : TestWithServices {
+    public sealed class EventValidatorTests : TestWithServices {
         private readonly PersistentEvent _benchmarkEvent;
         private readonly PersistentEventValidator _validator;
 

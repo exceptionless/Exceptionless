@@ -15,20 +15,19 @@ using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
-using Nest;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Services {
-    public sealed class UsageServiceTests : ElasticTestBase {
+    public sealed class UsageServiceTests : IntegrationTestsBase {
         private readonly ICacheClient _cache;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly UsageService _usageService;
         private readonly BillingPlans _plans;
 
-        public UsageServiceTests(ITestOutputHelper output) : base(output) {
+        public UsageServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             Log.SetLogLevel<OrganizationRepository>(LogLevel.Information);
             _cache = GetService<ICacheClient>();
             _usageService = GetService<UsageService>();
@@ -50,12 +49,12 @@ namespace Exceptionless.Tests.Services {
             var o = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id });
             var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = o.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, opt => opt.Cache());
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             Assert.InRange(o.GetHourlyEventLimit(_plans), 1, 750);
 
             int totalToIncrement = o.GetHourlyEventLimit(_plans) - 1;
             Assert.False(await _usageService.IncrementUsageAsync(o, project, false, totalToIncrement));
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             o = await _organizationRepository.GetByIdAsync(o.Id);
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
@@ -70,7 +69,7 @@ namespace Exceptionless.Tests.Services {
             Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id, project.Id), 0));
 
             Assert.True(await _usageService.IncrementUsageAsync(o, project, false, 2));
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             o = await _organizationRepository.GetByIdAsync(o.Id);
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
@@ -86,7 +85,7 @@ namespace Exceptionless.Tests.Services {
 
             o = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id });
             project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = o.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, opt => opt.Cache());
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
 
             await _cache.RemoveAllAsync();
             totalToIncrement = o.GetHourlyEventLimit(_plans) + 20;
@@ -119,11 +118,11 @@ namespace Exceptionless.Tests.Services {
             var o = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = limit, PlanId = _plans.FreePlan.Id });
             var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = o.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, opt => opt.Cache());
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             Assert.Equal(limit, o.GetHourlyEventLimit(_plans));
 
             Assert.False(await _usageService.IncrementUsageAsync(o, project, false, limit));
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             o = await _organizationRepository.GetByIdAsync(o.Id);
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
@@ -138,7 +137,7 @@ namespace Exceptionless.Tests.Services {
             Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(o.Id, project.Id), 0));
 
             Assert.True(await _usageService.IncrementUsageAsync(o, project, false, 2));
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             o = await _organizationRepository.GetByIdAsync(o.Id);
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));

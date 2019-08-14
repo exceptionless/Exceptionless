@@ -13,13 +13,12 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
-using Nest;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Stats {
-    public sealed class AggregationTests : ElasticTestBase {
+    public sealed class AggregationTests : IntegrationTestsBase {
         private readonly EventPipeline _pipeline;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
@@ -29,7 +28,7 @@ namespace Exceptionless.Tests.Stats {
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
 
-        public AggregationTests(ITestOutputHelper output) : base(output) {
+        public AggregationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             _pipeline = GetService<EventPipeline>();
             _eventRepository = GetService<IEventRepository>();
             _stackRepository = GetService<IStackRepository>();
@@ -200,7 +199,7 @@ namespace Exceptionless.Tests.Stats {
 
             var projects = ProjectData.GenerateSampleProjects();
             await _projectRepository.AddAsync(projects, o => o.Cache());
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
 
             if (eventCount > 0)
                 await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId });
@@ -212,7 +211,7 @@ namespace Exceptionless.Tests.Stats {
                 await _pipeline.RunAsync(eventGroup, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             await _stackService.SaveStackUsagesAsync();
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
         }
 
         private async Task<List<PersistentEvent>> CreateSessionEventsAsync() {
@@ -227,7 +226,7 @@ namespace Exceptionless.Tests.Stats {
             };
 
             await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
 
             var results = await _eventRepository.GetByFilterAsync(null, null, EventIndexType.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(6, results.Total);

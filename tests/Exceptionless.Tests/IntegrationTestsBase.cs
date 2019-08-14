@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Authentication;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Repositories.Configuration;
@@ -22,6 +23,7 @@ using Foundatio.Logging.Xunit;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
@@ -31,15 +33,15 @@ using IAsyncLifetime = Xunit.IAsyncLifetime;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests {
-    public class IntegrationTestsBase : TestWithLoggingBase, IAsyncLifetime, IClassFixture<AppWebHostFactory> {
+    public abstract class IntegrationTestsBase : TestWithLoggingBase, IAsyncLifetime, IClassFixture<AppWebHostFactory> {
         private static bool _indexesHaveBeenConfigured;
         private static readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
         private readonly IDisposable _testSystemClock = TestSystemClock.Install();
+        private readonly ExceptionlessElasticConfiguration _configuration;
         protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
         protected readonly TestServer _server;
         protected readonly FluentClient _client;
         protected readonly HttpClient _httpClient;
-        private  readonly ExceptionlessElasticConfiguration _configuration;
 
         public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output) {
             Log.MinimumLevel = LogLevel.Information;
@@ -47,6 +49,7 @@ namespace Exceptionless.Tests {
             Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
             Log.SetLogLevel<InMemoryCacheClient>(LogLevel.Warning);
             Log.SetLogLevel<InMemoryMetricsClient>(LogLevel.Information);
+            Log.SetLogLevel<Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager>(LogLevel.Warning);
 
             var configuredFactory = factory.Factories.FirstOrDefault();
             if (configuredFactory == null) {
@@ -81,16 +84,20 @@ namespace Exceptionless.Tests {
         }
 
         private IServiceProvider ServiceProvider { get; }
+        
         protected TService GetService<TService>() {
             return ServiceProvider.GetRequiredService<TService>();
         }
 
         protected virtual void RegisterServices(IServiceCollection services) {
+            // use xunit test logger
             services.AddSingleton<ILoggerFactory>(Log);
             services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
 
             services.AddSingleton<IMailer, NullMailer>();
             services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
+            
+            services.ReplaceSingleton(s => _server.CreateHandler());
         }
 
         protected virtual async Task ResetDataAsync() {
@@ -99,18 +106,26 @@ namespace Exceptionless.Tests {
                 var oldLoggingLevel = Log.MinimumLevel;
                 Log.MinimumLevel = LogLevel.Warning;
 
+                bool isTraceLogLevelEnabled = _logger.IsEnabled(LogLevel.Trace);
                 string indexList = String.Join(',', _configuration.Indexes.Select(i => i.Name));
                 await _configuration.Client.RefreshAsync(indexList);
                 if (!_indexesHaveBeenConfigured) {
                     await _configuration.DeleteIndexesAsync();
                     await _configuration.ConfigureIndexesAsync();
                     _indexesHaveBeenConfigured = true;
+                    
+                    if (isTraceLogLevelEnabled)
+                        _logger.LogTrace("Configured Indexes");
                 } else {
-                    await _configuration.Client.DeleteByQueryAsync(new DeleteByQueryRequest(indexList) {
+                    var response = await _configuration.Client.DeleteByQueryAsync(new DeleteByQueryRequest(indexList) {
                         Query = new MatchAllQuery(),
                         IgnoreUnavailable = true,
+                        WaitForCompletion = true,
                         Refresh = true
                     });
+                    
+                    if (isTraceLogLevelEnabled)
+                        _logger.LogTraceRequest(response);
                 }
                 
                 foreach (var index in _configuration.Indexes)
@@ -132,11 +147,11 @@ namespace Exceptionless.Tests {
         }
         
         
-        protected Task RefreshData(Indices indices = null) {
+        protected Task RefreshDataAsync(Indices indices = null) {
             return _configuration.Client.RefreshAsync(indices ?? Indices.All);
         }
         
-        protected async Task<HttpResponseMessage> SendRequest(Action<AppSendBuilder> configure) {
+        protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure) {
             var request = new HttpRequestMessage(HttpMethod.Get, _client.HttpClient.BaseAddress);
             var builder = new AppSendBuilder(request);
             configure(builder);
@@ -155,24 +170,24 @@ namespace Exceptionless.Tests {
             return response;
         }
 
-        protected async Task<T> SendRequestAs<T>(Action<AppSendBuilder> configure) {
-            var response = await SendRequest(configure);
+        protected async Task<T> SendRequestAsAsync<T>(Action<AppSendBuilder> configure) {
+            var response = await SendRequestAsync(configure);
             return await response.DeserializeAsync<T>();
         }
 
-        protected async Task<HttpResponseMessage> SendGlobalAdminRequest(Action<AppSendBuilder> configure) {
-            return await SendRequest(b => {
+        protected async Task<HttpResponseMessage> SendGlobalAdminRequestAsync(Action<AppSendBuilder> configure) {
+            return await SendRequestAsync(b => {
                 b.AsGlobalAdminUser();
                 configure(b);
             });
         }
 
-        protected async Task<T> SendGlobalAdminRequestAs<T>(Action<AppSendBuilder> configure) {
-            var response = await SendGlobalAdminRequest(configure);
+        protected async Task<T> SendGlobalAdminRequestAsAsync<T>(Action<AppSendBuilder> configure) {
+            var response = await SendGlobalAdminRequestAsync(configure);
             return await response.DeserializeAsync<T>();
         }
 
-        protected async Task<T> DeserializeResponse<T>(HttpResponseMessage response) {
+        protected async Task<T> DeserializeResponseAsync<T>(HttpResponseMessage response) {
             return await response.DeserializeAsync<T>();
         }
 
