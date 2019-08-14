@@ -20,10 +20,10 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    public sealed class GeoTests : TestWithServices {
-        private const string GREEN_BAY_COORDINATES = "44.5463,-88.1021";
+    public class GeoTests : TestWithServices {
+        private const string GREEN_BAY_COORDINATES = "44.5458,-88.1019";
         private const string GREEN_BAY_IP = "24.208.86.80";
-        private const string IRVING_COORDINATES = "32.8479,-96.974";
+        private const string IRVING_COORDINATES = "32.8489,-96.9667";
         private const string IRVING_IP = "192.91.253.248";
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
