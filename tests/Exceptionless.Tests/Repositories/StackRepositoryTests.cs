@@ -8,44 +8,43 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Utility;
-using Nest;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Repositories {
-    public sealed class StackRepositoryTests : ElasticTestBase {
+    public sealed class StackRepositoryTests : IntegrationTestsBase {
         private readonly InMemoryCacheClient _cache;
         private readonly IStackRepository _repository;
 
-        public StackRepositoryTests(ITestOutputHelper output) : base(output) {
-            _cache = _configuration.Cache as InMemoryCacheClient;
+        public StackRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+            _cache = GetService<ICacheClient>() as InMemoryCacheClient;
             _repository = GetService<IStackRepository>();
         }
 
         [Fact]
         public async Task CanGetByStackHashAsync() {
-            Assert.Equal(0, _cache.Count);
-            Assert.Equal(0, _cache.Hits);
-            Assert.Equal(1, _cache.Misses);
-
+            long count = _cache.Count;
+            long hits = _cache.Hits;
+            long misses = _cache.Misses;
+            
             var stack = await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.Cache());
             Assert.NotNull(stack?.Id);
-            Assert.Equal(2, _cache.Count);
-            Assert.Equal(0, _cache.Hits);
-            Assert.Equal(1, _cache.Misses);
+            Assert.Equal(count + 2, _cache.Count);
+            Assert.Equal(hits, _cache.Hits);
+            Assert.Equal(misses, _cache.Misses);
 
             var result = await _repository.GetStackBySignatureHashAsync(stack.ProjectId, stack.SignatureHash);
             Assert.Equal(stack.ToJson(), result.ToJson());
-            Assert.Equal(2, _cache.Count);
-            Assert.Equal(1, _cache.Hits);
-            Assert.Equal(1, _cache.Misses);
+            Assert.Equal(count + 2, _cache.Count);
+            Assert.Equal(hits + 1, _cache.Hits);
+            Assert.Equal(misses, _cache.Misses);
         }
 
         [Fact]
         public async Task CanGetByFixedAsync() {
             var stack = await _repository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             var results = await _repository.GetByFilterAsync(null, "fixed:true", null, null, DateTime.MinValue, DateTime.MaxValue);
             Assert.NotNull(results);
             Assert.Equal(0, results.Total);
@@ -58,7 +57,7 @@ namespace Exceptionless.Tests.Repositories {
 
             stack.MarkFixed();
             await _repository.SaveAsync(stack);
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
 
             results = await _repository.GetByFilterAsync(null, "fixed:true", null, null, DateTime.MinValue, DateTime.MaxValue);
             Assert.NotNull(results);
@@ -80,7 +79,7 @@ namespace Exceptionless.Tests.Repositories {
             Assert.False(stack.IsRegressed);
             Assert.NotNull(stack.DateFixed);
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             await _repository.MarkAsRegressedAsync(TestConstants.StackId);
 
             stack = await _repository.GetByIdAsync(TestConstants.StackId);
@@ -100,7 +99,7 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(DateTime.MinValue, stack.LastOccurrence);
 
             var utcNow = SystemClock.UtcNow;
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId, utcNow, utcNow, 1);
 
             stack = await _repository.GetByIdAsync(TestConstants.StackId);
@@ -108,7 +107,7 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(utcNow, stack.FirstOccurrence);
             Assert.Equal(utcNow, stack.LastOccurrence);
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId, utcNow.SubtractDays(1), utcNow.SubtractDays(1), 1);
 
             stack = await _repository.GetByIdAsync(TestConstants.StackId);
@@ -116,7 +115,7 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
             Assert.Equal(utcNow, stack.LastOccurrence);
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId, utcNow.AddDays(1), utcNow.AddDays(1), 1);
 
             stack = await _repository.GetByIdAsync(TestConstants.StackId);
@@ -130,7 +129,7 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(0, await _repository.CountAsync());
             await _repository.AddAsync(StackData.GenerateSampleStacks());
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(1).PageLimit(1));
             Assert.NotNull(stacks);
             Assert.Equal(3, stacks.Total);
@@ -148,7 +147,7 @@ namespace Exceptionless.Tests.Repositories {
 
             await _repository.RemoveAsync(stacks.Documents);
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             Assert.Equal(0, await _repository.CountAsync());
         }
     }

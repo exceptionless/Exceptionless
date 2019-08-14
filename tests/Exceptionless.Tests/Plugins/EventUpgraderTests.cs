@@ -8,7 +8,7 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
-    public class EventUpgraderTests : TestWithServices {
+    public sealed class EventUpgraderTests : TestWithServices {
         private readonly EventUpgraderPluginManager _upgrader;
         private readonly EventParserPluginManager _parser;
 

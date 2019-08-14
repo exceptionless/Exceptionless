@@ -19,6 +19,7 @@ using Foundatio.Jobs;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HostFiltering;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -52,11 +53,12 @@ namespace Exceptionless.Job {
         
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) {
             var jobOptions = new JobRunnerOptions(args);
+            
+            Console.Title = jobOptions.JobName != null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
+            
             string environment = Environment.GetEnvironmentVariable("EX_AppMode");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
-
-            Console.Title = jobOptions.JobName != null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
 
             string currentDirectory = Directory.GetCurrentDirectory();
             var config = new ConfigurationBuilder()
@@ -84,22 +86,37 @@ namespace Exceptionless.Job {
             var builder = WebHost.CreateDefaultBuilder(args)
                 .UseEnvironment(environment)
                 .UseConfiguration(config)
+                .UseDefaultServiceProvider((ctx, o) => {
+                    o.ValidateScopes = ctx.HostingEnvironment.IsDevelopment();
+                })
                 .ConfigureKestrel(c => {
                     c.AddServerHeader = false;
                     //c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
                 })
                 .UseSerilog(serilogLogger, true)
-                .ConfigureServices(s => {
-                    s.AddHttpContextAccessor();
+                .ConfigureServices((ctx, services) => {
+                    services.AddHttpContextAccessor();
                     
-                    AddJobs(s, jobOptions);
+                    AddJobs(services, jobOptions);
                     
                     if (useApplicationInsights)
-                        s.AddApplicationInsightsTelemetry();
+                        services.AddApplicationInsightsTelemetry();
                     
-                    Bootstrapper.RegisterServices(s);
-                    var serviceProvider = s.BuildServiceProvider();
-                    Insulation.Bootstrapper.RegisterServices(serviceProvider, s, options, true);
+                    Bootstrapper.RegisterServices(services);
+                    var serviceProvider = services.BuildServiceProvider();
+                    Insulation.Bootstrapper.RegisterServices(serviceProvider, services, options, true);
+
+                    services.PostConfigure<HostFilteringOptions>(o => {
+                        if (o.AllowedHosts == null || o.AllowedHosts.Count == 0) {
+                            // "AllowedHosts": "localhost;127.0.0.1;[::1]"
+                            var hosts = ctx.Configuration["AllowedHosts"]?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            // Fall back to "*" to disable.
+                            o.AllowedHosts = (hosts?.Length > 0 ? hosts : new[] { "*" });
+                        }
+                    });
+                    
+                    services.AddSingleton<IOptionsChangeTokenSource<HostFilteringOptions>>(new ConfigurationChangeTokenSource<HostFilteringOptions>(ctx.Configuration));
+                    services.AddTransient<IStartupFilter, HostFilteringStartupFilter>();
                 })
                 .Configure(app => {
                     Bootstrapper.LogConfiguration(app.ApplicationServices, options, _logger);
@@ -118,6 +135,9 @@ namespace Exceptionless.Job {
                     app.UseWaitForStartupActionsBeforeServingRequests();
                     app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobOptions.JobName}"));
                 });
+            
+            if (String.IsNullOrEmpty(builder.GetSetting(WebHostDefaults.ContentRootKey)))
+                builder.UseContentRoot(Directory.GetCurrentDirectory());
             
             if (useApplicationInsights)
                 builder.UseApplicationInsights(options.ApplicationInsightsKey);
@@ -181,6 +201,15 @@ namespace Exceptionless.Job {
             } else if (!String.Equals(options.Provider, "statsd")) {
                 builder.UseMetrics();
             }
+        }
+    }
+
+    internal class HostFilteringStartupFilter : IStartupFilter {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) {
+            return app => {
+                app.UseHostFiltering();
+                next(app);
+            };
         }
     }
 }
