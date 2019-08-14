@@ -160,7 +160,7 @@ namespace Exceptionless.Web {
             });
 
             app.Use(async (context, next) => {
-                if (context.Request.IsLocal() == false && options.AppMode != AppMode.Development)
+                if (options.AppMode != AppMode.Development && context.Request.IsLocal() == false)
                     context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
                 
                 context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
