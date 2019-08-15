@@ -33,8 +33,8 @@ namespace Exceptionless.Core.Pipeline {
             if (!ctx.Organization.HasPremiumFeatures)
                 return;
 
-            // notifications are disabled or stack is hidden.
-            if (ctx.Stack.DisableNotifications || ctx.Stack.IsHidden)
+            // notifications are disabled or stack is hidden/fixed.
+            if (ctx.Stack.DisableNotifications || ctx.Stack.IsHidden || (ctx.Stack.DateFixed.HasValue && !ctx.Stack.IsRegressed))
                 return;
 
             if (ShouldQueueNotification(ctx))
