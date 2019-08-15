@@ -9,6 +9,7 @@ services:
       context: .
       target: api
     image: exceptionless/api-ci:latest
+    restart: on-failure
     environment:
       EX_AppMode: Production
       EX_BaseURL: http://ex-ui.localtest.me:5100 #URL to UI
@@ -22,7 +23,7 @@ services:
       EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
       EX_RunJobsInProcess: 'false'
     ports:
-      - 5000:80
+      - 5000:80 # This can be commented out if using reverse proxy.
     volumes:
       - appdata:/app/storage
 
@@ -33,6 +34,7 @@ services:
       context: .
       target: job
     image: exceptionless/job-ci:latest
+    restart: on-failure
     environment:
       EX_AppMode: Production
       EX_BaseURL: http://ex-ui.localtest.me:5100
@@ -56,10 +58,26 @@ services:
       #EX_EnableSsl: 'false'
       #EX_EnableAccountCreation: 'false'
     ports:
-      - 5100:80
+      - 5100:80 # This can be commented out if using reverse proxy.
+
+#  reverseproxy:
+#    depends_on:
+#      - api
+#      - ui
+#    image: valian/docker-nginx-auto-ssl
+#    restart: on-failure
+#    ports:
+#      - 80:80
+#      - 443:443
+#    volumes:
+#      - ssldata:/etc/resty-auto-ssl
+#    environment:
+#      ALLOWED_DOMAINS: '(ex-ui|ex-api).mydomainn.com'
+#      SITES: 'ex-ui.mydomainn.com=ui;ex-api.mydomainn.com=api'
 
   elasticsearch:
     image: exceptionless/elasticsearch:1
+    restart: on-failure
     environment:
       cluster.name: 'exceptionless'
       bootstrap.memory_lock: 'true'
@@ -82,6 +100,7 @@ services:
     depends_on:
       - elasticsearch
     image: exceptionless/kibana:1
+    restart: on-failure
     environment:
       xpack.security.enabled: 'false'
     ports:
@@ -89,6 +108,7 @@ services:
 
   redis:
     image: redis:alpine
+    restart: on-failure
     ports:
       - 6379:6379
 
@@ -96,4 +116,6 @@ volumes:
   esdata:
     driver: local
   appdata:
+    driver: local
+  ssldata:
     driver: local
