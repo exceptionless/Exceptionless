@@ -8,18 +8,17 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Utility;
-using Nest;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Services {
-    public class StackServiceTests : ElasticTestBase {
+    public class StackServiceTests : IntegrationTestsBase {
         private readonly ICacheClient _cache;
         private readonly StackService _stackService;
         private readonly IStackRepository _stackRepository;
 
-        public StackServiceTests(ITestOutputHelper output) : base(output) {
+        public StackServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             Log.SetLogLevel<StackService>(LogLevel.Trace);
             _cache = GetService<ICacheClient>();
             _stackService = GetService<StackService>();
@@ -43,7 +42,7 @@ namespace Exceptionless.Tests.Services {
             Assert.True(occurrenceSet.IsNull || !occurrenceSet.HasValue || occurrenceSet.Value.Count == 0);
 
             var firstUtcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             await _stackService.IncrementStackUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, firstUtcNow, firstUtcNow, 1);
 
             // Assert stack state has no change after increment usage
@@ -60,7 +59,7 @@ namespace Exceptionless.Tests.Services {
             Assert.Single(occurrenceSet.Value);
 
             var secondUtcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             await _stackService.IncrementStackUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, secondUtcNow, secondUtcNow, 2);
 
             // Assert state in cache has been changed after increment usage again

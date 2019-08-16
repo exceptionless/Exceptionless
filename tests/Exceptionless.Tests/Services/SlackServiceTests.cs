@@ -10,7 +10,7 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Services {
-    public class SlackServiceTests : TestWithServices {
+    public sealed class SlackServiceTests : TestWithServices {
         private readonly Project _project;
         private readonly SlackService _slackService;
 

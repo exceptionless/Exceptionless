@@ -13,7 +13,7 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Search {
-    public class PersistentEventQueryValidatorTests : TestWithServices {
+    public sealed class PersistentEventQueryValidatorTests : TestWithServices {
         private readonly ElasticQueryParser _parser;
         private readonly PersistentEventQueryValidator _validator;
 

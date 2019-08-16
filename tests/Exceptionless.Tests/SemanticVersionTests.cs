@@ -5,9 +5,9 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests {
-    public class SemanticVersionParserTests : TestWithServices {
+    public class SemanticVersionTests : TestWithServices {
         private readonly SemanticVersionParser _parser;
-        public SemanticVersionParserTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public SemanticVersionTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _parser = new SemanticVersionParser(Log);
         }
         
@@ -27,9 +27,26 @@ namespace Exceptionless.Tests {
         [InlineData("1.2.*", "1.2.0")]
         [InlineData("1.2.3.4", "1.2.3-4")]
         [InlineData("1.2.3.4 7ab3b4da18", "1.2.3-4")]
-        public async Task SemanticVersionTests(string input, string expected) {
+        [InlineData("4.1.0034", "4.1.34")]
+        public async Task CanParseSemanticVersion(string input, string expected) {
             var actual = await _parser.ParseAsync(input);
             Assert.Equal(expected, actual?.ToString());
+        }
+        
+        [Theory]
+        [InlineData("4.1.0034", "4.1.34")]
+        public async Task VerifySameSemanticVersion(string version1, string version2) {
+            var parsedVersion1 = await _parser.ParseAsync(version1);
+            var parsedVersion2 = await _parser.ParseAsync(version2);
+            Assert.Equal(parsedVersion1, parsedVersion2);
+        }
+        
+        [Theory]
+        [InlineData("4.1.0034", "4.1.35")]
+        public async Task VerifySemanticVersionIsNewer(string oldVersion, string newVersion) {
+            var parsedOldVersion = await _parser.ParseAsync(oldVersion);
+            var parsedNewVersion = await _parser.ParseAsync(newVersion);
+            Assert.True(parsedOldVersion < parsedNewVersion);
         }
     }
 }
